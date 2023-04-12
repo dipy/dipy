@@ -267,7 +267,7 @@ Data Derivatives can be downloaded from the link below:
 Please note this is a large data file and might take some time to run. If you
 only want to test the workflows use the test sample data.
 
-All steps will be the same as mentioned above except this time the data donwloaded
+All steps will be the same as mentioned above except this time the data downloaded
 will have different folder name ``subjects`` instead of ``subjects_small``.
 
 For more information about each command line, you can go to

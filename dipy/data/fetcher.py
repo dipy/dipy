@@ -19,8 +19,11 @@ from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+
 from dipy.io.streamline import load_trk
+
 from dipy.utils.optpkg import optional_package, TripWire
+
 
 
 from urllib.request import urlopen
@@ -137,6 +140,7 @@ def fetch_data(files, folder, data_size=None):
         value. The downloaded file is not deleted when this error is raised.
 
     """
+
     if not op.exists(folder):
         _log("Creating new folder %s" % folder)
         os.makedirs(folder)
@@ -287,6 +291,34 @@ fetch_resdnn_weights = _make_fetcher(
     ['resdnn_weights_mri_2018.h5'],
     ['f0e118d72ab804a464494bd9015227f4'],
     doc="Download ResDNN model weights for Nath et. al 2018")
+
+fetch_synb0_weights = _make_fetcher(
+    "fetch_synb0_weights",
+    pjoin(dipy_home, 'synb0'),
+    'https://ndownloader.figshare.com/files/',
+    ['36379914', '36379917', '36379920', '36379923', '36379926'],
+    ['synb0_default_weights1.h5',
+     'synb0_default_weights2.h5',
+     'synb0_default_weights3.h5',
+     'synb0_default_weights4.h5',
+     'synb0_default_weights5.h5'],
+    ['a9362c75bc28616167a11a42fe5d004e',
+     '9dc9353d6ff741d8e22b8569f157c56e',
+     'e548f341e4f12d63dfbed306233fddce',
+     '8cb7a3492d08e4c9b8938277d6fd9b75',
+     '5e796f892605b3bdb9cb9678f1c6ac11'],
+    doc="Download Synb0 model weights for Schilling et. al 2019")
+
+fetch_synb0_test = _make_fetcher(
+    "fetch_synb0_test",
+    pjoin(dipy_home, 'synb0'),
+    'https://ndownloader.figshare.com/files/',
+    ['36379911', '36671850'],
+    ['test_input_synb0.npz',
+     'test_output_synb0.npz'],
+    ['987203aa73de2dac8770f39ed506dc0c',
+     '515544fbcafd9769785502821b47b661'],
+    doc="Download Synb0 test data for Schilling et. al 2019")
 
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
@@ -779,6 +811,19 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_resdnn_weights()
         wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
         return wraw
+    if name == 'synb0_default_weights':
+        _, folder = fetch_synb0_weights()
+        w1 = pjoin(folder, 'synb0_default_weights1.h5')
+        w2 = pjoin(folder, 'synb0_default_weights2.h5')
+        w3 = pjoin(folder, 'synb0_default_weights3.h5')
+        w4 = pjoin(folder, 'synb0_default_weights4.h5')
+        w5 = pjoin(folder, 'synb0_default_weights5.h5')
+        return w1, w2, w3, w4, w5
+    if name == 'synb0_test_data':
+        files, folder = fetch_synb0_test()
+        input_array = pjoin(folder, 'test_input_synb0.npz')
+        target_array = pjoin(folder, 'test_output_synb0.npz')
+        return input_array, target_array
     if name == 'DiB_70_lte_pte_ste':
         _, folder = fetch_DiB_70_lte_pte_ste()
         fdata = pjoin(folder, 'DiB_70_lte_pte_ste.nii.gz')
@@ -1055,7 +1100,7 @@ def read_tissue_data(contrast='T1'):
 
     Parameters
     ----------
-    constrast : str
+    contrast : str
         'T1', 'T1 denoised' or 'Anisotropic Power'
 
     Returns

@@ -38,8 +38,8 @@
    Gimbal lock
       See :ref:`gimbal-lock`
 
-   Homogenous coordinates
-      See `wikipedia homogenous coordinates`_
+   Homogeneous coordinates
+      See `wikipedia homogeneous coordinates`_
 
    Linear transformation
       A linear transformation is one that preserves lines - that is, if

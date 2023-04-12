@@ -49,7 +49,7 @@ Pull Requests (41):
 * :ghpull:`1738`: [FIX] Python 3 compatibility for some tools script
 * :ghpull:`1740`: [FIX] mapmri  with cvxpy 1.0.15
 * :ghpull:`1730`: [Fix] Cython syntax error
-* :ghpull:`1666`: Remove the points added oustide of a mask. Fix the related tests.
+* :ghpull:`1666`: Remove the points added outside of a mask. Fix the related tests.
 * :ghpull:`1737`: Doc Fix
 * :ghpull:`1733`: Minor Doc Fix
 * :ghpull:`1732`: MAIIncrement Python version for testing to 3.6
@@ -99,7 +99,7 @@ Issues (62):
 * :ghissue:`1740`: [FIX] mapmri  with cvxpy 1.0.15
 * :ghissue:`1730`: [Fix] Cython syntax error
 * :ghissue:`1661`: Local Tracking - BinaryTissueClassifier - dropping the last point
-* :ghissue:`1666`: Remove the points added oustide of a mask. Fix the related tests.
+* :ghissue:`1666`: Remove the points added outside of a mask. Fix the related tests.
 * :ghissue:`1737`: Doc Fix
 * :ghissue:`1604`: Cleaned PR for Affine Registration Workflow with Supporting Quality Metrics
 * :ghissue:`1734`: Documentation Error

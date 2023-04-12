@@ -91,7 +91,7 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=6.):
         Extracted bundle from the whole brain tractogram (eg: AF_L)
     expert_bundle : Streamlines
         Model bundle used as reference while extracting similar type bundle
-        from inout tractogram
+        from input tractogram
     nb_pts : integer (default 20)
         Discretizing streamlines to have nb_pts number of points
     threshold : float (default 6)
@@ -472,7 +472,7 @@ class RecoBundles(object):
                pruning_distance='mdf'):
         """ Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
-        first ouput of recobundle by applying second local slr (optional),
+        first output of recobundle by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
         This time, search space is created using pruned bundle and not model
@@ -610,7 +610,7 @@ class RecoBundles(object):
         return pruned_streamlines, self.filtered_indices[labels]
 
     def evaluate_results(self, model_bundle, pruned_streamlines, slr_select):
-        """ Compare the similiarity between two given bundles, model bundle,
+        """ Compare the similarity between two given bundles, model bundle,
         and extracted bundle.
 
         Parameters

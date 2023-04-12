@@ -36,11 +36,11 @@ Pull Requests (35):
 * :ghpull:`601`: BF: Some versions (<0.18) of numpy don't have nanmean.
 * :ghpull:`598`: Fixed undetected compilation errors prior to Cython 0.22
 * :ghpull:`596`: DOC + PEP8: Clean up a few typos, PEP8 things, etc.
-* :ghpull:`593`: DOC: fixed some typos and added a notes section to make the document mor...
+* :ghpull:`593`: DOC: fixed some typos and added a notes section to make the document more...
 * :ghpull:`588`: Nf csd calibration
 * :ghpull:`565`: Adding New Tissue Classifiers
 * :ghpull:`589`: DOC: minor typographic corrections
-* :ghpull:`584`: DOC: explain the changes made to the integration lenght in GQI2.
+* :ghpull:`584`: DOC: explain the changes made to the integration length in GQI2.
 * :ghpull:`568`: Quickbundles2
 * :ghpull:`559`: SFM for multi b-value data
 * :ghpull:`586`: BF: all_tensor_evecs should rotate from eye(3) to e0.
@@ -77,15 +77,15 @@ Issues (45):
 * :ghissue:`597`: tracking module not building on cython 0.22
 * :ghissue:`596`: DOC + PEP8: Clean up a few typos, PEP8 things, etc.
 * :ghissue:`404`: A better way to create a response function for CSD
-* :ghissue:`593`: DOC: fixed some typos and added a notes section to make the document mor...
+* :ghissue:`593`: DOC: fixed some typos and added a notes section to make the document more...
 * :ghissue:`588`: Nf csd calibration
 * :ghissue:`565`: Adding New Tissue Classifiers
 * :ghissue:`589`: DOC: minor typographic corrections
-* :ghissue:`584`: DOC: explain the changes made to the integration lenght in GQI2.
+* :ghissue:`584`: DOC: explain the changes made to the integration length in GQI2.
 * :ghissue:`568`: Quickbundles2
 * :ghissue:`559`: SFM for multi b-value data
 * :ghissue:`586`: BF: all_tensor_evecs should rotate from eye(3) to e0.
-* :ghissue:`585`: NF: Initial file strcuture skeleton for amico implementation
+* :ghissue:`585`: NF: Initial file structure skeleton for amico implementation
 * :ghissue:`574`: Affine registration PR1: Transforms.
 * :ghissue:`581`: BF: Normalization of GQI2 `gqi_vector`.
 * :ghissue:`580`: docstring for tensor fit was wrong

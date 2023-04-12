@@ -6,7 +6,7 @@
 .. _`PROJECTNAME mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 
 .. numpy
-.. _numpy: hhttp://numpy.scipy.org
+.. _numpy: http://numpy.scipy.org
 .. _`numpy github`: http://github.com/numpy/numpy
 .. _`numpy mailing list`: http://mail.scipy.org/mailman/listinfo/numpy-discussion
 

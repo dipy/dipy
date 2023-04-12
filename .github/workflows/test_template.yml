@@ -12,7 +12,7 @@ on:
         description: "Select Python version"
         type: string
         required: false
-        default: '["3.9", ]'
+        default: '["3.10", ]'
       use-pre:
         description: "bal"
         type: boolean
@@ -48,10 +48,6 @@ on:
 defaults:
   run:
     shell: bash
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
 
 jobs:
   build:

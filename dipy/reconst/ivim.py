@@ -632,7 +632,7 @@ class IvimModelVP(ReconstModel):
         """
         Cost function for differential evolution algorithm. Performs a
         stochastic search for the non-linear parameters 'x'. The objective
-        funtion is calculated in the :func: `ivim_mix_cost_one`. The function
+        function is calculated in the :func: `ivim_mix_cost_one`. The function
         constructs the parameters using :func: `phi`.
 
         Parameters
@@ -796,7 +796,7 @@ class IvimModelVP(ReconstModel):
         Returns
         -------
         x, f : array
-            Splitted parameters into two separate arrays
+            Split parameters into two separate arrays
 
         """
         x = np.zeros(2)
@@ -812,7 +812,7 @@ class IvimModelVP(ReconstModel):
         Parameters
         ----------
          x, f : array
-            Splitted parameters into two separate arrays
+            Split parameters into two separate arrays
 
         Returns
         -------

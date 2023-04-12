@@ -10,7 +10,7 @@ models: the diffusion tensor model (DTI) and Constrained Spherical
 Deconvolution (CSD). These models differ from each other substantially. DTI
 approximates the diffusion pattern as a 3D Gaussian distribution, and has only
 6 free parameters. CSD, on the other hand, fits many more parameters. The
-models aare also not nested, so they cannot be compared using the
+models are also not nested, so they cannot be compared using the
 log-likelihood ratio.
 
 A general way to perform model comparison is cross-validation [Hastie2008]_. In

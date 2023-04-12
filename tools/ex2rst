@@ -100,7 +100,7 @@ def exfile2rst(filename):
                cleanline.startswith('r"""') or cleanline.startswith("r'''")):
             # handle doc start
             if not indocs:
-                # guarenteed to start with """
+                # guaranteed to start with """
                 if len(cleanline) > 3 \
                   and (cleanline.endswith('"""') or cleanline.endswith("'''")):
                     # single line doc

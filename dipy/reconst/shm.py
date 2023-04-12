@@ -1072,7 +1072,7 @@ class ResidualBootstrapWrapper(object):
 
     Wraps a signal_object, this signal object can be an interpolator. When
     indexed, the the wrapper indexes the signal_object to get the signal.
-    There wrapper than samples the residual boostrap distribution of signal and
+    There wrapper than samples the residual bootstrap distribution of signal and
     returns that sample.
     """
     def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):

@@ -320,6 +320,11 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
 
+    # test the asymmetric case
+    directions, values, indices = peak_directions(odf_gt, sphere, 0, 0, False)
+    expected = np.concatenate([sticks, -sticks], axis=0)
+    assert_almost_equal(angular_similarity(directions, expected), 8, 1)
+
     odf_gt, sticks, hsphere = _create_mt_sim(mevals, angles, fractions,
                                              100, None, half_sphere=True)
 

@@ -58,7 +58,7 @@ def applymask(vol, mask):
         append $V - M$ dimensions with axis length 1 to `mask` so that `mask`
         will broadcast against `vol`.  In the typical case `vol` can be 4D,
         `mask` can be 3D, and we append a 1 to the mask shape which (via numpy
-        broadcasting) has the effect of appling the 3D mask to each 3D slice in
+        broadcasting) has the effect of applying the 3D mask to each 3D slice in
         `vol` (``vol[..., 0]`` to ``vol[..., -1``).
 
     Returns
@@ -82,9 +82,9 @@ def bounding_box(vol):
     Returns
     -------
     npmins : list
-        Array containg minimum index of each dimension
+        Array containing minimum index of each dimension
     npmaxs : list
-        Array containg maximum index of each dimension
+        Array containing maximum index of each dimension
     """
     # Find bounds on first dimension
     temp = vol

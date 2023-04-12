@@ -91,7 +91,7 @@ def cmp_pkg_version(version_str, pkg_version_str=__version__):
     version_str : str
         Version string to compare to current package version
     pkg_version_str : str, optional
-        Version of our package.  Optional, set fom ``__version__`` by default.
+        Version of our package.  Optional, set from ``__version__`` by default.
 
     Returns
     -------

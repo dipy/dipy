@@ -281,7 +281,7 @@ class Horizon(object):
                     scene.add(centroid_actor)
                     self.mem.centroid_actors.append(centroid_actor)
 
-                    cluster_actor = actor.line(clusters[i],
+                    cluster_actor = actor.line(clusters[i][:],
                                                lod=False)
                     cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
                     cluster_actor.GetProperty().SetLineWidth(6)

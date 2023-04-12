@@ -1,4 +1,5 @@
 from bisect import bisect
+from collections import OrderedDict
 from copy import deepcopy
 import enum
 from itertools import product
@@ -99,6 +100,7 @@ class StatefulTractogram(object):
 
         if isinstance(streamlines, Streamlines):
             streamlines = streamlines.copy()
+
         self._tractogram = Tractogram(streamlines,
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
@@ -128,7 +130,7 @@ class StatefulTractogram(object):
 
         (self._affine, self._dimensions,
          self._voxel_sizes, self._voxel_order) = space_attributes
-        self._inv_affine = np.linalg.inv(self._affine)
+        self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
 
         if space not in Space:
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX.')
@@ -138,6 +140,7 @@ class StatefulTractogram(object):
             raise ValueError('Origin MUST be from Origin enum, '
                              'e.g Origin.NIFTI.')
         self._origin = origin
+
         logger.debug(self)
 
     @staticmethod
@@ -198,6 +201,7 @@ class StatefulTractogram(object):
                                      origin=sft.origin,
                                      data_per_point=data_per_point,
                                      data_per_streamline=data_per_streamline)
+        new_sft.dtype_dict = sft.dtype_dict
         return new_sft
 
     def __str__(self):
@@ -240,7 +244,8 @@ class StatefulTractogram(object):
             return False
 
         streamlines_equal = np.allclose(self.streamlines.get_data(),
-                                        other.streamlines.get_data())
+                                        other.streamlines.get_data(),
+                                        rtol=1e-3)
         if not streamlines_equal:
             return False
 
@@ -248,7 +253,8 @@ class StatefulTractogram(object):
         for key in self.data_per_point:
             dpp_equal = dpp_equal and np.allclose(
                 self.data_per_point[key].get_data(),
-                other.data_per_point[key].get_data())
+                other.data_per_point[key].get_data(),
+                rtol=1e-3)
         if not dpp_equal:
             return False
 
@@ -256,7 +262,8 @@ class StatefulTractogram(object):
         for key in self.data_per_streamline:
             dps_equal = dps_equal and np.allclose(
                 self.data_per_streamline[key],
-                other.data_per_streamline[key])
+                other.data_per_streamline[key],
+                rtol=1e-3)
         if not dps_equal:
             return False
 
@@ -292,6 +299,24 @@ class StatefulTractogram(object):
     def __iadd__(self, other):
         self.value = self + other
         return self.value
+
+    @property
+    def dtype_dict(self):
+        """ Getter for dtype_dict """
+
+        dtype_dict = {'positions': self.streamlines._data.dtype,
+                      'offsets': self.streamlines._offsets.dtype}
+        if self.data_per_point is not None:
+            dtype_dict['dpp'] = {}
+            for key in self.data_per_point.keys():
+                if key in self.data_per_point:
+                    dtype_dict['dpp'][key] = self.data_per_point[key]._data.dtype
+        if self.data_per_streamline is not None:
+            dtype_dict['dps'] = {}
+            for key in self.data_per_streamline.keys():
+                if key in self.data_per_streamline:
+                    dtype_dict['dps'][key] = self.data_per_streamline[key].dtype
+        return OrderedDict(dtype_dict)
 
     @property
     def space_attributes(self):
@@ -333,6 +358,40 @@ class StatefulTractogram(object):
     def streamlines(self):
         """ Partially safe getter for streamlines """
         return self._tractogram.streamlines
+
+    @dtype_dict.setter
+    def dtype_dict(self, dtype_dict):
+        """ Modify dtype_dict.
+
+        Parameters
+        ----------
+        dtype_dict : dict
+            Dictionary containing the desired datatype for positions, offsets
+            and all dpp and dps keys. (To use with TRX file format):
+        """
+        if 'offsets' in dtype_dict:
+            self.streamlines._offsets = self.streamlines._offsets.astype(
+                dtype_dict['offsets'])
+        if 'positions' in dtype_dict:
+            self.streamlines._data = self.streamlines._data.astype(
+                dtype_dict['positions'])
+
+        if 'dpp' not in dtype_dict:
+            dtype_dict['dpp'] = {}
+        if 'dps' not in dtype_dict:
+            dtype_dict['dps'] = {}
+
+        for key in self.data_per_point:
+            if key in dtype_dict['dpp']:
+                dtype_to_use = dtype_dict['dpp'][key]
+                self.data_per_point[key]._data = \
+                    self.data_per_point[key]._data.astype(dtype_to_use)
+
+        for key in self.data_per_streamline:
+            if key in dtype_dict['dps']:
+                dtype_to_use = dtype_dict['dps'][key]
+                self.data_per_streamline[key] = \
+                    self.data_per_streamline[key].astype(dtype_to_use)
 
     def get_streamlines_copy(self):
         """ Safe getter for streamlines (for slicing) """

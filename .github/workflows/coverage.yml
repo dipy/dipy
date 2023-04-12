@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cov:
       uses: ./.github/workflows/test_template.yml
@@ -13,6 +17,6 @@ jobs:
         runs-on: '["ubuntu-latest", ]'
         coverage: true
         enable-viz-tests: true
-        extra-depends: scikit_learn scipy statsmodels pandas tables fury tensorflow
+        extra-depends: scikit-learn scipy statsmodels pandas tables fury tensorflow tensorflow-addons
       secrets:
         codecov-token: ${{ secrets.CODECOV_TOKEN }}

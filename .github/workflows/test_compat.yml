@@ -6,19 +6,23 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  minimal-py37:
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.7", ]'
-      depends: cython==0.29.24 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm
   minimal-py38:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
       python-version: '["3.8", ]'
       depends: cython==0.29.24 numpy==1.17.5 scipy==1.3.2 nibabel==3.0.0 h5py==3.0.0 tqdm
+  minimal-py39:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.9", ]'
+      depends: cython==0.29.24 numpy==1.19.4 scipy==1.5.4 nibabel==3.0.0 h5py==3.1.0 tqdm
   # install-type:
   #   uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
   #   with:

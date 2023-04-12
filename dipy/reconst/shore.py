@@ -192,7 +192,7 @@ class ShoreModel(Cache):
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
 
         if positive_constraint and not constrain_e0:
-            msg = "Constrain_e0 must be True to enfore positivity."
+            msg = "Constrain_e0 must be True to enforce positivity."
             raise ValueError(msg)
 
         if positive_constraint or constrain_e0:

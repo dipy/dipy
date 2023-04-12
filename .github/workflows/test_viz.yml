@@ -12,6 +12,10 @@ on:
       - dipy/viz/**
       - dipy/workflows/**
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   VIZ:
     uses: ./.github/workflows/test_template.yml
