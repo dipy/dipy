@@ -27,22 +27,32 @@ class ClustersTab(HorizonTab):
         
         self.__slider_label_size = build_label(text='Size')
         
+        self.__selected_size = np.percentile(sizes, 50)
+        
         self.__slider_size = ui.LineSlider2D(
-            initial_value=np.percentile(sizes, 50), min_value=np.min(sizes),
+            initial_value=self.__selected_size, min_value=np.min(sizes),
             max_value=np.percentile(sizes, 98), length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_size)
         
+        self.__slider_size.handle_events(self.__slider_size.handle.actor)
+        self.__slider_size.on_left_mouse_button_released = self.__change_size
+        
         self.__slider_label_length = build_label(text='Length')
         
+        self.__selected_length = np.percentile(lengths, 25)
+        
         self.__slider_length = ui.LineSlider2D(
-            initial_value=np.percentile(lengths, 25),
-            min_value=np.min(lengths), max_value=np.percentile(lengths, 98),
-            length=length, line_width=lw, outer_radius=radius, font_size=fs,
-            text_template=tt)
+            initial_value=self.__selected_length, min_value=np.min(lengths),
+            max_value=np.percentile(lengths, 98), length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_length)
+        
+        self.__slider_length.handle_events(self.__slider_length.handle.actor)
+        self.__slider_length.on_left_mouse_button_released = (
+            self.__change_length)
         
         self.__slider_label_threshold = build_label(text='Threshold')
         
@@ -51,6 +61,29 @@ class ClustersTab(HorizonTab):
             line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_threshold)
+    
+    def __change_length(self, istyle, obj, slider):
+        self.__selected_length = int(np.rint(slider.value))
+        self.__update_clusters()
+        istyle.force_render()
+    
+    def __change_size(self, istyle, obj, slider):
+        self.__selected_size = int(np.rint(slider.value))
+        self.__update_clusters()
+        istyle.force_render()
+    
+    def __update_clusters(self):
+        for k in self.__cluster_actors:
+            length_validation = (
+                self.__cluster_actors[k]['length'] < self.__selected_length)
+            size_validation = (
+                self.__cluster_actors[k]['size'] < self.__selected_size)
+            if (length_validation or size_validation):
+                self.__cluster_actors[k]['centroid_actor'].SetVisibility(False)
+                if k.GetVisibility():
+                    k.SetVisibility(False)
+            else:
+                self.__cluster_actors[k]['centroid_actor'].SetVisibility(True)
     
     def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id

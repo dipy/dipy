@@ -429,6 +429,7 @@ class Horizon(object):
             slider_threshold.handle_events(slider_threshold.handle.actor)
             slider_threshold.on_left_mouse_button_released = change_threshold
 
+            # TODO: Delete - Moved to respective tab
             def hide_clusters_length(slider):
                 self.length_min = np.round(slider.value)
 
@@ -442,6 +443,7 @@ class Horizon(object):
                         self.cla[k]['centroid_actor'].SetVisibility(1)
                 self.show_m.render()
 
+            # TODO: Delete - Moved to respective tab
             def hide_clusters_size(slider):
                 self.size_min = np.round(slider.value)
 
@@ -484,8 +486,7 @@ class Horizon(object):
             self.help_panel.add_element(text_block, coords=(0.05, 0.1))
             scene.add(self.help_panel)
             self.__tabs.append(ClustersTab(
-                self.mem.centroid_actors, self.mem.cluster_actors,
-                self.cluster_thr, sizes, lengths))
+                self.cea, self.cla, self.cluster_thr, sizes, lengths))
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
