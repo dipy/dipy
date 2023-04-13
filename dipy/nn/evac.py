@@ -19,7 +19,7 @@ tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Softmax, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
+    from tensorflow.keras.layers import Conv3D, LayerNormalization, LeakyReLU
     from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
@@ -148,13 +148,13 @@ class Block(Layer):
                                           padding=padding))
             self.layer_list.append(Dropout(drop_r))
             self.layer_list.append(LayerNormalization())
-            self.layer_list.append(ReLU())
+            self.layer_list.append(LeakyReLU())
         if layer_type=='down':
             self.layer_list2.append(Conv3D(1, 2, strides=2, padding='same'))
-            self.layer_list2.append(ReLU())
+            self.layer_list2.append(LeakyReLU())
         elif layer_type=='up':
             self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding='same'))
-            self.layer_list2.append(ReLU())
+            self.layer_list2.append(LeakyReLU())
 
         self.channel_sum = ChannelSum()
         self.add = Add()
@@ -180,7 +180,7 @@ class ChannelSum(Layer):
     def call(self, inputs):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
-def init_model(model_scale=8):
+def init_model(model_scale=16):
     inputs = tf.keras.Input(shape=(128, 128, 128, 1))
     raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
     raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
