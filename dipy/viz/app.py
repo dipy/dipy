@@ -281,8 +281,7 @@ class Horizon(object):
                     scene.add(centroid_actor)
                     self.mem.centroid_actors.append(centroid_actor)
 
-                    cluster_actor = actor.line(clusters[i][:],
-                                               lod=False)
+                    cluster_actor = actor.line(clusters[i][:], lod=False)
                     cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
                     cluster_actor.GetProperty().SetLineWidth(6)
                     cluster_actor.GetProperty().SetOpacity(1)
@@ -431,6 +430,7 @@ class Horizon(object):
             slider_threshold.on_left_mouse_button_released = change_threshold
 
             # TODO: Delete - Moved to respective tab
+            """
             def hide_clusters_length(slider):
                 self.length_min = np.round(slider.value)
 
@@ -443,8 +443,10 @@ class Horizon(object):
                     else:
                         self.cla[k]['centroid_actor'].SetVisibility(1)
                 self.show_m.render()
+            """
 
             # TODO: Delete - Moved to respective tab
+            """
             def hide_clusters_size(slider):
                 self.size_min = np.round(slider.value)
 
@@ -457,8 +459,9 @@ class Horizon(object):
                     else:
                         self.cla[k]['centroid_actor'].SetVisibility(1)
                 self.show_m.render()
+            """
 
-            slider_length.on_change = hide_clusters_length
+            #slider_length.on_change = hide_clusters_length
 
             # Clustering panel
             self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
@@ -467,22 +470,22 @@ class Horizon(object):
             self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
             self.panel2.add_element(slider_length, coords=(0.42, 0.4))
 
-            slider_size.on_change = hide_clusters_size
+            #slider_size.on_change = hide_clusters_size
 
             self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
             self.panel2.add_element(slider_size, coords=(0.42, 0.65))
 
             self.panel2.add_element(cluster_panel_label, coords=(0.05, 0.85))
 
-            scene.add(self.panel2)
+            #scene.add(self.panel2)
 
             # Information panel
             text_block = build_label(HELP_MESSAGE, 18)
             text_block.message = HELP_MESSAGE
 
-            self.help_panel = ui.Panel2D(size=(320, 200), position=(10, 10),
-                                         color=(0.8, 0.8, 1), opacity=0.2,
-                                         align="left")
+            self.help_panel = ui.Panel2D(
+                size=(320, 200), position=(1595, 875), color=(.8, .8, 1.),
+                opacity=.2, align='left')
 
             self.help_panel.add_element(text_block, coords=(0.05, 0.1))
             scene.add(self.help_panel)
