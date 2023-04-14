@@ -256,7 +256,7 @@ def init_model(model_scale=16):
     return model
 
 
-class EVACplus:
+class EVACPlus:
     """
     This class is intended for the EVAC+ model.
     """
