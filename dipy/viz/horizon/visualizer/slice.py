@@ -12,7 +12,7 @@ if has_fury:
     from fury.utils import apply_affine
 
 
-class SlicesLoader:
+class SlicesVisualizer:
     def __init__(
         self, interactor, scene, data, affine=None, world_coords=False,
         percentiles=[2, 98]):

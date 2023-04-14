@@ -7,9 +7,9 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.loader import SlicesLoader
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager)
+from dipy.viz.horizon.visualizer import SlicesVisualizer
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -512,7 +512,7 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
-                            slices_loader = SlicesLoader(
+                            slices_loader = SlicesVisualizer(
                                 self.show_m.iren, scene, data, affine=affine,
                                 world_coords=self.world_coords)
                             self.__tabs.append(SlicesTab(slices_loader))
@@ -522,7 +522,7 @@ class Horizon(object):
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
-                slices_loader = SlicesLoader(
+                slices_loader = SlicesVisualizer(
                     self.show_m.iren, scene, data, affine=affine,
                     world_coords=self.world_coords)
                 self.__tabs.append(SlicesTab(slices_loader))
