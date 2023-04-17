@@ -93,13 +93,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             rejection sampling.
 
          """
-        if probe_length <= 0:
+        if not probe_length > 0:
             raise ValueError("probe_length must be greater than 0.")
-        if probe_radius < 0:
+        if not probe_radius >= 0:
             raise ValueError("probe_radius must be greater or equal to 0.")
-        if probe_quality < 2:
+        if not probe_quality >= 2:
             raise ValueError("probe_quality must be greater or equal than 2.")
-        if probe_count < 1:
+        if not probe_count >= 1:
             raise ValueError("probe_count must be greater or equal than 1.")
 
         self.max_angle = max_angle
