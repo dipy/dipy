@@ -8,12 +8,14 @@ from packaging.version import Version
 import logging
 import numpy as np
 from scipy.ndimage import affine_transform
+
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
 from dipy.align.reslice import reslice
-from dipy.nn.utils import normalize
+from dipy.nn.utils import normalize, set_logger_level, transform_img
+from dipy.nn.utils import recover_img
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -38,66 +40,15 @@ else:
 logging.basicConfig()
 logger = logging.getLogger('EVAC+')
 
-
-def set_logger_level(log_level):
-    """ Change the logger of the EVAC+ to one on the following:
-    DEBUG, INFO, WARNING, CRITICAL, ERROR
-
-    Parameters
-    ----------
-    log_level : str
-        Log level for the EVAC+ only
-    """
-    logger.setLevel(level=log_level)
-
-def transform_img(image, affine):
-    r"""
-    Function to reshape image as an input to the model
-
-    Parameters
-    ----------
-    image : np.ndarray
-    affine : np.ndarray
-    voxsize : tuple
-
-    Returns
-    -------
-    transformed_img : np.ndarray
-    """
-    affine2 = affine.copy()
-    affine2[:3, 3] += np.array([128, 128, 128])
-    inv_affine = np.linalg.inv(affine2)
-    transformed_img = affine_transform(image, inv_affine, output_shape=(256, 256, 256))
-    transformed_img, _ = reslice(transformed_img, np.eye(4), (1, 1, 1), (2, 2, 2))
-    return transformed_img, affine2
-    
-def recover_img(image, affine, ori_shape):
-    r"""
-    Function to recover image back to its original shape
-
-    Parameters
-    ----------
-    image : np.ndarray
-    affine : np.ndarray
-    voxsize : tuple
-    ori_shape : tuple
-
-    Returns
-    -------
-    recovered_img : np.ndarray
-    """
-    new_image, _ = reslice(image, np.eye(4), (2, 2, 2), (1, 1, 1))
-    recovered_img = affine_transform(new_image, affine, output_shape=ori_shape)
-    return recovered_img
-
 def prepare_img(image):
     r"""
-    Function to prepare image
-    for model input
+    Function to prepare image for model input
+    Specific to EVAC+
     
     Parameters
     ----------
     image : np.ndarray
+        Input image
 
     Returns
     -------
@@ -181,6 +132,20 @@ class ChannelSum(Layer):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
 def init_model(model_scale=16):
+    r"""
+    Function to create model for EVAC+
+    
+    Parameters
+    ----------
+    model_scale : int, optional
+        The scale of the model
+        Should match the saved weights from fetcher
+        Default is 16
+
+    Returns
+    -------
+    model : tf.keras.Model
+    """
     inputs = tf.keras.Input(shape=(128, 128, 128, 1))
     raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
     raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
@@ -349,18 +314,18 @@ class EVACPlus:
             For a single image, input should be a 3D array.
             If multiple images, it should be a 4D array or a list.
 
-        affine : np.ndarray (4, 4) or (batch, 4, 4)
+        affine : np.ndarray (4, 4) or (batch, 4, 4), optional
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
             Default is None
         
-        voxsize : np.ndarray or list or tuple
+        voxsize : np.ndarray or list or tuple, optional
             (3,) or (batch, 3)
             voxel size of the T1 image.
             Default is (1, 1, 1)
 
-        batch_size : int
+        batch_size : int, optional
             Number of images per prediction pass. Only available if data
             is provided with a batch dimension.
             Consider lowering it if you get an out of memory error.
@@ -369,12 +334,12 @@ class EVACPlus:
             has a batch dimension.
             Default is None
 
-        return_affine : bool
+        return_affine : bool, optional
             Whether to return the affine matrix. Useful if the input was a
             file path.
             Default is False
 
-        return_prob : bool
+        return_prob : bool, optional
             Whether to return the probability map instead of a
             binary mask. Useful for testing.
             Default is False
@@ -393,7 +358,7 @@ class EVACPlus:
         voxsize = np.array(voxsize)
         affine = np.array(affine)
         
-        if type(T1) is list or type(T1) is tuple or len(T1.shape) == 4:
+        if isinstance(T1, (list, tuple)) or len(T1.shape) == 4:
             dim = 4
         else:
             dim = 3
@@ -413,8 +378,8 @@ class EVACPlus:
 
         # Normalize the data.
         n_T1 = np.zeros(T1.shape)
-        for i in range(len(T1)):
-            n_T1[i] = normalize(T1[i], new_min=0, new_max=1)
+        for i, T1_img in enumerate(T1):
+            n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
             t_img, t_affine = transform_img(n_T1[i],
                                             affine[i])
             input_data[..., i] = t_img
@@ -435,10 +400,10 @@ class EVACPlus:
             prediction[-remainder:] = temp_pred
 
         output_mask = []
-        for i in range(len(T1)):
+        for i, T1_img in enumerate(T1):
             output = recover_img(prediction[i],
                                  rev_affine[i],
-                                 T1[i].shape)
+                                 T1_img.shape)
             if return_prob == False:
                 output = np.where(output >= 0.5, 1, 0)
             output_mask.append(output)

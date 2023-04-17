@@ -6,11 +6,12 @@ Class and helper functions for fitting the Synb0 model.
 
 from packaging.version import Version
 import logging
+import numpy as np
+
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.nn.utils import normalize, unnormalize
-import numpy as np
+from dipy.nn.utils import normalize, unnormalize, set_logger_level
 
 tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
@@ -36,18 +37,6 @@ else:
 
 logging.basicConfig()
 logger = logging.getLogger('synb0')
-
-
-def set_logger_level(log_level):
-    """ Change the logger of the Synb0 to one on the following:
-    DEBUG, INFO, WARNING, CRITICAL, ERROR
-
-    Parameters
-    ----------
-    log_level : str
-        Log level for the Synb0 only
-    """
-    logger.setLevel(level=log_level)
 
 class EncoderBlock(Layer):
     def __init__(self, out_channels, kernel_size, strides, padding):
@@ -86,6 +75,18 @@ class DecoderBlock(Layer):
         return x
 
 def UNet3D(input_shape):
+    r"""
+    Function to create model for Synb0
+    
+    Parameters
+    ----------
+    input_shape : tuple
+        The input shape of the model
+
+    Returns
+    -------
+    tf.keras.Model
+    """
     inputs = tf.keras.Input(input_shape)
     # Encode
     x = EncoderBlock(32, kernel_size=3,

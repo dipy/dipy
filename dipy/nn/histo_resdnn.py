@@ -6,6 +6,7 @@ Class and helper functions for fitting the Histological ResDNN model.
 
 from packaging.version import Version
 import logging
+import numpy as np
 
 from dipy.core.gradients import unique_bvals_magnitude, get_bval_indices
 from dipy.core.sphere import HemiSphere
@@ -13,7 +14,7 @@ from dipy.data import get_sphere, get_fnames
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-import numpy as np
+from dipy.nn.utils import set_logger_level
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -31,19 +32,6 @@ else:
 
 logging.basicConfig()
 logger = logging.getLogger('histo_resdnn')
-
-
-def set_logger_level(log_level):
-    """ Change the logger of the HistoResDNN to one on the following:
-    DEBUG, INFO, WARNING, CRITICAL, ERROR
-
-    Parameters
-    ----------
-    log_level : str
-        Log level for the HistoResDNN only
-    """
-    logger.setLevel(level=log_level)
-
 
 class HistoResDNN:
     """
