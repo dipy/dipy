@@ -21,6 +21,8 @@ from dipy.align.imwarp import DiffeomorphicMap
 from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import StatefulTractogram, Space
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 
 
 def setup_module():
@@ -292,3 +294,16 @@ def test_streamline_registration():
             aligned, matrix = streamline_registration(fname2, fname1)
             npt.assert_almost_equal(aligned[0], sl1[0], decimal=5)
             npt.assert_almost_equal(aligned[1], sl1[1], decimal=5)
+
+def test_register_dwi_series_multi_b0():
+    # Test if register_dwi_series works with multiple b0 images
+    dwi_fname, dwi_bval_fname, dwi_bvec_fname = dpd.get_fnames('sherbrooke_3shell')
+    data, affine = load_nifti(dwi_fname)
+    bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
+
+    data_small = data[..., :2]
+    data = np.concatenate([data[..., :1], data_small], axis=-1)
+    bvals_small = np.concatenate([bvals[:1], bvals[:2]], axis=0)
+    bvecs_small = np.concatenate([bvecs[:1], bvecs[:2]], axis=0)
+    gtab = dpg.gradient_table(bvals_small, bvecs_small)
+    _ = motion_correction(data_small, gtab, affine)

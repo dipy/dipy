@@ -64,3 +64,7 @@ def test_resample():
     # test invalid values of num_threads
     assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
                   num_processes=0)
+    
+    # test invalid volume dimension
+    assert_raises(ValueError, reslice, np.zeros((4, 4, 4, 4, 1)), affine,
+                  zooms, new_zooms)
