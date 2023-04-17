@@ -154,11 +154,11 @@ class AxSymShResponse(object):
         self.sh_order = 2 * (len(dwi_response) - 1)
         self.n = np.arange(0, self.sh_order + 1, 2)
 
-    def basis(self, sphere,legacy=True):
+    def basis(self, sphere):
         """A basis that maps the response coefficients onto a sphere."""
         theta = sphere.theta[:, None]
         phi = sphere.phi[:, None]
-        return real_sh_descoteaux_from_index(self.m, self.n, theta, phi, legacy=legacy)
+        return real_sh_descoteaux_from_index(self.m, self.n, theta, phi)
 
     def on_sphere(self, sphere):
         """Evaluates the response function on sphere."""
