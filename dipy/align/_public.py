@@ -685,7 +685,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
         trans_b0, b0_affines = register_series(b0_img, ref=b0_ref,
                                                pipeline=pipeline,
                                                static_mask=static_mask)
-        ref_data = np.mean(trans_b0, -1)
+        ref_data = np.mean(trans_b0, -1, keep_dims=True)
     else:
         # There's only one b0 and we register everything to it
         trans_b0 = ref_data = data[..., gtab.b0s_mask]
@@ -704,6 +704,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
     affine_array = np.zeros((4, 4, data.shape[-1]))
     affine_array[..., gtab.b0s_mask] = b0_affines
     affine_array[..., ~gtab.b0s_mask] = affines
+    affine_arrray = np.moveaxis(affine_array, -1, 0)
 
     data_array = np.zeros(data.shape)
     data_array[..., gtab.b0s_mask] = trans_b0
