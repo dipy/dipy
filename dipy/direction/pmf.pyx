@@ -62,7 +62,7 @@ cdef class SHCoeffPmfGen(PmfGen):
     def __init__(self,
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
-                 object basis_type
+                 object basis_type,
                  legacy=True):
         cdef:
             int sh_order
