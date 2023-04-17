@@ -4,12 +4,9 @@
 
 cimport numpy as np
 
-from libc.stdlib cimport rand
+from libc.stdlib cimport rand, RAND_MAX
 from libc.math cimport sqrt
 
-
-cdef extern from "limits.h":
-    int INT_MAX
 
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(
@@ -36,14 +33,24 @@ cpdef double norm(
         double[:] v) nogil
 
 cpdef double dot(
-        double[:] v1, 
+        double[:] v1,
         double[:] v2) nogil
 
 cpdef void normalize(
         double[:] v) nogil
 
 cpdef void cross(
-        double[:] out, 
-        double[:] v1, 
+        double[:] out,
+        double[:] v1,
         double[:] v2) nogil
-    
+
+cpdef void random_vector(
+        double[:] out)
+
+cpdef void random_perpendicular_vector(
+        double[:] out,
+        double[:] v)
+
+cpdef (double, double) random_point_within_circle(
+        double r)
+

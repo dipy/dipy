@@ -139,11 +139,12 @@ EXTRAS_REQUIRE = {
         "matplotlib"
     ],
     "ml": [
-        "scikit_learn",
+        "scikit-learn",
         "pandas",
         "statsmodels",
         "tables",
         "tensorflow"
+        "tensorflow-addons"
     ]
 }
 
