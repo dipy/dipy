@@ -74,7 +74,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError("%s is not a known basis type." % basis_type)
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi,legacy=legacy)
+        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi, legacy=legacy)
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 

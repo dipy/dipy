@@ -195,7 +195,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
         """
         pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
-                                basis_type,legacy=legacy)
+                                basis_type, legacy=legacy)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
 

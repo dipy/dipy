@@ -158,7 +158,7 @@ class AxSymShResponse(object):
         """A basis that maps the response coefficients onto a sphere."""
         theta = sphere.theta[:, None]
         phi = sphere.phi[:, None]
-        return real_sh_descoteaux_from_index(self.m, self.n, theta, phi,legacy=legacy)
+        return real_sh_descoteaux_from_index(self.m, self.n, theta, phi, legacy=legacy)
 
     def on_sphere(self, sphere):
         """Evaluates the response function on sphere."""
