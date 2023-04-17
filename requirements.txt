@@ -13,4 +13,4 @@ h5py>=2.8.0
 >>>>>>> dd43e577e (upgrade numpy)
 packaging>=19.0
 tqdm>=4.30.0
-trx-python==0.1
+trx-python>=0.0

@@ -88,7 +88,7 @@ H5PY_MIN_VERSION = '2.8.0'
 >>>>>>> dd43e577e (upgrade numpy)
 PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
-TRX_MIN_VERSION = '0.1'
+TRX_MIN_VERSION = '0.0'
 
 # Main setup parameters
 NAME                = 'dipy'
