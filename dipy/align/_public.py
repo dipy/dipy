@@ -629,6 +629,8 @@ def register_series(series, ref, pipeline=None, series_affine=None,
                 static_mask=static_mask)
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
+    
+    affines = np.moveaxis(affines, -1, 0)
 
     return xformed, affines
 
