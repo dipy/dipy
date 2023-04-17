@@ -88,7 +88,7 @@ class HistoResDNN:
         self.basis_type = basis_type
 
         log_level = 'INFO' if verbose else 'CRITICAL'
-        set_logger_level(log_level)
+        set_logger_level(log_level, logger)
         if self.basis_type != 'tournier07':
             logger.warning('Be careful, original weights were obtained '
                            'from training on the tournier07 basis, '

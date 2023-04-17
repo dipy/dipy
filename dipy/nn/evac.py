@@ -252,7 +252,7 @@ class EVACPlus:
             raise tf()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
-        set_logger_level(log_level)
+        set_logger_level(log_level, logger)
 
         # EVAC+ network load
 

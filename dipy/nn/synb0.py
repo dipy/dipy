@@ -199,7 +199,7 @@ class Synb0:
             raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
-        set_logger_level(log_level)
+        set_logger_level(log_level, logger)
 
         # Synb0 network load
 
