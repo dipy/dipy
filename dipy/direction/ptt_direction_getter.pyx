@@ -50,6 +50,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       probe_step_size
     cdef double[9]    propagator
     cdef double       step_size
+    cdef int          rejection_sampling_max_try
+    cdef int          rejection_sampling_nbr_sample
 
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
@@ -110,7 +112,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                             * self.probe_count)
         self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.data_support_exponent = data_support_exponent
+
         self.k_small = 0.0001
+        self.rejection_sampling_max_try = 100
+        self.rejection_sampling_nbr_sample = 10 # Adaptively set in Trekker.
 
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
@@ -333,16 +338,15 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             Returns 0 if the initialization was successful, or
             1 otherwise.
         """
+        cdef double data_support = 0
+        cdef double max_posterior = 0
+        cdef int tries
 
         self.position[0] = seed_point[0]
         self.position[1] = seed_point[1]
         self.position[2] = seed_point[2]
 
-        cdef double data_support = 0
-        cdef double max_posterior = 0
-
-        cdef int tries
-        for tries in range(1000):
+        for tries in range(self.rejection_sampling_nbr_sample):
             self.initialize_candidate(seed_direction)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -353,7 +357,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(1000):
+        for tries in range(self.rejection_sampling_max_try):
             self.initialize_candidate(seed_direction)
             if (random() * max_posterior <= self.calculate_data_support()):
                 self.last_val = self.last_val_cand
@@ -377,7 +381,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double max_posterior = 0
         cdef double data_support = 0
         cdef double[3] tangent
-        cdef int tries = 0
+        cdef int tries
 
         self.prepare_propagator(self.step_size)
 
@@ -401,8 +405,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.frame[0][1] = tangent[1]
         self.frame[0][2] = tangent[2]
 
-        # This is adaptively set in Trekker.
-        for tries in range(20):
+        for tries in range(self.rejection_sampling_nbr_sample):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -413,7 +416,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(1000):
+        for tries in range(self.rejection_sampling_max_try):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             if random() * max_posterior <= self.calculate_data_support():
                 self.last_val = self.last_val_cand
