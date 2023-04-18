@@ -187,7 +187,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     Iterate over each pair of streamlines and deform them
     Append deformed streamlines in deformed_bundle
     """
-    for i in range(len(matched_pairs)):
+
+    for pairs in enumerate(matched_pairs):
 
         pairs = matched_pairs[i]
         s1 = static[int(pairs[1])]
@@ -246,8 +247,9 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
     colors = [np.random.rand(3) for si in range(n)]
 
     disks_color = []
-    for i in range(len(indx)):
-        disks_color.append(tuple(colors[indx[i]]))
+    for ind in enumerate(indx):
+
+        disks_color.append(tuple(colors[ind]))
 
     x = np.array(range(1, n+1))
     shape_profile = np.zeros(n)

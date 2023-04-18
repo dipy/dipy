@@ -314,3 +314,18 @@ new_tractogram = StatefulTractogram(deformed_bundle2, "m_UF_L.trk",
                                     Space.RASMM)
 save_tractogram(new_tractogram, "fully_deformed_bundle.trk",
                 bbox_valid_check=False)
+
+
+r"""
+
+References
+----------
+
+.. [Chandio23] Chandio et al., "BundleWarp, streamline-based nonlinear
+                    registration of white matter tracts."
+                    bioRxiv (2023): 2023-01.
+.. [Chandio20] Chandio and Garyfallidis., "StND: Streamline-based non-rigid
+                    partial-deformation tractography registration." Medical
+                    Imaging Meets NeurIPS (2020).
+
+"""
