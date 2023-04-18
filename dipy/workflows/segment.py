@@ -9,6 +9,7 @@ from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.nn.evac import EVACPlus
 
 
 class MedianOtsuFlow(Workflow):
@@ -334,3 +335,49 @@ class LabelsBundlesFlow(Workflow):
             new_sft = StatefulTractogram(bundle, sft, Space.RASMM)
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)
+
+class EVACPlusFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'evacplus'
+
+    def run(self, input_files, save_masked=False, out_dir='',
+            out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz'):
+        """ Extract brain using EVAC+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        save_masked : bool, optional
+            Save mask.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_mask : string, optional
+            Name of the mask volume to be saved.
+        out_masked : string, optional
+            Name of the masked volume to be saved.
+        """
+        io_it = self.get_io_iterator()
+
+        for fpath, mask_out_path, masked_out_path in io_it:
+            logging.info('Applying evac+ brain extraction on {0}'.
+                         format(fpath))
+
+            data, affine, img, voxsize = load_nifti(fpath, return_img=True, return_voxsize=True)
+            evac = EVACPlus()
+            mask_volume = evac.predict(data, affine, voxsize)
+            masked_volume = mask_volume * data
+
+            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
+
+            logging.info('Mask saved as {0}'.format(mask_out_path))
+
+            if save_masked:
+                save_nifti(masked_out_path, masked_volume, affine,
+                           img.header)
+
+                logging.info('Masked volume saved as {0}'.
+                             format(masked_out_path))
+
+        return io_it
