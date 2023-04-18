@@ -5,18 +5,39 @@ from dipy.tracking.streamline import (unlist_streamlines,
                                       Streamlines)
 from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
-
+from dipy.tracking.streamline import length
 from dipy.align.bundlemin import distance_matrix_mdf
-from dipy.viz.plottinf import bundle_shape_profile
+from dipy.viz.plotting import bundle_shape_profile
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+import warnings
 
 pycpd, have_pycpd, _ = optional_package("pycpd")
-matplt, have_matplotlib, _ = optional_package("matplotlib")
 
 if have_pycpd:
     from pycpd import DeformableRegistration
 
-if have_matplotlib:
-    import matplotlib.pyplot as plt
+
+def average_bundle_length(bundle):
+    """Find average Euclidian length of the bundle in mm.
+
+    Parameters
+    ----------
+    bundle : Streamlines
+        Bundle who's average length is to be calculated.
+
+    Returns
+    -------
+    int
+        Average Euclidian length of bundle in mm.
+
+    """
+    metric = AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=85., metric=metric)
+    clusters = qb.cluster(bundle)
+    centroids = Streamlines(clusters.centroids)
+
+    return length(centroids)[0]
 
 
 def find_missing(lst, cb):
@@ -71,14 +92,20 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
             registration of white matter tracts." bioRxiv (2023): 2023-01.
     """
+    if alpha <= 0.01:
+        warnings.warn("Using alpha<=0.01 will result in extreme deformations")
+
+    if average_bundle_length(static) <= 50:
+        beta = 10
+
     x0 = 'affine' if affine else 'rigid'
     moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0=x0,
                                            rm_small_clusters=0)
 
-    if dist:
+    if dist is not None:
         print("using pre-computed distances")
     else:
-        dist = distance_matrix_mdf(static, moving_aligned)
+        dist = distance_matrix_mdf(static, moving_aligned).T
 
     matched_pairs = np.zeros((len(moving), 2))
     matched_pairs1 = np.asarray(linear_sum_assignment(dist)).T
@@ -127,9 +154,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     # Iterate over each pair of streamlines and deform them
     # Append deformed streamlines in deformed_bundle
 
-    for pairs in enumerate(matched_pairs):
+    for _, pairs in enumerate(matched_pairs):
 
-        pairs = matched_pairs[i]
         s1 = static[int(pairs[1])]
         s2 = moving_aligned[int(pairs[0])]
 
@@ -163,10 +189,11 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
 
     Returns
     -------
-    offsets :
-        vector field modules
-    directions :
-    colors :
+    offsets : List
+        Vector field modules
+    directions : List
+        Unitary vector directions
+    colors : List
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)
@@ -184,7 +211,8 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     return offsets, directions, colors
 
 
-def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
+def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
+                              plotting=False):
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp
@@ -196,9 +224,19 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
         Linearly (affinely) moved bundle
     deformed_bundle : Streamlines
         Nonlinearly (warped) bundle
-    no_disks : Integer
+    no_disks : int
         Number of segments to be created along the length of the bundle
         (Default 10)
+    plotting : Boolean, optional
+        Plot bundle shape profile (default False)
+
+    Returns
+    -------
+    shape_profilen : np.ndarray
+        Float array containing bundlewarp displacement magnitudes along the
+        length of the bundle
+    stdv : np.ndarray
+        Float array containing standard deviations
     """
     n = no_disks
     offsets, directions, colors = bundlewarp_vector_filed(moving_aligned,
@@ -210,7 +248,7 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
     colors = [np.random.rand(3) for si in range(n)]
 
     disks_color = []
-    for ind in enumerate(indx):
+    for _, ind in enumerate(indx):
 
         disks_color.append(tuple(colors[ind]))
 
@@ -223,4 +261,7 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
         shape_profile[i] = np.mean(offsets[indx == i])
         stdv[i] = np.std(offsets[indx == i])
 
-    bundle_shape_profile(x, shape_profile, stdv)
+    if plotting:
+        bundle_shape_profile(x, shape_profile, stdv)
+
+    return shape_profile, stdv
