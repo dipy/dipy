@@ -6,9 +6,7 @@ from dipy.tracking.streamline import (unlist_streamlines,
 from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
-from dipy.segment.metricspeed import MinimumAverageDirectFlipMetric
-
-from dipy.segment.metricspeed import dist
+from dipy.align.bundlemin import distance_matrix_mdf
 
 pycpd, have_pycpd, _ = optional_package("pycpd")
 matplt, have_matplotlib, _ = optional_package("matplotlib")
@@ -20,58 +18,8 @@ if have_matplotlib:
     import matplotlib.pyplot as plt
 
 
-def mdf(s1, s2):
-    """
-    Calculate MDF distance between two streamlines.
-
-    Parameters
-    ----------
-    s1 : Streamline
-        Streamline 1
-    s2 : Streamline
-        Streamline 2
-
-    Returns
-    -------
-    float
-        MDF distance between s1 and s2
-
-    """
-    return dist(MinimumAverageDirectFlipMetric(), s1, s2)
-
-
-def mdf_dist(cb1, cb2):
-    """
-    Construct MDF distance matrix among two bundles.
-
-    Parameters
-    ----------
-    cb1 : Streamline
-        Bundle 1
-    cb2 : Streamline
-        Bundle 2
-
-    Returns
-    -------
-    dist : float
-        distance matrix with mdf distance between streamlines of cb1 and cb2
-
-    """
-    n = len(cb1)
-    m = len(cb2)
-    dist = np.zeros((m, n))
-
-    for i in range(m):
-        s1 = cb2[i]
-        for j in range(n):
-            s2 = cb1[j]
-            dist[i][j] = mdf(s1, s2)
-
-    return dist
-
-
 def find_missing(lst, cb):
-    """Function to find unmatched streamline indices in moving bundle.
+    """Find unmatched streamline indices in moving bundle.
 
     Parameters
     ----------
@@ -92,12 +40,15 @@ def find_missing(lst, cb):
 
 def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
                affine=True, precomputed=False):
-    """Function for registering two bundles.
+    """Register two bundle using nonlinear method.
 
     Parameters
     ----------
     static : Streamlines
+        Reference/fixed bundle
+
     moving : Streamlines
+        Target bundle that will be moved/registered to match the static bundle
 
     dist : float, optional.
         Precomputed distance matrix (default None)
@@ -114,29 +65,19 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     affine : boolean, optional
         If False, use rigid registration as starting point (default True)
 
-    Precomputed : boolean, optional
-        If True, must provide precomputed distance matrix 'dist'
-        (default False)
-
-
     References
     ----------
     .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
             registration of white matter tracts." bioRxiv (2023): 2023-01.
     """
-    if affine:
-        moving_aligned, _, _, _ = slr_with_qbx(static, moving,
-                                               rm_small_clusters=0)
+    x0 = 'affine' if affine else 'rigid'
+    moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0=x0,
+                                           rm_small_clusters=0)
 
-    else:
-        # rigid
-        moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0='rigid',
-                                               rm_small_clusters=0)
-
-    if precomputed is True:
+    if dist:
         print("using pre-computed distances")
     else:
-        dist = mdf_dist(static, moving_aligned)
+        dist = distance_matrix_mdf(static, moving_aligned)
 
     matched_pairs = np.zeros((len(moving), 2))
     matched_pairs1 = np.asarray(linear_sum_assignment(dist)).T
@@ -159,9 +100,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
 
             dist2 = dist[:][ml]
 
-            """
-            dist2 has distance among unmatched streamlines of moving bundle
-            and all static bundle's streamlines """
+            # dist2 has distance among unmatched streamlines of moving bundle
+            # and all static bundle's streamlines
 
             matched_pairs2 = np.asarray(linear_sum_assignment(dist2)).T
 
@@ -183,10 +123,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     deformed_bundle = Streamlines([])
     warp = []
 
-    """
-    Iterate over each pair of streamlines and deform them
-    Append deformed streamlines in deformed_bundle
-    """
+    # Iterate over each pair of streamlines and deform them
+    # Append deformed streamlines in deformed_bundle
 
     for pairs in enumerate(matched_pairs):
 
@@ -204,8 +142,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
         deformed_bundle.append(ty)
         warp.append(pr)
 
-    '''Returns affinely moved bundle, deformed bundle, streamline
-    correspondences, and warp field '''
+    # Returns deformed bundle, affinely moved bundle, distance matrix,
+    # streamline correspondences, and warp field
     return deformed_bundle, moving_aligned, dist, matched_pairs, warp
 
 
@@ -213,7 +151,21 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     """Calculate vector fields.
 
     Vector field computation as the difference between each streamline point
-    in the deformed and aligned bundles
+    in the deformed and linearly aligned bundles
+
+    Parameters
+    ----------
+    moving_aligned : Streamlines
+        Linearly (affinely) moved bundle
+    deformed_bundle : Streamlines
+        Nonlinearly (warped) bundle
+
+    Returns
+    -------
+    offsets :
+        vector field modules
+    directions :
+    colors :
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)
@@ -224,8 +176,8 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     # Normalize vectors to be unitary (directions)
     directions = vector_field / np.array([offsets]).T
 
-    """Define colors mapping the direction vectors to RGB.
-    Absolute value generates DTI-like colors"""
+    # Define colors mapping the direction vectors to RGB.
+    # Absolute value generates DTI-like colors
     colors = directions
 
     return offsets, directions, colors
@@ -236,6 +188,16 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
 
     Bundle shape difference analysis using magnitude from BundleWarp
     displacements and BUAN
+
+    Parameters
+    ----------
+    moving_aligned : Streamlines
+        Linearly (affinely) moved bundle
+    deformed_bundle : Streamlines
+        Nonlinearly (warped) bundle
+    no_disks : Integer
+        Number of segments to be created along the length of the bundle
+        (Default 10)
     """
     n = no_disks
     offsets, directions, colors = bundlewarp_vector_filed(moving_aligned,
