@@ -7,6 +7,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
 from dipy.align.bundlemin import distance_matrix_mdf
+from dipy.viz.plottinf import bundle_shape_profile
 
 pycpd, have_pycpd, _ = optional_package("pycpd")
 matplt, have_matplotlib, _ = optional_package("matplotlib")
@@ -215,25 +216,11 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
 
     x = np.array(range(1, n+1))
     shape_profile = np.zeros(n)
-    std_1 = np.zeros(n)
-    std_2 = np.zeros(n)
+    stdv = np.zeros(n)
 
     for i in range(n):
 
         shape_profile[i] = np.mean(offsets[indx == i])
-        stdv = np.std(offsets[indx == i])
-        std_1[i] = shape_profile[i]+stdv
-        std_2[i] = shape_profile[i]-stdv
+        stdv[i] = np.std(offsets[indx == i])
 
-    fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
-    ax.plot(x, shape_profile, '-', label='Mean', color='Purple', linewidth=3,
-            markersize=12)
-    ax.fill_between(x, std_1, std_2, alpha=0.2, label='Std', color='Purple')
-
-    plt.xticks(x)
-    plt.ylim(0, max(std_1)+2)
-
-    plt.ylabel("Average Displacement")
-    plt.xlabel("Segment Number")
-    plt.title('Bundle Shape Profile')
-    plt.legend(loc=2)
+    bundle_shape_profile(x, shape_profile, stdv)
