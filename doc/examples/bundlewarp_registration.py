@@ -141,7 +141,7 @@ method. This will save computation time.
 
 start = time()
 deformed_bundle2, moving_aligned, distances, match_pairs, warp_map = bundlewarp(
-        static, moving, dist=distances, alpha=0.001, beta=20, precomputed=True)
+        static, moving, dist=distances, alpha=0.001, beta=20)
 end = time()
 
 print("time taken by BundleWarp registration in seconds = ", end-start)
