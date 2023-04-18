@@ -358,19 +358,25 @@ class EVACPlus:
         voxsize = np.array(voxsize)
         affine = np.array(affine)
         
-        if isinstance(T1, (list, tuple)) or len(T1.shape) == 4:
+        if isinstance(T1, (list, tuple)):
             dim = 4
-        else:
+            T1 = np.array(T1)
+            affine = np.array(affine)
+            voxsize = np.array(voxsize)
+        elif len(T1.shape)==3:
             dim = 3
             if batch_size is not None:
                 logger.warning('Batch size specified, but not used',
-                            'due to the input not having \
-                            a batch dimension')
+                               'due to the input not having \
+                                a batch dimension')
             batch_size = 1
 
             T1 = np.expand_dims(T1, 0)
             affine = np.expand_dims(affine, 0)
             voxsize = np.expand_dims(voxsize, 0)
+        else:
+            raise ValueError("T1 data should be a np.ndarray of dimension 3 or"
+                             "a list/tuple of it")
             
 
         input_data = np.zeros((128, 128, 128, len(T1)))

@@ -58,7 +58,8 @@ def unnormalize(image, norm_min, norm_max, min_v, max_v):
     np.ndarray
         unnormalized image from range min_v to max_v
     """
-    return np.interp(image, (norm_min, norm_max), (min_v, max_v))
+    return (image - norm_min) / (norm_max-norm_min) * \
+           (max_v - min_v) + min_v
 
 
 def set_logger_level(log_level, logger):

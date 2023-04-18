@@ -29,6 +29,7 @@ def test_default_weights_batch():
     file_path = get_fnames('evac_test_data')
     input_arr = np.load(file_path)['input']
     output_arr = np.load(file_path)['output']
+    input_arr = [T1 for T1 in input_arr]
 
     evac_model = EVACPlus()
     fake_affine = np.array([np.eye(4), np.eye(4)])
