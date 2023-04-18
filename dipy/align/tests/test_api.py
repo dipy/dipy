@@ -219,7 +219,7 @@ def test_register_series():
     gtab = dpg.gradient_table(fbval, fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
     xformed, affines = register_series(img, ref_idx)
-    npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
+    npt.assert_(np.all(affines[ref_idx] == np.eye(4)))
     npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
 
 
@@ -301,9 +301,9 @@ def test_register_dwi_series_multi_b0():
     data, affine = load_nifti(dwi_fname)
     bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 
-    data_small = data[..., :2]
-    data = np.concatenate([data[..., :1], data_small], axis=-1)
-    bvals_small = np.concatenate([bvals[:1], bvals[:2]], axis=0)
-    bvecs_small = np.concatenate([bvecs[:1], bvecs[:2]], axis=0)
+    data_small = data[..., :3]
+    data_small = np.concatenate([data[..., :1], data_small], axis=-1)
+    bvals_small = np.concatenate([bvals[:1], bvals[:3]], axis=0)
+    bvecs_small = np.concatenate([bvecs[:1], bvecs[:3]], axis=0)
     gtab = dpg.gradient_table(bvals_small, bvecs_small)
     _ = motion_correction(data_small, gtab, affine)

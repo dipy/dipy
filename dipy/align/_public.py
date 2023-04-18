@@ -613,13 +613,13 @@ def register_series(series, ref, pipeline=None, series_affine=None,
                              " or the index of one or more volumes")
 
     xformed = np.zeros(series.shape)
-    affines = np.zeros((4, 4, series.shape[-1]))
+    affines = np.zeros((series.shape[-1], 4, 4))
     for ii in range(series.shape[-1]):
         this_moving = series[..., ii]
         if isinstance(ref_as_idx, numbers.Number) and ii == ref_as_idx:
             # This is the reference! No need to move and the xform is I(4):
             xformed[..., ii] = this_moving
-            affines[..., ii] = np.eye(4)
+            affines[ii] = np.eye(4)
         else:
             transformed, reg_affine = affine_registration(
                 this_moving, ref,
@@ -628,9 +628,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
                 pipeline=pipeline,
                 static_mask=static_mask)
             xformed[..., ii] = transformed
-            affines[..., ii] = reg_affine
-    
-    affines = np.moveaxis(affines, -1, 0)
+            affines[ii] = reg_affine
 
     return xformed, affines
 
@@ -687,11 +685,11 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
         trans_b0, b0_affines = register_series(b0_img, ref=b0_ref,
                                                pipeline=pipeline,
                                                static_mask=static_mask)
-        ref_data = np.mean(trans_b0, -1, keep_dims=True)
+        ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
         # There's only one b0 and we register everything to it
         trans_b0 = ref_data = data[..., gtab.b0s_mask]
-        b0_affines = np.eye(4)[..., np.newaxis]
+        b0_affines = np.eye(4)[np.newaxis, ...]
 
     # Construct a series out of the DWI and the registered mean B0:
     moving_data = data[..., ~gtab.b0s_mask]
@@ -701,12 +699,11 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
     xformed, affines = register_series(series, ref=0, pipeline=pipeline,
                                        static_mask=static_mask)
     # Cut out the part pertaining to that first volume:
-    affines = affines[..., 1:]
+    affines = affines[1:]
     xformed = xformed[..., 1:]
-    affine_array = np.zeros((4, 4, data.shape[-1]))
-    affine_array[..., gtab.b0s_mask] = b0_affines
-    affine_array[..., ~gtab.b0s_mask] = affines
-    affine_arrray = np.moveaxis(affine_array, -1, 0)
+    affine_array = np.zeros((data.shape[-1], 4, 4))
+    affine_array[gtab.b0s_mask] = b0_affines
+    affine_array[~gtab.b0s_mask] = affines
 
     data_array = np.zeros(data.shape)
     data_array[..., gtab.b0s_mask] = trans_b0
