@@ -108,7 +108,7 @@ jobs:
         fi
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
-      if: ${{ env.COVERAGE }}
+      if: ${{ env.COVERAGE == true}}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: for_testing
