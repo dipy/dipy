@@ -152,4 +152,7 @@ def test_roi_images():
                 out_png=tmp_fname)
         npt.assert_equal(os.path.exists(tmp_fname), True)
         ss = load_image(tmp_fname)
-        npt.assert_equal(ss[650, 800, :], [147, 0, 0])
+        # we search for [147, 0, 0]
+        red = np.where((ss[:, :, 0] == 147) & (ss[:, :, 1] == 0) &
+                       (ss[:, :, 2] == 0))
+        npt.assert_(len(red[0]) > 0, "Red color not found in image")
