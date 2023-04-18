@@ -302,7 +302,7 @@ class EVACPlus:
 
         return self.model.predict(x_test)
 
-    def predict(self, T1, affine=None,
+    def predict(self, T1, affine,
                 voxsize=(1, 1, 1), batch_size=None,
                 return_affine=False, return_prob=False):
         r"""
@@ -314,11 +314,10 @@ class EVACPlus:
             For a single image, input should be a 3D array.
             If multiple images, it should be a 4D array or a list.
 
-        affine : np.ndarray (4, 4) or (batch, 4, 4), optional
+        affine : np.ndarray (4, 4) or (batch, 4, 4)
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
-            Default is None
         
         voxsize : np.ndarray or list or tuple, optional
             (3,) or (batch, 3)
@@ -361,8 +360,6 @@ class EVACPlus:
         if isinstance(T1, (list, tuple)):
             dim = 4
             T1 = np.array(T1)
-            affine = np.array(affine)
-            voxsize = np.array(voxsize)
         elif len(T1.shape)==3:
             dim = 3
             if batch_size is not None:

@@ -1460,18 +1460,42 @@ def kurtosis_fractional_anisotropy(dki_params):
     W = 1.0/5.0 * (Wxxxx + Wyyyy + Wzzzz + 2*Wxxyy + 2*Wxxzz + 2*Wyyzz)
 
     # Compute's equation numerator
-    A = (Wxxxx - W) ** 2 + (Wyyyy - W) ** 2 + (Wzzzz - W) ** 2 + \
-        4 * Wxxxy ** 2 + 4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + \
-        4 * Wxzzz ** 2 + 4 * Wyzzz ** 2 + \
-        6 * (Wxxyy - W/3) ** 2 + 6 * (Wxxzz - W/3) ** 2 + \
-        6 * (Wyyzz - W/3) ** 2 + \
-        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+    A = (\
+          (Wxxxx - W) ** 2 + \
+          (Wyyyy - W) ** 2 + \
+          (Wzzzz - W) ** 2 + \
+          4 * (Wxxxy ** 2 +  \
+               Wxxxz ** 2 +  \
+               Wxyyy ** 2 +  \
+               Wyyyz ** 2 +  \
+               Wxzzz ** 2 +  \
+               Wyzzz ** 2) + \
+          6 * ((Wxxyy - W/3) ** 2  + \
+               (Wxxzz - W/3) ** 2  + \
+               (Wyyzz - W/3) ** 2) + \
+          12 * (Wxxyz ** 2 + \
+                Wxyyz ** 2 + \
+                Wxyzz ** 2)  \
+      )
 
     # Compute's equation denominator
-    B = Wxxxx ** 2 + Wyyyy ** 2 + Wzzzz ** 2 + 4 * Wxxxy ** 2 + \
-        4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + 4 * Wxzzz ** 2 + \
-        4 * Wyzzz ** 2 + 6 * Wxxyy ** 2 + 6 * Wxxzz ** 2 + 6 * Wyyzz ** 2 + \
-        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+    B = (\
+          Wxxxx ** 2 + \
+          Wyyyy ** 2 + \
+          Wzzzz ** 2 + \
+          4 * (Wxxxy ** 2 + \
+               Wxxxz ** 2 + \
+               Wxyyy ** 2 + \
+               Wyyyz ** 2 + \
+               Wxzzz ** 2 + \
+               Wyzzz ** 2) + \
+          6 * (Wxxyy ** 2 + \
+               Wxxzz ** 2 + \
+               Wyyzz ** 2) + \
+          12 * (Wxxyz ** 2 + \
+                Wxyyz ** 2 + \
+                Wxyzz ** 2)  \
+      )
 
     # Compute KFA
     KFA = np.zeros(A.shape)

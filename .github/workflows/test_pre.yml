@@ -6,11 +6,15 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   PRE:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.10", ]'
+      python-version: '["3.11", ]'
       use-pre: true
       extra-depends: scikit_learn scipy statsmodels pandas tables
