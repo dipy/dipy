@@ -313,50 +313,16 @@ class Horizon(object):
                 color_ind += 1
 
             if self.cluster:
-                lengths = np.array([
-                    clusters_viz.cluster_actors[c]['length']
-                    for c in clusters_viz.cluster_actors])
-                sizes = np.array([
-                    clusters_viz.cluster_actors[c]['size']
-                    for c in clusters_viz.cluster_actors])
-
                 # global self.panel2, slider_length, slider_size
-                self.panel2 = ui.Panel2D(size=(320, 200), position=(870, 520),
-                                        color=(1, 1, 1), opacity=0.1,
-                                        align="right")
-
-                cluster_panel_label = build_label(text="Cluster panel", bold=True)
+                self.panel2 = ui.Panel2D(
+                    size=(320, 200), position=(870, 520), color=(1, 1, 1),
+                    opacity=0.1, align="right")
 
                 slider_label_threshold = build_label(text="Threshold")
                 slider_threshold = ui.LineSlider2D(
-                        min_value=5,
-                        max_value=25,
-                        initial_value=self.cluster_thr,
-                        text_template="{value:.0f}",
-                        length=140, shape='square')
+                    min_value=5, max_value=25, initial_value=self.cluster_thr,
+                    text_template="{value:.0f}", length=140, shape='square')
                 _color_slider(slider_threshold)
-
-                slider_label_length = build_label(text="Length")
-                slider_length = ui.LineSlider2D(
-                        min_value=lengths.min(),
-                        max_value=np.percentile(lengths, 98),
-                        initial_value=np.percentile(lengths, 25),
-                        text_template="{value:.0f}",
-                        length=140)
-                _color_slider(slider_length)
-
-                slider_label_size = build_label(text="Size")
-                slider_size = ui.LineSlider2D(
-                        min_value=sizes.min(),
-                        max_value=np.percentile(sizes, 98),
-                        initial_value=np.percentile(sizes, 50),
-                        text_template="{value:.0f}",
-                        length=140)
-                _color_slider(slider_size)
-
-                # global self.length_min, size_min
-                self.size_min = sizes.min()
-                self.length_min = lengths.min()
 
                 def change_threshold(istyle, obj, slider):
                     sv = np.round(slider.value, 0)
@@ -390,14 +356,6 @@ class Horizon(object):
                 # Clustering panel
                 self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
                 self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
-
-                self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
-                self.panel2.add_element(slider_length, coords=(0.42, 0.4))
-
-                self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
-                self.panel2.add_element(slider_size, coords=(0.42, 0.65))
-
-                self.panel2.add_element(cluster_panel_label, coords=(0.05, 0.85))
 
                 #scene.add(self.panel2)
 
