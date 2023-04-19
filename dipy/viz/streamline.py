@@ -128,14 +128,14 @@ def viz_vector_field(points_aligned, directions, colors, offsets, fname,
     fname: str
         Rendered scene is stored in a png file with that name.
     bundle : Streamlines, optional
-        Bundle to be rendered with vector field (Deafult None).
+        Bundle to be rendered with vector field (Default None).
     interactive : boolean, optional
         If True a 3D interactive rendering is created. Default is True.
 
     """
     scene = window.Scene()
     scene.SetBackground(1., 1, 1)
-    arrows = actor.arrow(points_aligned, directions, colors, offsets)
+    arrows = actor.arrow(points_aligned, directions, colors, scales=offsets)
     arrows.RotateX(-70)
     arrows.RotateZ(90)
     scene.add(arrows)
