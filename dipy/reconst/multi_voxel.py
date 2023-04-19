@@ -14,11 +14,18 @@ def multi_voxel_fit(single_voxel_fit):
     definition into a multi voxel model fit definition
     """
 
-    def new_fit(self, data, mask=None):
+    def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
+
         # If only one voxel just return a normal fit
         if data.ndim == 1:
-            return single_voxel_fit(self, data)
+            svf = single_voxel_fit(self, data, **kwargs)
+            # If fit method does not return extra, cannot return extra
+            if isinstance(svf, tuple):
+                svf, extra = svf
+                return svf, extra
+            else:
+                return svf
 
         # Make a mask if mask is None
         if mask is None:
@@ -29,15 +36,47 @@ def multi_voxel_fit(single_voxel_fit):
         elif mask.shape != data.shape[:-1]:
             raise ValueError("mask and data shape do not match")
 
+        # Get weights from kwargs if provided
+        weights = kwargs["weights"] if "weights" in kwargs else None
+        weights_is_array = True if type(weights) is np.ndarray else False
+
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
+        extra_list = []
         bar = tqdm(total=np.sum(mask), position=0)
         for ijk in ndindex(data.shape[:-1]):
             if mask[ijk]:
-                fit_array[ijk] = single_voxel_fit(self, data[ijk])
+
+                if weights_is_array:
+                    kwargs["weights"] = weights[ijk]
+
+                svf = single_voxel_fit(self, data[ijk], **kwargs)
+
+                # Not all fit methods return extra, handle this here for now
+                if isinstance(svf, tuple):
+                    fit_array[ijk], extra = svf
+                else:
+                    fit_array[ijk], extra = svf, None
+
+                extra_list.append(extra)
+
                 bar.update()
         bar.close()
-        return MultiVoxelFit(self, fit_array, mask)
+
+        # Redefine extra to be a single dictionary
+        if extra is not None:
+            extra_mask = {key: np.vstack([e[key] for e in extra_list])
+                          for key in extra_list[0]}
+            extra = {}
+            for key in extra_mask:
+                extra[key] = np.zeros(data.shape)
+                extra[key][mask == 1] = extra_mask[key]
+
+        # If fit method does not return extra, assume we cannot return extra
+        if isinstance(svf, tuple):
+            return MultiVoxelFit(self, fit_array, mask), extra
+        else:
+            return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
 

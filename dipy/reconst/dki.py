@@ -6,7 +6,10 @@ import warnings
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.core.geometry import cart2sphere, perpendicular_directions, sphere2cart
+from dipy.core.geometry import (
+    cart2sphere,
+    perpendicular_directions,
+    sphere2cart)
 from dipy.core.gradients import check_multi_b
 from dipy.core.ndindex import ndindex
 from dipy.core.optimize import PositiveDefiniteLeastSquares
@@ -18,16 +21,23 @@ from dipy.reconst.dti import (
     TensorFit,
     decompose_tensor,
     from_lower_triangular,
+    iterative_fit_tensor,
     lower_triangular,
     mean_diffusivity,
     nlls_fit_tensor,
     radial_diffusivity,
     restore_fit_tensor,
+    robust_fit_tensor_nlls,
+    robust_fit_tensor_wls,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.reconst.weights_method import (
+    weights_method_nlls_gm,
+    weights_method_wls_gm,
+)
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -1802,7 +1812,7 @@ class DiffusionKurtosisModel(ReconstModel):
         self.common_fit_method = not callable(fit_method)
         if self.common_fit_method:
             try:
-                self.fit_method = common_fit_methods[fit_method]
+                self.fit_method = common_fit_methods[fit_method.upper()]
             except KeyError as e:
                 msg = '"' + str(fit_method) + '" is not a known fit method. '
                 msg += " The fit method should either be a function or one of "
@@ -1848,17 +1858,21 @@ class DiffusionKurtosisModel(ReconstModel):
                 self.sdp_constraints = load_sdp_constraints("dki", self.convexity_level)
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
-        self.weights = fit_method in {"WLS", "WLLS", "UWLLS", "CWLS"}
-        self.is_multi_method = fit_method in [
-            "WLS",
-            "OLS",
-            "UWLLS",
-            "ULLS",
-            "WLLS",
-            "OLLS",
-            "CLS",
-            "CWLS",
-        ]
+        self.weights = fit_method in {'WLS', 'WLLS', 'CWLS'}
+
+        self.is_multi_method = fit_method in ['WLS', 'WLLS',
+                                              'LS', 'LLS', 'OLS', 'OLLS',
+                                              'CLS', 'CWLS']
+
+        if "weights_method" in self.kwargs:
+            self.is_iter_method = True
+        else:
+            self.is_iter_method = False
+
+        if "num_iter" not in self.kwargs and self.is_iter_method:
+            self.kwargs["num_iter"] = 4
+
+        self.extra = {}
 
     def fit(self, data, mask=None):
         """Fit method of the DKI model.
@@ -1866,18 +1880,34 @@ class DiffusionKurtosisModel(ReconstModel):
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            The measured signal.
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
 
         """
         data_thres = np.maximum(data, self.min_signal)
-        if self.is_multi_method:
-            return self.multi_fit(data_thres, mask=mask)
+
+        if self.is_multi_method and not self.is_iter_method:
+            fit_result, extra = self.multi_fit(data_thres, mask=mask,
+                                               weights=self.weights,
+                                               **self.kwargs)
+            if extra is not None:
+                self.extra = extra
+            return fit_result
+
+        if self.is_multi_method and self.is_iter_method:
+            fit_result, extra =\
+              self.iterative_fit(data_thres, mask=mask,
+                                 num_iter=self.kwargs["num_iter"],
+                                 weights_method=self.kwargs["weights_method"])
+            if extra is not None:
+                self.extra = extra
+            return fit_result
 
         S0_params = None
-        if data.ndim == 1:
+
+        if data.ndim == 1:  # NOTE: doesn't use mask...
             params, extra = self.fit_method(
                 self.design_matrix,
                 data_thres,
@@ -1887,6 +1917,9 @@ class DiffusionKurtosisModel(ReconstModel):
             )
             if self.return_S0_hat:
                 params, S0_params = params
+            if extra is not None:
+                for key in extra:
+                    self.extra[key] = extra[key]
             return DiffusionKurtosisFit(self, params, model_S0=S0_params)
 
         if mask is not None:
@@ -1914,6 +1947,9 @@ class DiffusionKurtosisModel(ReconstModel):
             dki_params = params.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = S0_params.reshape(out_shape).squeeze()
+            if extra is not None:
+                for key in extra:
+                    self.extra[key] = extra[key].reshape(data.shape)
         else:
             dki_params = np.zeros(data.shape[:-1] + (27,))
             dki_params[mask, :] = params
@@ -1921,11 +1957,17 @@ class DiffusionKurtosisModel(ReconstModel):
                 S0_params_in_mask = np.zeros(data.shape[:-1])
                 S0_params_in_mask[mask] = S0_params.squeeze()
                 S0_params = S0_params_in_mask
+            if extra is not None:
+                for key in extra:
+                    self.extra[key] = np.zeros(data.shape)
+                    self.extra[key][mask, :] = extra[key]
 
         return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
     @multi_voxel_fit
-    def multi_fit(self, data_thres, mask=None):
+    def multi_fit(self, data_thres, mask=None, **kwargs):
+        """ Convenience function for fitting multiple voxels.
+        """
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1934,21 +1976,92 @@ class DiffusionKurtosisModel(ReconstModel):
                 "sdp": self.sdp,
             }
         )
+
         params, extra = self.fit_method(
             self.design_matrix,
             data_thres,
             self.inverse_design_matrix,
             return_S0_hat=self.return_S0_hat,
-            weights=self.weights,
             min_diffusivity=self.min_diffusivity,
             **extra_args,
+            **kwargs,
         )
 
         S0_params = None
         if self.return_S0_hat:
             params, S0_params = params
 
-        return DiffusionKurtosisFit(self, params, model_S0=S0_params)
+        return DiffusionKurtosisFit(self, params, model_S0=S0_params), extra
+
+    def iterative_fit(self, data_thres, *, mask=None, num_iter=4,
+                      weights_method=weights_method_wls_gm):
+        """ Iteratively Reweighted fitting for the DKI model.
+
+        Parameters
+        ----------
+        data_thres : array
+            The measured signal.
+        mask : array, optional
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[-1]
+        num_iter : int, optional
+            Number of times to iterate.
+        weights_method : function, optional
+            A function with args and returns as follows:
+
+            (weights, robust) =
+              weights_method(data, pred_sig,
+                             design_matrix, leverages,
+                             idx, num_iter,
+                             robust)
+
+        Notes
+        -----
+        On the first iteration, (C)WLS fit is performed. Subsequent iterations
+        will be weighted according to weights_method.  Outlier rejection should
+        be handled within weights_method by setting the corresponding weights
+        to zero (if weights_method implements outlier rejection).
+
+        """
+        if num_iter < 2:  # otherwise, weights_method will not be utilized
+            raise ValueError("num_iter must be 2+")
+
+        TDX = num_iter
+        for rdx in range(1, TDX + 1):
+
+            if rdx == 1:
+                w, robust = True, None  # w = True ensures WLS (not OLS)
+            else:
+                # if using mask, define full-sized arrays for w and robust
+                if rdx == 2 and mask is not None:
+                    cond = (mask == 1)
+                    w = np.ones_like(data_thres, dtype=float)
+                    robust = np.zeros_like(data_thres)
+                    robust[cond] = 1
+
+                # make prediction of the signal
+                pred_sig = self.predict(tmp.model_params, S0=tmp.model_S0)
+
+                # define weights for next fit
+                if mask is not None:
+                    w[cond], robust_mask =\
+                      weights_method(data_thres[cond], pred_sig[cond],
+                                     self.design_matrix, leverages[cond],
+                                     rdx, TDX, robust[cond])
+                    if robust_mask is not None:
+                        robust[cond] = robust_mask
+                else:
+                    w, robust =\
+                      weights_method(data_thres, pred_sig,
+                                     self.design_matrix, leverages,
+                                     rdx, TDX, robust)
+
+            tmp, extra = self.multi_fit(data_thres, mask=mask,
+                                        weights=w, return_leverages=True)
+            leverages = extra["leverages"]
+
+        extra = {"robust": robust}
+        return tmp, extra
 
     def predict(self, dki_params, S0=1.0):
         """Predict a signal for this DKI model class instance given parameters
@@ -2554,6 +2667,8 @@ def ls_fit_dki(
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,
+    return_lower_triangular=False,
+    return_leverages=False,
 ):
     r"""Compute the diffusion and kurtosis tensors using an ordinary or
     weighted linear least squares approach [1]_
@@ -2569,13 +2684,20 @@ def ls_fit_dki(
         Inverse of the design matrix.
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
-    weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+    weights : array ([X, Y, Z, ...], g), optional
+        Weights to apply for fitting. These weights must correspond to the
+        squared residuals such that $S = \sum_i w_i r_i^2$. If not provided,
+        weights are estimated as the squared predicted signal from an initial
+        OLS fit.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
         in metrics such as fa, diffusivity values smaller than
         `min_diffusivity` are replaced with `min_diffusivity`.
+    return_lower_triangular : bool, optional
+        Boolean to return (True) or not (False) the coefficients of the fit.
+    return_leverages : bool, optional
+        Boolean to return (True) or not (False) the fitting leverages.
 
     Returns
     -------
@@ -2586,6 +2708,8 @@ def ls_fit_dki(
         2) Three blocks of three elements, containing the first second and
             third coordinates of the diffusion tensor eigenvectors.
         3) Fifteen elements of the kurtosis tensor.
+    leverages : array (g)
+        Leverages of the fitting problem (if return_leverages is True)
 
     References
     ----------
@@ -2599,24 +2723,46 @@ def ls_fit_dki(
     A = design_matrix
     y = np.log(data)
 
-    # DKI ordinary linear least square solution
-    result = np.dot(inverse_design_matrix, y)
+    # weights correspond to *squared* residuals
+    # define W = sqrt(weights), so that W are weights for residuals
+    # e.g. weights for WLS are diag(fn**2), so W are diag(fn)
+    if weights is not False:
+        if type(weights) is np.ndarray:  # user supplied weights
+            W = np.diag(np.sqrt(weights))
+        else:  # Define weights as diag(fn**2) (fn = fitted signal from OLS)
+            result = np.dot(inverse_design_matrix, y)
+            W = np.diag(np.exp(np.dot(A, result)))  # W = sqrt(diag(fn**2))
 
-    # Define weights as diag(yn**2)
-    if weights:
-        W = np.diag(np.exp(2 * np.dot(A, result)))
-        AT_W = np.dot(A.T, W)
-        inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, A))
-        AT_W_LS = np.dot(AT_W, y)
-        result = np.dot(inv_AT_W_A, AT_W_LS)
+        W_A = np.dot(W, A)
+        inv_W_A_W = np.linalg.pinv(W_A).dot(W)
+        result = np.dot(inv_W_A_W, y)
+
+        if return_leverages:
+            leverages = np.einsum('ij,ji->i', design_matrix, inv_W_A_W)
+
+    else:
+        # DKI ordinary linear least square solution
+        result = np.dot(inverse_design_matrix, y)
+
+        if return_leverages:
+            leverages = np.einsum('ij,ji->i', design_matrix,
+                                  inverse_design_matrix)
+
+    if return_leverages:
+        leverages = {"leverages": leverages}
+    else:
+        leverages = None
+
+    if return_lower_triangular:
+        return result, leverages
 
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     if return_S0_hat:
-        return (dki_params[..., 0:-1], dki_params[..., -1]), None
+        return (dki_params[..., 0:-1], dki_params[..., -1]), leverages
     else:
-        return dki_params[..., 0:-1], None
+        return dki_params[..., 0:-1], leverages
 
 
 def cls_fit_dki(
@@ -2627,7 +2773,9 @@ def cls_fit_dki(
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,
-    cvxpy_solver=None,
+    return_lower_triangular=False,
+    return_leverages=False,
+    cvxpy_solver=None
 ):
     r"""Compute the diffusion and kurtosis tensors using a constrained
     ordinary or weighted linear least squares approach [1]_
@@ -2646,6 +2794,11 @@ def cls_fit_dki(
         problem.
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
+    weights : array ([X, Y, Z, ...], g), optional
+        Weights to apply for fitting. These weights must correspond to the
+        squared residuals such that $S = \sum_i w_i r_i^2$. If not provided,
+        weights are estimated as the squared predicted signal from an initial
+        OLS fit.
     weights : bool, optional
         Parameter indicating whether weights are used. Default: True.
     min_diffusivity : float, optional
@@ -2653,6 +2806,10 @@ def cls_fit_dki(
         much smaller than the diffusion weighting, cause quite a lot of noise
         in metrics such as fa, diffusivity values smaller than
         `min_diffusivity` are replaced with `min_diffusivity`.
+    return_lower_triangular : bool, optional
+        Boolean to return (True) or not (False) the coefficients of the fit.
+    return_leverages : bool, optional
+        Boolean to return (True) or not (False) the fitting leverages.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint with a
         particular cvxpy solver. See https://www.cvxpy.org/ for details.
@@ -2667,6 +2824,8 @@ def cls_fit_dki(
         2) Three blocks of three elements, containing the first second and
             third coordinates of the diffusion tensor eigenvectors.
         3) Fifteen elements of the kurtosis tensor.
+    leverages : array (g)
+        Leverages of the fitting problem (if return_leverages is True)
 
     References
     ----------
@@ -2678,23 +2837,41 @@ def cls_fit_dki(
     A = design_matrix
     y = np.log(data)
 
-    # Define sqrt weights as diag(yn)
-    if weights:
-        result = np.dot(inverse_design_matrix, y)
-        W = np.diag(np.exp(np.dot(A, result)))
+    # weights correspond to *squared* residuals
+    # define W = sqrt(weights), so that W are weights for residuals
+    # e.g. weights for WLS are diag(fn**2), so W are diag(fn)
+    if weights is not False:
+        if type(weights) is np.ndarray:  # use supplied weights
+            W = np.diag(np.sqrt(weights))
+        else:  # Define weights as diag(fn**2) (fn = fitted signal from OLS)
+            result = np.dot(inverse_design_matrix, y)
+            W = np.diag(np.exp(np.dot(A, result)))  # W = sqrt(diag(fn**2))
+
         A = np.dot(W, A)
         y = np.dot(W, y)
 
+        if return_leverages:
+            inv_W_A_W = np.linalg.pinv(A).dot(W)
+            leverages = np.einsum('ij,ji->i', design_matrix, inv_W_A_W)
+
     # Solve sdp
     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
+
+    if return_leverages:
+        leverages = {"leverages": leverages}
+    else:
+        leverages = None
+
+    if return_lower_triangular:
+        return result, leverages
 
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     if return_S0_hat:
-        return (dki_params[..., 0:-1], dki_params[..., -1]), None
+        return (dki_params[..., 0:-1], dki_params[..., -1]), leverages
     else:
-        return dki_params[..., 0:-1], None
+        return dki_params[..., 0:-1], leverages
 
 
 def Wrotate(kt, Basis):
@@ -2923,16 +3100,17 @@ def split_dki_param(dki_params):
 
 common_fit_methods = {
     "WLS": ls_fit_dki,
-    "OLS": ls_fit_dki,
-    "NLS": nlls_fit_tensor,
-    "UWLLS": ls_fit_dki,
-    "ULLS": ls_fit_dki,
     "WLLS": ls_fit_dki,
+    "LS": ls_fit_dki,
+    "LLS": ls_fit_dki,
+    "OLS": ls_fit_dki,
     "OLLS": ls_fit_dki,
+    "NLS": nlls_fit_tensor,
     "NLLS": nlls_fit_tensor,
-    "RT": restore_fit_tensor,
-    "restore": restore_fit_tensor,
     "RESTORE": restore_fit_tensor,
+    "IRLS": iterative_fit_tensor,
+    "RWLS": robust_fit_tensor_wls,
+    "RNLLS": robust_fit_tensor_nlls,
     "CLS": cls_fit_dki,
-    "CWLS": cls_fit_dki,
+    "CWLS": cls_fit_dki
 }
