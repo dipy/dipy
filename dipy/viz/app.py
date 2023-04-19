@@ -9,7 +9,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager)
-from dipy.viz.horizon.visualizer import SlicesVisualizer
+from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -207,9 +207,6 @@ class Horizon(object):
         self.mem = GlobalHorizon()
         scene = window.Scene()
         scene.background(self.bg_color)
-        self.add_cluster_actors(scene, self.tractograms,
-                                self.cluster_thr,
-                                enable_callbacks=False)
         return scene
 
     def remove_cluster_actors(self, scene):
@@ -353,144 +350,168 @@ class Horizon(object):
             scene, title=title, size=(1920, 1080), reset_camera=False,
             order_transparent=self.order_transparent)
         self.show_m.initialize()
+        
+        if len(self.tractograms) > 0:
+            """
+            self.add_cluster_actors(
+                scene, self.tractograms, self.cluster_thr,
+                enable_callbacks=False)
+            """
 
-        if self.cluster and self.tractograms:
+            if self.cluster:
 
-            lengths = np.array(
-                [self.cla[c]['length'] for c in self.cla])
-            szs = [self.cla[c]['size'] for c in self.cla]
-            sizes = np.array(szs)
-
-            # global self.panel2, slider_length, slider_size
-            self.panel2 = ui.Panel2D(size=(320, 200), position=(870, 520),
-                                     color=(1, 1, 1), opacity=0.1,
-                                     align="right")
-
-            cluster_panel_label = build_label(text="Cluster panel", bold=True)
-
-            slider_label_threshold = build_label(text="Threshold")
-            print("Cluster threshold", self.cluster_thr)
-            slider_threshold = ui.LineSlider2D(
-                    min_value=5,
-                    max_value=25,
-                    initial_value=self.cluster_thr,
-                    text_template="{value:.0f}",
-                    length=140, shape='square')
-            _color_slider(slider_threshold)
-
-            slider_label_length = build_label(text="Length")
-            slider_length = ui.LineSlider2D(
-                    min_value=lengths.min(),
-                    max_value=np.percentile(lengths, 98),
-                    initial_value=np.percentile(lengths, 25),
-                    text_template="{value:.0f}",
-                    length=140)
-            _color_slider(slider_length)
-
-            slider_label_size = build_label(text="Size")
-            slider_size = ui.LineSlider2D(
-                    min_value=sizes.min(),
-                    max_value=np.percentile(sizes, 98),
-                    initial_value=np.percentile(sizes, 50),
-                    text_template="{value:.0f}",
-                    length=140)
-            _color_slider(slider_size)
-
-            # global self.length_min, size_min
-            self.size_min = sizes.min()
-            self.length_min = lengths.min()
-
-            def change_threshold(istyle, obj, slider):
-                sv = np.round(slider.value, 0)
-                self.remove_cluster_actors(scene)
-                self.add_cluster_actors(scene, self.tractograms, threshold=sv)
-
-                # TODO need to double check if this section is still needed
+                """
                 lengths = np.array(
                     [self.cla[c]['length'] for c in self.cla])
                 szs = [self.cla[c]['size'] for c in self.cla]
                 sizes = np.array(szs)
+                """
+                
+                if 'tracts' in self.random_colors:
+                    clusters_viz = ClustersVisualizer(
+                        scene, self.tractograms, self.world_coords,
+                        self.cluster_thr, color_generator=self.color_gen)
+                else:
+                    clusters_viz = ClustersVisualizer(
+                        scene, self.tractograms, self.world_coords,
+                        self.cluster_thr)
+                lengths = np.asarray([
+                    clusters_viz.cluster_actors[c]['length']
+                    for c in clusters_viz.cluster_actors])
+                sizes = np.asarray([
+                    clusters_viz.cluster_actors[c]['size']
+                    for c in clusters_viz.cluster_actors])
 
-                slider_length.min_value = lengths.min()
-                slider_length.max_value = lengths.max()
-                slider_length.value = lengths.min()
-                slider_length.update()
+                # global self.panel2, slider_length, slider_size
+                self.panel2 = ui.Panel2D(size=(320, 200), position=(870, 520),
+                                        color=(1, 1, 1), opacity=0.1,
+                                        align="right")
 
-                slider_size.min_value = sizes.min()
-                slider_size.max_value = sizes.max()
-                slider_size.value = sizes.min()
-                slider_size.update()
+                cluster_panel_label = build_label(text="Cluster panel", bold=True)
 
-                self.length_min = min(lengths)
-                self.size_min = min(sizes)
+                slider_label_threshold = build_label(text="Threshold")
+                print("Cluster threshold", self.cluster_thr)
+                slider_threshold = ui.LineSlider2D(
+                        min_value=5,
+                        max_value=25,
+                        initial_value=self.cluster_thr,
+                        text_template="{value:.0f}",
+                        length=140, shape='square')
+                _color_slider(slider_threshold)
 
-                self.show_m.render()
+                slider_label_length = build_label(text="Length")
+                slider_length = ui.LineSlider2D(
+                        min_value=lengths.min(),
+                        max_value=np.percentile(lengths, 98),
+                        initial_value=np.percentile(lengths, 25),
+                        text_template="{value:.0f}",
+                        length=140)
+                _color_slider(slider_length)
 
-            slider_threshold.handle_events(slider_threshold.handle.actor)
-            slider_threshold.on_left_mouse_button_released = change_threshold
+                slider_label_size = build_label(text="Size")
+                slider_size = ui.LineSlider2D(
+                        min_value=sizes.min(),
+                        max_value=np.percentile(sizes, 98),
+                        initial_value=np.percentile(sizes, 50),
+                        text_template="{value:.0f}",
+                        length=140)
+                _color_slider(slider_size)
 
-            # TODO: Delete - Moved to respective tab
-            """
-            def hide_clusters_length(slider):
-                self.length_min = np.round(slider.value)
+                # global self.length_min, size_min
+                self.size_min = sizes.min()
+                self.length_min = lengths.min()
 
-                for k in self.cla:
-                    if (self.cla[k]['length'] < self.length_min or
-                            self.cla[k]['size'] < self.size_min):
-                        self.cla[k]['centroid_actor'].SetVisibility(0)
-                        if k.GetVisibility() == 1:
-                            k.SetVisibility(0)
-                    else:
-                        self.cla[k]['centroid_actor'].SetVisibility(1)
-                self.show_m.render()
-            """
+                def change_threshold(istyle, obj, slider):
+                    sv = np.round(slider.value, 0)
+                    self.remove_cluster_actors(scene)
+                    self.add_cluster_actors(scene, self.tractograms, threshold=sv)
 
-            # TODO: Delete - Moved to respective tab
-            """
-            def hide_clusters_size(slider):
-                self.size_min = np.round(slider.value)
+                    # TODO need to double check if this section is still needed
+                    lengths = np.array(
+                        [self.cla[c]['length'] for c in self.cla])
+                    szs = [self.cla[c]['size'] for c in self.cla]
+                    sizes = np.array(szs)
 
-                for k in self.cla:
-                    if (self.cla[k]['length'] < self.length_min or
-                            self.cla[k]['size'] < self.size_min):
-                        self.cla[k]['centroid_actor'].SetVisibility(0)
-                        if k.GetVisibility() == 1:
-                            k.SetVisibility(0)
-                    else:
-                        self.cla[k]['centroid_actor'].SetVisibility(1)
-                self.show_m.render()
-            """
+                    slider_length.min_value = lengths.min()
+                    slider_length.max_value = lengths.max()
+                    slider_length.value = lengths.min()
+                    slider_length.update()
 
-            #slider_length.on_change = hide_clusters_length
+                    slider_size.min_value = sizes.min()
+                    slider_size.max_value = sizes.max()
+                    slider_size.value = sizes.min()
+                    slider_size.update()
 
-            # Clustering panel
-            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
-            self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
+                    self.length_min = min(lengths)
+                    self.size_min = min(sizes)
 
-            self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
-            self.panel2.add_element(slider_length, coords=(0.42, 0.4))
+                    self.show_m.render()
 
-            #slider_size.on_change = hide_clusters_size
+                slider_threshold.handle_events(slider_threshold.handle.actor)
+                slider_threshold.on_left_mouse_button_released = change_threshold
 
-            self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
-            self.panel2.add_element(slider_size, coords=(0.42, 0.65))
+                # TODO: Delete - Moved to respective tab
+                """
+                def hide_clusters_length(slider):
+                    self.length_min = np.round(slider.value)
 
-            self.panel2.add_element(cluster_panel_label, coords=(0.05, 0.85))
+                    for k in self.cla:
+                        if (self.cla[k]['length'] < self.length_min or
+                                self.cla[k]['size'] < self.size_min):
+                            self.cla[k]['centroid_actor'].SetVisibility(0)
+                            if k.GetVisibility() == 1:
+                                k.SetVisibility(0)
+                        else:
+                            self.cla[k]['centroid_actor'].SetVisibility(1)
+                    self.show_m.render()
+                """
 
-            #scene.add(self.panel2)
+                # TODO: Delete - Moved to respective tab
+                """
+                def hide_clusters_size(slider):
+                    self.size_min = np.round(slider.value)
 
-            # Information panel
-            text_block = build_label(HELP_MESSAGE, 18)
-            text_block.message = HELP_MESSAGE
+                    for k in self.cla:
+                        if (self.cla[k]['length'] < self.length_min or
+                                self.cla[k]['size'] < self.size_min):
+                            self.cla[k]['centroid_actor'].SetVisibility(0)
+                            if k.GetVisibility() == 1:
+                                k.SetVisibility(0)
+                        else:
+                            self.cla[k]['centroid_actor'].SetVisibility(1)
+                    self.show_m.render()
+                """
 
-            self.help_panel = ui.Panel2D(
-                size=(320, 200), position=(1595, 875), color=(.8, .8, 1.),
-                opacity=.2, align='left')
+                #slider_length.on_change = hide_clusters_length
 
-            self.help_panel.add_element(text_block, coords=(0.05, 0.1))
-            scene.add(self.help_panel)
-            self.__tabs.append(ClustersTab(
-                self.cea, self.cla, self.cluster_thr, sizes, lengths))
+                # Clustering panel
+                self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
+                self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
+
+                self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
+                self.panel2.add_element(slider_length, coords=(0.42, 0.4))
+
+                #slider_size.on_change = hide_clusters_size
+
+                self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
+                self.panel2.add_element(slider_size, coords=(0.42, 0.65))
+
+                self.panel2.add_element(cluster_panel_label, coords=(0.05, 0.85))
+
+                #scene.add(self.panel2)
+
+                # Information panel
+                text_block = build_label(HELP_MESSAGE, 18)
+                text_block.message = HELP_MESSAGE
+
+                self.help_panel = ui.Panel2D(
+                    size=(320, 200), position=(1595, 875), color=(.8, .8, 1.),
+                    opacity=.2, align='left')
+
+                self.help_panel.add_element(text_block, coords=(0.05, 0.1))
+                scene.add(self.help_panel)
+                self.__tabs.append(ClustersTab(
+                    self.cea, self.cla, self.cluster_thr, sizes, lengths))
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
@@ -512,20 +533,20 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
-                            slices_loader = SlicesVisualizer(
+                            slices_viz = SlicesVisualizer(
                                 self.show_m.iren, scene, data, affine=affine,
                                 world_coords=self.world_coords)
-                            self.__tabs.append(SlicesTab(slices_loader))
+                            self.__tabs.append(SlicesTab(slices_viz))
                             first_img = False
                 if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
-                slices_loader = SlicesVisualizer(
+                slices_viz = SlicesVisualizer(
                     self.show_m.iren, scene, data, affine=affine,
                     world_coords=self.world_coords)
-                self.__tabs.append(SlicesTab(slices_loader))
+                self.__tabs.append(SlicesTab(slices_viz))
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
