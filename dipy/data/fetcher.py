@@ -320,6 +320,24 @@ fetch_synb0_test = _make_fetcher(
      '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
+fetch_evac_weights = _make_fetcher(
+    "fetch_evac_weights",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['40150867'],
+    ['evac_default_weights.h5'],
+    ['998d5122e0aef1ccf7c0d58e41e978af'],
+    doc="Download EVAC+ model weights for Park et. al 2022")
+
+fetch_evac_test = _make_fetcher(
+    "fetch_evac_test",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['40150894'],
+    ['evac_test_data.npz'],
+    ['a2173e8f800ab7ab3b159b86bf3a8536'],
+    doc="Download EVAC+ test data for Park et. al 2022")
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     pjoin(dipy_home, 'stanford_hardi'),
@@ -824,6 +842,14 @@ def get_fnames(name='small_64D'):
         input_array = pjoin(folder, 'test_input_synb0.npz')
         target_array = pjoin(folder, 'test_output_synb0.npz')
         return input_array, target_array
+    if name == 'evac_default_weights':
+        files, folder = fetch_evac_weights()
+        weight = pjoin(folder, 'evac_default_weights.h5')
+        return weight
+    if name == 'evac_test_data':
+        files, folder = fetch_evac_test()
+        test_data = pjoin(folder, 'evac_test_data.npz')
+        return test_data
     if name == 'DiB_70_lte_pte_ste':
         _, folder = fetch_DiB_70_lte_pte_ste()
         fdata = pjoin(folder, 'DiB_70_lte_pte_ste.nii.gz')
