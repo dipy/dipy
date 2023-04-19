@@ -344,22 +344,48 @@ class Horizon(object):
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
     def build_show(self, scene):
-
+        
         title = 'Horizon ' + horizon_version
         self.show_m = window.ShowManager(
             scene, title=title, size=(1920, 1080), reset_camera=False,
             order_transparent=self.order_transparent)
-        self.show_m.initialize()
         
         if len(self.tractograms) > 0:
-            """
-            self.add_cluster_actors(
-                scene, self.tractograms, self.cluster_thr,
-                enable_callbacks=False)
-            """
+            
+            if self.cluster:
+                clusters_viz = ClustersVisualizer(
+                    self.show_m, scene, self.cluster_thr)
+            
+            color_ind = 0
+            
+            for t, sft in enumerate(self.tractograms):
+                streamlines = sft.streamlines
+                
+                if 'tracts' in self.random_colors:
+                    colors = next(self.color_gen)
+                else:
+                    colors = None
+                
+                if not self.world_coords:
+                    # TODO: Get affine from a StatefullTractogram
+                    raise ValueError(
+                        'Currently native coordinates are not supported for'
+                        'streamlines.')
+                
+                if self.cluster:
+                    clusters_viz.add_cluster_actors(t, streamlines, colors)
+                else:
+                    if self.buan:
+                        colors = self.buan_colors[color_ind]
+                    
+                    streamline_actor = actor.line(streamlines, colors=colors)
+                    streamline_actor.GetProperty().SetEdgeVisibility(1)
+                    streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
+                    streamline_actor.GetProperty().SetLineWidth(6)
+                    streamline_actor.GetProperty().SetOpacity(1)
+                    scene.add(streamline_actor)
 
             if self.cluster:
-
                 """
                 lengths = np.array(
                     [self.cla[c]['length'] for c in self.cla])
@@ -367,18 +393,10 @@ class Horizon(object):
                 sizes = np.array(szs)
                 """
                 
-                if 'tracts' in self.random_colors:
-                    clusters_viz = ClustersVisualizer(
-                        scene, self.tractograms, self.world_coords,
-                        self.cluster_thr, color_generator=self.color_gen)
-                else:
-                    clusters_viz = ClustersVisualizer(
-                        scene, self.tractograms, self.world_coords,
-                        self.cluster_thr)
-                lengths = np.asarray([
+                lengths = np.array([
                     clusters_viz.cluster_actors[c]['length']
                     for c in clusters_viz.cluster_actors])
-                sizes = np.asarray([
+                sizes = np.array([
                     clusters_viz.cluster_actors[c]['size']
                     for c in clusters_viz.cluster_actors])
 
@@ -390,7 +408,6 @@ class Horizon(object):
                 cluster_panel_label = build_label(text="Cluster panel", bold=True)
 
                 slider_label_threshold = build_label(text="Threshold")
-                print("Cluster threshold", self.cluster_thr)
                 slider_threshold = ui.LineSlider2D(
                         min_value=5,
                         max_value=25,
@@ -450,48 +467,12 @@ class Horizon(object):
                 slider_threshold.handle_events(slider_threshold.handle.actor)
                 slider_threshold.on_left_mouse_button_released = change_threshold
 
-                # TODO: Delete - Moved to respective tab
-                """
-                def hide_clusters_length(slider):
-                    self.length_min = np.round(slider.value)
-
-                    for k in self.cla:
-                        if (self.cla[k]['length'] < self.length_min or
-                                self.cla[k]['size'] < self.size_min):
-                            self.cla[k]['centroid_actor'].SetVisibility(0)
-                            if k.GetVisibility() == 1:
-                                k.SetVisibility(0)
-                        else:
-                            self.cla[k]['centroid_actor'].SetVisibility(1)
-                    self.show_m.render()
-                """
-
-                # TODO: Delete - Moved to respective tab
-                """
-                def hide_clusters_size(slider):
-                    self.size_min = np.round(slider.value)
-
-                    for k in self.cla:
-                        if (self.cla[k]['length'] < self.length_min or
-                                self.cla[k]['size'] < self.size_min):
-                            self.cla[k]['centroid_actor'].SetVisibility(0)
-                            if k.GetVisibility() == 1:
-                                k.SetVisibility(0)
-                        else:
-                            self.cla[k]['centroid_actor'].SetVisibility(1)
-                    self.show_m.render()
-                """
-
-                #slider_length.on_change = hide_clusters_length
-
                 # Clustering panel
                 self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
                 self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
 
                 self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
                 self.panel2.add_element(slider_length, coords=(0.42, 0.4))
-
-                #slider_size.on_change = hide_clusters_size
 
                 self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
                 self.panel2.add_element(slider_size, coords=(0.42, 0.65))
@@ -547,11 +528,13 @@ class Horizon(object):
                     self.show_m.iren, scene, data, affine=affine,
                     world_coords=self.world_coords)
                 self.__tabs.append(SlicesTab(slices_viz))
+        
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
             scene.add(peak_actor)
             self.__tabs.append(PeaksTab(peak_actor))
+        
         else:
             data = None
             affine = None
