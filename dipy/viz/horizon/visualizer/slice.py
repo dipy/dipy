@@ -103,7 +103,7 @@ class SlicesVisualizer:
             self.__data_shape = self.__resliced_vol.shape
         print(f'Resized to RAS shape: {self.__data_shape}')
     
-    def __left_click_picker_callback(self, obj, ev):
+    def __left_click_picker_callback(self, obj, event):
         event_pos = self.__interactor.GetEventPosition()
 
         obj.picker.Pick(event_pos[0], event_pos[1], 0, self.__scene)
