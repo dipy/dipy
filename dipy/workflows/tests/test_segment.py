@@ -127,7 +127,6 @@ def test_evac_plus_flow():
         result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked = nib.load(pjoin(out_dir, masked_name))
-        result_masked_data = np.asanyarray(result_masked.dataobj)
+        result_masked_data = load_nifti_data(pjoin(out_dir, masked_name))
 
-        npt.assert_array_equal(np.round(result_masked_data), masked)
+        npt.assert_array_equal(result_masked_data, masked)
