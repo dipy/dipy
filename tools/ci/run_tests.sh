@@ -20,6 +20,7 @@ if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" == true ]; then
     # Run the tests and check for test coverage.
     coverage run -m pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
     coverage report -m  # Generate test coverage report.
+    coverage xml  # Generate coverage report in xml format for codecov upload.
 else
     pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
 fi
