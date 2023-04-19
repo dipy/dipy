@@ -1,5 +1,6 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+from packaging.version import Version
 
 import numpy.testing as npt
 import numpy as np
@@ -16,7 +17,14 @@ from dipy.tracking.streamline import set_number_of_points
 from dipy.workflows.segment import MedianOtsuFlow, EVACPlusFlow
 from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
 from dipy.nn.evac import EVACPlus
+from dipy.utils.optpkg import optional_package
 
+tf, have_tf, _ = optional_package('tensorflow')
+
+if have_tf:
+    from dipy.nn.evac import EVACPlus
+    if Version(tf.__version__) < Version('2.0.0'):
+        raise ImportError('Please upgrade to TensorFlow 2+')
 
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
@@ -104,6 +112,8 @@ def test_recobundles_flow():
 
         npt.assert_equal(bmd_value < 1, True)
 
+
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_evac_plus_flow():
     with TemporaryDirectory() as out_dir:
         file_path = get_fnames('evac_test_data')

@@ -336,6 +336,7 @@ class LabelsBundlesFlow(Workflow):
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)
 
+
 class EVACPlusFlow(Workflow):
     @classmethod
     def get_short_name(cls):
