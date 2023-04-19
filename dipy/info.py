@@ -112,7 +112,6 @@ EXTRAS_REQUIRE = {
         "pytest",
         "coverage",
         "coveralls",
-        "codecov",
     ],
     "doc": [
         "cython",
