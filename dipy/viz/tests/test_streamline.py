@@ -5,7 +5,8 @@ import pytest
 
 from dipy.utils.optpkg import optional_package
 from dipy.data import read_five_af_bundles, two_cingulum_bundles
-from dipy.tracking.streamline import set_number_of_points, unlist_streamlines
+from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
+                                      Streamlines)
 
 from dipy.align.streamwarp import bundlewarp, bundlewarp_vector_filed
 
@@ -57,16 +58,17 @@ def test_bundlewarp_viz():
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = cingulum_bundles[0]
-    cb1 = set_number_of_points(cb1, 20)
+    cb1 = Streamlines(set_number_of_points(cb1, 20))
 
     cb2 = cingulum_bundles[1]
-    cb2 = set_number_of_points(cb2, 20)
+    cb2 = Streamlines(set_number_of_points(cb2, 20))
 
     with tempfile.TemporaryDirectory() as temp_dir:
 
         deformed_bundle, affine_bundle, _, _, _ = bundlewarp(cb1, cb2)
 
-        offsets, directions, colors = bundlewarp_vector_filed(cb1, cb2)
+        offsets, directions, colors = bundlewarp_vector_filed(affine_bundle,
+                                                              deformed_bundle)
         points_aligned, _ = unlist_streamlines(affine_bundle)
 
         fname = os.path.join(temp_dir, 'test_vector_field.png')
