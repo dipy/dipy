@@ -85,7 +85,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
         Represents the strength of the interaction between points
         Gaussian kernel size (default 20)
 
-    max_iterations : int, optional
+    max_iter : int, optional
         Maximum number of iterations for deformation process in ml-CPD method
         (default 15)
 
