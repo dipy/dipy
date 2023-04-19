@@ -14,58 +14,10 @@ from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from fury import actor, shaders, ui, window
+    from fury import actor, ui, window
     from fury.colormap import distinguishable_colormap
 
     from dipy.viz.panel import _color_slider, build_label, slicer_panel
-
-
-def apply_shader(hz, act):
-    """ Apply a shader to an actor (act) that access shared memory
-
-    Parameters
-    ----------
-    hz : GlobalHorizon instance
-    act : fury.actor visual object
-    """
-
-    frag_decl = \
-        """
-        uniform float selected;
-        uniform float opacity_level;
-        """
-
-    frag_impl = \
-        """
-        if (selected == 1){
-            fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
-            }
-        """
-
-    shaders.shader_to_actor(act, "vertex", impl_code="\n",
-                            replace_first=False,
-                            replace_all=False)
-    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl,
-                            block="coincident")
-    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl,
-                            block="light")
-
-    def shader_selected_callback(caller, event, calldata=None):
-        program = calldata
-        if program is not None:
-            try:
-                program.SetUniformf("selected",
-                                    hz.cea[act]['selected'])
-            except KeyError:
-                pass
-            try:
-                program.SetUniformf("selected",
-                                    hz.cla[act]['selected'])
-            except KeyError:
-                pass
-            program.SetUniformf("opacity_level", 1)
-
-    shaders.add_shader_callback(act, shader_selected_callback, priority=100)
 
 
 HELP_MESSAGE = """
@@ -301,8 +253,6 @@ class Horizon(object):
                         'cluster': i, 'tractogram': t,
                         'size': sizes[i], 'length': centroid_lengths[i],
                         'selected': 0, 'highlighted': 0}
-                    apply_shader(self, cluster_actor)
-                    apply_shader(self, centroid_actor)
 
             else:
 
@@ -317,31 +267,6 @@ class Horizon(object):
                 self.mem.streamline_actors.append(streamline_actor)
 
             color_ind += 1
-
-        if not enable_callbacks:
-            return
-
-        def left_click_centroid_callback(obj, event):
-            self.cea[obj]['selected'] = not self.cea[obj]['selected']
-            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
-                self.cea[obj]['selected']
-            self.show_m.render()
-
-        def left_click_cluster_callback(obj, event):
-            if self.cla[obj]['selected']:
-                self.cla[obj]['centroid_actor'].VisibilityOn()
-                ca = self.cla[obj]['centroid_actor']
-                self.cea[ca]['selected'] = 0
-                obj.VisibilityOff()
-                self.cea[ca]['expanded'] = 0
-
-            self.show_m.render()
-
-        for cl in self.cla:
-            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
-                           1.0)
-            self.cla[cl]['centroid_actor'].AddObserver(
-                'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
     def build_show(self, scene):
         
@@ -384,15 +309,10 @@ class Horizon(object):
                     streamline_actor.GetProperty().SetLineWidth(6)
                     streamline_actor.GetProperty().SetOpacity(1)
                     scene.add(streamline_actor)
+                
+                color_ind += 1
 
             if self.cluster:
-                """
-                lengths = np.array(
-                    [self.cla[c]['length'] for c in self.cla])
-                szs = [self.cla[c]['size'] for c in self.cla]
-                sizes = np.array(szs)
-                """
-                
                 lengths = np.array([
                     clusters_viz.cluster_actors[c]['length']
                     for c in clusters_viz.cluster_actors])
@@ -491,8 +411,7 @@ class Horizon(object):
 
                 self.help_panel.add_element(text_block, coords=(0.05, 0.1))
                 scene.add(self.help_panel)
-                self.__tabs.append(ClustersTab(
-                    self.cea, self.cla, self.cluster_thr, sizes, lengths))
+                self.__tabs.append(ClustersTab(clusters_viz, self.cluster_thr))
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now

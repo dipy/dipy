@@ -26,23 +26,32 @@ class ClustersVisualizer:
         self.__tractogram_clusters = {}
         self.__centroid_actors = {}
         self.__cluster_actors = {}
+        
+        self.__lengths = []
+        self.__sizes = []
     
     def add_cluster_actors(self, tract_idx, streamlines, colors):
-        print(f'Clustering threshold {self.__threshold}')
+        print(f'\nClustering threshold {self.__threshold}')
         clusters = qbx_and_merge(
             streamlines, [40, 30, 25, 20, self.__threshold])
         self.__tractogram_clusters[tract_idx] = clusters
         centroids = clusters.centroids
         print(f'Total number of centroids = {len(centroids)}')
-        sizes = np.array([len(c) for c in clusters])
+        
+        lengths = [length(c) for c in centroids]
+        self.__lengths.extend(lengths)
+        lengths = np.array(lengths)
+        
+        sizes = [len(c) for c in clusters]
+        self.__sizes.extend(sizes)
+        sizes = np.array(sizes)
         linewidths = np.interp(
             sizes, [np.min(sizes), np.max(sizes)], [0.1, 2.])
-        centroid_lengths = np.array([length(c) for c in centroids])
 
         print(f'Minimum number of streamlines in cluster {np.min(sizes)}')
         print(f'Maximum number of streamlines in cluster {np.max(sizes)}')
 
-        print('Building cluster actors')
+        print('Building cluster actors\n')
         for idx, cent in enumerate(centroids):
 
             centroid_actor = actor.streamtube(
@@ -60,14 +69,12 @@ class ClustersVisualizer:
             self.__centroid_actors[centroid_actor] = {
                 'actor': cluster_actor, 'cluster': idx,
                 'tractogram': tract_idx, 'size': sizes[idx],
-                'length': centroid_lengths[idx], 'selected': 0,
-                'expanded': 0}
+                'length': lengths[idx], 'selected': 0, 'expanded': 0}
 
             self.__cluster_actors[cluster_actor] = {
                 'actor': centroid_actor, 'cluster': idx,
                 'tractogram': tract_idx, 'size': sizes[idx],
-                'length': centroid_lengths[idx], 'selected': 0,
-                'highlighted': 0}
+                'length': lengths[idx], 'selected': 0, 'highlighted': 0}
             
             self.__apply_shader(self.__centroid_actors[centroid_actor])
             self.__apply_shader(self.__cluster_actors[cluster_actor])
@@ -131,3 +138,11 @@ class ClustersVisualizer:
     @property
     def cluster_actors(self):
         return self.__cluster_actors
+    
+    @property
+    def lengths(self):
+        return np.array(self.__lengths)
+    
+    @property
+    def sizes(self):
+        return np.array(self.__sizes)

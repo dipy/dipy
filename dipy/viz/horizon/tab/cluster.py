@@ -10,10 +10,12 @@ if has_fury:
 
 
 class ClustersTab(HorizonTab):
-    def __init__(
-        self, centroid_actors, cluster_actors, threshold, sizes, lengths):
-        self.__centroid_actors = centroid_actors
-        self.__cluster_actors = cluster_actors
+    def __init__(self, clusters_visualizer, threshold):
+        
+        self.__visualizer = clusters_visualizer
+        
+        self.__centroid_actors = self.__visualizer.centroid_actors
+        self.__cluster_actors = self.__visualizer.cluster_actors
         self.__name = 'Clusters'
         
         self.__tab_id = 0
@@ -25,28 +27,33 @@ class ClustersTab(HorizonTab):
         fs = 16
         tt = '{value:.0f}'
         
+        self.__sizes = self.__visualizer.sizes
+        
         self.__slider_label_size = build_label(text='Size')
         
-        self.__selected_size = np.percentile(sizes, 50)
+        self.__selected_size = np.percentile(self.__sizes, 50)
         
         self.__slider_size = ui.LineSlider2D(
-            initial_value=self.__selected_size, min_value=np.min(sizes),
-            max_value=np.percentile(sizes, 98), length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=self.__selected_size, min_value=np.min(self.__sizes),
+            max_value=np.percentile(self.__sizes, 98), length=length,
+            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_size)
         
         self.__slider_size.handle_events(self.__slider_size.handle.actor)
         self.__slider_size.on_left_mouse_button_released = self.__change_size
         
+        self.__lengths = self.__visualizer.lengths
+        
         self.__slider_label_length = build_label(text='Length')
         
-        self.__selected_length = np.percentile(lengths, 25)
+        self.__selected_length = np.percentile(self.__lengths, 25)
         
         self.__slider_length = ui.LineSlider2D(
-            initial_value=self.__selected_length, min_value=np.min(lengths),
-            max_value=np.percentile(lengths, 98), length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=self.__selected_length,
+            min_value=np.min(self.__lengths),
+            max_value=np.percentile(self.__lengths, 98), length=length,
+            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_length)
         
@@ -114,11 +121,11 @@ class ClustersTab(HorizonTab):
             size_validation = (
                 self.__cluster_actors[k]['size'] < self.__selected_size)
             if (length_validation or size_validation):
-                self.__cluster_actors[k]['centroid_actor'].SetVisibility(False)
+                self.__cluster_actors[k]['actor'].SetVisibility(False)
                 if k.GetVisibility():
                     k.SetVisibility(False)
             else:
-                self.__cluster_actors[k]['centroid_actor'].SetVisibility(True)
+                self.__cluster_actors[k]['actor'].SetVisibility(True)
     
     def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
