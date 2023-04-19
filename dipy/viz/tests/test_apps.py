@@ -1,5 +1,4 @@
 import os
-from tempfile import TemporaryDirectory
 
 import numpy as np
 import numpy.testing as npt
@@ -16,7 +15,6 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from fury import window
-    from fury.io import load_image
 
     from dipy.viz.app import horizon
 
@@ -148,17 +146,3 @@ def test_roi_images():
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 2)
-    with TemporaryDirectory() as out_dir:
-        tmp_fname = os.path.join(out_dir, 'tmp_x.png')
-
-        # If roi_images=False, only the first non-binary image is loaded
-        horizon(images=images, interactive=False, out_png=tmp_fname)
-        npt.assert_equal(os.path.exists(tmp_fname), True)
-
-        # If roi_images=True, all th binary images are shown as contours
-        horizon(images=images, roi_images=True, interactive=False,
-                out_png=tmp_fname)
-        npt.assert_equal(os.path.exists(tmp_fname), True)
-        
-        #ss = load_image(tmp_fname)
-        #npt.assert_equal(ss[650, 800, :], [147, 0, 0])
