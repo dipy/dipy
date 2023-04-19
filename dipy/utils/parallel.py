@@ -29,6 +29,7 @@ def paramap(
     func_kwargs=None,
     **kwargs,
 ):
+# FIXME: but several fitting functions return "extra" - can this now not be handled? That some functions in dki.py would need to return 'extra' was very clear.
     """
     Maps a function to a list of inputs in parallel.
 
@@ -153,6 +154,16 @@ def paramap(
 
         func = ray.remote(func)
         if func_kwargs_sequence:
+            # NOTE this is just me checking what's going on...
+            #      confirms that ii = data[num_vox_in_chunk, num_dir], fk["weights"] = weights[num_vox_in_chunk, num_dir]
+            print("!!!! func_kwargs_sequence !!!!")
+            try:
+                for ii, fk in zip(in_list, func_kwargs):
+                    print("in parallel:", ii.shape, fk["weights"].shape)
+            except:
+                pass
+            # FIXME: so each worker seems to step through first dimension of ii (i.e. loop over voxels), but fk["weights"] is not being stepped through in the same way
+            #        what arrives in the function is not ii, but ii[0, ...], whereas all of fk["weights"] arrives... I'm not really getting this...
             results = ray.get(
                 [
                     func.remote(ii, *func_args, **fk)

@@ -43,6 +43,7 @@ python_sources = ['__init__.py',
   'shm.py',
   'shore.py',
   'utils.py',
+  'weights_method.py'
   ]
 
 py3.install_sources(
