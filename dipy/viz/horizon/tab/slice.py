@@ -14,22 +14,22 @@ if has_fury:
 
 
 class SlicesTab(HorizonTab):
-    def __init__(self, slices_loader):
+    def __init__(self, slices_visualizer):
         
-        self.__loader = slices_loader
+        self.__visualizer = slices_visualizer
         
-        self.__actors = self.__loader.slice_actors
+        self.__actors = self.__visualizer.slice_actors
         self.__name = 'Slices'
         
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__data_shape = self.__loader.data_shape
-        self.__selected_slice_x = self.__loader.selected_slices[0]
-        self.__selected_slice_y = self.__loader.selected_slices[1]
-        self.__selected_slice_z = self.__loader.selected_slices[2]
-        self.__min_intensity = self.__loader.intensities_range[0]
-        self.__max_intensity = self.__loader.intensities_range[1]
+        self.__data_shape = self.__visualizer.data_shape
+        self.__selected_slice_x = self.__visualizer.selected_slices[0]
+        self.__selected_slice_y = self.__visualizer.selected_slices[1]
+        self.__selected_slice_z = self.__visualizer.selected_slices[2]
+        self.__min_intensity = self.__visualizer.intensities_range[0]
+        self.__max_intensity = self.__visualizer.intensities_range[1]
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -106,10 +106,10 @@ class SlicesTab(HorizonTab):
         self.__slider_label_intensities = build_label(text='Intensities')
         
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=self.__loader.intensities_range,
-            min_value=self.__loader.volume_min,
-            max_value=self.__loader.volume_max, length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+            initial_values=self.__visualizer.intensities_range,
+            min_value=self.__visualizer.volume_min,
+            max_value=self.__visualizer.volume_max, length=length,
+            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
         color_double_slider(self.__slider_intensities)
         
@@ -148,7 +148,7 @@ class SlicesTab(HorizonTab):
         
         self.__label_picked_voxel = build_label(text='')
         
-        self.__loader.register_picker_callback(self.__change_picked_voxel)
+        self.__visualizer.register_picker_callback(self.__change_picked_voxel)
         
         if data_ndim == 4:
             self.__slider_label_volume = build_label(text='Volume')
@@ -246,7 +246,7 @@ class SlicesTab(HorizonTab):
             visible_slices = (
                 self.__selected_slice_x, self.__selected_slice_y,
                 self.__selected_slice_z)
-            valid_vol = self.__loader.change_volume(
+            valid_vol = self.__visualizer.change_volume(
                 self.__selected_volume_idx, value,
                 [self.__min_intensity, self.__max_intensity], visible_slices)
             if not valid_vol:
@@ -256,7 +256,7 @@ class SlicesTab(HorizonTab):
                     'previous volume.')
                 self.__slider_volume.value = self.__selected_volume_idx
             else:
-                intensities_range = self.__loader.intensities_range
+                intensities_range = self.__visualizer.intensities_range
                 
                 # Updating the colormap
                 self.__min_intensity = intensities_range[0]
@@ -265,8 +265,10 @@ class SlicesTab(HorizonTab):
                 
                 # Updating intensities slider
                 self.__slider_intensities.initial_values = intensities_range
-                self.__slider_intensities.min_value = self.__loader.volume_min
-                self.__slider_intensities.max_value = self.__loader.volume_max
+                self.__slider_intensities.min_value = (
+                    self.__visualizer.volume_min)
+                self.__slider_intensities.max_value = (
+                    self.__visualizer.volume_max)
                 
                 # Updating opacities
                 self.__update_opacities()
