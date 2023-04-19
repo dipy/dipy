@@ -45,11 +45,12 @@ def find_missing(lst, cb):
 
     Parameters
     ----------
-    lst : int
-        List containing all the streamlines indices in moving bundle.
-    cb : int
-        List containing streamline indices of the moving bundle that were not
-        matched to any streamline in static bundle.
+    lst : List
+        List of integers containing all the streamlines indices in moving
+        bundle.
+    cb : List
+        List of integers containing streamline indices of the moving bundle
+        that were not matched to any streamline in static bundle.
 
     Returns
     -------
@@ -83,6 +84,10 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     beta : int, optional
         Represents the strength of the interaction between points
         Gaussian kernel size (default 20)
+
+    max_iterations : int, optional
+        Maximum number of iterations for deformation process in ml-CPD method
+        (default 15)
 
     affine : boolean, optional
         If False, use rigid registration as starting point (default True)
@@ -178,10 +183,6 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
 
         static_s = s1
         moving_s = s2
-
-        # reg = DeformableRegistration(**{'X': static_s, 'Y': moving_s,
-        #                                'alpha': alpha, 'beta': beta,
-        #                                'max_iterations': max_iter})
 
         reg = DeformableRegistration(X=static_s, Y=moving_s, alpha=alpha,
                                      beta=beta, max_iterations=max_iter)
