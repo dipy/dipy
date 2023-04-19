@@ -106,8 +106,8 @@ fname = "partially_vectorfield.png"
 viz_vector_field(points_aligned, directions, colors, offsets, fname)
 
 """
-Let's visualize vector field over linearly moved bundle.This will show how much
-deformations were introduced after linear registration.
+Let's visualize vector field over linearly moved bundle. This will show how
+much deformations were introduced after linear registration.
 """
 
 fname = "partially_vectorfield_over_linearly_moved.png"
@@ -115,12 +115,13 @@ viz_vector_field(points_aligned, directions, colors, offsets, fname,
                  moving_aligned)
 
 """
-We can also visualize the magnitude of deformations mapped over moved (warped)
-bundle. It shows which streamlines were deformed the most.
+We can also visualize the magnitude of deformations in mm mapped over affinely
+moved bundle. It shows which streamlines were deformed the most after affine
+registration.
 """
 
-fname = "partially_deformation_magnitude_over_nonlinearly_moved.png"
-viz_displacement_mag(deformed_bundle, offsets, fname, interactive=False)
+fname = "partially_deformation_magnitude_over_linearly_moved.png"
+viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
 
 """
 Saving partially warped bundle.
@@ -182,12 +183,13 @@ viz_vector_field(points_aligned, directions, colors, offsets, fname,
                  moving_aligned)
 
 """
-Let's visualize the magnitude of deformations mapped over moved
-(completely warped) bundle. It shows which streamlines were deformed the most.
+Let's visualize the magnitude of deformations in mm mapped over affinely moved
+bundle. It shows which streamlines were deformed the most after affine
+registration.
 """
 
-fname = "fully_deformation_magnitude_over_nonlinearly_moved.png"
-viz_displacement_mag(deformed_bundle2, offsets, fname, interactive=False)
+fname = "fully_deformation_magnitude_over_linearly_moved.png"
+viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
 
 """
 Saving fully warped bundle.
