@@ -65,9 +65,22 @@ def test_ptt_tracking():
                                          seeds=seed_coordinates,
                                          affine=affine,
                                          maxlen=1)
-    streamlines = Streamlines(streamline_generator)
-    npt.assert_equal(len(streamlines), 10)
-    npt.assert_(np.all([len(s) == 3 for s in streamlines]))
+    streams = Streamlines(streamline_generator)
+    npt.assert_almost_equal(np.linalg.norm(streams[0][0] - streams[0][1]), 0.2,
+                            decimal=1)
+    npt.assert_equal(len(streams), 10)
+    npt.assert_(np.all([len(s) <= 3 for s in streams]))
+
+    streamline_generator = LocalTracking(direction_getter=dg,
+                                         step_size=0.2,
+                                         stopping_criterion=sc,
+                                         seeds=seed_coordinates,
+                                         affine=affine,
+                                         maxlen=1,
+                                         fixedstep=False)
+
+    # Check fixedstep ValueError
+    npt.assert_raises(ValueError, Streamlines, streamline_generator)
 
 
 def test_PTTDirectionGetter():

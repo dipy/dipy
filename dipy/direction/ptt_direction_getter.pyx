@@ -57,6 +57,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       step_size
     cdef int          rejection_sampling_max_try
     cdef int          rejection_sampling_nbr_sample
+    cdef double[3]    voxel_size
 
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
@@ -163,11 +164,14 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         else:
             for count in range(self.probe_count):
                 for i in range(3):
-                    position[i] = (self.position[i] +
-                                   self.frame[1][i] * self.probe_radius *
-                                   cos(count * self.angular_separation) +
-                                   self.frame[2][i] * self.probe_radius *
-                                   sin(count * self.angular_separation))
+                    position[i] = (self.position[i]
+                                   + self.frame[1][i] * self.probe_radius
+                                   * cos(count * self.angular_separation)
+                                   / self.voxel_size[i]
+                                   +
+                                   self.frame[2][i] * self.probe_radius
+                                   * sin(count * self.angular_separation)
+                                   / self.voxel_size[i])
 
                 self.last_val += self.pmf_gen.get_pmf_value(position,
                                                             self.frame[0])
@@ -248,10 +252,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         for q in range(1, self.probe_quality):
             for i in range(3):
-                position[i] = (self.propagator[0] * frame[0][i]
-                               + self.propagator[1] * frame[1][i]
-                               + self.propagator[2] * frame[2][i]
-                               + position[i])
+                position[i] = \
+                    (self.propagator[0] * frame[0][i] * self.voxel_size[i]
+                     + self.propagator[1] * frame[1][i] * self.voxel_size[i]
+                     + self.propagator[2] * frame[2][i] * self.voxel_size[i]
+                     + position[i])
                 tangent[i] = (self.propagator[3] * frame[0][i]
                               + self.propagator[4] * frame[1][i]
                               + self.propagator[5] * frame[2][i])
@@ -287,8 +292,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                         new_position[i] = (position[i]
                                            + normal[i] * self.probe_radius
                                            * cos(c * self.angular_separation)
+                                           / self.voxel_size[i]
                                            + binormal[i] * self.probe_radius
-                                           * sin(c * self.angular_separation))
+                                           * sin(c * self.angular_separation)
+                                           / self.voxel_size[i])
                     fod_amp = self.pmf_gen.get_pmf_value(new_position, tangent)
                     fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                     self.last_val_cand += fod_amp
@@ -367,16 +374,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # propagate
         for i in range(3):
-            self.position[i] = (self.propagator[0] * self.frame[0][i] +
-                                self.propagator[1] * self.frame[1][i] +
-                                self.propagator[2] * self.frame[2][i] +
-                                self.position[i])
+            self.position[i] = \
+                (self.propagator[0] * self.frame[0][i] / self.voxel_size[i]
+                + self.propagator[1] * self.frame[1][i] / self.voxel_size[i]
+                + self.propagator[2] * self.frame[2][i] / self.voxel_size[i]
+                + self.position[i])
             tangent[i] = (self.propagator[3] * self.frame[0][i]
                           + self.propagator[4] * self.frame[1][i]
                           + self.propagator[5] * self.frame[2][i])
-            self.frame[2][i] = (self.propagator[6] * self.frame[0][i] +
-                                self.propagator[7] * self.frame[1][i] +
-                                self.propagator[8] * self.frame[2][i])
+            self.frame[2][i] = (self.propagator[6] * self.frame[0][i]
+                                + self.propagator[7] * self.frame[1][i]
+                                + self.propagator[8] * self.frame[2][i])
         normalize(tangent)
         cross(self.frame[1], self.frame[2], tangent)
         normalize(self.frame[1])
@@ -420,14 +428,19 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef:
             cnp.npy_intp i
             cnp.npy_intp len_streamlines = streamline.shape[0]
-            double point[3]
-            double voxdir[3]
-            void (*step)(double*, double*, double) nogil
+            double average_voxel_size = 0
+
+        if not fixedstep > 0:
+           raise ValueError("PTT only supports fixed step size.")
 
         self.step_size = step_size
+        for i in range(3):
+            self.voxel_size[i] = voxel_size[i]
+            average_voxel_size += voxel_size[i] / 3
+
         # convert max_angle from degrees to radians
         self.max_curvature = 1 / min_radius_curvature_from_angle(
-            self.max_angle * M_PI / 180.0, self.step_size)
+            self.max_angle * M_PI / 180.0, self.step_size / average_voxel_size)
 
         copy_point(&seed[0], &streamline[0,0])
         i = 0
