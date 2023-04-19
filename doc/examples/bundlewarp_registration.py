@@ -13,7 +13,8 @@ registration of white matter tracts [Chandio23]_.
 """
 
 from dipy.io.streamline import load_trk
-from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed)
+from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed,
+                                   bundlewarp_shape_analysis)
 from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
                                       Streamlines)
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -190,6 +191,17 @@ registration.
 
 fname = "fully_deformation_magnitude_over_linearly_moved.png"
 viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
+
+
+"""
+We can also plot bundle shape profile using BUAN. Bundle shape profile shows
+average magnitude of deformations along the length of the bundle. Segments
+where we observe higher deformations are the areas where two bundles differ the
+most in shape.
+"""
+
+_, _ = bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
+                                 plotting=True)
 
 """
 Saving fully warped bundle.
