@@ -56,7 +56,7 @@ gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
 """
-Prepare the PTT direction getter using the fiber ODF (FOD) obtain with CSD. 
+Prepare the PTT direction getter using the fiber ODF (FOD) obtain with CSD.
 Start the local tractography using PTT direction getter.
 """
 
@@ -66,7 +66,7 @@ pmf = fod.clip(min=0)
 ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=15, probe_length=0.5,
                                      sphere=sphere)
 
-# Parallele Transport Tractography
+# Parallel Transport Tractography
 streamline_generator = LocalTracking(direction_getter=ptt_dg,
                                      stopping_criterion=stopping_criterion,
                                      seeds=seeds,
@@ -94,7 +94,7 @@ if has_fury:
 References
 ----------
 .. [Aydogan2021] Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
-    Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038. 
+    Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
     Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.
 
 .. include:: ../links_names.inc

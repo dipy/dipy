@@ -4,7 +4,12 @@
 
 """
 Implementation of the Parallel Transport Tractography (PTT) algorithm by
-Aydogan et al., (2021).
+Aydogan et al., (2021). PTT Default parameter values are slightly different
+then in Trekker to optimise performances. The rejection sampling
+algorithm also uses fewer samples to estimate the maximum of the posterior, and
+fewer tries to obtain a suitable propagation candidate. Moreover, the initial
+tangent direction in this implementation is always obtained from the voxel-wise
+peaks.
 
 Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
     Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
@@ -122,32 +127,32 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
 
     cdef void initialize_candidate(self, double[:] init_dir):
-        """"Return the likelihood value for a randomly picked candidate.
+        """"Initialize the parallel transport frame.
 
-        After initial position is set, a random PTF (a walking frame, i.e.,
-        3 orthonormal vectors (frame), plus 2 scalars, i.e., k1 and k2) is set
-        with this function. Optionally, the tangential component of PTF can be
-        user provided with the input initDir parameter.
-        A point + PTF parametrizes a curve that is named the "probe". Using
-        probe parameters (probe_length, probe_radius, probe_quality,
-        probe_count), a short fiber bundle segment is modelled.
+        After initial position is set, a parallel transport frame is set using
+        the initial direction (a walking frame, i.e., 3 orthonormal vectors,
+        plus 2 scalars, i.e. k1 and k2).
+
+        A point and parallel transport frame parametrizes a curve that is named
+        the "probe". Using probe parameters (probe_length, probe_radius,
+        probe_quality, probe_count), a short fiber bundle segment is modelled.
 
         Parameters
         ----------
         init_dir : np.array
-            Use initdir=[0,0,0] if initDir is not available.
-
-        Notes
-        -----
-        This function does NOT pick the initial curve. It only returns the
-        datasupport (likelihood) value for a randomly picked candidate.
+            Initial tracking direction (tangent)
 
         """
         cdef double[3] position
         cdef int count
         cdef int i
 
-        self.initialize_frame(init_dir)
+        # Initialize Frame
+        self.frame[0][0] = init_dir[0]
+        self.frame[0][1] = init_dir[1]
+        self.frame[0][2] = init_dir[2]
+        random_perpendicular_vector(self.frame[2], self.frame[0])
+        cross(self.frame[1], self.frame[2], self.frame[0])
         self.k1, self.k2 = random_point_within_circle(self.max_curvature)
 
         self.last_val = 0
@@ -166,31 +171,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
                 self.last_val += self.pmf_gen.get_pmf_value(position,
                                                             self.frame[0])
-
-
-    cdef void initialize_frame(self, double[:] _dir):
-        """Randomly generate 3 unit vectors that are orthogonal to each other.
-
-        This is used for initializing the moving frame of the tracker
-        Optionally, the initial direction, i.e., tangent, can also be provided
-        if norm(_dir.size)==0, then the tangent will also be a random vector
-
-        Parameters
-        ----------
-        _dir : double[3]
-            The optional initial direction (tangent) of the parallel transport
-            frame.
-
-        """
-        if norm(_dir) == 0:
-            random_vector(self.frame[0])
-        else:
-            self.frame[0][0] = _dir[0]
-            self.frame[0][1] = _dir[1]
-            self.frame[0][2] = _dir[2]
-
-        random_perpendicular_vector(self.frame[2], self.frame[0])
-        cross(self.frame[1], self.frame[2], self.frame[0])
 
 
     cdef void prepare_propagator(self, double arclength):
@@ -245,7 +225,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
 
     cdef double calculate_data_support(self):
-        """Calculates data support for the candidate probe"""
+        """Calculates data support for the candidate probe."""
 
         cdef double fod_amp
         cdef double[3] position
