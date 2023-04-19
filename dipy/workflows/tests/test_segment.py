@@ -1,6 +1,7 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 from packaging.version import Version
+import pytest
 
 import numpy.testing as npt
 import numpy as np
