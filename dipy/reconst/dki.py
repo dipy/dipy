@@ -1667,24 +1667,31 @@ class DiffusionKurtosisModel(ReconstModel):
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
         self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+        self.is_multi_method = fit_method in ['WLS', 'OLS', 'UWLLS', 'ULLS',
+                                              'WLLS', 'OLLS', 'CLS', 'CWLS']
+
+    def fit(self, data, mask=None):
+        data_thres = np.maximum(data, self.min_signal)
+        if self.is_multi_method:
+            return self.multi_fit(data_thres, mask=mask)
+
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 *self.args, **self.kwargs)
+        return DiffusionKurtosisFit(self, params)
 
     @multi_voxel_fit
-    def fit(self, data):
-        data_thres = np.maximum(data, self.min_signal)
-        if self.convexity_constraint:
-            params = self.fit_method(self.design_matrix, data_thres,
-                                     self.inverse_design_matrix, self.sdp,
-                                     weights=self.weights,
-                                     min_diffusivity=self.min_diffusivity,
-                                     cvxpy_solver=self.cvxpy_solver)
-        elif self.common_fit_method:
-            params = self.fit_method(self.design_matrix, data_thres,
-                                     self.inverse_design_matrix,
-                                     weights=self.weights,
-                                     min_diffusivity=self.min_diffusivity)
-        else:
-            params = self.fit_method(self.design_matrix, data_thres, *self.args,
-                                     **self.kwargs)
+    def multi_fit(self, data_thres, mask=None):
+        extra_args = {} if not self.convexity_constraint else {
+            'cvxpy_solver': self.cvxpy_solver,
+            'sdp': self.sdp,
+            }
+
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 self.inverse_design_matrix,
+                                 weights=self.weights,
+                                 min_diffusivity=self.min_diffusivity,
+                                 **extra_args)
+
         return DiffusionKurtosisFit(self, params)
 
     def predict(self, dki_params, S0=1.):
