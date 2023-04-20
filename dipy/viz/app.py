@@ -284,8 +284,9 @@ class Horizon(object):
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
-            if (centroid_actors[cent]['length'] >= min_length and
-                centroid_actors[cent]['size'] >= min_size):
+            valid_length = centroid_actors[cent]['length'] >= min_length
+            valid_size = centroid_actors[cent]['size'] >= min_size
+            if valid_length and valid_size:
                 centroid_actors[cent]['actor'].VisibilityOff()
                 cent.VisibilityOn()
                 centroid_actors[cent]['expanded'] = 0
