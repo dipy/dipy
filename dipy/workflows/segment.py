@@ -1,4 +1,4 @@
-
+import os
 import logging
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
@@ -345,6 +345,7 @@ class EVACPlusFlow(Workflow):
     def run(self, input_files, save_masked=False, out_dir='',
             out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz'):
         """ Extract brain using EVAC+
+
         Parameters
         ----------
         input_files : string
@@ -358,14 +359,27 @@ class EVACPlusFlow(Workflow):
             Name of the mask volume to be saved.
         out_masked : string, optional
             Name of the masked volume to be saved.
+
+        References
+        ----------
+        ..  [Park2022] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
+        EVAC+: Multi-scale V-net with Deep Feature
+        CRF Layers for Brain Extraction.  
+
         """
+        if os.path.exists(out_mask) or os.path.exists(out_masked):
+            raise ValueError("The output file or files already exists."
+                             " Please remove the files "
+                             "or change the output_path")
+        
         io_it = self.get_io_iterator()
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying evac+ brain extraction on {0}'.
                          format(fpath))
 
-            data, affine, img, voxsize = load_nifti(fpath, return_img=True, return_voxsize=True)
+            data, affine, img, voxsize = load_nifti(fpath, return_img=True,
+                                                    return_voxsize=True)
             evac = EVACPlus()
             mask_volume = evac.predict(data, affine, voxsize)
             masked_volume = mask_volume * data
