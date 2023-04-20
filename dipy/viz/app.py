@@ -19,9 +19,9 @@ if has_fury:
     from dipy.viz.panel import build_label, slicer_panel
 
 
+# TODO: Re-enable right click: see menu
 HELP_MESSAGE = """
 >> left click: select centroid
->> right click: see menu
 >> e: expand centroids
 >> r: collapse all clusters
 >> h: hide unselected centroids
@@ -412,7 +412,7 @@ class Horizon(object):
                 text_block.message = HELP_MESSAGE
 
                 self.help_panel = ui.Panel2D(
-                    size=(300, 220), position=(1615, 855), color=(.8, .8, 1.),
+                    size=(300, 200), position=(1615, 875), color=(.8, .8, 1.),
                     opacity=.2, align='left')
 
                 self.help_panel.add_element(text_block, coords=(.02, .01))
