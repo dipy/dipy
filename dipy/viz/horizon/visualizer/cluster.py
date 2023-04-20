@@ -15,25 +15,78 @@ if has_fury:
 
 
 class ClustersVisualizer:
-    def __init__(self, show_manager, scene, threshold, enable_callbacks=True):
+    def __init__(
+        self, show_manager, scene, tractograms, enable_callbacks=True):
         
         # TODO: Avoid passing the entire show manager to the visualizer
         self.__show_man = show_manager
         self.__scene = scene
-        self.__threshold = threshold
+        self.__tractograms = tractograms
         self.__enable_callbacks = enable_callbacks
         
         self.__tractogram_clusters = {}
+        
+        self.__first_time = True
+        self.__tractogram_colors = []
+        
         self.__centroid_actors = {}
         self.__cluster_actors = {}
         
         self.__lengths = []
         self.__sizes = []
     
-    def add_cluster_actors(self, tract_idx, streamlines, colors):
-        print(f'\nClustering threshold {self.__threshold}')
+    def __apply_shader(self, dict_element):
+        decl = \
+            """
+            uniform float selected;
+            """
+
+        impl = \
+            """
+            if (selected == 1)
+            {
+                fragOutput0 += vec4(.2, .2, .2, 0);
+            }
+            """
+        shader_to_actor(dict_element['actor'], 'fragment', decl_code=decl)
+        shader_to_actor(
+            dict_element['actor'], 'fragment', impl_code=impl, block='light')
+        
+        @calldata_type(VTK_OBJECT)
+        def uniform_selected_callback(caller, event, calldata=None):
+            program = calldata
+            if program is not None:
+                program.SetUniformf('selected', dict_element['selected'])
+        
+        add_shader_callback(
+            dict_element['actor'], uniform_selected_callback, priority=100)
+    
+    def __left_click_centroid_callback(self, obj, event):
+        self.__centroid_actors[obj]['selected'] = (
+            not self.__centroid_actors[obj]['selected'])
+        self.__cluster_actors[self.__centroid_actors[obj]['actor']][
+            'selected'] = self.__centroid_actors[obj]['selected']
+        # TODO: Find another way to rerender
+        self.__show_man.render()
+
+    def __left_click_cluster_callback(self, obj, event):
+        if self.__cluster_actors[obj]['selected']:
+            self.__cluster_actors[obj]['actor'].VisibilityOn()
+            ca = self.__cluster_actors[obj]['actor']
+            self.__centroid_actors[ca]['selected'] = 0
+            obj.VisibilityOff()
+            self.__centroid_actors[ca]['expanded'] = 0
+        # TODO: Find another way to rerender
+        self.__show_man.render()
+    
+    def add_cluster_actors(self, tract_idx, streamlines, thr, colors):
+        # Saving the tractogram colors in case of reclustering
+        if self.__first_time:
+            self.__tractogram_colors.append(colors)
+        
+        print(f'\nClustering threshold {thr}')
         clusters = qbx_and_merge(
-            streamlines, [40, 30, 25, 20, self.__threshold])
+            streamlines, [40, 30, 25, 20, thr])
         self.__tractogram_clusters[tract_idx] = clusters
         centroids = clusters.centroids
         print(f'Total number of centroids = {len(centroids)}')
@@ -87,49 +140,25 @@ class ClustersVisualizer:
                     'LeftButtonPressEvent',
                     self.__left_click_cluster_callback, 1.)
     
-    def __apply_shader(self, dict_element):
-        decl = \
-            """
-            uniform float selected;
-            """
-
-        impl = \
-            """
-            if (selected == 1)
-            {
-                fragOutput0 += vec4(.2, .2, .2, 0);
-            }
-            """
-        shader_to_actor(dict_element['actor'], 'fragment', decl_code=decl)
-        shader_to_actor(
-            dict_element['actor'], 'fragment', impl_code=impl, block='light')
+    def recluster_tractograms(self, thr):
+        for cent in self.__centroid_actors:
+            self.__scene.rm(self.__centroid_actors[cent]['actor'])
+        for clus in self.__cluster_actors:
+            self.__scene.rm(self.__cluster_actors[clus]['actor'])
+        self.__tractogram_clusters = {}
+        self.__centroid_actors = {}
+        self.__cluster_actors = {}
+        self.__lengths = []
+        self.__sizes = []
         
-        @calldata_type(VTK_OBJECT)
-        def uniform_selected_callback(caller, event, calldata=None):
-            program = calldata
-            if program is not None:
-                program.SetUniformf('selected', dict_element['selected'])
+        # Keeping states of some attributes        
+        self.__first_time = False
         
-        add_shader_callback(
-            dict_element['actor'], uniform_selected_callback, priority=100)
-    
-    def __left_click_centroid_callback(self, obj, event):
-        self.__centroid_actors[obj]['selected'] = (
-            not self.__centroid_actors[obj]['selected'])
-        self.__cluster_actors[self.__centroid_actors[obj]['actor']][
-            'selected'] = self.__centroid_actors[obj]['selected']
-        # TODO: Find another way to rerender
-        self.__show_man.render()
-
-    def __left_click_cluster_callback(self, obj, event):
-        if self.__cluster_actors[obj]['selected']:
-            self.__cluster_actors[obj]['actor'].VisibilityOn()
-            ca = self.__cluster_actors[obj]['actor']
-            self.__centroid_actors[ca]['selected'] = 0
-            obj.VisibilityOff()
-            self.__centroid_actors[ca]['expanded'] = 0
-        # TODO: Find another way to rerender
-        self.__show_man.render()
+        for t, sft in enumerate(self.__tractograms):
+            streamlines = sft.streamlines
+            self.add_cluster_actors(
+                        t, streamlines, thr, self.__tractogram_colors[t])
+            
     
     @property
     def centroid_actors(self):

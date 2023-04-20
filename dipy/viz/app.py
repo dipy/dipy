@@ -161,113 +161,6 @@ class Horizon(object):
         scene.background(self.bg_color)
         return scene
 
-    def remove_cluster_actors(self, scene):
-
-        for ca_ in self.mem.centroid_actors:
-            scene.rm(ca_)
-            del self.cea[ca_]
-        for ca_ in self.mem.cluster_actors:
-            scene.rm(ca_)
-            del self.cla[ca_]
-        self.mem.centroid_actors = []
-        self.mem.cluster_actors = []
-
-    def add_cluster_actors(self, scene, tractograms,
-                           threshold, enable_callbacks=True):
-        """ Add streamline actors to the scene
-
-        Parameters
-        ----------
-        scene : Scene
-        tractograms : list
-            list of tractograms
-        threshold : float
-            Cluster threshold
-        enable_callbacks : bool
-            Enable callbacks for selecting clusters
-        """
-        color_ind = 0
-        for (t, sft) in enumerate(tractograms):
-            streamlines = sft.streamlines
-
-            if 'tracts' in self.random_colors:
-                colors = next(self.color_gen)
-            else:
-                colors = None
-
-            if not self.world_coords:
-                # TODO we need to read the affine of a tractogram
-                # from a StatefullTractogram
-                msg = 'Currently native coordinates are not supported'
-                msg += ' for streamlines'
-                raise ValueError(msg)
-
-            if self.cluster:
-
-                print(' Clustering threshold {} \n'.format(threshold))
-                clusters = qbx_and_merge(streamlines,
-                                         [40, 30, 25, 20, threshold])
-                self.tractogram_clusters[t] = clusters
-                centroids = clusters.centroids
-                print(' Number of centroids is {}'.format(len(centroids)))
-                sizes = np.array([len(c) for c in clusters])
-                linewidths = np.interp(sizes,
-                                       [sizes.min(), sizes.max()], [0.1, 2.])
-                centroid_lengths = np.array([length(c) for c in centroids])
-
-                print(' Minimum number of streamlines in cluster {}'
-                      .format(sizes.min()))
-
-                print(' Maximum number of streamlines in cluster {}'
-                      .format(sizes.max()))
-
-                print(' Construct cluster actors')
-                for (i, c) in enumerate(centroids):
-
-                    centroid_actor = actor.streamtube([c], colors,
-                                                      linewidth=linewidths[i],
-                                                      lod=False)
-                    scene.add(centroid_actor)
-                    self.mem.centroid_actors.append(centroid_actor)
-
-                    cluster_actor = actor.line(clusters[i][:], lod=False)
-                    cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
-                    cluster_actor.GetProperty().SetLineWidth(6)
-                    cluster_actor.GetProperty().SetOpacity(1)
-                    cluster_actor.VisibilityOff()
-
-                    scene.add(cluster_actor)
-                    self.mem.cluster_actors.append(cluster_actor)
-
-                    # Every centroid actor (cea) is paired to a cluster actor
-                    # (cla).
-
-                    self.cea[centroid_actor] = {
-                        'cluster_actor': cluster_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0, 'expanded': 0}
-
-                    self.cla[cluster_actor] = {
-                        'centroid_actor': centroid_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0, 'highlighted': 0}
-
-            else:
-
-                s_colors = self.buan_colors[color_ind] if self.buan else colors
-                streamline_actor = actor.line(streamlines, colors=s_colors)
-
-                streamline_actor.GetProperty().SetEdgeVisibility(1)
-                streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
-                streamline_actor.GetProperty().SetLineWidth(6)
-                streamline_actor.GetProperty().SetOpacity(1)
-                scene.add(streamline_actor)
-                self.mem.streamline_actors.append(streamline_actor)
-
-            color_ind += 1
-
     def build_show(self, scene):
         
         title = 'Horizon ' + horizon_version
@@ -279,7 +172,7 @@ class Horizon(object):
             
             if self.cluster:
                 clusters_viz = ClustersVisualizer(
-                    self.show_m, scene, self.cluster_thr)
+                    self.show_m, scene, self.tractograms)
             
             color_ind = 0
             
@@ -298,7 +191,8 @@ class Horizon(object):
                         'streamlines.')
                 
                 if self.cluster:
-                    clusters_viz.add_cluster_actors(t, streamlines, colors)
+                    clusters_viz.add_cluster_actors(
+                        t, streamlines, self.cluster_thr, colors)
                 else:
                     if self.buan:
                         colors = self.buan_colors[color_ind]
@@ -313,52 +207,6 @@ class Horizon(object):
                 color_ind += 1
 
             if self.cluster:
-                # global self.panel2, slider_length, slider_size
-                self.panel2 = ui.Panel2D(
-                    size=(320, 200), position=(870, 520), color=(1, 1, 1),
-                    opacity=0.1, align="right")
-
-                slider_label_threshold = build_label(text="Threshold")
-                slider_threshold = ui.LineSlider2D(
-                    min_value=5, max_value=25, initial_value=self.cluster_thr,
-                    text_template="{value:.0f}", length=140, shape='square')
-                _color_slider(slider_threshold)
-
-                def change_threshold(istyle, obj, slider):
-                    sv = np.round(slider.value, 0)
-                    self.remove_cluster_actors(scene)
-                    self.add_cluster_actors(scene, self.tractograms, threshold=sv)
-
-                    # TODO need to double check if this section is still needed
-                    lengths = np.array(
-                        [self.cla[c]['length'] for c in self.cla])
-                    szs = [self.cla[c]['size'] for c in self.cla]
-                    sizes = np.array(szs)
-
-                    slider_length.min_value = lengths.min()
-                    slider_length.max_value = lengths.max()
-                    slider_length.value = lengths.min()
-                    slider_length.update()
-
-                    slider_size.min_value = sizes.min()
-                    slider_size.max_value = sizes.max()
-                    slider_size.value = sizes.min()
-                    slider_size.update()
-
-                    self.length_min = min(lengths)
-                    self.size_min = min(sizes)
-
-                    self.show_m.render()
-
-                slider_threshold.handle_events(slider_threshold.handle.actor)
-                slider_threshold.on_left_mouse_button_released = change_threshold
-
-                # Clustering panel
-                self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
-                self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
-
-                #scene.add(self.panel2)
-
                 # Information panel
                 text_block = build_label(HELP_MESSAGE, 18)
                 text_block.message = HELP_MESSAGE

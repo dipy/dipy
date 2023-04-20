@@ -27,33 +27,30 @@ class ClustersTab(HorizonTab):
         fs = 16
         tt = '{value:.0f}'
         
-        self.__sizes = self.__visualizer.sizes
-        
         self.__slider_label_size = build_label(text='Size')
         
-        self.__selected_size = np.percentile(self.__sizes, 50)
+        sizes = self.__visualizer.sizes
+        self.__selected_size = np.percentile(sizes, 50)
         
         self.__slider_size = ui.LineSlider2D(
-            initial_value=self.__selected_size, min_value=np.min(self.__sizes),
-            max_value=np.percentile(self.__sizes, 98), length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=self.__selected_size, min_value=np.min(sizes),
+            max_value=np.percentile(sizes, 98), length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_size)
         
         self.__slider_size.handle_events(self.__slider_size.handle.actor)
         self.__slider_size.on_left_mouse_button_released = self.__change_size
         
-        self.__lengths = self.__visualizer.lengths
-        
         self.__slider_label_length = build_label(text='Length')
         
-        self.__selected_length = np.percentile(self.__lengths, 25)
+        lengths = self.__visualizer.lengths
+        self.__selected_length = np.percentile(lengths, 25)
         
         self.__slider_length = ui.LineSlider2D(
-            initial_value=self.__selected_length,
-            min_value=np.min(self.__lengths),
-            max_value=np.percentile(self.__lengths, 98), length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=self.__selected_length, min_value=np.min(lengths),
+            max_value=np.percentile(lengths, 98), length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_length)
         
@@ -63,11 +60,19 @@ class ClustersTab(HorizonTab):
         
         self.__slider_label_threshold = build_label(text='Threshold')
         
+        self.__selected_threshold = threshold
+        
         self.__slider_threshold = ui.LineSlider2D(
-            initial_value=threshold, min_value=5, max_value=25, length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=self.__selected_threshold, min_value=5, max_value=25,
+            length=length, line_width=lw, outer_radius=radius, font_size=fs,
+            text_template=tt)
         
         color_single_slider(self.__slider_threshold)
+        
+        self.__slider_threshold.handle_events(
+            self.__slider_threshold.handle.actor)
+        self.__slider_threshold.on_left_mouse_button_released = (
+            self.__change_threshold)
     
     def __change_length(self, istyle, obj, slider):
         self.__selected_length = int(np.rint(slider.value))
@@ -80,39 +85,32 @@ class ClustersTab(HorizonTab):
         istyle.force_render()
     
     def __change_threshold(self, istyle, obj, slider):
-        self.__selected_threshold = int(np.rint(slider.value))
-        # TODO: Add ClusterLoader and move this to it
-        """
-        self.remove_cluster_actors(scene)
-        self.add_cluster_actors(
-            scene, self.tractograms, threshold=self.__selected_threshold)
-        """
+        value = int(np.rint(slider.value))
+        if value != self.__selected_threshold:
+            self.__visualizer.recluster_tractograms(value)
+            
+            sizes = self.__visualizer.sizes
+            self.__selected_size = np.percentile(sizes, 50)
+            
+            lengths = self.__visualizer.lengths
+            self.__selected_length = np.percentile(lengths, 25)
+            
+            self.__update_clusters()
+            
+            # Updating size slider
+            self.__slider_size.min_value = np.min(sizes)
+            self.__slider_size.max_value = np.percentile(sizes, 98)
+            self.__slider_size.value = self.__selected_size
+            self.__slider_size.update()
+            
+            # Updating length slider
+            self.__slider_length.min_value = np.min(lengths)
+            self.__slider_length.max_value = np.percentile(lengths, 98)
+            self.__slider_length.value = self.__selected_length
+            self.__slider_length.update()
 
-        # TODO: Recalculate lengths and sizes
-        """
-        # TODO need to double check if this section is still needed
-        lengths = np.array(
-            [self.cla[c]['length'] for c in self.cla])
-        szs = [self.cla[c]['size'] for c in self.cla]
-        sizes = np.array(szs)
-        """
-        
-        # TODO: Update sliders
-        """
-        self.__selected_length = np.percentile(lengths, 25)
-        self.__slider_length.min_value = np.min(lengths)
-        self.__slider_length.max_value = np.percentile(lengths, 98)
-        self.__slider_length.value = self.__selected_length
-        self.__slider_length.update()
-
-        self.__selected_size = np.percentile(sizes, 50)
-        self.__slider_size.min_value = np.min(sizes)
-        self.__slider_size.max_value = np.percentile(sizes, 98)
-        self.__slider_size.value = self.__selected_size
-        self.__slider_size.update()
-        """
-
-        istyle.force_render()
+            self.__selected_threshold = value
+            istyle.force_render()
     
     def __update_clusters(self):
         for k in self.__cluster_actors:
