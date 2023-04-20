@@ -153,9 +153,12 @@ class Horizon(object):
         
         self.__clusters_visualizer = None
         self.__tabs = []
+        self.__tab_mgr = None
         
         self.__select_all = False
         self.__hide_centroids = True
+        
+        self.__win_size = (0, 0)
     
     # TODO: Move to another class/module
     def __expand(self):
@@ -318,9 +321,18 @@ class Horizon(object):
                 cluster_actors[clus]['selected'] = (
                     centroid_actors[cent]['selected'])
         self.show_m.render()
+    
+    def __win_callback(self, obj, event):
+        if self.__win_size != obj.GetSize():
+            size_old = self.__win_size
+            self.__win_size = obj.GetSize()
+            size_change = [self.__win_size[0] - size_old[0], 0]
+            if len(self.__tabs) > 0:
+                self.__tab_mgr.reposition(self.__win_size)
+            if self.cluster:
+                self.help_panel.re_align(size_change)
 
     def build_scene(self):
-
         self.mem = GlobalHorizon()
         scene = window.Scene()
         scene.background(self.bg_color)
@@ -430,20 +442,12 @@ class Horizon(object):
             data = None
             affine = None
             pam = None
-
-        self.win_size = scene.GetSize()
-
-        def win_callback(obj, event):
-            if self.win_size != obj.GetSize():
-                size_old = self.win_size
-                self.win_size = obj.GetSize()
-                size_change = [self.win_size[0] - size_old[0], 0]
-                if self.cluster:
-                    self.help_panel.re_align(size_change)
+        
+        self.__win_size = scene.GetSize()
         
         if len(self.__tabs) > 0:
-            tab_mgr = TabManager(self.__tabs, self.win_size)
-            scene.add(tab_mgr.tab_ui)
+            self.__tab_mgr = TabManager(self.__tabs, self.__win_size)
+            scene.add(self.__tab_mgr.tab_ui)
 
         self.show_m.initialize()
 
@@ -534,7 +538,7 @@ class Horizon(object):
 
         if self.interactive:
 
-            self.show_m.add_window_callback(win_callback)
+            self.show_m.add_window_callback(self.__win_callback)
             self.show_m.add_timer_callback(True, 200, timer_callback)
             self.show_m.iren.AddObserver(
                 'KeyPressEvent', self.__key_press_events)

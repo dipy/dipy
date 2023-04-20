@@ -25,17 +25,24 @@ class TabManager:
         num_tabs = len(tabs)
         win_width, win_height = win_size
         
-        tab_size = (np.rint(win_width / 1.5), np.rint(win_height / 4.5))
-        x_pad = np.rint((win_width - tab_size[0]) / 2)
+        # TODO: Add dynamic sizing
+        # tab_size = (np.rint(win_width / 1.5), np.rint(win_height / 4.5))
+        self.__tab_size = (1280, 240)
+        x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
         
         self.__tab_ui = ui.TabUI(
-            position=(x_pad, 5), size=tab_size, nb_tabs=num_tabs,
+            position=(x_pad, 5), size=self.__tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
-            draggable=False, startup_tab_id=0)
+            draggable=True, startup_tab_id=0)
         
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
             tab.build(id, self.__tab_ui)
+    
+    def reposition(self, win_size):
+        win_width, win_height = win_size
+        x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
+        self.__tab_ui.position = (x_pad, 5)
     
     @property
     def tab_ui(self):
