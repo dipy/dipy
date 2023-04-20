@@ -3,8 +3,7 @@ import numpy as np
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
-from dipy.segment.clustering import qbx_and_merge
-from dipy.tracking.streamline import Streamlines, length
+from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
@@ -17,7 +16,7 @@ if has_fury:
     from fury import actor, ui, window
     from fury.colormap import distinguishable_colormap
 
-    from dipy.viz.panel import _color_slider, build_label, slicer_panel
+    from dipy.viz.panel import build_label, slicer_panel
 
 
 HELP_MESSAGE = """
@@ -152,11 +151,134 @@ class Horizon(object):
         else:
             self.random_colors = []
         
-        self.__culsters_visualizer = None
+        self.__clusters_visualizer = None
         self.__tabs = []
         
         self.__select_all = False
+        self.__hide_centroids = True
     
+    # TODO: Move to another class/module
+    def __expand(self):
+        centroid_actors = self.__clusters_visualizer.centroid_actors
+        lengths = self.__clusters_visualizer.lengths
+        sizes = self.__clusters_visualizer.sizes
+        min_length = np.min(lengths)
+        min_size = np.min(sizes)
+        for cent in centroid_actors:
+            if centroid_actors[cent]['selected']:
+                if not centroid_actors[cent]['expanded']:
+                    len_ = centroid_actors[cent]['length']
+                    sz_ = centroid_actors[cent]['size']
+                    if (len_ >= min_length and sz_ >= min_size):
+                        centroid_actors[cent]['actor'].VisibilityOn()
+                        cent.VisibilityOff()
+                        centroid_actors[cent]['expanded'] = 1
+        self.show_m.render()
+    
+    # TODO: Move to another class/module
+    def __hide(self):
+        centroid_actors = self.__clusters_visualizer.centroid_actors
+        lengths = self.__clusters_visualizer.lengths
+        sizes = self.__clusters_visualizer.sizes
+        min_length = np.min(lengths)
+        min_size = np.min(sizes)
+        for cent in centroid_actors:
+            if self.__hide_centroids:
+                if (centroid_actors[cent]['length'] >= min_length or
+                    centroid_actors[cent]['size'] >= min_size):
+                    if centroid_actors[cent]['selected'] == 0:
+                        cent.VisibilityOff()
+            else:
+                if (centroid_actors[cent]['length'] >= min_length and
+                    centroid_actors[cent]['size'] >= min_size):
+                    if centroid_actors[cent]['selected'] == 0:
+                        cent.VisibilityOn()
+        self.__hide_centroids = not self.__hide_centroids
+        self.show_m.render()
+    
+    # TODO: Move to another class/module
+    def __invert(self):
+        centroid_actors = self.__clusters_visualizer.centroid_actors
+        cluster_actors = self.__clusters_visualizer.cluster_actors
+        lengths = self.__clusters_visualizer.lengths
+        sizes = self.__clusters_visualizer.sizes
+        min_length = np.min(lengths)
+        min_size = np.min(sizes)
+        for cent in centroid_actors:
+            if (centroid_actors[cent]['length'] >= min_length and
+                centroid_actors[cent]['size'] >= min_size):
+                centroid_actors[cent]['selected'] = (
+                    not centroid_actors[cent]['selected'])
+                clus = centroid_actors[cent]['actor']
+                cluster_actors[clus]['selected'] = (
+                    centroid_actors[cent]['selected'])
+        self.show_m.render()
+    
+    def __key_press_events(self, obj, event):
+        key = obj.GetKeySym()
+        # TODO: Move to another class/module
+        if self.cluster:
+            # retract help panel
+            if key == 'o' or key == 'O':
+                self.help_panel._set_position((-300, 0))
+                self.show_m.render()
+            if key == 'a' or key == 'A':
+                self.__show_all()
+            if key == 'e' or key == 'E':
+                self.__expand()
+            # hide on/off unselected centroids
+            if key == 'h' or key == 'H':
+                self.__hide()
+            # invert selection
+            if key == 'i' or key == 'I':
+                self.__invert()
+            if key == 'r' or key == 'R':
+                self.__reset()
+            # save current result
+            if key == 's' or key == 'S':
+                save()
+            if key == 'y' or key == 'Y':
+                self.__new_window()
+    
+    # TODO: Move to another class/module
+    def __new_window(self):
+        cluster_actors = self.__clusters_visualizer.cluster_actors
+        tractogram_clusters = self.__clusters_visualizer.tractogram_clusters
+        active_streamlines = Streamlines()
+        for bundle in cluster_actors.keys():
+            if bundle.GetVisibility():
+                t = cluster_actors[bundle]['tractogram']
+                c = cluster_actors[bundle]['cluster']
+                indices = tractogram_clusters[t][c]
+                active_streamlines.extend(Streamlines(indices))
+
+        # Using the header of the first of the tractograms
+        active_sft = StatefulTractogram(
+            active_streamlines, self.tractograms[0], Space.RASMM)
+        hz2 = Horizon(
+            [active_sft], self.images, cluster=True,
+            cluster_thr=self.cluster_thr/2., random_colors=self.random_colors,
+            length_lt=np.inf, length_gt=0, clusters_lt=np.inf,
+            clusters_gt=0, world_coords=True, interactive=True)
+        ren2 = hz2.build_scene()
+        hz2.build_show(ren2)
+    
+    # TODO: Move to another class/module
+    def __reset(self):
+        centroid_actors = self.__clusters_visualizer.centroid_actors
+        lengths = self.__clusters_visualizer.lengths
+        sizes = self.__clusters_visualizer.sizes
+        min_length = np.min(lengths)
+        min_size = np.min(sizes)
+        for cent in centroid_actors:
+            if (centroid_actors[cent]['length'] >= min_length and
+                centroid_actors[cent]['size'] >= min_size):
+                centroid_actors[cent]['actor'].VisibilityOff()
+                cent.VisibilityOn()
+                centroid_actors[cent]['expanded'] = 0
+        self.show_m.render()
+    
+    # TODO: Move to another class/module
     def __show_all(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
         cluster_actors = self.__clusters_visualizer.cluster_actors
@@ -177,32 +299,6 @@ class Horizon(object):
                 cluster_actors[clus]['selected'] = (
                     centroid_actors[cent]['selected'])
         self.show_m.render()
-    
-    def __key_press_events(self, obj, event):
-        key = obj.GetKeySym()
-        # TODO: Move to another class/module
-        if self.cluster:
-            # retract help panel
-            if key == 'o' or key == 'O':
-                self.help_panel._set_position((-300, 0))
-                self.show_m.render()
-            if key == 'a' or key == 'A':
-                self.__show_all()
-            if key == 'e' or key == 'E':
-                expand()
-            # hide on/off unselected centroids
-            if key == 'h' or key == 'H':
-                hide()
-            # invert selection
-            if key == 'i' or key == 'I':
-                invert()
-            if key == 'r' or key == 'R':
-                reset()
-            # save current result
-            if key == 's' or key == 'S':
-                save()
-            if key == 'y' or key == 'Y':
-                new_window()
 
     def build_scene(self):
 
@@ -332,35 +428,6 @@ class Horizon(object):
 
         self.show_m.initialize()
 
-        self.hide_centroids = True
-
-        def hide():
-            if self.hide_centroids:
-                for ca in self.cea:
-                    if (self.cea[ca]['length'] >= self.length_min or
-                            self.cea[ca]['size'] >= self.size_min):
-                        if self.cea[ca]['selected'] == 0:
-                            ca.VisibilityOff()
-            else:
-                for ca in self.cea:
-                    if (self.cea[ca]['length'] >= self.length_min and
-                            self.cea[ca]['size'] >= self.size_min):
-                        if self.cea[ca]['selected'] == 0:
-                            ca.VisibilityOn()
-            self.hide_centroids = not self.hide_centroids
-            self.show_m.render()
-
-        def invert():
-            for ca in self.cea:
-                if (self.cea[ca]['length'] >= self.length_min and
-                        self.cea[ca]['size'] >= self.size_min):
-                    self.cea[ca]['selected'] = \
-                        not self.cea[ca]['selected']
-                    cas = self.cea[ca]['cluster_actor']
-                    self.cla[cas]['selected'] = \
-                        self.cea[ca]['selected']
-            self.show_m.render()
-
         def save():
             saving_streamlines = Streamlines()
             for bundle in self.cla.keys():
@@ -378,57 +445,6 @@ class Horizon(object):
             save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
             print('Saved!')
 
-        def new_window():
-            active_streamlines = Streamlines()
-            for bundle in self.cla.keys():
-                if bundle.GetVisibility():
-                    t = self.cla[bundle]['tractogram']
-                    c = self.cla[bundle]['cluster']
-                    indices = self.tractogram_clusters[t][c]
-                    active_streamlines.extend(Streamlines(indices))
-
-            # Using the header of the first of the tractograms
-            active_sft = StatefulTractogram(active_streamlines,
-                                            self.tractograms[0],
-                                            Space.RASMM)
-            hz2 = Horizon([active_sft],
-                          self.images, cluster=True,
-                          cluster_thr=self.cluster_thr/2.,
-                          random_colors=self.random_colors,
-                          length_lt=np.inf,
-                          length_gt=0, clusters_lt=np.inf,
-                          clusters_gt=0,
-                          world_coords=True,
-                          interactive=True)
-            ren2 = hz2.build_scene()
-            hz2.build_show(ren2)
-
-        def expand():
-            for c in self.cea:
-                if self.cea[c]['selected']:
-                    if not self.cea[c]['expanded']:
-                        len_ = self.cea[c]['length']
-                        sz_ = self.cea[c]['size']
-                        if (len_ >= self.length_min and
-                                sz_ >= self.size_min):
-                            self.cea[c]['cluster_actor']. \
-                                VisibilityOn()
-                            c.VisibilityOff()
-                            self.cea[c]['expanded'] = 1
-
-            self.show_m.render()
-
-        def reset():
-            for c in self.cea:
-
-                if (self.cea[c]['length'] >= self.length_min and
-                        self.cea[c]['size'] >= self.size_min):
-                    self.cea[c]['cluster_actor'].VisibilityOff()
-                    c.VisibilityOn()
-                    self.cea[c]['expanded'] = 0
-
-            self.show_m.render()
-
         options = [r'un\hide centroids', 'invert selection',
                    r'un\select all', 'expand clusters',
                    'collapse clusters', 'save streamlines',
@@ -440,19 +456,19 @@ class Horizon(object):
         def display_element():
             action = listbox.selected[0]
             if action == r'un\hide centroids':
-                hide()
+                self.__hide()
             if action == 'invert selection':
-                invert()
+                self.__invert()
             if action == r'un\select all':
                 self.__show_all()
             if action == 'expand clusters':
-                expand()
+                self.__expand()
             if action == 'collapse clusters':
-                reset()
+                self.__reset()
             if action == 'save streamlines':
                 save()
             if action == 'recluster':
-                new_window()
+                self.__new_window()
 
         listbox.on_change = display_element
         listbox.panel.opacity = 0.2
