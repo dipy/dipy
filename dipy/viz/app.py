@@ -341,14 +341,15 @@ class Horizon(object):
     
     def __win_callback(self, obj, event):
         if self.__win_size != obj.GetSize():
-            size_old = self.__win_size
             self.__win_size = obj.GetSize()
-            size_change = [self.__win_size[0] - size_old[0], 0]
             if len(self.__tabs) > 0:
                 self.__tab_mgr.reposition(self.__win_size)
             if self.cluster:
-                panel_size = self.help_panel._get_size()
-                new_pos = self.__win_size - panel_size - 5
+                if self.__help_visible:
+                    panel_size = self.help_panel._get_size()
+                    new_pos = np.array(self.__win_size) - panel_size - 5
+                else:
+                    new_pos = np.array(self.__win_size) - 10
                 self.help_panel._set_position(new_pos)
 
     def build_scene(self):
