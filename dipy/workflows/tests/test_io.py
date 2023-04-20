@@ -67,7 +67,7 @@ def test_io_fetch_fetcher_datanames():
                      'tissue_data', 'qte_lte_pte', 'resdnn_weights',
                      'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste', 'hcp',
                      'hbn', 'synb0_weights', 'synb0_test',
-                     'evac_weights', 'evac_test']
+                     'evac_weights', 'evac_test', 'ptt_minimal_dataset']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)
