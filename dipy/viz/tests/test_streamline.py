@@ -14,8 +14,8 @@ _, have_pycpd, _ = optional_package("pycpd")
 
 _, have_matplotlib, _ = optional_package("matplotlib")
 
-fury, has_fury, _ = optional_package('fury')
-if has_fury:
+fury, have_fury, _ = optional_package('fury')
+if have_fury:
     from dipy.viz.streamline import (show_bundles, viz_two_bundles,
                                      viz_displacement_mag, viz_vector_field)
     from dipy.viz import window
@@ -23,8 +23,8 @@ if has_fury:
 bundles = read_five_af_bundles()
 
 
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
-@pytest.mark.skipif(not have_matplotlib, reason='Requires Matplotlib')
+@pytest.mark.skipif(not have_fury or not have_matplotlib,
+                    reason='Requires FURY and Matplotlib')
 def test_output_created():
     views = ['axial', 'sagital', 'coronal']
 
@@ -52,14 +52,13 @@ def test_output_created():
         assert_equal(os.path.exists(fname), True)
 
 
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
+@pytest.mark.skipif(not have_fury, reason='Requires FURY')
 def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
 
 
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
-@pytest.mark.skipif(not have_pycpd, reason='Requires pycpd')
-@pytest.mark.skipif(not have_matplotlib, reason='Requires Matplotlib')
+@pytest.mark.skipif(not have_fury or not have_pycpd or not have_matplotlib,
+                    reason='Requires FURY, pycpd, and Matplotlib')
 def test_bundlewarp_viz():
 
     with tempfile.TemporaryDirectory() as temp_dir:
