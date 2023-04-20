@@ -152,7 +152,57 @@ class Horizon(object):
         else:
             self.random_colors = []
         
+        self.__culsters_visualizer = None
         self.__tabs = []
+        
+        self.__select_all = False
+    
+    def __show_all(self):
+        centroid_actors = self.__clusters_visualizer.centroid_actors
+        cluster_actors = self.__clusters_visualizer.cluster_actors
+        lengths = self.__clusters_visualizer.lengths
+        sizes = self.__clusters_visualizer.sizes
+        min_length = np.min(lengths)
+        min_size = np.min(sizes)
+        for cent in centroid_actors:
+            if (centroid_actors[cent]['length'] >= min_length and 
+                centroid_actors[cent]['size'] >= min_size):
+                if not self.__select_all:
+                    centroid_actors[cent]['selected'] = 1
+                    self.__select_all = True
+                else:
+                    centroid_actors[cent]['selected'] = 0
+                    self.__select_all = False
+                clus = centroid_actors[cent]['actor']
+                cluster_actors[clus]['selected'] = (
+                    centroid_actors[cent]['selected'])
+        self.show_m.render()
+    
+    def __key_press_events(self, obj, event):
+        key = obj.GetKeySym()
+        # TODO: Move to another class/module
+        if self.cluster:
+            # retract help panel
+            if key == 'o' or key == 'O':
+                self.help_panel._set_position((-300, 0))
+                self.show_m.render()
+            if key == 'a' or key == 'A':
+                self.__show_all()
+            if key == 'e' or key == 'E':
+                expand()
+            # hide on/off unselected centroids
+            if key == 'h' or key == 'H':
+                hide()
+            # invert selection
+            if key == 'i' or key == 'I':
+                invert()
+            if key == 'r' or key == 'R':
+                reset()
+            # save current result
+            if key == 's' or key == 'S':
+                save()
+            if key == 'y' or key == 'Y':
+                new_window()
 
     def build_scene(self):
 
@@ -171,7 +221,7 @@ class Horizon(object):
         if len(self.tractograms) > 0:
             
             if self.cluster:
-                clusters_viz = ClustersVisualizer(
+                self.__clusters_visualizer = ClustersVisualizer(
                     self.show_m, scene, self.tractograms)
             
             color_ind = 0
@@ -191,7 +241,7 @@ class Horizon(object):
                         'streamlines.')
                 
                 if self.cluster:
-                    clusters_viz.add_cluster_actors(
+                    self.__clusters_visualizer.add_cluster_actors(
                         t, streamlines, self.cluster_thr, colors)
                 else:
                     if self.buan:
@@ -217,7 +267,8 @@ class Horizon(object):
 
                 self.help_panel.add_element(text_block, coords=(0.05, 0.1))
                 scene.add(self.help_panel)
-                self.__tabs.append(ClustersTab(clusters_viz, self.cluster_thr))
+                self.__tabs.append(ClustersTab(
+                    self.__clusters_visualizer, self.cluster_thr))
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
@@ -273,7 +324,6 @@ class Horizon(object):
                 self.win_size = obj.GetSize()
                 size_change = [self.win_size[0] - size_old[0], 0]
                 if self.cluster:
-                    self.panel2.re_align(size_change)
                     self.help_panel.re_align(size_change)
         
         if len(self.__tabs) > 0:
@@ -283,7 +333,6 @@ class Horizon(object):
         self.show_m.initialize()
 
         self.hide_centroids = True
-        self.select_all = False
 
         def hide():
             if self.hide_centroids:
@@ -354,28 +403,6 @@ class Horizon(object):
             ren2 = hz2.build_scene()
             hz2.build_show(ren2)
 
-        def show_all():
-            if self.select_all is False:
-                for ca in self.cea:
-                    if (self.cea[ca]['length'] >= self.length_min and
-                            self.cea[ca]['size'] >= self.size_min):
-                        self.cea[ca]['selected'] = 1
-                        cas = self.cea[ca]['cluster_actor']
-                        self.cla[cas]['selected'] = \
-                            self.cea[ca]['selected']
-                self.show_m.render()
-                self.select_all = True
-            else:
-                for ca in self.cea:
-                    if (self.cea[ca]['length'] >= self.length_min and
-                            self.cea[ca]['size'] >= self.size_min):
-                        self.cea[ca]['selected'] = 0
-                        cas = self.cea[ca]['cluster_actor']
-                        self.cla[cas]['selected'] = \
-                            self.cea[ca]['selected']
-                self.show_m.render()
-                self.select_all = False
-
         def expand():
             for c in self.cea:
                 if self.cea[c]['selected']:
@@ -402,39 +429,6 @@ class Horizon(object):
 
             self.show_m.render()
 
-        def key_press(obj, event):
-            key = obj.GetKeySym()
-            if self.cluster:
-
-                # hide on/off unselected centroids
-                if key == 'h' or key == 'H':
-                    hide()
-
-                # invert selection
-                if key == 'i' or key == 'I':
-                    invert()
-
-                # retract help panel
-                if key == 'o' or key == 'O':
-                    self.help_panel._set_position((-300, 0))
-                    self.show_m.render()
-
-                # save current result
-                if key == 's' or key == 'S':
-                    save()
-
-                if key == 'y' or key == 'Y':
-                    new_window()
-
-                if key == 'a' or key == 'A':
-                    show_all()
-
-                if key == 'e' or key == 'E':
-                    expand()
-
-                if key == 'r' or key == 'R':
-                    reset()
-
         options = [r'un\hide centroids', 'invert selection',
                    r'un\select all', 'expand clusters',
                    'collapse clusters', 'save streamlines',
@@ -450,7 +444,7 @@ class Horizon(object):
             if action == 'invert selection':
                 invert()
             if action == r'un\select all':
-                show_all()
+                self.__show_all()
             if action == 'expand clusters':
                 expand()
             if action == 'collapse clusters':
@@ -524,7 +518,8 @@ class Horizon(object):
 
             self.show_m.add_window_callback(win_callback)
             self.show_m.add_timer_callback(True, 200, timer_callback)
-            self.show_m.iren.AddObserver('KeyPressEvent', key_press)
+            self.show_m.iren.AddObserver(
+                'KeyPressEvent', self.__key_press_events)
 
             if self.return_showm:
                 return self.show_m
