@@ -317,18 +317,26 @@ class Horizon(object):
         sizes = self.__clusters_visualizer.sizes
         min_length = np.min(lengths)
         min_size = np.min(sizes)
-        for cent in centroid_actors:
-            if (centroid_actors[cent]['length'] >= min_length and 
-                centroid_actors[cent]['size'] >= min_size):
-                if not self.__select_all:
-                    centroid_actors[cent]['selected'] = 1
-                    self.__select_all = True
-                else:
+        if self.__select_all:
+            for cent in centroid_actors:
+                valid_length = centroid_actors[cent]['length'] >= min_length
+                valid_size = centroid_actors[cent]['size'] >= min_size
+                if valid_length and valid_size:
                     centroid_actors[cent]['selected'] = 0
-                    self.__select_all = False
-                clus = centroid_actors[cent]['actor']
-                cluster_actors[clus]['selected'] = (
-                    centroid_actors[cent]['selected'])
+                    clus = centroid_actors[cent]['actor']
+                    cluster_actors[clus]['selected'] = (
+                        centroid_actors[cent]['selected'])
+            self.__select_all = False
+        else:
+            for cent in centroid_actors:
+                valid_length = centroid_actors[cent]['length'] >= min_length
+                valid_size = centroid_actors[cent]['size'] >= min_size
+                if valid_length and valid_size:
+                    centroid_actors[cent]['selected'] = 1
+                    clus = centroid_actors[cent]['actor']
+                    cluster_actors[clus]['selected'] = (
+                        centroid_actors[cent]['selected'])
+            self.__select_all = True
         self.show_m.render()
     
     def __win_callback(self, obj, event):
