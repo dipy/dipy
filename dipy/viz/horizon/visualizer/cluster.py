@@ -174,3 +174,7 @@ class ClustersVisualizer:
     @property
     def sizes(self):
         return np.array(self.__sizes)
+    
+    @property
+    def tractogram_clusters(self):
+        return self.__tractogram_clusters
