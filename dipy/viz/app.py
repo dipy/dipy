@@ -155,8 +155,10 @@ class Horizon(object):
         self.__tabs = []
         self.__tab_mgr = None
         
-        self.__select_all = False
+        self.__help_visible = True
+        # TODO: Move to another class/module
         self.__hide_centroids = True
+        self.__select_all = False
         
         self.__win_size = (0, 0)
     
@@ -223,7 +225,14 @@ class Horizon(object):
         if self.cluster:
             # retract help panel
             if key == 'o' or key == 'O':
-                self.help_panel._set_position((-300, 0))
+                panel_size = self.help_panel._get_size()
+                if self.__help_visible:
+                    new_pos = np.array(self.__win_size) - 10
+                    self.__help_visible = False
+                else:
+                    new_pos = np.array(self.__win_size) - panel_size - 5
+                    self.__help_visible = True
+                self.help_panel._set_position(new_pos)
                 self.show_m.render()
             if key == 'a' or key == 'A':
                 self.__show_all()
@@ -330,7 +339,6 @@ class Horizon(object):
             if len(self.__tabs) > 0:
                 self.__tab_mgr.reposition(self.__win_size)
             if self.cluster:
-                #self.help_panel.re_align(size_change)
                 panel_size = self.help_panel._get_size()
                 new_pos = self.__win_size - panel_size - 5
                 self.help_panel._set_position(new_pos)
