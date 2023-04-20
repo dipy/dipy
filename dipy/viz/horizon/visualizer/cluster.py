@@ -151,14 +151,13 @@ class ClustersVisualizer:
         self.__lengths = []
         self.__sizes = []
         
-        # Keeping states of some attributes        
+        # Keeping states of some attributes
         self.__first_time = False
         
         for t, sft in enumerate(self.__tractograms):
             streamlines = sft.streamlines
             self.add_cluster_actors(
                         t, streamlines, thr, self.__tractogram_colors[t])
-            
     
     @property
     def centroid_actors(self):
