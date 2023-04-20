@@ -120,7 +120,7 @@ class SlicesTab(HorizonTab):
         self.__supported_colormaps = {
             'Gray': 'gray', 'Bone': 'bone', 'Cividis': 'cividis',
             'Inferno': 'inferno', 'Magma': 'magma', 'Viridis': 'viridis',
-            'Jet': 'jet', 'Pastel 1': 'Pastel1', 'Distinguishable': 'dist'}
+            'Jet': 'jet', 'Pastel 1': 'Pastel1', 'Distinct': 'dist'}
         
         self.__selected_colormap_idx = 0
         selected_colormap = list(self.__supported_colormaps)[
@@ -375,7 +375,7 @@ class SlicesTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__label_selected_colormap, (.63, .56))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__button_next_colormap, (.73, .54))
+            self.__tab_id, self.__button_next_colormap, (.69, .54))
         self.__tab_ui.add_element(
             self.__tab_id, self.__label_picked_voxel, (x_pos, .38))
         

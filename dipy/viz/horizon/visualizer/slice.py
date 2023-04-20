@@ -104,6 +104,7 @@ class SlicesVisualizer:
         print(f'Resized to RAS shape: {self.__data_shape}')
     
     def __left_click_picker_callback(self, obj, event):
+        # TODO: Find out why this is not triggered when opacity < 1
         event_pos = self.__interactor.GetEventPosition()
 
         obj.picker.Pick(event_pos[0], event_pos[1], 0, self.__scene)
