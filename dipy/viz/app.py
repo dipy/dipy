@@ -29,6 +29,7 @@ HELP_MESSAGE = """
 >> a: select all centroids
 >> s: save in file
 >> y: new window
+>> o: hide/show this panel
 """
 
 
@@ -411,10 +412,10 @@ class Horizon(object):
                 text_block.message = HELP_MESSAGE
 
                 self.help_panel = ui.Panel2D(
-                    size=(320, 200), position=(1595, 875), color=(.8, .8, 1.),
+                    size=(300, 220), position=(1615, 855), color=(.8, .8, 1.),
                     opacity=.2, align='left')
 
-                self.help_panel.add_element(text_block, coords=(0.05, 0.1))
+                self.help_panel.add_element(text_block, coords=(.02, .01))
                 scene.add(self.help_panel)
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
