@@ -117,7 +117,8 @@ class SlicesVisualizer:
             message = f'{res[0]:.2f} {res[1]:.2f} {res[2]:.2f}'
         message = f'({i}, {j}, {k}) = {message}'
         self.__picker_callback(message)
-        self.__replace_picked_voxel_actor(i, j, k)
+        # TODO: Fix this
+        #self.__replace_picked_voxel_actor(i, j, k)
     
     def __replace_picked_voxel_actor(self, x, y, z):
         if self.__picked_voxel_actor:
