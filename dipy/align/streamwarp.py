@@ -17,6 +17,10 @@ pycpd, have_pycpd, _ = optional_package("pycpd")
 if have_pycpd:
     from pycpd import DeformableRegistration
 
+if not have_pycpd:
+    msg = "Missing pycpd dependency. Please install pycpd package"
+    raise ImportError(msg)
+
 
 def average_bundle_length(bundle):
     """Find average Euclidean length of the bundle in mm.

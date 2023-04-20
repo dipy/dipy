@@ -24,6 +24,7 @@ bundles = read_five_af_bundles()
 
 
 @pytest.mark.skipif(not has_fury, reason='Requires FURY')
+@pytest.mark.skipif(not have_matplotlib, reason='Requires Matplotlib')
 def test_output_created():
     views = ['axial', 'sagital', 'coronal']
 
@@ -57,6 +58,8 @@ def test_incorrect_view():
 
 
 @pytest.mark.skipif(not has_fury, reason='Requires FURY')
+@pytest.mark.skipif(not have_pycpd, reason='Requires pycpd')
+@pytest.mark.skipif(not have_matplotlib, reason='Requires Matplotlib')
 def test_bundlewarp_viz():
 
     with tempfile.TemporaryDirectory() as temp_dir:
