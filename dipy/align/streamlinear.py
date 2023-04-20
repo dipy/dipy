@@ -852,7 +852,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
 
 def slr_with_qbx(static, moving,
                  x0='affine',
-                 rm_small_clusters=0,
+                 rm_small_clusters=50,
                  maxiter=100,
                  select_random=None,
                  verbose=False,
@@ -875,8 +875,7 @@ def slr_with_qbx(static, moving,
         rigid, similarity or affine transformation model (default affine)
 
     rm_small_clusters : int, optional
-        Remove clusters that have less than `rm_small_clusters` (default 0)
-        Set it to 50 if your input is a whole brain tractogram.
+        Remove clusters that have less than `rm_small_clusters`
 
     select_random : int, optional.
         If not, None selects a random number of streamlines to apply clustering
@@ -984,6 +983,15 @@ def slr_with_qbx(static, moving,
 
     if verbose:
         t = time()
+
+    if not len(qb_centroids1):
+        msg = "No cluster centroids found in Static Streamlines. Please "
+        msg += "decrease  the value of rm_small_clusters."
+        raise ValueError(msg)
+    if not len(qb_centroids2):
+        msg = "No cluster centroids found in Moving Streamlines. Please "
+        msg += "decrease the value of rm_small_clusters."
+        raise ValueError(msg)
 
     if not progressive:
         slr = StreamlineLinearRegistration(x0=x0,
