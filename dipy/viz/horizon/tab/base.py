@@ -36,7 +36,8 @@ class TabManager:
             draggable=True, startup_tab_id=0)
         
         for id, tab in enumerate(tabs):
-            self.__tab_ui.tabs[id].title = tab.name
+            self.__tab_ui.tabs[id].title = ' ' + tab.name
+            self.__tab_ui.tabs[id].title_font_size = 18
             tab.build(id, self.__tab_ui)
     
     def reposition(self, win_size):
