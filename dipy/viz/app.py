@@ -330,7 +330,10 @@ class Horizon(object):
             if len(self.__tabs) > 0:
                 self.__tab_mgr.reposition(self.__win_size)
             if self.cluster:
-                self.help_panel.re_align(size_change)
+                #self.help_panel.re_align(size_change)
+                panel_size = self.help_panel._get_size()
+                new_pos = self.__win_size - panel_size - 5
+                self.help_panel._set_position(new_pos)
 
     def build_scene(self):
         self.mem = GlobalHorizon()
