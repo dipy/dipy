@@ -16,7 +16,8 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow, MotionCorrectionFlow)
+                                  SlrWithQbxFlow, MotionCorrectionFlow,
+                                  BundleWarpFlow)
 
 
 def test_reslice():
@@ -436,3 +437,36 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_path), True)
         warped_map_path = syn_flow.last_generated_outputs['out_field']
         npt.assert_equal(os.path.isfile(warped_map_path), True)
+
+
+def test_bundlewarp_flow():
+    with TemporaryDirectory() as out_dir:
+        data_path = get_fnames('fornix')
+
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
+
+        f = Streamlines(fornix)
+        f1 = f.copy()
+
+        f1_path = pjoin(out_dir, "f1.trk")
+        sft = StatefulTractogram(f1, data_path, Space.RASMM)
+        save_tractogram(sft, f1_path, bbox_valid_check=False)
+
+        f2 = f1.copy()
+        f2._data += np.array([50, 0, 0])
+
+        f2_path = pjoin(out_dir, "f2.trk")
+        sft = StatefulTractogram(f2, data_path, Space.RASMM)
+        save_tractogram(sft, f2_path, bbox_valid_check=False)
+
+        bw_flow = BundleWarpFlow(force=True)
+        bw_flow.run(f1_path, f2_path)
+
+        out_path = bw_flow.last_generated_outputs['out_linear_moved']
+
+        npt.assert_equal(os.path.isfile(out_path), True)
+
+        out_path = bw_flow.last_generated_outputs['out_nonlinear_moved']
+
+        npt.assert_equal(os.path.isfile(out_path), True)
