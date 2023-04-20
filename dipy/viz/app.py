@@ -28,6 +28,7 @@ HELP_MESSAGE = """
 >> i: invert selection
 >> a: select all centroids
 >> s: save in file
+>> y: new window
 """
 
 
@@ -133,7 +134,6 @@ class Horizon(object):
 
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
-        self.tractogram_clusters = {}
         self.recorded_events = recorded_events
         self.show_m = None
         self.return_showm = return_showm
@@ -236,7 +236,7 @@ class Horizon(object):
                 self.__reset()
             # save current result
             if key == 's' or key == 'S':
-                save()
+                self.__save()
             if key == 'y' or key == 'Y':
                 self.__new_window()
     
@@ -277,6 +277,25 @@ class Horizon(object):
                 cent.VisibilityOn()
                 centroid_actors[cent]['expanded'] = 0
         self.show_m.render()
+    
+    # TODO: Move to another class/module
+    def __save(self):
+        cluster_actors = self.__clusters_visualizer.cluster_actors
+        tractogram_clusters = self.__clusters_visualizer.tractogram_clusters
+        saving_streamlines = Streamlines()
+        for bundle in cluster_actors.keys():
+            if bundle.GetVisibility():
+                t = cluster_actors[bundle]['tractogram']
+                c = cluster_actors[bundle]['cluster']
+                indices = tractogram_clusters[t][c]
+                saving_streamlines.extend(Streamlines(indices))
+        print('Saving result in tmp.trk')
+
+        # Using the header of the first of the tractograms
+        sft_new = StatefulTractogram(
+            saving_streamlines, self.tractograms[0], Space.RASMM)
+        save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
+        print('Saved!')
     
     # TODO: Move to another class/module
     def __show_all(self):
@@ -428,23 +447,6 @@ class Horizon(object):
 
         self.show_m.initialize()
 
-        def save():
-            saving_streamlines = Streamlines()
-            for bundle in self.cla.keys():
-                if bundle.GetVisibility():
-                    t = self.cla[bundle]['tractogram']
-                    c = self.cla[bundle]['cluster']
-                    indices = self.tractogram_clusters[t][c]
-                    saving_streamlines.extend(Streamlines(indices))
-            print('Saving result in tmp.trk')
-
-            # Using the header of the first of the tractograms
-            sft_new = StatefulTractogram(saving_streamlines,
-                                         self.tractograms[0],
-                                         Space.RASMM)
-            save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
-            print('Saved!')
-
         options = [r'un\hide centroids', 'invert selection',
                    r'un\select all', 'expand clusters',
                    'collapse clusters', 'save streamlines',
@@ -466,7 +468,7 @@ class Horizon(object):
             if action == 'collapse clusters':
                 self.__reset()
             if action == 'save streamlines':
-                save()
+                self.__save()
             if action == 'recluster':
                 self.__new_window()
 
