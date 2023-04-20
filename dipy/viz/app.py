@@ -188,14 +188,14 @@ class Horizon(object):
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
+            valid_length = centroid_actors[cent]['length'] >= min_length
+            valid_size = centroid_actors[cent]['size'] >= min_size
             if self.__hide_centroids:
-                if (centroid_actors[cent]['length'] >= min_length or
-                    centroid_actors[cent]['size'] >= min_size):
+                if valid_length or valid_size:
                     if centroid_actors[cent]['selected'] == 0:
                         cent.VisibilityOff()
             else:
-                if (centroid_actors[cent]['length'] >= min_length and
-                    centroid_actors[cent]['size'] >= min_size):
+                if valid_length and valid_size:
                     if centroid_actors[cent]['selected'] == 0:
                         cent.VisibilityOn()
         self.__hide_centroids = not self.__hide_centroids
