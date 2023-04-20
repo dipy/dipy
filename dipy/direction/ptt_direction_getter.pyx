@@ -21,8 +21,8 @@ from libc.math cimport M_PI, pow, sin, cos
 
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, cross, norm, normalize, random,
-                                    random_vector, random_perpendicular_vector,
+from dipy.utils.fast_numpy cimport (copy_point, cross, normalize, random,
+                                    random_perpendicular_vector,
                                     random_point_within_circle)
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
@@ -369,10 +369,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double data_support = 0
         cdef double[3] tangent
         cdef int tries
+        cdef int i
 
         self.prepare_propagator(self.step_size)
 
-        # propagate
         for i in range(3):
             self.position[i] = \
                 (self.propagator[0] * self.frame[0][i] / self.voxel_size[i]
