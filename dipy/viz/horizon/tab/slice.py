@@ -269,6 +269,8 @@ class SlicesTab(HorizonTab):
                     self.__visualizer.volume_min)
                 self.__slider_intensities.max_value = (
                     self.__visualizer.volume_max)
+                self.__slider_intensities.update(0)
+                self.__slider_intensities.update(1)
                 
                 # Updating opacities
                 self.__update_opacities()
