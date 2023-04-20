@@ -2,7 +2,6 @@ from numpy.testing import assert_equal
 from dipy.align.streamwarp import (bundlewarp,
                                    bundlewarp_shape_analysis,
                                    bundlewarp_vector_filed)
-from dipy.align import streamwarp as bw
 import pytest
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import set_number_of_points, Streamlines
@@ -11,8 +10,7 @@ from dipy.utils.optpkg import optional_package
 _, have_pycpd, _ = optional_package("pycpd")
 
 
-@pytest.mark.skipif(not have_pycpd or not bw.have_pycpd,
-                    reason='Requires pycpd')
+@pytest.mark.skipif(not have_pycpd, reason='Requires pycpd')
 def test_bundlewarp():
 
     cingulum_bundles = two_cingulum_bundles()
@@ -36,8 +34,7 @@ def test_bundlewarp():
     assert_equal(len(cb2), len(warp))
 
 
-@pytest.mark.skipif(not have_pycpd or not bw.have_pycpd,
-                    reason='Requires pycpd')
+@pytest.mark.skipif(not have_pycpd, reason='Requires pycpd')
 def test_bundlewarp_vector_filed():
 
     cingulum_bundles = two_cingulum_bundles()
@@ -62,8 +59,7 @@ def test_bundlewarp_vector_filed():
     assert_equal(len(colors), len(deformed_bundle.get_data()))
 
 
-@pytest.mark.skipif(not have_pycpd or not bw.have_pycpd,
-                    reason='Requires pycpd')
+@pytest.mark.skipif(not have_pycpd, reason='Requires pycpd')
 def test_bundle_shape_profile():
 
     cingulum_bundles = two_cingulum_bundles()

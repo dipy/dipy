@@ -17,10 +17,6 @@ pycpd, have_pycpd, _ = optional_package("pycpd")
 if have_pycpd:
     from pycpd import DeformableRegistration
 
-if not have_pycpd:
-    msg = "Missing pycpd dependency. Please install pycpd package"
-    raise ImportError(msg)
-
 
 def average_bundle_length(bundle):
     """Find average Euclidean length of the bundle in mm.
@@ -118,6 +114,10 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
             registration of white matter tracts." bioRxiv (2023): 2023-01.
     """
+    if not have_pycpd:
+        msg = "Missing pycpd dependency. Please install pycpd package"
+        raise ImportError(msg)
+
     if alpha <= 0.01:
         warnings.warn("Using alpha<=0.01 will result in extreme deformations")
 
