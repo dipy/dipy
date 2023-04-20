@@ -237,6 +237,13 @@ purposes it is recommended to use the MOSEK solver (https://www.mosek.com/) by
 setting ``cvxpy_solver='MOSEK'``. Different solvers can differ greatly in terms
 of runtime and solution accuracy, and in some cases solvers may show warnings
 about convergence or recommended option settings.
+
+.. note::
+   In certain atypical scenarios, the DKI+ constraints could potentially be
+   too restrictive. Always check the results of a constrained fit with their
+   unconstrained counterpart to verify that there are no unexpected
+   qualitative differences.
+
 """
 
 dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
@@ -245,7 +252,7 @@ dkifit_plus = dkimodel_plus.fit(data_smooth, mask=mask)
 """
 We can now compare the kurtosis measures obtained with the constrained fit to
 the measures obtained before, where we see that many of the artefactual voxels
-have now been corrected. In particlar outliers caused by pure noise -- instead
+have now been corrected. In particular outliers caused by pure noise -- instead
 of for example acquisition artefacts -- can be corrected with this method.
 """
 
@@ -286,7 +293,7 @@ As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
 depends on the information of both diffusion and kurtosis tensor. DKI measures
 that only depend on the kurtosis tensor include the mean of the kurtosis tensor
 [Hansen2013]_, and the kurtosis fractional anisotropy [GlennR2015]_. These
-measures are computed and illustrated bellow:
+measures are computed and illustrated below:
 """
 
 compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
