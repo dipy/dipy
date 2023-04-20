@@ -131,9 +131,12 @@ class SlicesVisualizer:
     
     def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
         vol_data = self.__data[..., prev_idx]
-        percentiles = stats.percentileofscore(np.ravel(vol_data), intensities)
+        # NOTE: Supported only in latests versions of scipy
+        # percs = stats.percentileofscore(np.ravel(vol_data), intensities)
+        perc_0 = stats.percentileofscore(np.ravel(vol_data), intensities[0])
+        perc_1 = stats.percentileofscore(np.ravel(vol_data), intensities[1])
         vol_data = self.__data[..., next_idx]
-        value_range = np.percentile(vol_data, percentiles)
+        value_range = np.percentile(vol_data, [perc_0, perc_1])
         if np.sum(np.diff(self.__int_range)) == 0:
             return False
         
