@@ -5,6 +5,9 @@ from dipy.align.streamwarp import (bundlewarp,
 
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import set_number_of_points, Streamlines
+from dipy.utils.optpkg import optional_package
+
+_, have_pycpd, _ = optional_package("pycpd")
 
 
 def test_bundlewarp():

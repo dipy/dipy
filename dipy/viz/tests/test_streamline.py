@@ -10,6 +10,10 @@ from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
 
 from dipy.align.streamwarp import bundlewarp, bundlewarp_vector_filed
 
+_, have_pycpd, _ = optional_package("pycpd")
+
+_, have_matplotlib, _ = optional_package("matplotlib")
+
 fury, has_fury, _ = optional_package('fury')
 if has_fury:
     from dipy.viz.streamline import (show_bundles, viz_two_bundles,
@@ -55,15 +59,15 @@ def test_incorrect_view():
 @pytest.mark.skipif(not has_fury, reason='Requires FURY')
 def test_bundlewarp_viz():
 
-    cingulum_bundles = two_cingulum_bundles()
-
-    cb1 = cingulum_bundles[0]
-    cb1 = Streamlines(set_number_of_points(cb1, 20))
-
-    cb2 = cingulum_bundles[1]
-    cb2 = Streamlines(set_number_of_points(cb2, 20))
-
     with tempfile.TemporaryDirectory() as temp_dir:
+
+        cingulum_bundles = two_cingulum_bundles()
+
+        cb1 = cingulum_bundles[0]
+        cb1 = Streamlines(set_number_of_points(cb1, 20))
+
+        cb2 = cingulum_bundles[1]
+        cb2 = Streamlines(set_number_of_points(cb2, 20))
 
         deformed_bundle, affine_bundle, _, _, _ = bundlewarp(cb1, cb2)
 
