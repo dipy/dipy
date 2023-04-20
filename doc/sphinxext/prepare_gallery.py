@@ -172,7 +172,7 @@ def prepare_gallery(app=None):
         abort(msg)
 
     disable_examples_section = []
-
+    included_examples = []
     for example in examples_config:
         if not example.enable:
             disable_examples_section.append(example.folder_name)
@@ -201,20 +201,27 @@ def prepare_gallery(app=None):
         if not example.files:
             continue
 
-        for fi in example.files:
-            if not Path(examples_dir, fi).exists():
-                msg = f'\tFile {fi} not found in examples folder: {examples_dir}. '
-                msg += 'Please, Add the file or remove it from the description file.'
+        for filename in example.files:
+            if not Path(examples_dir, filename).exists():
+                msg = f'\tFile {filename} not found in examples folder:  '
+                msg += f'{examples_dir}.Please, Add the file or remove it '
+                msg += 'from the description file.'
                 logger.warning(msg)
                 continue
 
-            with io.open(Path(examples_dir, fi), encoding="utf8") as f:
+            with io.open(Path(examples_dir, filename), encoding="utf8") as f:
                 xfile = f.readlines()
 
+            new_name = None
+            if filename in included_examples:
+                # file need ot be renamed to make it unique for sphinx-gallery
+                occurences = included_examples.count(fi)
+                new_name = f'{filename[:-3]}_{occurences}.py'
             if already_converted(xfile):
-                shutil.copy(Path(examples_dir, fi), Path(folder, fi))
+                shutil.copy(Path(examples_dir, filename),
+                            Path(folder, new_name or filename))
             else:
-                with open(Path(folder, fi), 'w') as f:
+                with open(Path(folder, new_name or filename), 'w') as f:
                     f.write(convert_to_sphinx_gallery_format(xfile))
 
     # Check if all python examples are in the description file
