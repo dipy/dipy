@@ -470,12 +470,12 @@ def test_getitem_idx():
     gtab = GradientTable(gradients) 
 
     # Test with a single index
-    gtab_slice1 = gtab.__get_item__(1)
+    gtab_slice1 = gtab[2:5]
     assert np.array_equal(gtab_slice1.bvals, np.array([100.]))
     assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
 
     # Test with a range of indices
-    gtab_slice2 = gtab.__get_item__(slice(2, 5))
+    gtab_slice2 = gtab[2:5]
     assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
     assert np.array_equal(gtab_slice2.bvecs, np.array([[0., 1., 0.], [0., 0., 1.], [1., 0., 0.]]))
 

@@ -212,7 +212,7 @@ class GradientTable(object):
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
     
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         if isinstance(idx, int):
             idx = [idx]#convert in a list if integer.
             
