@@ -367,11 +367,8 @@ class EVACPlusFlow(Workflow):
         CRF Layers for Brain Extraction.  
 
         """
-        if os.path.exists(out_mask) or os.path.exists(out_masked):
-            raise ValueError("The output file or files already exists."
-                             " Please remove the files "
-                             "or change the output_path")
-        
+
+        self._force_overwrite = True
         io_it = self.get_io_iterator()
 
         for fpath, mask_out_path, masked_out_path in io_it:
