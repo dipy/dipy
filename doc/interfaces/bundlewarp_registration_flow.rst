@@ -75,7 +75,7 @@ Fully Deformable BundleWarp Registration
 
 Here, we fully deform/warp moving bundle to make it completely aligned with
 the static bundle. Here, we use lower value of alpha=0.01.
-NOTE: Be caustious with setting lower value of alpha as it can completley
+NOTE: Be caustious with setting lower value of alpha as it can completely
 change the original anatomical shape of the moving bundle.
 
 Run the following workflow::
