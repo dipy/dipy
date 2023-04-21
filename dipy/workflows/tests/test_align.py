@@ -5,7 +5,8 @@ from tempfile import TemporaryDirectory
 import numpy.testing as npt
 import numpy as np
 import nibabel as nib
-
+import pytest
+from dipy.utils.optpkg import optional_package
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
@@ -18,6 +19,9 @@ from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
                                   SlrWithQbxFlow, MotionCorrectionFlow,
                                   BundleWarpFlow)
+
+_, have_pd, _ = optional_package("pandas")
+_, have_pycpd, _ = optional_package("pycpd")
 
 
 def test_reslice():
@@ -439,6 +443,8 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_map_path), True)
 
 
+@pytest.mark.skipif(not have_pycpd or not have_pd,
+                    reason='Requires pycpd and pandas')
 def test_bundlewarp_flow():
     with TemporaryDirectory() as out_dir:
 
