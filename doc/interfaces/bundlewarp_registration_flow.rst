@@ -4,7 +4,7 @@
 Nonrigid White Matter Bundle Registration with BundleWarp
 =========================================================
 
-This tutorial explains how we can use BundleWarp [Chandio23]_ to nonlinearly
+This tutorial explains how we can use BundleWarp [Chandio2023]_ to nonlinearly
 register two bundles.
 
 
