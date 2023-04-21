@@ -386,7 +386,7 @@ class Horizon(object):
                 if not self.world_coords:
                     # TODO: Get affine from a StatefullTractogram
                     raise ValueError(
-                        'Currently native coordinates are not supported for'
+                        'Currently native coordinates are not supported for '
                         'streamlines.')
                 
                 if self.cluster:
