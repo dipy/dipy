@@ -1,3 +1,19 @@
+"""
+
+Note
+----
+
+This file is copied (possibly with major modifications) from the
+sources of the pycpd project - https://github.com/siavashk/pycpd.
+It remains licensed as the rest of PyCPD (MIT license as of October 2010).
+
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+#   See COPYING file distributed along with the PyCPD package for the
+#   copyright and license terms.
+#
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+"""
 
 import numpy as np
 import numbers
