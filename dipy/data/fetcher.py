@@ -320,6 +320,24 @@ fetch_synb0_test = _make_fetcher(
      '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
+fetch_evac_weights = _make_fetcher(
+    "fetch_evac_weights",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['40150867'],
+    ['evac_default_weights.h5'],
+    ['998d5122e0aef1ccf7c0d58e41e978af'],
+    doc="Download EVAC+ model weights for Park et. al 2022")
+
+fetch_evac_test = _make_fetcher(
+    "fetch_evac_test",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['40150894'],
+    ['evac_test_data.npz'],
+    ['a2173e8f800ab7ab3b159b86bf3a8536'],
+    doc="Download EVAC+ test data for Park et. al 2022")
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     pjoin(dipy_home, 'stanford_hardi'),
@@ -622,6 +640,19 @@ fetch_DiB_217_lte_pte_ste = _make_fetcher(
     data_size='166.3 MB')
 
 
+fetch_ptt_minimal_dataset = _make_fetcher(
+    "fetch_ptt_minimal_dataset",
+    pjoin(dipy_home, 'ptt_dataset'),
+    'https://raw.githubusercontent.com/dipy/dipy_datatest/main/',
+    ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
+    ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
+    ['6e454f8088b64e7b85218c71010d8dbe',
+     '8c2d71fb95020e2bb1743623eb11c2a6',
+     '9cb88f88d664019ba80c0b372c8bafec'],
+    doc="Download FOD and seeds for PTT testing and examples",
+    data_size="203KB")
+
+
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
 
@@ -824,6 +855,14 @@ def get_fnames(name='small_64D'):
         input_array = pjoin(folder, 'test_input_synb0.npz')
         target_array = pjoin(folder, 'test_output_synb0.npz')
         return input_array, target_array
+    if name == 'evac_default_weights':
+        files, folder = fetch_evac_weights()
+        weight = pjoin(folder, 'evac_default_weights.h5')
+        return weight
+    if name == 'evac_test_data':
+        files, folder = fetch_evac_test()
+        test_data = pjoin(folder, 'evac_test_data.npz')
+        return test_data
     if name == 'DiB_70_lte_pte_ste':
         _, folder = fetch_DiB_70_lte_pte_ste()
         fdata = pjoin(folder, 'DiB_70_lte_pte_ste.nii.gz')
@@ -839,6 +878,12 @@ def get_fnames(name='small_64D'):
         fbvec = pjoin(folder, 'bvec_DiB_217_lte_pte_ste.bvec')
         fmask = pjoin(folder, 'DiB_mask.nii.gz')
         return fdata_1, fdata_2, fbval, fbvec, fmask
+    if name == 'ptt_minimal_dataset':
+        files, folder = fetch_ptt_minimal_dataset()
+        fod_name = pjoin(folder, 'ptt_fod.nii')
+        seed_coords_name = pjoin(folder, 'ptt_seed_coords.txt')
+        seed_image_name = pjoin(folder, 'ptt_seed_image.nii')
+        return fod_name, seed_coords_name, seed_image_name
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -1800,7 +1845,7 @@ def fetch_hcp(subjects,
         data_files[pjoin(sub_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
             f'{study}/{subject}/T1w/T1w_acpc_dc.nii.gz'
         data_files[pjoin(sub_dir, 'anat',
-                           f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
+                         f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
             f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
 
     download_files = {}
@@ -1905,7 +1950,8 @@ def fetch_hbn(subjects, path=None):
             Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
         query_content = query.get('Contents', None)
         if query_content is None:
-            raise ValueError(f"Could not find derivatives data for subject {subject}")
+            raise ValueError(
+                f"Could not find derivatives data for subject {subject}")
         file_list = [kk["Key"] for kk in query["Contents"]]
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
@@ -1913,7 +1959,8 @@ def fetch_hbn(subjects, path=None):
             os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
         for remote in file_list:
-            full = remote.split("Projects")[-1][1:].replace("/BIDS_curated", "")
+            full = remote.split(
+                "Projects")[-1][1:].replace("/BIDS_curated", "")
             local = op.join(dipy_home, full)
             data_files[local] = remote
 

@@ -375,8 +375,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         data_in_mask = np.maximum(data_in_mask, self.min_signal)
 
         # DKI fit
-        dki_params = self.fit_method(self.design_matrix, data_in_mask,
-                                     *self.args, **self.kwargs)
+        dki_params = super().fit(data_in_mask).model_params
 
         # Computing awf
         awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=gtol)

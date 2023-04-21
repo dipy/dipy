@@ -61,7 +61,6 @@ First, we import all relevant modules:
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
 from dipy.core.gradients import gradient_table
@@ -69,6 +68,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
+from dipy.viz.plotting import compare_maps
 from scipy.ndimage import gaussian_filter
 
 """
@@ -131,87 +131,38 @@ dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
 To fit the data using the defined model object, we call the ``fit`` function of
-this object:
+this object. For the purpose of this example, we will only fit a single slice of
+the data:
 """
 
+data_smooth = data_smooth[:, :, 9:10]
+mask = mask[:, :, 9:10]
 dkifit = dkimodel.fit(data_smooth, mask=mask)
 
 """
 The fit method creates a DiffusionKurtosisFit object, which contains all the
 diffusion and kurtosis fitting parameters and other DKI attributes. For
 instance, since the diffusion kurtosis model estimates the diffusion tensor,
-all diffusion standard tensor statistics can be computed from the
-DiffusionKurtosisFit instance. For example, we show below how to extract the
-fractional anisotropy (FA), the mean diffusivity (MD), the axial diffusivity
-(AD) and the radial diffusivity (RD) from the DiffusionKurtosisiFit instance.
-"""
-
-FA = dkifit.fa
-MD = dkifit.md
-AD = dkifit.ad
-RD = dkifit.rd
-
-"""
-Note that these four standard measures could also be computed from DIPY's DTI
-module. Computing these measures from both models should be analogous; however,
-theoretically, the diffusion statistics from the kurtosis model are expected to
-have better accuracy, since DKI's diffusion tensor are decoupled from higher
-order terms effects [Veraar2011]_, [NetoHe2012]_. For comparison purposes,
-we calculate below the FA, MD, AD, and RD using DIPY's ``TensorModel``.
+all standard diffusion tensor statistics can be computed from the
+DiffusionKurtosisFit instance. For example, we can extract the fractional
+anisotropy (FA), the mean diffusivity (MD), the axial diffusivity (AD) and the
+radial diffusivity (RD) from the DiffusionKurtosisiFit instance. Of course,
+these measures can also be computed from DIPY's ``TensorModel`` fit, and should
+be analogous; however, theoretically, the diffusion statistics from the kurtosis
+model are expected to have better accuracy, since DKI's diffusion tensor are
+decoupled from higher order terms effects [Veraar2011]_, [NetoHe2012]_. Below we
+compare the FA, MD, AD, and RD, computed from both DTI and DKI.
 """
 
 tenmodel = dti.TensorModel(gtab)
 tenfit = tenmodel.fit(data_smooth, mask=mask)
 
-dti_FA = tenfit.fa
-dti_MD = tenfit.md
-dti_AD = tenfit.ad
-dti_RD = tenfit.rd
-
-"""
-The DT based measures can be easily visualized using matplotlib. For example,
-the FA, MD, AD, and RD obtained from the diffusion kurtosis model (upper
-panels) and the tensor model (lower panels) are plotted for a selected axial
-slice. DTI's diffusion estimates present lower values than DKI's estimates,
-showing that DTI's diffusion measurements are underestimated  by higher order
-effects.
-"""
-
-axial_slice = 9
-
-fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
-
-fig1.subplots_adjust(hspace=0.3, wspace=0.05)
-
-ax.flat[0].imshow(FA[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=0.7, origin='lower')
-ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[3].set_title('RD (DKI)')
-
-ax.flat[4].imshow(dti_FA[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=0.7, origin='lower')
-ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD[:, :, axial_slice].T, cmap='gray',
-                  vmin=0, vmax=2.0e-3, origin='lower')
-ax.flat[7].set_title('RD (DTI)')
-
-plt.show()
-fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
+fits = [tenfit, dkifit]
+maps = ['fa', 'md', 'ad', 'rd']
+fit_labels = ['DTI', 'DKI']
+map_kwargs = [{'vmax': 0.7}, {'vmax': 2e-3}, {'vmax': 2e-3}, {'vmax': 2e-3}]
+compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
+             filename='Diffusion_tensor_measures_from_DTI_and_DKI.png')
 
 """
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
@@ -220,53 +171,19 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
    Diffusion tensor measures obtained from the diffusion tensor estimated
    from DKI (upper panels) and DTI (lower panels).
 
+DTI's diffusion estimates present lower values than DKI's estimates,
+showing that DTI's diffusion measurements are underestimated  by higher order
+effects.
+
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 instance can be used to estimate the non-Gaussian measures of mean kurtosis
 (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
-
-Kurtosis measures are susceptible to high amplitude outliers. The impact of
-high amplitude kurtosis outliers can be removed by introducing as an optional
-input the extremes of the typical values of kurtosis. Here these are assumed to
-be on the range between 0 and 3):
 """
 
-MK = dkifit.mk(0, 3)
-AK = dkifit.ak(0, 3)
-RK = dkifit.rk(0, 3)
-
-"""
-Now we are ready to plot the kurtosis standard measures using matplotlib:
-"""
-
-fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
-
-fig2.subplots_adjust(hspace=0.3, wspace=0.05)
-
-ax.flat[0].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[0].set_title('MK')
-ax.flat[0].annotate('', fontsize=12, xy=(57, 30),
-                    color='red',
-                    xycoords='data', xytext=(30, 0),
-                    textcoords='offset points',
-                    arrowprops=dict(arrowstyle="->",
-                                    color='red'))
-ax.flat[1].imshow(AK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[1].set_title('AK')
-ax.flat[2].imshow(RK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[2].set_title('RK')
-ax.flat[2].annotate('', fontsize=12, xy=(57, 30),
-                    color='red',
-                    xycoords='data', xytext=(30, 0),
-                    textcoords='offset points',
-                    arrowprops=dict(arrowstyle="->",
-                                    color='red'))
-
-plt.show()
-fig2.savefig('Kurtosis_tensor_standard_measures.png')
+maps = ['mk', 'ak', 'rk']
+compare_maps([dkifit], maps, fit_labels=['DKI'],
+             map_kwargs={'vmin': 0, 'vmax': 1.5},
+             filename='Kurtosis_tensor_standard_measures.png')
 
 """
 .. figure:: Kurtosis_tensor_standard_measures.png
@@ -281,9 +198,9 @@ These water diffusion compartmentalization is expected to be more pronounced
 perpendicularly to white matter fibers and thus the RK map presents higher
 amplitudes than the AK map.
 
-It is important to note that kurtosis estimates might presented negative
-estimates in deep white matter regions (e.g. red arrow added in the figure
-above). This negative kurtosis values are artefactual and might be induced by:
+It is important to note that kurtosis estimates might present negative estimates
+in deep white matter regions (e.g. the band of dark voxels in the RK map above).
+These negative kurtosis values are artefactual and might be induced by:
 1) low radial diffusivities of aligned white matter - since it is very hard
 to capture non-Gaussian information in radial direction due to it's low
 diffusion decays, radial kurtosis estimates (and consequently the mean
@@ -300,9 +217,74 @@ suppression algorithms, e.g., as mentioned above, the MP-PCA denoising
 (:ref:`example-denoise-mppca`) and Gibbs Unringing
 (:ref:`example-denoise-gibbs`) algorithms. Alternatively, one can overcome this
 artefact by computing the kurtosis values from powder-averaged
-diffusion-weighted signals. The details on how to compute
-the kurtosis from powder-average signals in dipy are described in follow the
-tutorial (:ref:`example-reconst-msdki`).
+diffusion-weighted signals. The details on how to compute the kurtosis from
+powder-average signals in dipy are described in follow the tutorial
+(:ref:`example-reconst-msdki`). Finally, one can use constrained optimization to
+ensure that the fitted parameters are physically plausible [DelaHa2020]_, as we
+will illustrate in the next section. Ideally though, artefacts such as Gibbs
+ringing should be corrected for as well as possible before using constrained
+optimization.
+
+Constrained optimization for DKI
+================================
+
+When instantiating the DiffusionKurtosisModel, the model can be set up to use
+constraints with the option `fit_method='CLS'` (for ordinary least squares) or
+with `fit_method='CWLS'` (for weighted least squares). Constrained fitting takes
+more time than unconstrained fitting, but is generally recommended to prevent
+physically unplausible parameter estimates [DelaHa2020]_. For performance
+purposes it is recommended to use the MOSEK solver (https://www.mosek.com/) by
+setting ``cvxpy_solver='MOSEK'``. Different solvers can differ greatly in terms
+of runtime and solution accuracy, and in some cases solvers may show warnings
+about convergence or recommended option settings.
+
+.. note::
+   In certain atypical scenarios, the DKI+ constraints could potentially be
+   too restrictive. Always check the results of a constrained fit with their
+   unconstrained counterpart to verify that there are no unexpected
+   qualitative differences.
+
+"""
+
+dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
+dkifit_plus = dkimodel_plus.fit(data_smooth, mask=mask)
+
+"""
+We can now compare the kurtosis measures obtained with the constrained fit to
+the measures obtained before, where we see that many of the artefactual voxels
+have now been corrected. In particular outliers caused by pure noise -- instead
+of for example acquisition artefacts -- can be corrected with this method.
+"""
+
+compare_maps([dkifit_plus], ['mk', 'ak', 'rk'], fit_labels=['DKI+'],
+             filename='Kurtosis_tensor_standard_measures_plus.png')
+
+"""
+.. figure:: Kurtosis_tensor_standard_measures_plus.png
+   :align: center
+
+   DKI standard kurtosis measures obtained with constrained optimization.
+
+When using constrained optimization, the expected range of the kurtosis measures
+is also naturally constrained, and so does not typically require additional
+clipping.
+
+Finally, constrained optimization obviates the need for smoothing in many cases:
+"""
+
+dkifit_noisy = dkimodel.fit(data[:, :, 9:10], mask=mask)
+dkifit_noisy_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask)
+
+compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
+             fit_labels=['DKI', 'DKI+'], map_kwargs={'vmin': 0, 'vmax': 1.5},
+             filename='Kurtosis_tensor_standard_measures_noisy.png')
+
+"""
+.. figure:: Kurtosis_tensor_standard_measures_noisy.png
+   :align: center
+
+   DKI standard kurtosis measures obtained on unsmoothed data with constrained
+   optimization.
 
 Mean kurtosis tensor and kurtosis fractional anisotropy
 =======================================================
@@ -310,27 +292,13 @@ Mean kurtosis tensor and kurtosis fractional anisotropy
 As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
 depends on the information of both diffusion and kurtosis tensor. DKI measures
 that only depend on the kurtosis tensor include the mean of the kurtosis tensor
-[Hansen2013]_, and the kurtosis fractional anisotropy [GlennR2015]_. This
+[Hansen2013]_, and the kurtosis fractional anisotropy [GlennR2015]_. These
 measures are computed and illustrated below:
 """
 
-MKT = dkifit.mkt(0, 3)
-KFA = dkifit.kfa
-
-fig3, ax = plt.subplots(1, 2, figsize=(10, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
-
-fig3.subplots_adjust(hspace=0.3, wspace=0.05)
-
-ax.flat[0].imshow(MKT[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[0].set_title('MKT')
-ax.flat[1].imshow(KFA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1,
-                  origin='lower')
-ax.flat[1].set_title('KFA')
-
-plt.show()
-fig3.savefig('Measures_from_kurtosis_tensor_only.png')
+compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
+             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1}],
+             filename='Measures_from_kurtosis_tensor_only.png')
 
 """
 .. figure:: Measures_from_kurtosis_tensor_only.png
@@ -391,6 +359,9 @@ References
 .. [NetoHe2018] Neto Henriques R (2018). Advanced Methods for Diffusion MRI
                 Data Analysis and their Application to the Healthy Ageing Brain
                 (Doctoral thesis). https://doi.org/10.17863/CAM.29356
+.. [DelaHa2020] Dela Haije et al. "Enforcing necessary non-negativity
+                constraints for common diffusion MRI models using sum of squares
+                programming". NeuroImage 209, 2020, 116405.
 
 .. include:: ../links_names.inc
 """

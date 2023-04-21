@@ -20,6 +20,9 @@ from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.geometry import sphere2cart
+from dipy.utils.optpkg import optional_package
+
+_, have_cvxpy, _ = optional_package("cvxpy")
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -116,6 +119,24 @@ def test_dki_fits():
     dki_wlsF = dki_wlsM.fit(signal_cross)
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
+
+    if have_cvxpy:
+        # CLS fitting
+        dki_clsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CLS")
+        dki_clsF = dki_clsM.fit(signal_cross)
+
+        assert_array_almost_equal(dki_clsF.model_params, crossing_ref)
+
+        # CWLS fitting
+        dki_cwlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CWLS")
+        dki_cwlsF = dki_cwlsM.fit(signal_cross)
+
+        assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
+    else:
+        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="CLS")
+        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="CWLS")
 
     # NLS fitting
     dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
