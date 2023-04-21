@@ -216,13 +216,14 @@ def prepare_gallery(app=None):
             if filename in included_examples:
                 # file need ot be renamed to make it unique for sphinx-gallery
                 occurences = included_examples.count(fi)
-                new_name = f'{filename[:-3]}_{occurences}.py'
+                new_name = f'{filename[:-3]}_{occurences+1}.py'
             if already_converted(xfile):
                 shutil.copy(Path(examples_dir, filename),
                             Path(folder, new_name or filename))
             else:
                 with open(Path(folder, new_name or filename), 'w') as f:
                     f.write(convert_to_sphinx_gallery_format(xfile))
+            included_examples.append(filename)
 
     # Check if all python examples are in the description file
     files_in_config = [fi for ex in examples_config for fi in ex.files]
