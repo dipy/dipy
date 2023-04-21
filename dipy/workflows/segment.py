@@ -369,11 +369,7 @@ class EVACPlusFlow(Workflow):
         """
         
         io_it = self.get_io_iterator()
-
-        if len(io_it) == 0:
-            raise ValueError("All output paths exists."
-                             " If you want to overwrite "
-                             "please use the --force option.")
+        empty_flag = True
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying evac+ brain extraction on {0}'.
@@ -395,5 +391,10 @@ class EVACPlusFlow(Workflow):
 
                 logging.info('Masked volume saved as {0}'.
                              format(masked_out_path))
+            empty_flag = False
+        if empty_flag:
+            raise ValueError("All output paths exists."
+                             " If you want to overwrite "
+                             "please use the --force option.")
 
         return io_it
