@@ -88,7 +88,9 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
     for i in range(m):
         for j in range(n):
             try:
-                attr = getattr(fits[i], maps[j])()
+                attr = getattr(fits[i], maps[j])
+                if hasattr(attr, '__call__'):
+                    attr = attr()
             except AttributeError:
                 warn('Could not recover attribute ' + maps[j] + '.')
                 attr = np.zeros((2, 2))

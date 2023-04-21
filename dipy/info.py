@@ -112,7 +112,6 @@ EXTRAS_REQUIRE = {
         "pytest",
         "coverage",
         "coveralls",
-        "codecov",
     ],
     "doc": [
         "cython",
@@ -138,12 +137,13 @@ EXTRAS_REQUIRE = {
         "matplotlib"
     ],
     "ml": [
-        "scikit_learn",
+        "scikit-learn",
         "pandas",
         "statsmodels",
         "pycpd",
         "tables",
         "tensorflow"
+        "tensorflow-addons"
     ]
 }
 

@@ -220,15 +220,25 @@ def test_qbx_and_merge():
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1))
 
+
     streamlines = Streamlines(list(itertools.chain(*bundles)))
 
     thresholds = [10, 2, 1]
 
     rng = np.random.RandomState(seed=42)
-    qbxm_centroids = qbx_and_merge(streamlines, thresholds, rng=rng).centroids
+    qbxm = qbx_and_merge(streamlines, thresholds, rng=rng)
+
+    qbxm_centroids = qbxm.centroids
+
+    qbxm_clusters = qbxm.clusters
 
     qbx = QuickBundlesX(thresholds)
     tree = qbx.cluster(streamlines)
     qbx_centroids = tree.get_clusters(3).centroids
 
     assert_equal(len(qbx_centroids) > len(qbxm_centroids), True)
+
+    # check that refdata clusters return streamlines in qbx_and_merge    
+    streamline_idx =qbxm_clusters[0].indices[0]
+    assert_array_equal(qbxm_clusters[0][0], streamlines[streamline_idx]) 
+

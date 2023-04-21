@@ -11,7 +11,8 @@ from dipy.direction import (BootDirectionGetter,
                             ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
-                            ProbabilisticDirectionGetter)
+                            ProbabilisticDirectionGetter,
+                            PTTDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.tracking.local_tracking import (LocalTracking,
@@ -376,6 +377,15 @@ def test_particle_filtering_tractography():
 
     npt.assert_(np.array([len(pft_streamlines) > 0]))
     npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
+
+    # Test PFT with a PTT direction getter
+    dg_ptt = PTTDirectionGetter.from_pmf(pmf, 60, sphere)
+    pft_ptt_streamlines = Streamlines(ParticleFilteringTracking(
+        dg_ptt, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=False,
+        pft_back_tracking_dist=1, pft_front_tracking_dist=0.5))
+
+    npt.assert_(np.array([len(pft_ptt_streamlines) > 0]))
+    npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
 
     # Test that all points are equally spaced
     for l in [1, 2, 5, 10, 100]:
