@@ -448,12 +448,22 @@ class Horizon(object):
                 if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
             else:
-                data, affine = self.images[0]
-                self.vox2ras = affine
-                slices_viz = SlicesVisualizer(
-                    self.show_m.iren, scene, data, affine=affine,
-                    world_coords=self.world_coords)
-                self.__tabs.append(SlicesTab(slices_viz))
+                if len(self.images) > 1:
+                    for img_id, img in enumerate(self.images):
+                        data, affine = img
+                        self.vox2ras = affine
+                        slices_viz = SlicesVisualizer(
+                            self.show_m.iren, scene, data, affine=affine,
+                            world_coords=self.world_coords)
+                        self.__tabs.append(SlicesTab(
+                            slices_viz, id=img_id + 1))
+                else:
+                    data, affine = self.images[0]
+                    self.vox2ras = affine
+                    slices_viz = SlicesVisualizer(
+                        self.show_m.iren, scene, data, affine=affine,
+                        world_coords=self.world_coords)
+                    self.__tabs.append(SlicesTab(slices_viz))
         
         if len(self.pams) > 0:
             pam = self.pams[0]

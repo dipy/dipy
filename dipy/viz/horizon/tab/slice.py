@@ -14,12 +14,15 @@ if has_fury:
 
 
 class SlicesTab(HorizonTab):
-    def __init__(self, slices_visualizer):
+    def __init__(self, slices_visualizer, id=0):
         
         self.__visualizer = slices_visualizer
         
         self.__actors = self.__visualizer.slice_actors
-        self.__name = 'Slices'
+        if id == 0:
+            self.__name = 'Image'
+        else:
+            self.__name = f'Image {id}'
         
         self.__tab_id = 0
         self.__tab_ui = None
