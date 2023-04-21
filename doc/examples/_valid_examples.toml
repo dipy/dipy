@@ -1,9 +1,18 @@
 [main]
 readme = """
 .. _ref_examples:
+
 Examples
 ========
-How to use widgets, ui, actor and windows module. Below some examples and apps to go in details.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../note_about_examples
+
+.. contents::
+   :depth: 2
+
 """
 position = 0   # it should always be 0
 enable = true  # it should always be true
@@ -162,6 +171,7 @@ files = [
     "segment_quickbundles.py",
     "tissue_classification.py",
     "brain_extraction_dwi.py",
+    "fast_streamline_search.py",
 ]
 
 [simulations]
