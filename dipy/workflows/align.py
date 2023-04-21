@@ -3,6 +3,7 @@ import logging
 from warnings import warn
 import numpy as np
 import nibabel as nib
+from os.path import join as pjoin
 from dipy.utils.optpkg import optional_package
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
@@ -871,25 +872,26 @@ class BundleWarpFlow(Workflow):
         logging.info('Saving output file {0}'.format(out_linear_moved))
         new_tractogram = nib.streamlines.Tractogram(affine_bundle,
                                                     affine_to_rasmm=np.eye(4))
-        nib.streamlines.save(new_tractogram, out_linear_moved,
+        nib.streamlines.save(new_tractogram, pjoin(out_dir, out_linear_moved),
                              header=moving_header)
 
         logging.info('Saving output file {0}'.format(out_nonlinear_moved))
         new_tractogram = nib.streamlines.Tractogram(deformed_bundle,
                                                     affine_to_rasmm=np.eye(4))
-        nib.streamlines.save(new_tractogram, out_nonlinear_moved,
+        nib.streamlines.save(new_tractogram, pjoin(out_dir, out_nonlinear_moved),
                              header=moving_header)
 
         df = pd.DataFrame(warp, columns=['transforms', 'gaussian_kernel'])
 
         logging.info('Saving output file {0}'.format(out_warp_transform))
-        np.save(out_warp_transform, np.array(df['transforms']))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(df['transforms']))
 
         logging.info('Saving output file {0}'.format(out_warp_kernel))
-        np.save(out_warp_kernel, np.array(df['gaussian_kernel']))
+        np.save(pjoin(out_dir, out_warp_kernel),
+                np.array(df['gaussian_kernel']))
 
         logging.info('Saving output file {0}'.format(out_dist))
-        np.save(out_dist, dist)
+        np.save(pjoin(out_dir, out_dist), dist)
 
         logging.info('Saving output file {0}'.format(out_matched_pairs))
-        np.save(out_matched_pairs, mp)
+        np.save(pjoin(out_dir, out_matched_pairs), mp)

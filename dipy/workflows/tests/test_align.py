@@ -441,6 +441,7 @@ def test_syn_registration_flow():
 
 def test_bundlewarp_flow():
     with TemporaryDirectory() as out_dir:
+
         data_path = get_fnames('fornix')
 
         fornix = load_tractogram(data_path, 'same',
@@ -461,12 +462,10 @@ def test_bundlewarp_flow():
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         bw_flow = BundleWarpFlow(force=True)
-        bw_flow.run(f1_path, f2_path)
+        bw_flow.run(f1_path, f2_path, out_dir=out_dir)
 
-        out_path = bw_flow.last_generated_outputs['out_linear_moved']
+        out_linearly_moved = pjoin(out_dir, "linearly_moved.trk")
+        out_nonlinearly_moved = pjoin(out_dir, "nonlinearly_moved.trk")
 
-        npt.assert_equal(os.path.isfile(out_path), True)
-
-        out_path = bw_flow.last_generated_outputs['out_nonlinear_moved']
-
-        npt.assert_equal(os.path.isfile(out_path), True)
+        assert os.path.exists(out_linearly_moved)
+        assert os.path.exists(out_nonlinearly_moved)
