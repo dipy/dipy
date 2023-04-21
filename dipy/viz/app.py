@@ -7,7 +7,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager)
+                                  TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 
 fury, has_fury, setup_module = optional_package('fury')
@@ -16,10 +16,8 @@ if has_fury:
     from fury import actor, ui, window
     from fury.colormap import distinguishable_colormap
 
-    from dipy.viz.panel import build_label, slicer_panel
 
-
-# TODO: Re-enable right click: see menu
+# TODO: Re-enable >> right click: see menu
 HELP_MESSAGE = """
 >> left click: select centroid
 >> e: expand centroids
@@ -157,6 +155,7 @@ class Horizon(object):
         self.__tab_mgr = None
         
         self.__help_visible = True
+        
         # TODO: Move to another class/module
         self.__hide_centroids = True
         self.__select_all = False
