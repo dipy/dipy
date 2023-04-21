@@ -367,9 +367,13 @@ class EVACPlusFlow(Workflow):
         CRF Layers for Brain Extraction.  
 
         """
-
-        self._force_overwrite = True
+        
         io_it = self.get_io_iterator()
+
+        if len(io_it) == 0:
+            raise ValueError("All output paths exists."
+                             " If you want to overwrite "
+                             "please use the --force option.")
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying evac+ brain extraction on {0}'.
