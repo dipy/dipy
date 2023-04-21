@@ -128,7 +128,6 @@ EXTRAS_REQUIRE = {
         "scikit-learn",
         "scikit-image",
         "statsmodels",
-        "pycpd",
         "boto3"
 
     ],
@@ -140,7 +139,6 @@ EXTRAS_REQUIRE = {
         "scikit-learn",
         "pandas",
         "statsmodels",
-        "pycpd",
         "tables",
         "tensorflow"
         "tensorflow-addons"

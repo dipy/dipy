@@ -13,4 +13,3 @@ scikit-image
 statsmodels
 numpydoc
 sphinx!=4.4
-pycpd>=2.0.0

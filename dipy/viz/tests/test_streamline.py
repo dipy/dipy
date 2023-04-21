@@ -10,8 +10,6 @@ from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
 
 from dipy.align.streamwarp import bundlewarp, bundlewarp_vector_filed
 
-_, have_pycpd, _ = optional_package("pycpd")
-
 _, have_matplotlib, _ = optional_package("matplotlib")
 
 fury, have_fury, _ = optional_package('fury')
@@ -57,8 +55,8 @@ def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
 
 
-@pytest.mark.skipif(not have_fury or not have_pycpd or not have_matplotlib,
-                    reason='Requires FURY, pycpd, and Matplotlib')
+@pytest.mark.skipif(not have_fury or not have_matplotlib,
+                    reason='Requires FURY, and Matplotlib')
 def test_bundlewarp_viz():
 
     with tempfile.TemporaryDirectory() as temp_dir:

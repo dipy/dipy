@@ -1,21 +1,18 @@
+import warnings
+
 import numpy as np
 from scipy.optimize import linear_sum_assignment
+
 from dipy.align.streamlinear import slr_with_qbx
+from dipy.align.cpd import DeformableRegistration
 from dipy.tracking.streamline import (unlist_streamlines,
                                       Streamlines)
 from dipy.stats.analysis import assignment_map
-from dipy.utils.optpkg import optional_package
 from dipy.tracking.streamline import length
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.viz.plotting import bundle_shape_profile
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
-import warnings
-
-pycpd, have_pycpd, _ = optional_package("pycpd")
-
-if have_pycpd:
-    from pycpd import DeformableRegistration
 
 
 def average_bundle_length(bundle):
@@ -113,11 +110,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     ----------
     .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
             registration of white matter tracts." bioRxiv (2023): 2023-01.
-    """
-    if not have_pycpd:
-        msg = "Missing pycpd dependency. Please install pycpd package"
-        raise ImportError(msg)
 
+    """
     if alpha <= 0.01:
         warnings.warn("Using alpha<=0.01 will result in extreme deformations")
 

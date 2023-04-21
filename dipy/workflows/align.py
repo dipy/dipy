@@ -22,8 +22,6 @@ from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
 
-pycpd, have_pycpd, _ = optional_package("pycpd")
-
 if have_pd:
     import pandas as pd
 

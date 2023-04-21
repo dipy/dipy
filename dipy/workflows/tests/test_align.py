@@ -21,7 +21,6 @@ from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   BundleWarpFlow)
 
 _, have_pd, _ = optional_package("pandas")
-_, have_pycpd, _ = optional_package("pycpd")
 
 
 def test_reslice():
@@ -443,8 +442,7 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_map_path), True)
 
 
-@pytest.mark.skipif(not have_pycpd or not have_pd,
-                    reason='Requires pycpd and pandas')
+@pytest.mark.skipif(not have_pd, reason='Requires pandas')
 def test_bundlewarp_flow():
     with TemporaryDirectory() as out_dir:
 
