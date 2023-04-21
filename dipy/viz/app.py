@@ -421,11 +421,10 @@ class Horizon(object):
                     self.__clusters_visualizer, self.cluster_thr))
 
         if len(self.images) > 0:
-            # Only first non-binary image loading supported for now
-            first_img = True
             if self.roi_images:
                 roi_color = self.roi_colors
                 roi_actors = []
+                img_count = 0
                 for img in self.images:
                     img_data, img_affine = img
                     dim = np.unique(img_data).shape[0]
@@ -437,14 +436,14 @@ class Horizon(object):
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
-                        if first_img:
-                            data, affine = img
-                            self.vox2ras = affine
-                            slices_viz = SlicesVisualizer(
-                                self.show_m.iren, scene, data, affine=affine,
-                                world_coords=self.world_coords)
-                            self.__tabs.append(SlicesTab(slices_viz))
-                            first_img = False
+                        data, affine = img
+                        self.vox2ras = affine
+                        slices_viz = SlicesVisualizer(
+                            self.show_m.iren, scene, data, affine=affine,
+                            world_coords=self.world_coords)
+                        self.__tabs.append(SlicesTab(
+                            slices_viz, id=img_count + 1))
+                        img_count += 1
                 if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
             else:
