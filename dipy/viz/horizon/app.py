@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from dipy import __version__ as horizon_version
@@ -140,8 +142,8 @@ class Horizon(object):
         self.order_transparent = order_transparent
         self.buan = buan
         self.buan_colors = buan_colors
-        self.roi_images = roi_images
-        self.roi_colors = roi_colors
+        self.__roi_images = roi_images
+        self.__roi_colors = roi_colors
 
         if self.random_colors is not None:
             self.color_gen = distinguishable_colormap()
@@ -420,48 +422,37 @@ class Horizon(object):
                     self.__clusters_visualizer, self.cluster_thr))
 
         if len(self.images) > 0:
-            if self.roi_images:
-                roi_color = self.roi_colors
-                roi_actors = []
-                img_count = 0
-                for img in self.images:
-                    img_data, img_affine = img
-                    dim = np.unique(img_data).shape[0]
-                    if dim == 2:
+            if self.__roi_images:
+                roi_color = self.__roi_colors
+            roi_actors = []
+            img_count = 0
+            for img in self.images:
+                data, affine = img
+                self.vox2ras = affine
+                img_val_range = np.unique(data).shape[0]
+                if img_val_range == 2:
+                    if self.__roi_images:
                         if 'rois' in self.random_colors:
                             roi_color = next(self.color_gen)
                         roi_actor = actor.contour_from_roi(
-                            img_data, affine=img_affine, color=roi_color)
+                            data, affine=affine, color=roi_color)
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
-                        data, affine = img
-                        self.vox2ras = affine
-                        slices_viz = SlicesVisualizer(
-                            self.show_m.iren, scene, data, affine=affine,
-                            world_coords=self.world_coords)
-                        self.__tabs.append(SlicesTab(
-                            slices_viz, id=img_count + 1))
-                        img_count += 1
-                if len(roi_actors) > 0:
-                    self.__tabs.append(ROIsTab(roi_actors))
-            else:
-                if len(self.images) > 1:
-                    for img_id, img in enumerate(self.images):
-                        data, affine = img
-                        self.vox2ras = affine
-                        slices_viz = SlicesVisualizer(
-                            self.show_m.iren, scene, data, affine=affine,
-                            world_coords=self.world_coords)
-                        self.__tabs.append(SlicesTab(
-                            slices_viz, id=img_id + 1))
+                        warnings.warn(
+                            'Your data does not have any contrast. Please, '
+                            'check the value range of your data. If you want '
+                            'to visualize binary images use the --roi_images '
+                            'flag.')
                 else:
-                    data, affine = self.images[0]
-                    self.vox2ras = affine
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
                         world_coords=self.world_coords)
-                    self.__tabs.append(SlicesTab(slices_viz))
+                    self.__tabs.append(SlicesTab(
+                        slices_viz, id=img_count + 1))
+                    img_count += 1
+            if len(roi_actors) > 0:
+                    self.__tabs.append(ROIsTab(roi_actors))
         
         if len(self.pams) > 0:
             pam = self.pams[0]

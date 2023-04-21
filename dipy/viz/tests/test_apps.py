@@ -140,7 +140,6 @@ def test_roi_images():
     img3 = np.zeros((5, 5, 5))
     img3[3, 3, 3] = 1
     images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
-    # TODO: Fix this. Fails due to multi-image feature
     show_m = horizon(images=images, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 0)
