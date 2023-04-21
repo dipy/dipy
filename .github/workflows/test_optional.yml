@@ -15,10 +15,10 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      extra-depends: scikit_learn pandas statsmodels tables scipy
+      extra-depends: scikit_learn pandas statsmodels tables scipy pycpd
   conda:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
-      extra-depends: scikit-learn pandas statsmodels pytables scipy
+      extra-depends: scikit-learn pandas statsmodels pytables scipy pycpd
