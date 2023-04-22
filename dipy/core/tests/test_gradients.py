@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 
-from dipy.data import get_fnames 
+from dipy.data import get_fnames
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
@@ -20,6 +20,7 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.testing import clear_and_catch_warnings
+
 
 def test_unique_bvals_deprecated():
     npt.assert_raises(ExpiredDeprecationError, unique_bvals,
@@ -463,11 +464,13 @@ def test_generate_bvecs():
 def test_getitem_idx():
     # Create a GradientTable object with some test b-values and b-vectors
     bvals = np.array([0, 100, 200, 300, 400])
-    #value should be in increasing order as b-value affects the diffusion weighting of the image, and the amount of diffusion weighting increases with increasing b-value.
+    # value should be in increasing order as b-value affects the diffusion
+    # weighting of the image, and the amount of diffusion weighting increases
+    # with increasing b-value.
     bvecs = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]])
-    #the b-vectors should be unit-length vectors
+    # the b-vectors should be unit-length vectors
     gradients = bvals[:, None] * bvecs
-    gtab = GradientTable(gradients) 
+    gtab = GradientTable(gradients)
 
     # Test with a single index
     gtab_slice1 = gtab[1]
@@ -477,7 +480,9 @@ def test_getitem_idx():
     # Test with a range of indices
     gtab_slice2 = gtab[2:5]
     assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
-    assert np.array_equal(gtab_slice2.bvecs, np.array([[0., 1., 0.], [0., 0., 1.], [1., 0., 0.]]))
+    assert np.array_equal(gtab_slice2.bvecs,
+                          np.array([[0., 1., 0.], [0., 0., 1.],
+                                    [1., 0., 0.]]))
 
 
 def test_round_bvals():
