@@ -152,6 +152,7 @@ files = [
     "bundle_group_registration.py",
     "register_binary_fuzzy.py",
     "streamline_registration.py",
+    "bundlewarp_registration.py",
     "syn_registration_2d.py",
     "syn_registration_3d.py",
     "affine_registration_masks.py",

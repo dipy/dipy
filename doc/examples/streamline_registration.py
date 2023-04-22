@@ -312,7 +312,7 @@ if has_fury:
 
     from fury import actor, window
 
-    show_template_bundles(mni_streamlines, show=True,
+    show_template_bundles(mni_streamlines, show=False,
                           fname='streamlines_DSN_MNI.png')
 
     """

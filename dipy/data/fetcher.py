@@ -663,6 +663,17 @@ fetch_ptt_minimal_dataset = _make_fetcher(
     data_size="203KB")
 
 
+fetch_bundle_warp_dataset = _make_fetcher(
+    "fetch_bundle_warp_dataset",
+    pjoin(dipy_home, 'bundle_warp'),
+    'https://ndownloader.figshare.com/files/',
+    ['40026343', '40026346'],
+    ['m_UF_L.trk', 's_UF_L.trk', ],
+    ['4db38ca1e80c16d6e3a97f88f0611187',
+     'c1499005baccfab865ce38368d7a4c7f'],
+    doc="Download Bundle Warp dataset")
+
+
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
 

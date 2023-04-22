@@ -11,14 +11,15 @@ algorithm used here is called BundleWarp, streamline-based nonlinear
 registration of white matter tracts [Chandio23]_.
 
 """
+from os.path import join as pjoin
 
-from dipy.io.streamline import load_trk
 from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed,
                                    bundlewarp_shape_analysis)
+from dipy.data import fetch_bundle_warp_dataset
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram, load_trk
 from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
                                       Streamlines)
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram
 from dipy.viz.streamline import (viz_two_bundles, viz_vector_field,
                                  viz_displacement_mag)
 from time import time
@@ -29,9 +30,13 @@ of the brain (UF_L) available here:
 https://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733
 """
 
-uf_subj1 = load_trk("s_UF_L.trk", reference="same",
+bundle_warp_files = fetch_bundle_warp_dataset()
+s_UF_L_path = pjoin(bundle_warp_files[1], 's_UF_L.trk')
+m_UF_L_path = pjoin(bundle_warp_files[1], 'm_UF_L.trk')
+
+uf_subj1 = load_trk(s_UF_L_path, reference="same",
                     bbox_valid_check=False).streamlines
-uf_subj2 = load_trk("m_UF_L.trk", reference="same",
+uf_subj2 = load_trk(m_UF_L_path, reference="same",
                     bbox_valid_check=False).streamlines
 
 """
@@ -128,7 +133,7 @@ viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
 Saving partially warped bundle.
 """
 
-new_tractogram = StatefulTractogram(deformed_bundle, "m_UF_L.trk", Space.RASMM)
+new_tractogram = StatefulTractogram(deformed_bundle, m_UF_L_path, Space.RASMM)
 save_tractogram(new_tractogram, "partially_deformed_bundle.trk",
                 bbox_valid_check=False)
 
@@ -203,13 +208,13 @@ differ the most in shape.
 """
 
 _, _ = bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
-                                 plotting=True)
+                                 plotting=False)
 
 """
 Saving fully warped bundle.
 """
 
-new_tractogram = StatefulTractogram(deformed_bundle2, "m_UF_L.trk",
+new_tractogram = StatefulTractogram(deformed_bundle2, m_UF_L_path,
                                     Space.RASMM)
 save_tractogram(new_tractogram, "fully_deformed_bundle.trk",
                 bbox_valid_check=False)

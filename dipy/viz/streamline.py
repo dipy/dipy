@@ -106,9 +106,10 @@ def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0),
         window.show(ren)
 
     window.record(ren, n_frames=1, out_path=fname, size=(1200, 1200))
-    im = plt.imread(fname)
-    plt.figure(figsize=(10, 10))
-    plt.imshow(im)
+    if interactive:
+        im = plt.imread(fname)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(im)
 
 
 def viz_vector_field(points_aligned, directions, colors, offsets, fname,
@@ -150,9 +151,10 @@ def viz_vector_field(points_aligned, directions, colors, offsets, fname,
         window.show(scene)
 
     window.record(scene, n_frames=1, out_path=fname, size=(1200, 1200))
-    im = plt.imread(fname)
-    plt.figure(figsize=(10, 10))
-    plt.imshow(im)
+    if interactive:
+        im = plt.imread(fname)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(im)
 
 
 def viz_displacement_mag(bundle, offsets, fname, interactive=False):
@@ -195,6 +197,7 @@ def viz_displacement_mag(bundle, offsets, fname, interactive=False):
         window.show(scene)
 
     window.record(scene, n_frames=1, out_path=fname, size=(2000, 1500))
-    im = plt.imread(fname)
-    plt.figure(figsize=(10, 10))
-    plt.imshow(im)
+    if interactive:
+        im = plt.imread(fname)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(im)

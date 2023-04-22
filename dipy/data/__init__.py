@@ -60,7 +60,8 @@ from dipy.data.fetcher import (get_fnames,
                                read_DiB_217_lte_pte_ste,
                                read_five_af_bundles,
                                fetch_hbn,
-                               fetch_ptt_minimal_dataset)
+                               fetch_ptt_minimal_dataset,
+                               fetch_bundle_warp_dataset)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti
