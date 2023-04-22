@@ -195,27 +195,39 @@ class DeformableRegistration:
                 "The source point cloud (Y) must be a 2D numpy array.")
 
         if X.shape[1] != Y.shape[1]:
-            raise ValueError(
-                "Both point clouds need to have the same number of dimensions.")
+            msg = "Both point clouds need to have the same number "
+            msg += "of dimensions."
+            raise ValueError(msg)
 
-        if sigma2 is not None and (not isinstance(sigma2, numbers.Number) or sigma2 <= 0):
-            raise ValueError(
-                "Expected a positive value for sigma2 instead got: {}".format(sigma2))
+        if sigma2 is not None and (not isinstance(sigma2, numbers.Number)
+                                   or sigma2 <= 0):
+            msg = f"Expected a positive value for sigma2 instead got: {sigma2}"
+            raise ValueError(msg)
 
-        if max_iterations is not None and (not isinstance(max_iterations, numbers.Number) or max_iterations < 0):
-            raise ValueError(
-                "Expected a positive integer for max_iterations instead got: {}".format(max_iterations))
-        elif isinstance(max_iterations, numbers.Number) and not isinstance(max_iterations, int):
-            warn("Received a non-integer value for max_iterations: {}. Casting to integer.".format(max_iterations))
+        if max_iterations is not None and (not isinstance(max_iterations,
+                                                          numbers.Number)
+                                           or max_iterations < 0):
+            msg = "Expected a positive integer for max_iterations "
+            msg += f"instead got: {max_iterations}"
+            raise ValueError(msg)
+        elif isinstance(max_iterations, numbers.Number) and \
+                not isinstance(max_iterations, int):
+            msg = "Received a non-integer value for max_iterations: "
+            msg += f"{max_iterations}. Casting to integer."
+            warn(msg)
             max_iterations = int(max_iterations)
 
-        if tolerance is not None and (not isinstance(tolerance, numbers.Number) or tolerance < 0):
-            raise ValueError(
-                "Expected a positive float for tolerance instead got: {}".format(tolerance))
+        if tolerance is not None and (not isinstance(tolerance, numbers.Number)
+                                      or tolerance < 0):
+            msg = "Expected a positive float for tolerance "
+            msg += f"instead got: {tolerance}"
+            raise ValueError(msg)
 
-        if w is not None and (not isinstance(w, numbers.Number) or w < 0 or w >= 1):
-            raise ValueError(
-                "Expected a value between 0 (inclusive) and 1 (exclusive) for w instead got: {}".format(w))
+        if w is not None and (not isinstance(w, numbers.Number)
+                              or w < 0 or w >= 1):
+            msg = "Expected a value between 0 (inclusive) and 1 (exclusive) "
+            msg += f"for w instead got: {w}"
+            raise ValueError(msg)
 
         self.X = X
         self.Y = Y
@@ -235,13 +247,16 @@ class DeformableRegistration:
         self.PX = np.zeros((self.M, self.D))
         self.Np = 0
 
-        if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha <= 0):
-            raise ValueError(
-                "Expected a positive value for regularization parameter alpha. Instead got: {}".format(alpha))
+        if alpha is not None and (not isinstance(alpha, numbers.Number)
+                                  or alpha <= 0):
+            msg = "Expected a positive value for regularization parameter "
+            msg += f"alpha. Instead got: {alpha}"
+            raise ValueError(msg)
 
-        if beta is not None and (not isinstance(beta, numbers.Number) or beta <= 0):
-            raise ValueError(
-                "Expected a positive value for the width of the coherent Gaussian kernel. Instead got: {}".format(beta))
+        if beta is not None and (not isinstance(beta, numbers.Number)
+                                 or beta <= 0):
+            msg = "Expected a positive value for the width of the coherent "
+            msg += f"Gaussian kernel. Instead got: {beta}"
 
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
@@ -274,7 +289,8 @@ class DeformableRegistration:
             Returned params dependent on registration method used.
         """
         self.transform_point_cloud()
-        while self.iteration < self.max_iterations and self.diff > self.tolerance:
+        while self.iteration < self.max_iterations and \
+                self.diff > self.tolerance:
             self.iterate()
             if callable(callback):
                 kwargs = {'iteration': self.iteration,
