@@ -241,7 +241,7 @@ class DeformableRegistration:
 
         if beta is not None and (not isinstance(beta, numbers.Number) or beta <= 0):
             raise ValueError(
-                "Expected a positive value for the width of the coherent Gaussian kerenl. Instead got: {}".format(beta))
+                "Expected a positive value for the width of the coherent Gaussian kernel. Instead got: {}".format(beta))
 
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
