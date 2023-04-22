@@ -16,14 +16,13 @@ project, then adapted for use first in NIPY and then in skimage. PyMVPA
 is an MIT-licensed project.
 """
 
-# Stdlib imports
+import ast
 import os
 import re
-from inspect import getmodule
 from importlib import import_module
 
 from types import BuiltinFunctionType, FunctionType
-from inspect import ismethod
+from inspect import ismethod, getmodule
 
 # suppress print statements (warnings for empty files)
 DEBUG = True
@@ -41,6 +40,7 @@ class ApiDocWriter(object):
                  rst_extension='.txt',
                  package_skip_patterns=None,
                  module_skip_patterns=None,
+                 object_skip_patterns=None,
                  other_defines=True
                  ):
         r"""Initialize package for parsing.
@@ -68,6 +68,8 @@ class ApiDocWriter(object):
             ``.util.console``
             If is None, gives default. Default is:
             ['\.setup$', '\._']
+        object_skip_patterns: None or sequence of {strings, regexps}
+            skip some specific class or function
         other_defines : {True, False}, optional
             Whether to include classes and functions that are imported in a
             particular module but not defined there.
@@ -76,10 +78,14 @@ class ApiDocWriter(object):
             package_skip_patterns = ['\\.tests$']
         if module_skip_patterns is None:
             module_skip_patterns = ['\\.setup$', '\\._']
+        if object_skip_patterns is None:
+            object_skip_patterns = []
+
         self.package_name = package_name
         self.rst_extension = rst_extension
         self.package_skip_patterns = package_skip_patterns
         self.module_skip_patterns = module_skip_patterns
+        self.object_skip_patterns = object_skip_patterns
         self.other_defines = other_defines
 
     def get_package_name(self):
@@ -214,31 +220,70 @@ class ApiDocWriter(object):
             A list of (public) class names in the module.
         """
         mod = import_module(uri)
-        # find all public objects in the module.
-        obj_strs = [obj for obj in dir(mod) if not obj.startswith('_')]
-        functions = []
-        classes = []
-        for obj_str in obj_strs:
-            # find the actual object from its string representation
-            if obj_str not in mod.__dict__:
-                continue
-            obj = mod.__dict__[obj_str]
-            # Check if function / class defined in module
-            if not self.other_defines and not getmodule(obj) == mod:
-                continue
-            # figure out if obj is a function or class
-            if (hasattr(obj, 'func_name') or
-                    isinstance(obj, BuiltinFunctionType) or
-                    ismethod(obj) or isinstance(obj, FunctionType)):
-                functions.append(obj_str)
-            else:
-                try:
-                    issubclass(obj, object)
-                    classes.append(obj_str)
-                except TypeError:
-                    # not a function or class
-                    pass
-        return functions, classes
+        patterns = '(?:{0})'.format('|'.join(self.object_skip_patterns))
+        pat = re.compile(patterns)
+
+        if mod.__file__.endswith('.py'):
+            with open(mod.__file__) as fi:
+                node = ast.parse(fi.read())
+
+            functions = []
+            classes = []
+            for n in node.body:
+
+                if not hasattr(n, 'name'):
+                    if not isinstance(n, ast.Assign):
+                        continue
+
+                if isinstance(n, ast.ClassDef):
+                    if n.name.startswith('_') or pat.search(n.name):
+                        continue
+                    classes.append(n.name)
+                elif isinstance(n, ast.FunctionDef):
+                    if n.name.startswith('_') or pat.search(n.name):
+                        continue
+                    functions.append(n.name)
+                # Specific condition for vtk and fury
+                elif isinstance(n, ast.Assign):
+                    try:
+                        if isinstance(n.value, ast.Call):
+                            if isinstance(n.targets[0], ast.Tuple):
+                                continue
+                            functions.append(n.targets[0].id)
+                        elif hasattr(n.value, 'attr') and n.value.attr.startswith('vtk'):
+                            classes.append(n.targets[0].id)
+                    except Exception:
+                        print(mod.__file__)
+                        print(n.lineno)
+                        print(n.targets[0])
+
+            return functions, classes
+        else:
+            # find all public objects in the module.
+            obj_strs = [obj for obj in dir(mod) if not obj.startswith('_')]
+            functions = []
+            classes = []
+            for obj_str in obj_strs:
+                # find the actual object from its string representation
+                if obj_str not in mod.__dict__:
+                    continue
+                obj = mod.__dict__[obj_str]
+                # Check if function / class defined in module
+                if not self.other_defines and not getmodule(obj) == mod:
+                    continue
+                # figure out if obj is a function or class
+                if (hasattr(obj, 'func_name') or
+                        isinstance(obj, BuiltinFunctionType) or
+                        ismethod(obj) or isinstance(obj, FunctionType)):
+                    functions.append(obj_str)
+                else:
+                    try:
+                        issubclass(obj, object)
+                        classes.append(obj_str)
+                    except TypeError:
+                        # not a function or class
+                        pass
+            return functions, classes
 
     def _parse_lines(self, linesource):
         """Parse lines of text for functions and classes."""

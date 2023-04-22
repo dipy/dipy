@@ -51,7 +51,7 @@ extensions = ['sphinx.ext.autodoc',
               'prepare_gallery',
               'sphinx_gallery.gen_gallery',
               'math_dollar',  # has to go before numpydoc
-              'numpydoc',
+            #   'numpydoc',
               'github']
 
 numpydoc_show_class_members = True
