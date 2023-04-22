@@ -112,6 +112,7 @@ files = [
     "tracking_deterministic.py",
     "tracking_introduction_eudx.py",
     "tracking_pft.py",
+    "tracking_ptt.py",
     "tracking_probabilistic.py",
     "tracking_sfm.py",
     "tracking_stopping_criterion.py",

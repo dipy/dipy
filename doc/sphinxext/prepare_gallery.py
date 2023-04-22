@@ -154,7 +154,8 @@ def prepare_gallery(app=None):
 
     try:
         examples_config = sorted(
-            [examplesConfig(folder_name=k, **v) for k, v in desc_examples.items()]
+            [examplesConfig(folder_name=k, **v)
+             for k, v in desc_examples.items()]
         )
     except Exception as e:
         msg = f'Error parsing examples description file: {e}.\n\n'
@@ -162,7 +163,8 @@ def prepare_gallery(app=None):
         abort(msg)
 
     if examples_config[0].position != 0:
-        msg = 'Main section must be first in examples description file with position=0'
+        msg = 'Main section must be first in examples description file with'
+        msg += 'position=0'
         abort(msg)
     elif examples_config[0].folder_name != 'main':
         msg = "Main section must be named 'main' in examples description file"
@@ -181,7 +183,8 @@ def prepare_gallery(app=None):
         # Create folder for each example
         if example.position != 0:
             folder = Path(
-                examples_revamp_dir, f'{example.position:02d}_{example.folder_name}'
+                examples_revamp_dir,
+                f'{example.position:02d}_{example.folder_name}'
             )
         else:
             folder = Path(examples_revamp_dir)
@@ -192,7 +195,8 @@ def prepare_gallery(app=None):
         # Create readme file
         if example.readme.startswith('file:'):
             filename = example.readme.split('file:')[1].strip()
-            shutil.copy(Path(examples_dir, filename), Path(folder, 'README.rst'))
+            shutil.copy(Path(examples_dir, filename), Path(folder,
+                                                           'README.rst'))
         else:
             with open(Path(folder, 'README.rst'), 'w') as fi:
                 fi.write(example.readme)
@@ -214,9 +218,9 @@ def prepare_gallery(app=None):
 
             new_name = None
             if filename in included_examples:
-                # file need ot be renamed to make it unique for sphinx-gallery
-                occurences = included_examples.count(fi)
-                new_name = f'{filename[:-3]}_{occurences+1}.py'
+                # file need to be renamed to make it unique for sphinx-gallery
+                occurrences = included_examples.count(fi)
+                new_name = f'{filename[:-3]}_{occurrences+1}.py'
             if already_converted(xfile):
                 shutil.copy(Path(examples_dir, filename),
                             Path(folder, new_name or filename))
@@ -231,7 +235,8 @@ def prepare_gallery(app=None):
     for all_ex in all_examples:
         if all_ex in files_in_config:
             continue
-        msg = f'File {all_ex} not found in examples description file: {f_example_desc}'
+        msg = f'File {all_ex} not found in examples '
+        msg += f"description file: {f_example_desc}"
         logger.warning(msg)
 
 
@@ -255,4 +260,4 @@ if __name__ == '__main__':
     gallery_name = sys.argv[1]
     outdir = sys.argv[2]
 
-    prepare_gallery(app=None, package=package, outdir=outdir)
+    prepare_gallery(app=None)
