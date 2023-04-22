@@ -461,6 +461,30 @@ def test_generate_bvecs():
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
+def test_getitem_idx():
+    # Create a GradientTable object with some test b-values and b-vectors
+    bvals = np.array([0, 100, 200, 300, 400])
+    # value should be in increasing order as b-value affects the diffusion
+    # weighting of the image, and the amount of diffusion weighting increases
+    # with increasing b-value.
+    bvecs = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]])
+    # the b-vectors should be unit-length vectors
+    gradients = bvals[:, None] * bvecs
+    gtab = GradientTable(gradients)
+
+    # Test with a single index
+    gtab_slice1 = gtab[1]
+    assert np.array_equal(gtab_slice1.bvals, np.array([100.]))
+    assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
+
+    # Test with a range of indices
+    gtab_slice2 = gtab[2:5]
+    assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
+    assert np.array_equal(gtab_slice2.bvecs,
+                          np.array([[0., 1., 0.], [0., 0., 1.],
+                                    [1., 0., 0.]]))
+
+
 def test_round_bvals():
     bvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     b = round_bvals(bvals_gt)

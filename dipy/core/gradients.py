@@ -10,6 +10,7 @@ from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.deprecator import deprecated_params
 
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -210,6 +211,37 @@ class GradientTable(object):
         denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
+
+    def __getitem__(self, idx):
+        if isinstance(idx, int):
+            idx = [idx]  # convert in a list if integer.
+
+        elif isinstance(idx, slice):
+            # Get the lower bound of the slice
+            slice_start = idx.start if idx.start is not None else 0
+            # Check if it is different from b0_threshold
+            if slice_start != self.b0_threshold:
+                # Update b0_threshold and warn the user
+                self.b0_threshold = slice_start
+                warn(f"Updating b0_threshold to {slice_start} for slicing.",
+                     UserWarning, stacklevel=2)
+                idx = range(*idx.indices(len(self.bvals)))
+
+        mask = self.bvals[idx] > self.b0_threshold
+        # Apply the mask to select the desired b-values and b-vectors
+        bvals_selected = self.bvals[idx][mask]
+        bvecs_selected = self.bvecs[idx, :][mask, :]
+
+        # Create a new MyGradientTable object with the selected b-values
+        # and b-vectors
+        return gradient_table_from_bvals_bvecs(bvals_selected,
+                                               bvecs_selected,
+                                               big_delta=self.big_delta,
+                                               small_delta=self.small_delta,
+                                               b0_threshold=self.b0_threshold,
+                                               btens=self.btens)
+        # removing atol parameter as it's not in the constructor
+        # of GradientTable.
 
     @property
     def info(self, use_logging=False):
