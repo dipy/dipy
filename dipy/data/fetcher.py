@@ -356,6 +356,16 @@ fetch_stanford_pve_maps = _make_fetcher(
      '1654b20aeb35fc2734a0d7928b713874',
      '2e244983cf92aaf9f9d37bc7716b37d5'])
 
+fetch_stanford_tracks = _make_fetcher(
+    "fetch_stanford_tracks",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://raw.githubusercontent.com/dipy/dipy_datatest/main/',
+    ['hardi-lr-superiorfrontal.trk', ],
+    ['hardi-lr-superiorfrontal.trk', ],
+    ['2d49aaf6ad6c10d8d069bfb319bf3541',],
+    doc="Download stanford track for examples",
+    data_size="1.4MB")
+
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
@@ -1252,7 +1262,7 @@ def read_mni_template(version="a", contrast="T2"):
     if contrast == "mask" and version == "a":
         raise ValueError("No template mask available for MNI 2009a")
 
-    if not(isinstance(contrast, str)) and version == "c":
+    if not isinstance(contrast, str) and version == "c":
         for k in contrast:
             if k == "T2":
                 raise ValueError("No T2 image for MNI template 2009c")
