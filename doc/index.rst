@@ -18,17 +18,24 @@ Highlights
 
 **DIPY 1.7.0** is now available. New features include:
 
-
+- NF: BundleWarp - Streamline-based Nonlinear registration added.
+- NF: DKI+ - Diffusion Kurtosis constraints added.
+- NF: Synb0 added.
+- NF: New Parallel Transport Tractography (PTT) added.
+- NF: Fast Streamline Search algorithm added.
+- NF: New denoising methods based on 1D CNN added.
+- Handle Asymmetric Spherical Functions.
+- Large update of Horizon features.
 - Large codebase cleaning.
-- Large documentation update.
-- Closed 75 issues and merged 41 pull requests.
+- Large documentation update. Integration of Sphinx-Gallery.
+- Closed 53 issues and merged 34 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
 *************
 Announcements
 *************
-- :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April , 2023.
+- :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
 - :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
 - :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 11, 2022.
 

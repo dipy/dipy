@@ -24,11 +24,19 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.7.0 (, April , 2023)
+* 1.7.0 (Sunday, April 23, 2023)
 
+- NF: BundleWarp - Streamline-based Nonlinear registration added.
+- NF: DKI+ - Diffusion Kurtosis constraints added.
+- NF: Synb0 added.
+- NF: New Parallel Transport Tractography (PTT) added.
+- NF: Fast Streamline Search algorithm added.
+- NF: New denoising methods based on 1D CNN added.
+- Handle Asymmetric Spherical Functions.
+- Large update of Horizon features.
 - Large codebase cleaning.
-- Large documentation update.
-- Closed 75 issues and merged 41 pull requests.
+- Large documentation update. Integration of Sphinx-Gallery.
+- Closed 53 issues and merged 34 pull requests.
 
 * 1.6.0 (Monday, January 16, 2023)
 
