@@ -22,6 +22,7 @@ files = []
 readme = """
 Quick Start
 -----------
+
 """
 position = 1
 enable = true
@@ -35,6 +36,7 @@ files = [
 readme = """
 Preprocessing
 -------------
+
 """
 position = 4
 enable = true
@@ -57,6 +59,13 @@ files = [
 readme = """
 Reconstruction
 --------------
+
+Below, an overview of all reconstruction models available on DIPY.
+
+Note: Some reconstruction models do not have a tutorial yet
+
+.. include:: ../reconstruction_models_list.rst
+
 """
 position = 7
 enable = true
@@ -92,6 +101,7 @@ files = [
 readme = """
 Contextual Enhancement
 ----------------------
+
 """
 position = 10
 enable = true
@@ -104,6 +114,7 @@ files = [
 readme = """
 Fiber Tracking
 --------------
+
 """
 position = 13
 enable = true
@@ -125,6 +136,7 @@ files = [
 readme = """
 Streamlines Analysis and Connectivity
 -------------------------------------
+
 """
 position = 17
 enable = true
@@ -143,6 +155,7 @@ files = [
 readme = """
 Registration
 ------------
+
 """
 position = 20
 enable = true
@@ -162,6 +175,7 @@ files = [
 readme = """
 Segmentation
 ------------
+
 """
 position = 23
 enable = true
@@ -180,6 +194,7 @@ files = [
 readme = """
 Simulation
 ----------
+
 """
 position = 26
 enable = true
@@ -193,6 +208,7 @@ files = [
 readme = """
 Multiprocessing
 ---------------
+
 """
 position = 29
 enable = true
@@ -205,6 +221,7 @@ files = [
 readme = """
 File Formats
 ------------
+
 """
 position = 32
 enable = true
@@ -215,7 +232,8 @@ files = [
 [visualization]
 readme = """
 Visualization
-------------
+-------------
+
 """
 position = 35
 enable = true
@@ -230,6 +248,7 @@ files = [
 readme = """
 Workflows
 --------
+
 """
 position = 37
 enable = true

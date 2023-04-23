@@ -49,8 +49,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
               'prepare_gallery',
-              'sphinx_gallery.gen_gallery',
               'math_dollar',  # has to go before numpydoc
+              'sphinx_gallery.gen_gallery',
             #   'numpydoc',
               'github']
 
@@ -258,6 +258,8 @@ sphinx_gallery_conf = {
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
+     'default_thumb_file': '_static/dipy_full_logo.png',
+     'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
 # Example configuration for intersphinx: refer to the Python standard library.

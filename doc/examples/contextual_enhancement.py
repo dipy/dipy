@@ -71,19 +71,20 @@ are unknown, we use the approximation given in [Portegies2015b]_.
 
 """
 
-"""
-The enhancement is evaluated on the Stanford HARDI dataset
-(150 orientations, b=2000 $s/mm^2$) where Rician noise is added. Constrained
-spherical deconvolution is used to model the fiber orientations.
-
-"""
-
 import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, default_sphere
 from dipy.io.image import load_nifti_data
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.sims.voxel import add_noise
+from dipy.reconst.csdeconv import odf_sh_to_sharp
+
+"""
+The enhancement is evaluated on the Stanford HARDI dataset
+(150 orientations, b=2000 $s/mm^2$) where Rician noise is added. Constrained
+spherical deconvolution is used to model the fiber orientations.
+
+"""
 
 # Read data
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -194,7 +195,7 @@ The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 """
 
 # Sharpen via the Sharpening Deconvolution Transform
-from dipy.reconst.csdeconv import odf_sh_to_sharp
+
 csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8,
                                     lambda_=0.1)
 
