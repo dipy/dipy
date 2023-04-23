@@ -91,7 +91,7 @@ Issues (53):
 * :ghissue:`2540`: Updates the default value of rm_small_clusters variable in slr_with_qbx function
 * :ghissue:`2609`: NF: DKI+ constraints
 * :ghissue:`2596`: NF - Parallel Transport Tractography (PTT)
-* :ghissue:`2756`: Remove unusued inplace param from gibbs_removal()
+* :ghissue:`2756`: Remove unused inplace param from gibbs_removal()
 * :ghissue:`2754`: [Question] dipy/denoise/gibbs.py
 * :ghissue:`2740`: Integration of Denoising Method for DWI with 1D CNN
 * :ghissue:`2773`: Including EVAC+ and util function
