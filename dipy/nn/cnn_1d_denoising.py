@@ -144,7 +144,7 @@ class Cnn1DDenoiser:
         """Split the input data into random train and test subsets.
 
         Parameters
-        -----------
+        ----------
         x: numpy array
            input data.
         y: numpy array

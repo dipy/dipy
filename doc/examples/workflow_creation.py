@@ -108,8 +108,8 @@ This is the method that will wrap everything that is needed to make a flow
 command line ready then run it.
 """
 
-if __name__ == "__main__":
-    run_flow(AppendTextFlow())
+# if __name__ == "__main__":
+#     run_flow(AppendTextFlow())
 
 """
 This is the only thing needed to make your workflow available through the

@@ -356,6 +356,16 @@ fetch_stanford_pve_maps = _make_fetcher(
      '1654b20aeb35fc2734a0d7928b713874',
      '2e244983cf92aaf9f9d37bc7716b37d5'])
 
+fetch_stanford_tracks = _make_fetcher(
+    "fetch_stanford_tracks",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://raw.githubusercontent.com/dipy/dipy_datatest/main/',
+    ['hardi-lr-superiorfrontal.trk', ],
+    ['hardi-lr-superiorfrontal.trk', ],
+    ['2d49aaf6ad6c10d8d069bfb319bf3541',],
+    doc="Download stanford track for examples",
+    data_size="1.4MB")
+
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
@@ -651,6 +661,17 @@ fetch_ptt_minimal_dataset = _make_fetcher(
      '9cb88f88d664019ba80c0b372c8bafec'],
     doc="Download FOD and seeds for PTT testing and examples",
     data_size="203KB")
+
+
+fetch_bundle_warp_dataset = _make_fetcher(
+    "fetch_bundle_warp_dataset",
+    pjoin(dipy_home, 'bundle_warp'),
+    'https://ndownloader.figshare.com/files/',
+    ['40026343', '40026346'],
+    ['m_UF_L.trk', 's_UF_L.trk', ],
+    ['4db38ca1e80c16d6e3a97f88f0611187',
+     'c1499005baccfab865ce38368d7a4c7f'],
+    doc="Download Bundle Warp dataset")
 
 
 def get_fnames(name='small_64D'):
@@ -1252,7 +1273,7 @@ def read_mni_template(version="a", contrast="T2"):
     if contrast == "mask" and version == "a":
         raise ValueError("No template mask available for MNI 2009a")
 
-    if not(isinstance(contrast, str)) and version == "c":
+    if not isinstance(contrast, str) and version == "c":
         for k in contrast:
             if k == "T2":
                 raise ValueError("No T2 image for MNI template 2009c")

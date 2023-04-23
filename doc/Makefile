@@ -56,12 +56,24 @@ gitwash-update:
             --project-url=https://dipy.org \
             --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
-html: api rstexamples html-after-examples
+html-legacy: api rstexamples html-after-examples-legacy
 	# build full docs including examples
 
-html-after-examples:
+html-after-examples-legacy:
 	# Standard html build after examples have been prepared
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	@echo
+	@echo "Build finished. The HTML pages are in _build/html."
+
+html: api
+	#  Standard html build after examples have been prepared
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	@echo
+	@echo "Build finished. The HTML pages are in _build/html."
+
+html-no-examples: api
+	# Standard html build after examples have been prepared
+	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 

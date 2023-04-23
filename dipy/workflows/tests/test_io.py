@@ -66,8 +66,9 @@ def test_io_fetch_fetcher_datanames():
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
                      'tissue_data', 'qte_lte_pte', 'resdnn_weights',
                      'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste',
-                     'synb0_weights', 'synb0_test',
-                     'evac_weights', 'evac_test', 'ptt_minimal_dataset']
+                     'synb0_weights', 'synb0_test', 'bundle_warp_dataset',
+                     'evac_weights', 'evac_test', 'ptt_minimal_dataset',
+                     'stanford_tracks']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)

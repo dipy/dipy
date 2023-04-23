@@ -43,7 +43,6 @@ import dipy.reconst.fwdti as fwdti
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 from dipy.data import fetch_hbn
-from dipy.segment.mask import median_otsu
 import os.path as op
 import nibabel as nib
 from dipy.core.gradients import gradient_table

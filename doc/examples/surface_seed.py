@@ -90,7 +90,7 @@ seed_n = seeds_from_surface_coordinates(triangles, normals, tri_idx, trilin_co)
 Create dot actor for seeds (blue)
 """
 
-seed_actors = actor.dots(seed_pts, color=(0, 0, 1), dot_size=4.0)
+seed_actors = actor.dot(seed_pts, colors=(0, 0, 1), dot_size=4.0)
 
 """
 Create line actors for seeds normals (green outside, red inside)

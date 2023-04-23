@@ -13,3 +13,5 @@ scikit-image
 statsmodels
 numpydoc
 sphinx!=4.4
+sphinx-gallery>=0.10.0
+tomli>=2.0.1
