@@ -1,5 +1,7 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+from packaging.version import Version
+import pytest
 
 import numpy.testing as npt
 import numpy as np
@@ -11,11 +13,19 @@ from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import Streamlines
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.image import load_nifti_data
+from dipy.io.image import load_nifti_data, save_nifti
 from dipy.tracking.streamline import set_number_of_points
-from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.segment import MedianOtsuFlow, EVACPlusFlow
 from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
+from dipy.nn.evac import EVACPlus
+from dipy.utils.optpkg import optional_package
 
+tf, have_tf, _ = optional_package('tensorflow')
+
+if have_tf:
+    from dipy.nn.evac import EVACPlus
+    if Version(tf.__version__) < Version('2.0.0'):
+        raise ImportError('Please upgrade to TensorFlow 2+')
 
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
@@ -102,3 +112,32 @@ def test_recobundles_flow():
         bmd_value = BMD.distance(x0.tolist())
 
         npt.assert_equal(bmd_value < 1, True)
+
+
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
+def test_evac_plus_flow():
+    with TemporaryDirectory() as out_dir:
+        file_path = get_fnames('evac_test_data')
+
+        volume = np.load(file_path)['input'][0]
+        temp_affine = np.eye(4)
+        temp_path = pjoin(out_dir, 'temp.nii.gz') 
+        save_nifti(temp_path, volume, temp_affine)
+        save_masked = True
+
+        evac_flow = EVACPlusFlow()
+        evac_flow.run(temp_path, out_dir=out_dir, save_masked=save_masked)
+
+        mask_name = evac_flow.last_generated_outputs['out_mask']
+        masked_name = evac_flow.last_generated_outputs['out_masked']
+
+        evac = EVACPlus()
+        mask = evac.predict(volume, temp_affine)
+        masked = volume * mask
+
+        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
+        npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
+
+        result_masked_data = load_nifti_data(pjoin(out_dir, masked_name))
+
+        npt.assert_array_equal(result_masked_data, masked)

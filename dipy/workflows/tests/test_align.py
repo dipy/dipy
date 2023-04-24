@@ -5,7 +5,8 @@ from tempfile import TemporaryDirectory
 import numpy.testing as npt
 import numpy as np
 import nibabel as nib
-
+import pytest
+from dipy.utils.optpkg import optional_package
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
@@ -16,7 +17,10 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow, MotionCorrectionFlow)
+                                  SlrWithQbxFlow, MotionCorrectionFlow,
+                                  BundleWarpFlow)
+
+_, have_pd, _ = optional_package("pandas")
 
 
 def test_reslice():
@@ -436,3 +440,36 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_path), True)
         warped_map_path = syn_flow.last_generated_outputs['out_field']
         npt.assert_equal(os.path.isfile(warped_map_path), True)
+
+
+@pytest.mark.skipif(not have_pd, reason='Requires pandas')
+def test_bundlewarp_flow():
+    with TemporaryDirectory() as out_dir:
+
+        data_path = get_fnames('fornix')
+
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
+
+        f = Streamlines(fornix)
+        f1 = f.copy()
+
+        f1_path = pjoin(out_dir, "f1.trk")
+        sft = StatefulTractogram(f1, data_path, Space.RASMM)
+        save_tractogram(sft, f1_path, bbox_valid_check=False)
+
+        f2 = f1.copy()
+        f2._data += np.array([50, 0, 0])
+
+        f2_path = pjoin(out_dir, "f2.trk")
+        sft = StatefulTractogram(f2, data_path, Space.RASMM)
+        save_tractogram(sft, f2_path, bbox_valid_check=False)
+
+        bw_flow = BundleWarpFlow(force=True)
+        bw_flow.run(f1_path, f2_path, out_dir=out_dir)
+
+        out_linearly_moved = pjoin(out_dir, "linearly_moved.trk")
+        out_nonlinearly_moved = pjoin(out_dir, "nonlinearly_moved.trk")
+
+        assert os.path.exists(out_linearly_moved)
+        assert os.path.exists(out_nonlinearly_moved)

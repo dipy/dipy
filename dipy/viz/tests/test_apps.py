@@ -16,7 +16,7 @@ fury, has_fury, setup_module = optional_package('fury')
 if has_fury:
     from fury import window
 
-    from dipy.viz.app import horizon
+    from dipy.viz.horizon.app import horizon
 
 skip_it = use_xvfb == 'skip'
 
@@ -114,7 +114,7 @@ def test_horizon():
                 clusters_lt=np.inf, clusters_gt=0,
                 world_coords=False, interactive=False)
 
-    msg = 'Currently native coordinates are not supported for streamlines'
+    msg = 'Currently native coordinates are not supported for streamlines.'
     npt.assert_(msg in str(ve.exception))
 
     # only images

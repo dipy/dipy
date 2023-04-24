@@ -25,25 +25,22 @@ b0 from the Stanford HARDI dataset:
 
 """
 
+from os.path import join as pjoin
+
 import numpy as np
 import nibabel as nib
-import os.path as op
 
-if not op.exists('lr-superiorfrontal.trk'):
-    from streamline_tools import *
-    vox_size = hardi_img.header.get_zooms()[0]
-else:
-    from dipy.core.gradients import gradient_table
-    from dipy.data import get_fnames
-    from dipy.io.gradients import read_bvals_bvecs
-    from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 
-    hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
-    data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
-    vox_size = hardi_img.header.get_zooms()[0]
-    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-    gtab = gradient_table(bvals, bvecs)
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+vox_size = hardi_img.header.get_zooms()[0]
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 """
 The second one will be the T2-contrast MNI template image, which we'll need to
@@ -214,13 +211,21 @@ regtools.overlay_slices(static, warped_moving, None, 2, 'Static', 'Moving',
 """
 
 """
+Let's now fetch a set of streamlines from the Stanford HARDI dataset.
+Those streamlines were generated during the :ref:`streamline_tools` example.
+
 We read the streamlines from file in voxel space:
 
 """
-
+from dipy.data import fetch_stanford_tracks
 from dipy.io.streamline import load_tractogram
 
-sft = load_tractogram('lr-superiorfrontal.trk', 'same')
+
+streamlines_files = fetch_stanford_tracks()
+lr_superiorfrontal_path = pjoin(streamlines_files[1],
+                                'hardi-lr-superiorfrontal.trk')
+
+sft = load_tractogram(lr_superiorfrontal_path, 'same')
 
 
 """

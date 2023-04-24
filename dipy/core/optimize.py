@@ -393,6 +393,9 @@ class PositiveDefiniteLeastSquares:
                for common diffusion MRI models using sum of squares
                programming". NeuroImage 209, 2020, 116405.
         """
+        # Check for cvxpy solver
+        if not have_cvxpy:
+            raise ValueError('CVXPY package needed to enforce constraints.')
 
         # Input
         self.A = A

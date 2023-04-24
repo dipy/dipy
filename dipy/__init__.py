@@ -21,6 +21,7 @@ Subpackages
                   diffusion spectrum, etc.)
  segment       -- Tractography segmentation
  sims          -- MRI phantom signal simulation
+ stats         -- Tractometry
  tracking      -- Tractography, metrics for streamlines
  viz           -- Visualization and GUIs
 
@@ -36,12 +37,6 @@ import sys
 
 from .info import __version__
 from .testing import setup_test
-
-# Test callable
-from numpy.testing import Tester
-test = Tester().test
-bench = Tester().bench
-del Tester
 
 # Plumb in version etc info stuff
 from .pkg_info import get_pkg_info as _get_pkg_info

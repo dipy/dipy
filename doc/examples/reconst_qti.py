@@ -10,7 +10,7 @@ of how to estimate the diffusion and covariance tensors using DIPY.
 
 Theory
 ======
- 
+
 In QTI, the tissue microstructure is represented by a diffusion tensor
 distribution (DTD). Here, DTD is denoted by $\mathbf{D}$ and the voxel-level
 diffusion tensor from DTI by $\langle\mathbf{D}\rangle$, where
@@ -84,9 +84,8 @@ importing the required modules and functions:
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.image import load_nifti
 import matplotlib.pyplot as plt
-import nibabel as nib
 import numpy as np
 import dipy.reconst.qti as qti
 

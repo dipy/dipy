@@ -23,7 +23,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dipy.viz import regtools
 from dipy.data import fetch_stanford_hardi
-from dipy.data.fetcher import fetch_syn_data
 from dipy.io.image import load_nifti
 from dipy.align.imaffine import (AffineMap,
                                  MutualInformationMetric,

@@ -39,7 +39,3 @@ class GlobalHorizon(object):
         self.streamline_actors = []
         self.centroid_actors = []
         self.cluster_actors = []
-
-        # roi level sharing
-        self.roi_opacity = 1
-        self.slicer_roi_actor = []
