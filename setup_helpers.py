@@ -14,7 +14,7 @@ try:
 except ImportError:
     # can remove this except case once we require setuptools>=59.0
     from distutils.errors import CompileError, LinkError
-from pkg_resources import parse_version
+from packaging.version import Version
 
 
 BAT_TEMPLATE = \
@@ -230,7 +230,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
     if found_ver == 'unknown':
         return 'We need {0} version {1}, but cannot get version'.format(
             pkg_name, min_ver)
-    if parse_version(found_ver) >= parse_version(min_ver):
+    if Version(found_ver) >= Version(min_ver):
         return None
     return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 
