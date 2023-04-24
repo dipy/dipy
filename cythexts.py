@@ -4,7 +4,7 @@ from hashlib import sha1
 
 from setuptools.command.build_ext import build_ext
 from setuptools.command.sdist import sdist
-from pkg_resources import parse_version
+from packaging.version import Version
 
 
 def derror_maker(klass, msg):
@@ -117,7 +117,7 @@ def cyproc_exts(exts, cython_min_version,
                             'Need cython>={0} to build extensions '
                             'but cannot import "Cython"'.format(
                             cython_min_version)), True
-    if parse_version(cyversion) >= parse_version(cython_min_version):
+    if Version(cyversion) >= Version(cython_min_version):
         from Cython.Distutils import build_ext as extbuilder
         return extbuilder, True
     return derror_maker(build_ext,
