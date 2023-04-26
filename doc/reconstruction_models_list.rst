@@ -133,7 +133,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
-        <td></td>
+        <td> At least one non-zero b-shell, recommended 23 b-shells ranging from 0 to 4000 in a 258 direction grid-sampling scheme</td>
         <td><a href=''>Yeh 2010</a></td>
     </tr>
     <tr>
