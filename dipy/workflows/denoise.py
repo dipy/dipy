@@ -22,9 +22,9 @@ class Patch2SelfFlow(Workflow):
         return 'patch2self'
 
     def run(self, input_files, bval_files, model='ols',
-            b0_threshold=50, alpha=1.0, verbose=False, b0_denoising=True,
-            clip_negative_vals=False, shift_intensity=True, out_dir='',
-            out_denoised='dwi_patch2self.nii.gz'):
+            b0_threshold=50, alpha=1.0, verbose=False, patch_radius=0,
+            b0_denoising=True, clip_negative_vals=False, shift_intensity=True,
+            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
