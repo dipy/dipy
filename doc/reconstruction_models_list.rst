@@ -199,7 +199,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>5 b=0, 50 directions at 3 non-zero b-shells: b=1000, b=2000, b=3000</td>
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/25109526'>Jeurissen 2014</a></td>
     </tr>
     <tr>
