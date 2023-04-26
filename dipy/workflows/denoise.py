@@ -55,7 +55,7 @@ class Patch2SelfFlow(Workflow):
             Regularization parameter only for ridge regression model.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
-        patch_radius : int or 1 D array, optional
+        patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel
         b0_denoising : bool, optional
             Skips denoising b0 volumes if set to False.
@@ -78,6 +78,8 @@ class Patch2SelfFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
         for fpath, bvalpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
