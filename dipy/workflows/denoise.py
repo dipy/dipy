@@ -55,6 +55,8 @@ class Patch2SelfFlow(Workflow):
             Regularization parameter only for ridge regression model.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
+        patch_radius : int or 1 D array, optional
+            The radius of the local patch to be taken around each voxel
         b0_denoising : bool, optional
             Skips denoising b0 volumes if set to False.
         clip_negative_vals : bool, optional
@@ -87,7 +89,8 @@ class Patch2SelfFlow(Workflow):
 
                 denoised_data = patch2self(
                     data, bvals, model=model, b0_threshold=b0_threshold,
-                    alpha=alpha, verbose=verbose, b0_denoising=b0_denoising,
+                    alpha=alpha, verbose=verbose, patch_radius=patch_radius, 
+                    b0_denoising=b0_denoising, 
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
                 )
