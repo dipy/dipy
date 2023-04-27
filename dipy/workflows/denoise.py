@@ -22,9 +22,9 @@ class Patch2SelfFlow(Workflow):
         return 'patch2self'
 
     def run(self, input_files, bval_files, model='ols',
-            b0_threshold=50, alpha=1.0, verbose=False, b0_denoising=True,
-            clip_negative_vals=False, shift_intensity=True, out_dir='',
-            out_denoised='dwi_patch2self.nii.gz'):
+            b0_threshold=50, alpha=1.0, verbose=False, patch_radius=0,
+            b0_denoising=True, clip_negative_vals=False, shift_intensity=True,
+            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
@@ -55,6 +55,8 @@ class Patch2SelfFlow(Workflow):
             Regularization parameter only for ridge regression model.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
+        patch_radius : variable int, optional
+            The radius of the local patch to be taken around each voxel
         b0_denoising : bool, optional
             Skips denoising b0 volumes if set to False.
         clip_negative_vals : bool, optional
@@ -76,6 +78,8 @@ class Patch2SelfFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
         for fpath, bvalpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
@@ -87,7 +91,8 @@ class Patch2SelfFlow(Workflow):
 
                 denoised_data = patch2self(
                     data, bvals, model=model, b0_threshold=b0_threshold,
-                    alpha=alpha, verbose=verbose, b0_denoising=b0_denoising,
+                    alpha=alpha, verbose=verbose, patch_radius=patch_radius, 
+                    b0_denoising=b0_denoising, 
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
                 )
