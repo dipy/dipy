@@ -54,8 +54,8 @@ def test_io_peaks():
 
         fname3 = 'test3.pam5'
         pam4 = PeaksAndMetrics()
-        npt.assert_raises(AttributeError, save_peaks, pjoin(tmpdir, fname3),
-                          pam4)
+        npt.assert_raises((ValueError, AttributeError), save_peaks,
+                          pjoin(tmpdir, fname3), pam4)
 
         fname4 = 'test4.pam5'
         del pam.affine
@@ -107,8 +107,8 @@ def test_io_save_peaks_error():
         pam = PeaksAndMetrics()
 
         npt.assert_raises(IOError, save_peaks, pjoin(tmpdir, 'test.pam'), pam)
-        npt.assert_raises(AttributeError, save_peaks, pjoin(tmpdir, fname),
-                          pam)
+        npt.assert_raises((ValueError, AttributeError), save_peaks,
+                          pjoin(tmpdir, fname), pam)
 
         pam.affine = np.eye(4)
         pam.peak_dirs = np.random.rand(10, 10, 10, 5, 3)
