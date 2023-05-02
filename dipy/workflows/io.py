@@ -5,6 +5,8 @@ import numpy as np
 import logging
 import importlib
 from inspect import getmembers, isfunction
+from dipy.core.sphere import Sphere
+from dipy.data import get_sphere
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import (pam_to_niftis, niftis_to_pam,
                            tensor_to_pam, load_pam)
@@ -271,7 +273,7 @@ class NiftisToPamFlow(Workflow):
             shm_files=None, gfa_files=None, sphere_files=None,
             default_sphere_name='repulsion724', out_dir='',
             out_pam="peaks.pam5"):
-        """Convert pam5 files to mutiple nifti files.
+        """Convert pam5 files to multiple nifti files.
 
         Parameters
         ----------
@@ -296,8 +298,8 @@ class NiftisToPamFlow(Workflow):
             default_sphere option will be used
         default_sphere: string, optional
             Specify default sphere to use for spherical harmonics
-            representation. This option can be supersed by sphere_files option.
-            default: repulsion724.
+            representation. This option can be superseded by
+            sphere_files option. default: repulsion724.
             possible options: ['symmetric362', 'symmetric642', 'symmetric724',
             'repulsion724', 'repulsion100', 'repulsion200']
         out_dir : string, optional
@@ -357,8 +359,8 @@ class TensorToPamFlow(Workflow):
             default_sphere option will be used
         default_sphere_name : string, optional
             Specify default sphere to use for spherical harmonics
-            representation. This option can be supersed by sphere_files option.
-            default: repulsion724.
+            representation. This option can be superseded by sphere_files
+            option. default: repulsion724.
             possible options: ['symmetric362', 'symmetric642', 'symmetric724',
             'repulsion724', 'repulsion100', 'repulsion200']
         out_dir : string, optional
@@ -398,7 +400,7 @@ class PamToNiftisFlow(Workflow):
             out_peaks_indices='peaks_indices.nii.gz',
             out_shm='shm.nii.gz', out_gfa='gfa.nii.gz',
             out_sphere='sphere.txt'):
-        """Convert pam5 files to mutiple nifti files.
+        """Convert pam5 files to multiple nifti files.
 
         Parameters
         ----------
