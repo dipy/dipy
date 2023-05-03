@@ -42,7 +42,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>DTI-style acquistion, multiple b=0, all shells should be < 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)</td>
         <td>
             <a href='https://www.ncbi.nlm.nih.gov/pubmed/19623619'>Pasternak 2009</a>,
             <a href='https://github.com/ReScience-Archives/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017/raw/master/article/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017.pdf'>Henriques et al., 2017</a>
