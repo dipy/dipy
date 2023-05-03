@@ -112,7 +112,7 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>QBI-style acquisition (60-64 directions, b-value 1000mm/s^2)</td>
         <td><a href=''>Descoteaux 2009</a></td>
     </tr>
     <tr>
