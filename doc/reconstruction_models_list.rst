@@ -147,8 +147,8 @@
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Rokem 2015</a></td>
+        <td>At least 40 directions, b-value above 1000mm/s^2</td>
+        <td><a href='https://doi.org/10.1371/journal.pone.0123272'>Rokem 2015</a></td>
     </tr>
     <tr>
         <td><a href='#q-ball-constant-solid-angle'>Q-Ball (OPDT)</a></td>
