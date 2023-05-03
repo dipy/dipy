@@ -121,8 +121,10 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td>515 diffusion encodings (acceleration in subsequent studies with ~100 diffusion encoding directions in half sphere of the q-space with b-values = 1000, 2000, 3000s/mm2)</td>
-        <td><a href='https://doi.org/10.1016/j.neuroimage.2008.03.036'>Wedeen 2008</a></td>
-        <td><a href='https://doi.org/10.1016/j.neuroimage.2013.05.057'>Sotiropoulos 2013</a></td>
+        <td>
+            <a href='https://doi.org/10.1016/j.neuroimage.2008.03.036'>Wedeen 2008</a>,
+            <a href='https://doi.org/10.1016/j.neuroimage.2013.05.057'>Sotiropoulos 2013</a>
+        </td>
         </tr>
     <tr>
         <td><a href='#dsi-with-deconvolution'>DSID</a></td>
