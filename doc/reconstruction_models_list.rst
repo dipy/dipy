@@ -120,7 +120,7 @@
         <td class='red'>No</td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
-        <td>515 diffusion encodings (acceleration in subsequent studies with ~100 diffusion encoding directions in half sphere of the q-space with b-values = 1000, 2000, 3000s/mm2)</td>
+        <td>515 diffusion encodings, b-values from 12,000 to 18,000 s/mm^2. Acceleration in subsequent studies with ~100 diffusion encoding directions in half sphere of the q-space with b-values = 1000, 2000, 3000s/mm2)</td>
         <td>
             <a href='https://doi.org/10.1016/j.neuroimage.2008.03.036'>Wedeen 2008</a>,
             <a href='https://doi.org/10.1016/j.neuroimage.2013.05.057'>Sotiropoulos 2013</a>
@@ -131,8 +131,8 @@
         <td class='red'>No</td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
-        <td></td>
-        <td><a href=''>Canales-Rodriguez 2010</a></td>
+        <td>203 diffusion encodings (isotropic 3D grid points in the q-space contained within a sphere with radius 3.6), maximum b-value=4000mm/s^2</td>
+        <td><a href='https://doi.org/10.1016/j.neuroimage.2009.11.066'>Canales-Rodriguez 2010</a></td>
     </tr>
     <tr>
         <td><a href='#generalized-q-sampling-imaging'>GQI - GQI2</a></td>
