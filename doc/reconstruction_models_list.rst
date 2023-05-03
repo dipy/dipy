@@ -53,7 +53,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>Dual spin echo diffusion-weighted 2D EPI images were acquired with b values of 0, 500, 1000, 1500, 2000, and 2500 s/mm^2 (max b value of 2000 suggested as sufficient in brain tissue); at least 15 directions</td>
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/15906300'>Jensen 2005</a></td>
     </tr>
     <tr>
@@ -61,15 +61,18 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href='https://www.sciencedirect.com/science/article/pii/S1053811911006148'>Fieremans 2011</a></td>
+        <td>DKI-style acquisition: at least two non-zero b shells (max b value 2000), minimum of 15 directions; typically b-values in increments of 500 from 0 to 2000, 30 directions</td>
+        <td>
+            <a href='https://www.sciencedirect.com/science/article/pii/S1053811911006148'>Fieremans 2011</a>,
+            <a href='https://doi.org/10.1002/mrm.22655'>Tabesh 2010</a>
+        </td>
     </tr>
     <tr>
         <td><a href='#diffusion-kurtosis-imaging'>Mean Signal DKI</a></td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>b-values in increments of 500 from 0 to 2000, 30 directions</td>
         <td><a href='https://www.repository.cam.ac.uk/handle/1810/281993'>Henriques, 2018</a></td>
     </tr>
     <tr>
