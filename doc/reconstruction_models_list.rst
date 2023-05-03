@@ -229,7 +229,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>Evenly distributed geometric sampling scheme of 216 measurements, 5 b-values (50, 250, 50, 1000, 200mm/s^2), measurement tensors of four shapes: stick, prolate, sphere, and plane</td>
         <td><a href='https://doi.org/10.1016/j.neuroimage.2016.02.039'>Westin 2016</a></td>
     </tr>
     <tr>
@@ -237,8 +237,11 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href='https://doi.org/10.1016/j.neuroimage.2021.118198'>Herberthson 2021</a></td>
+        <td>At least one b=0, minimum of 39 acquisitions with spherical and linear encoding; optimal 120 (see <a href='https://doi.org/10.1002/hbm.26175'>Morez 2023</a>), ideal 217 see <a href='https://www.sciencedirect.com/science/article/pii/S1053811921004754?via%3Dihub#tbl0001'>Herberthson 2021 Table 1</a></td>
+        <td>
+            <a href='https://doi.org/10.1016/j.neuroimage.2021.118198'>Herberthson 2021</a>
+            <a href='https://doi.org/10.1002/hbm.26175'>Morez 2023</a>
+        </td>
     </tr>
     <tr>
         <td>Ball & Stick</td>
