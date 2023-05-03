@@ -1,7 +1,5 @@
 """ Distutils / setuptools helpers for versioning
 
-This code started life in the nibabel package as nisexts/sexts.py
-
 Code transferred by Matthew Brett, who holds copyright.
 
 This version under the standard dipy BSD license.
