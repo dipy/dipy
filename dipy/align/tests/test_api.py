@@ -1,11 +1,11 @@
 import os.path as op
 import pytest
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import numpy.testing as npt
 
 import nibabel as nib
-import nibabel.tmpdirs as nbtmp
 
 import dipy.data as dpd
 import dipy.core.gradients as dpg
@@ -45,7 +45,7 @@ def setup_module():
 
 
 def test_syn_registration():
-    with nbtmp.InTemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         warped_moving, mapping = syn_registration(subset_b0,
                                                   subset_t2,
                                                   moving_affine=hardi_affine,
@@ -223,7 +223,7 @@ def test_register_series():
 
 def test_register_dwi_series_and_motion_correction():
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
-    with nbtmp.InTemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         # Use an abbreviated data-set:
         img = nib.load(fdata)
         data = img.get_fdata()[..., :10]
@@ -261,7 +261,7 @@ def test_streamline_registration():
     base_aff[:3, 3] = np.array([1, 2, 3])
     base_aff[3, 3] = 1
 
-    with nbtmp.InTemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         for use_aff in [None, base_aff]:
             fname1 = op.join(tmpdir, 'sl1.trk')
             fname2 = op.join(tmpdir, 'sl2.trk')

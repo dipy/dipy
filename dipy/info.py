@@ -75,10 +75,10 @@ MIT licenses.
 # versions for dependencies
 # Check these versions against .travis.yml and requirements.txt
 CYTHON_MIN_VERSION = '0.29.24'
-NUMPY_MIN_VERSION = '1.14.5'
-SCIPY_MIN_VERSION = '1.1'
-NIBABEL_MIN_VERSION = '3.0.0'
-H5PY_MIN_VERSION = '2.8.0'
+NUMPY_MIN_VERSION = '1.22.4'
+SCIPY_MIN_VERSION = '1.8.1'
+NIBABEL_MIN_VERSION = '4.0.0'
+H5PY_MIN_VERSION = '3.7.0'
 PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
 
@@ -115,33 +115,32 @@ EXTRAS_REQUIRE = {
     ],
     "doc": [
         "cython",
-        "numpy",
-        "scipy",
-        "nibabel>=3.0.0",
+        "numpy>=1.22.4",
+        "scipy>=1.8.1",
+        "nibabel>=4.0.0",
         "h5py",
         "h5py<3.0.0; sys_platform == 'win32'",
         "cvxpy",
         "pandas",
         "tables",
         "matplotlib",
-        "fury>=0.8.0",
+        "fury>=0.9.0",
         "scikit-learn",
         "scikit-image",
         "statsmodels",
-        "boto3"
-
+        "boto3",
     ],
     "viz": [
-        "fury>=0.8.0",
-        "matplotlib"
+        "fury>=0.9.0",
+        "matplotlib",
     ],
     "ml": [
         "scikit-learn",
         "pandas",
         "statsmodels",
         "tables",
-        "tensorflow"
-        "tensorflow-addons"
+        "tensorflow",
+        "tensorflow-addons",
     ]
 }
 
