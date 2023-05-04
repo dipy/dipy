@@ -155,11 +155,11 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>At least 64 directions, maximum b-values 3000-4000mm/s^2, multi-shell, isotropic voxel size</td>
         <td>
-            <a href=''>Tuch 2004</a>,
+            <a href='https://doi.org/10.1002/mrm.20279'>Tuch 2004</a>,
             <a href='https://www.ncbi.nlm.nih.gov/pubmed/17763358'>Descoteaux 2007</a>,
-            <a href=''>Tristan-Vega 2010</a>
+            <a href='https://doi.org/10.1007/978-3-642-04271-3_51'>Tristan-Vega 2010</a>
         </td>
     </tr>
     <tr>
@@ -178,8 +178,11 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Ozarslan 2013</a></td>
+        <td>Six unit sphere shells with b = 1000, 2000, 3000, 4000, 5000, 6000 s/mm^2 along 19, 32, 56, 87, 125, and 170 directions (see <a href='https://doi.org/10.1016/j.neuroimage.2019.05.078'>Olson 2019</a> for candidate sub-sampling schemes)</td>
+        <td>
+            <a href='https://doi.org/10.1016%2Fj.neuroimage.2013.04.016'>Ozarslan 2013</a>
+            <a href='https://doi.org/10.1016/j.neuroimage.2019.05.078'>Olson 2019</a>
+        </td>
     </tr>
     <tr>
         <td>MAPL</td>
