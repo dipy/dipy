@@ -248,8 +248,8 @@
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href='https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.10609'>Behrens 2013</a></td>
+        <td>Three b=0, 60 evenly distributed directions per <a href='https://doi.org/10.1002/(SICI)1522-2594(199909)42:3%3C515::AID-MRM14%3E3.0.CO;2-Q'>Jones 1999</a> at b-value 1000mm/s^2</td>
+        <td><a href='https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.10609'>Behrens 2003</a></td>
     </tr>
         <tr>
         <td><a href='#studying-diffusion-time-dependence-using-qt-dmri'>QTau-MRI</a></td>
