@@ -274,7 +274,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>72 directions at each of 5 evenly spaced b-values from 0.5 to 2.5 ms/μm2, 5 b-values from 3 to 5 ms/μm2, 5 b-values from 5.5 to 7.5 ms/μm2, and 3 b-values from 8 to 9 ms/μm2 /  b=0 ms/μm^-2, and along 33 directions at b-values from 0.2–3 ms/μm^-2 in steps of 0.2 ms/μm^−2 (24 point spherical design and 9 directions identified for rapid kurtosis estimation)</td>
         <td><a href='https://doi.org/10.1002/mrm.27606'>NetoHe2019</a>, <a href='https://www.nature.com/articles/sdata201672'>Kaden2016b</a></td>
     </tr>
     </table>
