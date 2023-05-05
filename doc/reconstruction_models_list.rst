@@ -189,15 +189,15 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Fick 2016</a></td>
+        <td>Multi-shell similar to WU-Minn HCP, with minimum of 60 samples from 2 shells b-value 1000 and 3000s/mm^2</td>
+        <td><a href='https://doi.org/10.1016/j.neuroimage.2016.03.046'>Fick 2016</a></td>
     </tr>
     <tr>
         <td><a href='#constrained-spherical-deconvolution'>CSD</a></td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>Minimum: 20 gradient directions and a b-value of 1000 s/mm^2; benefits additionally from 60 direction HARDI data with b-value = 3000s/mm^2 or multi-shell</td>
         <td>
             <a href=''>Tournier 2017</a>
             <a href=''>Descoteaux 2008</a>
