@@ -167,7 +167,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>Multi-shell HARDI data (500, 1000, and 2000 s/mm^2; minimum 2 non-zero b-shells) or DSI (514 images in a cube of five lattice-units, one b=0)</td>
         <td>
             <a href=''>Merlet 2013</a>,
             <a href=''>Özarslan 2009</a>,
