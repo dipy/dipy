@@ -26,7 +26,7 @@
         <th>Single Shell</th>
         <th>Multi Shell</th>
         <th>Cartesian</th>
-        <th>Ideal Data Requirements</th>
+        <th>Paper Data Descriptions</th>
         <th>References</th>
     </tr>
     <tr>
