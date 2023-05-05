@@ -80,7 +80,7 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>HARDI data (preferably 7T) with at least 200 diffusion images at b=3000 s/mm^2, or multi-shell data with high angular resolution</td>
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/20535807'>Aganj 2010</a></td>
     </tr>
     <tr>
