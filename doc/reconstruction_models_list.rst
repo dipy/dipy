@@ -259,7 +259,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>Minimum 200 volumes of multi-spherical dMRI (multi-shell, multi-diffusion time; varying gradient directions, gradient strengths, and diffusion times)</td>
         <td><a href=''>Fick 2017</a></td>
     </tr>
     </tr>
@@ -268,7 +268,7 @@
         <td class='green'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>HARDI data with 60 directions at b-value = 3000 s/mm^2, 7 b=0 (Minimum: HARDI data with at least 30 directions)</td>
         <td><a href='http://archive.ismrm.org/2014/0730.html'>DellAcqua2014</a></td>
     </tr>
     </tr>
