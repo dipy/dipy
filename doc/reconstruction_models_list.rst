@@ -265,7 +265,7 @@
     </tr>
         <tr>
         <td>Power Map</td>
-        <td class='green'>Yes</td>
+        <td class='green'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
