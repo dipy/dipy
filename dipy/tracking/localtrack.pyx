@@ -56,14 +56,21 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
+        double dir[3]
+        double vs[3]
+        double seed[3]
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
+    for i in range(3):
+        dir[i] = first_step[i]
+        vs[i] = voxel_size[i]
+        seed[i] = seed_pos[i]
+
     stream_status = TRACKPOINT
-    i, stream_status = dg.generate_streamline(seed_pos, first_step, voxel_size,
-                                              step_size, sc,
+    i, stream_status = dg.generate_streamline(seed, dir, vs, step_size, sc,
                                               streamline, stream_status,
                                               fixedstep)
     return i, stream_status
