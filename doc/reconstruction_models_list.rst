@@ -216,15 +216,18 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Anderson 2005</a></td>
+        <td>Multi-shell 64 direction b-values of 1000, 2000s/mm^2 as in <a href='https://doi.org/10.1038%2Fsdata.2017.181'>Alexander 2017</a>. Original model used 1480 s/mm^2  with 92 directions and 36 b=0</td>
+        <td>
+            <a href=''>Anderson 2005</a>
+            <a href='https://doi.org/10.1038%2Fsdata.2017.181'>Alexander 2017</a>
+        </td>
     </tr>
     <tr>
         <td><a href='#robust-and-unbiased-model-based-spherical-deconvolution-(rumba-sd)'>RUMBA-SD</a></td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
-        <td></td>
+        <td>HARDI data with 64 directions at b = 2500s/mm^2, 3 b=0 images (full original acquisition: 256 directions on a sphere at b = 2500s/mm^2, 36 b=0 volumes)</td>
         <td><a href='https://doi.org/10.1371/journal.pone.0138910'>Canales-Rodríguez 2015</a></td>
     </tr>
     <tr>
