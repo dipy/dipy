@@ -143,7 +143,13 @@ class LocalTracking(object):
                         stream_status == StreamlineStatus.ENDPOINT or
                         stream_status == StreamlineStatus.OUTSIDEIMAGE):
                     continue
-                first_step = -first_step
+                if stepsF > 1:
+                    # Use the opposite of the first selected orientation for
+                    # the backward tracking segment
+                    first_step = F[0] - F[1]
+                    first_step = first_step / np.linalg.norm(first_step)
+                else:
+                    first_step = -first_step
                 stepsB, stream_status = self._tracker(s, first_step, B)
                 if not (self.return_all or
                         stream_status == StreamlineStatus.ENDPOINT or

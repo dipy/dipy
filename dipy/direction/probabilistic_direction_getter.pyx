@@ -93,14 +93,23 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         cdef:
             cnp.npy_intp i, idx, _len
             double[:] newdir, pmf
+            double vertex[3]
             double last_cdf, random_sample
             cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
-
-        bool_array = self._adj_matrix[
-            (direction[0], direction[1], direction[2])]
+        try:
+            bool_array = self._adj_matrix[
+                (direction[0], direction[1], direction[2])]
+        except KeyError:
+            # if direction is not a sphere vertex, we find the closest vertex
+            for i in range(3):
+                vertex[i] = direction[i]
+            idx = self.sphere.find_closest(vertex)
+            bool_array = self._adj_matrix[(self.vertices[idx, :][0],
+                                           self.vertices[idx, :][1],
+                                           self.vertices[idx, :][2])]
 
         for i in range(_len):
             if bool_array[i] == 0:
@@ -157,14 +166,25 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         cdef:
             cnp.npy_intp _len, max_idx
             double[:] newdir, pmf
+            double vertex[3]
             double max_value
             cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
 
-        bool_array = self._adj_matrix[
-            (direction[0], direction[1], direction[2])]
+        try:
+            bool_array = self._adj_matrix[
+                (direction[0], direction[1], direction[2])]
+        except KeyError:
+            # if direction is not a sphere vertex, we find the closest vertex
+            print("oh no!")
+            for i in range(3):
+                vertex[i] = direction[i]
+            idx = self.sphere.find_closest(vertex)
+            bool_array = self._adj_matrix[(self.vertices[idx, :][0],
+                                           self.vertices[idx, :][1],
+                                           self.vertices[idx, :][2])]
 
         max_idx = 0
         max_value = 0.0
