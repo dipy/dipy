@@ -268,7 +268,7 @@
     </tr>
         <tr>
         <td>Power Map</td>
-        <td class='green'>No</td>
+        <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td>HARDI data with 60 directions at b-value = 3000 s/mm^2, 7 b=0 (Minimum: HARDI data with at least 30 directions)</td>
