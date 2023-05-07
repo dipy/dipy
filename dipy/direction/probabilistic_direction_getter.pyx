@@ -178,7 +178,6 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
                 (direction[0], direction[1], direction[2])]
         except KeyError:
             # if direction is not a sphere vertex, we find the closest vertex
-            print("oh no!")
             for i in range(3):
                 vertex[i] = direction[i]
             idx = self.sphere.find_closest(vertex)
