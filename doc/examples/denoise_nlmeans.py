@@ -79,7 +79,8 @@ save_nifti('denoised.nii.gz', den, affine)
 
 """
 An improved version of non-local means denoising is adaptive soft coefficient
-matching, please refer to :ref:`example_denoise_ascm` for more details.
+matching, please refer to
+:ref:`sphx_glr_examples_built_preprocessing_denoise_ascm.py` for more details.
 
 References
 ----------

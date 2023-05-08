@@ -211,7 +211,8 @@ save_nifti('HARDI193_S0.nii.gz', S0s, affine)
 
 """
 Now, that we learned how to load dMRI datasets we can start the analysis.
-See example :ref:`example_reconst_dti` to learn how to create FA maps.
+See example :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py` to
+learn how to create FA maps.
 
 .. include:: ../links_names.inc
 
