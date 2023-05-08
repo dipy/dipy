@@ -46,13 +46,14 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage',
               'sphinx.ext.mathjax',
+              'sphinx.ext.viewcode',
               'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
-              'prepare_gallery',
               'math_dollar',  # has to go before numpydoc
+              'sphinx.ext.napoleon',
+              'prepare_gallery',
               'sphinx_gallery.gen_gallery',
               'sphinxcontrib.bibtex',
-            #   'numpydoc',
               'github']
 
 numpydoc_show_class_members = True
