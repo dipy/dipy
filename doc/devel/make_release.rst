@@ -6,35 +6,6 @@ A guide to making a DIPY release
 
 A guide for developers who are doing a DIPY release
 
-.. _release-tools:
-
-Release tools
-=============
-
-There are some release utilities that come with nibabel_. nibabel should
-install these as the ``nisext`` package, and the testing stuff is understandably
-in the ``testers`` module of that package. DIPY has Makefile targets for their
-use.  The relevant targets are::
-
-    make check-version-info
-    make check-files
-    make sdist-tests
-
-The first installs the code from a git archive, from the repository, and for
-in-place use, and runs the ``get_info()`` function to confirm that installation
-is working and information parameters are set correctly.
-
-The second (``sdist-tests``) makes an sdist source distribution archive,
-installs it to a temporary directory, and runs the tests of that install.
-
-If you have a version of nibabel trunk past February 11th 2011, there will also
-be a functional make target::
-
-    make bdist-egg-tests
-
-This builds an egg (which is a zip file), hatches it (unzips the egg) and runs
-the tests from the resulting directory.
-
 .. _release-checklist:
 
 Release checklist
@@ -46,7 +17,7 @@ Release checklist
 
 * Check whether there are no build failing on `Travis`. Indeed, ``PRE`` build is
   allowed to fail and does not block a PR merge but it should block release !
-  So make sure that ``PRE`` build is not failing. 
+  So make sure that ``PRE`` build is not failing.
 
 * Review and update the release notes.  Review and update the :file:`Changelog`
   file.  Get a partial list of contributors with something like::
@@ -87,45 +58,6 @@ Release checklist
     git branch -D pre-release-test # in case branch already exists
     git co -b pre-release-test
 
-* Run the builder and review the output from
-  http://nipy.bic.berkeley.edu/builders/dipy-release-checks   This builder does
-  *not* check the outputs - they will likely all be green - you have to check the
-  ``stdio`` output for each step using the web interface.
-
-  The ``dipy-release-checks`` builder runs these tests::
-
-    make distclean
-    python -m compileall .
-    make sdist-tests
-    make bdist-egg-tests
-    make check-version-info
-    make check-files
-
-* ``make bdist-egg-tests`` may well fail because of a problem with the script
-  tests; if you have a recent (>= March 31 2013) nibabel ``nisext`` package, you
-  could try instead doing::
-
-    python -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy", label="not slow and not script_test")'
-
-  Eventually we should update the ``bdist-egg-tests`` makefile target.
-
-* ``make check-version-info`` checks how the commit hash is stored in the
-  installed files.  You should see something like this::
-
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'archive substitution', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
-    /var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy/__init__.pyc
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'installation', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
-    /Users/mb312/dev_trees/dipy/dipy/__init__.pyc
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'repository', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/Users/mb312/dev_trees/dipy/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
-
-* ``make check-files`` checks if the source distribution is picking up all the
-  library and script files.  Look for output at the end about missed files, such
-  as::
-
-    Missed script files:  /Users/mb312/dev_trees/dipy/bin/nib-dicomfs, /Users/mb312/dev_trees/dipy/bin/nifti1_diagnose.py
-
-  Fix ``setup.py`` to carry across any files that should be in the distribution.
-
 * Clean and compile::
 
     make distclean
@@ -147,19 +79,6 @@ Release checklist
   At the moment this generates lots of errors from the autodoc documentation
   running the doctests in the code, where the doctests pass when run in pytest -
   we should find out why this is at some point, but leave it for now.
-
-* Trigger builds of all the binary build testers for DIPY, using the web
-  interface. You may need permissions set to do this - contact Matthew or
-  Eleftherios if you do.
-
-  At the moment, the useful DIPY binary build testers are:
-
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-35
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-27
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist64-27
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist64-35
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.6
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.7
 
 * Build and test the DIPY wheels.  See the `wheel builder README
   <https://github.com/MacPython/dipy-wheels>`_ for instructions.  In summary,

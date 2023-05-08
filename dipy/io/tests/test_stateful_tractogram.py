@@ -1,8 +1,9 @@
 import json
 import os
+from os.path import join as pjoin
 from copy import deepcopy
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_allclose, assert_array_equal, assert_
@@ -255,12 +256,13 @@ def test_to_center_equivalence():
 def test_trk_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    with InTemporaryDirectory():
-        save_tractogram(sft, 'gs_iter.trk')
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sft, pjoin(tmpdir, 'gs_iter.trk'))
         tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
         for _ in range(100):
-            sft_iter = load_tractogram('gs_iter.trk', filepath_dix['gs.nii'],
+            sft_iter = load_tractogram(pjoin(tmpdir, 'gs_iter.trk'),
+                                       filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
                             sft_iter.streamlines.get_data(),
@@ -271,17 +273,18 @@ def test_trk_iterative_saving_loading():
 def test_tck_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    with InTemporaryDirectory():
-        save_tractogram(sft, 'gs_iter.tck')
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sft, pjoin(tmpdir, 'gs_iter.tck'))
         tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
         for _ in range(100):
-            sft_iter = load_tractogram('gs_iter.tck', filepath_dix['gs.nii'],
+            sft_iter = load_tractogram(pjoin(tmpdir, 'gs_iter.tck'),
+                                       filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
                             sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
-            save_tractogram(sft_iter, 'gs_iter.tck')
+            save_tractogram(sft_iter, pjoin(tmpdir, 'gs_iter.tck'))
 
 
 def test_trx_iterative_saving_loading():
@@ -306,33 +309,33 @@ def test_fib_iterative_saving_loading():
         return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    with InTemporaryDirectory():
-        save_tractogram(sft, 'gs_iter.fib')
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sft, pjoin(tmpdir, 'gs_iter.fib'))
         tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
         for _ in range(100):
-            sft_iter = load_tractogram('gs_iter.fib', filepath_dix['gs.nii'],
+            sft_iter = load_tractogram(pjoin(tmpdir, 'gs_iter.fib'), filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
                             sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
-            save_tractogram(sft_iter, 'gs_iter.fib')
+            save_tractogram(sft_iter, pjoin(tmpdir, 'gs_iter.fib'))
 
 
 def test_dpy_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.dpy'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    with InTemporaryDirectory():
-        save_tractogram(sft, 'gs_iter.dpy')
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sft, pjoin(tmpdir, 'gs_iter.dpy'))
         tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
         for _ in range(100):
-            sft_iter = load_tractogram('gs_iter.dpy', filepath_dix['gs.nii'],
+            sft_iter = load_tractogram(pjoin(tmpdir, 'gs_iter.dpy'), filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
                             sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
-            save_tractogram(sft_iter, 'gs_iter.dpy')
+            save_tractogram(sft_iter, pjoin(tmpdir, 'gs_iter.dpy'))
 
 
 def test_iterative_to_vox_transformation():
@@ -487,8 +490,8 @@ def test_random_point_color():
 
     try:
         sft.data_per_point = coloring_dict
-        with InTemporaryDirectory():
-            save_tractogram(sft, 'random_points_color.trk')
+        with TemporaryDirectory() as tmp_dir:
+            save_tractogram(sft, pjoin(tmp_dir, 'random_points_color.trk'))
         assert_(True)
     except (TypeError, ValueError):
         assert_(False)
@@ -507,8 +510,8 @@ def test_random_point_gray():
 
     try:
         sft.data_per_point = coloring_dict
-        with InTemporaryDirectory():
-            save_tractogram(sft, 'random_points_gray.trk')
+        with TemporaryDirectory() as tmpdir:
+            save_tractogram(sft, pjoin(tmpdir, 'random_points_gray.trk'))
         assert_(True)
     except (ValueError):
         assert_(False)
@@ -536,8 +539,8 @@ def test_random_streamline_color():
 
     try:
         sft.data_per_point = coloring_dict
-        with InTemporaryDirectory():
-            save_tractogram(sft, 'random_streamlines_color.trk')
+        with TemporaryDirectory() as tmpdir:
+            save_tractogram(sft, pjoin(tmpdir, 'random_streamlines_color.trk'))
         assert_(True)
     except (TypeError, ValueError):
         assert_(False)
