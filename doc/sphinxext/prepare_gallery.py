@@ -225,8 +225,16 @@ def prepare_gallery(app=None):
                 shutil.copy(Path(examples_dir, filename),
                             Path(folder, new_name or filename))
             else:
-                with open(Path(folder, new_name or filename), 'w') as f:
-                    f.write(convert_to_sphinx_gallery_format(xfile))
+                with open(Path(folder, new_name or filename), 'w') as fi:
+                    fi.write(convert_to_sphinx_gallery_format(xfile))
+            # Add additional link_names
+            with open(Path(folder, new_name or filename), 'r+') as fi:
+                content = fi.read()
+                fi.seek(0, 0)
+                link_name = f'{sphx_glr_sep}\n'
+                link_name += '# .. include:: ../../links_names.inc\n#\n'
+                fi.write(content + link_name)
+
             included_examples.append(filename)
 
     # Check if all python examples are in the description file
