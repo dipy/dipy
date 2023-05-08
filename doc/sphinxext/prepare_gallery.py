@@ -101,13 +101,11 @@ def convert_to_sphinx_gallery_format(content):
                 if len(line.rstrip()) > 4 \
                   and (line.rstrip().endswith('"""') or line.rstrip().endswith("'''")):
                     # single line doc
-                    # import ipdb; ipdb.set_trace()
                     tmp_line = line.replace('"""', '').replace("'''", '')
                     new_content += f'{sphx_glr_sep}\n'
                     new_content += f'# {tmp_line}'
                 else:
                     # must be start of multiline block
-                    # import ipdb; ipdb.set_trace()
                     indocs = True
                     new_content += f'{sphx_glr_sep}\n'
             else:
@@ -127,6 +125,41 @@ def convert_to_sphinx_gallery_format(content):
         new_content += line
 
     return new_content
+
+
+def folder_explicit_order():
+    srcdir = os.path.abspath(os.path.dirname(__file__))
+    examples_dir = os.path.join(srcdir, '..', 'examples')
+
+    f_example_desc = Path(examples_dir, '_valid_examples.toml')
+    if not f_example_desc.exists():
+        msg = f'No valid examples description file found in {examples_dir}'
+        msg += "(e.g '_valid_examples.toml')"
+        abort(msg)
+
+    with open(f_example_desc, 'rb') as fobj:
+        try:
+            desc_examples = tomllib.load(fobj)
+        except Exception as e:
+            msg = f'Error Loading examples description file: {e}.\n\n'
+            msg += 'Please check the file format.'
+            abort(msg)
+
+    if 'main' not in desc_examples.keys():
+        msg = 'No main section found in examples description file'
+        abort(msg)
+
+    try:
+        folder_list = sorted(
+            [examplesConfig(folder_name=k.lower(), **v)
+             for k, v in desc_examples.items()]
+        )
+    except Exception as e:
+        msg = f'Error parsing examples description file: {e}.\n\n'
+        msg += 'Please check the file format.'
+        abort(msg)
+
+    return [f.folder_name for f in folder_list if f.enable]
 
 
 def prepare_gallery(app=None):
@@ -154,7 +187,7 @@ def prepare_gallery(app=None):
 
     try:
         examples_config = sorted(
-            [examplesConfig(folder_name=k, **v)
+            [examplesConfig(folder_name=k.lower(), **v)
              for k, v in desc_examples.items()]
         )
     except Exception as e:
@@ -183,9 +216,7 @@ def prepare_gallery(app=None):
         # Create folder for each example
         if example.position != 0:
             folder = Path(
-                examples_revamp_dir,
-                f'{example.position:02d}_{example.folder_name}'
-            )
+                examples_revamp_dir, f'{example.folder_name}')
         else:
             folder = Path(examples_revamp_dir)
 
@@ -268,4 +299,5 @@ if __name__ == '__main__':
     gallery_name = sys.argv[1]
     outdir = sys.argv[2]
 
+    print(folder_explicit_order())
     prepare_gallery(app=None)
