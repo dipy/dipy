@@ -223,7 +223,7 @@ But how well does the model do in explaining the diffusion data? We can
 quantify that: the ``FiberFit`` class instance has a `predict` method, which
 can be used to invert the model and predict back either the data that was used
 to fit the model, or other unseen data (e.g. in cross-validation, see
-:ref:`kfold_xval`).
+:ref:`sphx_glr_examples_built_reconstruction_kfold_xval.py`).
 
 Without arguments, the ``.predict()`` method will predict the diffusion signal
 for the same gradient table that was used in the fit data, but ``gtab`` and
@@ -368,8 +368,9 @@ substantial reduction of the error.
 
 Note that for full-brain tractographies *LiFE* can require large amounts of
 memory. For detailed memory profiling of the algorithm, based on the
-streamlines generated in :ref:`example_probabilistic_fiber_tracking`, see `this
-IPython notebook
+streamlines generated in
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`, see
+`this IPython notebook
 <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
 
 For the Matlab implementation of LiFE, head over to `Franco Pestilli's github

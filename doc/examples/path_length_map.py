@@ -34,8 +34,8 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 """
 First, we need to generate some streamlines and visualize. For a more complete
 description of these steps, please refer to the
-:ref:`example_probabilistic_fiber_tracking` and the Visualization of ROI
-Surface Rendered with Streamlines Tutorials.
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
+and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 """
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
