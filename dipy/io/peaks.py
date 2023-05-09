@@ -29,7 +29,7 @@ def _safe_save(group, array, name):
 
 @deprecate_with_version("dipy.io.peaks.load_peaks is deprecated, Please use"
                         "dipy.io.peaks.load_pam instead",
-                        since='1.2', until='1.4')
+                        since='1.7', until='1.9')
 def load_peaks(fname, verbose=False):
     """Load a PeaksAndMetrics HDF5 file (PAM5).
 
@@ -128,7 +128,7 @@ def load_pam(fname, verbose=False):
 
 @deprecate_with_version("dipy.io.peaks.save_peaks is deprecated, Please use"
                         "dipy.io.peaks.save_pam instead",
-                        since='1.2', until='1.4')
+                        since='1.7', until='1.9')
 def save_peaks(fname, pam, affine=None, verbose=False):
     """Save PeaksAndMetrics object attributes in a PAM5 file (HDF5).
 
@@ -243,7 +243,7 @@ def save_pam(fname, pam, affine=None, verbose=False):
 
 @deprecate_with_version("dipy.io.peaks.peaks_to_niftis is deprecated, Please"
                         " use dipy.io.peaks.pam_to_niftis instead",
-                        since='1.2', until='1.4')
+                        since='1.7', until='1.9')
 def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
                     fname_gfa, reshape_dirs=False):
     """Save SH, directions, indices and values of peaks to Nifti.
