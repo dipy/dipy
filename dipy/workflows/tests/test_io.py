@@ -15,8 +15,7 @@ from dipy.reconst.dti import TensorModel
 from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
                                PamToNiftisFlow, NiftisToPamFlow,
                                TensorToPamFlow)
-from nibabel.tmpdirs import TemporaryDirectory
-from tempfile import mkstemp
+
 fname_log = mkstemp()[1]
 
 logging.basicConfig(level=logging.INFO,

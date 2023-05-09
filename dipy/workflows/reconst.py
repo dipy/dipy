@@ -1217,11 +1217,11 @@ class ReconstRUMBAFlow(Workflow):
 
             rumba_peaks.affine = affine
 
-            save_peaks(opam, rumba_peaks)
+            save_pam(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
+                              opeaks_indices, ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
