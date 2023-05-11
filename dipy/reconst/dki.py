@@ -380,8 +380,10 @@ def _F2m(a, b, c):
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r""" Calculate the apparent diffusion coefficient (adc) in each direction of
-    a sphere for a single voxel [1]_
+    r"""Compute apparent diffusion coefficient (adc).
+
+    Calculate the apparent diffusion coefficient (adc) in each direction of
+    a sphere for a single voxel :footcite:t:`NETOHENRIQUES201585`.
 
     Parameters
     ----------
@@ -403,10 +405,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
 
     References
     ----------
-    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
+    .. footbibliography::
     """
     adc = \
         V[:, 0] * V[:, 0] * dt[0] + \

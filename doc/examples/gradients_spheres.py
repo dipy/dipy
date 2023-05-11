@@ -18,7 +18,7 @@ For both shells let's say that we want a specific number of gradients (64) and
 we want to have the points on the sphere evenly distributed.
 
 This is possible using the ``disperse_charges`` which is an implementation of
-electrostatic repulsion [Jones1999]_.
+electrostatic repulsion :footcite:t:`Jones1999`.
 """
 
 import numpy as np
@@ -198,11 +198,10 @@ if interactive:
 
 References
 ----------
+.. footbibliography::
 
-.. [Jones1999] Jones, DK. et al. Optimal strategies for measuring diffusion in
-   anisotropic systems by magnetic resonance imaging, Magnetic Resonance in
-   Medicine, vol 42, no 3, 515-525, 1999.
+.. include:: ../../links_names.inc
 
-.. include:: ../links_names.inc
+
 
 """
