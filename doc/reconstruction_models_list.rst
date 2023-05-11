@@ -34,7 +34,7 @@
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
-        <td>- All shells should be < 1000</td>
+        <td>Typical b-value = 1000s/mm^2, maximum b-value 1200s/mm^2 (some success up to 1500s/mm^2) </td>
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/8130344'>Basser 1994</a></td>
     </tr>
     <tr>
@@ -42,7 +42,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td>DTI-style acquistion, multiple b=0, all shells should be < 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)</td>
+        <td>DTI-style acquistion, multiple b=0, all shells should be within maximum b-value of 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)</td>
         <td>
             <a href='https://www.ncbi.nlm.nih.gov/pubmed/19623619'>Pasternak 2009</a>,
             <a href='https://github.com/ReScience-Archives/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017/raw/master/article/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017.pdf'>Henriques et al., 2017</a>
