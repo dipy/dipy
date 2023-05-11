@@ -31,21 +31,20 @@ sys.path.append(os.path.abspath("sphinxext"))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.coverage",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo",
-    "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
     "sphinx.ext.ifconfig",
-    "sphinx.ext.autosummary",
-    "prepare_gallery",
-    "math_dollar",  # has to go before numpydoc
     # "sphinx.ext.napoleon",
+    "math_dollar",  # has to go before numpydoc
+    # 'numpydoc',
     "prepare_gallery",
     "sphinx_gallery.gen_gallery",
     "sphinxcontrib.bibtex",
-    # 'numpydoc',
     "github",
     "sphinx_design",
 ]
@@ -55,7 +54,7 @@ numpydoc_class_members_toctree = False
 
 # Sphinx extension for BibTeX style citations.
 # https://github.com/mcmtroffaes/sphinxcontrib-bibtex
-bibtex_bibfiles = ['diffusion.bib']
+bibtex_bibfiles = ["diffusion.bib"]
 
 # ghissue config
 github_project_url = "https://github.com/dipy/dipy"
