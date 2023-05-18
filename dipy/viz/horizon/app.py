@@ -439,11 +439,20 @@ class Horizon(object):
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
+                        """
                         warnings.warn(
                             'Your data does not have any contrast. Please, '
                             'check the value range of your data. If you want '
                             'to visualize binary images use the --roi_images '
                             'flag.')
+                        """
+                        slices_viz = SlicesVisualizer(
+                            self.show_m.iren, scene, data, affine=affine,
+                            world_coords=self.world_coords,
+                            percentiles=[0, 100])
+                        self.__tabs.append(SlicesTab(
+                            slices_viz, id=img_count + 1))
+                        img_count += 1
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
