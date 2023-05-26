@@ -219,7 +219,7 @@ def test_register_series():
     gtab = dpg.gradient_table(fbval, fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
     xformed, affines = register_series(img, ref_idx)
-    npt.assert_(np.all(affines[ref_idx] == np.eye(4)))
+    npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
     npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
 
 
