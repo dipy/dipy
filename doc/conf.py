@@ -14,6 +14,7 @@
 import os
 import re
 import sys
+import ablog
 
 # Doc generation depends on being able to import dipy
 try:
@@ -52,7 +53,8 @@ extensions = ['sphinx.ext.autodoc',
               'math_dollar',  # has to go before numpydoc
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
-              'github']
+              'github',
+              'ablog']
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
