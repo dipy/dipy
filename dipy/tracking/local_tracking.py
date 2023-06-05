@@ -182,7 +182,8 @@ class ParticleFilteringTracking(LocalTracking):
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
-                 random_seed=None, save_seeds=False):
+                 random_seed=None, save_seeds=False,
+                 min_wm_pve_before_stopping=0):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -233,6 +234,10 @@ class ParticleFilteringTracking(LocalTracking):
             random.seed).
         save_seeds : bool
             If True, return seeds alongside streamlines
+        min_wm_pve_before_stopping : int
+            Minimum white matter pve (1 - stopping_criterion.include_map -
+            stopping_criterion.exclude_map) to reach before allowing the
+            tractography to stop.
 
 
         References
@@ -260,8 +265,12 @@ class ParticleFilteringTracking(LocalTracking):
         if particle_count <= 0:
             raise ValueError("The particle count must be greater than 0.")
 
-        self.directions = np.empty((maxlen + 1, 3), dtype=float)
+        if min_wm_pve_before_stopping < 0 or min_wm_pve_before_stopping > 1:
+            raise ValueError("The min_wm_pve_before_stopping value must be "
+                             "between 0 and 1.")
 
+        self.min_wm_pve_before_stopping = min_wm_pve_before_stopping
+        self.directions = np.empty((maxlen + 1, 3), dtype=float)
         self.pft_max_trial = pft_max_trial
         self.particle_count = particle_count
         self.particle_paths = np.empty((2, self.particle_count,
@@ -302,4 +311,5 @@ class ParticleFilteringTracking(LocalTracking):
                            self.particle_dirs,
                            self.particle_weights,
                            self.particle_steps,
-                           self.particle_stream_statuses)
+                           self.particle_stream_statuses,
+                           self.min_wm_pve_before_stopping)
