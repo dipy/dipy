@@ -1313,7 +1313,11 @@ def iter_fit_tensor(step=1e4):
                                   return_S0_hat=return_S0_hat,
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            dtiparams = np.empty((size, 12), dtype=np.float64)
+            if 'return_lower_triangular' in kwargs:
+                sz = 7 if kwargs['return_lower_triangular'] else 12
+            else:
+                sz = 12
+            dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
@@ -1328,10 +1332,10 @@ def iter_fit_tensor(step=1e4):
                                                        data[i:i + step],
                                                        *args, **kwargs)
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (12, )),
+                return (dtiparams.reshape(shape + (sz, )),
                         S0params.reshape(shape + (1, )))
             else:
-                return dtiparams.reshape(shape + (12, ))
+                return dtiparams.reshape(shape + (sz, ))
 
         return wrapped_fit_tensor
 
