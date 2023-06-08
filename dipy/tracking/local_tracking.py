@@ -1,6 +1,6 @@
 import random
 from collections.abc import Iterable
-
+from warnings import warn
 import numpy as np
 
 from dipy.tracking.localtrack import local_tracker, pft_tracker
@@ -31,9 +31,16 @@ class LocalTracking:
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
+<<<<<<< HEAD
                  step_size, max_cross=None, maxlen=500, minlen=2,
                  fixedstep=True, return_all=True, random_seed=None,
                  save_seeds=False):
+=======
+                 step_size, max_cross=None, maxlen=500, fixedstep=True,
+                 return_all=True, random_seed=None, save_seeds=False,
+                 unidirectional=False, randomize_forward_direction=False,
+                 initial_directions=None):
+>>>>>>> WIP - initial tracking direction
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -74,11 +81,25 @@ class LocalTracking:
             random.seed).
         save_seeds : bool, optional
             If True, return seeds alongside streamlines
+        unidirectional : bool
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
+        initial_directions: array (N, npeaks, 3)
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel. If None, `direction_getter.initial_direction` is used.
         """
 
         self.direction_getter = direction_getter
         self.stopping_criterion = stopping_criterion
         self.seeds = seeds
+        self.unidirectional = unidirectional
+        self.randomize_forward_direction = randomize_forward_direction
+        self.initial_directions = initial_directions
+
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         if step_size <= 0:
@@ -89,6 +110,19 @@ class LocalTracking:
             raise ValueError("maxlen must be greater than or equal to minlen")
         if not isinstance(seeds, Iterable):
             raise ValueError("seeds should be (N,3) array.")
+        if (initial_directions is not None and
+                seeds.shape[0] != initial_directions.shape[0]):
+            raise ValueError("initial_directions and seeds must have the "
+                             + "same shape[0].")
+        if (initial_directions is None and unidirectional and
+                self.randomize_forward_direction is False):
+            warn("Unidirectional tractography will be performed "
+                 + "without providing initial directions nor "
+                 + "randomizing extracted initial forward "
+                 + "directions. This may introduce directional "
+                 + "biases in the reconstructed streamlines. "
+                 + "See ``initial_directions`` and "
+                 + "``randomize_forward_direction`` parameters.")
 
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
@@ -129,23 +163,32 @@ class LocalTracking:
 
         F = np.empty((self.max_length + 1, 3), dtype=float)
         B = F.copy()
-        for s in self.seeds:
-            s = np.dot(lin, s) + offset
-            # Set the random seed in numpy, random and fast_numpy (libc.stdlib)
+        for i in range(len(self.seeds)):
+            s = np.dot(lin, self.seeds[i]) + offset
+            # Set the random seed in numpy and random
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
                     % (np.iinfo(np.uint32).max - 1)
                 random.seed(s_random_seed)
                 np.random.seed(s_random_seed)
                 fast_numpy.seed(s_random_seed)
-            directions = self.direction_getter.initial_direction(s)
-            if directions.size == 0 and self.return_all:
+
+            if self.initial_directions is None:
+                directions = self.direction_getter.initial_direction(s)
+            else:
+                directions = self.initial_directions[i, :, :]
+
+            if self.randomize_forward_direction:
+                directions = [d * random.choice([1, -1]) for d in directions]
+            directions = directions[:self.max_cross]
+
+            if len(directions) == 0 and self.return_all:
                 # only the seed position
                 if self.save_seeds:
                     yield [s], s
                 else:
                     yield [s]
-            directions = directions[:self.max_cross]
+
             for first_step in directions:
                 stepsF, stream_status = self._tracker(s, first_step, F)
                 if not (self.return_all
