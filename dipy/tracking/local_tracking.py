@@ -31,16 +31,10 @@ class LocalTracking:
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-<<<<<<< HEAD
                  step_size, max_cross=None, maxlen=500, minlen=2,
                  fixedstep=True, return_all=True, random_seed=None,
-                 save_seeds=False):
-=======
-                 step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None, save_seeds=False,
-                 unidirectional=False, randomize_forward_direction=False,
-                 initial_directions=None):
->>>>>>> WIP - initial tracking direction
+                 save_seeds=False, unidirectional=False,
+                 randomize_forward_direction=False, initial_directions=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -163,8 +157,8 @@ class LocalTracking:
 
         F = np.empty((self.max_length + 1, 3), dtype=float)
         B = F.copy()
-        for i in range(len(self.seeds)):
-            s = np.dot(lin, self.seeds[i]) + offset
+        for i, s in enumerate(self.seeds):
+            s = np.dot(lin, s) + offset
             # Set the random seed in numpy and random
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
@@ -240,7 +234,8 @@ class ParticleFilteringTracking(LocalTracking):
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, save_seeds=False,
-                 min_wm_pve_before_stopping=0):
+                 min_wm_pve_before_stopping=0, unidirectional=False,
+                 randomize_forward_direction=False, initial_directions=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -298,6 +293,16 @@ class ParticleFilteringTracking(LocalTracking):
             Minimum white matter pve (1 - stopping_criterion.include_map -
             stopping_criterion.exclude_map) to reach before allowing the
             tractography to stop.
+        unidirectional : bool
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
+        initial_directions: array (N, npeaks, 3)
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel. If None, `direction_getter.initial_direction` is used.
 
 
         References
@@ -342,18 +347,22 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_steps = np.empty((2, self.particle_count), dtype=int)
         self.particle_stream_statuses = np.empty((2, self.particle_count),
                                                  dtype=int)
-        super(ParticleFilteringTracking, self).__init__(direction_getter,
-                                                        stopping_criterion,
-                                                        seeds,
-                                                        affine,
-                                                        step_size,
-                                                        max_cross,
-                                                        maxlen,
-                                                        minlen,
-                                                        True,
-                                                        return_all,
-                                                        random_seed,
-                                                        save_seeds)
+         super(ParticleFilteringTracking, self).__init__(
+            direction_getter=direction_getter,
+            stopping_criterion=stopping_criterion,
+            seeds=seeds,
+            affine=affine,
+            step_size=step_size,
+            max_cross=max_cross,
+            maxlen=maxlen,
+            minLen=minlen,
+            fixedstep=True,
+            return_all=return_all,
+            random_seed=random_seed,
+            save_seeds=save_seeds,
+            unidirectional=unidirectional,
+            randomize_forward_direction=randomize_forward_direction,
+            initial_directions=initial_directions)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
