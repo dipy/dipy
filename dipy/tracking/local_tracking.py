@@ -176,8 +176,13 @@ class LocalTracking:
             if self.initial_directions is None:
                 directions = self.direction_getter.initial_direction(s)
             else:
-                directions = self.initial_directions[i, :, :]
-
+                directions = []
+                for d in self.initial_directions[i, :, :]:
+                    d_norm = np.linalg.norm(d)
+                    if d_norm > 0:
+                        new_d = d / d_norm
+                        directions.append(new_d)
+                directions = np.array(directions)
             if self.randomize_forward_direction:
                 directions = [d * random.choice([1, -1]) for d in directions]
             directions = directions[:self.max_cross]
