@@ -234,30 +234,33 @@ def test_tracking_max_angle():
                     min_cos_sim = cos_sim
         return min_cos_sim
     np.random.seed(0)  # Random number generator initialization
-    sphere = get_sphere('repulsion100')
-    shape_img = list([5, 5, 5])
-    shape_img.extend([sphere.vertices.shape[0]])
-    mask = np.ones(shape_img[:3])
-    affine = np.eye(4)
-    random_pmf = np.random.random(shape_img)
-    seeds = seeds_from_mask(mask, affine, density=1)
-    sc = ActStoppingCriterion.from_pve(mask,
-                                       np.zeros(shape_img[:3]),
-                                       np.zeros(shape_img[:3]))
-    max_angle = 20
-    step_size = 1
-    dg = ProbabilisticDirectionGetter.from_pmf(random_pmf, max_angle, sphere,
-                                               pmf_threshold=0.1)
-    # local tracking
-    streamlines = Streamlines(LocalTracking(dg, sc, seeds, affine, step_size))
-    min_cos_sim = get_min_cos_similarity(streamlines)
-    npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
 
-    # PFT tracking
-    streamlines = Streamlines(ParticleFilteringTracking(dg, sc, seeds, affine,
-                                                        1.))
-    min_cos_sim = get_min_cos_similarity(streamlines)
-    npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+    for sphere in [get_sphere('repulsion100'),
+                   HemiSphere.from_sphere(get_sphere('repulsion100'))]:
+        shape_img = list([5, 5, 5])
+        shape_img.extend([sphere.vertices.shape[0]])
+        mask = np.ones(shape_img[:3])
+        affine = np.eye(4)
+        random_pmf = np.random.random(shape_img)
+        seeds = seeds_from_mask(mask, affine, density=1)
+        sc = ActStoppingCriterion.from_pve(mask,
+                                           np.zeros(shape_img[:3]),
+                                           np.zeros(shape_img[:3]))
+        max_angle = 20
+        step_size = 1
+        dg = ProbabilisticDirectionGetter.from_pmf(random_pmf, max_angle,
+                                                   sphere, pmf_threshold=0.1)
+        # local tracking
+        streamlines = Streamlines(LocalTracking(
+            dg, sc, seeds, affine, step_size))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+
+        # PFT tracking
+        streamlines = Streamlines(ParticleFilteringTracking(dg, sc, seeds,
+                                                            affine, 1.))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
 
 
 def test_probabilistic_odf_weighted_tracker():
