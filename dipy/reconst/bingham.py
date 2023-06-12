@@ -1,9 +1,17 @@
-# -*- coding: utf-8 -*-
+"""Tools for fitting Bingham distributions to orientation distributions,
+as described in Riffert et al [1]_. The resulting distributions can further
+be used to compute ODF-lobe-specific measures such as the fiber density
+and fiber spread [1]_.
 
-import itertools
-import multiprocessing
+References
+----------
+.. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+           anisotropy: Extraction of bundle-specific structural metrics from
+           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+"""
 
 from math import cos, radians
+from warnings import warn
 import numpy as np
 
 from dipy.direction import peak_directions
@@ -16,17 +24,33 @@ def bingham_to_sf(f0, k1, k2 , major_axis, minor_axis, vertices):
     Parameters
     ----------
     f0: float
-
+        Maximum amplitude of the distribution.
+    k1: float
+        Concentration along major axis.
+    k2: float
+        Concentration along minor axis.
+    vertices: ndarray (N, 3)
+        Unit sphere directions along which the distribution
+        is evaluated.
     """
+    if not (np.linalg.norm(vertices, axis=-1) == 1).any():
+        warn("Some sphere directions are not normalized. Normalizing.",
+             UserWarning)
+        vertices /= np.linalg.norm(vertices, axis=-1, keepdims=True)
+
     sf = f0*np.exp(-k1*vertices.dot(major_axis)**2
                    -k2*vertices.dot(minor_axis)**2)
     return sf.T
 
 
-def bingham_fit_sf(sf, sphere, max_search_angle,
-                    min_sep_angle, rel_th):
+def bingham_fit_sf(sf, sphere, max_search_angle=15,
+                      min_sep_angle=15, rel_th=0.1):
     """
-    Peak extraction followed by Bingham fit for each peak.
+    Fit a Bingham distribution onto each principal SF lobe. Lobes
+    are first found by performing a peak extraction on the input
+    SF, and Bingham distributions are then fitting around each of
+    the extracted peaks using the method described in Riffert et
+    al [1]_.
 
     Parameters
     ----------
@@ -34,18 +58,24 @@ def bingham_fit_sf(sf, sphere, max_search_angle,
         Spherical function (SF) evaluated on the sphere `sphere`.
     sphere: DIPY Sphere
         Sphere on which the SF is defined.
-    max_angle: float
+    max_search_angle: float, optional
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution.
-    min_sep_angle: float
+    min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
-    rel_th: float
+    rel_th: float, optional
         Relative threshold used for peak extraction.
 
     Returns
     -------
     fits: list of tuples
         Bingham distribution parameters for each SF peak.
+
+    References
+    ----------
+    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+           anisotropy: Extraction of bundle-specific structural metrics from
+           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     # extract all maximum on the SF
     peaks, _, _ = peak_directions(sf, sphere,
@@ -82,9 +112,9 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
         Maximum amplitude of the distribution.
     concentration: tuple (2,) of floats
         Concentration parameter of principal axes.
-    mu_1: tuple (3,) of floats
+    mu_1: ndarray (3,) of floats
         Major concentration axis.
-    mu_2: tuple (3,) of floats
+    mu_2: ndarray (3,) of floats
         Minor concentration axis.
     """
     # abs for twice the number of pts to fit
@@ -139,12 +169,13 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     return f0, k1, k2, mu1, mu2
 
 
-def bingham_to_fd(bingham_fits, n_thetas=50, n_phis=100):
+def bingham_to_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
     """
     Compute fiber density for each lobe for a given Bingham ODF.
 
     Fiber density (FD) is given by the integral of the Bingham
-    distribution over the sphere.
+    distribution over the sphere and describes the apparent
+    quantity of fibers passing through an ODF lobe.
 
     Parameters
     ----------
@@ -160,6 +191,12 @@ def bingham_to_fd(bingham_fits, n_thetas=50, n_phis=100):
     -------
     fd: list of floats
         Fiber density for each Bingham distribution.
+
+    References
+    ----------
+    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+           anisotropy: Extraction of bundle-specific structural metrics from
+           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi[
     theta = np.linspace(0, np.pi, n_thetas)  # [0, pi]
@@ -180,7 +217,7 @@ def bingham_to_fd(bingham_fits, n_thetas=50, n_phis=100):
     return fd
 
 
-def bingham_to_fs(bingham_fits, fd=None):
+def bingham_to_fiber_spread(bingham_fits, fd=None):
     """
     Compute fiber spread for each lobe for a given Bingham volume.
 
@@ -194,44 +231,26 @@ def bingham_to_fs(bingham_fits, fd=None):
         initial fitted function.
     fd: list of floats or None
         Fiber density (fd) of each Bingham distribution. If None, fd
-        will be computed inside the method.
+        will be computed by the method.
 
     Returns
     -------
     fs: list of floats
         Fiber spread for each Bingham distribution in the input Bingham fit.
+
+    References
+    ----------
+    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+           anisotropy: Extraction of bundle-specific structural metrics from
+           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     f0 = np.array([x for x, _,_,_,_ in bingham_fits])
 
     if fd is None:
-        fd = bingham_to_fd(bingham_fits)
+        fd = bingham_to_fiber_density(bingham_fits)
     fd = np.asarray(fd)
 
     fs = np.zeros((len(f0),))
     fs[f0 > 0] = fd[f0 > 0] / f0[f0 > 0]
 
     return fs.tolist()
-
-
-def fd_to_ff(fd):
-    """
-    Compute the fiber fraction for each lobe at each voxel.
-
-    The fiber fraction (FF) represents the fraction of the current lobe's
-    FD on the total FD for all lobes. FF sums to 1.
-
-    Parameters
-    ----------
-    fd: ndarray (X, Y, Z, max_lobes)
-        Fiber density image.
-
-    Returns
-    -------
-    ff: ndarray (X, Y, Z, max_lobes)
-        Fiber fraction image.
-    """
-    ff = np.zeros_like(fd)
-    sum = np.sum(fd)
-    nonzero = sum > 0
-    ff[nonzero] = np.asarray(fd)[nonzero] / sum[nonzero]
-    return ff.tolist()
