@@ -1,4 +1,5 @@
-GSOC 2023 week 0 blog
+Journey of GSOC application & acceptance : Week 0
+=================================================
 
 .. post:: May 19 2023
      :author: Vara Lakshmi Bayanagari
