@@ -75,7 +75,7 @@ print('Fiber spread:', fs)
 
 """
 Finally, we can validate the quality of our Bingham fit by visualizing the
-Bingham distributions overlayed on the input ODF.
+Bingham distributions overlaid on the input ODF.
 """
 actors = []
 actors.append(actor.odf_slicer(odf[None, None, None, :], sphere=sphere,
