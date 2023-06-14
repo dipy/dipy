@@ -198,25 +198,28 @@ class LocalTracking:
                     yield [s]
 
             for first_step in directions:
+                stepsF = stepsB = 1
                 stepsF, stream_status = self._tracker(s, first_step, F)
                 if not (self.return_all
                         or stream_status in (StreamlineStatus.ENDPOINT,
                                              StreamlineStatus.OUTSIDEIMAGE)):
                     continue
-                if stepsF > 1:
-                    # Use the opposite of the first selected orientation for
-                    # the backward tracking segment
-                    opposite_step = F[0] - F[1]
-                    opposite_step_norm = np.linalg.norm(opposite_step)
-                    if opposite_step_norm > 0:
-                        first_step = opposite_step / opposite_step_norm
+                if not self.unidirectional:
+                    if stepsF > 1:
+                        # Use the opposite of the first selected orientation for
+                        # the backward tracking segment
+                        opposite_step = F[0] - F[1]
+                        opposite_step_norm = np.linalg.norm(opposite_step)
+                        if opposite_step_norm > 0:
+                            first_step = opposite_step / opposite_step_norm
+                        else:
+                            first_step = -first_step
                     else:
                         first_step = -first_step
-                else:
-                    first_step = -first_step
-                stepsB, stream_status = self._tracker(s, first_step, B)
-                if not (self.return_all
-                        or stream_status in (StreamlineStatus.ENDPOINT,
+                    stepsB, stream_status = self._tracker(s, first_step, B)
+
+                if not (self.return_all or
+                        stream_status == in (StreamlineStatus.ENDPOINT,
                                              StreamlineStatus.OUTSIDEIMAGE)):
                     continue
                 if stepsB == 1:
