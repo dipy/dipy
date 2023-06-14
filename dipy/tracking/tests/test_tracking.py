@@ -984,3 +984,154 @@ def test_random_seed_initialization():
                                       affine=np.eye(4),
                                       step_size=1.,
                                       random_seed=rdm_seed))
+
+
+def test_tracking_with_initial_directions():
+    """This tests that tractography play well with using seeding directions."""
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    pmf_lookup = np.array([[0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 1., 0.],
+                           [.6, .4, 0.]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 2],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0]])
+    simple_image = simple_image[..., None]
+    simple_wm = np.array([[0, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0],
+                          [1, 1, 1, 1, 1, 1],
+                          [0, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0]])
+    simple_wm = simple_wm[..., None]
+    simple_csf = np.ones(simple_wm.shape) - simple_wm
+    simple_gm = np.zeros(simple_wm.shape)
+    pmf = pmf_lookup[simple_image]
+    mask = (simple_image > 0).astype(float)
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]]),
+                np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]])]
+
+    # Test LocalTracking with inital directions
+    sc = ThresholdStoppingCriterion(mask, .5)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
+                                               pmf_threshold=0.1)
+    crossing_pos = np.array([2, 1, 0])
+    seeds = np.array([crossing_pos, crossing_pos, crossing_pos])
+    initial_directions = np.array([[sphere.vertices[0], [0, 0, 0]],
+                                   [sphere.vertices[1], sphere.vertices[0]],
+                                   [[0, 0, 0], [0, 0, 0]]])
+    # with max_cross=1
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=1, return_all=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], np.array([crossing_pos])))
+    # with max_cross=2
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1]))
+    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+
+    # Test inital_directions with norm != 1 and not sphere vertices
+    initial_directions = np.array([[[0, 0, 0], [2, 0, 0]],
+                                   [[0.1, 0.8, 0], [-0.4, 0, 0]],
+                                   [[0, 0, 0], [0.7, 0.6, -0.1]]])
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[1]))
+
+    # Test dimension mismatch between seeds and initial_directions
+    npt.assert_raises(
+        ValueError,
+        lambda: LocalTracking(dg, sc, seeds, np.eye(4), 0.2, max_cross=1,
+                              return_all=True,
+                              initial_directions=initial_directions[:1, :, :]))
+
+    # Test ParticleFilteringTracking with inital directions
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
+                                               pmf_threshold=0.1)
+    sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
+    crossing_pos = np.array([2, 1, 0])
+    seeds = np.array([crossing_pos, crossing_pos, crossing_pos])
+    initial_directions = np.array([[sphere.vertices[0], [0, 0, 0]],
+                                   [sphere.vertices[1], sphere.vertices[0]],
+                                   [[0, 0, 0], [0, 0, 0]]])
+
+    streamline_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), 1, return_all=True,
+        initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1]))
+    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+
+    # Test unidirectional tracking with initial directions
+    initial_directions = np.array([[[1, 0, 0], [0, 0, 0]],
+                                   [[-1, 0, 0], [0, 0, 0]],
+                                   [[0, -1, 0], [0, 1, 0]]])
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+
+    streamline_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), 1, return_all=True, unidirectional=True,
+        initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+
+    # Test randomized initial forward direction
+    seeds = np.array([crossing_pos] * 30)
+    initial_directions = np.array([np.array([1, 0, 0])] * 30)[:, np.newaxis, :]
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         randomize_forward_direction=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[1][2:])
+                    or np.allclose(sl, expected[1][:3][::-1]))
