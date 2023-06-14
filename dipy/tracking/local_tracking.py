@@ -177,8 +177,17 @@ class LocalTracking:
                         new_d = d / d_norm
                         directions.append(new_d)
                 directions = np.array(directions)
+
+            if directions.size == 0 and self.return_all:
+                # only the seed position
+                if self.save_seeds:
+                    yield [s], s
+                else:
+                    yield [s]
+
             if self.randomize_forward_direction:
                 directions = [d * random.choice([1, -1]) for d in directions]
+
             directions = directions[:self.max_cross]
 
             if len(directions) == 0 and self.return_all:
