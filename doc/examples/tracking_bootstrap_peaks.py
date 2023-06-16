@@ -9,7 +9,8 @@ probabilistic tracking, as described in Berman et al. (2008) [Berman2008]_ a
 nd the closest peak direction getter (a type of deterministic tracking).
 (Amirbekian, PhD thesis, 2016)
 
-This example is an extension of the :ref:`example_tracking_introduction_eudx`
+This example is an extension of the
+:ref:`sphx_glr_examples_built_quick_start_tracking_introduction_eudx.py`
 example. Let's start by loading the necessary modules for executing this
 tutorial.
 """

@@ -47,7 +47,8 @@ gtab = gradient_table(bvals, bvecs)
 
 """
 For comparison, this dataset is pre-processed using the same steps used in the
-example for reconstructing DKI (see :ref:`example_reconst_dki`).
+example for reconstructing DKI (see
+:ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`).
 """
 
 # data masking

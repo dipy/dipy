@@ -14,7 +14,8 @@ point can be represented as a probability mass function (PMF) if the possible
 tracking directions are restricted to discrete numbers of well distributed
 points on a sphere.
 
-This example is an extension of the :ref:`example_tracking_introduction_eudx`
+This example is an extension of the
+:ref:`sphx_glr_examples_built_quick_start_tracking_introduction_eudx.py`
 example. We'll begin by repeating a few steps from that example, loading the
 data and fitting a Constrained Spherical Deconvolution (CSD) model.
 """

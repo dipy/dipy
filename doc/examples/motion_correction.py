@@ -57,13 +57,14 @@ Start motion correction of our reduced DWI dataset(between-volumes motion
 correction).
 """
 
-data_corrected, reg_afines = motion_correction(data_small, gtab, affine)
+data_corrected, reg_affines = motion_correction(data_small, gtab, affine)
 
 """
 Save our DWI dataset corrected to a new Nifti file.
 """
 
-save_nifti('motion_correction.nii.gz', data_corrected.get_fdata(), affine)
+save_nifti('motion_correction.nii.gz', data_corrected.get_fdata(),
+           data_corrected.affine)
 
 """
 References

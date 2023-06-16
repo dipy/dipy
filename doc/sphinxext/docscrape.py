@@ -7,7 +7,13 @@ import pydoc
 from warnings import warn
 import collections
 import sys
+from packaging.version import Version
 
+python_version = '.'.join(str(x) for x in sys.version_info[:2])
+if Version(python_version) >= Version('3.10'):
+    from collections.abc import Mapping 
+else:
+    from collections import Mapping 
 
 class Reader(object):
     """A line-based string reader.
@@ -85,7 +91,8 @@ class Reader(object):
         return not ''.join(self._str).strip()
 
 
-class NumpyDocString(collections.Mapping):
+class NumpyDocString(Mapping):
+
     def __init__(self, docstring, config={}):
         docstring = textwrap.dedent(docstring).split('\n')
 

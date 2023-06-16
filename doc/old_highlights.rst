@@ -4,6 +4,22 @@
 Older Highlights
 ****************
 
+
+**DIPY 1.6.0** is now available. New features include:
+
+- NF: Unbiased groupwise linear bundle registration added.
+- NF: MAP+ constraints added.
+- Generalized PCA to less than 3 spatial dims.
+- Add positivity constraints to QTI.
+- Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
+- New Human Connectome Project (HCP) data fetcher added.
+- New Healthy Brain Network (HBN) data fetcher added.
+- Multiple Workflows updated (DTIFlow, LPCAFlow, MPPCA) and added (RUMBAFlow).
+- Ability to handle VTP files.
+- Large codebase cleaning.
+- Large documentation update.
+- Closed 75 issues and merged 41 pull requests.
+
 **DIPY 1.5.0** is now available. New features include:
 
 - New reconstruction model added: Q-space Trajectory Imaging (QTI).

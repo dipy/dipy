@@ -14,6 +14,7 @@
 import os
 import re
 import sys
+import ablog
 
 # Doc generation depends on being able to import dipy
 try:
@@ -52,7 +53,8 @@ extensions = ['sphinx.ext.autodoc',
               'math_dollar',  # has to go before numpydoc
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
-              'github']
+              'github',
+              'ablog']
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -104,7 +106,7 @@ release = version
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build', 'examples']
+exclude_patterns = ['_build', 'examples', 'examples_revamped']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -244,8 +246,11 @@ latex_preamble = r"""
 
 # -- Options for sphinx gallery -------------------------------------------
 from docimage_scrap import ImageFileScraper
+from sphinx_gallery.sorting import ExplicitOrder
+from prepare_gallery import folder_explicit_order
 
 sc = ImageFileScraper()
+ordered_folders = [f'examples_revamped/{f}' for f in folder_explicit_order()]
 
 sphinx_gallery_conf = {
      'doc_module': ('dipy',),
@@ -253,6 +258,7 @@ sphinx_gallery_conf = {
      'examples_dirs': ['examples_revamped', ],
      # path where to save gallery generated examples
      'gallery_dirs': ['examples_built', ],
+     'subsection_order': ExplicitOrder(ordered_folders),
      'image_scrapers': (sc),
      'backreferences_dir': 'examples_built',
      'reference_url': {'dipy': None, },

@@ -122,8 +122,8 @@ plt.savefig('dsi_gfa.png', bbox_inches='tight')
 .. figure:: dsi_gfa.png
    :align: center
 
-See also :ref:`example_reconst_dsi_metrics` for calculating different types
-of DSI maps.
+See also :ref:`sphx_glr_examples_built_reconstruction_reconst_dsi_metrics.py`
+for calculating different types of DSI maps.
 
 
 .. [Wedeen08] Wedeen et al., Diffusion spectrum magnetic resonance imaging

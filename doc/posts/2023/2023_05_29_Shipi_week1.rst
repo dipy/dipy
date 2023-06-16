@@ -1,0 +1,43 @@
+Community Bonding and Week 1 Insights
+=====================================
+
+.. post:: May 29 2023
+    :author: Shilpi Prasad
+    :tags: google
+    :category: gsoc
+
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+As this was my first week I majorly spent a lot of time knowing about the codebase of the organization. I also went through a couple of research papers of projects which have already been implemented to get information related to my branch.
+I'm currently in the middle of reading through the research paper, which is directly related to my project: `here <https://www.sciencedirect.com/science/article/pii/S1053811920300926>`
+I also went through some of the videos related to information on cti, a couple of them are: `this <https://www.youtube.com/watch?v=bTFLGdbSi9M>` and also, `this <https://www.youtube.com/watch?v=2WtGl3YQou8&list=PLRZ9VSqV-6srrTAcDh4JYwrlef2Zpjucw&index=16>`
+I also submitted `this <https://github.com/dipy/dipy/pull/2813>` PR. In this PR members of my organization are supposed to submit all the
+blogs.
+But mostly I spent a lot of time in implementing the already existing MultiTensor Simulation on my local system , and also completing the assignment which my mentor gave me.
+In this assignment, I was given a specific number of directions, 'n' and some steps on how to produce bvals and bvecs. I had to create gtab1 and gtab2. and then taking gtab1 & gtab2 as input, I was supposed to create a function which would give output btensor i.e btens.
+The purpose of this assignment was to strengthen my knowledge on concepts I've already read and also to give me some coding experience, as this is critical in order for me to be able to implement the rest of my project.
+
+What is coming up next Week
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These simulations were basically the first task of the proposal.
+So after the btensor I intend on producing the synthetic signals using the qti model (hint on how
+it is done in qti tests).
+make a figure similar to figure 1 of the 2021 CTI paper:
+`here <https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.28938>`
+
+
+Did I get stuck anywhere
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+I got stuck while creating `this <https://github.com/dipy/dipy/pull/2813>` PR, I had to rebase a bunch of commits and this was a new concept to me so it took me a while to figure it out. And due to rebasing, I ended up creating a bunch of other commits because of which the commit history of this PR was a mess. So I again had to learn about the concept of squashing the commits.
+I also got stuck a lot while trying to find out the perpendicular directions to the vectors used in gtab1 .
+I was supposed to implement the formula in `this <https://drive.google.com/file/d/1IV9il1vvf616uXtdGsXbZ3eXzmQNLIO1/view?usp=drive_link>` image.
+I had to spend a lot of time figuring out how to combine 3 vectors of shape (81, 3) to get V.
+And also working on the function which would give me the perpendicular vector to the vector in gtab1.
+I got a bunch of ValueErrors saying: could not broadcast input array from shape (3,3,1) into shape (3,3) and some IndexError saying: shape mismatch: indexing arrays could not be broadcast together with shapes (81,) (3,1) (3,).
+I also had to experiment on how to concatenate different vectors to get the vector of right shape, since there are a bunch of possible options while stacking, such as vstack, hstack, stack etc.
+

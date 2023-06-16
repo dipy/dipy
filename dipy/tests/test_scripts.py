@@ -9,6 +9,7 @@ Run scripts and check outputs
 import glob
 import os
 import shutil
+from tempfile import TemporaryDirectory
 
 from os.path import (dirname, join as pjoin, abspath)
 
@@ -17,7 +18,6 @@ import numpy.testing as nt
 import pytest
 
 import nibabel as nib
-from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_fnames
 
@@ -67,7 +67,7 @@ def assert_image_shape_affine(filename, shape, affine):
 
 
 def test_dipy_fit_tensor_again():
-    with InTemporaryDirectory():
+    with TemporaryDirectory():
         dwi, bval, bvec = get_fnames("small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
@@ -89,7 +89,7 @@ def test_dipy_fit_tensor_again():
         assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
 
-    with InTemporaryDirectory():
+    with TemporaryDirectory():
         dwi, bval, bvec = get_fnames("small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
@@ -120,7 +120,7 @@ def test_dipy_fit_tensor_again():
 
 @pytest.mark.skipif(no_mpl)
 def test_qb_commandline():
-    with InTemporaryDirectory():
+    with TemporaryDirectory():
         tracks_file = get_fnames('fornix')
         cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
                '--out_file', 'tracks300.trk']
@@ -129,7 +129,7 @@ def test_qb_commandline():
 
 @pytest.mark.skipif(no_mpl)
 def test_qb_commandline_output_path_handling():
-    with InTemporaryDirectory():
+    with TemporaryDirectory():
         # Create temporary subdirectory for input and for output
         os.mkdir('work')
         os.mkdir('output')
