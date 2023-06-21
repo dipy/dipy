@@ -1,4 +1,3 @@
-
 import logging
 import numpy as np
 import os.path
@@ -10,7 +9,7 @@ import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.peaks import save_peaks, peaks_to_niftis
+from dipy.io.peaks import save_pam, pam_to_niftis
 from dipy.io.image import load_nifti, save_nifti, load_nifti_data
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
@@ -123,7 +122,7 @@ class ReconstMAPMRIFlow(Workflow):
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
                      "b0_threshold. It should be higher than the first b0 "
-                     "value({1}).".format(b0_threshold, bvals.min()))
+                     "value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
                                   big_delta=big_delta,
@@ -232,6 +231,7 @@ class ReconstDtiFlow(Workflow):
             out_eval='evals.nii.gz', nifti_tensor=True):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
+
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified by
         ``out_dir``.
@@ -436,7 +436,7 @@ class ReconstCSDFlow(Workflow):
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Constrained spherical deconvolution
+        """Constrained spherical deconvolution.
 
         Parameters
         ----------
@@ -517,8 +517,8 @@ class ReconstCSDFlow(Workflow):
 
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+                     "b0_threshold. It should be higher than the first b0 "
+                     "value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
             mask_vol = load_nifti_data(maskfile).astype(bool)
@@ -580,13 +580,15 @@ class ReconstCSDFlow(Workflow):
                                          num_processes=num_processes)
             peaks_csd.affine = affine
 
-            save_peaks(opam, peaks_csd)
+            save_pam(opam, peaks_csd)
 
             logging.info('CSD computation completed.')
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(peaks_csd, fname_peaks_dir=opeaks_dir,
+                              fname_shm=oshm, fname_peaks_values=opeaks_values,
+                              fname_peaks_indices=opeaks_indices,
+                              fname_gfa=ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
@@ -614,7 +616,7 @@ class ReconstCSAFlow(Workflow):
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Constant Solid Angle.
+        """Constant Solid Angle.
 
         Parameters
         ----------
@@ -681,8 +683,8 @@ class ReconstCSAFlow(Workflow):
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+                     "b0_threshold. It should be higher than the first b0 "
+                     "value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = load_nifti_data(maskfile).astype(bool)
@@ -706,14 +708,15 @@ class ReconstCSAFlow(Workflow):
                                          num_processes=num_processes)
             peaks_csa.affine = affine
 
-            save_peaks(opam, peaks_csa)
+            save_pam(opam, peaks_csa)
 
             logging.info('Finished CSA {0}'.format(dwi))
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
-                                opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(peaks_csa, fname_peaks_dir=opeaks_dir,
+                              fname_shm=oshm, fname_peaks_values=opeaks_values,
+                              fname_peaks_indices=opeaks_indices,
+                              fname_gfa=ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
@@ -1214,11 +1217,11 @@ class ReconstRUMBAFlow(Workflow):
 
             rumba_peaks.affine = affine
 
-            save_peaks(opam, rumba_peaks)
+            save_pam(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
+                              opeaks_indices, ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':

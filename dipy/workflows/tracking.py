@@ -6,7 +6,7 @@ from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter,
                             ClosestPeakDirectionGetter)
 from dipy.io.image import load_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
@@ -188,7 +188,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             logging.info('Local tracking on {0}'
                          .format(pams_path))
 
-            pam = load_peaks(pams_path, verbose=False)
+            pam = load_pam(pams_path, verbose=False)
             dg = self._get_direction_getter(tracking_method, pam,
                                             pmf_threshold=pmf_threshold,
                                             max_angle=max_angle)
@@ -279,7 +279,7 @@ class PFTrackingPAMFlow(Workflow):
             logging.info('Particle Filtering tracking on {0}'
                          .format(pams_path))
 
-            pam = load_peaks(pams_path, verbose=False)
+            pam = load_pam(pams_path, verbose=False)
 
             wm, affine, voxel_size = load_nifti(wm_path, return_voxsize=True)
             gm, _ = load_nifti(gm_path)
