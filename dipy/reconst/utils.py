@@ -55,9 +55,9 @@ def cti_design_matrix(gtab1, gtab2):
 	Parameters
 	----------
 	gtab1: dipy.core.gradients.GradientTable
-		A GradientTable class instance
+		A GradientTable class instance for first DDE diffusion epoch
 	gtab2: dipy.core.gradients.GradientTable
-		A GradientTable class instance
+		A GradientTable class instance for second DDE diffusion epoch
 	   
 	Returns
 	-------
