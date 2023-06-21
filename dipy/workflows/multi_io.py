@@ -4,7 +4,7 @@ import numpy as np
 import os
 from glob import glob
 
-from dipy.workflows.base import get_args_default
+from dipy.workflows import base
 
 
 def common_start(sa, sb):
@@ -172,32 +172,22 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
         Properly instantiated IOIterator object.
 
     """
-    args, _, _, values = inspect.getargvalues(frame)
-    args.remove('self')
-    del values['self']
-
-    spargs, defaults = get_args_default(fnc)
-
-    len_args = len(spargs)
-    len_defaults = len(defaults)
-    split_at = len_args - len_defaults
+    arg_values = inspect.getargvalues(frame)
+    arg_defaults = base.get_args_default(fnc)
 
     inputs = []
     outputs = []
-    out_dir = ''
-
-    # inputs
-    for arv in args[:split_at]:
-        inputs.append(values[arv])
-
-    # defaults
     out_keys = []
-    for arv in args[split_at:]:
-        if arv == 'out_dir':
-            out_dir = values[arv]
-        elif 'out_' in arv:
-            out_keys.append(arv)
-            outputs.append(values[arv])
+    out_dir = ""
+    for arg_name, default_value in arg_defaults.items():
+        value = arg_values.locals[arg_name]
+        if default_value is base.Empty:
+            inputs.append(value)
+        elif arg_name == "out_dir":
+            out_dir = value
+        elif arg_name.startswith("out_"):
+            out_keys.append(arg_name)
+            outputs.append(value)
 
     return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names,
                        out_keys=out_keys)

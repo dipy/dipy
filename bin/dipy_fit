@@ -1,0 +1,7 @@
+#!python
+
+from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.reconst import ReconstFlow
+
+if __name__ == "__main__":
+    run_flow(ReconstFlow())
