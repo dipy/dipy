@@ -25,7 +25,7 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.odf import OdfFit
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
-from scipy.io import savemat
+from scipy.io import loadmat, savemat
 
 
 DEFAULT_RECON_EDGE = 1.2
@@ -66,74 +66,23 @@ def plot_odf(odf, filename='odf.png', tessellation=dsiSphere8Fold()):
     plt.close(fig)    
 
 
-class OdffpDictionary(object):
-    odf = None
-    peak_dirs = None
-    micro = None
-    ratio = None
-    peaks_per_voxel = None
-    max_peaks_num = 0    
-        
+# Base abstract class
+class DiffusionDataGenerator(object):
     MICRO_DA  = 0
     MICRO_DE  = 1
     MICRO_DR  = 2
     MICRO_FIN = 3    
     
-    MICRO_PARAMS_NUM = len((MICRO_DA, MICRO_DE, MICRO_DR, MICRO_FIN)) 
-
-        
-    def __init__(self, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
-        
+    MICRO_PARAMS_NUM = len((MICRO_DA, MICRO_DE, MICRO_DR, MICRO_FIN))
+    
+    max_peaks_num = 0    
+    
+    
+    def __init__(self, gtab, tessellation=dsiSphere8Fold()):
+        self.gtab = gtab
         self.tessellation = tessellation
-        self._is_sorted = is_sorted
-
-        if dict_file is not None:
-            self.load(dict_file)
-   
-           
-    def _sort_peaks(self):
-        for j in range(self.peak_dirs.shape[2]):
-
-            # First, convert spherical coordinates from Matlab (azim, elev, radius) to Python (radius, phi, theta) 
-            # and then to Cartesian coordinates
-            peak_dirs = np.array(sphere2cart(1, np.pi/2 + self.peak_dirs[1,:,j], self.peak_dirs[0,:,j]))
-            peaks_filter = np.any(~np.isnan(peak_dirs), axis=0)
-
-            if ~np.any(peaks_filter):
-                continue
-
-            peak_vertex_idx = np.argmax(np.dot(self.tessellation.vertices, peak_dirs[:,peaks_filter]), axis=0)     
-            peak_vertex_values = self.odf[np.mod(peak_vertex_idx, self.odf.shape[0]),j]     
-                  
-            idx = np.arange(len(peak_vertex_values))
-            
-            # Sort in the descending order, hence -peak_vertex_values
-            sorted_idx = np.argsort(-peak_vertex_values)
-            
-            if np.any(idx != sorted_idx):
-                self.peak_dirs[:,idx,j] = self.peak_dirs[:,sorted_idx,j]
-                self.micro[:,idx+1,j] = self.micro[:,sorted_idx+1,j]
-                self.ratio[idx+1,j] = self.ratio[sorted_idx+1,j]
-
-   
-    def _peaks_per_voxel_cdf(self, total_dirs_num):
-        """Cummulative Distribution Function (CDF) of a random variable: peaks_per_voxel"""
-        
-        # Numbers of directions are in the proportion 1 : 1*(k-1) : 1*(k-1)*(k-2) : ...
-        # Thus, for k=321 (total_dirs_num) the cumulative number of directions is [1,321,102401,...] 
-        cumulative_dirs_num = np.ones(self.max_peaks_num)
-        
-        # One fiber can have only one orientation [0,0,1]
-        dirs_per_peak = 1
-
-        # Compute the cumulative number of directions for fibers other than [0,0,1]
-        for i in range(1,self.max_peaks_num):
-            dirs_per_peak *= total_dirs_num-i 
-            cumulative_dirs_num[i] = cumulative_dirs_num[i-1] + dirs_per_peak
-        
-        return cumulative_dirs_num[:-1] / cumulative_dirs_num[-1]
     
-    
+
     def _validate_interval_parameter(self, parm):
         return np.array([np.min(parm), np.max(parm)])
     
@@ -226,13 +175,13 @@ class OdffpDictionary(object):
         return micro_params
     
     
-    def _compute_dwi(self, gtab, ratio, micro, peak_dirs_idx):
+    def _compute_dwi(self, ratio, micro, peak_dirs_idx):
    
         ratio[np.isnan(ratio)] = 0
         micro[np.isnan(micro)] = 0
            
         # Convert the b-values from s/mm^2 to ms/um^2 
-        bvals = np.vstack(1e-3 * gtab.bvals)
+        bvals = np.vstack(1e-3 * self.gtab.bvals)
            
         # First, compute the diffusion signal of free water
         dwi = ratio[0] * np.exp(-bvals * micro[self.MICRO_DE,0])
@@ -241,18 +190,78 @@ class OdffpDictionary(object):
         for j in range(len(peak_dirs_idx)):
                
             # Squared dot product of the b-vectors and the j-th peak directions
-            dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]].T) ** 2
+            dir_prod_sqr = np.dot(self.gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]].T) ** 2
                
             dwi_intra = np.exp(-bvals * micro[self.MICRO_DA,j+1] * dir_prod_sqr)
             dwi_extra = np.exp(-bvals * (micro[self.MICRO_DE,j+1] * dir_prod_sqr + micro[self.MICRO_DR,j+1] * (1 - dir_prod_sqr)))
                
             dwi += ratio[j+1] * (micro[self.MICRO_FIN,j+1] * dwi_intra + (1 - micro[self.MICRO_FIN,j+1]) * dwi_extra)
            
-        return dwi.T
+        return 1e3 * dwi.T
 
+
+class OdffpDictionary(DiffusionDataGenerator):
+    odf = None
+    peak_dirs = None
+    micro = None
+    ratio = None
+    peaks_per_voxel = None
+        
+        
+    def __init__(self, gtab, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
+        
+        super().__init__(gtab, tessellation)
+        self._is_sorted = is_sorted
+
+        if dict_file is not None:
+            self.load(dict_file)
+   
+           
+    def _sort_peaks(self):
+        for j in range(self.peak_dirs.shape[2]):
+
+            # First, convert spherical coordinates from Matlab (azim, elev, radius) to Python (radius, phi, theta) 
+            # and then to Cartesian coordinates
+            peak_dirs = np.array(sphere2cart(1, np.pi/2 + self.peak_dirs[1,:,j], self.peak_dirs[0,:,j]))
+            peaks_filter = np.any(~np.isnan(peak_dirs), axis=0)
+
+            if ~np.any(peaks_filter):
+                continue
+
+            peak_vertex_idx = np.argmax(np.dot(self.tessellation.vertices, peak_dirs[:,peaks_filter]), axis=0)     
+            peak_vertex_values = self.odf[np.mod(peak_vertex_idx, self.odf.shape[0]),j]     
+                  
+            idx = np.arange(len(peak_vertex_values))
+            
+            # Sort in the descending order, hence -peak_vertex_values
+            sorted_idx = np.argsort(-peak_vertex_values)
+            
+            if np.any(idx != sorted_idx):
+                self.peak_dirs[:,idx,j] = self.peak_dirs[:,sorted_idx,j]
+                self.micro[:,idx+1,j] = self.micro[:,sorted_idx+1,j]
+                self.ratio[idx+1,j] = self.ratio[sorted_idx+1,j]
+
+   
+    def _peaks_per_voxel_cdf(self, total_dirs_num):
+        """Cummulative Distribution Function (CDF) of a random variable: peaks_per_voxel"""
+        
+        # Numbers of directions are in the proportion 1 : 1*(k-1) : 1*(k-1)*(k-2) : ...
+        # Thus, for k=321 (total_dirs_num) the cumulative number of directions is [1,321,102401,...] 
+        cumulative_dirs_num = np.ones(self.max_peaks_num)
+        
+        # One fiber can have only one orientation [0,0,1]
+        dirs_per_peak = 1
+
+        # Compute the cumulative number of directions for fibers other than [0,0,1]
+        for i in range(1,self.max_peaks_num):
+            dirs_per_peak *= total_dirs_num-i 
+            cumulative_dirs_num[i] = cumulative_dirs_num[i-1] + dirs_per_peak
+        
+        return cumulative_dirs_num[:-1] / cumulative_dirs_num[-1]
     
-    def _compute_odf_trace(self, gtab, odf_recon_model, ratio, micro, peak_dirs_idx):
-        dwi = self._compute_dwi(gtab, ratio, micro, peak_dirs_idx)        
+    
+    def _compute_odf_trace(self, odf_recon_model, ratio, micro, peak_dirs_idx):
+        dwi = self._compute_dwi(ratio, micro, peak_dirs_idx)        
       
         # Compute the ODF for the generated DWI
         odf = odf_recon_model.fit(dwi).odf(self.tessellation).T
@@ -304,14 +313,14 @@ class OdffpDictionary(object):
         self.peaks_per_voxel = np.concatenate((self.peaks_per_voxel, external_odf_dict.peaks_per_voxel))
         
     
-    def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
+    def generate(self, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
                  p_iso=[0.0,1.0], p_fib=[0.0,1.0], f_in=[0.0,1.0], 
-                 D_iso=[2.0,3.0], D_a=[0.5,2.5], D_e=[0.5,2.5], D_r=[0.0,2.0],
+                 D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5],
                  max_chunk_size=10000, odf_recon_model=None, 
                  assert_faster_D_a=False, tortuosity_approximation=False):
            
         if odf_recon_model is None:
-            odf_recon_model = GeneralizedQSamplingModel(gtab, sampling_length=DEFAULT_DICT_EDGE)
+            odf_recon_model = GeneralizedQSamplingModel(self.gtab, sampling_length=DEFAULT_DICT_EDGE)
            
         dict_size = np.maximum(1, dict_size)
         self.max_peaks_num = np.maximum(1, max_peaks_num)
@@ -334,7 +343,7 @@ class OdffpDictionary(object):
         self.micro[1:3,0] = 3  # diffusivity of free water at 37C
         self.peaks_per_voxel[0] = 0
         self.odf[:,0] = np.squeeze(
-            self._compute_odf_trace(gtab, odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
+            self._compute_odf_trace(odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
         )
    
         for chunk_idx in np.split(range(1, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
@@ -373,7 +382,7 @@ class OdffpDictionary(object):
                 )
                
             self.odf[:,chunk_idx] = self._compute_odf_trace(
-                gtab, odf_recon_model, self.ratio[:,chunk_idx], self.micro[:,:,chunk_idx], peak_dirs_idx
+                odf_recon_model, self.ratio[:,chunk_idx], self.micro[:,:,chunk_idx], peak_dirs_idx
             )
                
             recompute_filter = np.zeros(chunk_size, dtype=bool)
@@ -398,7 +407,7 @@ class OdffpDictionary(object):
                     recompute_filter[i] = True
                              
             self.odf[:,chunk_idx[recompute_filter]] = self._compute_odf_trace(
-                gtab, odf_recon_model, self.ratio[:,chunk_idx[recompute_filter]], 
+                odf_recon_model, self.ratio[:,chunk_idx[recompute_filter]], 
                 self.micro[:,:,chunk_idx[recompute_filter]], peak_dirs_idx[:,recompute_filter]
             )
 
@@ -413,8 +422,12 @@ class PosteriorOdffpDictionary(OdffpDictionary):
 
             compartment_volumes = odffp_fit.get_compartment_volume(peaks_num)
             try:
+                # # Fit KDE model of the compartment volumes
+                # self._ratio_pdf[peaks_num] = scipy.stats.gaussian_kde(compartment_volumes)
+
                 # Fit KDE model of the compartment volumes
-                self._ratio_pdf[peaks_num] = scipy.stats.gaussian_kde(compartment_volumes)
+                self._ratio_pdf[peaks_num] = scipy.stats.gaussian_kde(compartment_volumes[1:])
+            
             except:
                 # If not succeeded, take mean values
                 self._ratio_pdf[peaks_num] = np.mean(compartment_volumes, axis=1)
@@ -437,7 +450,7 @@ class PosteriorOdffpDictionary(OdffpDictionary):
                     # If not succeeded, take mean values
                     self._micro_pdf[peaks_num][peak_id] = np.mean(micro_parameters, axis=1)
                         
-        OdffpDictionary.__init__(self, dict_file, is_sorted, tessellation)
+        super().__init__(dict_file, is_sorted, tessellation)
     
 
     def _crop_value(self, value, lower_bound, upper_bound):
@@ -446,7 +459,9 @@ class PosteriorOdffpDictionary(OdffpDictionary):
 
     def _random_fraction_volumes(self, p_iso, p_fib, peaks_per_voxel):        
         try:
-            fraction_volumes = np.squeeze(self._ratio_pdf[peaks_per_voxel].resample(1))
+            fiber_fraction_volumes = np.squeeze(self._ratio_pdf[peaks_per_voxel].resample(1))
+            water_fraction_volume = np.maximum(p_iso[0], 1 - np.sum(fiber_fraction_volumes))
+            fraction_volumes = np.hstack((water_fraction_volume, fiber_fraction_volumes))
         except:
             fraction_volumes = np.squeeze(self._ratio_pdf[peaks_per_voxel])
 
@@ -512,6 +527,76 @@ class PosteriorOdffpDictionary(OdffpDictionary):
             break
     
         return micro_params
+
+
+class PosteriorOdffpDictionaryFromFib(PosteriorOdffpDictionary):
+
+    def __init__(self, fib_file_name, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
+        self._ratio_pdf = {0: {}} 
+        self._micro_pdf = {0: {}}
+
+        with gzip.open(fib_file_name, 'rb') as fib_file:
+            fib = loadmat(fib_file)
+        
+        max_peaks_num = len({v for v in fib.keys() if v.startswith('fa')})
+        voxel_filter = fib['fib1_p'] > 0
+        
+        all_compartment_volumes = np.zeros((max_peaks_num+1, np.sum(voxel_filter)))
+        all_micro_parameters = np.zeros((max_peaks_num+1, OdffpDictionary.MICRO_PARAMS_NUM, np.sum(voxel_filter)))
+        
+        all_compartment_volumes[0] = fib['p_iso'][voxel_filter]
+        for i in range(1,max_peaks_num+1):
+            all_compartment_volumes[i] = fib['fib%d_p' % i][voxel_filter]
+            all_micro_parameters[i] = np.vstack((
+                fib['fib%d_Da' % i][voxel_filter],
+                fib['fib%d_De' % i][voxel_filter],
+                fib['fib%d_Dr' % i][voxel_filter],
+                fib['fib%d_fin' % i][voxel_filter]
+            ))
+        
+        peaks_per_voxel = np.sum(~np.isnan(all_compartment_volumes[1:]),axis=0)     
+        
+        for peaks_num in range(1, max_peaks_num+1):
+        
+            peaks_num_filter = self._get_peaks_num_filter(peaks_num, peaks_per_voxel)
+            
+            compartment_volumes = all_compartment_volumes[:peaks_num+1,peaks_num_filter]
+            try:
+                # Fit KDE model of the compartment volumes
+                self._ratio_pdf[peaks_num] = scipy.stats.gaussian_kde(compartment_volumes[1:])
+        
+            except:
+                # If not succeeded, take mean values
+                self._ratio_pdf[peaks_num] = np.mean(compartment_volumes, axis=1)
+        
+            self._micro_pdf[peaks_num] = {}
+            for peak_id in range(peaks_num+1):
+        
+                # Diffusivity parameters of the free water compartment aren't estimated
+                if peak_id < 1:
+                    self._micro_pdf[peaks_num][peak_id] = {}
+                    continue
+        
+                micro_parameters = all_micro_parameters[peak_id,:,peaks_num_filter].T
+                try:    
+                    # Fit KDE model of the microstructure parameters
+                    self._micro_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
+                        micro_parameters, bw_method='silverman'
+                    )
+                except:
+                    # If not succeeded, take mean values
+                    self._micro_pdf[peaks_num][peak_id] = np.mean(micro_parameters, axis=1)
+                        
+        super().__init__(dict_file, is_sorted, tessellation)
+
+
+    def _get_peaks_num_filter(self, peaks_num, peaks_per_voxel):
+        peaks_num_filter = peaks_per_voxel == peaks_num
+    
+        if np.sum(peaks_num_filter) == 0:
+            peaks_num_filter = peaks_per_voxel >= peaks_num
+    
+        return peaks_num_filter
 
 
 class OdffpModel(object):
@@ -804,12 +889,12 @@ class OdffpFit(OdfFit):
         return self._export_dict_var(self._dict.ratio, fixed_peaks_num, peak_id, full_volume)
     
     
-    def save_as_fib(self, affine, voxel_size, output_file_name='output.fib'):
+    def save_as_fib(self, affine, voxel_size, output_file_name='output.fib.gz'):
         fib = {}
-        fib['dimension'] = self._data.shape[:-1]
+        fib['dimension'] = np.int16(self._data.shape[:-1])
         fib['voxel_size'] = voxel_size
         fib['odf_vertices'] = self._dict.tessellation.vertices.T
-        fib['odf_faces'] = self._dict.tessellation.faces.T
+        fib['odf_faces'] = np.int16(self._dict.tessellation.faces.T)
         
         voxels_num = np.prod(fib['dimension'])
         slice_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
@@ -845,7 +930,7 @@ class OdffpFit(OdfFit):
             fib['index%d' % i] = np.zeros(voxels_num)
         
         for j in range(voxels_num):
-            peaks_filter = np.any(output_peak_dirs[j] != 0, axis=1)
+            peaks_filter = np.all(~np.isnan(output_peak_dirs[j]), axis=1)
             peak_vertex_idx = np.mod(
                 np.argmax(np.dot(output_peak_dirs[j,peaks_filter], fib_tessellation.vertices.T), axis=1), 
                 tessellation_half_size
@@ -857,8 +942,8 @@ class OdffpFit(OdfFit):
                 fib['fa%d' % i][j] = peak_vertex_values[i] - np.min(output_odf[j])
 
         for i in range(self._dict.max_peaks_num):
-            fib['fa%d' % i] -= np.min(fib['fa%d' % i])
-            fib['nqa%d' % i] = fib['fa%d' % i] / np.maximum(1e-8, np.max(fib['fa%d' % i]))
+            fib['fa%d' % i] -= np.nanmin(fib['fa%d' % i])
+            fib['nqa%d' % i] = fib['fa%d' % i] / np.maximum(1e-8, np.nanmax(fib['fa%d' % i]))
 
         fa_filter = fib['fa0'] > 0
 
@@ -889,7 +974,7 @@ class OdffpFit(OdfFit):
         for i in range(self._dict.max_peaks_num):
             fib['fa%d' % i] = self._fib_reshape(fib['fa%d' % i], slice_size)
             fib['nqa%d' % i] = self._fib_reshape(fib['nqa%d' % i], slice_size)
-            fib['index%d' % i] = self._fib_reshape(fib['index%d' % i], (1, voxels_num))
+            fib['index%d' % i] = np.int16(self._fib_reshape(fib['index%d' % i], slice_size))
         
         output_file_prefix = output_file_name.replace(".fib.gz", "").replace(".fib", "") 
         savemat("%s.fib" % output_file_prefix, fib, format='4')        
