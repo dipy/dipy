@@ -10,7 +10,7 @@ from dipy.reconst.tests.test_qti import  _anisotropic_DTD, _isotropic_DTD
 import dipy.reconst.qti as qti
 from dipy.reconst.qti import from_3x3_to_6x1, from_6x1_to_3x3, dtd_covariance, qti_signal
 
-def perpendicular_directions(v, num=20, half=False):
+def perpendicular_directions_temp(v, num=20, half=False):
     v = np.array(v, dtype=np.float64)
     v = v.T 
     er = np.finfo(v[0].dtype).eps * 1e3
