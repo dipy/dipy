@@ -138,7 +138,7 @@ def cti_design_matrix(gtab1, gtab2):
                     n2[:, 2] + b1*n1[:, 0]*n1[:, 2] * b2*n2[:, 0]*n2[:, 1])
     B[:, 41] = 4 * (b1*n1[:, 0] * n1[:, 1] * b2*n2[:, 1] *
                     n2[:, 2] + b1*n1[:, 1]*n1[:, 2] * b2*n2[:, 0]*n2[:, 1])
-    B[:42] = -np.ones(len(b1))
+    B[:, 42] = -np.ones(len(b1))
 
     return B
 
