@@ -14,7 +14,7 @@ from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular,lower_triangular, mean_diffusivity)
 
 
-def cti_prediction(cti_params, gtab1, gtab2, S0=1):
+def cti_prediction(cti_params, gtab1, gtab2, S0=100):
     """Predict a signal given correlation tensor imaging parameters
 
         Parameters
@@ -121,7 +121,7 @@ class CorrelationTensorModel(ReconstModel):
         """
         return None
 
-    def predict(self, cti_params, S0=1.):  # created
+    def predict(self, cti_params, S0=100):  # created
         """Predict a signal for the CTI model class instance given parameteres
 
         Parameters:
@@ -214,7 +214,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
     """
         return None
 
-    def predict(self, gtab1, gtab2, S0=1.):  # created
+    def predict(self, gtab1, gtab2, S0=100):  # created
         """Given a CTI model fit, predict the signal on the vertices of a gradient table
 
         Parameters:
