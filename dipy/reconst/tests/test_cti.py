@@ -127,34 +127,58 @@ def test_cti_prediction():
         isotropic_DTD,
         np.concatenate((anisotropic_DTD, isotropic_DTD))
     ]
+
     DTD_labels = ["anisotropic_DTD", "isotropic_DTD", "combined_DTD"]
-
-
-    for DTD in DTDs:
+    for i, DTD in enumerate(DTDs):
         D = np.mean(DTD, axis=0)
-        D_flat = np.squeeze(from_3x3_to_6x1(D)) #has shape:(6, )
-        evals, evecs = decompose_tensor(
-            from_lower_triangular(D_flat))  #evals:shape: (3, ) & evecs.shape: (3, 3)
+        D_flat = np.squeeze(from_3x3_to_6x1(D)) #has shape:(6, )    #pretty useless, not needed
+        evals, evecs = decompose_tensor(D)  #evals:shape: (3, ) & evecs.shape: (3, 3)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
+
+        #changing up cti : 
+        const = np.sqrt(2) 
+        ccti = np.zeros((21, 1)) 
+        ccti[0] = C[0]
+        ccti[1] = C[1]
+        ccti[2] = C[2]
+        ccti[3] = C[3] / const
+        ccti[4] = C[4] / const
+        ccti[5] = C[5] / const
+        ccti[6] = C[6] / const
+        ccti[7] = C[7] / const
+        ccti[8] = C[8] / const
+        ccti[9] = C[9] / const
+        ccti[10] = C[10] / const
+        ccti[11] = C[11] / const
+        ccti[12] = C[12] / const
+        ccti[13] = C[13] / const
+        ccti[14] = C[14] / const
+        ccti[15] = C[15] / const
+        ccti[16] = C[16] / const
+        ccti[17] = C[17] / const
+        ccti[18] = C[18] / const
+        ccti[19] = C[19] / const
+        ccti[20] = C[20] / const
+
         MD = mean_diffusivity(evals) #is a sclar
         # Compute kurtosis tensor (K)
         K = np.zeros((15,1))
-        K[0] = 3 * C[0] / (MD ** 2)
-        K[1] = 3 * C[1] / (MD ** 2)
-        K[2] = 3 * C[2] / (MD ** 2)
-        K[3] = 3 * C[8] / (MD ** 2)
-        K[4] = 3 * C[7] / (MD ** 2)
-        K[5] = 3 * C[11] / (MD ** 2)
-        K[6] = 3 * C[9] / (MD ** 2)
-        K[7] = 3 * C[13] / (MD ** 2)
-        K[8] = 3 * C[12] / (MD ** 2)
-        K[9] = (C[5] + 2 * C[17]) / (MD**2)
-        K[10] = (C[4] + 2 * C[16]) / (MD**2)
-        K[11] = (C[3] + 2 * C[15]) / (MD**2)
-        K[12] = (C[6] + 2 * C[19]) / (MD**2)
-        K[13] = (C[10] + 2 * C[20]) / (MD**2)
-        K[14] = (C[14] + 2 * C[18]) / (MD**2)
+        K[0] = 3 * ccti[0] / (MD ** 2)
+        K[1] = 3 * ccti[1] / (MD ** 2)
+        K[2] = 3 * ccti[2] / (MD ** 2)
+        K[3] = 3 * ccti[8] / (MD ** 2)
+        K[4] = 3 * ccti[7] / (MD ** 2)
+        K[5] = 3 * ccti[11] / (MD ** 2)
+        K[6] = 3 * ccti[9] / (MD ** 2)
+        K[7] = 3 * ccti[13] / (MD ** 2)
+        K[8] = 3 * ccti[12] / (MD ** 2)
+        K[9] = (ccti[5] + 2 * ccti[17]) / (MD**2)
+        K[10] = (ccti[4] + 2 * ccti[16]) / (MD**2)
+        K[11] = (ccti[3] + 2 * ccti[15]) / (MD**2)
+        K[12] = (ccti[6] + 2 * ccti[19]) / (MD**2)
+        K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
+        K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
 
         cti_params = construct_cti_params(evals, evecs, K, C)
         # Generate predicted signals using cti_prediction function
@@ -162,9 +186,9 @@ def test_cti_prediction():
 
         # Generate predicted signals using QTI model
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :] #shape:(81, )
-        
-        # plt.plot(cti_pred_signals.ravel(), label=DTD_labels[i])
-        # plt.plot(qti_pred_signals.ravel(), label=DTD_labels[i])
+
+        plt.plot(cti_pred_signals.ravel(), label=DTD_labels[i])
+        plt.plot(qti_pred_signals.ravel(), label=DTD_labels[i])
 
         # Compare CTI and QTI predicted signals
         assert np.allclose(
