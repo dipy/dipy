@@ -133,7 +133,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'sphinxdoc'
+html_theme = "pydata_sphinx_theme"
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
@@ -257,14 +257,14 @@ sphinx_gallery_conf = {
      # path to your examples scripts
      'examples_dirs': ['examples_revamped', ],
      # path where to save gallery generated examples
-     'gallery_dirs': ['examples_built', ],
+    #  'gallery_dirs': ['examples_built', ],
      'subsection_order': ExplicitOrder(ordered_folders),
      'image_scrapers': (sc),
      'backreferences_dir': 'examples_built',
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': '_static/dipy_full_logo.png',
+     'default_thumb_file': '_static/dipy-logo.png',
      'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
