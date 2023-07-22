@@ -1,12 +1,11 @@
 .. _documentation:
 
-Documentation
-===================
-
-Contents:
+.. jinja:: 
+   :context: hello
+   :file: _templates/documentation.html
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
    introduction
    mission
@@ -22,6 +21,7 @@ Contents:
    reference/index
    reference_cmd/index
    api_changes
+
 
 ..
    Indices and tables

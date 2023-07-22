@@ -39,6 +39,7 @@ rel = {}
 with open(os.path.join('..', 'dipy', 'info.py')) as f:
     exec(f.read(), rel)
 
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
@@ -54,7 +55,16 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
               'github',
-              'ablog']
+              'ablog',
+              'jinja'
+]
+
+# Providing different contexts for the jinja directive
+jinja_contexts = {
+    "hello": {
+        "hello": "hi"
+    }
+}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -138,12 +148,15 @@ html_theme = "pydata_sphinx_theme"
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'dipy.css'
+html_style = 'css/dipy.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+  "secondary_sidebar_items": ["page-toc"],
+  "show_toc_level": 2
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
