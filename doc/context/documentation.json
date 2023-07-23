@@ -1,0 +1,36 @@
+{
+  "topics": [
+    {
+      "name": "What is DIPY?",
+      "link": "introduction.html",
+      "sub-topics": [
+        {
+          "name": "Introduction",
+          "link": "./introduction.html#what-is-dipy"
+        },
+        {
+          "name": "Mission Statement",
+          "link": "./introduction.html#what-is-dipy"
+        }
+      ]
+    },
+    {
+      "name": "Quickstart",
+      "link": "installtion.html",
+      "sub-topics": [
+        {
+          "name": "Installing a release",
+          "link": "./installation.html#installing-a-release"
+        },
+        {
+          "name": "Support",
+          "link": "./installation.html#support"
+        },
+        {
+          "name": "Installing from source",
+          "link": "./installation.html#installing-from-source"
+        }
+      ]
+    }
+  ]
+}

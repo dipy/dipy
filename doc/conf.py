@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import ablog
+import json
 
 # Doc generation depends on being able to import dipy
 try:
@@ -61,9 +62,7 @@ extensions = ['sphinx.ext.autodoc',
 
 # Providing different contexts for the jinja directive
 jinja_contexts = {
-    "hello": {
-        "hello": "hi"
-    }
+    "documentation": json.load(open("./context/documentation.json"))
 }
 
 numpydoc_show_class_members = True

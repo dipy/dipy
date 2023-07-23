@@ -1,51 +1,6 @@
-@import url("./sphinxdoc.css");
-@import url("./documentation.css");
-@import url("./override.css");
+/* Index CSS file */
+/* Do not add any css directly here.... */
 
-body {
-    background-color: #FFFFFF;
-}
-
-div.sphinxsidebar h4, div.sphinxsidebar h3 {
-    background-color: #000000;
-}
-
-h1,h2,h3,h4,h5 {
-    color: #000000;
-}
-
-h1 { margin-top: 10px; font-size: 160%; }
-h2 { font-size: 140%; }
-h3 { font-size: 120%; }
-h4 { font-size: 110%; }
-h5 { font-size: 90%; }
-h6 { font-size: 80%; }
-
-table {
-    margin: 0 0 0 0;
-}
-
-div.footer {
-    background-color: #000000;
-}
-
-
-div.body {
-    background-color: white;
-}
-
-
-tt {
-    background-color: transparent;
-}
-
-
-div.leftside {
-    width: 614px;
-    padding: 0px 3px 0px 0px;
-    float: left;
-}
-
-div.rightside {
-    float: right;
-}
+@import url("./common/variables.css");
+@import url("./common/section-list.css");
+@import url("./common/override.css");
