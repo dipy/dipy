@@ -1,22 +1,22 @@
 import os
+
 import numpy as np
-import pytest
-from tempfile import TemporaryDirectory
-
 import numpy.testing as npt
+import pytest
 
-from dipy.tracking.streamline import Streamlines
+from dipy.data import DATA_DIR
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
 from dipy.testing.decorators import use_xvfb
+from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
-from dipy.data import DATA_DIR
 
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz.app import horizon
-    from fury.io import load_image
+    from fury import window
+
+    from dipy.viz.horizon.app import horizon
 
 skip_it = use_xvfb == 'skip'
 
@@ -114,7 +114,7 @@ def test_horizon():
                 clusters_lt=np.inf, clusters_gt=0,
                 world_coords=False, interactive=False)
 
-    msg = 'Currently native coordinates are not supported for streamlines'
+    msg = 'Currently native coordinates are not supported for streamlines.'
     npt.assert_(msg in str(ve.exception))
 
     # only images
@@ -140,16 +140,9 @@ def test_roi_images():
     img3 = np.zeros((5, 5, 5))
     img3[3, 3, 3] = 1
     images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
-    with TemporaryDirectory() as out_dir:
-        tmp_fname = os.path.join(out_dir, 'tmp_x.png')
-
-        # If roi_images=False, only the first non-binary image is loaded
-        horizon(images=images, interactive=False, out_png=tmp_fname)
-        npt.assert_equal(os.path.exists(tmp_fname), True)
-
-        # If roi_images=True, all th binary images are shown as contours
-        horizon(images=images, roi_images=True, interactive=False,
-                out_png=tmp_fname)
-        npt.assert_equal(os.path.exists(tmp_fname), True)
-        ss = load_image(tmp_fname)
-        npt.assert_equal(ss[650, 800, :], [147, 0, 0])
+    show_m = horizon(images=images, return_showm=True)
+    analysis = window.analyze_scene(show_m.scene)
+    npt.assert_equal(analysis.actors, 0)
+    show_m = horizon(images=images, roi_images=True, return_showm=True)
+    analysis = window.analyze_scene(show_m.scene)
+    npt.assert_equal(analysis.actors, 2)

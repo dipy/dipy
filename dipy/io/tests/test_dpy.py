@@ -1,15 +1,15 @@
-import numpy as np
+from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import InTemporaryDirectory
+import numpy as np
+import numpy.testing as npt
 
 from dipy.io.dpy import Dpy, Streamlines
 
-import numpy.testing as npt
-
 
 def test_dpy():
-    fname = 'test.bin'
-    with InTemporaryDirectory():
+    with TemporaryDirectory() as tmpdir:
+        fname = pjoin(tmpdir, 'test.bin')
         dpw = Dpy(fname, 'w')
         A = np.ones((5, 3))
         B = 2 * A.copy()

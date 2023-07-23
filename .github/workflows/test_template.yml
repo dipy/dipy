@@ -106,6 +106,17 @@ jobs:
         else
           tools/ci/run_tests.sh
         fi
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: ${{ fromJSON(env.COVERAGE) }}
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: for_testing
+        files: coverage.xml
+        fail_ci_if_error: true
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     # - name: Setup tmate session
     #   if: ${{ failure() }}

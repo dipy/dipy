@@ -17,7 +17,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from dipy.workflows.viz import HorizonFlow
-    from dipy.viz.app import horizon
+    from dipy.viz.horizon.app import horizon
 
 
 skip_it = use_xvfb == 'skip'

@@ -31,16 +31,17 @@ import os.path as op
 
 """
 
-To get started, we will grab the bundles that were extracted in the bundle
-extraction example. If the example has not been run yet, these files don't
-yet exist, and we'll need to run that example:
-
+To get started, we will grab the bundles.
 """
 
-if not (op.exists("CST_L_org_1.trk") and
-        op.exists("AF_L_org_1.trk") and
-        op.exists("slr_transform.npy")):
-    import bundle_extraction
+bundles_path = dpd.fetch_bundles_2_subjects()
+bundles_folder = bundles_path[1]
+
+cst_l_file = op.join(bundles_folder, "bundles_2_subjects", "subj_2", "bundles",
+                     "bundles_cst.left.trk")
+af_l_file = op.join(bundles_folder, "bundles_2_subjects", "subj_2", "bundles",
+                    "bundles_af.left.trk")
+
 
 """
 
@@ -49,10 +50,8 @@ Either way, we can use the `dipy.io` API to read in the bundles from file.
 
 """
 
-cst_l = load_trk("CST_L_org_1.trk", "same", bbox_valid_check=False).streamlines
-af_l = load_trk("AF_L_org_1.trk", "same", bbox_valid_check=False).streamlines
-
-transform = np.load("slr_transform.npy")
+cst_l = load_trk(cst_l_file, "same", bbox_valid_check=False).streamlines
+af_l = load_trk(af_l_file, "same", bbox_valid_check=False).streamlines
 
 """
 
@@ -149,8 +148,8 @@ fig.savefig("tract_profiles")
 .. figure:: tract_profiles.png
    :align: center
 
-   Bundle profiles for the fractional anisotropy in the left CST (left) and left
-   AF (right).
+   Bundle profiles for the fractional anisotropy in the left CST (left) and
+   left AF (right).
 """
 
 """

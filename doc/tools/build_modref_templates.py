@@ -71,6 +71,11 @@ if __name__ == '__main__':
                                         r'\.info.*$',
                                         r'\.pkg_info.*$',
                                         ]
+    docwriter.object_skip_patterns += [
+        r'.*FetcherError.*$',
+        r'.*urlopen.*',
+        r'.*add_callback.*',
+    ]
     docwriter.write_api_docs(outdir)
     docwriter.write_index(outdir, 'index', relative_to=outdir)
     print('%d files written' % len(docwriter.written_modules))

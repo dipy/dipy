@@ -7,8 +7,10 @@ Here, we demonstrate fiber tracking using a probabilistic direction getter
 and RUMBA-SD, a model introduced in [CanalesRodriguez2015]_. This model adapts
 Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi noise
 instead of Gaussian, which more accurately reflects the noise from MRI
-scanners (see also :ref:`example_reconst_rumba`). This tracking tutorial is an
-extension on :ref:`example_tracking_probabilistic`.
+scanners (see also
+:ref:`sphx_glr_examples_built_reconstruction_reconst_rumba.py`). This tracking
+tutorial is an extension on
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`.
 
 We start by loading sample data and identifying a fiber response function.
 """

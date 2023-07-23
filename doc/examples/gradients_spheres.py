@@ -6,11 +6,11 @@ Gradients and Spheres
 This example shows how you can create gradient tables and sphere objects using
 DIPY_.
 
-Usually, as we saw in :ref:`example_quick_start`, you load your b-values and
-b-vectors from disk and then you can create your own gradient table. But
-this time let's say that you are an MR physicist and you want to design a new
-gradient scheme or you are a scientist who wants to simulate many different
-gradient schemes.
+Usually, as we saw in :ref:`sphx_glr_examples_built_quick_start_quick_start.py`,
+you load your b-values and b-vectors from disk and then you can create your own
+gradient table. But this time let's say that you are an MR physicist and you
+want to design a new gradient scheme or you are a scientist who wants to
+simulate many different gradient schemes.
 
 Now let's assume that you are interested in creating a multi-shell
 acquisition with 2-shells, one at b=1000 $s/mm^2$ and one at b=2500 $s/mm^2$.

@@ -19,39 +19,46 @@ first, by importing it. This provides us with all of the variables that were
 created in that example:
 
 """
+from os.path import join as pjoin
 
-from mpl_toolkits.axes_grid1 import AxesGrid
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import AxesGrid
+
+import dipy.core.optimize as opt
+from dipy.data import fetch_stanford_tracks
+from dipy.io.streamline import load_trk
 import dipy.tracking.life as life
 from dipy.viz import window, actor, colormap as cmap
-import numpy as np
-import os.path as op
-from dipy.io.streamline import load_trk
-import dipy.core.optimize as opt
-if not op.exists('lr-superiorfrontal.trk'):
-    from streamline_tools import *
-else:
+
     # We'll need to know where the corpus callosum is from these variables:
-    from dipy.core.gradients import gradient_table
-    from dipy.data import get_fnames
-    from dipy.io.gradients import read_bvals_bvecs
-    from dipy.io.image import load_nifti_data, load_nifti
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti
 
-    hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-    label_fname = get_fnames('stanford_labels')
-    t1_fname = get_fnames('stanford_t1')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
 
-    data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
-    labels = load_nifti_data(label_fname)
-    t1_data = load_nifti_data(t1_fname)
-    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-    gtab = gradient_table(bvals, bvecs)
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+t1_data = load_nifti_data(t1_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
-    cc_slice = labels == 2
+cc_slice = labels == 2
 
+# Let's now fetch a set of streamlines from the Stanford HARDI dataset.
+# Those streamlines were generated during the :ref:`streamline_tools` example.
 # Read the candidates from file in voxel space:
-candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
+
+streamlines_files = fetch_stanford_tracks()
+lr_superiorfrontal_path = pjoin(streamlines_files[1],
+                                'hardi-lr-superiorfrontal.trk')
+
+candidate_sl_sft = load_trk(lr_superiorfrontal_path, 'same')
 candidate_sl_sft.to_vox()
 candidate_sl = candidate_sl_sft.streamlines
 
@@ -216,7 +223,7 @@ But how well does the model do in explaining the diffusion data? We can
 quantify that: the ``FiberFit`` class instance has a `predict` method, which
 can be used to invert the model and predict back either the data that was used
 to fit the model, or other unseen data (e.g. in cross-validation, see
-:ref:`kfold_xval`).
+:ref:`sphx_glr_examples_built_reconstruction_kfold_xval.py`).
 
 Without arguments, the ``.predict()`` method will predict the diffusion signal
 for the same gradient table that was used in the fit data, but ``gtab`` and
@@ -361,8 +368,9 @@ substantial reduction of the error.
 
 Note that for full-brain tractographies *LiFE* can require large amounts of
 memory. For detailed memory profiling of the algorithm, based on the
-streamlines generated in :ref:`example_probabilistic_fiber_tracking`, see `this
-IPython notebook
+streamlines generated in
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`, see
+`this IPython notebook
 <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
 
 For the Matlab implementation of LiFE, head over to `Franco Pestilli's github

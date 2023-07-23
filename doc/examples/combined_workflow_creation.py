@@ -114,8 +114,8 @@ This is the method that will wrap everything that is needed to make a workflow
 ready then run it.
 """
 
-if __name__ == "__main__":
-    run_flow(DenoiseAndSegment())
+# if __name__ == "__main__":
+#     run_flow(DenoiseAndSegment())
 """
 This is the only thing needed to make your workflow available through command
 line.

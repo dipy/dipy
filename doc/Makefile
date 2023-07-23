@@ -43,7 +43,8 @@ api:
 	@echo "Build API docs...done."
 
 examples-clean:
-	-cd examples_built && rm -rf *.py *.rst *.png fig
+	rm -rf examples_revamped
+	-cd examples_built && rm -rf *.py *.rst *.png fig *.zip *.db *.examples
 
 examples-clean-tgz: examples-clean examples-tgz
 	../tools/pack_examples.py ../dist
@@ -56,12 +57,24 @@ gitwash-update:
             --project-url=https://dipy.org \
             --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
-html: api rstexamples html-after-examples
+html-legacy: api rstexamples html-after-examples-legacy
 	# build full docs including examples
 
-html-after-examples:
+html-after-examples-legacy:
 	# Standard html build after examples have been prepared
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	@echo
+	@echo "Build finished. The HTML pages are in _build/html."
+
+html: api
+	#  Standard html build after examples have been prepared
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	@echo
+	@echo "Build finished. The HTML pages are in _build/html."
+
+html-no-examples: api
+	# Standard html build after examples have been prepared
+	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 

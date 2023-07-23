@@ -12,7 +12,7 @@ Contents:
    mission
    installation
    data
-   examples_index
+   examples_built/index
    interfaces/index
    faq
    developers

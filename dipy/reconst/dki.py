@@ -2,8 +2,10 @@
 """ Classes and functions for fitting the diffusion kurtosis model """
 
 import numpy as np
+import warnings
 import scipy.optimize as opt
 import dipy.core.sphere as dps
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
@@ -15,7 +17,8 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 perpendicular_directions)
-from dipy.data import get_sphere, get_fnames
+from dipy.core.optimize import PositiveDefiniteLeastSquares
+from dipy.data import get_sphere, get_fnames, load_sdp_constraints
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
 
@@ -48,8 +51,9 @@ def _positive_evals(L1, L2, L3, er=2e-7):
 
 
 def carlson_rf(x, y, z, errtol=3e-4):
-    r""" Computes the Carlson's incomplete elliptic integral of the first kind
-    defined as:
+    r""" Compute the Carlson's incomplete elliptic integral of the first kind
+
+    Carlson's incomplete elliptic integral of the first kind is defined as:
 
     .. math::
 
@@ -118,8 +122,9 @@ def carlson_rf(x, y, z, errtol=3e-4):
 
 
 def carlson_rd(x, y, z, errtol=1e-4):
-    r""" Computes the Carlson's incomplete elliptic integral of the second kind
-    defined as:
+    r""" Compute the Carlson's incomplete elliptic integral of the second kind
+
+    Carlson's incomplete elliptic integral of the second kind is defined as:
 
     .. math::
 
@@ -194,7 +199,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
 
 def _F1m(a, b, c):
     r""" Helper function that computes function $F_1$ which is required to
-    compute the analytical solution of the Mean kurtosis.
+    compute the analytical solution of the Mean kurtosis
 
     Parameters
     ----------
@@ -285,7 +290,7 @@ def _F1m(a, b, c):
 
 def _F2m(a, b, c):
     r""" Helper function that computes function $F_2$ which is required to
-    compute the analytical solution of the Mean kurtosis.
+    compute the analytical solution of the Mean kurtosis
 
     Parameters
     ----------
@@ -375,8 +380,8 @@ def _F2m(a, b, c):
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r""" Calculates the apparent diffusion coefficient (adc) in each direction
-    of a sphere for a single voxel [1]_.
+    r""" Calculate the apparent diffusion coefficient (adc) in each direction of
+    a sphere for a single voxel [1]_
 
     Parameters
     ----------
@@ -417,8 +422,8 @@ def directional_diffusion(dt, V, min_diffusivity=0):
 
 
 def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
-    r""" Calculates the apparent diffusion variance (adv) in each direction
-    of a sphere for a single voxel [1]_.
+    r""" Calculate the apparent diffusion variance (adv) in each direction of a
+    sphere for a single voxel [1]_
 
     Parameters
     ----------
@@ -478,8 +483,8 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
 
 def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
                          adc=None, adv=None):
-    r""" Calculates the apparent kurtosis coefficient (akc) in each direction
-    of a sphere for a single voxel [1]_.
+    r""" Calculate the apparent kurtosis coefficient (akc) in each direction of
+    a sphere for a single voxel [1]_
 
     Parameters
     ----------
@@ -544,8 +549,8 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
 
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-3./7):
-    r""" Calculates the apparent kurtosis coefficient (AKC) in each direction
-    of a sphere [1]_.
+    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+    of a sphere [1]_
 
     Parameters
     ----------
@@ -644,7 +649,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
 def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
                   analytical=True):
-    r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
+    r""" Compute mean kurtosis (MK) from the kurtosis tensor
 
     Parameters
     ----------
@@ -789,7 +794,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
 
 def _G1m(a, b, c):
     r""" Helper function that computes function $G_1$ which is required to
-    compute the analytical solution of the Radial kurtosis.
+    compute the analytical solution of the Radial kurtosis
 
     Parameters
     ----------
@@ -856,7 +861,7 @@ def _G1m(a, b, c):
 
 def _G2m(a, b, c):
     r""" Helper function that computes function $G_2$ which is required to
-    compute the analytical solution of the Radial kurtosis.
+    compute the analytical solution of the Radial kurtosis
 
     Parameters
     ----------
@@ -921,7 +926,7 @@ def _G2m(a, b, c):
 
 def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
                     analytical=True):
-    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_, [2]_.
+    r""" Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_, [2]_
 
     Parameters
     ----------
@@ -1061,7 +1066,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
 
 def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
                    analytical=True):
-    r"""  Computes axial Kurtosis (AK) from the kurtosis tensor [1]_, [2]_.
+    r"""  Compute axial kurtosis (AK) from the kurtosis tensor [1]_, [2]_
 
     Parameters
     ----------
@@ -1176,7 +1181,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
 
 def _kt_maximum_converge(ang, dt, md, kt):
     """ Helper function that computes the inverse of the directional kurtosis
-    of a voxel along a given direction in polar coordinates.
+    of a voxel along a given direction in polar coordinates
 
     Parameters
     ----------
@@ -1208,7 +1213,7 @@ def _kt_maximum_converge(ang, dt, md, kt):
 
 
 def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
-    """ Computes the maximum value of a single voxel kurtosis tensor
+    """ Compute the maximum value of a single voxel kurtosis tensor
 
     Parameters
     ----------
@@ -1271,7 +1276,7 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
 
 def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
                      mask=None):
-    """ Computes kurtosis maximum value
+    """ Compute kurtosis maximum value
 
     Parameters
     ----------
@@ -1336,7 +1341,7 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
 
 
 def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
-    r""" Computes mean of the kurtosis tensor (MKT) [1]_.
+    r""" Compute mean of the kurtosis tensor (MKT) [1]_
 
     Parameters
     ----------
@@ -1405,7 +1410,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
 
 
 def kurtosis_fractional_anisotropy(dki_params):
-    r""" Computes the anisotropy of the kurtosis tensor (KFA) [1]_.
+    r""" Compute the anisotropy of the kurtosis tensor (KFA) [1]_
 
     Parameters
     ----------
@@ -1509,7 +1514,7 @@ def kurtosis_fractional_anisotropy(dki_params):
 
 
 def dki_prediction(dki_params, gtab, S0=1.):
-    """ Predict a signal given diffusion kurtosis imaging parameters.
+    """ Predict a signal given diffusion kurtosis imaging parameters
 
     Parameters
     ----------
@@ -1579,92 +1584,118 @@ class DiffusionKurtosisModel(ReconstModel):
 
         Parameters
         ----------
-        gtab : GradientTable class instance
-
-        fit_method : str or callable
-            str can be one of the following:
-            'OLS' or 'ULLS' for ordinary least squares
-                dki.ols_fit_dki
-            'WLS' or 'UWLLS' for weighted ordinary least squares
-                dki.wls_fit_dki
-
+        gtab : GradientTable instance
+            The gradient table for the data set.
+        fit_method : str or callable, optional
+            str be one of the following:
+                'OLS' or 'ULLS' for ordinary least squares.
+                'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
+                    See dki.ls_fit_dki.
+                'CLS' for LMI constrained ordinary least squares [2].
+                'CWLS' for LMI constrained weighted least squares [2].
+                    See dki.cls_fit_dki.
             callable has to have the signature:
-                fit_method(design_matrix, data, *args, **kwargs)
-
-        args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
+                fit_method(design_matrix, data, *args, **kwargs).
+            Default: "WLS"
+        args, kwargs :
+            arguments and key-word arguments passed to the fit_method.
 
         References
         ----------
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-        Estimation of tensors and tensor-derived measures in diffusional
-        kurtosis imaging. Magn Reson Med. 65(3), 823-836
+               Estimation of tensors and tensor-derived measures in diffusional
+               kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        .. [2] Dela Haije et al. "Enforcing necessary non-negativity constraints
+               for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
+
         """
         ReconstModel.__init__(self, gtab)
-
-        if not callable(fit_method):
-            try:
-                self.fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                raise ValueError('"' + str(fit_method) + '" is not a known '
-                                 'fit method, the fit method should either be '
-                                 'a function or one of the common fit methods')
-
-        self.design_matrix = design_matrix(self.gtab)
-        self.args = args
-        self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
-        if self.min_signal is not None and self.min_signal <= 0:
-            e_s = "The `min_signal` key-word argument needs to be strictly"
-            e_s += " positive."
-            raise ValueError(e_s)
 
         # Check if at least three b-values are given
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b:
-            mes = "DKI requires at least 3 b-values (which can include b=0)"
-            raise ValueError(mes)
+            msg = "DKI requires at least 3 b-values (which can include b=0)."
+            raise ValueError(msg)
+
+        self.common_fit_method = not callable(fit_method)
+        if self.common_fit_method:
+            try:
+                self.fit_method = common_fit_methods[fit_method]
+            except KeyError:
+                msg = '"' + str(fit_method) + '" is not a known fit method. The'
+                msg += ' fit method should either be a function or one of the'
+                msg += ' common fit methods.'
+                raise ValueError(msg)
+
+        self.args = args
+        self.kwargs = kwargs
+
+        self.min_signal = self.kwargs.pop('min_signal', None)
+        if self.min_signal is None:
+            self.min_signal = MIN_POSITIVE_SIGNAL
+        elif self.min_signal <= 0:
+            msg = "The `min_signal` key-word argument needs to be strictly"
+            msg += " positive."
+            raise ValueError(msg)
+
+        self.design_matrix = design_matrix(self.gtab)
+        self.inverse_design_matrix = np.linalg.pinv(self.design_matrix)
+
+        tol = 1e-6
+        self.min_diffusivity = tol / -self.design_matrix.min()
+
+        self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
+        if self.convexity_constraint:
+            self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
+            self.convexity_level = self.kwargs.pop('convexity_level', 'full')
+            msg = "convexity_level must be a positive, even number, or 'full'."
+            if isinstance(self.convexity_level, str):
+                if self.convexity_level == 'full':
+                    self.sdp_constraints = load_sdp_constraints('dki')
+                else:
+                    raise ValueError(msg)
+            elif self.convexity_level < 0 or self.convexity_level % 2:
+                raise ValueError(msg)
+            else:
+                if self.convexity_level > 4:
+                    msg = "Maximum convexity_level supported is 4."
+                    warnings.warn(msg)
+                    self.convexity_level = 4
+                self.sdp_constraints = load_sdp_constraints(
+                    'dki', self.convexity_level)
+            self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
+
+        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+        self.is_multi_method = fit_method in ['WLS', 'OLS', 'UWLLS', 'ULLS',
+                                              'WLLS', 'OLLS', 'CLS', 'CWLS']
 
     def fit(self, data, mask=None):
-        """ Fit method of the DKI model class
+        data_thres = np.maximum(data, self.min_signal)
+        if self.is_multi_method:
+            return self.multi_fit(data_thres, mask=mask)
 
-        Parameters
-        ----------
-        data : array
-            The measured signal from one voxel.
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 *self.args, **self.kwargs)
+        return DiffusionKurtosisFit(self, params)
 
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[-1]
+    @multi_voxel_fit
+    def multi_fit(self, data_thres, mask=None):
+        extra_args = {} if not self.convexity_constraint else {
+            'cvxpy_solver': self.cvxpy_solver,
+            'sdp': self.sdp,
+            }
 
-        """
-        if mask is not None:
-            # Check for valid shape of the mask
-            if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
-        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 self.inverse_design_matrix,
+                                 weights=self.weights,
+                                 min_diffusivity=self.min_diffusivity,
+                                 **extra_args)
 
-        if self.min_signal is None:
-            min_signal = MIN_POSITIVE_SIGNAL
-        else:
-            min_signal = self.min_signal
-
-        data_in_mask = np.maximum(data_in_mask, min_signal)
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
-
-        if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
-            dki_params = params_in_mask.reshape(out_shape)
-        else:
-            dki_params = np.zeros(data.shape[:-1] + (27,))
-            dki_params[mask, :] = params_in_mask
-
-        return DiffusionKurtosisFit(self, dki_params)
+        return DiffusionKurtosisFit(self, params)
 
     def predict(self, dki_params, S0=1.):
-        """ Predict a signal for this DKI model class instance given parameters.
+        """ Predict a signal for this DKI model class instance given parameters
 
         Parameters
         ----------
@@ -1690,7 +1721,7 @@ class DiffusionKurtosisFit(TensorFit):
     """ Class for fitting the Diffusion Kurtosis Model"""
 
     def __init__(self, model, model_params):
-        """ Initialize a DiffusionKurtosisFit class instance.
+        """ Initialize a DiffusionKurtosisFit class instance
 
         Since DKI is an extension of DTI, class instance is defined as subclass
         of the TensorFit from dti.py
@@ -1713,12 +1744,12 @@ class DiffusionKurtosisFit(TensorFit):
     @property
     def kt(self):
         """
-        Returns the 15 independent elements of the kurtosis tensor as an array
+        Return the 15 independent elements of the kurtosis tensor as an array
         """
         return self.model_params[..., 12:]
 
     def akc(self, sphere):
-        r""" Calculates the apparent kurtosis coefficient (AKC) in each
+        r""" Calculate the apparent kurtosis coefficient (AKC) in each
         direction on the sphere for each voxel in the data
 
         Parameters
@@ -1754,7 +1785,7 @@ class DiffusionKurtosisFit(TensorFit):
         return apparent_kurtosis_coef(self.model_params, sphere)
 
     def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
-        r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
+        r""" Compute mean kurtosis (MK) from the kurtosis tensor
 
         Parameters
         ----------
@@ -1851,7 +1882,7 @@ class DiffusionKurtosisFit(TensorFit):
 
     def ak(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
         r"""
-        Axial Kurtosis (AK) of a diffusion kurtosis tensor [1]_.
+        Compute axial kurtosis (AK) of a diffusion kurtosis tensor [1]_
 
         Parameters
         ----------
@@ -1915,7 +1946,7 @@ class DiffusionKurtosisFit(TensorFit):
                               analytical)
 
     def rk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
-        r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_.
+        r""" Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_
 
         Parameters
         ----------
@@ -1998,7 +2029,7 @@ class DiffusionKurtosisFit(TensorFit):
                                analytical)
 
     def kmax(self, sphere='repulsion100', gtol=1e-5, mask=None):
-        r""" Computes the maximum value of a single voxel kurtosis tensor
+        r""" Compute the maximum value of a single voxel kurtosis tensor
 
         Parameters
         ----------
@@ -2021,7 +2052,7 @@ class DiffusionKurtosisFit(TensorFit):
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
 
     def mkt(self, min_kurtosis=-3./7, max_kurtosis=10):
-        r""" Computes mean of the kurtosis tensor (MKT) [1]_.
+        r""" Compute mean of the kurtosis tensor (MKT) [1]_
 
         Parameters
         ----------
@@ -2074,7 +2105,7 @@ class DiffusionKurtosisFit(TensorFit):
 
     @property
     def kfa(self):
-        r""" Returns the kurtosis tensor (KFA) [1]_.
+        r""" Return the kurtosis tensor (KFA) [1]_
 
         Notes
         -----
@@ -2141,46 +2172,15 @@ class DiffusionKurtosisFit(TensorFit):
         return dki_prediction(self.model_params, gtab, S0)
 
 
-def _ols_iter(inv_design, sig, min_diffusivity):
-    """ Helper function used by ols_fit_dki - Applies OLS fit of the diffusion
-    kurtosis model to single voxel signals.
-
-    Parameters
-    ----------
-    inv_design : array (g, 22)
-        Inverse of the design matrix holding the covariants used to solve for
-        the regression coefficients.
-    sig : array (g,)
-        Diffusion-weighted signal for a single voxel data.
-    min_diffusivity : float
-        Because negative eigenvalues are not physical and small eigenvalues,
-        much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than
-        `min_diffusivity` are replaced with `min_diffusivity`.
-
-    Returns
-    -------
-    dki_params : array (27,)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    """
-    # DKI ordinary linear least square solution
-    log_s = np.log(sig)
-    result = np.dot(inv_design, log_s)
-
+def params_to_dki_params(result, min_diffusivity=0):
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
     evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
                                     min_diffusivity=min_diffusivity)
 
     # Extracting kurtosis tensor parameters from solution
-    MD_square = (evals.mean(0))**2
-    KT_elements = result[6:21] / MD_square
+    MD_square = evals.mean(0)**2
+    KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
 
     # Write output
     dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
@@ -2189,146 +2189,37 @@ def _ols_iter(inv_design, sig, min_diffusivity):
     return dki_params
 
 
-def ols_fit_dki(design_matrix, data):
-    r""" Computes the diffusion and kurtosis tensors using an ordinary linear
-    least squares (OLS) approach [1]_.
+def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
+               min_diffusivity=0):
+    r""" Compute the diffusion and kurtosis tensors using an ordinary or
+    weighted linear least squares approach [1]_
 
     Parameters
     ----------
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array (N, g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
-
-    Returns
-    -------
-    dki_params : array (N, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    See Also
-    --------
-    wls_fit_dki, nls_fit_dki
-
-    References
-    ----------
-    [1] Lu, H., Jensen, J. H., Ramani, A., and Helpern, J. A. (2006).
-        Three-dimensional characterization of non-gaussian water diffusion in
-        humans using diffusion kurtosis imaging. NMR in Biomedicine 19,
-        236–247. doi:10.1002/nbm.1020
-
-    """
-    tol = 1e-6
-
-    # preparing data and initializing parameters
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 27))
-
-    # inverting design matrix and defining minimum diffusion
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
-
-    # looping OLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        dki_params[vox] = _ols_iter(inv_design, data_flat[vox],
-                                    min_diffusivity)
-
-    # Reshape data according to the input data shape
-    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
-
-    return dki_params
-
-
-def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
-    """ Helper function used by wls_fit_dki - Applies WLS fit of the diffusion
-    kurtosis model to single voxel signals.
-
-    Parameters
-    ----------
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients
-    inv_design : array (g, 22)
+    data : array (g)
+        Data or response variables holding the data.
+    inverse_design_matrix : array (22, g)
         Inverse of the design matrix.
-    sig : array (g, )
-        Diffusion-weighted signal for a single voxel data.
-    min_diffusivity : float
+    weights : bool, optional
+        Parameter indicating whether weights are used. Default: True.
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than
-        `min_diffusivity` are replaced with `min_diffusivity`.
+        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+        are replaced with `min_diffusivity`.
 
     Returns
     -------
-    dki_params : array (27, )
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    """
-    A = design_matrix
-
-    # DKI ordinary linear least square solution (initial guess)
-    log_s = np.log(sig)
-    ols_result = np.dot(inv_design, log_s)
-
-    # Define weights as diag(yn**2)
-    W = np.diag(np.exp(2 * np.dot(A, ols_result)))
-
-    # DKI weighted linear least square solution
-    inv_AT_W_A = np.linalg.pinv(np.dot(np.dot(A.T, W), A))
-    AT_W_LS = np.dot(np.dot(A.T, W), log_s)
-    wls_result = np.dot(inv_AT_W_A, AT_W_LS)
-
-    # Extracting the diffusion tensor parameters from solution
-    DT_elements = wls_result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
-                                    min_diffusivity=min_diffusivity)
-
-    # Extracting kurtosis tensor parameters from solution
-    MD_square = (evals.mean(0))**2
-    KT_elements = wls_result[6:21] / MD_square
-
-    # Write output
-    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements), axis=0)
-
-    return dki_params
-
-
-def wls_fit_dki(design_matrix, data):
-    r""" Computes the diffusion and kurtosis tensors using a weighted linear
-    least squares (WLS) approach [1]_.
-
-    Parameters
-    ----------
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array (N, g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
-
-    Returns
-    -------
-    dki_params : array (N, 27)
+    dki_params : array (27)
         All parameters estimated from the diffusion kurtosis model for all N
-        voxels.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
+        voxels. Parameters are ordered as follows:
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
@@ -2338,24 +2229,88 @@ def wls_fit_dki(design_matrix, data):
         335-346.
 
     """
-    tol = 1e-6
+    # Set up least squares problem
+    A = design_matrix
+    y = np.log(data)
 
-    # preparing data and initializing parameters
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 27))
+    # DKI ordinary linear least square solution
+    result = np.dot(inverse_design_matrix, y)
 
-    # inverting design matrix and defining minimum diffusion
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
+    # Define weights as diag(yn**2)
+    if weights:
+        W = np.diag(np.exp(2 * np.dot(A, result)))
+        AT_W = np.dot(A.T, W)
+        inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, A))
+        AT_W_LS = np.dot(AT_W, y)
+        result = np.dot(inv_AT_W_A, AT_W_LS)
 
-    # looping WLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
-                                    min_diffusivity)
+    # Write output
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    # Reshape data according to the input data shape
-    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
+    return dki_params
+
+
+def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
+                min_diffusivity=0, cvxpy_solver=None):
+    r""" Compute the diffusion and kurtosis tensors using a constrained
+    ordinary or weighted linear least squares approach [1]_
+
+    Parameters
+    ----------
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array (g)
+        Data or response variables holding the data.
+    inverse_design_matrix : array (22, g)
+        Inverse of the design matrix.
+    sdp : PositiveDefiniteLeastSquares instance
+        A CVXPY representation of a regularized least squares optimization
+        problem.
+    weights : bool, optional
+        Parameter indicating whether weights are used. Default: True.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+        are replaced with `min_diffusivity`.
+    cvxpy_solver : str, optional
+        cvxpy solver name. Optionally optimize the positivity constraint with a
+        particular cvxpy solver. See http://www.cvxpy.org/ for details.
+        Default: None (cvxpy chooses its own solver).
+
+    Returns
+    -------
+    dki_params : array (27)
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
+
+    References
+    ----------
+    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints for
+           common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
+    """
+    # Set up least squares problem
+    A = design_matrix
+    y = np.log(data)
+
+    # Define sqrt weights as diag(yn)
+    if weights:
+        result = np.dot(inverse_design_matrix, y)
+        W = np.diag(np.exp(np.dot(A, result)))
+        A = np.dot(W, A)
+        y = np.dot(W, y)
+
+    # Solve sdp
+    result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
+
+    # Write output
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     return dki_params
 
@@ -2430,8 +2385,8 @@ ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
 
 
 def Wrotate_element(kt, indi, indj, indk, indl, B):
-    r""" Computes the the specified index element of a kurtosis tensor rotated
-    to the coordinate system basis B.
+    r""" Compute the the specified index element of a kurtosis tensor rotated
+    to the coordinate system basis B
 
     Parameters
     ----------
@@ -2551,15 +2506,17 @@ def split_dki_param(dki_params):
     return evals, evecs, kt
 
 
-common_fit_methods = {'WLS': wls_fit_dki,
-                      'OLS': ols_fit_dki,
+common_fit_methods = {'WLS': ls_fit_dki,
+                      'OLS': ls_fit_dki,
                       'NLS': nlls_fit_tensor,
-                      'UWLLS': wls_fit_dki,
-                      'ULLS': ols_fit_dki,
-                      'WLLS': wls_fit_dki,
-                      'OLLS': ols_fit_dki,
+                      'UWLLS': ls_fit_dki,
+                      'ULLS': ls_fit_dki,
+                      'WLLS': ls_fit_dki,
+                      'OLLS': ls_fit_dki,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
                       'restore': restore_fit_tensor,
-                      'RESTORE': restore_fit_tensor
+                      'RESTORE': restore_fit_tensor,
+                      'CLS': cls_fit_dki,
+                      'CWLS': cls_fit_dki
                       }

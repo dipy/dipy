@@ -26,9 +26,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     directions more than ``max_angle`` degrees from the incoming direction are
     set to 0 and the result is normalized.
     """
-    cdef:
-        double[:, :] vertices
-        dict _adj_matrix
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.

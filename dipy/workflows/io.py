@@ -133,7 +133,9 @@ class FetchFlow(Workflow):
                                for name, func in getmembers(fetcher_module,
                                                             isfunction)
                                if name.lower().startswith("fetch_") and
-                               func is not fetcher_module.fetch_data])
+                               func is not fetcher_module.fetch_data
+                               if name.lower() not in ['fetch_hbn',
+                                                       'fetch_hcp']])
 
         return available_data
 
