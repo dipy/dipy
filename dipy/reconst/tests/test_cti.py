@@ -6,16 +6,11 @@ from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
 from dipy.sims.voxel import multi_tensor
-from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
 import dipy.reconst.qti as qti
 import dipy.reconst.cti as cti 
 from dipy.reconst.qti import (from_3x3_to_6x1, from_6x1_to_3x3, dtd_covariance, qti_signal)
 from dipy.reconst.dti import (decompose_tensor, from_lower_triangular, mean_diffusivity)
 from dipy.reconst.cti import (cti_prediction, split_cti_params)
-from dipy.reconst.qti import (qti_signal)
-import dipy.reconst.cti as cti 
-import dipy.reconst.qti as qti 
-from dipy.reconst.qti import from_3x3_to_6x1
 
 def perpendicular_directions_temp(v, num=20, half=False):
     v = np.array(v, dtype=np.float64)
@@ -78,34 +73,6 @@ for i in range(81):
 # on providing btens, (bvals1,bvecs1) is ignored.
 gtab = gradient_table(bvals1, bvecs1, btens=B)
 S0 = 100
-# we've isotropic and anisotropic diffusion tensor distribution (DTD)
-anisotropic_DTD = _anisotropic_DTD()  # assuming these functions work correctly
-isotropic_DTD = _isotropic_DTD()
-
-DTDs = [
-    anisotropic_DTD,
-    isotropic_DTD,
-    np.concatenate((anisotropic_DTD, isotropic_DTD))
-]
-
-# label for each DTD, for the plot
-DTD_labels = ['Anisotropic DTD', 'Isotropic DTD', 'Combined DTD']
-
-for DTD in DTDs:
-    D = np.mean(DTD, axis=0)
-    C = qti.dtd_covariance(DTD)
-    params = np.concatenate(
-        (np.zeros((1, 1)),  # replaced np.log(1)[np.newaxis, np.newaxis] with 0
-            qti.from_3x3_to_6x1(D),
-            qti.from_6x6_to_21x1(C))).T
-    data = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :]
-
-    # use labels that describe the signal
-    plt.plot(data.ravel(), label=DTD_labels[i])
-
-plt.legend()
-plt.show()
-
 
 def construct_cti_params(evals, evecs, kt, fcvt):
     fevals = evals.reshape((-1, evals.shape[-1])) #has shape: (1, 3)
@@ -116,6 +83,31 @@ def construct_cti_params(evals, evecs, kt, fcvt):
     cti_params = np.concatenate((fevals.T, fevecs.T, fkt, fcvt), axis = 0)    
     return np.squeeze(cti_params) #returns shape: (48, )
 
+def modify_C_params(C): 
+    const = np.sqrt(2)
+    ccti = np.zeros((21, 1)) 
+    ccti[0] = C[0]
+    ccti[1] = C[1]
+    ccti[2] = C[2]
+    ccti[3] = C[3] / const
+    ccti[4] = C[4] / const
+    ccti[5] = C[5] / const
+    ccti[6] = C[6] / 2
+    ccti[7] = C[7] / 2
+    ccti[8] = C[8] / 2
+    ccti[9] = C[9] / 2
+    ccti[10] = C[10] / 2
+    ccti[11] = C[11] / 2
+    ccti[12] = C[12] / 2
+    ccti[13] = C[13] / 2
+    ccti[14] = C[14] / 2
+    ccti[15] = C[15] / 2
+    ccti[16] = C[16] / 2
+    ccti[17] = C[17] / 2
+    ccti[18] = C[18] / (2 * const)
+    ccti[19] = C[19] / (2 * const)
+    ccti[20] = C[20] / (2 * const)
+    return ccti
 
 def test_cti_prediction():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
@@ -128,38 +120,16 @@ def test_cti_prediction():
         np.concatenate((anisotropic_DTD, isotropic_DTD))
     ]
 
-    DTD_labels = ["anisotropic_DTD", "isotropic_DTD", "combined_DTD"]
-    for i, DTD in enumerate(DTDs):
+    # DTD_labels = ["anisotropic_DTD", "isotropic_DTD", "combined_DTD"]
+    for DTD in enumerate(DTDs):
         D = np.mean(DTD, axis=0)
         D_flat = np.squeeze(from_3x3_to_6x1(D)) #has shape:(6, )    #pretty useless, not needed
         evals, evecs = decompose_tensor(D)  #evals:shape: (3, ) & evecs.shape: (3, 3)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
 
-        #changing up cti : 
-        const = np.sqrt(2) 
-        ccti = np.zeros((21, 1)) 
-        ccti[0] = C[0]
-        ccti[1] = C[1]
-        ccti[2] = C[2]
-        ccti[3] = C[3] / const
-        ccti[4] = C[4] / const
-        ccti[5] = C[5] / const
-        ccti[6] = C[6] / const
-        ccti[7] = C[7] / const
-        ccti[8] = C[8] / const
-        ccti[9] = C[9] / const
-        ccti[10] = C[10] / const
-        ccti[11] = C[11] / const
-        ccti[12] = C[12] / const
-        ccti[13] = C[13] / const
-        ccti[14] = C[14] / const
-        ccti[15] = C[15] / const
-        ccti[16] = C[16] / const
-        ccti[17] = C[17] / const
-        ccti[18] = C[18] / const
-        ccti[19] = C[19] / const
-        ccti[20] = C[20] / const
+        #getting C_params from voigt notation
+        ccti = modify_C_params(C)
 
         MD = mean_diffusivity(evals) #is a sclar
         # Compute kurtosis tensor (K)
@@ -180,15 +150,13 @@ def test_cti_prediction():
         K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
         K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
 
-        cti_params = construct_cti_params(evals, evecs, K, C)
+        cti_params = construct_cti_params(evals, evecs, K, ccti)
         # Generate predicted signals using cti_prediction function
         cti_pred_signals = ctiM.predict(cti_params) #shape: (81, )
 
         # Generate predicted signals using QTI model
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :] #shape:(81, )
 
-        plt.plot(cti_pred_signals.ravel(), label=DTD_labels[i])
-        plt.plot(qti_pred_signals.ravel(), label=DTD_labels[i])
 
         # Compare CTI and QTI predicted signals
         assert np.allclose(

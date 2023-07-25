@@ -13,6 +13,38 @@ from dipy.reconst.dki import (
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular,lower_triangular, mean_diffusivity)
 
+def split_cti_params(cti_params):
+    r"""Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector matrix, and the 21 independent elements of the covariance tensor, and the 15 independent elements of the kurtosis tensor from the model parameters estimated from the CTI model
+    Parameters:
+         -----------
+         params: numpy.ndarray (...,48)
+                 All parameters estimated from the correlation tensor model.
+                 Paramters are ordered as follows::
+
+                 1. Three diffusion tensor's eigenvalues
+                 2. Three lines of the eigenvector matrix each containing the
+                 first, second and third coordinates of the eigenvector
+                 3. Fifteen elements of the kurtosis tensor
+                 4. Twenty-One elements of the covariance tensor
+         S0 : float or ndarray (optional)
+             The non diffusion-weighted signal in every voxel, or across all
+             voxels. Default: 1
+
+         Returns
+         -------
+         evals: Three diffusion tensor's eigenvalues
+         evecs: Three lines of the eigenvector matrix each continaint ehf irst, second and third coordinates of the eigenvector
+         kt: Fifteen elemnets of the kurtosis tensor
+         cvt : Twenty-one elements of the covariance tensor
+
+       """
+    # DT_elements = np.squeeze(cti_params[:6, ...])
+    # evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
+    evals = cti_params[..., :3]
+    evecs = cti_params[..., 3:12].reshape(cti_params.shape[:-1] + (3, 3))
+    kt = cti_params[ 12:27, ...]
+    cvt = cti_params[27:48, ... ]
+    return evals, evecs, kt, cvt
 
 def cti_prediction(cti_params, gtab1, gtab2, S0=100):
     """Predict a signal given correlation tensor imaging parameters
@@ -309,40 +341,6 @@ def from_3x3_to_6x1_temp(T):
                   C * T[..., 0, 2],
                   C * T[..., 0, 1]), axis=-1)
     return V
-
-
-def split_cti_params(cti_params):
-    r"""Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector matrix, and the 21 independent elements of the covariance tensor, and the 15 independent elements of the kurtosis tensor from the model parameters estimated from the CTI model
-    Parameters:
-         -----------
-         params: numpy.ndarray (...,48)
-                 All parameters estimated from the correlation tensor model.
-                 Paramters are ordered as follows::
-
-                 1. Three diffusion tensor's eigenvalues
-                 2. Three lines of the eigenvector matrix each containing the
-                 first, second and third coordinates of the eigenvector
-                 3. Fifteen elements of the kurtosis tensor
-                 4. Twenty-One elements of the covariance tensor
-         S0 : float or ndarray (optional)
-             The non diffusion-weighted signal in every voxel, or across all
-             voxels. Default: 1
-
-         Returns
-         -------
-         evals: Three diffusion tensor's eigenvalues
-         evecs: Three lines of the eigenvector matrix each continaint ehf irst, second and third coordinates of the eigenvector
-         kt: Fifteen elemnets of the kurtosis tensor
-         cvt : Twenty-one elements of the covariance tensor
-
-       """
-    # DT_elements = np.squeeze(cti_params[:6, ...])
-    # evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
-    evals = cti_params[..., :3]
-    evecs = cti_params[..., 3:12].reshape(cti_params.shape[:-1] + (3, 3))
-    kt = cti_params[ 12:27, ...]
-    cvt = cti_params[27:48, ... ]
-    return evals, evecs, kt, cvt
 
 
 def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True, min_diffusivity=0):
