@@ -9,7 +9,10 @@ import scipy.optimize as opt
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.utils import cti_design_matrix as design_matrix
 from dipy.reconst.dki import (
-    DiffusionKurtosisFit)
+    DiffusionKurtosisFit, 
+    apparent_kurtosis_coef, 
+    mean_kurtosis, 
+    axial_kurtosis )
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular,lower_triangular, mean_diffusivity)
 
@@ -28,7 +31,7 @@ def split_cti_params(cti_params):
                  4. Twenty-One elements of the covariance tensor
          S0 : float or ndarray (optional)
              The non diffusion-weighted signal in every voxel, or across all
-             voxels. Default: 1
+             voxels. Default: 100
 
          Returns
          -------
@@ -198,35 +201,107 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         ----------
         model : CorrelationTensorModel Class instance
             Class instance containing the Correlation Tensor Model for the fit
-        model_params : ndarray (x, y, z, 43) or (n, 43)
-            All parameters estimated from the correlation tensor model.
+        model_params : ndarray (x, y, z, 48) or (n, 48)
+            All parameters estimated from the diffusion kurtosis model.
             Parameters are ordered as follows:
+                1) Three diffusion tensor's eigenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
+                4) Twenty One elements of the covariance tensor
 
         """
-        DiffusionKurtosisFit.__init__(self, model, model_params)
+        DiffusionKurtosisFit.__init__(self, model, model_params) 
 
     def kt(self):  # created
         """
         Return the 15 independent elements of the kurtosis tensor as an array
         """
-        return self.model_params[..., 27:42]  # last index won't get included....?
+        return self.model_params[12:27, ...]  # last index won't get included....?
 
-    def dft(self):  # created
+    def dft(self):  # created 
         """
         Returns the 6 independent elements of the diffusion tensor as an array
         """
-        return self.model_params[..., :6]
 
+		# Extract the eigenvalues and the eigenvectors
+		evals = self.model_params[:3]
+		evecs = self.model_params[3:12].reshape((3,3))
+
+		# Construct the diffusion tensor
+		diffusion_tensor = np.dot(np.dot(evecs, np.diag(evals)), evecs.T)
+
+		# Extract the independent elements of the diffusion tensor
+		dt_elements = np.array([diffusion_tensor[0, 0], 
+				    diffusion_tensor[1, 1], 
+				    diffusion_tensor[2, 2],
+				    diffusion_tensor[0, 1], 
+				    diffusion_tensor[0, 2], 
+				    diffusion_tensor[1, 2]])
+
+        return dt_elements
+        
     def cvt(self):  # created
         """
         Returns the 21 independent elements of the covariance tensor as an array
         """
-        return self.model_params[..., 6:27]
+        return self.model_params[27:48, ...]
 # calculating the mean of the kurtosis tensor...?Needs to be modified...?
 
-    def mkt(self, min_kurtosis=-3./7, max_kurtosis=10):  # imported (dki.py)
+@property
+    def mkt(self, min_kurtosis=-3./7, max_kurtosis=10):  # imported (dki.py)     #mean kurtosis tensor 
         return mean_kurtosis_tensor(self.model_params, min_kurtosis,
                                     max_kurtosis)
+    @property                   
+    def def akc(self, sphere):                                                    #apparent kurtosis tensor 
+        r""" Calculate the apparent kurtosis coefficient (AKC) in each
+        direction on the sphere for each voxel in the data
+
+        Parameters
+        ----------
+        sphere : Sphere class instance
+
+        Returns
+        -------
+        akc : ndarray
+           The estimates of the apparent kurtosis coefficient in every
+           direction on the input sphere
+           
+        sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0]) #here gtab is the combined gtab from gtab1 and gtab2 
+        
+        """ 
+        return apparent_kurtosis_coef(self.model_params, sphere) #passing cti_params, 
+        
+        @property
+        def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):               #mean kurtosis + mean_kurtosis_tensor
+        
+        	return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
+                             analytical)
+                             
+         @property                    
+      	def ak(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):               #axial kurtosis 
+      		return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
+                              analytical)
+                              
+         @property                
+        def rk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):              #radial kurtosis 
+        	return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
+                               analytical)
+        @property 
+        def kmax(self, sphere='repulsion100', gtol=1e-5, mask=None):
+        r""" Compute the maximum value of a single voxel kurtosis tensor
+        Returns
+        -------
+        max_value : float
+            kurtosis tensor maximum value
+
+        """
+        return kurtosis_maximum(self.model_params, sphere, gtol, mask)
+        
+         @property
+	def kfa(self):
+		return kurtosis_fractional_anisotropy(self.model_params)         
+
 
    # def cvt(__):  # calculates the mean of all covariance parameters. required ? Formula ?
 
@@ -234,17 +309,6 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         # we separate the kurtosis in 3 parts: isotropic+anisotropoic+microscopic. Do we need methods for this? : REFER VIDEO ON THIS
 
-    def split_dk_cv_param(params):
-        r""" Extract the diffusion tensor eigenvalues, the diffusion tensor
-    eigenvector matrix, and the 15 independent elements of the kurtosis tensor
-    from the model parameters estimated from the CTI model
-
-    Parameters
-    ----------
-
-
-    """
-        return None
 
     def predict(self, gtab1, gtab2, S0=100):  # created
         """Given a CTI model fit, predict the signal on the vertices of a gradient table
@@ -275,6 +339,82 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """
         return cti_prediction(self.model_params, gtab1, gtab2, S0)
 
+def params_to_cti_params(result, min_diffusivity=0):
+    # Extracting the diffusion tensor parameters from solution
+    DT_elements = result[:6]
+    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
+                                    min_diffusivity=min_diffusivity)
+
+    # Extracting kurtosis tensor parameters from solution
+    MD_square = evals.mean(0)**2
+    KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
+
+    # Write output
+    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                 KT_elements), axis=0)
+
+    return dki_params
+
+
+def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
+               min_diffusivity=0):
+    r""" Compute the diffusion and kurtosis tensors using an ordinary or
+    weighted linear least squares approach [1]_
+
+    Parameters
+    ----------
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array (g)
+        Data or response variables holding the data.
+    inverse_design_matrix : array (22, g)
+        Inverse of the design matrix.
+    weights : bool, optional
+        Parameter indicating whether weights are used. Default: True.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+        are replaced with `min_diffusivity`.
+
+    Returns
+    -------
+    dki_params : array (27)
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
+
+    References
+    ----------
+    [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
+        2013. Weighted linear least squares estimation of diffusion MRI
+        parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
+        335-346.
+
+    """
+    # Set up least squares problem
+    A = design_matrix
+    y = np.log(data)
+
+    # DKI ordinary linear least square solution
+    result = np.dot(inverse_design_matrix, y)
+
+    # Define weights as diag(yn**2)
+    if weights:
+        W = np.diag(np.exp(2 * np.dot(A, result)))
+        AT_W = np.dot(A.T, W)
+        inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, A))
+        AT_W_LS = np.dot(AT_W, y)
+        result = np.dot(inv_AT_W_A, AT_W_LS)
+
+    # Write output
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
+
+    return dki_params
 
 def params_to_cti_params(result, min_diffusivity=0):
 
@@ -341,7 +481,6 @@ def from_3x3_to_6x1_temp(T):
                   C * T[..., 0, 2],
                   C * T[..., 0, 1]), axis=-1)
     return V
-
 
 def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True, min_diffusivity=0):
     r"""Compute the diffusion and kurtosis tensors using an ordinary or
