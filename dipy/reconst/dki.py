@@ -2501,7 +2501,7 @@ def split_dki_param(dki_params):
     """
     evals = dki_params[..., :3]
     evecs = dki_params[..., 3:12].reshape(dki_params.shape[:-1] + (3, 3))
-    kt = dki_params[..., 12:27] #changing this
+    kt = dki_params[..., 12:27] 
 
     return evals, evecs, kt
 

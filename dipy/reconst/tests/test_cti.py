@@ -175,3 +175,95 @@ def test_cti_prediction():
         # Compare CTI and QTI predicted signals
         assert np.allclose(
             cti_pred_signals, qti_pred_signals), "CTI and QTI signals do not match!"
+            
+def test_split_cti_param():
+    ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
+
+    ctiF = ctiM.fit(DWI)
+    evals, evecs, kt, cvt = cti.split_cti_param(ctiF.model_params)
+    
+    assert_array_almost_equal(evals, ctiF.evals)
+    assert_array_almost_equal(evecs, ctiF.evecs)
+    assert_array_almost_equal(kt, ctiF.kt) 
+    assert_array_almost_equal(cvt, ctiF.cvt)
+
+
+def test_dki_fits():
+    """ DKI fits are tested on noise free crossing fiber simulates """
+
+    # OLS fitting
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
+    dkiF = dkiM.fit(signal_cross)
+
+    assert_array_almost_equal(dkiF.model_params, crossing_ref)
+
+    # WLS fitting
+    dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
+    dki_wlsF = dki_wlsM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
+
+    if have_cvxpy:
+        # CLS fitting
+        dki_clsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CLS")
+        dki_clsF = dki_clsM.fit(signal_cross)
+
+        assert_array_almost_equal(dki_clsF.model_params, crossing_ref)
+
+        # CWLS fitting
+        dki_cwlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CWLS")
+        dki_cwlsF = dki_cwlsM.fit(signal_cross)
+
+        assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
+    else:
+        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="CLS")
+        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="CWLS")
+
+    # NLS fitting
+    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
+    dki_nlsF = dki_nlsM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+
+    # Restore fitting
+    dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
+    dki_rtF = dki_rtM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+
+    # testing multi-voxels
+    dkiF_multi = dkiM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
+    dkiF_multi = dki_wlsM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
+    dkiF_multi = dki_rtM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
