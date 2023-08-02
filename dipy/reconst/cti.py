@@ -16,6 +16,35 @@ from dipy.reconst.dki import (
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular, lower_triangular, mean_diffusivity)
 
+# sources of kurtosis:
+# we've formulats for Kaniso, Ksio, then get Ktotal. So for microscopic kurtosis, we subtract, Kt - K aniso
+
+
+def calculate_K_aniso(D, C):  # D is a diffusion tensor 3x3, C is a 1D array.
+
+    Variance = 2/9 * [C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
+                               - D[0, 0]*D[1, 1] - C[4] - D[0, 0] * D[2, 2] -
+                                 C[3] - D[1, 1] * D[2, 2]
+                               + 3 * (C[17] + D[0, 1] ** 2 + C[16] + D[0, 2] ** 2 + C[15] + D[1, 2] ** 2)]
+    mean_D =  np.trace(D) / 3#trace(D) / 3
+    K_aniso = (6/5) * (Variance / (mean_D **2))
+    return K_aniso 
+
+def calculate_K_iso(C): 
+    mean_D = np.trace(D) / 3
+    Variance = 1/9 * (C[0] + C[1] + C[2] + 2 * C[5] + 2 * C[4] + 2 * C[3])
+    K_iso = 3 * (Variance / mean_D)
+    return K_iso
+
+def K_total(cti_params, D):  #excess kurtosis. #W: kurtosis tenosr a 1D array, D: diffusionTensor: (3,3) matrix 
+    mean_K = mean_kurtosis(cti_params)
+    mean_D = np.trace(D) / 3
+    psi = 2/ 5 * ((np.sqrt(D[0,0]) + np.sqrt(D[1,1])+ np.sqrt(D[2,2])
+                  + 2 * np.sqrt(D[0,1]) + 2 * np.sqrt(D[0,2]) + np.sqrt(D[1,2])) / mean_D ** 2) - (6/5) 
+    excess_K = 1/5 * mean_K  + psi 
+    return excess_K  
+
+
 
 def split_cti_params(cti_params):
     r"""Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector matrix, and the 21 independent elements of the covariance tensor, and the 15 independent elements of the kurtosis tensor from the model parameters estimated from the CTI model
@@ -191,7 +220,7 @@ class CorrelationTensorModel(ReconstModel):
 
 class CorrelationTensorFit(DiffusionKurtosisFit):
 
-    """ Class for fitting the Diffusion Kurtosis Model """
+    """ Class for fitting the Correlation Tensor Model """
 
     def __init__(self, model, model_params):
         """ Initialize a CorrelationTensorFit class instance.
@@ -292,17 +321,17 @@ def params_to_cti_params(result, min_diffusivity=0):
     # Extracting kurtosis tensor parameters from solution
     MD_square = evals.mean(0)**2
     KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
-    
+
     # Extracting covariance tensor parameters from solution
     CT_elements = result[21:42]
 
     # Write output
-    cti_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
+    cti_params= np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                  KT_elements, CT_elements), axis=0)
 
     return cti_params
 
-def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True, #shouldn't the effect of covariance tensor be obsvd ? 
+def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True,  # shouldn't the effect of covariance tensor be obsvd ?
                min_diffusivity=0):
     r""" Compute the diffusion kurtosis and covariance tensors using an ordinary or
     weighted linear least squares approach [1]_
@@ -333,23 +362,23 @@ def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True, #should
             2) Three blocks of three elements, containing the first second and
                third coordinates of the diffusion tensor eigenvectors.
             3) Fifteen elements of the kurtosis tensor.
-            4) Twenty One elements of the covariance tensor. 
+            4) Twenty One elements of the covariance tensor.
 
     """
     # Set up least squares problem
     A = design_matrix
-    y = np.log(data
-        
-    # CTI ordinary linear least square solution
-	result = np.dot(inverse_design_matrix, y)
+    y = np.log(data)
 
-	# Define weights as diag(yn**2)
-	if weights:
-	    W = np.diag(np.exp(2 * np.dot(A, result)))
-	    AT_W = np.dot(A.T, W)
-	    inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, A))
-	    AT_W_LS = np.dot(AT_W, y)
-	    result = np.dot(inv_AT_W_A, AT_W_LS)
+    # CTI ordinary linear least square solution
+    result = np.dot(inverse_design_matrix, y)
+
+    # Define weights as diag(yn**2)
+    if weights:
+        W = np.diag(np.exp(2 * np.dot(A, result)))
+        AT_W = np.dot(A.T, W)
+        inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, A))
+        AT_W_LS = np.dot(AT_W, y)
+        result = np.dot(inv_AT_W_A, AT_W_LS)
 
 
     # Write output
@@ -357,8 +386,65 @@ def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True, #should
 
     return cti_params
 
+def cls_fit_cti(design_matrix, data, inverse_design_matrix, sdp, weights=True,  # shouldn't the effect of covariance tensor be obsvd ?
+               min_diffusivity=0, cvxpy_solver=None):
+    r""" Compute the diffusion kurtosis and covariance tensors using a constrained ordinary or
+    weighted linear least squares approach [1]_
 
+    Parameters
+    ----------
+    design_matrix : array (g, 43)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array (g)
+        Data or response variables holding the data.
+    inverse_design_matrix : array (43, g)
+        Inverse of the design matrix.
+    sdp : PositiveDefiniteLeastSquares instance
+        A CVXPY representation of a regularized least squares optimization
+        problem.
+    weights : bool, optional
+        Parameter indicating whether weights are used. Default: True.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+        are replaced with `min_diffusivity`.
+    cvxpy_solver : str, optional
+        cvxpy solver name. Optionally optimize the positivity constraint with a
+        particular cvxpy solver. See http://www.cvxpy.org/ for details.
+        Default: None (cvxpy chooses its own solver).
 
+    Returns
+    -------
+    cti_params : array (48)
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
+            4) Twenty One elements of the covariance tensor.
+
+    """
+    # Set up least squares problem
+    A = design_matrix
+    y = np.log(data)
+
+    # Define sqrt weights as diag(yn)
+    if weights:
+        result = np.dot(inverse_design_matrix, y)
+        W = np.diag(np.exp(np.dot(A, result)))
+        A = np.dot(W, A)
+        y = np.dot(W, y)
+
+    # Solve sdp
+    result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
+
+    # Write output
+    cti_params = params_to_cti_params(result, min_diffusivity=min_diffusivity)
+
+    return cti_params
 # def params_to_dki_params(result, min_diffusivity=0):
     # takes kurtosis tensor parameters and returns a matrix
 
@@ -405,7 +491,12 @@ def from_3x3_to_6x1_temp(T):
     return V
 
 
-
-common_fit_methods = {'WLS': ls_fit_cti,  # weighted least squares
-                      'OLS': ls_fit_cti  # ordinary least squares
+common_fit_methods = {'WLS': ls_fit_cti,
+                      'OLS': ls_fit_cti,
+                      'UWLLS': ls_fit_cti,
+                      'ULLS': ls_fit_cti,
+                      'WLLS': ls_fit_cti,
+                      'OLLS': ls_fit_cti,
+                      'CLS': cls_fit_cti,
+                      'CWLS': cls_fit_cti
                       }

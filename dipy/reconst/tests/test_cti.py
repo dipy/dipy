@@ -7,10 +7,13 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
 from dipy.sims.voxel import multi_tensor
 import dipy.reconst.qti as qti
-import dipy.reconst.cti as cti 
-from dipy.reconst.qti import (from_3x3_to_6x1, from_6x1_to_3x3, dtd_covariance, qti_signal)
-from dipy.reconst.dti import (decompose_tensor, from_lower_triangular, mean_diffusivity)
+import dipy.reconst.cti as cti
+from dipy.reconst.qti import (
+    from_3x3_to_6x1, from_6x1_to_3x3, dtd_covariance, qti_signal)
+from dipy.reconst.dti import (
+    decompose_tensor, from_lower_triangular, mean_diffusivity)
 from dipy.reconst.cti import (cti_prediction, split_cti_params)
+
 
 def _perpendicular_directions_temp(v, num=20, half=False):
     v = np.array(v, dtype=np.float64)
@@ -86,18 +89,20 @@ DTDs = [
 # label for each DTD, for the plot
 DTD_labels = ['Anisotropic DTD', 'Isotropic DTD', 'Combined DTD']
 
+
 def construct_cti_params(evals, evecs, kt, fcvt):
-    fevals = evals.reshape((-1, evals.shape[-1])) #has shape: (1, 3)
+    fevals = evals.reshape((-1, evals.shape[-1]))  # has shape: (1, 3)
     fevecs = evecs.reshape((-1,) + evecs.shape[-2:])
-    fevecs = fevecs.reshape((1, -1)) #shape: (3, 3)
+    fevecs = fevecs.reshape((1, -1))  # shape: (3, 3)
     fkt = kt.reshape((-1, kt.shape[-1]))
     # Concatenate all the flattened tensors
-    cti_params = np.concatenate((fevals.T, fevecs.T, fkt, fcvt), axis = 0)    
-    return np.squeeze(cti_params) #returns shape: (48, )
+    cti_params = np.concatenate((fevals.T, fevecs.T, fkt, fcvt), axis=0)
+    return np.squeeze(cti_params)  # returns shape: (48, )
 
-def modify_C_params(C): 
+
+def modify_C_params(C):
     const = np.sqrt(2)
-    ccti = np.zeros((21, 1)) 
+    ccti = np.zeros((21, 1))
     ccti[0] = C[0]
     ccti[1] = C[1]
     ccti[2] = C[2]
@@ -121,25 +126,27 @@ def modify_C_params(C):
     ccti[20] = C[20] / (2 * const)
     return ccti
 
-def generate_K(ccti, MD): 
-	K = np.zeros((15,1))
-        K[0] = 3 * ccti[0] / (MD ** 2)
-        K[1] = 3 * ccti[1] / (MD ** 2)
-        K[2] = 3 * ccti[2] / (MD ** 2)
-        K[3] = 3 * ccti[8] / (MD ** 2)
-        K[4] = 3 * ccti[7] / (MD ** 2)
-        K[5] = 3 * ccti[11] / (MD ** 2)
-        K[6] = 3 * ccti[9] / (MD ** 2)
-        K[7] = 3 * ccti[13] / (MD ** 2)
-        K[8] = 3 * ccti[12] / (MD ** 2)
-        K[9] = (ccti[5] + 2 * ccti[17]) / (MD**2)
-        K[10] = (ccti[4] + 2 * ccti[16]) / (MD**2)
-        K[11] = (ccti[3] + 2 * ccti[15]) / (MD**2)
-        K[12] = (ccti[6] + 2 * ccti[19]) / (MD**2)
-        K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
-        K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
-       	return K 
-       	
+
+def generate_K(ccti, MD):
+    K = np.zeros((15, 1))
+    K[0] = 3 * ccti[0] / (MD ** 2)
+    K[1] = 3 * ccti[1] / (MD ** 2)
+    K[2] = 3 * ccti[2] / (MD ** 2)
+    K[3] = 3 * ccti[8] / (MD ** 2)
+    K[4] = 3 * ccti[7] / (MD ** 2)
+    K[5] = 3 * ccti[11] / (MD ** 2)
+    K[6] = 3 * ccti[9] / (MD ** 2)
+    K[7] = 3 * ccti[13] / (MD ** 2)
+    K[8] = 3 * ccti[12] / (MD ** 2)
+    K[9] = (ccti[5] + 2 * ccti[17]) / (MD**2)
+    K[10] = (ccti[4] + 2 * ccti[16]) / (MD**2)
+    K[11] = (ccti[3] + 2 * ccti[15]) / (MD**2)
+    K[12] = (ccti[6] + 2 * ccti[19]) / (MD**2)
+    K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
+    K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
+    return K
+
+
 def test_cti_prediction():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
     anisotropic_DTD = _anisotropic_DTD()
@@ -151,119 +158,129 @@ def test_cti_prediction():
         np.concatenate((anisotropic_DTD, isotropic_DTD))
     ]
 
-    for DTD in enumerate(DTDs):
+    for DTD in DTDs:
         D = np.mean(DTD, axis=0)
-        D_flat = np.squeeze(from_3x3_to_6x1(D)) #has shape:(6, )    #pretty useless, not needed
-        evals, evecs = decompose_tensor(D)  #evals:shape: (3, ) & evecs.shape: (3, 3)
+        # has shape:(6, )    #pretty useless, not needed
+        D_flat = np.squeeze(from_3x3_to_6x1(D))
+        # evals:shape: (3, ) & evecs.shape: (3, 3)
+        evals, evecs = decompose_tensor(D)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
 
-        #getting C_params from voigt notation
+        # getting C_params from voigt notation
         ccti = modify_C_params(C)
 
-        MD = mean_diffusivity(evals) #is a sclar
+        MD = mean_diffusivity(evals)  # is a sclar
         # Compute kurtosis tensor (K)
-        K = generate_K(ccti, MD) 
+        K = generate_K(ccti, MD)
 
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         # Generate predicted signals using cti_prediction function
-        cti_pred_signals = ctiM.predict(cti_params) #shape: (81, )
+        cti_pred_signals = ctiM.predict(cti_params)  # shape: (81, )
 
         # Generate predicted signals using QTI model
-        qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :] #shape:(81, )
+        qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[
+            np.newaxis, :]  # shape:(81, )
 
         # Compare CTI and QTI predicted signals
         assert np.allclose(
             cti_pred_signals, qti_pred_signals), "CTI and QTI signals do not match!"
-            
+
+
 def test_split_cti_param():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
 
     ctiF = ctiM.fit(DWI)
     evals, evecs, kt, cvt = cti.split_cti_param(ctiF.model_params)
-    
+
     assert_array_almost_equal(evals, ctiF.evals)
     assert_array_almost_equal(evecs, ctiF.evecs)
-    assert_array_almost_equal(kt, ctiF.kt) 
+    assert_array_almost_equal(kt, ctiF.kt)
     assert_array_almost_equal(cvt, ctiF.cvt)
 
 
-def test_dki_fits():
-    """ DKI fits are tested on noise free crossing fiber simulates """
+def test_cti_fits():
 
-    # OLS fitting
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
-    dkiF = dkiM.fit(signal_cross)
+    for DTD in DTDs:  # trying out all fits for each DTD.
+        D = np.mean(DTD, axis=0)
+        evals, evecs = decompose_tensor(D)
+        C = qti.dtd_covariance(DTD)
+        C = qti.from_6x6_to_21x1(C)
 
-    assert_array_almost_equal(dkiF.model_params, crossing_ref)
+        # getting C_params from voigt notation
+        ccti = modify_C_params(C)
 
-    # WLS fitting
-    dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
-    dki_wlsF = dki_wlsM.fit(signal_cross)
+        MD = mean_diffusivity(evals)  # is a sclar
+        # Compute kurtosis tensor (K)
+        K = generate_K(ccti, MD)
 
-    assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
+        cti_params = construct_cti_params(evals, evecs, K, ccti)
+        # Generate predicted signals using cti_prediction function
+        cti_pred_signals = ctiM.predict(cti_params)
 
-    if have_cvxpy:
-        # CLS fitting
-        dki_clsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CLS")
-        dki_clsF = dki_clsM.fit(signal_cross)
+        # OLS fitting
+        ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
+        ctiF = ctiM.fit(cti_pred_signals)
 
-        assert_array_almost_equal(dki_clsF.model_params, crossing_ref)
+        assert_array_almost_equal(ctiF.model_params, cti_params)
 
-        # CWLS fitting
-        dki_cwlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CWLS")
-        dki_cwlsF = dki_cwlsM.fit(signal_cross)
+        # WLS fitting
+        cti_wlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="WLS")
+        # signal_cross ---> cti_pred_signals, crossing_ref --> cti_params
+        cti_wlsF = cti_wlsM.fit(cti_pred_signals)
 
-        assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
-    else:
-        assert_raises(ValueError, dki.DiffusionKurtosisModel,
-                      gtab_2s, fit_method="CLS")
-        assert_raises(ValueError, dki.DiffusionKurtosisModel,
-                      gtab_2s, fit_method="CWLS")
+        assert_array_almost_equal(cti_wlsF.model_params, cti_params)
 
-    # NLS fitting
-    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
-    dki_nlsF = dki_nlsM.fit(signal_cross)
+        if have_cvxpy:
+            # CLS fitting
+            cti_clsM = cti.CorrelationTensorModel(
+                gtab1, gtab2, fit_method="CLS")
+            cti_clsF = cti_clsM.fit(cti_params)
 
-    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+            assert_array_almost_equal(cti_clsF.model_params, cti_params)
 
-    # Restore fitting
-    dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
-    dki_rtF = dki_rtM.fit(signal_cross)
+            # CWLS fitting
+            cti_cwlsM = cti.CorrelationTensorModel(
+                gtab1, gtab2, fit_method="CWLS")
+            cti_cwlsF = cti_cwlsf.fit(cti_params)
 
-    assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+            assert_array_almost_equal(cti_clsF.model_params, cti_params)
+        else:
+            assert_raises(ValueError, cti.CorrelationTensorModel,
+                          gtab1, gtab2, fit_method="CLS")
+            assert_raises(ValueError, cti.CorrelationTensorModel,
+                          gtab1, gtab2, fit_method="CWLS")
 
-    # testing multi-voxels
-    dkiF_multi = dkiM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+        # checking Mean Kurtosis values:
+        mk_result = ctiF.mk(min_kurtosis=-3./7,
+                            max_kurtosis=10, analytical=True)
+        # calling from dki.py, outside Fit class.
+        mean_kurtosis_result = mean_kurtosis(
+            cti_params, min_kurtosis=-3./7, max_kurtosis=10, analytical=True)
+        assert mk_result == mean_kurtosis_result, "The results of the mk function from CorrelationTensorFit and the mean_kurtosis function from dki.py are not equal."
 
-    dkiF_multi = dki_wlsM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+        # checking Axial Kurtosis Values
+        ak_result = ctiF.ak(min_kurtosis=-3./7,
+                            max_kurtosis=10, analytical=True)
+        akial_kurtosis_result = axial_kurtosis(
+            cti_params, min_kurtosis=-3./7, max_kurtosis=10, analytical=True)
+        assert ak_result == axial_kurtosis_result, "The result of the ak function from CorrealtionTensorFit and the axial_kurtosis function from dki.py are not equal."
 
-    dkiF_multi = dki_rtM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
-    
+        # checking Radial kurtosis values
+        rk_result = ctiF.rk(min_kurtosis=-3./7,
+                            max_kurtosis=10, analytical=True)
+        radial_kurtosis_result = radial_kurtosis(
+            cti_params, min_kurtosis=-3./7, max_kurtosis=10, analytical=True)
+        assert rk_result == radial_kurtosis_result, "The results of the rk function from CorrelationTensorfit and the radial_kurtosis function from dki.py are not equal. "
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        # checking Anisotropic values.
+        kfa_result = ctiF.kfa()
+        kurtosis_fractional_anisotropy_result = kurtosis_fractional_anisotropy(
+            cti_params)
+        assert kfa_result == kurtosis_fractional_anisotropy_result, "the reuslts of the kfa function from CorrelationTensorFit and the kurtosis_fractional_anisotropy function from dki.py are not equal. "
+
+        # checking mean Kurtosis tensor
+        mkt_result = ctiF.mkt(min_kurtosis=-3./7, max_kurtosis=10)
+        mkt_kurtosis_result = ctiF.mean_kurtosis_tensor(
+            cti_params, min_kurtosis=-3./7, max_kurtosis=10)
+        assert mkt_result == mkt_kurtosis_result, "The results of mkt function from CorrelationTensorFit and the mean_kurtosis_tensor function from dki.py are not equal. "
