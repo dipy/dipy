@@ -31,8 +31,8 @@ from scipy.io import loadmat, savemat
 DEFAULT_RECON_EDGE = 1.2
 DEFAULT_DICT_EDGE = 1.2
 
-DEFAULT_FIT_PENALTY = 0.001
-MAX_FIT_PENALTY = 0.25
+DEFAULT_FIT_PENALTY = 0.00001
+MAX_FIT_PENALTY = 0.1
 
 
 def plot_odf(odf, filename='odf.png', tessellation=dsiSphere8Fold()):
@@ -414,7 +414,7 @@ class OdffpDictionary(DiffusionDataGenerator):
 
 class PosteriorOdffpDictionary(OdffpDictionary):
     
-    def __init__(self, odffp_fit, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
+    def __init__(self, gtab, odffp_fit, tessellation=dsiSphere8Fold()):
         self._ratio_pdf = {0: {}} 
         self._micro_pdf = {0: {}}
 
@@ -450,7 +450,7 @@ class PosteriorOdffpDictionary(OdffpDictionary):
                     # If not succeeded, take mean values
                     self._micro_pdf[peaks_num][peak_id] = np.mean(micro_parameters, axis=1)
                         
-        super().__init__(dict_file, is_sorted, tessellation)
+        OdffpDictionary.__init__(self, gtab, tessellation=tessellation)
     
 
     def _crop_value(self, value, lower_bound, upper_bound):
@@ -531,7 +531,7 @@ class PosteriorOdffpDictionary(OdffpDictionary):
 
 class PosteriorOdffpDictionaryFromFib(PosteriorOdffpDictionary):
 
-    def __init__(self, fib_file_name, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
+    def __init__(self, gtab, fib_file_name, tessellation=dsiSphere8Fold()):
         self._ratio_pdf = {0: {}} 
         self._micro_pdf = {0: {}}
 
@@ -587,7 +587,7 @@ class PosteriorOdffpDictionaryFromFib(PosteriorOdffpDictionary):
                     # If not succeeded, take mean values
                     self._micro_pdf[peaks_num][peak_id] = np.mean(micro_parameters, axis=1)
                         
-        super().__init__(dict_file, is_sorted, tessellation)
+        OdffpDictionary.__init__(self, gtab, tessellation=tessellation)
 
 
     def _get_peaks_num_filter(self, peaks_num, peaks_per_voxel):
