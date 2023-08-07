@@ -141,8 +141,8 @@ class DiffusionDataGenerator(object):
         
         micro_params = np.zeros((self.MICRO_PARAMS_NUM, peaks_per_voxel+1))
         
-        # Free water compartment has D_a=0, f_in=0, and D_a=D_e
-        micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
+        # Free water compartment has D_a=0, f_in=0, and D_e=D_iso
+        micro_params[self.MICRO_DE,0] = np.random.uniform(D_iso[0], D_iso[1])
         
         # Repeat until the microstructure parameters are valid
         while True:
@@ -206,7 +206,12 @@ class OdffpDictionary(DiffusionDataGenerator):
     micro = None
     ratio = None
     peaks_per_voxel = None
-        
+       
+    IDX_VOID = 0;
+    IDX_ISO  = 1;    
+    
+    PREDEFINED_IDX_NUM = len((IDX_VOID, IDX_ISO))
+
         
     def __init__(self, gtab, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
         
@@ -338,15 +343,20 @@ class OdffpDictionary(DiffusionDataGenerator):
            
         self.odf = np.zeros((total_dirs_num, dict_size))
    
-        # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
-        self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
-        self.micro[1:3,0] = 3  # diffusivity of free water at 37C
-        self.peaks_per_voxel[0] = 0
-        self.odf[:,0] = np.squeeze(
-            self._compute_odf_trace(odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
+        # VOID element of the ODF-dictionary represents empty voxels outside mask
+        self.ratio[0,self.IDX_VOID] = 0               # no isotropic water
+        self.micro[self.MICRO_DE,0,self.IDX_VOID] = 0 # no diffusivity at all
+        self.peaks_per_voxel[self.IDX_VOID] = -1      # to be skipped in ODF matching, hence peaks_per_voxel < 0  
+
+        # ISO element of the ODF-dictionary represents voxels with isotropic water only
+        self.ratio[0,self.IDX_ISO] = 1                # isotropic water without fibers, hence p_iso=1 
+        self.micro[self.MICRO_DE,0,self.IDX_ISO] = 3  # diffusivity of free water at 37C
+        self.peaks_per_voxel[self.IDX_ISO] = 0        # no fibers, hence peaks_per_voxel=0 
+        self.odf[:,self.IDX_ISO] = np.squeeze(
+            self._compute_odf_trace(odf_recon_model, self.ratio[:,self.IDX_ISO], self.micro[:,:,self.IDX_ISO], [])
         )
    
-        for chunk_idx in np.split(range(1, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
+        for chunk_idx in np.split(range(self.PREDEFINED_IDX_NUM, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
            
             print("%.1f%%" % (100 * (np.max(chunk_idx) + 1) / dict_size))
    
@@ -746,7 +756,7 @@ class OdffpModel(object):
             for peak_id in range(self._dict.max_peaks_num+1):
                 peak_filter = np.array(self._dict.peaks_per_voxel == peak_id)
                 if ~np.any(peak_filter):
-                    peak_filter[0] = True
+                    peak_filter[self._dict.IDX_ISO] = True
                 
                 peak_filter_idx = np.arange(len(self._dict.peaks_per_voxel))[peak_filter]
     
@@ -895,9 +905,13 @@ class OdffpFit(OdfFit):
         return matrix.reshape(new_size, order='F')
 
 
-    def _fib_index_map(self, var_data, dict_idx, slice_size, fa_filter):
-        index_map = np.zeros(dict_idx.shape)
-        index_map[fa_filter] = var_data[dict_idx[fa_filter]]
+    def _fib_index_map(self, var_data, dict_idx, slice_size, fa_filter = None):
+        if fa_filter is None:
+            index_map = var_data[dict_idx]
+        else:
+            index_map = np.zeros(dict_idx.shape)
+            index_map[fa_filter] = var_data[dict_idx[fa_filter]]
+            
         return self._fib_reshape(index_map, slice_size)
 
 
@@ -996,13 +1010,13 @@ class OdffpFit(OdfFit):
             warnings.warn("The output is empty.")
 
         # Fetch microstructure parameters
-        fib['D_iso'] = self._fib_index_map(self._dict.micro[1,0], dict_idx, slice_size, fa_filter)
-        fib['p_iso'] = self._fib_index_map(self._dict.ratio[0], dict_idx, slice_size, fa_filter)
+        fib['D_iso'] = self._fib_index_map(self._dict.micro[self._dict.MICRO_DE,0], dict_idx, slice_size)
+        fib['p_iso'] = self._fib_index_map(self._dict.ratio[0], dict_idx, slice_size)
 
         for i in range(1, self._dict.max_peaks_num+1):
             index_maps = {
-                'fib%d_Da' % i: self._dict.micro[0,i], 'fib%d_De' % i: self._dict.micro[1,i],
-                'fib%d_Dr' % i: self._dict.micro[2,i], 'fib%d_fin' % i: self._dict.micro[3,i],
+                'fib%d_Da' % i: self._dict.micro[self._dict.MICRO_DA,i], 'fib%d_De' % i: self._dict.micro[self._dict.MICRO_DE,i],
+                'fib%d_Dr' % i: self._dict.micro[self._dict.MICRO_DR,i], 'fib%d_fin' % i: self._dict.micro[self._dict.MICRO_FIN,i],
                 'fib%d_p' % i: self._dict.ratio[i]
             }
             for index_name in index_maps:
