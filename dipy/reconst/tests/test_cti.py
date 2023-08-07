@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
+from numpy.testing import (assert_array_almost_equal, assert_array_equal,
+                           assert_almost_equal, assert_raises)
 from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
@@ -13,6 +15,10 @@ from dipy.reconst.qti import (
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular, mean_diffusivity)
 from dipy.reconst.cti import (cti_prediction, split_cti_params)
+from dipy.reconst.dki import (mean_kurtosis,
+                              axial_kurtosis, radial_kurtosis,
+                              mean_kurtosis_tensor,
+                              kurtosis_fractional_anisotropy)
 
 
 def _perpendicular_directions_temp(v, num=20, half=False):
@@ -34,7 +40,6 @@ def _perpendicular_directions_temp(v, num=20, half=False):
         psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
                              (v[0]*cosa - v[2]*v[1]*sina) / sq])
     return psamples.T
-
 
 # Simulation: signals of two crossing fibers are simulated
 n_pts = 20  # points are assumed to be on a sphere
@@ -188,15 +193,34 @@ def test_cti_prediction():
 
 
 def test_split_cti_param():
-    ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
+    ctiM = cti.CorrelationTensorModel(gtab1, gtab2) #fit_method is WLS by default.
+    for DTD in DTDs: #generating cti_pred_signals for all DTDs
+        D = np.mean(DTD, axis=0)
+        evals, evecs = decompose_tensor(D)
+        C = qti.dtd_covariance(DTD)
+        C = qti.from_6x6_to_21x1(C)
 
-    ctiF = ctiM.fit(DWI)
-    evals, evecs, kt, cvt = cti.split_cti_param(ctiF.model_params)
+        # getting C_params from voigt notation
+        ccti = modify_C_params(C)
 
-    assert_array_almost_equal(evals, ctiF.evals)
-    assert_array_almost_equal(evecs, ctiF.evecs)
-    assert_array_almost_equal(kt, ctiF.kt)
-    assert_array_almost_equal(cvt, ctiF.cvt)
+        MD = mean_diffusivity(evals)  # is a sclar
+        # Compute kurtosis tensor (K)
+        K = generate_K(ccti, MD)
+
+        cti_params = construct_cti_params(evals, evecs, K, ccti)
+        # Generate predicted signals using cti_prediction function
+        ctiM = cti.CorrelationTensorModel(gtab1, gtab2) 
+        cti_pred_signals = ctiM.predict(cti_params)
+        #DWI = np.zeros((2, 2, 1, len(gtab.bvals)))
+        #DWI[0, 0, 0] = DWI[0, 1, 0] = DWI[1, 0, 0] = DWI[1, 1, 0] = cti_pred_signals
+        # ctiF = ctiM.fit(cti_pred_signals) #should pass cti_pred_signal, in our case we don't have DWI
+        ctiF = ctiM.fit(cti_params)
+        evals, evecs, kt, cvt = cti.split_cti_params(ctiF.model_params)
+        print('this is ctiF.kt: and its type: ', ctiF.kt, type(ctiF.kt))
+        assert_array_almost_equal(evals, ctiF.evals)
+        assert_array_almost_equal(evecs, ctiF.evecs)
+        assert_array_almost_equal(kt, ctiF.kt)
+        assert_array_almost_equal(cvt, ctiF.cvt)
 
 
 def test_cti_fits():
@@ -216,18 +240,20 @@ def test_cti_fits():
 
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         # Generate predicted signals using cti_prediction function
-        cti_pred_signals = ctiM.predict(cti_params)
+        # cti_pred_signals = ctiM.predict(cti_params)
 
         # OLS fitting
         ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
-        ctiF = ctiM.fit(cti_pred_signals)
+        #here replacing cti_pred_signals with cti_params
+        ctiF = ctiM.fit(cti_params) #this is turning out to be NoneType                     #error 
 
         assert_array_almost_equal(ctiF.model_params, cti_params)
 
         # WLS fitting
         cti_wlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="WLS")
         # signal_cross ---> cti_pred_signals, crossing_ref --> cti_params
-        cti_wlsF = cti_wlsM.fit(cti_pred_signals)
+        # cti_wlsF = cti_wlsM.fit(cti_pred_signals)
+        cti_wlsF = cti_wlsM.fit(cti_params)
 
         assert_array_almost_equal(cti_wlsF.model_params, cti_params)
 
@@ -254,7 +280,6 @@ def test_cti_fits():
         # checking Mean Kurtosis values:
         mk_result = ctiF.mk(min_kurtosis=-3./7,
                             max_kurtosis=10, analytical=True)
-        # calling from dki.py, outside Fit class.
         mean_kurtosis_result = mean_kurtosis(
             cti_params, min_kurtosis=-3./7, max_kurtosis=10, analytical=True)
         assert mk_result == mean_kurtosis_result, "The results of the mk function from CorrelationTensorFit and the mean_kurtosis function from dki.py are not equal."
@@ -262,7 +287,7 @@ def test_cti_fits():
         # checking Axial Kurtosis Values
         ak_result = ctiF.ak(min_kurtosis=-3./7,
                             max_kurtosis=10, analytical=True)
-        akial_kurtosis_result = axial_kurtosis(
+        axial_kurtosis_result = axial_kurtosis(
             cti_params, min_kurtosis=-3./7, max_kurtosis=10, analytical=True)
         assert ak_result == axial_kurtosis_result, "The result of the ak function from CorrealtionTensorFit and the axial_kurtosis function from dki.py are not equal."
 

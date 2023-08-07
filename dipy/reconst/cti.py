@@ -5,6 +5,7 @@ import warnings
 import functools
 import numpy as np
 import scipy.optimize as opt
+from dipy.core.optimize import PositiveDefiniteLeastSquares
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.utils import cti_design_matrix as design_matrix
@@ -13,36 +14,13 @@ from dipy.reconst.dki import (
     apparent_kurtosis_coef,
     mean_kurtosis,
     axial_kurtosis)
+from dipy.data import load_sdp_constraints
 from dipy.reconst.dti import (
-    decompose_tensor, from_lower_triangular, lower_triangular, mean_diffusivity)
+    decompose_tensor, from_lower_triangular, lower_triangular, mean_diffusivity, MIN_POSITIVE_SIGNAL)
 
 # sources of kurtosis:
 # we've formulats for Kaniso, Ksio, then get Ktotal. So for microscopic kurtosis, we subtract, Kt - K aniso
 
-
-def calculate_K_aniso(D, C):  # D is a diffusion tensor 3x3, C is a 1D array.
-
-    Variance = 2/9 * [C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
-                               - D[0, 0]*D[1, 1] - C[4] - D[0, 0] * D[2, 2] -
-                                 C[3] - D[1, 1] * D[2, 2]
-                               + 3 * (C[17] + D[0, 1] ** 2 + C[16] + D[0, 2] ** 2 + C[15] + D[1, 2] ** 2)]
-    mean_D =  np.trace(D) / 3#trace(D) / 3
-    K_aniso = (6/5) * (Variance / (mean_D **2))
-    return K_aniso 
-
-def calculate_K_iso(C): 
-    mean_D = np.trace(D) / 3
-    Variance = 1/9 * (C[0] + C[1] + C[2] + 2 * C[5] + 2 * C[4] + 2 * C[3])
-    K_iso = 3 * (Variance / mean_D)
-    return K_iso
-
-def K_total(cti_params, D):  #excess kurtosis. #W: kurtosis tenosr a 1D array, D: diffusionTensor: (3,3) matrix 
-    mean_K = mean_kurtosis(cti_params)
-    mean_D = np.trace(D) / 3
-    psi = 2/ 5 * ((np.sqrt(D[0,0]) + np.sqrt(D[1,1])+ np.sqrt(D[2,2])
-                  + 2 * np.sqrt(D[0,1]) + 2 * np.sqrt(D[0,2]) + np.sqrt(D[1,2])) / mean_D ** 2) - (6/5) 
-    excess_K = 1/5 * mean_K  + psi 
-    return excess_K  
 
 
 
@@ -171,8 +149,57 @@ class CorrelationTensorModel(ReconstModel):
         self.gtab2 = gtab2
         self.args = args
         self.kwargs = kwargs
+        self.common_fit_method = not callable(fit_method)
 
-    def fit(self, data, mask=None):
+        if self.common_fit_method:
+            try:
+                self.fit_method = common_fit_methods[fit_method]
+            except KeyError:
+                msg = '"' + str(fit_method) + '" is not a known fit method. The'
+                msg += ' fit method should either be a function or one of the'
+                msg += ' common fit methods.'
+                raise ValueError(msg)
+
+        self.args = args
+        self.kwargs = kwargs
+
+        self.min_signal = self.kwargs.pop('min_signal', None)
+        if self.min_signal is None:
+            self.min_signal = MIN_POSITIVE_SIGNAL
+        elif self.min_signal <= 0:
+            msg = "The `min_signal` key-word argument needs to be strictly"
+            msg += " positive."
+            raise ValueError(msg)
+
+        self.design_matrix = design_matrix(self.gtab1, self.gtab2)
+        self.inverse_design_matrix = np.linalg.pinv(self.design_matrix)
+
+        tol = 1e-6
+        self.min_diffusivity = tol / -self.design_matrix.min()
+        self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
+        if self.convexity_constraint:
+            self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
+            self.convexity_level = self.kwargs.pop('convexity_level', 'full')
+            msg = "convexity_level must be a positive, even number, or 'full'."
+            if isinstance(self.convexity_level, str):
+                if self.convexity_level == 'full':
+                    self.sdp_constraints = load_sdp_constraints('dki')
+                else:
+                    raise ValueError(msg)
+            elif self.convexity_level < 0 or self.convexity_level % 2:
+                raise ValueError(msg)
+            else:
+                if self.convexity_level > 4:
+                    msg = "Maximum convexity_level supported is 4."
+                    warnings.warn(msg)
+                    self.convexity_level = 4
+                self.sdp_constraints = load_sdp_constraints(
+                    'dki', self.convexity_level)
+            self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
+
+        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+
+    def fit(self, data, mask=None): #here data is cti_params of shape : (n, 48) 
         """ Fit method of the CTI model class
 
         Parameters
@@ -185,7 +212,9 @@ class CorrelationTensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[-1]
 
         """
-        return None
+        #we need to somehow obtian cti_params from data (it's actually cti_pred_signals)
+        print('this is data.shape: ',data.shape)
+        return CorrelationTensorFit(self, ) #ig there's a need to somehow define cti_params here. 
 
     def predict(self, cti_params, S0=100):  # created
         """Predict a signal for the CTI model class instance given parameteres
@@ -311,6 +340,93 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             Signals.
         """
         return cti_prediction(self.model_params, gtab1, gtab2, S0)
+        
+        #def calculate_K_aniso(D, C):  # D is a diffusion tensor 3x3, C is a 1D array.
+
+    def calculate_K_aniso(self):
+        r""" Returns the anisotropic Source of Kurtosis (K_aniso) 
+            
+            Notes 
+            -----
+            The K_aniso is defined as : 
+            
+            :math:: 
+            
+            \[K_{aniso} = \frac{6}{5} \cdot \frac{\langle V_{\lambda}(D_c) \rangle}{\overline{D}^2}\]
+            
+        where: \(K_{aniso}\) is the anisotropic kurtosis, 
+            \(\langle V_{\lambda}(D_c) \rangle\) represents the mean of the variance of eigenvalues of the diffusion tensor,
+            \(\overline{D}\) is the mean of the diffusion tensor.
+        """ 
+
+        D = self.dft() 
+        C = self.cvt()
+
+        Variance = 2/9 * [C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
+                                - D[0, 0]*D[1, 1] - C[4] - D[0, 0] * D[2, 2] -
+                                    C[3] - D[1, 1] * D[2, 2]
+                                + 3 * (C[17] + D[0, 1] ** 2 + C[16] + D[0, 2] ** 2 + C[15] + D[1, 2] ** 2)]
+        mean_D =  np.trace(D) / 3#trace(D) / 3
+        K_aniso = (6/5) * (Variance / (mean_D **2))
+        return K_aniso 
+
+    def calculate_K_iso(self): 
+        r""" Returns the isotropic Source of Kurtosis (K_iso)
+        
+        Notes 
+        -----
+        The K_iso is defined as : 
+        
+        :math:: 
+            \[K_{iso} = 3 \cdot \frac{V({\overline{D}^c})}{\overline{D}^2}\]
+        
+        where: \(K_{iso}\) is the isotropic kurtosis,
+            \(V({\overline{D}^c})\) represents the variance of the diffusion tensor raised to the power c, 
+            \(\overline{D}\) is the mean of the diffusion tensor.
+                
+        """ 
+        D = self.dft() 
+        C = self.cvt()
+        mean_D = np.trace(D) / 3
+        Variance = 1/9 * (C[0] + C[1] + C[2] + 2 * C[5] + 2 * C[4] + 2 * C[3])
+        K_iso = 3 * (Variance / mean_D)
+        return K_iso
+
+    def K_total(self):  #excess kurtosis. #W: kurtosis tenosr a 1D array, D: diffusionTensor: (3,3) matrix 
+        #mean_K = mean_kurtosis_tensor(cti_params) 
+        r""" Returns the total execess Kurtosis. (K_total)
+            
+            Notes
+            -----
+            The K_total is defined as :
+            
+            :math:: 
+                \[\Psi = \frac{2}{5} \cdot \frac{D_{11}^2 + D_{22}^2 + D_{33}^2 + 2D_{12}^2 + 2D_{13}^2 + 2D_{23}^2{\overline{D}^2} - \frac{6}{5} \]
+                \[{\overline{W}} = \frac{1}{5} \cdot (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})\]
+            
+            where \(\Psi\) is a variable representing a part of the total excess kurtosis,
+            \(D_{ij}\) are elements of the diffusion tensor,
+            \(\overline{D}\) is the mean of the diffusion tensor.
+            \{\overline{W}} is the mean kurtosis,
+            \(W_{ijkl}\) are elements of the kurtosis tensor.
+        """ 
+
+        mean_K = self.mkt()
+        D = self.dft()
+        mean_D = np.trace(D) / 3
+        psi = 2/ 5 * ((np.sqrt(D[0,0]) + np.sqrt(D[1,1])+ np.sqrt(D[2,2])
+                + 2 * np.sqrt(D[0,1]) + 2 * np.sqrt(D[0,2]) + np.sqrt(D[1,2])) / mean_D ** 2) - (6/5) 
+        excess_K = 1/5 * mean_K  + psi 
+        return excess_K  
+
+    def K_micro(self):
+        r""" Returns Microscopic Source of Kurtosis.  """ 
+
+        K_excess = self.K_total()
+        K_aniso = self.calculate_K_aniso()
+        micro_K = K_excess - K_aniso 
+        return micro_K
+
 
 def params_to_cti_params(result, min_diffusivity=0):
     # Extracting the diffusion tensor parameters from solution
@@ -480,7 +596,7 @@ def from_3x3_to_6x1_temp(T):
     if T.shape[-2::] != (3, 3):
         raise ValueError('The shape of the input array must be (..., 3, 3).')
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All matrices converted to Voigt notation are not symmetric.')
+        warnings.warn('All matrices converted to Voigt notation are not symmetric.')
     C = np.sqrt(2)
     V = np.stack((T[..., 0, 0],
                   T[..., 1, 1],
