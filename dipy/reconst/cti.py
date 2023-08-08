@@ -6,6 +6,7 @@ import functools
 import numpy as np
 import scipy.optimize as opt
 from dipy.core.optimize import PositiveDefiniteLeastSquares
+from dipy.reconst.multi_voxel import multi_voxel_fit
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.utils import cti_design_matrix as design_matrix
@@ -13,7 +14,8 @@ from dipy.reconst.dki import (
     DiffusionKurtosisFit,
     apparent_kurtosis_coef,
     mean_kurtosis,
-    axial_kurtosis)
+    axial_kurtosis
+    )
 from dipy.data import load_sdp_constraints
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular, lower_triangular, mean_diffusivity, MIN_POSITIVE_SIGNAL)
@@ -176,28 +178,30 @@ class CorrelationTensorModel(ReconstModel):
 
         tol = 1e-6
         self.min_diffusivity = tol / -self.design_matrix.min()
-        self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
-        if self.convexity_constraint:
-            self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
-            self.convexity_level = self.kwargs.pop('convexity_level', 'full')
-            msg = "convexity_level must be a positive, even number, or 'full'."
-            if isinstance(self.convexity_level, str):
-                if self.convexity_level == 'full':
-                    self.sdp_constraints = load_sdp_constraints('dki')
-                else:
-                    raise ValueError(msg)
-            elif self.convexity_level < 0 or self.convexity_level % 2:
-                raise ValueError(msg)
-            else:
-                if self.convexity_level > 4:
-                    msg = "Maximum convexity_level supported is 4."
-                    warnings.warn(msg)
-                    self.convexity_level = 4
-                self.sdp_constraints = load_sdp_constraints(
-                    'dki', self.convexity_level)
-            self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
+        # self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
+        # if self.convexity_constraint:
+        #     self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
+        #     self.convexity_level = self.kwargs.pop('convexity_level', 'full')
+        #     msg = "convexity_level must be a positive, even number, or 'full'."
+        #     if isinstance(self.convexity_level, str):
+        #         if self.convexity_level == 'full':
+        #             self.sdp_constraints = load_sdp_constraints('dki')
+        #         else:
+        #             raise ValueError(msg)
+        #     elif self.convexity_level < 0 or self.convexity_level % 2:
+        #         raise ValueError(msg)
+        #     else:
+        #         if self.convexity_level > 4:
+        #             msg = "Maximum convexity_level supported is 4."
+        #             warnings.warn(msg)
+        #             self.convexity_level = 4
+        #         self.sdp_constraints = load_sdp_constraints(
+        #             'dki', self.convexity_level)
+        #     self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
         self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+        self.is_multi_method = fit_method in ['WLS', 'OLS', 'UWLLS', 'ULLS',
+                                              'WLLS', 'OLLS', 'CLS', 'CWLS']
 
     def fit(self, data, mask=None): #here data is cti_params of shape : (n, 48) 
         """ Fit method of the CTI model class
@@ -212,10 +216,24 @@ class CorrelationTensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[-1]
 
         """
+        data_thres = np.maximum(data, self.min_signal)
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 *self.args, **self.kwargs)
         #we need to somehow obtian cti_params from data (it's actually cti_pred_signals)
         print('this is data.shape: ',data.shape)
-        return CorrelationTensorFit(self, ) #ig there's a need to somehow define cti_params here. 
+        return CorrelationTensorFit(self, params) #ig there's a need to somehow define cti_params here. 
+    
+    @multi_voxel_fit
+    def multi_fit(self, data_thres, mask=None):
 
+        params = self.fit_method(self.design_matrix, data_thres,
+                                 self.inverse_design_matrix,
+                                 weights=self.weights,
+                                 min_diffusivity=self.min_diffusivity,
+                                )
+
+        return CorrelationTensorFit(self, params)
+    
     def predict(self, cti_params, S0=100):  # created
         """Predict a signal for the CTI model class instance given parameteres
 
@@ -502,65 +520,65 @@ def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True,  # shou
 
     return cti_params
 
-def cls_fit_cti(design_matrix, data, inverse_design_matrix, sdp, weights=True,  # shouldn't the effect of covariance tensor be obsvd ?
-               min_diffusivity=0, cvxpy_solver=None):
-    r""" Compute the diffusion kurtosis and covariance tensors using a constrained ordinary or
-    weighted linear least squares approach [1]_
+# def cls_fit_cti(design_matrix, data, inverse_design_matrix, sdp, weights=True,  # shouldn't the effect of covariance tensor be obsvd ?
+#                min_diffusivity=0, cvxpy_solver=None):
+#     r""" Compute the diffusion kurtosis and covariance tensors using a constrained ordinary or
+#     weighted linear least squares approach [1]_
 
-    Parameters
-    ----------
-    design_matrix : array (g, 43)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array (g)
-        Data or response variables holding the data.
-    inverse_design_matrix : array (43, g)
-        Inverse of the design matrix.
-    sdp : PositiveDefiniteLeastSquares instance
-        A CVXPY representation of a regularized least squares optimization
-        problem.
-    weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
-    min_diffusivity : float, optional
-        Because negative eigenvalues are not physical and small eigenvalues,
-        much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
-        are replaced with `min_diffusivity`.
-    cvxpy_solver : str, optional
-        cvxpy solver name. Optionally optimize the positivity constraint with a
-        particular cvxpy solver. See http://www.cvxpy.org/ for details.
-        Default: None (cvxpy chooses its own solver).
+#     Parameters
+#     ----------
+#     design_matrix : array (g, 43)
+#         Design matrix holding the covariants used to solve for the regression
+#         coefficients.
+#     data : array (g)
+#         Data or response variables holding the data.
+#     inverse_design_matrix : array (43, g)
+#         Inverse of the design matrix.
+#     sdp : PositiveDefiniteLeastSquares instance
+#         A CVXPY representation of a regularized least squares optimization
+#         problem.
+#     weights : bool, optional
+#         Parameter indicating whether weights are used. Default: True.
+#     min_diffusivity : float, optional
+#         Because negative eigenvalues are not physical and small eigenvalues,
+#         much smaller than the diffusion weighting, cause quite a lot of noise
+#         in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+#         are replaced with `min_diffusivity`.
+#     cvxpy_solver : str, optional
+#         cvxpy solver name. Optionally optimize the positivity constraint with a
+#         particular cvxpy solver. See http://www.cvxpy.org/ for details.
+#         Default: None (cvxpy chooses its own solver).
 
-    Returns
-    -------
-    cti_params : array (48)
-        All parameters estimated from the diffusion kurtosis model for all N
-        voxels. Parameters are ordered as follows:
-            1) Three diffusion tensor eigenvalues.
-            2) Three blocks of three elements, containing the first second and
-               third coordinates of the diffusion tensor eigenvectors.
-            3) Fifteen elements of the kurtosis tensor.
-            4) Twenty One elements of the covariance tensor.
+#     Returns
+#     -------
+#     cti_params : array (48)
+#         All parameters estimated from the diffusion kurtosis model for all N
+#         voxels. Parameters are ordered as follows:
+#             1) Three diffusion tensor eigenvalues.
+#             2) Three blocks of three elements, containing the first second and
+#                third coordinates of the diffusion tensor eigenvectors.
+#             3) Fifteen elements of the kurtosis tensor.
+#             4) Twenty One elements of the covariance tensor.
 
-    """
-    # Set up least squares problem
-    A = design_matrix
-    y = np.log(data)
+#     """
+#     # Set up least squares problem
+#     A = design_matrix
+#     y = np.log(data)
 
-    # Define sqrt weights as diag(yn)
-    if weights:
-        result = np.dot(inverse_design_matrix, y)
-        W = np.diag(np.exp(np.dot(A, result)))
-        A = np.dot(W, A)
-        y = np.dot(W, y)
+#     # Define sqrt weights as diag(yn)
+#     if weights:
+#         result = np.dot(inverse_design_matrix, y)
+#         W = np.diag(np.exp(np.dot(A, result)))
+#         A = np.dot(W, A)
+#         y = np.dot(W, y)
 
-    # Solve sdp
-    result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
+#     # Solve sdp
+#     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
 
-    # Write output
-    cti_params = params_to_cti_params(result, min_diffusivity=min_diffusivity)
+#     # Write output
+#     cti_params = params_to_cti_params(result, min_diffusivity=min_diffusivity)
 
-    return cti_params
+#     return cti_params
 # def params_to_dki_params(result, min_diffusivity=0):
     # takes kurtosis tensor parameters and returns a matrix
 
@@ -612,7 +630,5 @@ common_fit_methods = {'WLS': ls_fit_cti,
                       'UWLLS': ls_fit_cti,
                       'ULLS': ls_fit_cti,
                       'WLLS': ls_fit_cti,
-                      'OLLS': ls_fit_cti,
-                      'CLS': cls_fit_cti,
-                      'CWLS': cls_fit_cti
+                      'OLLS': ls_fit_cti
                       }

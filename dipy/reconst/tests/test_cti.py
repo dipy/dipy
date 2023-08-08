@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
+from dipy.reconst.utils import cti_design_matrix as design_matrix
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_raises)
 from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
@@ -14,11 +15,13 @@ from dipy.reconst.qti import (
     from_3x3_to_6x1, from_6x1_to_3x3, dtd_covariance, qti_signal)
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular, mean_diffusivity)
-from dipy.reconst.cti import (cti_prediction, split_cti_params)
+from dipy.reconst.cti import (cti_prediction, split_cti_params, ls_fit_cti)
 from dipy.reconst.dki import (mean_kurtosis,
                               axial_kurtosis, radial_kurtosis,
                               mean_kurtosis_tensor,
                               kurtosis_fractional_anisotropy)
+from dipy.utils.optpkg import optional_package
+_, have_cvxpy, _ = optional_package("cvxpy")
 
 
 def _perpendicular_directions_temp(v, num=20, half=False):
@@ -151,6 +154,83 @@ def generate_K(ccti, MD):
     K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
     return K
 
+def convert_E_bulk(Ebulk): 
+    const = np.sqrt(2)
+    E_bulk = np.zeros((21, 1))
+    E_bulk[0] = Ebulk[0]
+    E_bulk[1] = Ebulk[1]
+    E_bulk[2] = Ebulk[2]
+    E_bulk[3] = Ebulk[3] / const
+    E_bulk[4] = Ebulk[4] / const
+    E_bulk[5] = Ebulk[5] / const
+    E_bulk[6] = Ebulk[6] / 2
+    E_bulk[7] = Ebulk[7] / 2
+    E_bulk[8] = Ebulk[8] / 2
+    E_bulk[9] = Ebulk[9] / 2
+    E_bulk[10] = Ebulk[10] / 2
+    E_bulk[11] = Ebulk[11] / 2
+    E_bulk[12] = Ebulk[12] / 2
+    E_bulk[13] = Ebulk[13] / 2
+    E_bulk[14] = Ebulk[14] / 2
+    E_bulk[15] = Ebulk[15] / 2
+    E_bulk[16] = Ebulk[16] / 2
+    E_bulk[17] = Ebulk[17] / 2
+    E_bulk[18] = Ebulk[18] / (2 * const)
+    E_bulk[19] = Ebulk[19] / (2 * const)
+    E_bulk[20] = Ebulk[20] / (2 * const)
+    return E_bulk
+
+def convert_E_shear(Eshear): 
+    const = np.sqrt(2)
+    E_shear = np.zeros((21, 1))
+    E_shear[0] = Eshear[0]
+    E_shear[1] = Eshear[1]
+    E_shear[2] = Eshear[2]
+    E_shear[3] = Eshear[3] / const
+    E_shear[4] = Eshear[4] / const
+    E_shear[5] = Eshear[5] / const
+    E_shear[6] = Eshear[6] / 2
+    E_shear[7] = Eshear[7] / 2
+    E_shear[8] = Eshear[8] / 2
+    E_shear[9] = Eshear[9] / 2
+    E_shear[10] = Eshear[10] / 2
+    E_shear[11] = Eshear[11] / 2
+    E_shear[12] = Eshear[12] / 2
+    E_shear[13] = Eshear[13] / 2
+    E_shear[14] = Eshear[14] / 2
+    E_shear[15] = Eshear[15] / 2
+    E_shear[16] = Eshear[16] / 2
+    E_shear[17] = Eshear[17] / 2
+    E_shear[18] = Eshear[18] / (2 * const)
+    E_shear[19] = Eshear[19] / (2 * const)
+    E_shear[20] = Eshear[20] / (2 * const)
+    return E_shear
+
+def convert_d_sq(dsq): 
+    const = np.sqrt(2)
+    d_sq = np.zeros((21, 1))
+    d_sq[0] = dsq[0]
+    d_sq[1] = dsq[1]
+    d_sq[2] = dsq[2]
+    d_sq[3] = dsq[3] / const
+    d_sq[4] = dsq[4] / const
+    d_sq[5] = dsq[5] / const
+    d_sq[6] = dsq[6] / 2
+    d_sq[7] = dsq[7] / 2
+    d_sq[8] = dsq[8] / 2
+    d_sq[9] = dsq[9] / 2
+    d_sq[10] = dsq[10] / 2
+    d_sq[11] = dsq[11] / 2
+    d_sq[12] = dsq[12] / 2
+    d_sq[13] = dsq[13] / 2
+    d_sq[14] = dsq[14] / 2
+    d_sq[15] = dsq[15] / 2
+    d_sq[16] = dsq[16] / 2
+    d_sq[17] = dsq[17] / 2
+    d_sq[18] = dsq[18] / (2 * const)
+    d_sq[19] = dsq[19] / (2 * const)
+    d_sq[20] = dsq[20] / (2 * const)
+    return d_sq
 
 def test_cti_prediction():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
@@ -213,8 +293,8 @@ def test_split_cti_param():
         cti_pred_signals = ctiM.predict(cti_params)
         #DWI = np.zeros((2, 2, 1, len(gtab.bvals)))
         #DWI[0, 0, 0] = DWI[0, 1, 0] = DWI[1, 0, 0] = DWI[1, 1, 0] = cti_pred_signals
-        # ctiF = ctiM.fit(cti_pred_signals) #should pass cti_pred_signal, in our case we don't have DWI
-        ctiF = ctiM.fit(cti_params)
+        ctiF = ctiM.fit(cti_pred_signals) #should pass cti_pred_signal, in our case we don't have DWI
+        # ctiF = ctiM.fit(cti_params)
         evals, evecs, kt, cvt = cti.split_cti_params(ctiF.model_params)
         print('this is ctiF.kt: and its type: ', ctiF.kt, type(ctiF.kt))
         assert_array_almost_equal(evals, ctiF.evals)
@@ -224,7 +304,7 @@ def test_split_cti_param():
 
 
 def test_cti_fits():
-
+    ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
     for DTD in DTDs:  # trying out all fits for each DTD.
         D = np.mean(DTD, axis=0)
         evals, evecs = decompose_tensor(D)
@@ -240,20 +320,25 @@ def test_cti_fits():
 
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         # Generate predicted signals using cti_prediction function
-        # cti_pred_signals = ctiM.predict(cti_params)
+        cti_pred_signals = ctiM.predict(cti_params)
 
+        # def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True,  # shouldn't the effect of covariance tensor be obsvd ?
+        #        min_diffusivity=0):
+        inverse_design_matrix = np.linalg.pinv(design_matrix(gtab1, gtab2))
+        cti_return = ls_fit_cti(design_matrix(gtab1, gtab2), cti_pred_signals, inverse_design_matrix )
         # OLS fitting
         ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
-        #here replacing cti_pred_signals with cti_params
-        ctiF = ctiM.fit(cti_params) #this is turning out to be NoneType                     #error 
+        # ctiF = ctiM.fit(cti_pred_signals)
+        # ctiF = ctiM.fit(cti_params) #this is turning out to be NoneType                     #error 
 
-        assert_array_almost_equal(ctiF.model_params, cti_params)
+        # assert_array_almost_equal(ctiF.model_params, cti_params)
+        assert_array_almost_equal(cti_return, cti_params)
 
         # WLS fitting
         cti_wlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="WLS")
         # signal_cross ---> cti_pred_signals, crossing_ref --> cti_params
-        # cti_wlsF = cti_wlsM.fit(cti_pred_signals)
-        cti_wlsF = cti_wlsM.fit(cti_params)
+        cti_wlsF = cti_wlsM.fit(cti_pred_signals)
+        # cti_wlsF = cti_wlsM.fit(cti_params)
 
         assert_array_almost_equal(cti_wlsF.model_params, cti_params)
 
@@ -268,7 +353,7 @@ def test_cti_fits():
             # CWLS fitting
             cti_cwlsM = cti.CorrelationTensorModel(
                 gtab1, gtab2, fit_method="CWLS")
-            cti_cwlsF = cti_cwlsf.fit(cti_params)
+            cti_cwlsF = cti_cwlsM.fit(cti_params)
 
             assert_array_almost_equal(cti_clsF.model_params, cti_params)
         else:
@@ -309,3 +394,28 @@ def test_cti_fits():
         mkt_kurtosis_result = ctiF.mean_kurtosis_tensor(
             cti_params, min_kurtosis=-3./7, max_kurtosis=10)
         assert mkt_result == mkt_kurtosis_result, "The results of mkt function from CorrelationTensorFit and the mean_kurtosis_tensor function from dki.py are not equal. "
+
+        #checking sources of kurtosis : 
+        d_sq = qti.from_3x3_to_6x1(D) @ qti.from_3x3_to_6x1(D).T
+        e_iso = np.eye(3) / 3
+        E_bulk = from_3x3_to_6x1(e_iso) @ from_3x3_to_6x1(e_iso).T                  #this is a 6x6 matrix.
+
+        #defining test for K_iso
+        k_bulk = (3 * np.matmul(                                                       #deal wE_bulk
+            np.swapaxes(ccti, -1, -2),                                                 #also deal with d_sq conversion
+            convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))) / np.matmul(
+                np.swapaxes(convert_d_sq(qti.from_6x6_to_21x1(d_sq)), -1, -2),          #define convert_d_sq
+                convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))))[0, 0]                   #define convert_E_bulk
+        K_iso = ctiF.calculate_K_iso() 
+
+        #defining test for K_aniso 
+        k_shear = (6 / 5 * np.matmul(
+            np.swapaxes(ccti, -1, -2),
+            convert_E_shear(qti.from_6x6_to_21x1(qti.E_shear))) / np.matmul(            #define convert_E_shear
+                np.swapaxes(convert_d_sq(qti.from_6x6_to_21x1(d_sq)), -1, -2),
+                convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))))[0, 0]
+        K_aniso  = ctiF.calculate_K_aniso() 
+
+
+        assert k_bulk == K_iso, "The results of calculate_K_iso function from CorrelationTensorFit and the k_bulk from qti.py are not equal. "
+        assert k_shear == K_aniso, "The results of calculate_K_aniso function from CorrelationTensorFit and the k_shear from qti.py are not equal. "
