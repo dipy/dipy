@@ -185,6 +185,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
         reg = DeformableRegistration(X=static_s, Y=moving_s, alpha=alpha,
                                      beta=beta, max_iterations=max_iter)
         ty, pr = reg.register()
+        ty = ty.astype(float)
         deformed_bundle.append(ty)
         warp.append(pr)
 
