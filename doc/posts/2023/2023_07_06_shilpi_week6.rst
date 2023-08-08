@@ -10,9 +10,12 @@ Creating signal_predict Method: Testing Signal Generation
 What I did this week
 ~~~~~~~~~~~~~~~~~~~~
 
-This week, I worked together with my mentor to come up with a new way of arranging the elements of the design_matrix. So, first I rearranged all the parameters of the covariance parameters so that they'd match with the ones in QTI. So now, the order is: the diffusion tensor, the covariance tensor, and then the kurtosis tensors. But then we decided that it would be better to put the kurtosis tensors first because then we wouldn't have to re-implement all the kurtosis methods again. So, I changed the order of kurtosis and the covariance tensors. 
-Also, in order to maintain the coding standards of the previously implemented models, we decided that the diffusion tensor should be divided into evals and evecs. 
+This week, I worked together with my mentor to come up with a new way of arranging the elements of the design matrix. So, first I rearranged all the parameters of the covariance parameters so that they'd match with the ones in QTI. So now, the order is: the diffusion tensor, the covariance tensor, and then the kurtosis tensors. But then we decided that it would be better to put the kurtosis tensors first because then we wouldn't have to re-implement all the kurtosis methods again. So, I changed the order of kurtosis and the covariance tensors.
+
+Also, in order to maintain the coding standards of the previously implemented models, we decided that the diffusion tensor should be divided into evals and evecs.
+
 Therefore, because of all these changes I had to re-implement a lot of already implemented functions in CTI which also required changing the description of those functions and not only the code.
+
 But my major time went towards writing tests for these modified codes. While writing codes, I realized that a lot of the functions needed to be modified a bit. Also, I had to import several new libraries in order for the functions to work. 
 
 What Is coming up next week
