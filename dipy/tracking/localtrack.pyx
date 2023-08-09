@@ -56,21 +56,21 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
-        double dir[3]
-        double vs[3]
-        double seed[3]
+        double input_direction[3]
+        double input_voxel_size[3]
+        double input_seed_pos[3]
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
-    for i in range(3):
-        dir[i] = first_step[i]
-        vs[i] = voxel_size[i]
-        seed[i] = seed_pos[i]
+    copy_point(&first_step[0], input_direction)
+    copy_point(&voxel_size[0], input_voxel_size)
+    copy_point(&seed_pos[0], input_seed_pos)
 
     stream_status = TRACKPOINT
-    i, stream_status = dg.generate_streamline(seed, dir, vs, step_size, sc,
+    i, stream_status = dg.generate_streamline(input_seed_pos, input_direction,
+                                              input_voxel_size, step_size, sc,
                                               streamline, stream_status,
                                               fixedstep)
     return i, stream_status
@@ -153,21 +153,20 @@ def pft_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
-        double dir[3]
-        double vs[3]
-        double seed[3]
+        double input_direction[3]
+        double input_voxel_size[3]
+        double input_seed_pos[3]
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
-    for i in range(3):
-        dir[i] = first_step[i]
-        vs[i] = voxel_size[i]
-        seed[i] = seed_pos[i]
+    copy_point(&first_step[0], input_direction)
+    copy_point(&voxel_size[0], input_voxel_size)
+    copy_point(&seed_pos[0], input_seed_pos)
 
-    i = _pft_tracker(dg, sc, seed, dir, vs, streamline,
-                     directions, step_size, &stream_status,
+    i = _pft_tracker(dg, sc, input_seed_pos, input_direction, input_voxel_size,
+                     streamline, directions, step_size, &stream_status,
                      pft_max_nbr_back_steps, pft_max_nbr_front_steps,
                      pft_max_trials, particle_count, particle_paths,
                      particle_dirs, particle_weights, particle_steps,
