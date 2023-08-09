@@ -1,5 +1,5 @@
-Design Matrix Implementation and Coding with PEP8: Week4
-========================================================
+Design Matrix Implementation and Coding with PEP8
+=================================================
 
 What I did this Week
 ~~~~~~~~~~~~~~~~~~~~
