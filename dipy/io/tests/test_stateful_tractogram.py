@@ -310,17 +310,18 @@ def test_tck_iterative_saving_loading():
 def test_trx_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    with InTemporaryDirectory():
-        save_tractogram(sft, 'gs_iter.trx')
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sft, pjoin(tmpdir, 'gs_iter.trx'))
         tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
         for _ in range(100):
-            sft_iter = load_tractogram('gs_iter.trx', filepath_dix['gs.nii'],
+            sft_iter = load_tractogram(pjoin(tmpdir, 'gs_iter.trx'),
+                                       filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
                             sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
-            save_tractogram(sft_iter, 'gs_iter.trx')
+            save_tractogram(sft_iter, pjoin(tmpdir, 'gs_iter.trx'))
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
