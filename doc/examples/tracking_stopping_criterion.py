@@ -18,10 +18,10 @@ or only the 'valid' ones. See Girard et al. (2004) [Girard2014]_ and Smith et
 al.(2012) [Smith2012]_ for more details on these methods.
 
 This example is an extension of the
-:ref:`example_tracking_deterministic` example. We begin by loading the
-data, creating a seeding mask from white matter voxels of the corpus callosum,
-fitting a Constrained Spherical Deconvolution (CSD) reconstruction
-model and creating the maximum deterministic direction getter.
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_deterministic.py` example.
+We begin by loading the data, creating a seeding mask from white matter voxels
+of the corpus callosum, fitting a Constrained Spherical Deconvolution (CSD)
+reconstruction model and creating the maximum deterministic direction getter.
 """
 
 import matplotlib.pyplot as plt

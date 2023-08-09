@@ -5,7 +5,8 @@ Mean signal diffusion kurtosis imaging (MSDKI)
 ==============================================
 
 Diffusion Kurtosis Imaging (DKI) is one of the conventional ways to estimate
-the degree of non-Gaussian diffusion (see :ref:`example_reconst_dki`)
+the degree of non-Gaussian diffusion
+(see :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`)
 [Jensen2005]_. However, a limitation of DKI is that its measures are highly
 sensitive to noise and image artefacts. For instance, due to the low radial
 diffusivities, standard kurtosis estimates in regions of well-aligned voxel may
@@ -59,11 +60,11 @@ Testing MSDKI in synthetic data
 
 We simulate representative diffusion-weighted signals using MultiTensor
 simulations (for more information on this type of simulations see
-:ref:`example_simulate_multi_tensor`). For this example, simulations are
-produced based on the sum of four diffusion tensors to represent the intra-
-and extra-cellular spaces of two fiber populations. The parameters of these
-tensors are adjusted according to [NetoHe2015]_ (see also
-:ref:`example_simulate_dki`).
+:ref:`sphx_glr_examples_built_simulations_simulate_multi_tensor.py`). For this
+example, simulations are produced based on the sum of four diffusion tensors
+to represent the intra- and extra-cellular spaces of two fiber populations.
+The parameters of these tensors are adjusted according to [NetoHe2015]_
+(see also :ref:`sphx_glr_examples_built_simulations_simulate_dki.py`).
 """
 
 mevals = np.array([[0.00099, 0, 0],
@@ -219,10 +220,11 @@ Reconstructing diffusion data using MSDKI
 
 Now that the properties of MSDKI were illustrated, let's apply MSDKI to in-vivo
 diffusion-weighted data. As the example for the standard DKI
-(see :ref:`example_reconst_dki`), we use fetch to download a multi-shell
-dataset which was kindly provided by Hansen and Jespersen (more details about
-the data are provided in their paper [Hansen2016]_). The total size of the
-downloaded data is 192 MBytes, however you only need to fetch it once.
+(see :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`), we use fetch
+to download a multi-shell dataset which was kindly provided by Hansen and
+Jespersen (more details about the data are provided in their paper
+[Hansen2016]_). The total size of the downloaded data is 192 MBytes, however
+you only need to fetch it once.
 """
 
 fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
@@ -236,8 +238,9 @@ Before fitting the data, we perform some data pre-processing. For illustration,
 we only mask the data to avoid unnecessary calculations on the background of
 the image; however, you could also apply other pre-processing techniques.
 For example, some state of the art denoising algorithms are available in DIPY_
-(e.g. the non-local means filter :ref:`example-denoise-nlmeans` or the
-local pca :ref:`example-denoise-localpca`).
+(e.g. the non-local means filter
+:ref:`sphx_glr_examples_built_preprocessing_denoise_nlmeans.py` or the
+local pca :ref:`sphx_glr_examples_built_preprocessing_denoise_localpca.py`).
 """
 
 maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,

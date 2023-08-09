@@ -51,7 +51,8 @@ Extending `Feature`
 ===================
 This section will guide you through the creation of a new feature extraction
 method that can be used in the context of this clustering framework. For a
-list of available features in DIPY see :ref:`example_segment_clustering_features`.
+list of available features in DIPY see
+:ref:`sphx_glr_examples_built_segmentation_segment_clustering_features.py`.
 
 Assuming a set of streamlines, the type of features we want to extract is the
 arc length (i.e. the sum of the length of each segment for a given streamline).
@@ -153,7 +154,8 @@ Extending `Metric`
 ==================
 This section will guide you through the creation of a new metric that can be
 used in the context of this clustering framework. For a list of available
-metrics in DIPY see :ref:`example_segment_clustering_metrics`.
+metrics in DIPY see
+:ref:`sphx_glr_examples_built_segmentation_segment_clustering_metrics.py`.
 
 Assuming a set of streamlines, we want a metric that computes the cosine
 distance giving the vector between endpoints of each streamline (i.e. one

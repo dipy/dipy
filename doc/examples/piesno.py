@@ -90,7 +90,8 @@ print('The std of the background is =',
 
 Here, we obtained a noise standard deviation of 7.26. For comparison, a simple
 standard deviation of all voxels in the estimated mask (as done in the previous
-example :ref:`example_snr_in_cc`) gives a value of 6.1.
+example :ref:`sphx_glr_examples_built_preprocessing_snr_in_cc.py`) gives a
+value of 6.1.
 
 """
 

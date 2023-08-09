@@ -1,0 +1,35 @@
+Journey of GSOC application & acceptance : Week 0
+=================================================
+
+.. post:: May 19 2023
+     :author: Vara Lakshmi Bayanagari
+     :tags: google
+     :category: gsoc
+
+While applying for the GSOC 2023 DIPY sub-project titled “Creating Synthetic MRI”, I knew 
+this would be the right one for me for two reasons. Keep reading to know more!
+
+As nervous and not-so-optimistic as I am about applying for academic competitions, I pushed
+myself to apply for GSOC out of a necessity for summer job more than anything. This got me out
+of my comfort zone and I ventured into open source development. During the time of application 
+I was a Master’s student from NYU(current status - graduated) with focus on Deep Learning 
+Applications in Healthcare. I was so involved in research in Computer Vision during school, I
+decided to pursue career in the same field going forward. Fortunately, I came across a college
+senior’s post on LinkedIn regarding getting accepted as a mentor for GSOC 2023 during that time.
+This prompted me to look further into GSOC and its list of projects for this year. I have only
+heard of GSOC during my undergrad, during which I never could muster courage to pursue something
+outside college. But this time around, I decided to put a confident front and take the leap.
+
+As I searched through the list of available projects, I got iteratively definitive about what I 
+wanted to work on - looked for python projects first, filtered out machine learning projects next, 
+narrowed down to a couple of relevant projects. In the process, I came across the list of DIPY 
+projects. Firstly, I was looking to further my research knowledge in ML by exploring Generative AI.
+Secondly, I have worked with MRI datasets in the context of Deep Learning previously, so 
+‘Creating Synthetic MRI’ project seemed the right fit. These reasons got me hooked to DIPY 
+sub-organization. I thoroughly enjoyed exploring DIPY applications and began the process for
+the application preparation soon. With the wonderful help from the mentors, I successfully submitted
+an application, later got an interview call and voila, I got in!
+
+I am very happy about participating in GSOC this year. What started out as a necessity has now become
+a passion project. I hope to enjoy the journey ahead, looking forward to learning and implementing few 
+things along the way!

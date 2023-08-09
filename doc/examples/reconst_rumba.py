@@ -257,7 +257,8 @@ rumba = RumbaSDModel(
 
 """
 For efficiency, we will only fit a small part of the data. This is the same
-portion of data used in :ref:`example_reconst_csd`.
+portion of data used in
+:ref:`sphx_glr_examples_built_reconstruction_reconst_csd.py`.
 """
 
 data_small = data[20:50, 55:85, 38:39]

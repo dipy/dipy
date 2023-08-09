@@ -4,16 +4,17 @@ Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
 The diffusion kurtosis model is an expansion of the diffusion tensor model
-(see :ref:`example_reconst_dti`). In addition to the diffusion tensor (DT), the
-diffusion kurtosis model quantifies the degree to which water diffusion in
-biological tissues is non-Gaussian using the kurtosis tensor (KT)
-[Jensen2005]_.
+(see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
+addition to the diffusion tensor (DT), the diffusion kurtosis model
+quantifies the degree to which water diffusion in biological tissues is
+non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to characterize tissue microstructural
 heterogeneity [Jensen2010]_. Moreover, DKI can be used to: 1) derive concrete
 biophysical parameters, such as the density of axonal fibers and diffusion
-tortuosity [Fierem2011]_ (see :ref:`example_reconst_dki_micro`); and 2)
+tortuosity [Fierem2011]_ (see
+:ref:`sphx_glr_examples_built_reconstruction_reconst_dki_micro.py`); and 2)
 resolve crossing fibers in tractography and to obtain invariant rotational
 measures not limited to well-aligned fiber populations [NetoHe2015]_.
 
@@ -110,8 +111,10 @@ fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
 [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
 are comparable to these studies, it is important to note that more advanced
 noise and artifact suppression algorithms are available in DIPY_, e.g. the
-Marcenko-Pastur PCA denoising algorithm (:ref:`example-denoise-mppca`) and
-the Gibbs artefact suppression algorithm (:ref:`example-denoise-gibbs`).
+Marcenko-Pastur PCA denoising algorithm
+(:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`) and
+the Gibbs artefact suppression algorithm
+(:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`).
 """
 
 fwhm = 1.25
@@ -214,16 +217,17 @@ in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
 
 One can try to suppress this issue by using the more advance noise and artefact
 suppression algorithms, e.g., as mentioned above, the MP-PCA denoising
-(:ref:`example-denoise-mppca`) and Gibbs Unringing
-(:ref:`example-denoise-gibbs`) algorithms. Alternatively, one can overcome this
-artefact by computing the kurtosis values from powder-averaged
-diffusion-weighted signals. The details on how to compute the kurtosis from
-powder-average signals in dipy are described in follow the tutorial
-(:ref:`example-reconst-msdki`). Finally, one can use constrained optimization to
-ensure that the fitted parameters are physically plausible [DelaHa2020]_, as we
-will illustrate in the next section. Ideally though, artefacts such as Gibbs
-ringing should be corrected for as well as possible before using constrained
-optimization.
+(:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`) and Gibbs
+Unringing (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`)
+algorithms. Alternatively, one can overcome this artefact by computing the
+kurtosis values from powder-averaged diffusion-weighted signals. The details on
+how to compute the kurtosis from powder-average signals in dipy are described
+in follow the tutorial
+(:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`). Finally, one
+can use constrained optimization to ensure that the fitted parameters are
+physically plausible [DelaHa2020]_, as we will illustrate in the next section.
+Ideally though, artefacts such as Gibbs ringing should be corrected for as well
+as possible before using constrained optimization.
 
 Constrained optimization for DKI
 ================================
