@@ -146,8 +146,12 @@ class LocalTracking(object):
                 if stepsF > 1:
                     # Use the opposite of the first selected orientation for
                     # the backward tracking segment
-                    first_step = F[0] - F[1]
-                    first_step = first_step / np.linalg.norm(first_step)
+                    opposite_step = F[0] - F[1]
+                    opposite_step_norm = np.linalg.norm(opposite_step)
+                    if opposite_step_norm > 0:
+                        first_step = opposite_step / opposite_step_norm
+                    else:
+                        first_step = -first_step
                 else:
                     first_step = -first_step
                 stepsB, stream_status = self._tracker(s, first_step, B)
