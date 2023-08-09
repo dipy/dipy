@@ -17,16 +17,37 @@ cdef class PmfGen:
                  object sphere):
         self.data = np.asarray(data, dtype=float, order='C')
         self.sphere = sphere
+        self.vertices = np.asarray(sphere.vertices, dtype=float)
+        self.nbr_vertices = self.vertices.shape[0]
 
     cpdef double[:] get_pmf(self, double[::1] point):
         pass
+
+    cdef find_closest(self, double[::1] xyz):
+        cdef:
+            double cos_max = 0
+            double cos_sim
+            int idx = 0
+            int i
+
+        for i in range(self.nbr_vertices):
+            cos_sim = self.vertices[i][0] * xyz[0] \
+                    + self.vertices[i][1] * xyz[1] \
+                    + self.vertices[i][2] * xyz[2]
+            if cos_sim < 0:
+                cos_sim *= -1
+            if cos_sim > cos_max:
+                cos_max = cos_sim
+                idx = i
+        return idx
+
 
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
-        cdef int idx = self.sphere.find_closest(xyz)
+        cdef int idx = self.find_closest(xyz)
         return self.get_pmf(point)[idx]
 
     cdef void __clear_pmf(self):
@@ -55,6 +76,19 @@ cdef class SimplePmfGen(PmfGen):
         if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf
+
+    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        cdef int idx = self.find_closest(xyz)
+
+        if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+                                     &point[0],
+                                     self.pmf[0:1]) != 0:
+            PmfGen.__clear_pmf(self)
+        return self.pmf[0]
 
 
 cdef class SHCoeffPmfGen(PmfGen):
