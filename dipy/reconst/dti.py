@@ -674,8 +674,8 @@ def tensor_prediction(dti_params, gtab, S0):
     return np.exp(np.dot(lower_tri, D.T))
 
 
-def adjacency_calc(img_shape, mask):
-    r"""Create adjacency list for voxels, accounting for the mask.
+def adjacency_calc(img_shape, mask=None, distance=1.99):
+    """Create adjacency list for voxels, accounting for the mask.
 
     Parameters
     ----------
@@ -686,6 +686,9 @@ def adjacency_calc(img_shape, mask):
     mask : array
         A boolean array used to mark the coordinates in the data that
         should be analyzed that should have the same shape as the images.
+
+    distance : float
+        Cutoff distance for finding adjacent voxels.
 
     Returns
     -------
@@ -700,7 +703,7 @@ def adjacency_calc(img_shape, mask):
     XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing='ij')
     XYZ = np.column_stack([xyz.ravel() for xyz in XYZ])
     dists = squareform(pdist(XYZ))
-    dists = (dists < 2)  # NOTE: adjaceny list will contain the voxel itself
+    dists = (dists < distance)  # NOTE: adjaceny list contains currnet voxel
     adj = []
     if mask is not None:
         flat_mask = mask.reshape(-1)
@@ -801,6 +804,7 @@ class TensorModel(ReconstModel):
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
+        self.extra = {}
 
     def fit(self, data, mask=None, adjacency=False):
         """ Fit method of the DTI model class
@@ -814,8 +818,9 @@ class TensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
 
-        adjacency : bool, optional
-            Boolean to calculate voxel adjacency accounting for mask.
+        adjacency : float, optional
+            Calculate voxel adjacency accounting for mask, using this
+            value as cutoff distance.
         """
 
         S0_params = None
@@ -828,10 +833,9 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        # build adjacency list, if required
-        # NOTE: could make a list somewhere that notes whether this is required for a particular algorithm
-        if adjacency:
-            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask)
+        if adjacency > 0:
+            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask,
+                                                      adjacency)
 
         if "sigma" in self.kwargs:
             sigma = self.kwargs["sigma"]
@@ -879,7 +883,8 @@ class TensorModel(ReconstModel):
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
             if extra is not None:
-                self.extra = extra.reshape(data.shape)
+                for key in extra:
+                    self.extra[key] = extra[key].reshape(data.shape)
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
@@ -887,8 +892,9 @@ class TensorModel(ReconstModel):
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0.squeeze()
             if extra is not None:
-                self.extra = np.zeros(data.shape)
-                self.extra[mask, :] = extra
+                for key in extra:
+                    self.extra[key] = np.zeros(data.shape)
+                    self.extra[key][mask, :] = extra[key]
 
         return TensorFit(self, dti_params, model_S0=S0_params)
 
@@ -1379,25 +1385,36 @@ def iter_fit_tensor(step=1e4):
             dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
-            extra = np.empty(data.shape)
+            extra = {}
             for i in range(0, size, step):
                 if return_S0_hat:
-                    (dtiparams[i:i + step], S0params[i:i + step]),\
-                     extra[i:i + step]\
+                    (dtiparams[i:i + step], S0params[i:i + step]), extra_i\
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      return_S0_hat=return_S0_hat,
                                      *args, **kwargs)
                 else:
-                    dtiparams[i:i + step], extra[i:i + step]\
+                    dtiparams[i:i + step], extra_i\
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      *args, **kwargs)
+
+                if extra_i is not None:
+                    for key in extra_i:
+                        if i == 0: extra[key] = np.empty(data.shape)
+                        extra[key][i:i + step] = extra_i
+                else:
+                    if i == 0: extra = None
+
+            if extra is not None:
+                for key in extra:
+                    extra[key] = extra[key].reshape(shape + (-1,))
+
             if return_S0_hat:
                 return (dtiparams.reshape(shape + (sz, )),
-                        S0params.reshape(shape + (1, ))), extra.reshape(shape + (-1,))
+                        S0params.reshape(shape + (1, ))), extra
             else:
-                return dtiparams.reshape(shape + (sz, )), extra.reshape(shape + (-1,))
+                return dtiparams.reshape(shape + (sz, )), extra
 
         return wrapped_fit_tensor
 
@@ -1665,7 +1682,7 @@ class _nlls_class():
                 raise ValueError(e_s)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                w = 1 / sigma  # sigma should be 'C^2 + initial_residuals^2'
+                w = 1 / sigma
                 # no need to normalize
 
         # Return the weighted residuals:
@@ -1693,7 +1710,7 @@ class _nlls_class():
 
         """
         # minus sign, because derivative of residuals = data - y
-        # sqrt(w) because w coresponds to the squared residuals
+        # sqrt(w) because w corresponds to the squared residuals
 
         if weighting is None:
             return -self.y[:, None] * design_matrix
@@ -2095,11 +2112,12 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
+    extra = {"robust": robust}
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return [params, model_S0], robust
+        return [params, model_S0], extra
     else:
-        return params, robust
+        return params, extra
 
 
 _lt_indices = np.array([[0, 1, 3],
