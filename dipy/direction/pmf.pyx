@@ -23,7 +23,7 @@ cdef class PmfGen:
     cpdef double[:] get_pmf(self, double[::1] point):
         pass
 
-    cdef find_closest(self, double[::1] xyz):
+    cdef int find_closest(self, double[::1] xyz) nogil:
         cdef:
             double cos_max = 0
             double cos_sim
@@ -35,12 +35,11 @@ cdef class PmfGen:
                     + self.vertices[i][1] * xyz[1] \
                     + self.vertices[i][2] * xyz[2]
             if cos_sim < 0:
-                cos_sim *= -1
+                cos_sim = cos_sim * -1
             if cos_sim > cos_max:
                 cos_max = cos_sim
                 idx = i
         return idx
-
 
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
         """
@@ -50,7 +49,7 @@ cdef class PmfGen:
         cdef int idx = self.find_closest(xyz)
         return self.get_pmf(point)[idx]
 
-    cdef void __clear_pmf(self):
+    cdef void __clear_pmf(self) nogil:
         cdef:
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp i
@@ -82,7 +81,10 @@ cdef class SimplePmfGen(PmfGen):
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
-        cdef int idx = self.find_closest(xyz)
+        cdef:
+            int idx
+
+        idx = self.find_closest(xyz)
 
         if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
                                      &point[0],
@@ -125,7 +127,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             for i in range(len_pmf):
                 _sum = 0
                 for j in range(len_B):
-                    _sum += self.B[i, j] * self.coeff[j]
+                    _sum = _sum + (self.B[i, j] * self.coeff[j])
                 self.pmf[i] = _sum
         return self.pmf
 
