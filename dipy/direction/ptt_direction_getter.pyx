@@ -17,7 +17,7 @@ Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
 """
 
 cimport numpy as cnp
-from libc.math cimport M_PI, pow, sin, cos
+from libc.math cimport M_PI, pow, sin, cos, fabs
 
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter
@@ -177,7 +177,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                                             self.frame[0])
 
 
-    cdef void prepare_propagator(self, double arclength):
+    cdef void prepare_propagator(self, double arclength) nogil:
         """Prepare the propagator.
 
         The propagator used for transporting the moving frame forward.
@@ -190,8 +190,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double tmp_arclength
 
-        if (abs(self.k1) < self.k_small
-            and abs(self.k2) < self.k_small):
+        if (fabs(self.k1) < self.k_small
+            and fabs(self.k2) < self.k_small):
             self.propagator[0] = arclength
             self.propagator[1] = 0
             self.propagator[2] = 0
@@ -202,9 +202,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.propagator[7] = 0
             self.propagator[8] = 1
         else:
-            if abs(self.k1) < self.k_small:
+            if fabs(self.k1) < self.k_small:
                 self.k1 = self.k_small
-            if abs(self.k2) < self.k_small:
+            if fabs(self.k2) < self.k_small:
                 self.k2 = self.k_small
 
             tmp_arclength  = arclength * arclength / 2.0
@@ -213,19 +213,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.propagator[1] = self.k1 * tmp_arclength
             self.propagator[2] = self.k2 * tmp_arclength
             self.propagator[3] = (1
-                                  - self.k2 * self.k2
-                                  * tmp_arclength
-                                  - self.k1 * self.k1
-                                  * tmp_arclength)
+                                  - self.k2 * self.k2 * tmp_arclength
+                                  - self.k1 * self.k1 * tmp_arclength)
             self.propagator[4] = self.k1 * arclength
             self.propagator[5] = self.k2 * arclength
             self.propagator[6] = -self.k2 * arclength
-            self.propagator[7] = (-self.k1
-                                  * self.k2
-                                  * tmp_arclength)
-            self.propagator[8] = (1 - self.k2
-                                  * self.k2
-                                  * tmp_arclength)
+            self.propagator[7] = -self.k1 * self.k2 * tmp_arclength
+            self.propagator[8] = (1 - self.k2 * self.k2 * tmp_arclength)
 
 
     cdef double calculate_data_support(self):
