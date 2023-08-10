@@ -7,13 +7,14 @@ Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking.
 """
 
-from random import random
+from libc.math cimport sqrt
 
 import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
-from dipy.utils.fast_numpy cimport cumsum, where_to_insert
+from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize, random,
+                                    where_to_insert)
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -58,20 +59,8 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
-        self.vertices = self.sphere.vertices.copy()
-        self._set_adjacency_matrix(sphere, self.cos_similarity)
+        self.vertices = np.asarray(self.sphere.vertices, order='C')
 
-    def _set_adjacency_matrix(self, sphere, cos_similarity):
-        """Creates a dictionary where each key is a direction from sphere and
-        each value is a boolean array indicating which directions are less than
-        max_angle degrees from the key"""
-        matrix = np.dot(sphere.vertices, sphere.vertices.T)
-        matrix = (abs(matrix) >= cos_similarity).astype('uint8')
-        keys = [tuple(v) for v in sphere.vertices]
-        adj_matrix = dict(zip(keys, matrix))
-        keys = [tuple(-v) for v in sphere.vertices]
-        adj_matrix.update(zip(keys, matrix))
-        self._adj_matrix = adj_matrix
 
     cdef int get_direction_c(self, double* point, double* direction):
         """Samples a pmf to updates ``direction`` array with a new direction.
@@ -93,49 +82,49 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         cdef:
             cnp.npy_intp i, idx, _len
             double[:] newdir, pmf
-            double vertex[3]
-            double last_cdf, random_sample
-            cnp.uint8_t[:] bool_array
+            double last_cdf, cos_sim, dir_norm
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
-        try:
-            bool_array = self._adj_matrix[
-                (direction[0], direction[1], direction[2])]
-        except KeyError:
-            # if direction is not a sphere vertex, we find the closest vertex
-            for i in range(3):
-                vertex[i] = direction[i]
-            idx = self.sphere.find_closest(vertex)
-            bool_array = self._adj_matrix[(self.vertices[idx, :][0],
-                                           self.vertices[idx, :][1],
-                                           self.vertices[idx, :][2])]
 
-        for i in range(_len):
-            if bool_array[i] == 0:
-                pmf[i] = 0.0
-        cumsum(&pmf[0], &pmf[0], _len)
-        last_cdf = pmf[_len - 1]
+        with nogil:
+            # TO DO call fast numpy fcts.
+            dir_norm = sqrt(direction[0] * direction[0]
+                            + direction[1] * direction[1]
+                            + direction[2] * direction[2])
+            if dir_norm == 0:
+                return 0
+            direction[0] = direction[0] / dir_norm
+            direction[1] = direction[1] / dir_norm
+            direction[2] = direction[2] / dir_norm
 
-        if last_cdf == 0:
-            return 1
+            for i in range(_len):
+                cos_sim = self.vertices[i][0] * direction[0] \
+                        + self.vertices[i][1] * direction[1] \
+                        + self.vertices[i][2] * direction[2]
+                if cos_sim < 0:
+                    cos_sim = cos_sim * -1
+                if cos_sim < self.cos_similarity:
+                    pmf[i] = 0
 
-        random_sample = random() * last_cdf
-        idx = where_to_insert(&pmf[0], random_sample, _len)
+            cumsum(&pmf[0], &pmf[0], _len)
+            last_cdf = pmf[_len - 1]
+            if last_cdf == 0:
+                return 1
 
-        newdir = self.vertices[idx, :]
-        # Update direction and return 0 for error
-        if direction[0] * newdir[0] \
-         + direction[1] * newdir[1] \
-         + direction[2] * newdir[2] > 0:
+            idx = where_to_insert(&pmf[0], random() * last_cdf, _len)
 
-            direction[0] = newdir[0]
-            direction[1] = newdir[1]
-            direction[2] = newdir[2]
-        else:
-            direction[0] = -newdir[0]
-            direction[1] = -newdir[1]
-            direction[2] = -newdir[2]
+            newdir = self.vertices[idx]
+            # Update direction and return 0 for error
+            if (direction[0] * newdir[0]
+                + direction[1] * newdir[1]
+                + direction[2] * newdir[2] > 0):
+                copy_point(&newdir[0], direction)
+            else:
+                newdir[0] = newdir[0] * -1
+                newdir[1] = newdir[1] * -1
+                newdir[2] = newdir[2] * -1
+                copy_point(&newdir[0], direction)
         return 0
 
 
@@ -166,45 +155,46 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         cdef:
             cnp.npy_intp _len, max_idx
             double[:] newdir, pmf
-            double vertex[3]
-            double max_value
-            cnp.uint8_t[:] bool_array
+            double max_value, cos_sim
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
-
-        try:
-            bool_array = self._adj_matrix[
-                (direction[0], direction[1], direction[2])]
-        except KeyError:
-            # if direction is not a sphere vertex, we find the closest vertex
-            for i in range(3):
-                vertex[i] = direction[i]
-            idx = self.sphere.find_closest(vertex)
-            bool_array = self._adj_matrix[(self.vertices[idx, :][0],
-                                           self.vertices[idx, :][1],
-                                           self.vertices[idx, :][2])]
-
         max_idx = 0
         max_value = 0.0
-        for i in range(_len):
-            if bool_array[i] > 0 and pmf[i] > max_value:
-                max_idx = i
-                max_value = pmf[i]
 
-        if max_value <= 0:
-            return 1
+        with nogil:
+            # TO DO call fast numpy fcts.
+            dir_norm = sqrt(direction[0] * direction[0]
+                            + direction[1] * direction[1]
+                            + direction[2] * direction[2])
+            if dir_norm == 0:
+                return 0
+            direction[0] = direction[0] / dir_norm
+            direction[1] = direction[1] / dir_norm
+            direction[2] = direction[2] / dir_norm
 
-        newdir = self.vertices[max_idx]
-        # Update direction
-        if direction[0] * newdir[0] \
-         + direction[1] * newdir[1] \
-         + direction[2] * newdir[2] > 0:
-            direction[0] = newdir[0]
-            direction[1] = newdir[1]
-            direction[2] = newdir[2]
-        else:
-            direction[0] = -newdir[0]
-            direction[1] = -newdir[1]
-            direction[2] = -newdir[2]
+            for i in range(_len):
+                cos_sim = self.vertices[i][0] * direction[0] \
+                        + self.vertices[i][1] * direction[1] \
+                        + self.vertices[i][2] * direction[2]
+                if cos_sim < 0:
+                    cos_sim = cos_sim * -1
+                if cos_sim > self.cos_similarity and pmf[i] > max_value:
+                    max_idx = i
+                    max_value = pmf[i]
+
+            if max_value <= 0:
+                return 1
+
+            newdir = self.vertices[max_idx]
+            # Update direction and return 0 for error
+            if (direction[0] * newdir[0]
+                + direction[1] * newdir[1]
+                + direction[2] * newdir[2] > 0):
+                copy_point(&newdir[0], direction)
+            else:
+                newdir[0] = newdir[0] * -1
+                newdir[1] = newdir[1] * -1
+                newdir[2] = newdir[2] * -1
+                copy_point(&newdir[0], direction)
         return 0
