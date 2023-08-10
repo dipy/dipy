@@ -703,7 +703,11 @@ def adjacency_calc(img_shape, mask=None, distance=1.99):
     XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing='ij')
     XYZ = np.column_stack([xyz.ravel() for xyz in XYZ])
     dists = squareform(pdist(XYZ))
-    dists = (dists < distance)  # NOTE: adjaceny list contains currnet voxel
+#    if mask is not None:
+#        import matplotlib.pyplot as plt
+#        plt.imshow(dists[1025].reshape(img_shape), alpha=mask.astype(float))
+#        plt.show()
+    dists = (dists < distance)  # adjacency list contains current voxel
     adj = []
     if mask is not None:
         flat_mask = mask.reshape(-1)
@@ -711,7 +715,10 @@ def adjacency_calc(img_shape, mask=None, distance=1.99):
             if flat_mask[idx]:
                 cond = dists[idx, :]
                 cond = cond * flat_mask
-                cond = cond[flat_mask]  # so indices will match masked array
+#                print(cond)
+#                print("before:", cond.sum())
+                cond = cond[flat_mask == 1]  # so indices will match masked array
+#                print("after:", cond.sum())
                 adj.append(np.argwhere(cond).flatten().tolist())
     else:
         for idx in range(dists.shape[0]):
