@@ -19,14 +19,14 @@ from dipy.reconst.dki import (
 from dipy.data import load_sdp_constraints
 from dipy.reconst.dti import (
     decompose_tensor, from_lower_triangular, lower_triangular, mean_diffusivity, MIN_POSITIVE_SIGNAL)
-
+from dipy.reconst.qti import from_6x1_to_3x3
 # sources of kurtosis:
 # we've formulats for Kaniso, Ksio, then get Ktotal. So for microscopic kurtosis, we subtract, Kt - K aniso
 
 
 
 
-def split_cti_params(cti_params):
+def split_cti_params(cti_params): #here cti_params.shape : (48, )
     r"""Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector matrix, and the 21 independent elements of the covariance tensor, and the 15 independent elements of the kurtosis tensor from the model parameters estimated from the CTI model
     Parameters:
          -----------
@@ -55,7 +55,8 @@ def split_cti_params(cti_params):
     # evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
     evals = cti_params[..., :3]
     evecs = cti_params[..., 3:12].reshape(cti_params.shape[:-1] + (3, 3))
-    kt = cti_params[12:27, ...]
+    kt = cti_params[12:27, ...] #original
+    # kt = cti_params[..., 12:27]
     cvt = cti_params[27:48, ...]
     return evals, evecs, kt, cvt
 
@@ -199,10 +200,10 @@ class CorrelationTensorModel(ReconstModel):
         #             'dki', self.convexity_level)
         #     self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
-        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS'}
         self.is_multi_method = fit_method in ['WLS', 'OLS', 'UWLLS', 'ULLS',
-                                              'WLLS', 'OLLS', 'CLS', 'CWLS']
-
+                                              'WLLS', 'OLLS']
+    @multi_voxel_fit 
     def fit(self, data, mask=None): #here data is cti_params of shape : (n, 48) 
         """ Fit method of the CTI model class
 
@@ -217,22 +218,22 @@ class CorrelationTensorModel(ReconstModel):
 
         """
         data_thres = np.maximum(data, self.min_signal)
-        params = self.fit_method(self.design_matrix, data_thres,
+        params = self.fit_method(self.design_matrix, data_thres,self.inverse_design_matrix,
                                  *self.args, **self.kwargs)
         #we need to somehow obtian cti_params from data (it's actually cti_pred_signals)
-        print('this is data.shape: ',data.shape)
+        # print('this is data.shape: ',data.shape) #this is always (81, )
         return CorrelationTensorFit(self, params) #ig there's a need to somehow define cti_params here. 
     
-    @multi_voxel_fit
-    def multi_fit(self, data_thres, mask=None):
+    # @multi_voxel_fit
+    # def multi_fit(self, data_thres, mask=None):
 
-        params = self.fit_method(self.design_matrix, data_thres,
-                                 self.inverse_design_matrix,
-                                 weights=self.weights,
-                                 min_diffusivity=self.min_diffusivity,
-                                )
+    #     params = self.fit_method(self.design_matrix, data_thres,
+    #                              self.inverse_design_matrix,
+    #                              weights=self.weights,
+    #                              min_diffusivity=self.min_diffusivity,
+    #                             )
 
-        return CorrelationTensorFit(self, params)
+    #     return CorrelationTensorFit(self, params)
     
     def predict(self, cti_params, S0=100):  # created
         """Predict a signal for the CTI model class instance given parameteres
@@ -291,12 +292,14 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """
         DiffusionKurtosisFit.__init__(self, model, model_params)
 
-    def kt(self):  # created
+    @property
+    def kt(self):  # self.model_params.shape = (48, )
         """
         Return the 15 independent elements of the kurtosis tensor as an array
         """
-        return self.model_params[12:27, ...]  # last index won't get included....?
+        return self.model_params[12:27, ...]  
 
+    @property
     def dft(self):  # created
         """
         Returns the 6 independent elements of the diffusion tensor as an array
@@ -317,7 +320,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                                 diffusion_tensor[1, 2]])
 
         return dt_elements
-
+    
+    @property
     def cvt(self):  # created
         """
         Returns the 21 independent elements of the covariance tensor as an array
@@ -377,13 +381,21 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             \(\overline{D}\) is the mean of the diffusion tensor.
         """ 
 
-        D = self.dft() 
-        C = self.cvt()
+        D = self.dft
+        C = self.cvt
+        # print('this is D inside aniso, previously: ', D)
+        # D = D.reshape(-1, 1)
+        # #converting D
+        # D = from_6x1_to_3x3(D)
+        matrix = np.array([[D[0], D[3], D[4]],[D[3], D[1], D[5]],[D[4], D[5], D[2]]])
+        D  = matrix 
+        # print('this is D after: ', D)
+        
+        Variance = 2/9 * (C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
+                 - D[0, 0] * D[1, 1] - C[4] - D[0, 0] * D[2, 2]
+                 - C[3] - D[1, 1] * D[2, 2]
+                 + 3 * (C[17] + D[0, 1] ** 2 + C[16] + D[0, 2] ** 2 + C[15] + D[1, 2] ** 2))
 
-        Variance = 2/9 * [C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
-                                - D[0, 0]*D[1, 1] - C[4] - D[0, 0] * D[2, 2] -
-                                    C[3] - D[1, 1] * D[2, 2]
-                                + 3 * (C[17] + D[0, 1] ** 2 + C[16] + D[0, 2] ** 2 + C[15] + D[1, 2] ** 2)]
         mean_D =  np.trace(D) / 3#trace(D) / 3
         K_aniso = (6/5) * (Variance / (mean_D **2))
         return K_aniso 
@@ -403,8 +415,12 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             \(\overline{D}\) is the mean of the diffusion tensor.
                 
         """ 
-        D = self.dft() 
-        C = self.cvt()
+        D = self.dft #this is a (6, ) shaped array, 
+        C = self.cvt
+    
+        matrix = np.array([[D[0], D[3], D[4]],[D[3], D[1], D[5]],[D[4], D[5], D[2]]])
+        D  = matrix 
+        # print('this is D.shape inside K_iso: ', D.shape) #(6, )
         mean_D = np.trace(D) / 3
         Variance = 1/9 * (C[0] + C[1] + C[2] + 2 * C[5] + 2 * C[4] + 2 * C[3])
         K_iso = 3 * (Variance / mean_D)
@@ -430,7 +446,9 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """ 
 
         mean_K = self.mkt()
-        D = self.dft()
+        D = self.dft
+        matrix = np.array([[D[0], D[3], D[4]],[D[3], D[1], D[5]],[D[4], D[5], D[2]]])
+        D  = matrix 
         mean_D = np.trace(D) / 3
         psi = 2/ 5 * ((np.sqrt(D[0,0]) + np.sqrt(D[1,1])+ np.sqrt(D[2,2])
                 + 2 * np.sqrt(D[0,1]) + 2 * np.sqrt(D[0,2]) + np.sqrt(D[1,2])) / mean_D ** 2) - (6/5) 
