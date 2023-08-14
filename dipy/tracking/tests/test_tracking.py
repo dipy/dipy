@@ -546,7 +546,8 @@ def test_maximum_deterministic_tracker():
     mask = (simple_image > 0).astype(float)
     sc = ThresholdStoppingCriterion(mask, .5)
 
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, max_angle=100,
+                                                      sphere=sphere,
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
