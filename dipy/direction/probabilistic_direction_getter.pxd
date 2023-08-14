@@ -5,4 +5,3 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
     cdef:
         double[:, :] vertices
-        dict _adj_matrix

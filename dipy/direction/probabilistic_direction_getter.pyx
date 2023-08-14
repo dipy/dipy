@@ -7,14 +7,12 @@ Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking.
 """
 
-from libc.math cimport sqrt
-
 import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize, random,
-                                    where_to_insert)
+from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
+                                    random, where_to_insert)
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -59,7 +57,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
-        self.vertices = np.asarray(self.sphere.vertices, order='C')
+        self.vertices = self.sphere.vertices.copy()
 
 
     cdef int get_direction_c(self, double* point, double* direction):
@@ -87,17 +85,11 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
 
-        with nogil:
-            # TO DO call fast numpy fcts.
-            dir_norm = sqrt(direction[0] * direction[0]
-                            + direction[1] * direction[1]
-                            + direction[2] * direction[2])
-            if dir_norm == 0:
-                return 0
-            direction[0] = direction[0] / dir_norm
-            direction[1] = direction[1] / dir_norm
-            direction[2] = direction[2] / dir_norm
+        if norm(<double[:3]> direction) == 0:
+            return 0
+        normalize(<double[:3]> direction)
 
+        with nogil:
             for i in range(_len):
                 cos_sim = self.vertices[i][0] * direction[0] \
                         + self.vertices[i][1] * direction[1] \
@@ -125,7 +117,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
                 newdir[1] = newdir[1] * -1
                 newdir[2] = newdir[2] * -1
                 copy_point(&newdir[0], direction)
-        return 0
+            return 0
 
 
 cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
@@ -162,17 +154,11 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         max_idx = 0
         max_value = 0.0
 
-        with nogil:
-            # TO DO call fast numpy fcts.
-            dir_norm = sqrt(direction[0] * direction[0]
-                            + direction[1] * direction[1]
-                            + direction[2] * direction[2])
-            if dir_norm == 0:
-                return 0
-            direction[0] = direction[0] / dir_norm
-            direction[1] = direction[1] / dir_norm
-            direction[2] = direction[2] / dir_norm
+        if norm(<double[:3]> direction) == 0:
+            return 0
+        normalize(<double[:3]> direction)
 
+        with nogil:
             for i in range(_len):
                 cos_sim = self.vertices[i][0] * direction[0] \
                         + self.vertices[i][1] * direction[1] \
