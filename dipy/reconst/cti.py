@@ -417,7 +417,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """ 
         D = self.dft #this is a (6, ) shaped array, 
         C = self.cvt
-    
+        #shouldn't we do : C = ccti ? or is this required only when 6x6 conversion is done?
         matrix = np.array([[D[0], D[3], D[4]],[D[3], D[1], D[5]],[D[4], D[5], D[2]]])
         D  = matrix 
         # print('this is D.shape inside K_iso: ', D.shape) #(6, )
