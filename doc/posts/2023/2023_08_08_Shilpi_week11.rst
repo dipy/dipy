@@ -24,6 +24,6 @@ This week I'll try to make sure that the test functions are able to work properl
 Did I get stuck anywhere 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-I didn't exactly get stuck as I kept learning new things while encountering problems in testing the function. But when I felt that I could not move forward with one tast, I immediately started with other tasks such as providing documentation to function as well as getting started with the tutorials. 
+I didn't exactly get stuck as I kept learning new things while encountering problems in testing the function. But when I felt that I could not move forward with one task, I immediately started with other tasks such as providing documentation to function as well as getting started with the tutorials. 
 
 
