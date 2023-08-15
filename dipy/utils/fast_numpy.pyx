@@ -53,7 +53,7 @@ cpdef double random() nogil:
     Returns
     -------
     _ : double
-        random number
+        random number.
     """
     return rand() / float(RAND_MAX)
 
@@ -67,7 +67,6 @@ cpdef void seed(int s) nogil:
         random seed.
     """
     srand(s)
-
 
 
 cpdef double norm(double[:] v) nogil:

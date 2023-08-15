@@ -81,7 +81,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         cdef:
             cnp.npy_intp i, idx, _len
             double[:] newdir, pmf
-            double last_cdf, cos_sim, dir_norm
+            double last_cdf, cos_sim
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]

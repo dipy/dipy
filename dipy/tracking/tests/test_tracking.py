@@ -227,11 +227,12 @@ def test_tracking_max_angle():
     def get_min_cos_similarity(streamlines):
         min_cos_sim = 1
         for sl in streamlines:
-            v = sl[:-1] - sl[1:]  # vectors have norm of 1
-            for i in range(len(v)-1):
-                cos_sim = np.dot(v[i], v[i+1])
-                if cos_sim < min_cos_sim:
-                    min_cos_sim = cos_sim
+            if len(sl) > 1:
+                v = sl[:-1] - sl[1:]  # vectors have norm of 1
+                for i in range(len(v)-1):
+                    cos_sim = np.dot(v[i], v[i+1])
+                    if cos_sim < min_cos_sim:
+                        min_cos_sim = cos_sim
         return min_cos_sim
     np.random.seed(0)  # Random number generator initialization
 
@@ -439,6 +440,7 @@ def test_particle_filtering_tractography():
             for i in range(len(s) - 1):
                 npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
                                         step_size)
+
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)
     pft_streamlines_generator = ParticleFilteringTracking(
