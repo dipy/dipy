@@ -645,7 +645,7 @@ def order_from_ncoef(ncoef, full_basis=False):
 
     # Solve the quadratic equation derived from :
     # ncoef = (sh_order + 2) * (sh_order + 1) / 2
-    return int(-3 + np.sqrt(9 - 4 * (2-2*ncoef)))/2
+    return -1 + int(np.sqrt(9 - 4 * (2-2*ncoef))//2)
 
 
 def smooth_pinv(B, L):

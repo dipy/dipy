@@ -1891,7 +1891,7 @@ def fetch_hcp(subjects,
     to_bids_description(base_dir,
                         **{"Name": study,
                            "Acknowledgements": hcp_acknowledgements,
-                           "PipelineDescription": {'Name': 'hcp_pipeline'}})
+                           "GeneratedBy": [{'Name': 'hcp_pipeline'}]})
 
     return data_files, pjoin(my_path, study)
 
