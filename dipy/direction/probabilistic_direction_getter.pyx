@@ -85,7 +85,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         _len = pmf.shape[0]
 
         if norm(<double[:3]> direction) == 0:
-            return 0
+            return 1
         normalize(<double[:3]> direction)
 
         with nogil:
@@ -154,7 +154,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         max_value = 0.0
 
         if norm(<double[:3]> direction) == 0:
-            return 0
+            return 1
         normalize(<double[:3]> direction)
 
         with nogil:
