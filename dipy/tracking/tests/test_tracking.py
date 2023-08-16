@@ -437,7 +437,6 @@ def test_particle_filtering_tractography():
                                                     step_size, max_cross=1,
                                                     return_all=True, maxlen=l)
         for s in pft_streamlines:
-            print(s)
             for i in range(len(s) - 1):
                 npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
                                         step_size)
