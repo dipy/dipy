@@ -710,20 +710,19 @@ class StatefulTractogram(object):
     def _shift_voxel_origin(self):
         """ Unsafe function to switch the origin from center to corner
         and vice versa """
-        if not self.streamlines:
-            return
+        if self.streamlines:
+            shift = np.asarray([0.5, 0.5, 0.5])
+            if self._space == Space.VOXMM:
+                shift = shift * self._voxel_sizes
+            elif self._space == Space.RASMM:
+                tmp_affine = np.eye(4)
+                tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
+                shift = apply_affine(tmp_affine, shift)
+            if self._origin == Origin.TRACKVIS:
+                shift *= -1
 
-        shift = np.asarray([0.5, 0.5, 0.5])
-        if self._space == Space.VOXMM:
-            shift = shift * self._voxel_sizes
-        elif self._space == Space.RASMM:
-            tmp_affine = np.eye(4)
-            tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
-            shift = apply_affine(tmp_affine, shift)
-        if self._origin == Origin.TRACKVIS:
-            shift *= -1
+            self._tractogram.streamlines._data += shift
 
-        self._tractogram.streamlines._data += shift
         if self._origin == Origin.NIFTI:
             logger.debug('Origin moved to the corner of voxel.')
             self._origin = Origin.TRACKVIS
