@@ -117,7 +117,13 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=100):
         X = np.concatenate((dt, fkt[v] * MD * MD, fcvt[v],  # added line
                             np.array([-np.log(this_S0)])),
                            axis=0)
-
+        # print("Under cti.py, cti_prediction function: ")
+        # print("A shape:", A.shape) #(636, 43)
+        # print("X shape:", X.shape) #(43, )
+        # print("A", A) #very large values
+        # print("X", X)
+        # print("A dot X:", np.dot(A, X))
+        # print("exp(A dot X):", np.exp(np.dot(A, X)))
         pred_sig[v] = np.exp(np.dot(A, X))
 
     # Reshape data according to the shape of cti_params
@@ -365,7 +371,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         
         #def calculate_K_aniso(D, C):  # D is a diffusion tensor 3x3, C is a 1D array.
 
-    def calculate_K_aniso(self):
+    def K_aniso(self):
         r""" Returns the anisotropic Source of Kurtosis (K_aniso) 
             
             Notes 
@@ -400,7 +406,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         K_aniso = (6/5) * (Variance / (mean_D **2))
         return K_aniso 
 
-    def calculate_K_iso(self): 
+    def K_iso(self): 
         r""" Returns the isotropic Source of Kurtosis (K_iso)
         
         Notes 

@@ -299,8 +299,13 @@ def test_split_cti_param():
 
 
 def test_cti_fits():
+    DTDs = [
+        anisotropic_DTD,
+        isotropic_DTD,
+        np.concatenate((anisotropic_DTD, isotropic_DTD))
+    ]
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
-    for DTD in DTDs:  # trying out all fits for each DTD.
+    for i,DTD in enumerate(DTDs):  # trying out all fits for each DTD.
         D = np.mean(DTD, axis=0)
         evals, evecs = decompose_tensor(D)
         C = qti.dtd_covariance(DTD)
@@ -315,7 +320,7 @@ def test_cti_fits():
         #Testing ls_fit_cti 
         inverse_design_matrix = np.linalg.pinv(design_matrix(gtab1, gtab2))
         cti_return = ls_fit_cti(design_matrix(gtab1, gtab2), cti_pred_signals, inverse_design_matrix )
-        evals_return, evecs_return, kt_return, cvt_return = split_cti_params(cti_return)
+        evals_return, _ , kt_return, cvt_return = split_cti_params(cti_return)
         assert np.allclose(evals, evals_return), "evals do not match!"
         assert np.allclose(kt, kt_return), "K do not match!"
         assert np.allclose(cvt, cvt_return), "C do not match!"
@@ -324,41 +329,20 @@ def test_cti_fits():
         # OLS fitting
         ctiM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="OLS")
         ctiF = ctiM.fit(cti_pred_signals)
-        ols_evals, ols_evecs, ols_kt, ols_cvt = split_cti_params(ctiF.model_params)
+        ols_evals, _ , ols_kt, ols_cvt = split_cti_params(ctiF.model_params)
         assert np.allclose(evals, ols_evals), "evals do not match!"
         assert np.allclose(kt, ols_kt), "K do not match!"
         assert np.allclose(cvt, ols_cvt), "C do not match!"
-        # assert_array_almost_equal(ctiF.model_params, cti_params)
 
         # WLS fitting
         cti_wlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="WLS")
         cti_wlsF = cti_wlsM.fit(cti_pred_signals)
-        wls_evals, wls_evecs, wls_kt, wls_cvt = split_cti_params(ctiF.model_params)
+        wls_evals, _, wls_kt, wls_cvt = split_cti_params(cti_wlsF.model_params)
         assert np.allclose(evals, wls_evals), "evals do not match!"
         assert np.allclose(kt, wls_kt), "K do not match!"
         assert np.allclose(cvt, wls_cvt), "C do not match!"
 
-        # if have_cvxpy:                                : constrainedFitting, not required
-        #     # CLS fitting
-        #     cti_clsM = cti.CorrelationTensorModel(
-        #         gtab1, gtab2, fit_method="CLS")
-        #     cti_clsF = cti_clsM.fit(cti_params)
-
-        #     assert_array_almost_equal(cti_clsF.model_params, cti_params)
-
-        #     # CWLS fitting
-        #     cti_cwlsM = cti.CorrelationTensorModel(
-        #         gtab1, gtab2, fit_method="CWLS")
-        #     cti_cwlsF = cti_cwlsM.fit(cti_params)
-
-        #     assert_array_almost_equal(cti_clsF.model_params, cti_params)
-        # else:
-        #     assert_raises(ValueError, cti.CorrelationTensorModel,
-        #                   gtab1, gtab2, fit_method="CLS")
-        #     assert_raises(ValueError, cti.CorrelationTensorModel,
-        #                   gtab1, gtab2, fit_method="CWLS")
-
-        # checking Mean Kurtosis values:
+        #checking Mean Kurtosis Values
         mk_result = ctiF.mk(min_kurtosis=-3./7,
                             max_kurtosis=10, analytical=True)
         mean_kurtosis_result = mean_kurtosis(
@@ -387,42 +371,82 @@ def test_cti_fits():
 
         # checking mean Kurtosis tensor
         mkt_result = ctiF.mkt(min_kurtosis=-3./7, max_kurtosis=10)
-        mkt_kurtosis_result = mean_kurtosis_tensor(
+        mean_kurtosis_result = mean_kurtosis_tensor(
             cti_params, min_kurtosis=-3./7, max_kurtosis=10)
         assert np.allclose(mkt_result, mean_kurtosis_result), "The results of the mkt function from CorrelationTensorFit and the mean_kurtosis_tensor function from dki.py are not equal."
         # print('this is D.shape inside test_cti.py', D.shape) #(3,3)
-        
-        
-        
+           
         #checking sources of kurtosis : NOT RECOMMENDED: from_3x3to6x1
-        d_sq = qti.from_3x3_to_6x1(D) @ qti.from_3x3_to_6x1(D).T
-        e_iso = np.eye(3) / 3
-        E_bulk = from_3x3_to_6x1(e_iso) @ from_3x3_to_6x1(e_iso).T                  #this is a 6x6 matrix.
+        # print("Starting test for K_iso.")
+        # print('This is {}th DTD'.format(i))
+        # K_iso  = ctiF.calculate_K_iso() 
+        # variance_of_mean_diffusivities = np.var(MD)
+        # # The ground truth K_iso for anisotropic DTD should be zero
+        # ground_truth_K_iso = 3 * variance_of_mean_diffusivities / np.mean(MD)**2
 
-        #defining test for K_iso, shouldn't we use E_bulk as qti.E_bulk
-        k_bulk = (3 * np.matmul(                                                       #deal wE_bulk
-        np.swapaxes(ccti, -1, -2),                                                 #also deal with d_sq conversion
-        convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))) / np.matmul(
-            np.swapaxes(convert_d_sq(qti.from_6x6_to_21x1(d_sq)), -1, -2),          #define convert_d_sq
-            convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))))[0, 0]                   #define convert_E_bulk
-        K_iso = ctiF.calculate_K_iso() 
-        #here from_6x6_to_21x1(C) fun has already been called.
-        # k_bulk = (3 * np.matmul(
-        # np.swapaxes(C, -1, -2),
-        # qti.from_6x6_to_21x1(E_bulk)) / np.matmul(
-        #     np.swapaxes(qti.from_6x6_to_21x1(d_sq), -1, -2),
-        #     qti.from_6x6_to_21x1(E_bulk)))[0, 0]
-        
+        # # Compare the calculated value with the ground truth
+        # print('this is K_iso: ', K_iso)
+        # assert np.isclose(K_iso, ground_truth_K_iso), \
+        #     f"Calculated K_iso {K_iso} does not match the ground truth {ground_truth_K_iso}"
+        # print('i = {} works'.format(i))
 
-        #defining test for K_aniso 
-        # k_shear = (6 / 5 * np.matmul(
-        #     np.swapaxes(ccti, -1, -2),
-        #     convert_E_shear(qti.from_6x6_to_21x1(qti.E_shear))) / np.matmul(            #define convert_E_shear
-        #         np.swapaxes(convert_d_sq(qti.from_6x6_to_21x1(d_sq)), -1, -2),
-        #         convert_E_bulk(qti.from_6x6_to_21x1(E_bulk))))[0, 0]
-        # K_aniso  = ctiF.calculate_K_aniso() 
+def test_isotropic_source():  #passes only for _anisotropic_DTD()
+    ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
+    DTD = _anisotropic_DTD()
+    D = np.mean(DTD, axis=0)
+    evals, evecs = decompose_tensor(D)
+    C = qti.dtd_covariance(DTD)
+    C = qti.from_6x6_to_21x1(C)
+    ccti = modify_C_params(C)
+    MD = mean_diffusivity(evals)  # is a sclar
+    K = generate_K(ccti, MD)
+    cti_params = construct_cti_params(evals, evecs, K, ccti)
+    cti_pred_signals = ctiM.predict(cti_params)
+    ctiF = ctiM.fit(cti_pred_signals)
 
-        # print('this is k_shear: ', k_shear, 'and K-aniso: ', K_aniso) #1.74 & 2.4
-        print('this is k_bulk: ', k_bulk,'and k_iso: ', K_iso)
-        # assert k_shear == K_aniso, "The results of calculate_K_iso function from CorrelationTensorFit and the k_bulk from qti.py are not equal. "
-        assert k_bulk == K_iso, "The results of calculate_K_iso function from CorrelationTensorFit and the k_shear from qti.py are not equal. "
+    K_iso  = ctiF.calculate_K_iso() 
+    # Compute variance of mean diffusivities; for anisotropic DTD, this should be zero
+    variance_of_mean_diffusivities = np.var(MD)
+    # The ground truth K_iso for anisotropic DTD should be zero
+    ground_truth_K_iso = 3 * variance_of_mean_diffusivities / np.mean(MD)**2
+    # print('this is K_iso for anisotropic case:{} and this is ground_truth: {}'.format(K_iso, ground_truth_K_iso) )
+    assert np.isclose(K_iso, ground_truth_K_iso), \
+            f"Calculated K_iso {K_iso} for anisotropicDTD does not match the ground truth {ground_truth_K_iso}"
+
+
+def test_anisotropic_source_modified(): 
+    print('this is second test')
+    ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
+    DTD = _isotropic_DTD()
+    D = np.mean(DTD, axis=0)
+    evals, evecs = decompose_tensor(D)
+    C = qti.dtd_covariance(DTD)
+    C = qti.from_6x6_to_21x1(C)
+    ccti = modify_C_params(C)
+    MD = mean_diffusivity(evals)  # is a sclar
+    K = generate_K(ccti, MD)
+    cti_params = construct_cti_params(evals, evecs, K, ccti)
+    cti_pred_signals = ctiM.predict(cti_params)
+    ctiF = ctiM.fit(cti_pred_signals)
+    K_aniso = ctiF.calculate_K_aniso()
+
+
+    variance_of_eigenvalues = []
+    for tensor in DTD:
+        evals_tensor, _ = decompose_tensor(tensor)  # Decompose individual tensor
+        variance_of_eigenvalues.append(np.var(evals_tensor))
+    mean_variance_of_eigenvalues = np.mean(variance_of_eigenvalues)
+
+    # Other code related to fitting, prediction, etc.
+
+    mean_D = np.trace(np.mean(DTD, axis=0)) / 3
+
+    ground_truth_K_aniso = (6/5) * (mean_variance_of_eigenvalues / (mean_D ** 2))
+    print("K_aniso: {}, ground_truth_K_aniso: {}".format(K_aniso, ground_truth_K_aniso))
+    assert np.isclose(K_aniso, ground_truth_K_aniso), \
+            f"Calculated K_iso {K_aniso} for isotropicDTD does not match the ground truth {ground_truth_K_aniso}"
+
+
+
+
+
