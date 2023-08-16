@@ -1,13 +1,11 @@
 
-from random import random
-
 cimport cython
 cimport numpy as cnp
 from .direction_getter cimport DirectionGetter
 from .stopping_criterion cimport(
     StreamlineStatus, StoppingCriterion, AnatomicalStoppingCriterion,
     TRACKPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
-from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
+from dipy.utils.fast_numpy cimport copy_point, cumsum, random, where_to_insert
 
 
 def local_tracker(
@@ -196,7 +194,7 @@ cdef _pft_tracker(DirectionGetter dg,
                   cnp.int_t[:, :] particle_steps,
                   cnp.int_t[:, :] particle_stream_statuses):
     cdef:
-        int i, pft_trial, pft_streamline_i, back_steps, front_steps
+        int i, pft_trial, back_steps, front_steps
         int strl_array_len
         double point[3]
         void (*step)(double* , double*, double) nogil
@@ -226,7 +224,7 @@ cdef _pft_tracker(DirectionGetter dg,
             # The tracking continues normally
             continue
         elif stream_status[0] == INVALIDPOINT:
-            if pft_trial < pft_max_trials and i > 1:
+            if pft_trial < pft_max_trials and i > 1 and i < strl_array_len:
                 back_steps = min(i - 1, pft_max_nbr_back_steps)
                 front_steps = min(strl_array_len - i - back_steps - 1,
                                   pft_max_nbr_front_steps)
