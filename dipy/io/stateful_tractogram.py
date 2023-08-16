@@ -641,8 +641,8 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOXMM
-                logger.debug('Moved streamlines from vox to voxmm.')
+            self._space = Space.VOXMM
+            logger.debug('Moved streamlines from vox to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
@@ -653,8 +653,8 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOX
-                logger.debug('Moved streamlines from voxmm to vox.')
+            self._space = Space.VOX
+            logger.debug('Moved streamlines from voxmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
@@ -664,8 +664,8 @@ class StatefulTractogram(object):
         if self._space == Space.VOX:
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._affine)
-                self._space = Space.RASMM
-                logger.debug('Moved streamlines from vox to rasmm.')
+            self._space = Space.RASMM
+            logger.debug('Moved streamlines from vox to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
@@ -675,8 +675,8 @@ class StatefulTractogram(object):
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
-                self._space = Space.VOX
-                logger.debug('Moved streamlines from rasmm to vox.')
+            self._space = Space.VOX
+            logger.debug('Moved streamlines from rasmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
@@ -688,8 +688,8 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
-                self._space = Space.RASMM
-                logger.debug('Moved streamlines from voxmm to rasmm.')
+            self._space = Space.RASMM
+            logger.debug('Moved streamlines from voxmm to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
@@ -701,8 +701,8 @@ class StatefulTractogram(object):
                 self._tractogram.apply_affine(self._inv_affine)
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOXMM
-                logger.debug('Moved streamlines from rasmm to voxmm.')
+            self._space = Space.VOXMM
+            logger.debug('Moved streamlines from rasmm to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
             return
