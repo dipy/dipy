@@ -143,6 +143,8 @@ def test_roi_images():
     show_m = horizon(images=images, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 0)
+    arr = window.snapshot(show_m.scene)
+    report = window.analyze_snapshot(arr)
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 2)
