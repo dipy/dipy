@@ -1,11 +1,13 @@
 
+from random import random
+
 cimport cython
 cimport numpy as cnp
 from .direction_getter cimport DirectionGetter
 from .stopping_criterion cimport(
     StreamlineStatus, StoppingCriterion, AnatomicalStoppingCriterion,
     TRACKPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
-from dipy.utils.fast_numpy cimport copy_point, cumsum, random, where_to_insert
+from dipy.utils.fast_numpy cimport copy_point, cumsum, where_to_insert
 
 
 def local_tracker(

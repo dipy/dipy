@@ -6,12 +6,14 @@
 Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking.
 """
+from random import random
+
 import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
-                                    random, where_to_insert)
+                                     where_to_insert)
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -103,19 +105,19 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
             if last_cdf == 0:
                 return 1
 
-            idx = where_to_insert(&pmf[0], random() * last_cdf, _len)
+        idx = where_to_insert(&pmf[0], random() * last_cdf, _len)
 
-            newdir = self.vertices[idx]
-            # Update direction and return 0 for error
-            if (direction[0] * newdir[0]
-                + direction[1] * newdir[1]
-                + direction[2] * newdir[2] > 0):
-                copy_point(&newdir[0], direction)
-            else:
-                newdir[0] = newdir[0] * -1
-                newdir[1] = newdir[1] * -1
-                newdir[2] = newdir[2] * -1
-                copy_point(&newdir[0], direction)
+        newdir = self.vertices[idx]
+        # Update direction and return 0 for error
+        if (direction[0] * newdir[0]
+            + direction[1] * newdir[1]
+            + direction[2] * newdir[2] > 0):
+            copy_point(&newdir[0], direction)
+        else:
+            newdir[0] = newdir[0] * -1
+            newdir[1] = newdir[1] * -1
+            newdir[2] = newdir[2] * -1
+            copy_point(&newdir[0], direction)
         return 0
 
 
