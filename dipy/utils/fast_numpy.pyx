@@ -53,9 +53,20 @@ cpdef double random() nogil:
     Returns
     -------
     _ : double
-        random number
+        random number.
     """
     return rand() / float(RAND_MAX)
+
+
+cpdef void seed(int s) nogil:
+    """Set the random seed of stdlib.
+
+    Parameters
+    ----------
+    s : int
+        random seed.
+    """
+    srand(s)
 
 
 cpdef double norm(double[:] v) nogil:
@@ -66,10 +77,6 @@ cpdef double norm(double[:] v) nogil:
     v : double[3]
         input vector.
 
-    Returns
-    -------
-    _ : double
-        norm of the input vector.
     """
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
