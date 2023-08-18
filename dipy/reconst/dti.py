@@ -2012,7 +2012,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
                     C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
-                    gmm = C**2 + residuals**2
+                    gmm = C**2 / (C**2 + residuals**2)**2
 
                     # Do nlls with GMM-weighting:
                     if jac:
