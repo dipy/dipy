@@ -24,6 +24,7 @@ Deconvolution (CSD) reconstruction model, creating the probabilistic direction
 getter and defining the seeds.
 """
 
+from dipy.tracking.stopping_criterion import CmcStoppingCriterion
 import numpy as np
 
 from dipy.core.gradients import gradient_table
@@ -84,8 +85,6 @@ region. ACT uses a fixed threshold on the PVE maps. Both stopping criterion can
 be used in conjunction with PFT. In this example, we used CMC.
 """
 
-from dipy.tracking.stopping_criterion import CmcStoppingCriterion
-
 voxel_size = np.average(voxel_size[1:4])
 step_size = 0.2
 
@@ -95,18 +94,38 @@ cmc_criterion = CmcStoppingCriterion.from_pve(pve_wm_data,
                                               step_size=step_size,
                                               average_voxel_size=voxel_size)
 
-# Particle Filtering Tractography
-pft_streamline_generator = ParticleFilteringTracking(dg,
-                                                     cmc_criterion,
-                                                     seeds,
-                                                     affine,
-                                                     max_cross=1,
-                                                     step_size=step_size,
-                                                     maxlen=1000,
-                                                     pft_back_tracking_dist=2,
-                                                     pft_front_tracking_dist=1,
-                                                     particle_count=15,
-                                                     return_all=False)
+"""
+Particle Filtering Tractography
+===============================
+`pft_back_tracking_dist` is the distance in mm to backtrack when the
+tractography incorrectly stops in the WM or CSF. `pft_front_tracking_dist` is
+the distance in mm to track after the stopping event using PFT.
+
+The `particle_count` parameter is the number of sample in the particle
+filtering algorithm.
+
+`min_wm_pve_before_stopping` controls when the tracking can stop in the GM.
+The tractography must reaches a position where WM_pve >=
+`min_wm_pve_before_stopping` before stopping in the GM. As long as the
+condition is not reached and WM_pve > 0, the tractography will continue.
+It is particularlyusefull to set this parameter > 0.5 when seeding tractography
+at the WM-GM interface or in the sub-cortical GM. It allows streamlines to
+exit the seeding voxels until they reach the deep white matter where WM_pve >
+`min_wm_pve_before_stopping`.
+"""
+
+pft_streamline_gen = ParticleFilteringTracking(dg,
+                                               cmc_criterion,
+                                               seeds,
+                                               affine,
+                                               max_cross=1,
+                                               step_size=step_size,
+                                               maxlen=1000,
+                                               pft_back_tracking_dist=2,
+                                               pft_front_tracking_dist=1,
+                                               particle_count=15,
+                                               return_all=False,
+                                               min_wm_pve_before_stopping=1)
 streamlines = Streamlines(pft_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_pft.trk")
