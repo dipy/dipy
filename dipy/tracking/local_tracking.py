@@ -234,7 +234,7 @@ class ParticleFilteringTracking(LocalTracking):
             random.seed).
         save_seeds : bool
             If True, return seeds alongside streamlines
-        min_wm_pve_before_stopping : int
+        min_wm_pve_before_stopping : int, optional
             Minimum white matter pve (1 - stopping_criterion.include_map -
             stopping_criterion.exclude_map) to reach before allowing the
             tractography to stop.
@@ -265,7 +265,7 @@ class ParticleFilteringTracking(LocalTracking):
         if particle_count <= 0:
             raise ValueError("The particle count must be greater than 0.")
 
-        if min_wm_pve_before_stopping < 0 or min_wm_pve_before_stopping > 1:
+        if 0 < min_wm_pve_before_stopping < 1:
             raise ValueError("The min_wm_pve_before_stopping value must be "
                              "between 0 and 1.")
 
