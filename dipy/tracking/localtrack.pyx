@@ -54,7 +54,7 @@ def local_tracker(
         Ending state of the streamlines as determined by the StoppingCriterion.
     """
     cdef:
-        int i
+        cnp.npy_intp i
         StreamlineStatus stream_status
         double input_direction[3]
         double input_voxel_size[3]
@@ -155,7 +155,7 @@ def pft_tracker(
 
     """
     cdef:
-        int i
+        cnp.npy_intp i
         StreamlineStatus stream_status
         double input_direction[3]
         double input_voxel_size[3]
@@ -201,7 +201,8 @@ cdef _pft_tracker(DirectionGetter dg,
                   cnp.int_t[:, :] particle_stream_statuses,
                   double min_wm_pve_before_stopping):
     cdef:
-        int i, j, pft_trial, back_steps, front_steps
+        cnp.npy_intp i, j
+        int pft_trial, back_steps, front_steps
         int strl_array_len
         double max_wm_pve, current_wm_pve
         double point[3]
@@ -308,7 +309,7 @@ cdef _pft(cnp.float_t[:, :] streamline,
         double point[3]
         double dir[3]
         double eps = 1e-16
-        int s, p, j
+        cnp.npy_intp s, p, j
 
     if pft_nbr_steps <= 0:
         return streamline_i
