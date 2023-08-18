@@ -683,11 +683,11 @@ def adjacency_calc(img_shape, mask=None, distance=1.99):
     img_shape : list
         Spatial shape of the image data.
 
-    mask : array
+    mask : array, optional
         A boolean array used to mark the coordinates in the data that
         should be analyzed that should have the same shape as the images.
 
-    distance : float
+    distance : float, optional
         Cutoff distance for finding adjacent voxels.
 
     Returns
@@ -703,10 +703,6 @@ def adjacency_calc(img_shape, mask=None, distance=1.99):
     XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing='ij')
     XYZ = np.column_stack([xyz.ravel() for xyz in XYZ])
     dists = squareform(pdist(XYZ))
-#    if mask is not None:
-#        import matplotlib.pyplot as plt
-#        plt.imshow(dists[1025].reshape(img_shape), alpha=mask.astype(float))
-#        plt.show()
     dists = (dists < distance)  # adjacency list contains current voxel
     adj = []
     if mask is not None:
@@ -715,10 +711,7 @@ def adjacency_calc(img_shape, mask=None, distance=1.99):
             if flat_mask[idx]:
                 cond = dists[idx, :]
                 cond = cond * flat_mask
-#                print(cond)
-#                print("before:", cond.sum())
                 cond = cond[flat_mask == 1]  # so indices will match masked array
-#                print("after:", cond.sum())
                 adj.append(np.argwhere(cond).flatten().tolist())
     else:
         for idx in range(dists.shape[0]):
@@ -813,7 +806,7 @@ class TensorModel(ReconstModel):
             raise ValueError(e_s)
         self.extra = {}
 
-    def fit(self, data, mask=None, adjacency=False):
+    def fit(self, data, mask=None, adjacency=0):
         """ Fit method of the DTI model class
 
         Parameters
@@ -1664,7 +1657,6 @@ class _nlls_class():
 
         # Compute the residuals
         residuals = data - y
-        self.residuals = residuals  # cache the results
 
         # If we don't want to weight the residuals, we are basically done:
         if weighting is None:
@@ -1678,7 +1670,6 @@ class _nlls_class():
                 e_s += " method"
                 raise ValueError(e_s)
             w = 1 / (sigma**2)
-            # no need to normalize the weights
 
         elif weighting == 'gmm':
             # We use the Geman-McClure M-estimator to compute the weights
@@ -1689,8 +1680,7 @@ class _nlls_class():
                 raise ValueError(e_s)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                w = 1 / sigma
-                # no need to normalize
+                w = sigma
 
         # Return the weighted residuals:
         with warnings.catch_warnings():
@@ -1721,11 +1711,7 @@ class _nlls_class():
 
         if weighting is None:
             return -self.y[:, None] * design_matrix
-
-        if weighting == 'sigma':
-            return -self.y[:, None] * design_matrix * self.sqrt_w
-
-        if weighting == 'gmm':
+        else:
             return -self.y[:, None] * design_matrix * self.sqrt_w
 
 
