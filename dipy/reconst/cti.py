@@ -55,9 +55,10 @@ def split_cti_params(cti_params): #here cti_params.shape : (48, )
     # evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
     evals = cti_params[..., :3]
     evecs = cti_params[..., 3:12].reshape(cti_params.shape[:-1] + (3, 3))
-    kt = cti_params[12:27, ...] #original
-    # kt = cti_params[..., 12:27]
-    cvt = cti_params[27:48, ...]
+    # kt = cti_params[12:27, ...] #original
+    kt = cti_params[..., 12:27]
+    # cvt = cti_params[27:48, ...]
+    cvt = cti_params[..., 27:48]
     return evals, evecs, kt, cvt
 
 
@@ -371,6 +372,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         
         #def calculate_K_aniso(D, C):  # D is a diffusion tensor 3x3, C is a 1D array.
 
+    @auto_attr
     def K_aniso(self):
         r""" Returns the anisotropic Source of Kurtosis (K_aniso) 
             
@@ -389,13 +391,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         D = self.dft
         C = self.cvt
-        # print('this is D inside aniso, previously: ', D)
-        # D = D.reshape(-1, 1)
-        # #converting D
-        # D = from_6x1_to_3x3(D)
         matrix = np.array([[D[0], D[3], D[4]],[D[3], D[1], D[5]],[D[4], D[5], D[2]]])
         D  = matrix 
-        # print('this is D after: ', D)
         
         Variance = 2/9 * (C[0] + D[0, 0] ** 2 + C[1] + D[1, 1] ** 2 + C[2] + D[2, 2]**2 - C[5]
                  - D[0, 0] * D[1, 1] - C[4] - D[0, 0] * D[2, 2]
@@ -405,7 +402,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         mean_D =  np.trace(D) / 3#trace(D) / 3
         K_aniso = (6/5) * (Variance / (mean_D **2))
         return K_aniso 
-
+    
+    @auto_attr
     def K_iso(self): 
         r""" Returns the isotropic Source of Kurtosis (K_iso)
         
@@ -432,6 +430,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         K_iso = 3 * (Variance / mean_D)
         return K_iso
 
+    @auto_attr
     def K_total(self):  #excess kurtosis. #W: kurtosis tenosr a 1D array, D: diffusionTensor: (3,3) matrix 
         #mean_K = mean_kurtosis_tensor(cti_params) 
         r""" Returns the total execess Kurtosis. (K_total)
@@ -461,6 +460,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         excess_K = 1/5 * mean_K  + psi 
         return excess_K  
 
+    @auto_attr
     def K_micro(self):
         r""" Returns Microscopic Source of Kurtosis.  """ 
 
