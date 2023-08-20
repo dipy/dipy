@@ -101,7 +101,7 @@ Particle Filtering Tractography
 tractography incorrectly stops in the WM or CSF. `pft_front_tracking_dist` is
 the distance in mm to track after the stopping event using PFT.
 
-The `particle_count` parameter is the number of sample in the particle
+The `particle_count` parameter is the number of samples used in the particle
 filtering algorithm.
 
 `min_wm_pve_before_stopping` controls when the tracking can stop in the GM.

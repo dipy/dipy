@@ -142,7 +142,7 @@ def pft_tracker(
         Temporary array for the number of steps of particles.
     particle_stream_statuses : array, float, (2, particle_count)
         Temporary array for the stream status of particles.
-    min_wm_pve_before_stopping : int
+    min_wm_pve_before_stopping : int, optional
         Minimum white matter pve (1 - sc.include_map - sc.exclude_map) to
         reach before allowing the tractography to stop.
 
