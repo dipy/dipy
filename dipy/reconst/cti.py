@@ -22,7 +22,7 @@ from dipy.reconst.dti import (
 from dipy.reconst.qti import from_6x1_to_3x3
 # sources of kurtosis:
 # we've formulats for Kaniso, Ksio, then get Ktotal. So for microscopic kurtosis, we subtract, Kt - K aniso
-
+from dipy.core.onetime import auto_attr
 
 
 
