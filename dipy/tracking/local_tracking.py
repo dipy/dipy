@@ -265,7 +265,7 @@ class ParticleFilteringTracking(LocalTracking):
         if particle_count <= 0:
             raise ValueError("The particle count must be greater than 0.")
 
-        if not 0 < min_wm_pve_before_stopping < 1:
+        if not 0 <= min_wm_pve_before_stopping <= 1:
             raise ValueError("The min_wm_pve_before_stopping value must be "
                              "between 0 and 1.")
 
