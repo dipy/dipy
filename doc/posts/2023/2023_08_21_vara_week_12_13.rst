@@ -1,0 +1,55 @@
+Finalized experiments using both datasets: Week 12 & Week13
+============================================================
+
+.. post:: August 21 2023
+   :author: Vara Lakshmi Bayanagari
+   :tags: google
+   :category: gsoc
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+Monai's VQVAE results on T1-weighted NFBS dataset, 125 samples, for batch_size=5 were qualitatively and quantitatively superior to all previous results. I continued the same experiments on the T1-weighted CC359(Calgary-Campinas-359) public dataset consisting of 359 anatomical MRI volumes of healthy individuals. Preprocessed the data using existing `transform_img` function -
+   1. skull-strips the volume using the respective mask
+   2. dipy's `resize` & scipy's `affine_transform` scale the volume to (128,128,128,1) shape
+   3. MinMax normalization to limit the range of intensities to (0,1)
+
+Using existing training parameters, carried out two experiments, one on CC359 alone & another on both datasets combined. Additionally, I made a slight modification in the loss definition by attributing different weights of 0.5 & 1 to background & foreground pixels compared to equal weights from previous experiments. This resulted in faster convergence as shown in the red, blue & purple lines in the combined plot below-
+
+.. image:: /doc/_static/vqvae3d-monai-training-plots.png
+   :alt: Combined trainings plots for all experiments
+   :width: 800
+
+Inference results on the best performing model - B12-both - is as follows-
+
+.. image:: /doc/_static/vqvae-monai-B12-both.png
+   :alt: VQVAE-Monai-B12-both reconstructions & originals showing equally spaced 5 slices for 2 samples
+   :width: 800
+
+This shows that our training not only converged quickly but also improved visually. Here's a comparison of our current best performing model i.e., VQVAE-Monai-B12-both & the previous one i.e., VQVAE-Monai-B5-NFBS. The test reconstruction loss is 0.0013 & 0.0015 respectively.
+
+.. image:: /doc/_static/vqvae-reconstructions-comparison.png
+   :alt: VQVAE reconstruction comparison for B12-both & B5-NFBS
+   :width: 800
+
+I also carried Diffusion Model training for the bets performing B12-both model for 300 & 500 diffusion steps and the training curve obtained is as follows-
+
+.. image:: /doc/_static/dm3d-monai-training-curves.png
+   :alt: Diffusion Model training plots for 300 & 500 diffusion steps
+   :width: 800
+
+These curves seemed to converge pretty quickly but the sampling outputs in the generation pipeline are still pure noise.
+
+What is coming up next week
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Wrapping up documentation & final report
+
+Did I get stuck anywhere
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Yes, I carried out debugging to understand the generation pipeline of the Diffusion Model. Cross-checked implementations of posterior mean & variance in the code base with respective formulas from the paper, as well as with MONAI's DDPM implementation. Didn't come across any error, yet the generated samples are erroneous.
+
+
+
+
+
