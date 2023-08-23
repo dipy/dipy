@@ -1746,7 +1746,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         Return the 15 independent elements of the kurtosis tensor as an array
         """
-        return self.model_params[..., 12:]
+        return self.model_params[..., 12:27]
 
     def akc(self, sphere):
         r""" Calculate the apparent kurtosis coefficient (AKC) in each
