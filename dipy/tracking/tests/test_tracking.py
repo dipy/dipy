@@ -11,7 +11,8 @@ from dipy.direction import (BootDirectionGetter,
                             ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
-                            ProbabilisticDirectionGetter)
+                            ProbabilisticDirectionGetter,
+                            PTTDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.tracking.local_tracking import (LocalTracking,
@@ -21,7 +22,7 @@ from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
                                               BinaryStoppingCriterion,
                                               ThresholdStoppingCriterion,
                                               StreamlineStatus)
-from dipy.tracking.utils import seeds_from_mask
+from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
 
 
@@ -219,6 +220,50 @@ def test_save_seeds():
     npt.assert_equal(seed, seeds[1])
 
 
+def test_tracking_max_angle():
+    """This tests that the angle between streamline points is always smaller
+    then the input `max_angle` parameter.
+    """
+    def get_min_cos_similarity(streamlines):
+        min_cos_sim = 1
+        for sl in streamlines:
+            if len(sl) > 1:
+                v = sl[:-1] - sl[1:]  # vectors have norm of 1
+                for i in range(len(v)-1):
+                    cos_sim = np.dot(v[i], v[i+1])
+                    if cos_sim < min_cos_sim:
+                        min_cos_sim = cos_sim
+        return min_cos_sim
+    np.random.seed(0)  # Random number generator initialization
+
+    for sphere in [get_sphere('repulsion100'),
+                   HemiSphere.from_sphere(get_sphere('repulsion100'))]:
+        shape_img = list([5, 5, 5])
+        shape_img.extend([sphere.vertices.shape[0]])
+        mask = np.ones(shape_img[:3])
+        affine = np.eye(4)
+        random_pmf = np.random.random(shape_img)
+        seeds = seeds_from_mask(mask, affine, density=1)
+        sc = ActStoppingCriterion.from_pve(mask,
+                                           np.zeros(shape_img[:3]),
+                                           np.zeros(shape_img[:3]))
+        max_angle = 20
+        step_size = 1
+        dg = ProbabilisticDirectionGetter.from_pmf(random_pmf, max_angle,
+                                                   sphere, pmf_threshold=0.1)
+        # local tracking
+        streamlines = Streamlines(LocalTracking(
+            dg, sc, seeds, affine, step_size))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+
+        # PFT tracking
+        streamlines = Streamlines(ParticleFilteringTracking(dg, sc, seeds,
+                                                            affine, 1.))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+
+
 def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabilistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -377,6 +422,15 @@ def test_particle_filtering_tractography():
     npt.assert_(np.array([len(pft_streamlines) > 0]))
     npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
 
+    # Test PFT with a PTT direction getter
+    dg_ptt = PTTDirectionGetter.from_pmf(pmf, 60, sphere)
+    pft_ptt_streamlines = Streamlines(ParticleFilteringTracking(
+        dg_ptt, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=False,
+        pft_back_tracking_dist=1, pft_front_tracking_dist=0.5))
+
+    npt.assert_(np.array([len(pft_ptt_streamlines) > 0]))
+    npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
+
     # Test that all points are equally spaced
     for l in [1, 2, 5, 10, 100]:
         pft_streamlines = ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
@@ -386,6 +440,7 @@ def test_particle_filtering_tractography():
             for i in range(len(s) - 1):
                 npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
                                         step_size)
+
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)
     pft_streamlines_generator = ParticleFilteringTracking(
@@ -493,7 +548,8 @@ def test_maximum_deterministic_tracker():
     mask = (simple_image > 0).astype(float)
     sc = ThresholdStoppingCriterion(mask, .5)
 
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, max_angle=100,
+                                                      sphere=sphere,
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 

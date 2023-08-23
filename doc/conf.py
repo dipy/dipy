@@ -11,7 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import re
+import sys
+import ablog
 
 # Doc generation depends on being able to import dipy
 try:
@@ -46,9 +49,12 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
-              'math_dollar', # has to go before numpydoc
-              'numpydoc',
-              'github']
+              'prepare_gallery',
+              'math_dollar',  # has to go before numpydoc
+              'sphinx_gallery.gen_gallery',
+            #   'numpydoc',
+              'github',
+              'ablog']
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -100,7 +106,7 @@ release = version
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build', 'examples']
+exclude_patterns = ['_build', 'examples', 'examples_revamped']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -237,6 +243,30 @@ latex_preamble = r"""
 # If false, no module index is generated.
 #latex_use_modindex = True
 
+
+# -- Options for sphinx gallery -------------------------------------------
+from docimage_scrap import ImageFileScraper
+from sphinx_gallery.sorting import ExplicitOrder
+from prepare_gallery import folder_explicit_order
+
+sc = ImageFileScraper()
+ordered_folders = [f'examples_revamped/{f}' for f in folder_explicit_order()]
+
+sphinx_gallery_conf = {
+     'doc_module': ('dipy',),
+     # path to your examples scripts
+     'examples_dirs': ['examples_revamped', ],
+     # path where to save gallery generated examples
+     'gallery_dirs': ['examples_built', ],
+     'subsection_order': ExplicitOrder(ordered_folders),
+     'image_scrapers': (sc),
+     'backreferences_dir': 'examples_built',
+     'reference_url': {'dipy': None, },
+     'abort_on_example_error': False,
+     'filename_pattern': re.escape(os.sep),
+     'default_thumb_file': '_static/dipy_full_logo.png',
+     'pypandoc': {'extra_args': ['--mathjax',]},
+}
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}

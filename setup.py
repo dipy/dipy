@@ -2,11 +2,12 @@
 """ Installation script for dipy package """
 
 import os
-import sys
 import platform
+import sys
 from copy import deepcopy
-from os.path import join as pjoin, dirname, exists
 from glob import glob
+from os.path import dirname, exists
+from os.path import join as pjoin
 
 # BEFORE importing setuptools, remove MANIFEST. setuptools doesn't properly
 # update it when the contents of directories change.
@@ -32,9 +33,9 @@ from setuptools import setup
 from setuptools.extension import Extension
 
 from cythexts import cyproc_exts, get_pyx_sdist
-from setup_helpers import (install_scripts_bat, add_flag_checking,
-                           SetupDependency, read_vars_from,
-                           make_np_ext_builder)
+from setup_helpers import (SetupDependency, add_flag_checking,
+                           install_scripts_bat, make_np_ext_builder,
+                           read_vars_from)
 from version_helpers import get_comrec_build
 
 # Get version and release info, which is all stored in dipy/info.py
@@ -54,7 +55,7 @@ if using_setuptools:
         tests_require=['pytest'],
         zip_safe=False,
         extras_require=info.EXTRAS_REQUIRE,
-        python_requires=">= 3.6",
+        python_requires=">= 3.8",
         )
 
 # Define extensions
@@ -70,6 +71,7 @@ for modulename, other_sources, language in (
         ('dipy.core.interpolation', [], 'c'),
         ('dipy.direction.pmf', [], 'c'),
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
+        ('dipy.direction.ptt_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
         ('dipy.direction.bootstrap_direction_getter', [], 'c'),
         ('dipy.reconst.eudx_direction_getter', [], 'c'),
@@ -206,6 +208,9 @@ def main(**extra_args):
                     'dipy.io',
                     'dipy.io.tests',
                     'dipy.viz',
+                    'dipy.viz.horizon',
+                    'dipy.viz.horizon.tab',
+                    'dipy.viz.horizon.visualizer',
                     'dipy.viz.tests',
                     'dipy.testing',
                     'dipy.testing.tests',

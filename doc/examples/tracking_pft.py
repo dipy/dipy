@@ -16,10 +16,12 @@ gray matter.
 PFT finds an alternative streamline segment whenever the stopping criterion
 returns a position classified as 'INVALIDPOINT'.
 
-This example is an extension of :ref:`example_tracking_probabilistic` and
-:ref:`example_tracking_stopping_criterion` examples. We begin by loading the
-data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
-model, creating the probabilistic direction getter and defining the seeds.
+This example is an extension of
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py` and
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_stopping_criterion.py`
+examples. We begin by loading the data, fitting a Constrained Spherical
+Deconvolution (CSD) reconstruction model, creating the probabilistic direction
+getter and defining the seeds.
 """
 
 import numpy as np

@@ -155,7 +155,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     @classmethod
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                     pmf_threshold=0.1, basis_type=None, **kwargs):
+                     pmf_threshold=0.1, basis_type=None, legacy=True, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
 
@@ -185,6 +185,9 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         min_separation_angle : float in [0, 90]
             Used for extracting initial tracking directions. Passed to
             peak_directions.
+        legacy: bool, optional
+            True to use a legacy basis definition for backward compatibility
+            with previous ``tournier07`` and ``descoteaux07`` implementations.
 
         See Also
         --------
@@ -192,7 +195,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
         """
         pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
-                                basis_type)
+                                basis_type, legacy=legacy)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
 

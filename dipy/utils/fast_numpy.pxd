@@ -4,7 +4,7 @@
 
 cimport numpy as np
 
-from libc.stdlib cimport rand, RAND_MAX
+from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.math cimport sqrt
 
 
@@ -28,6 +28,8 @@ cdef void scalar_muliplication_point(
         double scalar) nogil
 
 cpdef double random() nogil
+
+cpdef void seed(int s) nogil
 
 cpdef double norm(
         double[:] v) nogil

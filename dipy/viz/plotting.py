@@ -10,19 +10,19 @@ plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
                  fit_kwargs=None, map_kwargs=None, filename=None):
-    """ Compare one or more scalar maps for different fits or models.
+    """Compare one or more scalar maps for different fits or models.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     fits : list
         List of fits to be compared.
     maps : list
         Names of attributes to be compared.
         Default: 'rtop'.
     transpose : bool, optional
-        If False, different fits are placed on different rows and different maps
-        on different columns. If True, the order is transposed. If None, the
-        figures are placed such that there are more columns than rows.
+        If False, different fits are placed on different rows and different
+        maps on different columns. If True, the order is transposed. If None,
+        the figures are placed such that there are more columns than rows.
         Default: None.
     fit_labels : list, optional
         Labels for the different fitting routines. If None the fits are labeled
@@ -37,14 +37,13 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
         The dicts are passed to imshow as keyword-argument pairs.
         Default: {}.
     map_kwargs : list or dict, optional
-        A dict or list of dicts with imshow options for each MAP-MRI scalar. The
-        dicts are passed to imshow as keyword-argument pairs.
+        A dict or list of dicts with imshow options for each MAP-MRI scalar.
+        The dicts are passed to imshow as keyword-argument pairs.
         Default: {}.
     filename : string, optional
         Filename where the image will be saved.
         Default: None.
     """
-
     fit_kwargs = fit_kwargs or {}
     map_kwargs = map_kwargs or {}
 
@@ -89,7 +88,9 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
     for i in range(m):
         for j in range(n):
             try:
-                attr = getattr(fits[i], maps[j])()
+                attr = getattr(fits[i], maps[j])
+                if hasattr(attr, '__call__'):
+                    attr = attr()
             except AttributeError:
                 warn('Could not recover attribute ' + maps[j] + '.')
                 attr = np.zeros((2, 2))
@@ -117,11 +118,11 @@ def compare_qti_maps(gt, fit1, fit2, mask,
                      xlimits=([0, 1], [0.4, 1.5]),
                      disprange=([0, 1], [0, 1]),
                      slice=13):
-    """ Compare one or more qti derived maps obtained with
+    """Compare one or more qti derived maps obtained with
     different fitting routines.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     gt : qti fit object
         The qti fit to be considered as ground truth
     fit1 : qti fit object
@@ -142,7 +143,6 @@ def compare_qti_maps(gt, fit1, fit2, mask,
     slice : int, optional
         Axial brain slice to be visualized
     """
-
     if not have_plt:
         raise ValueError(
                     'matplotlib package needed for visualization')
@@ -186,4 +186,34 @@ def compare_qti_maps(gt, fit1, fit2, mask,
         ax[k, 3].set_xlim(xlimits[k])
 
     fig.tight_layout()
+    plt.show()
+
+
+def bundle_shape_profile(x, shape_profile, std):
+    """Plot bundlewarp bundle shape profile.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Integer array containing x-axis
+    shape_profile : np.ndarray
+        Float array containing bundlewarp displacement magnitudes along the
+        length of the bundle
+    std : np.ndarray
+        Float array containing standard deviations
+    """
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
+    std_1 = shape_profile+std
+    std_2 = shape_profile-std
+    ax.plot(x, shape_profile, '-', label='Mean', color='Purple', linewidth=3,
+            markersize=12)
+    ax.fill_between(x, std_1, std_2, alpha=0.2, label='Std', color='Purple')
+
+    plt.xticks(x)
+    plt.ylim(0, max(std_1)+2)
+
+    plt.ylabel("Average Displacement")
+    plt.xlabel("Segment Number")
+    plt.title('Bundle Shape Profile')
+    plt.legend(loc=2)
     plt.show()

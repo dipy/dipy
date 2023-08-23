@@ -6,10 +6,12 @@ Class and helper functions for fitting the Synb0 model.
 
 from packaging.version import Version
 import logging
+import numpy as np
+
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-import numpy as np
+from dipy.nn.utils import normalize, unnormalize, set_logger_level
 
 tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
@@ -27,21 +29,129 @@ else:
 
     class Layer:
         pass
+    logging.warning('This model requires Tensorflow and Tensorflow\
+                    -addons. Please install these packages using \
+                    pip. If using mac, please refer to this \
+                    link for installation. \
+                    https://github.com/apple/tensorflow_macos')
 
 logging.basicConfig()
 logger = logging.getLogger('synb0')
 
+class EncoderBlock(Layer):
+    def __init__(self, out_channels, kernel_size, strides, padding):
+        super(EncoderBlock, self).__init__()
+        self.conv3d = Conv3D(out_channels,
+                             kernel_size,
+                             strides=strides,
+                             padding=padding,
+                             use_bias=False)
+        self.instnorm = InstanceNormalization()
+        self.activation = LeakyReLU(0.01)
 
-def set_logger_level(log_level):
-    """ Change the logger of the Synb0 to one on the following:
-    DEBUG, INFO, WARNING, CRITICAL, ERROR
+    def call(self, input):
+        x = self.conv3d(input)
+        x = self.instnorm(x)
+        x = self.activation(x)
 
+        return x
+
+class DecoderBlock(Layer):
+    def __init__(self, out_channels, kernel_size, strides, padding):
+        super(DecoderBlock, self).__init__()
+        self.conv3d = Conv3DTranspose(out_channels,
+                                      kernel_size,
+                                      strides=strides,
+                                      padding=padding,
+                                      use_bias=False)
+        self.instnorm = InstanceNormalization()
+        self.activation = LeakyReLU(0.01)
+
+    def call(self, input):
+        x = self.conv3d(input)
+        x = self.instnorm(x)
+        x = self.activation(x)
+
+        return x
+
+def UNet3D(input_shape):
+    r"""
+    Function to create model for Synb0
+    
     Parameters
     ----------
-    log_level : str
-        Log level for the Synb0 only
+    input_shape : tuple
+        The input shape of the model
+
+    Returns
+    -------
+    tf.keras.Model
     """
-    logger.setLevel(level=log_level)
+    inputs = tf.keras.Input(input_shape)
+    # Encode
+    x = EncoderBlock(32, kernel_size=3,
+                     strides=1, padding='same')(inputs)
+    syn0 = EncoderBlock(64, kernel_size=3,
+                        strides=1, padding='same')(x)
+    
+    x = MaxPool3D()(syn0)
+    x = EncoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+    syn1 = EncoderBlock(128, kernel_size=3,
+                        strides=1, padding='same')(x)
+
+    x = MaxPool3D()(syn1)
+    x = EncoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    syn2 = EncoderBlock(256, kernel_size=3,
+                        strides=1, padding='same')(x)
+
+    x = MaxPool3D()(syn2)
+    x = EncoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = EncoderBlock(512, kernel_size=3,
+                     strides=1, padding='same')(x)
+
+    # Last layer without relu
+    x = Conv3D(512, kernel_size=1,
+               strides=1, padding='same')(x)
+    
+    x = DecoderBlock(512, kernel_size=2,
+                     strides=2, padding='valid')(x)
+
+    x = Concatenate()([x, syn2])
+
+    x = DecoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(256, kernel_size=2,
+                     strides=2, padding='valid')(x)
+    
+    x = Concatenate()([x, syn1])
+
+    x = DecoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(128, kernel_size=2,
+                     strides=2, padding='valid')(x)
+
+    x = Concatenate()([x, syn0])
+
+    x = DecoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+
+    x = DecoderBlock(1, kernel_size=1,
+                     strides=1, padding='valid')(x)
+
+    # Last layer without relu
+    out = Conv3DTranspose(1, kernel_size=1,
+                          strides=1, padding='valid')(x)
+
+    return Model(inputs, out)
 
 
 def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
@@ -251,7 +361,7 @@ class Synb0:
             raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
-        set_logger_level(log_level)
+        set_logger_level(log_level, logger)
 
         # Synb0 network load
 

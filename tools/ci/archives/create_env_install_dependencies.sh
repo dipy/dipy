@@ -25,7 +25,7 @@ else
     $PIPI pytest
     $PIPI numpy
     if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
-    if [ "$COVERAGE" == "1" ]; then pip install coverage coveralls codecov; fi
+    if [ "$COVERAGE" == "1" ]; then pip install coverage coveralls; fi
     if [ "$VTK" == "1" ]; then
         sudo apt-get update;
         sudo apt-get install -y $VTK_VER;

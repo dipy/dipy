@@ -17,7 +17,8 @@ Deterministic maximum fiber tracking is an alternative to EuDX deterministic
 tractography and unlike EuDX does not follow the peaks of the local models but
 uses the entire orientation distributions.
 
-This example is an extension of the :ref:`example_tracking_probabilistic`
+This example is an extension of the
+:ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
 example. We begin by loading the data, fitting a Constrained Spherical
 Deconvolution (CSD) reconstruction model for the tractography and fitting
 the constant solid angle (CSA) reconstruction model to define the tracking

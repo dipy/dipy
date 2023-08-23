@@ -1,0 +1,30 @@
+Making the Tests Work : Week 11
+===============================
+
+.. post:: August 08, 2023
+     :author: Shilpi Prasad
+     :tags: google
+     :category: gsoc
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+Previously, I had the function for different sources of kurtosis outside the Fit class. Upon suggestion from my mentor, this week I put them inside the Fit class. This required me to make changes to how certain variables were being called inside those functions. I also had to determine what arguments needed to be passed to those functions. 
+
+I added documentation to those functions, including their basic information and the math involved. I wrote tests for them inside the ``test_cti_fits`` function. To implement this, I took help from ``QTI.py`` as our ``K_aniso`` resembles the QTI ``k_shear`` function, and ``K_iso`` resembles the QTI ``k_bulk`` function. Taking these points into consideration, my job of writing tests was made easier. While implementing the tests, I had to keep in mind the conversion factors. Every variable involving conversion ``from_a_6x6_to_21x1`` matrix required its own conversion function, such as ``k_shear``, ``k_bulk``, etc.
+
+I also implemented tests for the mean, axial, radial, and apparent kurtosis functions already present in the CTI Fit class. These measures, derived from the diffusion kurtosis tensor, provide different perspectives on the microstructural complexity of the tissue.
+This week, I was also given real-time data to construct ``bvals``, ``bvecs`` with files that had extensions ``.bvals``, ``.bvecs``. I was able to run these files successfully on my computer. I ensured that the ``gtab`` created from these files gave the expected signals.
+
+Majorly this week, I worked on modifying the tests of the functions as required and tried to make them work. However, I realized that the 'fit' function inside the model class was not implemented properly. Hence, the test functions were not able to work as expected.
+I also started with the tutorial for CTI. 
+
+What is coming up next week 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+This week, I'll try to make sure that the test functions work properly. I'll focus on the function ``ls_fit_cti`` to ensure it's giving the required output. After this function works, I'll move on to implementing the 'fit' function. It will later help in the testing of the Fit class.
+
+Did I get stuck anywhere 
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+I didn't exactly get stuck, as I kept learning new things while encountering problems in testing the function. When I felt that I could not move forward with one task, I immediately started with other tasks. These included providing documentation to function and getting started with the tutorials.

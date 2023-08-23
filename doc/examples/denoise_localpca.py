@@ -21,7 +21,8 @@ This algorithm involves the following steps:
 
 
 To perform PCA denoising without a prior noise standard deviation estimate
-please see the following example instead: :ref:`denoise_mppca`
+please see the following example instead:
+:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`
 
 Let's load the necessary modules
 """

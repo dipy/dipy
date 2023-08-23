@@ -36,7 +36,8 @@ sphere = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 We now need to create our initial signal. To do so, we will use our sphere's
 vertices as the sampled points of our spherical function (SF). We will
 use ``multi_tensor_odf`` to simulate an ODF. For more information on how to use
-DIPY_ to simulate a signal and ODF, see :ref:`example_simulate_multi_tensor`.
+DIPY_ to simulate a signal and ODF, see
+:ref:`sphx_glr_examples_built_simulations_simulate_multi_tensor.py`.
 """
 
 from dipy.sims.voxel import multi_tensor_odf

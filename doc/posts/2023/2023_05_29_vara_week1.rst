@@ -1,0 +1,26 @@
+Community bonding and Project kickstart : Week 1
+================================================
+
+.. post:: May 29 2023
+     :author: Vara Lakshmi Bayanagari
+     :tags: google
+     :category: gsoc
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+Community Bonding period ended last week and my first blog is based on the work carried 
+out in the last week. My meeting with GSOC mentors at the start of the week helped me chalk
+out an agenda for the week. As the first step, I familiarized myself with Tensorflow 
+operations, functions and distribution strategies. My previous experience with PyTorch as 
+well as `website tutorials <https://www.tensorflow.org/tutorials/images/cnn>`_ on basic Deep
+Learning models helped me quickly learn Tensorflow. As the next step, I read VQ-VAE paper & 
+understood the tensorflow open source implementation. VQ-VAE addresses 'posterior collapse' 
+seen in traditional VAEs and overcomes it by discretizing latent space. This in turn also 
+improved the generative capability by producing less blurrier images than before. 
+Familiarizing about VQ-VAE early on helps in understading the latents used in Diffusion models
+in later steps. I also explored a potential dataset - `IXI (T1 images) <https://brain-development.org/ixi-dataset/>`_ 
+- and performed some exploratory data analysis, such as age & sex distribution. The images contain 
+entire skull information, it may require brain extraction & registration. It maybe more useful 
+to use existing preprocessed datasets & align them to a template. For next week, I'll be 
+conducting further literature survey on Diffusion models.

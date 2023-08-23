@@ -206,7 +206,8 @@ fig2.savefig('Gibbs_suppression_b0.png')
 The above figure shows that the benefits of suppressing Gibbs artefacts is hard
 to observe on b-value=0 data. Therefore, diffusion derived metrics for both
 uncorrected and corrected data are computed using the mean signal diffusion
-kurtosis image technique (:ref:`example_reconst_msdki`).
+kurtosis image technique
+(:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`).
 
 To avoid unnecessary calculations on the background of the image, we also
 compute a brain mask.

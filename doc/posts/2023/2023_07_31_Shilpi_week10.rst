@@ -1,0 +1,41 @@
+Adding Tests : Week 10
+======================
+
+.. post:: July 31, 2023
+     :author: Shilpi Prasad
+     :tags: google
+     :category: gsoc
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+Last week, we decided to generate a DTD to make the model more robust. This decision accounted for situations where almost all the parameters were non-zero. However, the signals weren't matching exactly in that situation. This week, I fixed that issue. We can now safely say that all DTDs will match the ground truth signals, regardless of which parameters are non-zero or what changes we make. We accomplished this by figuring out the correct order of ccti parameters. These are covariance parameters that take the root2 and '2' factor into consideration.
+
+I also removed the mean, axial, radial, and kurtosis functions from our CTI Fit method. I realized that we're already importing all the necessary features by importing the DKI Fit class. I still need to write tests for these methods to ensure that everything is working properly.
+
+The most important task this week has been the implementation of the ``ls_fit_cti``, ``cls_fit_cti``, and ``split_cti_params`` functions. These are vital in the CTI Fit class. I also wrote tests for this class. This required understanding previously implemented similar functions and the parameters they needed. One example is ``data``, which can basically be interpreted as the ``cti_pred_signals``.
+The importance of writing tests is to see if given the signals, ``gtab1`` and ``gtab2`` can we obtain the cti parameters correctly or not. So, I'm still analyzing all the functions which have been implemented in DKI, and the tests that have been implemented for them.
+So, the important testing function in order to be able to is the ``test_fit`` function in CTI. 
+
+I also implemented the ``test_split_cti_params`` and ``test_cti_fits`` in the ``test_cti.py`` file. In CTI, we must implement tests for radial, axial, anisotropic, and mean kurtosis, even though we're not implementing them ourselves. To write these tests, I referred to the ground truth values when calling the functions outside the Fit class. I implemented tests accordingly.
+Note that in DKI, we only needed multiple b-values. In CTI, we also need symmetric ``b1`` and ``b2s`` and also parallel and perpendicular experiments. In CTI, we consider not only the different components of kurtosis but also the sources of kurtosis. The three sources of kurtosis that we identify in CTI is isotropic kurtosis, anisotropic kurtosis, and microscopic kurtosis in CTI. I looked through the original CTI paper's formulas and implemented functions for these.
+
+Things to do next week 
+~~~~~~~~~~~~~~~~~~~~~~ 
+
+Even though I've implemented the function which could calculate the sources of kurtosis, it's still outside the CTI Fit class, and needs to be incorporated in the Fit class. I also need to write tests for these functions. In order to do this, I intend on referring to the QTI paper to look for similarities.
+
+Also, even though I've written tests for the ``ls_fit_cti`` and ``cls_fit_cti`` function, I still need to run these tests and make sure that it's working as expected.
+
+If I get stuck, I plan to write a tutorial for the CTI implementation.
+
+I also need to make sure that my model runs in case of given multi-voxels. A voxel in a 3D image which can be thought of as similar to a pixel in a 2D image in that both represent a discrete element of the image data. In DIPY, a voxel model refers to a representation of a 3D image volume as a collection of individual voxels, each of which represents a small volume element within the image.
+After I write tests for multi-voxel cases, and if my model is working on everything, then I'll move on to running my model on real-time data.
+
+If I get stuck anywhere, then I intend on writing a tutorial for the CTI implementation. 
+
+Did I get stuck
+~~~~~~~~~~~~~~~ 
+
+No, I didn't. 

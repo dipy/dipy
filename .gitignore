@@ -18,6 +18,7 @@
 build
 *~
 doc/_build
+doc/examples_revamped
 doc/reference_cmd
 doc/*-stamp
 MANIFEST

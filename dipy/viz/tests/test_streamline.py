@@ -4,17 +4,25 @@ from numpy.testing import assert_raises, assert_equal
 import pytest
 
 from dipy.utils.optpkg import optional_package
-from dipy.data import read_five_af_bundles
+from dipy.data import read_five_af_bundles, two_cingulum_bundles
+from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
+                                      Streamlines)
 
-fury, has_fury, _ = optional_package('fury')
-if has_fury:
-    from dipy.viz.streamline import show_bundles
+from dipy.align.streamwarp import bundlewarp, bundlewarp_vector_filed
+
+_, have_matplotlib, _ = optional_package("matplotlib")
+
+fury, have_fury, _ = optional_package('fury')
+if have_fury:
+    from dipy.viz.streamline import (show_bundles, viz_two_bundles,
+                                     viz_displacement_mag, viz_vector_field)
     from dipy.viz import window
 
 bundles = read_five_af_bundles()
 
 
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
+@pytest.mark.skipif(not have_fury or not have_matplotlib,
+                    reason='Requires FURY and Matplotlib')
 def test_output_created():
     views = ['axial', 'sagital', 'coronal']
 
@@ -35,7 +43,42 @@ def test_output_created():
         report = window.analyze_snapshot(fname, find_objects=True)
         assert_equal(report.objects > 0, True)
 
+        cb1, cb2 = two_cingulum_bundles()
 
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
+        fname = os.path.join(temp_dir, 'test_two_bundles.png')
+        viz_two_bundles(cb1, cb2, fname=fname)
+        assert_equal(os.path.exists(fname), True)
+
+
+@pytest.mark.skipif(not have_fury, reason='Requires FURY')
 def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
+
+
+@pytest.mark.skipif(not have_fury or not have_matplotlib,
+                    reason='Requires FURY, and Matplotlib')
+def test_bundlewarp_viz():
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+
+        cingulum_bundles = two_cingulum_bundles()
+
+        cb1 = cingulum_bundles[0]
+        cb1 = Streamlines(set_number_of_points(cb1, 20))
+
+        cb2 = cingulum_bundles[1]
+        cb2 = Streamlines(set_number_of_points(cb2, 20))
+
+        deformed_bundle, affine_bundle, _, _, _ = bundlewarp(cb1, cb2)
+
+        offsets, directions, colors = bundlewarp_vector_filed(affine_bundle,
+                                                              deformed_bundle)
+        points_aligned, _ = unlist_streamlines(affine_bundle)
+
+        fname = os.path.join(temp_dir, 'test_vector_field.png')
+        viz_vector_field(points_aligned, directions, colors, offsets, fname)
+        assert_equal(os.path.exists(fname), True)
+
+        fname = os.path.join(temp_dir, 'test_mag_viz.png')
+        viz_displacement_mag(affine_bundle, offsets, fname)
+        assert_equal(os.path.exists(fname), True)

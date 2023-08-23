@@ -3,14 +3,15 @@
 Using the free water elimination model to remove DTI free water contamination
 =============================================================================
 
-As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor model
-is a simple way to characterize diffusion anisotropy. However, in regions near
-the ventricles and parenchyma, anisotropy can be underestimated by partial
-volume effects of the cerebral spinal fluid (CSF). This free water contamination
-can particularly corrupt Diffusion Tensor Imaging analysis of microstructural
-changes when different groups of subjects show different brain morphology (e.g.
-brain ventricle enlargement associated with brain tissue atrophy that occurs in
-several brain pathologies and aging).
+As shown previously (see
+:ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`), the diffusion
+tensor model is a simple way to characterize diffusion anisotropy. However,
+in regions near the ventricles and parenchyma, anisotropy can be
+underestimated by partial volume effects of the cerebral spinal fluid (CSF).
+This free water contamination can particularly corrupt Diffusion Tensor
+Imaging analysis of microstructural changes when different groups of subjects
+show different brain morphology (e.g. brain ventricle enlargement associated
+with brain tissue atrophy that occurs in several brain pathologies and aging).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
@@ -23,11 +24,12 @@ below:
     \mathbf{g}}+S_0fe^{-b D_{iso}}
 
 where $\mathbf{g}$ and $b$ are diffusion gradient direction and weighted (more
-information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
-diffusion-weighted signal measured, $S_0$ is the signal in a measurement with no
-diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
-fraction of the free water component, and $D_{iso}$ is the isotropic value of
-the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
+information see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`),
+$S(\mathbf{g}, b)$ is thebdiffusion-weighted signal measured, $S_0$ is the
+signal in a measurement with no diffusion weighting, $\mathbf{D}$ is the
+diffusion tensor, $f$ the volume fraction of the free water component, and
+$D_{iso}$ is the isotropic value of the free water diffusion (normally set to
+$3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
 In this example, we show how to process a diffusion weighting dataset using an
 adapted version of the free water elimination proposed by [Hoy2014]_.
@@ -43,7 +45,6 @@ import dipy.reconst.fwdti as fwdti
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 from dipy.data import fetch_hbn
-from dipy.segment.mask import median_otsu
 import os.path as op
 import nibabel as nib
 from dipy.core.gradients import gradient_table

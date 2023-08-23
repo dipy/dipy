@@ -15,10 +15,6 @@ can reslice a dMRI dataset to have isotropic voxel size.
 
 import nibabel as nib
 
-"""
-The function we need to use is called resample.
-"""
-
 from dipy.align.reslice import reslice
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti

@@ -1016,7 +1016,7 @@ def slr_with_qbx(static, moving,
         rigid, similarity or affine transformation model (default affine)
 
     rm_small_clusters : int, optional
-        Remove clusters that have less than `rm_small_clusters` (default 50)
+        Remove clusters that have less than `rm_small_clusters`
 
     maxiter : int, optional
         Maximum number of iterations to perform.
@@ -1127,6 +1127,15 @@ def slr_with_qbx(static, moving,
 
     if verbose:
         t = time()
+
+    if not len(qb_centroids1):
+        msg = "No cluster centroids found in Static Streamlines. Please "
+        msg += "decrease  the value of rm_small_clusters."
+        raise ValueError(msg)
+    if not len(qb_centroids2):
+        msg = "No cluster centroids found in Moving Streamlines. Please "
+        msg += "decrease the value of rm_small_clusters."
+        raise ValueError(msg)
 
     if not progressive:
         slr = StreamlineLinearRegistration(x0=x0,

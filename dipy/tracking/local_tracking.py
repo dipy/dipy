@@ -7,6 +7,7 @@ from dipy.tracking.localtrack import local_tracker, pft_tracker
 from dipy.tracking.stopping_criterion import (AnatomicalStoppingCriterion,
                                               StreamlineStatus)
 from dipy.tracking import utils
+from dipy.utils import fast_numpy
 
 
 class LocalTracking(object):
@@ -123,12 +124,13 @@ class LocalTracking(object):
         B = F.copy()
         for s in self.seeds:
             s = np.dot(lin, s) + offset
-            # Set the random seed in numpy and random
+            # Set the random seed in numpy, random and fast_numpy (libc.stdlib)
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
                     % (2**32 - 1)
                 random.seed(s_random_seed)
                 np.random.seed(s_random_seed)
+                fast_numpy.seed(s_random_seed)
             directions = self.direction_getter.initial_direction(s)
             if directions.size == 0 and self.return_all:
                 # only the seed position
@@ -143,7 +145,17 @@ class LocalTracking(object):
                         stream_status == StreamlineStatus.ENDPOINT or
                         stream_status == StreamlineStatus.OUTSIDEIMAGE):
                     continue
-                first_step = -first_step
+                if stepsF > 1:
+                    # Use the opposite of the first selected orientation for
+                    # the backward tracking segment
+                    opposite_step = F[0] - F[1]
+                    opposite_step_norm = np.linalg.norm(opposite_step)
+                    if opposite_step_norm > 0:
+                        first_step = opposite_step / opposite_step_norm
+                    else:
+                        first_step = -first_step
+                else:
+                    first_step = -first_step
                 stepsB, stream_status = self._tracker(s, first_step, B)
                 if not (self.return_all or
                         stream_status == StreamlineStatus.ENDPOINT or

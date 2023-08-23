@@ -180,8 +180,8 @@ streamlines = Streamlines(sfil)
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
 versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken2011]_
 rotated over a discrete set of orientations. See the
-`Contextual enhancement example <https://dipy.org/documentation/latest/examples_built/contextual_enhancement/#example-contextual-enhancement>`_
-for more details regarding the kernel. In order to ensure rotationally
+:ref:`sphx_glr_examples_built_contextual_enhancement_contextual_enhancement.py`
+example for more details regarding the kernel. In order to ensure rotationally
 invariant processing, the discrete orientations are required to be equally
 distributed over a sphere. By default, a sphere with 100 directions is obtained
 from electrostatic repulsion in DIPY.

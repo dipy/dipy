@@ -77,25 +77,6 @@ distclean: clean
 %.html : %.pyx
 	cython -a $<
 
-# Check for files not installed
-check-files:
-	$(PYTHON) -c 'from nisext.testers import check_files; check_files("dipy")'
-
-# Print out info for possible install methods
-check-version-info:
-	$(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("dipy")'
-
-# Run tests from installed code
-installed-tests:
-	$(PYTHON) -c 'from nisext.testers import tests_installed; tests_installed("dipy")'
-
-# Run tests from installed code
-sdist-tests:
-	$(PYTHON) -c 'from nisext.testers import sdist_tests; sdist_tests("dipy")'
-
-bdist-egg-tests:
-	$(PYTHON) -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy")'
-
 source-release: clean
 	$(PYTHON) -m compileall .
 	$(PYTHON) setup.py sdist --formats=gztar,zip

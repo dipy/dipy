@@ -1,0 +1,25 @@
+Diffusion research continues: Week 4
+====================================
+
+
+.. post:: June 19, 2023
+    :author: Vara Lakshmi Bayanagari
+    :tags: google
+    :category: gsoc
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+As discussed last week, I completed researching on StableDiffusion(SD). Currently we're looking for unconditional image reconstruction/denoising/generation using SD. I completed putting together keras implementation of unconditional SD. Since I couldn't find an official implementation of unconditional SD code, I collated the DDPM diffusion model codebase, VQ-VAE codebase separately.
+
+DDPM code uses Attention based U-Net for noise prediction. The basic code blocks of the U-Net are Downsampling, Middle and Upsampling blocks, where each constitute ResidualBlock & AttentionBlock. ResidualBlock is additionally conditioned on the diffusion timestep, DDPM implements this conditioning by adding diffusion timestep to the input image, whereas DDIM performs a concatenation.
+
+Downsampling & Upsampling in the U-Net are performed 4 times with decreasing & increasing widths respectively. Each downsampling layer consists of two ResidualBlocks, an optional AttentionBlock and a convolutional downsampling(stride=2) layer. At each upsampling layer, there's a concatenation from the respective downsampling layer, three ResidualBlocks, an optional AttentionBlock, ``keras.layers.Upsampling2D`` and a Conv2D layers. The Middle block consists of two ResidualBlocks with an AttentionBlock in between, resulting in no change in the output size. The final output of the Upsampling block is followed by a GroupNormalization layer, Swish Activation layer and Conv2D layer to provide an output with desired dimensions.
+
+Due to personal reasons, I took a couple of days off this week and will be continuing the rest of the work next week.
+
+What Is coming up next week
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+I will be running experiments on CIFAR10 on SD, NFBS on 3D VQ-VAE.
