@@ -17,8 +17,8 @@ The official code in Keras uses a ``tfp.layers.DistributionLambda(tfp.distributi
 
 Therefore, the autoregressive nature of PixelCNN combined with a sampling layer for every pixel delivers an effective generative model. The outputs for all my experiments are shown in the image below -
 
-.. image:: ./_static/vq-vae-results.png
-  :width: 400
+.. image:: /doc/_static/vq-vae-results.png
+  :width: 800
 
 Based on qualitative analysis, PixelCNN outputs may require some extra work. This leads me to the next step in my research - to explore Diffusion models. The first breakthrough paper on Diffusion models is by DDPM - Denoising Diffusion Probabilistic models. Inspired by previous work on nonequilibrium thermodynamics, they show that training diffusion models while maximizing the posterior likelihood in an image generation task is mathematically equivalent to denoising score matching. 
 
