@@ -26,7 +26,7 @@ def split_cti_params(cti_params):
     -----------
         params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
-        Parameters are ordered as follows::
+        Parameters are ordered as follows:
 
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
@@ -65,7 +65,7 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
         ----------
         cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
-        Parameters are ordered as follows::
+        Parameters are ordered as follows:
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
             first, second and third coordinates of the eigenvector
@@ -198,7 +198,7 @@ class CorrelationTensorModel(ReconstModel):
         -----------
         cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
-        Parameters are ordered as follows::
+        Parameters are ordered as follows:
 
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
@@ -264,7 +264,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         -----------
         params: numpy.ndarray (...,43)
                 All parameters estimated from the correlation tensor model.
-                Parameters are ordered as follows::
+                Parameters are ordered as follows:
 
                 1. Three diffusion tensor's eigenvalues
                 2. Three lines of the eigenvector matrix each containing the
