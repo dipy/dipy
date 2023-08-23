@@ -8,7 +8,6 @@ import functools
 import numpy as np
 
 import scipy.optimize as opt
-from scipy.spatial.distance import pdist, squareform
 
 from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
@@ -17,6 +16,7 @@ from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
+from dipy.utils.volume import adjacency_calc
 
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -674,53 +674,6 @@ def tensor_prediction(dti_params, gtab, S0):
     return np.exp(np.dot(lower_tri, D.T))
 
 
-def adjacency_calc(img_shape, mask=None, distance=1.99):
-    """Create adjacency list for voxels, accounting for the mask.
-
-    Parameters
-    ----------
-
-    img_shape : list
-        Spatial shape of the image data.
-
-    mask : array, optional
-        A boolean array used to mark the coordinates in the data that
-        should be analyzed that should have the same shape as the images.
-
-    distance : float, optional
-        Cutoff distance for finding adjacent voxels.
-
-    Returns
-    -------
-
-    adj : list
-        List, one entry per voxel, giving the indices of adjacent voxels.
-        The list will correspond to the data array once masked and flattened.
-
-    """
-
-    # Image-space coordinates of voxels, flattened
-    XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing='ij')
-    XYZ = np.column_stack([xyz.ravel() for xyz in XYZ])
-    dists = squareform(pdist(XYZ))
-    dists = (dists < distance)  # adjacency list contains current voxel
-    adj = []
-    if mask is not None:
-        flat_mask = mask.reshape(-1)
-        for idx in range(dists.shape[0]):
-            if flat_mask[idx]:
-                cond = dists[idx, :]
-                cond = cond * flat_mask
-                cond = cond[flat_mask == 1]  # so indices will match masked array
-                adj.append(np.argwhere(cond).flatten().tolist())
-    else:
-        for idx in range(dists.shape[0]):
-            cond = dists[idx, :]
-            adj.append(np.argwhere(cond).flatten().tolist())
-
-    return adj
-
-
 class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
@@ -806,7 +759,7 @@ class TensorModel(ReconstModel):
             raise ValueError(e_s)
         self.extra = {}
 
-    def fit(self, data, mask=None, adjacency=0):
+    def fit(self, data, mask=None, adjacency=False):
         """ Fit method of the DTI model class
 
         Parameters
@@ -820,7 +773,7 @@ class TensorModel(ReconstModel):
 
         adjacency : float, optional
             Calculate voxel adjacency accounting for mask, using this
-            value as cutoff distance.
+            value as cutoff distance (measured in voxel coordinates)
         """
 
         S0_params = None
@@ -1378,10 +1331,7 @@ def iter_fit_tensor(step=1e4):
                                   return_S0_hat=return_S0_hat,
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            if 'return_lower_triangular' in kwargs:
-                sz = 7 if kwargs['return_lower_triangular'] else 12
-            else:
-                sz = 12
+            sz = 7 if kwargs.get('return_lower_triangular', False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
@@ -1597,7 +1547,7 @@ def _ols_fit_matrix(design_matrix):
     return np.dot(U, U.T)
 
 
-class _nlls_class():
+class _NllsHelper():
     r"""Class with member functions to return nlls error and derivative.
     """
 
@@ -1825,8 +1775,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     # For warnings
     resort_to_OLS = False
 
-    # Instance of _nlls_class, need for nlls error func and jacobian
-    nlls = _nlls_class()
+    # Instance of _NllsHelper, need for nlls error func and jacobian
+    nlls = _NllsHelper()
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
@@ -1967,8 +1917,8 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     # For warnings
     resort_to_OLS = False
 
-    # Instance of _nlls_class, need for nlls error func and jacobian
-    nlls = _nlls_class()
+    # Instance of _NllsHelper, need for nlls error func and jacobian
+    nlls = _NllsHelper()
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))

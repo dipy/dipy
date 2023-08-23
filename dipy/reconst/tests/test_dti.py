@@ -13,8 +13,7 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               mean_diffusivity, radial_diffusivity,
                               TensorModel, trace, linearity, planarity,
                               sphericity, decompose_tensor,
-                              _decompose_tensor_nan,
-                              adjacency_calc)
+                              _decompose_tensor_nan)
 
 from dipy.io.image import load_nifti_data
 from dipy.data import get_fnames, dsi_voxels, get_sphere
@@ -534,7 +533,7 @@ def test_nnls_jacobian_func():
     # they are not accurate enough to pass the tests, leaving out
     # for weighting in [None, "sigma", "gmm"]:
     for weighting in [None]:
-        nlls = dti._nlls_class()
+        nlls = dti._NllsHelper()
 
         for D in [D_orig, np.zeros_like(D_orig)]:
 
@@ -647,6 +646,7 @@ def test_nlls_fit_tensor():
     sigma = np.ones(Y_less.shape[-1])
     tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS',
                                    weighting='sigma', sigma=sigma)
+    tmf = tensor_model.fit(Y_less)
 
     # Test sigma with an array of wrong size
     sigma = np.ones(Y_less.shape[-1] + 10)
@@ -714,38 +714,6 @@ def test_restore():
                                    return_S0_hat=True, fail_is_nan=True)
     tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
     npt.assert_equal(tmf[0].S0_hat, np.nan)
-
-
-def test_adjacency_calc():
-    """
-    Test adjacency_calc function, which calculates indices of adjacent voxels
-    """
-
-    distance = 1.99
-    for img_shape in [(50, 50), (50, 50, 5)]:
-
-        mask = None
-        adj = adjacency_calc(img_shape, mask, distance=distance)
-        # check that adj in the first voxel is correct
-        adj[0].sort()
-        if len(img_shape) == 2:
-            npt.assert_equal(adj[0], [0, 1, 50, 51])
-        if len(img_shape) == 3:
-            npt.assert_equal(adj[0], [0, 1, 5, 6, 250, 251, 255, 256])
-
-        mask = np.zeros(img_shape, dtype=int)
-        if len(img_shape) == 2:
-            mask[10:40, 20:30] = 1
-        if len(img_shape) == 3:
-            mask[10:40, 20:30, :] = 1
-        adj = adjacency_calc(img_shape, mask, distance=distance)
-        # check that adj in the first voxel is correct
-        if len(img_shape) == 2:
-            npt.assert_equal(adj[0], [0, 1, 10, 11])
-        if len(img_shape) == 3:
-            npt.assert_equal(adj[0], [0, 1, 5, 6, 50, 51, 55, 56])
-        # test that adj only corresponds to flattened and masked data
-        npt.assert_equal(len(adj), mask.sum())
 
 
 def test_adc():
