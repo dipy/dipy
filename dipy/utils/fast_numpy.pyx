@@ -47,29 +47,7 @@ cdef void scalar_muliplication_point(
         a[i] *= scalar
 
 
-cpdef double random() nogil:
-    """Sample a random number between 0 and 1.
-
-    Returns
-    -------
-    _ : double
-        random number.
-    """
-    return rand() / float(RAND_MAX)
-
-
-cpdef void seed(int s) nogil:
-    """Set the random seed of stdlib.
-
-    Parameters
-    ----------
-    s : int
-        random seed.
-    """
-    srand(s)
-
-
-cpdef double norm(double[:] v) nogil:
+cdef double norm(double * v) nogil:
     """Compute the vector norm.
 
     Parameters
@@ -81,7 +59,7 @@ cpdef double norm(double[:] v) nogil:
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 
-cpdef double dot(double[:] v1, double[:] v2) nogil:
+cdef double dot(double * v1, double * v2) nogil:
     """Compute vectors dot product.
 
     Parameters
@@ -99,7 +77,7 @@ cpdef double dot(double[:] v1, double[:] v2) nogil:
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
 
-cpdef void normalize(double[:] v) nogil:
+cdef void normalize(double * v) nogil:
     """Normalize the vector.
 
     Parameters
@@ -118,7 +96,7 @@ cpdef void normalize(double[:] v) nogil:
     v[2] = v[2] * scale
 
 
-cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
+cdef void cross(double * out, double * v1, double * v2) nogil:
     """Compute vectors cross product.
 
     Parameters
@@ -140,7 +118,7 @@ cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
     out[2] = v1[0] * v2[1] - v1[1] * v2[0]
 
 
-cpdef void random_vector(double[:] out):
+cdef void random_vector(double * out):
     """Generate a unit random vector
 
     Parameters
@@ -158,7 +136,7 @@ cpdef void random_vector(double[:] out):
     normalize(out)
 
 
-cpdef void random_perpendicular_vector(double[:] out,double[:] v):
+cdef void random_perpendicular_vector(double * out, double * v):
     """Generate a random perpendicular vector
 
     Parameters
@@ -205,3 +183,24 @@ cpdef (double, double) random_point_within_circle(double r):
         y = 2.0 * random() - 1.0
     return (r * x, r * y)
 
+
+cpdef double random() nogil:
+    """Sample a random number between 0 and 1.
+
+    Returns
+    -------
+    _ : double
+        random number.
+    """
+    return rand() / float(RAND_MAX)
+
+
+cpdef void seed(int s) nogil:
+    """Set the random seed of stdlib.
+
+    Parameters
+    ----------
+    s : int
+        random seed.
+    """
+    srand(s)

@@ -86,9 +86,9 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
 
-        if norm(<double[:3]> direction) == 0:
+        if norm(direction) == 0:
             return 1
-        normalize(<double[:3]> direction)
+        normalize(direction)
 
         with nogil:
             for i in range(_len):
@@ -155,9 +155,9 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         max_idx = 0
         max_value = 0.0
 
-        if norm(<double[:3]> direction) == 0:
+        if norm(direction) == 0:
             return 1
-        normalize(<double[:3]> direction)
+        normalize(direction)
 
         with nogil:
             for i in range(_len):

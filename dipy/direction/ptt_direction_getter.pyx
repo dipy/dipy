@@ -152,8 +152,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.frame[0][0] = init_dir[0]
         self.frame[0][1] = init_dir[1]
         self.frame[0][2] = init_dir[2]
-        random_perpendicular_vector(self.frame[2], self.frame[0])
-        cross(self.frame[1], self.frame[2], self.frame[0])
+        random_perpendicular_vector(&self.frame[2][0], &self.frame[0][0])
+        cross(&self.frame[1][0], &self.frame[2][0], &self.frame[0][0])
         self.k1, self.k2 = random_point_within_circle(self.max_curvature)
 
         self.last_val = 0
@@ -254,14 +254,14 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 tangent[i] = (self.propagator[3] * frame[0][i]
                               + self.propagator[4] * frame[1][i]
                               + self.propagator[5] * frame[2][i])
-            normalize(tangent)
+            normalize(&tangent[0])
 
             if q < (self.probe_quality - 1):
                 for i in range(3):
                     binormal[i] = (self.propagator[6] * frame[0][i]
                                    + self.propagator[7] * frame[1][i]
                                    + self.propagator[8] * frame[2][i])
-                cross(normal, binormal, tangent)
+                cross(&normal[0], &binormal[0], &tangent[0])
                 for i in range(3):
                     frame[0][i] = tangent[i]
                     frame[1][i] = normal[i]
@@ -279,7 +279,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                         binormal[i] = (self.propagator[6] * frame[0][i]
                                       + self.propagator[7] * frame[1][i]
                                       + self.propagator[8] * frame[2][i])
-                    cross(normal, binormal, tangent)
+                    cross(&normal[0], &binormal[0], &tangent[0])
 
                 for c in range(self.probe_count):
                     for i in range(3):
@@ -379,10 +379,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.frame[2][i] = (self.propagator[6] * self.frame[0][i]
                                 + self.propagator[7] * self.frame[1][i]
                                 + self.propagator[8] * self.frame[2][i])
-        normalize(tangent)
-        cross(self.frame[1], self.frame[2], tangent)
-        normalize(self.frame[1])
-        cross(self.frame[2], tangent, self.frame[1])
+        normalize(&tangent[0])
+        cross(&self.frame[1][0], &self.frame[2][0], &tangent[0])
+        normalize(&self.frame[1][0])
+        cross(&self.frame[2][0], &tangent[0], &self.frame[1][0])
         self.frame[0][0] = tangent[0]
         self.frame[0][1] = tangent[1]
         self.frame[0][2] = tangent[2]

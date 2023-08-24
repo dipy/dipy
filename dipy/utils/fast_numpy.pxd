@@ -27,32 +27,32 @@ cdef void scalar_muliplication_point(
         double * a,
         double scalar) nogil
 
-cpdef double random() nogil
+cdef double norm(
+        double * v) nogil
 
-cpdef void seed(int s) nogil
+cdef double dot(
+        double * v1,
+        double * v2) nogil
 
-cpdef double norm(
-        double[:] v) nogil
+cdef void normalize(
+        double * v) nogil
 
-cpdef double dot(
-        double[:] v1,
-        double[:] v2) nogil
+cdef void cross(
+        double * out,
+        double * v1,
+        double * v2) nogil
 
-cpdef void normalize(
-        double[:] v) nogil
+cdef void random_vector(
+        double * out)
 
-cpdef void cross(
-        double[:] out,
-        double[:] v1,
-        double[:] v2) nogil
-
-cpdef void random_vector(
-        double[:] out)
-
-cpdef void random_perpendicular_vector(
-        double[:] out,
-        double[:] v)
+cdef void random_perpendicular_vector(
+        double * out,
+        double * v)
 
 cpdef (double, double) random_point_within_circle(
         double r)
+
+cpdef double random() nogil
+
+cpdef void seed(int s) nogil
 
