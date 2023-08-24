@@ -2,7 +2,7 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-cimport numpy as np
+cimport numpy as cnp
 
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.math cimport sqrt
@@ -10,13 +10,13 @@ from libc.math cimport sqrt
 
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(
-        np.float_t* arr,
-        np.float_t number,
+        cnp.float_t* arr,
+        cnp.float_t number,
         int size) nogil
 
 cdef void cumsum(
-        np.float_t* arr_in,
-        np.float_t* arr_out,
+        cnp.float_t* arr_in,
+        cnp.float_t* arr_out,
         int N) nogil
 
 cdef void copy_point(
@@ -43,14 +43,14 @@ cdef void cross(
         double * v2) nogil
 
 cdef void random_vector(
-        double * out)
+        double * out) nogil
 
 cdef void random_perpendicular_vector(
         double * out,
-        double * v)
+        double * v) nogil
 
 cpdef (double, double) random_point_within_circle(
-        double r)
+        double r) nogil
 
 cpdef double random() nogil
 
