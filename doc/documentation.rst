@@ -5,6 +5,7 @@ Documentation
 
 .. This tree is helping populate the side navigation panel
 .. toctree::
+   :maxdepth: 2
 
    introduction
    mission
