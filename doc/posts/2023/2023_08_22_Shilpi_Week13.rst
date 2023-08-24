@@ -1,0 +1,26 @@
+Writing Tests & Making Documentation: Week 13
+=============================================
+
+.. post:: August 22, 2023
+     :author: Shilpi Prasad
+     :tags: google
+     :category: gsoc
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+This week, I finished writing tests for the sources of kurtosis. While the isotropic source passed the test for the anisotropic DTD, the anisotropic source passed tests for all DTDs. As a result, I integrated the test for the anisotropic source within the ``test_cti_fits`` function, eliminating the need for a separate function.
+I also created tests for multi-voxel cases but the tests passed only for single voxel cases. One reason I think this might be happening is because of the way we're accessing the covariance and diffusion tensor elements. I intend to look further into this. 
+I worked on the real life data, trying to plot maps, but it didn't work out because the problem was really related to the fact that the current kurtosis source implementations do not handle multiple voxel cases. 
+I worked on real life data, attempting to plot maps. Even though I was not able to get the desired result, I'm sure I'll figure it out with further research and possible collaboration. 
+
+What is coming up next Week
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- As soon as mapping of the images is done, I'll finish with the documentation of my model. 
+- I also intend on adding some references to some of the important methods. 
+- If everything is done early, and time remains then I'll look into finishing the QTI simulation tutorial. 
+- I also intend on creating a final work report of my project and submit it to the GSoC dashboard. 
+
+
