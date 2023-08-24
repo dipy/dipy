@@ -304,11 +304,12 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             variance of eigenvalues of the diffusion tensor,
             \(\overline{D}\) is the mean of the diffusion tensor.
         """
-        evals = self.model_params[:3]
-        evecs = self.model_params[3:12].reshape((3, 3))
-        D_elements_new_order = lower_triangular(vec_val_vect(evecs, evals))
+        # evals = self.model_params[:3]
+        # evecs = self.model_params[3:12].reshape((3, 3))
+        # D_elements_new_order = lower_triangular(vec_val_vect(evecs, evals))
         C = self.ct
-        D = from_lower_triangular(D_elements_new_order)
+        # D = from_lower_triangular(D_elements_new_order)
+        D = self.quadratic_form
 
         Variance = 2/9 * (C[..., 0] + D[..., 0, 0] ** 2 + C[..., 1]
                           + D[..., 1, 1] ** 2 + C[..., 2]
@@ -340,15 +341,11 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             \(\overline{D}\) is the mean of the diffusion tensor.
 
         """
-        evals = self.model_params[:3]
-        evecs = self.model_params[3:12].reshape((3, 3))
-        D_elements_new_order = lower_triangular(vec_val_vect(evecs, evals))
-        D = from_lower_triangular(D_elements_new_order)
         C = self.ct
-        mean_D = np.trace(D) / 3
+        mean_D = self.md
         Variance = 1/9 * (C[..., 0] + C[..., 1] + C[..., 2] + 2 * C[..., 5]
                           + 2 * C[..., 4] + 2 * C[..., 3])
-        K_iso = 3 * (Variance / mean_D)
+        K_iso = 3 * (Variance / (mean_D ** 2))
         return K_iso
 
     @auto_attr
@@ -378,16 +375,12 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """
 
         mean_K = self.mkt()
-        evals = self.model_params[:3]
-        evecs = self.model_params[3:12].reshape((3, 3))
-        D_elements_new_order = lower_triangular(vec_val_vect(evecs, evals))
-        D = from_lower_triangular(D_elements_new_order)
-
+        D = self.quadratic_form
         mean_D = np.trace(D) / 3
         psi = 2 / 5 * ((np.sqrt(D[..., 0, 0]) + np.sqrt(D[..., 1, 1])
                         + np.sqrt(D[..., 2, 2])
                         + 2 * np.sqrt(D[..., 0, 1]) + 2 * np.sqrt(D[..., 0, 2])
-                        + np.sqrt(D[..., 1, 2])) / mean_D ** 2) - (6/5)
+                        + np.sqrt(D[..., 1, 2])) / (mean_D ** 2)) - (6/5)
 
         excess_K = 1/5 * mean_K + psi
         return excess_K
@@ -398,7 +391,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         K_excess = self.K_total
         K_aniso = self.K_aniso
-        micro_K = K_excess - K_aniso
+        K_iso = self.K_iso
+        micro_K = K_excess - K_aniso - K_iso
         return micro_K
 
 

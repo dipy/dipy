@@ -183,7 +183,7 @@ def test_split_cti_param():
 
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
-        cti_pred_signals = ctiM.predict(cti_params, S0 = S0)
+        cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         ctiF = ctiM.fit(cti_pred_signals)
         evals, evecs, kt, ct = cti.split_cti_params(ctiF.model_params)
 
@@ -211,7 +211,7 @@ def test_cti_fits():
         MD = mean_diffusivity(evals)
         K = generate_K(ccti, MD)
         cti_params = construct_cti_params(evals, evecs, K, ccti)
-        cti_pred_signals = ctiM.predict(cti_params, S0= S0)
+        cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         evals, evecs, kt, ct = split_cti_params(cti_params)
 
         # Testing Multi-Voxel Fit
@@ -320,26 +320,62 @@ def test_cti_fits():
         )
         assert np.isclose(K_aniso, ground_truth_K_aniso), error_msg
 
+        # checking isotropic source of kurtosis.
+        K_iso = ctiF.K_iso
 
-def test_isotropic_source():
-    ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
-    DTD = _anisotropic_DTD()
-    D = np.mean(DTD, axis=0)
-    evals, evecs = decompose_tensor(D)
-    C = qti.dtd_covariance(DTD)
-    C = qti.from_6x6_to_21x1(C)
-    ccti = modify_C_params(C)
-    MD = mean_diffusivity(evals)
-    K = generate_K(ccti, MD)
-    cti_params = construct_cti_params(evals, evecs, K, ccti)
-    cti_pred_signals = ctiM.predict(cti_params, S0 = S0)
-    ctiF = ctiM.fit(cti_pred_signals)
-    K_iso = ctiF.K_iso
-    variance_of_mean_diffusivities = np.var(MD)
-    ground_truth_K_iso = 3 * variance_of_mean_diffusivities / np.mean(MD)**2
+        mean_diffusivities = []
 
-    error_msg = (
-        f"Calculated K_iso {K_iso} for anisotropicDTD does not match the "
-        f"ground truth {ground_truth_K_iso}"
-    )
-    assert np.isclose(K_iso, ground_truth_K_iso), error_msg
+        for tensor in DTD:
+            evals_tensor, _ = decompose_tensor(tensor)
+            mean_diffusivities.append(np.mean(evals_tensor))
+        variance_of_mean_diffusivities = np.var(mean_diffusivities)
+        mean_D = np.mean(mean_diffusivities) 
+        ground_truth_K_iso = 3 * variance_of_mean_diffusivities / (mean_D ** 2)
+        
+        error_msg = (
+            f"Calculated K_iso {K_iso} for anisotropicDTD does not match the "
+            f"ground truth {ground_truth_K_iso}"
+        )
+        assert np.isclose(K_iso, ground_truth_K_iso), error_msg
+
+# def test_isotropic_source():
+#     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
+#     isotropic_DTD = _isotropic_DTD()
+#     anisotropic_DTD = _anisotropic_DTD()
+#     DTD = np.concatenate((anisotropic_DTD, isotropic_DTD))
+#     DTD = _isotropic_DTD()
+#     D = np.mean(DTD, axis=0)
+#     evals, evecs = decompose_tensor(D)
+#     C = qti.dtd_covariance(DTD)
+#     C = qti.from_6x6_to_21x1(C)
+#     ccti = modify_C_params(C)
+#     MD = mean_diffusivity(evals)
+#     K = generate_K(ccti, MD)
+#     cti_params = construct_cti_params(evals, evecs, K, ccti)
+#     cti_pred_signals = ctiM.predict(cti_params, S0=S0)
+#     ctiF = ctiM.fit(cti_pred_signals)
+#     K_iso = ctiF.K_iso
+
+    
+#     # variance_of_mean_diffusivities = np.var(MD)
+#     # print('this is variance_of_mean_diffusivities: ', variance_of_mean_diffusivities )
+#     # # print('And this is np.mean(MD): ', np.mean(MD))
+#     # ground_truth_K_iso = 3 * variance_of_mean_diffusivities / np.mean(MD)**2
+
+#     mean_diffusivities = []
+
+#     for tensor in DTD:
+#         evals_tensor, _ = decompose_tensor(tensor)
+#         mean_diffusivities.append(np.mean(evals_tensor))
+
+#     # Variance of individual tensor's mean diffusivities
+#     variance_of_mean_diffusivities = np.var(mean_diffusivities)
+#     mean_D = np.mean(mean_diffusivities)  # Or use the existing computation: mean_D = np.trace(np.mean(DTD, axis=0)) / 3
+#     ground_truth_K_iso = 3 * variance_of_mean_diffusivities / (mean_D ** 2)
+
+
+#     error_msg = (
+#         f"Calculated K_iso {K_iso} for anisotropicDTD does not match the "
+#         f"ground truth {ground_truth_K_iso}"
+#     )
+#     assert np.isclose(K_iso, ground_truth_K_iso), error_msg
