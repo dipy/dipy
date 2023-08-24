@@ -5,7 +5,6 @@ Documentation
 
 .. This tree is helping populate the side navigation panel
 .. toctree::
-   :hidden:
 
    introduction
    mission
@@ -23,9 +22,6 @@ Documentation
    api_changes
 
 .. Main content will be displayed using the jinja template
-.. jinja:: 
-   :context: documentation
-   :file: _templates/documentation.html
 
 
 ..
