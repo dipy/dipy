@@ -58,6 +58,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef int          rejection_sampling_max_try
     cdef int          rejection_sampling_nbr_sample
     cdef double[3]    voxel_size
+    cdef double[3]    inv_voxel_size
 
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
@@ -167,11 +168,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     position[i] = (self.position[i]
                                    + self.frame[1][i] * self.probe_radius
                                    * cos(count * self.angular_separation)
-                                   / self.voxel_size[i]
+                                   * self.inv_voxel_size[i]
                                    +
                                    self.frame[2][i] * self.probe_radius
                                    * sin(count * self.angular_separation)
-                                   / self.voxel_size[i])
+                                   * self.inv_voxel_size[i])
 
                 self.last_val += self.pmf_gen.get_pmf_value(position,
                                                             self.frame[0])
@@ -233,7 +234,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3] binormal
         cdef double[3] new_position
         cdef double likelihood
-        cdef int i, j, q
+        cdef int c, i, j, q
 
         self.prepare_propagator(self.probe_step_size)
 
@@ -262,10 +263,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                    + self.propagator[7] * frame[1][i]
                                    + self.propagator[8] * frame[2][i])
                 cross(&normal[0], &binormal[0], &tangent[0])
-                for i in range(3):
-                    frame[0][i] = tangent[i]
-                    frame[1][i] = normal[i]
-                    frame[2][i] = binormal[i]
+
+                copy_point(&tangent[0], &frame[0][0])
+                copy_point(&normal[0], &frame[1][0])
+                copy_point(&binormal[0], &frame[2][0])
 
             if self.probe_count == 1:
                 fod_amp = self.pmf_gen.get_pmf_value(position, tangent)
@@ -286,10 +287,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                         new_position[i] = (position[i]
                                            + normal[i] * self.probe_radius
                                            * cos(c * self.angular_separation)
-                                           / self.voxel_size[i]
+                                           * self.inv_voxel_size[i]
                                            + binormal[i] * self.probe_radius
                                            * sin(c * self.angular_separation)
-                                           / self.voxel_size[i])
+                                           * self.inv_voxel_size[i])
                     fod_amp = self.pmf_gen.get_pmf_value(new_position, tangent)
                     fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                     self.last_val_cand += fod_amp
@@ -369,9 +370,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         for i in range(3):
             self.position[i] = \
-                (self.propagator[0] * self.frame[0][i] / self.voxel_size[i]
-                + self.propagator[1] * self.frame[1][i] / self.voxel_size[i]
-                + self.propagator[2] * self.frame[2][i] / self.voxel_size[i]
+                (self.propagator[0] * self.frame[0][i] * self.inv_voxel_size[i]
+                + self.propagator[1] * self.frame[1][i] * self.inv_voxel_size[i]
+                + self.propagator[2] * self.frame[2][i] * self.inv_voxel_size[i]
                 + self.position[i])
             tangent[i] = (self.propagator[3] * self.frame[0][i]
                           + self.propagator[4] * self.frame[1][i]
@@ -430,6 +431,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.step_size = step_size
         for i in range(3):
             self.voxel_size[i] = voxel_size[i]
+            self.inv_voxel_size[i] = 1 / voxel_size[i]
             average_voxel_size += voxel_size[i] / 3
 
         # convert max_angle from degrees to radians
