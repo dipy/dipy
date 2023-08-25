@@ -13,7 +13,6 @@ from dipy.reconst.dti import (
     from_lower_triangular,
     lower_triangular,
     MIN_POSITIVE_SIGNAL)
-from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.onetime import auto_attr
 
 
@@ -35,7 +34,7 @@ def split_cti_params(cti_params):
             4. Twenty-One elements of the covariance tensor
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 100
+            voxels. Default: 1
 
         Returns
         -------
@@ -126,13 +125,10 @@ class CorrelationTensorModel(ReconstModel):
         Parameters
         ----------
         gtab1: dipy.core.gradients.GradientTable
-        A GradientTable class instance for first DDE diffusion epoch
+            A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
-        A GradientTable class instance for second DDE diffusion epoch
-
+            A GradientTable class instance for second DDE diffusion epoch
         fit_method : str or callable
-
-
         args, kwargs : arguments and key-word arguments passed to the
         fit_method.
 
@@ -180,9 +176,8 @@ class CorrelationTensorModel(ReconstModel):
             The measured signal from one voxel.
 
         mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[-1]
-
+            A boolean array of the same shape as data.shape[-1]. It
+            designates which coordinates in the data should be analyzed.
         """
         data_thres = np.maximum(data, self.min_signal)
         params = self.fit_method(self.design_matrix, data_thres,
@@ -304,11 +299,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             variance of eigenvalues of the diffusion tensor,
             \(\overline{D}\) is the mean of the diffusion tensor.
         """
-        # evals = self.model_params[:3]
-        # evecs = self.model_params[3:12].reshape((3, 3))
-        # D_elements_new_order = lower_triangular(vec_val_vect(evecs, evals))
         C = self.ct
-        # D = from_lower_triangular(D_elements_new_order)
         D = self.quadratic_form
 
         Variance = 2/9 * (C[..., 0] + D[..., 0, 0] ** 2 + C[..., 1]
@@ -350,7 +341,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     @auto_attr
     def K_total(self):
-        r""" Returns the total execess Kurtosis. (K_total)
+        r""" Returns the total excess Kurtosis. (K_total)
 
             Notes
             -----
@@ -376,33 +367,39 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         mean_K = self.mkt()
         D = self.quadratic_form
-        mean_D = np.trace(D) / 3
-        psi = 2 / 5 * ((np.sqrt(D[..., 0, 0]) + np.sqrt(D[..., 1, 1])
-                        + np.sqrt(D[..., 2, 2])
-                        + 2 * np.sqrt(D[..., 0, 1]) + 2 * np.sqrt(D[..., 0, 2])
-                        + np.sqrt(D[..., 1, 2])) / (mean_D ** 2)) - (6/5)
+        # mean_D = np.trace(D) / 3
+        mean_D = self.md
+        psi = 2 / 5 * ((D[..., 0, 0]**2 + D[..., 1, 1]**2
+                        + D[..., 2, 2]**2
+                        + 2 * D[..., 0, 1]**2 + 2 * D[..., 0, 2]**2
+                        + D[..., 1, 2]**2) / (mean_D ** 2)) - (6/5)
 
-        excess_K = 1/5 * mean_K + psi
-        return excess_K
+        return mean_K + psi
 
     @property
     def K_micro(self):
         r""" Returns Microscopic Source of Kurtosis.  """
 
-        K_excess = self.K_total
+        K_total = self.K_total
         K_aniso = self.K_aniso
         K_iso = self.K_iso
-        micro_K = K_excess - K_aniso - K_iso
+        micro_K = K_total - K_aniso - K_iso
         return micro_K
 
 
 def params_to_cti_params(result, min_diffusivity=0):
+    # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
     evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
                                     min_diffusivity=min_diffusivity)
+    # Extracting kurtosis tensor parameters from solution
     MD_square = evals.mean(0)**2
     KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
+
+    # Extracting correlation tensor parameters from solution
     CT_elements = result[21:42]
+
+    # Write output
     cti_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                 KT_elements, CT_elements), axis=0)
 
@@ -412,8 +409,7 @@ def params_to_cti_params(result, min_diffusivity=0):
 def ls_fit_cti(design_matrix, data, inverse_design_matrix, weights=True,
                min_diffusivity=0):
     r""" Compute the diffusion kurtosis and covariance tensors using an
-    ordinary or
-    weighted linear least squares approach [1]_
+    ordinary or weighted linear least squares approach
 
     Parameters
     ----------

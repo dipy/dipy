@@ -15,11 +15,32 @@ from dipy.reconst.dki import (mean_kurtosis,
                               axial_kurtosis, radial_kurtosis,
                               mean_kurtosis_tensor,
                               kurtosis_fractional_anisotropy)
-from dipy.utils.optpkg import optional_package
-_, have_cvxpy, _ = optional_package("cvxpy")
 
 
 def _perpendicular_directions_temp(v, num=20, half=False):
+    """
+    Computes a set of perpendicular directions relative to the direction in v.
+
+    The perpendicular directions are computed by sampling on a unit
+    circumference that is perpendicular to `v`. The computation depends on
+    whether the vector is aligned with the x-axis or not.
+
+    Parameters
+    ----------
+    v : array (3,)
+        Array containing the three cartesian coordinates of vector v.
+    num : int, optional
+        Number of perpendicular directions to generate. Default is 20.
+    half : bool, optional
+        If True, perpendicular directions are sampled on half of the unit
+        circumference perpendicular to v, otherwise they are sampled on the
+        full circumference. Default is False.
+
+    Returns
+    -------
+    psamples : array (n, 3)
+        Array of vectors perpendicular to v.
+    """
     v = np.array(v, dtype=np.float64)
     v = v.T
     er = np.finfo(v[0].dtype).eps * 1e3
@@ -39,26 +60,38 @@ def _perpendicular_directions_temp(v, num=20, half=False):
                              (v[0]*cosa - v[2]*v[1]*sina) / sq])
     return psamples.T
 
+# Generating the DDE acquisition parameters (gtab1 and gtab2) for CTI based on
+# the minimal requirements.
+# This code then further generates the corresponding QTE gtab to test simulated
+# signals based on multiple Gaussian components.
+# In this scenario, CTI should yield analogous Kaniso and Kiso values as
+# compared to QTE, while Kmicro would be zero.
 
-# Simulation: signals of two crossing fibers are simulated
+
 n_pts = 20
 theta = np.pi * np.random.rand(n_pts)
 phi = 2 * np.pi * np.random.rand(n_pts)
 hsph_initial = HemiSphere(theta=theta, phi=phi)
 hsph_updated, potential = disperse_charges(hsph_initial, 5000)
 
+# Generating gtab1
 bvecs1 = np.concatenate([hsph_updated.vertices] * 4)
 bvecs1 = np.append(bvecs1, [[0, 0, 0]], axis=0)
 bvals1 = np.array([2] * 20 + [1] * 20 + [1] * 20 + [1] * 20 + [0])
 gtab1 = gradient_table(bvals1, bvecs1)
+
+# Generating perpendicular directions to hsph_updated
 hsph_updated90 = _perpendicular_directions_temp(hsph_updated.vertices)
 dot_product = np.sum(hsph_updated.vertices * hsph_updated90, axis=1)
 are_perpendicular = np.isclose(dot_product, 0)
+
+# Generating gtab2
 bvecs2 = np.concatenate(([hsph_updated.vertices] * 2) +
                         [hsph_updated90] + ([hsph_updated.vertices]))
 bvecs2 = np.append(bvecs2, [[0, 0, 0]], axis=0)
 bvals2 = np.array([0] * 20 + [1] * 20 + [1] * 20 + [0] * 20 + [0])
 gtab2 = gradient_table(bvals2, bvecs2)
+
 e1 = bvecs1
 e2 = bvecs2
 e3 = np.cross(e1, e2)
@@ -82,10 +115,36 @@ DTDs = [
 ]
 DTD_labels = ['Anisotropic DTD', 'Isotropic DTD', 'Combined DTD']
 
-CTI_data = np.zeros((2, 2, 1, len(gtab1.bvals)))
-
 
 def construct_cti_params(evals, evecs, kt, fct):
+    """
+    Combines all components to generate Correlation Tensor Model Parameter.
+
+    Parameters
+    ----------
+    evals : array (..., 3)
+        Eigenvalues from eigen decomposition of the tensor.
+    evecs : array (..., 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. evecs[:,j] is associated with
+        evals[j])
+    kt : array (..., 15)
+        Fifteen elements of the kurtosis tensor
+    fct: array(..., 21)
+        Twenty-one elements of the covariance tensor
+
+    Returns
+    -------
+    cti_params :  numpy.ndarray (..., 48)
+    All parameters estimated from the correlation tensor model.
+    Parameters are ordered as follows:
+
+        1. Three diffusion tensor's eigenvalues
+        2. Three lines of the eigenvector matrix each containing the
+        first, second and third coordinates of the eigenvector
+        3. Fifteen elements of the kurtosis tensor
+        4. Twenty-One elements of the covariance tensor
+    """
     fevals = evals.reshape((-1, evals.shape[-1]))
     fevecs = evecs.reshape((-1,) + evecs.shape[-2:])
     fevecs = fevecs.reshape((1, -1))
@@ -94,7 +153,21 @@ def construct_cti_params(evals, evecs, kt, fct):
     return np.squeeze(cti_params)
 
 
-def modify_C_params(C):
+def from_qte_to_cti(C):
+    """
+    Rescales the qte C elements to the C elements used in CTI.
+
+    Parameters
+    ----------
+    C: array(..., 21)
+        Twenty-one elements of the covariance tensor in voigt notation plus
+        some extra scaling factors.
+
+    Returns
+    -------
+    ccti: array(..., 21)
+        Covariance Tensor Elements with no hidden factors.
+    """
     const = np.sqrt(2)
     ccti = np.zeros((21, 1))
     ccti[0] = C[0]
@@ -121,7 +194,22 @@ def modify_C_params(C):
     return ccti
 
 
-def generate_K(ccti, MD):
+def multi_gaussian_k_from_c(ccti, MD):
+    """
+    Computes the multiple Gaussian diffusion kurtosis tensor from the
+    covariance tensor.
+
+    Parameters
+    ----------
+    ccti: array(..., 21)
+        Covariance Tensor Elements with no hidden factors.
+    MD: Mean Diffusivity (MD) of a diffusion tensor.
+
+    Returns
+    -------
+    K: array (..., 15)
+        Fifteen elements of the kurtosis tensor
+    """
     K = np.zeros((15, 1))
     K[0] = 3 * ccti[0] / (MD ** 2)
     K[1] = 3 * ccti[1] / (MD ** 2)
@@ -143,25 +231,16 @@ def generate_K(ccti, MD):
 
 def test_cti_prediction():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
-    anisotropic_DTD = _anisotropic_DTD()
-    isotropic_DTD = _isotropic_DTD()
-
-    DTDs = [
-        anisotropic_DTD,
-        isotropic_DTD,
-        np.concatenate((anisotropic_DTD, isotropic_DTD))
-    ]
-
     for DTD in DTDs:
         D = np.mean(DTD, axis=0)
         evals, evecs = decompose_tensor(D)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
-        ccti = modify_C_params(C)
+        ccti = from_qte_to_cti(C)
         MD = mean_diffusivity(evals)
-        K = generate_K(ccti, MD)
+        K = multi_gaussian_k_from_c(ccti, MD)
         cti_params = construct_cti_params(evals, evecs, K, ccti)
-        cti_pred_signals = ctiM.predict(cti_params, S0 = S0)
+        cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[
             np.newaxis, :]
         assert np.allclose(cti_pred_signals, qti_pred_signals), (
@@ -176,10 +255,10 @@ def test_split_cti_param():
         evals, evecs = decompose_tensor(D)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
-        ccti = modify_C_params(C)
+        ccti = from_qte_to_cti(C)
 
         MD = mean_diffusivity(evals)
-        K = generate_K(ccti, MD)
+        K = multi_gaussian_k_from_c(ccti, MD)
 
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
@@ -196,20 +275,16 @@ def test_split_cti_param():
 
 
 def test_cti_fits():
-    DTDs = [
-        anisotropic_DTD,
-        isotropic_DTD,
-        np.concatenate((anisotropic_DTD, isotropic_DTD))
-    ]
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
+    CTI_data = np.zeros((2, 2, 1, len(gtab1.bvals)))
     for i, DTD in enumerate(DTDs):
         D = np.mean(DTD, axis=0)
         evals, evecs = decompose_tensor(D)
         C = qti.dtd_covariance(DTD)
         C = qti.from_6x6_to_21x1(C)
-        ccti = modify_C_params(C)
+        ccti = from_qte_to_cti(C)
         MD = mean_diffusivity(evals)
-        K = generate_K(ccti, MD)
+        K = multi_gaussian_k_from_c(ccti, MD)
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         evals, evecs, kt, ct = split_cti_params(cti_params)
@@ -229,10 +304,7 @@ def test_cti_fits():
         assert np.allclose(evals, multi_evals), "Evals don't match"
         assert np.allclose(kt, multi_kt), "K doesn't match"
         assert np.allclose(ct, multi_ct), "C doesn't match"
-        # assert_array_almost_equal(ctiF_multi.model_params, multi_params)
-        assert np.allclose(ctiF_multi.model_params, multi_params), (
-            "multi voxel fit doesn't pass"
-            )
+
         # Testing ls_fit_cti
         inverse_design_matrix = np.linalg.pinv(design_matrix(gtab1, gtab2))
         cti_return = ls_fit_cti(design_matrix(
@@ -329,53 +401,18 @@ def test_cti_fits():
             evals_tensor, _ = decompose_tensor(tensor)
             mean_diffusivities.append(np.mean(evals_tensor))
         variance_of_mean_diffusivities = np.var(mean_diffusivities)
-        mean_D = np.mean(mean_diffusivities) 
+        mean_D = np.mean(mean_diffusivities)
         ground_truth_K_iso = 3 * variance_of_mean_diffusivities / (mean_D ** 2)
-        
+
         error_msg = (
             f"Calculated K_iso {K_iso} for anisotropicDTD does not match the "
             f"ground truth {ground_truth_K_iso}"
         )
         assert np.isclose(K_iso, ground_truth_K_iso), error_msg
 
-# def test_isotropic_source():
-#     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
-#     isotropic_DTD = _isotropic_DTD()
-#     anisotropic_DTD = _anisotropic_DTD()
-#     DTD = np.concatenate((anisotropic_DTD, isotropic_DTD))
-#     DTD = _isotropic_DTD()
-#     D = np.mean(DTD, axis=0)
-#     evals, evecs = decompose_tensor(D)
-#     C = qti.dtd_covariance(DTD)
-#     C = qti.from_6x6_to_21x1(C)
-#     ccti = modify_C_params(C)
-#     MD = mean_diffusivity(evals)
-#     K = generate_K(ccti, MD)
-#     cti_params = construct_cti_params(evals, evecs, K, ccti)
-#     cti_pred_signals = ctiM.predict(cti_params, S0=S0)
-#     ctiF = ctiM.fit(cti_pred_signals)
-#     K_iso = ctiF.K_iso
-
-    
-#     # variance_of_mean_diffusivities = np.var(MD)
-#     # print('this is variance_of_mean_diffusivities: ', variance_of_mean_diffusivities )
-#     # # print('And this is np.mean(MD): ', np.mean(MD))
-#     # ground_truth_K_iso = 3 * variance_of_mean_diffusivities / np.mean(MD)**2
-
-#     mean_diffusivities = []
-
-#     for tensor in DTD:
-#         evals_tensor, _ = decompose_tensor(tensor)
-#         mean_diffusivities.append(np.mean(evals_tensor))
-
-#     # Variance of individual tensor's mean diffusivities
-#     variance_of_mean_diffusivities = np.var(mean_diffusivities)
-#     mean_D = np.mean(mean_diffusivities)  # Or use the existing computation: mean_D = np.trace(np.mean(DTD, axis=0)) / 3
-#     ground_truth_K_iso = 3 * variance_of_mean_diffusivities / (mean_D ** 2)
-
-
-#     error_msg = (
-#         f"Calculated K_iso {K_iso} for anisotropicDTD does not match the "
-#         f"ground truth {ground_truth_K_iso}"
-#     )
-#     assert np.isclose(K_iso, ground_truth_K_iso), error_msg
+        # checking microscopic source of kurtosis
+        ground_truth_K_micro = 0
+        K_micro = ctiF.K_micro
+        assert np.allclose(K_micro, ground_truth_K_micro), (
+            "K_micro values don't match ground truth values"
+            )
