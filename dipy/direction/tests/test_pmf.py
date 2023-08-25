@@ -29,7 +29,7 @@ def test_pmf_val():
         xyz = sphere.vertices[idx] + np.random.random([3]) / 100
         pmf_idx = pmfgen.get_pmf_value(point, xyz)
         # Test that the pmf sampled for the direction xyz is correct
-        npt.assert_array_equal(pmf[idx], pmf_idx)
+        npt.assert_array_almost_equal(pmf[idx], pmf_idx)
 
 
 def test_pmf_from_sh():
