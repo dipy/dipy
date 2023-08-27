@@ -187,7 +187,7 @@ class CorrelationTensorModel(ReconstModel):
         return CorrelationTensorFit(self, params)
 
     def predict(self, cti_params, S0=1):
-        """Predict a signal for the CTI model class instance given parameteres
+        """Predict a signal for the CTI model class instance given parameters
 
         Parameters:
         -----------
