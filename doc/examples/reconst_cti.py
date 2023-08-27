@@ -19,8 +19,8 @@ and structural disorder in compartments like cross-sectional variance
 While the CorrelationTensorModel was initiated using the class instance of the
 DiffusionKurtosisTensorFit to capture common attributes, their expressions for
 representing the diffusion-weighted signal differ significantly. This
-distinction in representation necessitated a change in the ``design matrix`` for
-CTI.
+distinction in representation necessitated a change in the ``design matrix``
+for CTI.
 The CorrelationTensorModel expresses the diffusion-weighted signal as:
 
 .. math::
@@ -58,11 +58,11 @@ import dipy.reconst.cti as cti
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.io.image import load_nifti
-from dipy.segment.mask import median_otsu
+from dipy.data import get_fnames
 """
 For CTI analysis, data must be acquired using double diffusion encoding, taking
-into account different pairs of b-values and gradient directions between the two
-diffusion epochs, as discussed by Henriques et al. in Magn Reson Med 2021
+into account different pairs of b-values and gradient directions between the
+two diffusion epochs, as discussed by Henriques et al. in Magn Reson Med 2021
 [NetoHe2021]._
 To run CTI we need to have separate b-value and b-vector files for each DDE
 diffusion epoch. In this tutorial, a sample DDE dataset and respective b-value
@@ -72,20 +72,19 @@ code to add the paths of your data.
 The users should also ensure that the data is formatted correctly for the CTI
 analysis they are performing.
 """
-data, affine = load_nifti('temp_data/RB_invivo_cti_data_f3.nii')
-bvals1, bvecs1 = read_bvals_bvecs('temp_data/bvals1.bval',
-                                  'temp_data/bvec1.bvec')
-bvals2, bvecs2 = read_bvals_bvecs('temp_data/bvals2.bval',
-                                  'temp_data/bvec2.bvec')
+fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames('cti_rat1')
+data, affine = load_nifti(fdata)
+bvals1, bvecs1 = read_bvals_bvecs(fbvals1, fbvecs1)
+bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
 """
 In this example, the function ``load_nifti`` is used to load the CTI data from
 the file ``RB_invivo_cti_data_f3.nii`` and returns the data as a nibabel
 Nifti1Image object along with the affine transformation. The b-values and
 b-vectors for two different gradient tables are loaded from ``bvals1.bval`` and
 ``bvec1.bvec``, and ``bvals2.bval`` and ``bvec2.bvec`` respectively using the
-``read_bvals_bvecs`` function. For CTI reconstruction in DIPY, we need to define
-the b-values and b-vectors for each diffusion epoch on separate gradient table,
-as done in the above line of code.
+``read_bvals_bvecs`` function. For CTI reconstruction in DIPY, we need to
+define the b-values and b-vectors for each diffusion epoch on separate gradient
+table, as done in the above line of code.
 """
 gtab1 = gradient_table(bvals1, bvecs1)
 gtab2 = gradient_table(bvals2, bvecs2)
@@ -93,8 +92,7 @@ gtab2 = gradient_table(bvals2, bvecs2)
 Before fitting the data, we perform some data pre-processing. We first compute
 a brain mask to avoid unnecessary calculations on the background of the image.
 """
-maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
-                             autocrop=False, dilate=1)
+mask, mask_affine = load_nifti(fmask)
 """
 Now that we've loaded the data and generated the two gradient tables we can go
 forward with CTI fitting. For this, the CTI model is first defined for
@@ -169,5 +167,5 @@ Jespersen, S.N., Shemesh, N.
     stroke, Neuroimage 247: 118833. doi: 10.1016/j.neuroimage.2021.118833
 .. [NetHe2021] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2021.
 Evidence for microscopic kurtosis in neural tissue revealed by correlation
-tensor MRI. Magn. Reson. Med. 1–20. doi: 10.1002/mrm.28938
+tensor MRI. Magn. Reson. Med. 1-20. doi: 10.1002/mrm.28938
 """
