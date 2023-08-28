@@ -26,6 +26,13 @@ from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
 
 
+def allclose(x, y, atol=None):
+    if atol is not None:
+        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
+    else:
+        return x.shape == y.shape and np.allclose(x, y)
+
+
 def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
     following tissue types.
@@ -307,9 +314,6 @@ def test_probabilistic_odf_weighted_tracker():
                           [3., 1., 0.],
                           [4., 1., 0.]])]
 
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
-
     path = [False, False]
     for sl in streamlines:
         if allclose(sl, expected[0]):
@@ -520,6 +524,66 @@ def test_particle_filtering_tractography():
                                                       random_seed=0))._data
     npt.assert_equal(tracking1, tracking2)
 
+    # Test min_wm_pve_before_stopping parameter
+    expected = [np.array([[1., 0., 1.],
+                          [1., 1., 1.],
+                          [1., 2., 1.]]),
+                np.array([[1., 0., 1.],
+                          [1., 1., 1.],
+                          [1., 2., 1.],
+                          [1., 3., 1.],
+                          [1., 4., 1.]])]
+
+    simple_wm = np.array([[0, 0, 0, 0, 0, 0],
+                          [0, 0.4, 0.4, 1, 0.4, 0],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_wm = np.dstack([np.zeros(simple_wm.shape),
+                           simple_wm,
+                           simple_wm,
+                           simple_wm,
+                           np.zeros(simple_wm.shape)])
+    simple_gm = np.array([[0, 0, 0, 0, 0, 0],
+                          [1, 0.6, 0.6, 0, 0.6, 1],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_gm = np.dstack([np.zeros(simple_gm.shape),
+                           simple_gm,
+                           simple_gm,
+                           simple_gm,
+                           np.zeros(simple_gm.shape)])
+    simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
+    sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
+    seeds = np.array([[1, 1, 1]])
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf = np.zeros(list(simple_gm.shape) + [3])
+    pmf[:, :, :, 1] = 1  # horizontal bundle
+
+    #inital_directions = np.array([[0, 1, 0]]).reshape([1, 1, 3])
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 30, sphere)
+
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size=1,
+        max_cross=1, return_all=True,
+        min_wm_pve_before_stopping=0)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+    npt.assert_(np.allclose(pft_streamlines[0], expected[0]))
+
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size=1,
+        max_cross=1, return_all=True,
+        min_wm_pve_before_stopping=1)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+    npt.assert_(np.allclose(pft_streamlines[0], expected[1]))
+
+    # Test invalid min_wm_pve_before_stopping parameters
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
+                                          min_wm_pve_before_stopping=-1))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
+                                          min_wm_pve_before_stopping=2))
+
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
@@ -567,9 +631,6 @@ def test_maximum_deterministic_tracker():
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
 
     for sl in streamlines:
         if not allclose(sl, expected[0]):
@@ -665,12 +726,9 @@ def test_bootstap_peak_tracker():
                           [2., 0., 0.],
                           ])]
 
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
-
-    if not allclose(streamlines[0], expected[0]):
+    if not allclose(streamlines[0], expected[0], atol=0.5):
         raise AssertionError()
-    if not allclose(streamlines[1], expected[1]):
+    if not allclose(streamlines[1], expected[1], atol=0.5):
         raise AssertionError()
 
 
@@ -715,9 +773,6 @@ def test_closest_peak_tracker():
                           [2., 2., 0.],
                           [2., 3., 0.],
                           [2., 4., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
 
     if not allclose(streamlines[0], expected[0]):
         raise AssertionError()
