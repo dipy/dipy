@@ -12,6 +12,8 @@ import pytest
 from dipy.data import fetch_gold_standard_io
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.utils import is_header_compatible
+
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
@@ -227,6 +229,24 @@ def test_to_center_equivalence():
     sft_2.to_origin(Origin.NIFTI)
     assert_allclose(sft_1.streamlines.get_data(),
                     sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
+
+
+def test_empty_sft_case():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX, to_origin=Origin('corner'))
+    # Removing data_per_point
+    sft_1 = sft_1.from_sft(sft_1.streamlines, sft_1)
+
+    # Creating an empty set with the same spatial attributes.
+    sft_2 = sft_1.from_sft([], sft_1)
+
+    # Loaded in Vox, Corner. Modifying and checking.
+    sft_1.to_rasmm()
+    sft_2.to_rasmm()
+    sft_1.to_center()
+    sft_2.to_center()
+    assert StatefulTractogram.are_compatible(sft_1, sft_2)
+    assert is_header_compatible(sft_1, sft_2)
 
 
 def test_trk_iterative_saving_loading():

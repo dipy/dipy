@@ -1675,7 +1675,7 @@ class DiffusionKurtosisModel(ReconstModel):
         if self.is_multi_method:
             return self.multi_fit(data_thres, mask=mask)
 
-        params = self.fit_method(self.design_matrix, data_thres,
+        params, extra = self.fit_method(self.design_matrix, data_thres,
                                  *self.args, **self.kwargs)
         return DiffusionKurtosisFit(self, params)
 
@@ -1686,7 +1686,7 @@ class DiffusionKurtosisModel(ReconstModel):
             'sdp': self.sdp,
             }
 
-        params = self.fit_method(self.design_matrix, data_thres,
+        params, extra = self.fit_method(self.design_matrix, data_thres,
                                  self.inverse_design_matrix,
                                  weights=self.weights,
                                  min_diffusivity=self.min_diffusivity,
@@ -2247,7 +2247,7 @@ def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params
+    return dki_params, None
 
 
 def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
@@ -2312,7 +2312,7 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params
+    return dki_params, None
 
 
 def Wrotate(kt, Basis):

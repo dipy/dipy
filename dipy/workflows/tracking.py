@@ -213,7 +213,8 @@ class PFTrackingPAMFlow(Workflow):
             pft_count=15,
             out_dir='',
             out_tractogram='tractogram.trk',
-            save_seeds=False):
+            save_seeds=False,
+            min_wm_pve_before_stopping=0):
         """Workflow for Particle Filtering Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -263,6 +264,10 @@ class PFTrackingPAMFlow(Workflow):
             If true, save the seeds associated to their streamline
             in the 'data_per_streamline' Tractogram dictionary using
             'seeds' as the key.
+        min_wm_pve_before_stopping : int, optional
+            Minimum white matter pve (1 - stopping_criterion.include_map -
+            stopping_criterion.exclude_map) to reach before allowing the
+            tractography to stop.
 
         References
         ----------
@@ -309,7 +314,8 @@ class PFTrackingPAMFlow(Workflow):
                 pft_front_tracking_dist=pft_front,
                 pft_max_trial=20,
                 particle_count=pft_count,
-                save_seeds=save_seeds)
+                save_seeds=save_seeds,
+                min_wm_pve_before_stopping=min_wm_pve_before_stopping)
 
             logging.info('ParticleFilteringTracking initiated')
 

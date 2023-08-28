@@ -1,0 +1,28 @@
+Week12: Making Test Functions Work
+==================================
+
+.. post:: August 15 2023
+    :author: Shilpi Prasad
+    :tags: google
+    :category: gsoc
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+According to last week's situation, I was trying to make the ``test_cti_fits`` function work as well as the ``test_split_cti_params`` function. This week I figured out the problem with these functions and was able to fix it. The major problem was occurring while I was trying to compare the parameters. Firstly, I started by removing all the extra fit methods in ``common_fit_method`` list such as NLS, CLS and CWLS as I realized that we won't immediately be needing an extra ``multi_tensor_fit`` function in CTI.
+
+I also realized that our fit method needs to accommodate multiple voxels, so I had to add "@multi_voxel_fit" decorator at the top of that method. Major fact that I realized was that the already implemented ``ls_fit_cti`` function was not implemented incorrectly. The cti_return (obtained directly from ``ls_fit_cti``) was not matching cti_params because of the eigen value decomposition. Since the total diffusion tensor in my test was isotropic, when the tensor was decomposed inside the function ``ls_fit_cti``, it created a different eigenvector due to floating point precision. So, I instead tried to compare the more broken down variables, hence I compared the evals from ``cti_params`` to evals of ``cti_return``, and the same for covariance tensor elements and kurtosis tensor elements. And on doing this the variables matched perfectly.
+
+Also, last time I had the tests and functions for axial, radial, mean and apparent kurtosis which are basically different measures derived from the diffusion kurtosis tensor, and they help in providing different perspectives on the microstructural complexity of the tissue. So, since last time the fit function itself could not be tested, consequently I couldn't run tests for these functions as well. So, after the tests for the fit function were working, I ran tests for these functions and realized some errors. I fixed the errors by having to take care of the implementation part of these functions as well as changing direction assertion to np.allclose as we also need to take care of the floating point precision detail. 
+
+However, for implementing tests for the sources of kurtosis, we'd previously decided that we'd take QTI tests into consideration as ``k_bulk`` appeared similar to ``k_iso`` and ``k_shear`` seemed similar to ``k_aniso``, but upon careful examination we realized that this was not actually the case. This is because in case of QTI, when they're calculating D from self.params, they already have the top 6 elements in voigt notation. We can also observe that when they convert ``from_3x3_to_6x1``, they're multiplying some factors. So, the end point being that "D" in our case and the diffusion tensor "D" in their case is different. And this matters because they're using D to calculate ``k_bulk`` (line 1059 in QTI.py) and we're using it to calculate ``K_iso``. Therefore I couldn't use their tests anymore. So, the only solution now in order to be able to implement tests for the sources of kurtosis is to look at the actual paper and implement their ground truth values. 
+
+This week I also spent time creating a basic draft of the CTI simulation. 
+
+Things to do next week 
+~~~~~~~~~~~~~~~~~~~~~~
+
+This week I intend on making sure that the tests for the sources of kurtosis are implemented properly and they're working as expected. 
+Also, the real life data when run on our model at the moment is giving some overflow errors. I intend on working towards this as well. 
+I'm also going to make sure that at the end of this week, I'm able to create a good near finish draft of the CTI simulation. 
