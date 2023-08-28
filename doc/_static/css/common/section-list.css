@@ -1,0 +1,34 @@
+.section {
+  margin-bottom: 64px;
+}
+
+.section .section-sub-topic-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1em;
+}
+
+.section .section-sub-topic {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 4px;
+
+  padding: 1em;
+
+  text-decoration: none;
+}
+
+.section .section-sub-topic:hover {
+  border: 1px solid var(--pst-color-secondary);
+  color: var(--pst-color-secondary);
+  cursor: pointer;
+}
+
+.section .section-sub-topic span {
+  font-weight: 600;
+}
+
+@media only screen and (max-width: 767px) {
+  .section .section-sub-topic-list {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
