@@ -586,7 +586,7 @@ fetch_qte_lte_pte = _make_fetcher(
 
 fetch_cti_rat_data = _make_fetcher(
     'fetch_cti_rat_data',
-    pjoin(dipy_home, 'cti_data'),
+    pjoin(dipy_home, 'cti_rat1'),
     'https://zenodo.org/record/8276773/files/',
     ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
      'bvals2.bval', 'bvec2.bvec', 'Rat1_mask.nii'],
