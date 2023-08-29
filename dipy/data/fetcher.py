@@ -584,8 +584,8 @@ fetch_qte_lte_pte = _make_fetcher(
     data_size='41.5 MB')
 
 
-fetch_cti_rat_data = _make_fetcher(
-    'fetch_cti_rat_data',
+fetch_cti_rat1 = _make_fetcher(
+    'fetch_cti_rat1',
     pjoin(dipy_home, 'cti_rat1'),
     'https://zenodo.org/record/8276773/files/',
     ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
@@ -874,7 +874,7 @@ def get_fnames(name='small_64D'):
         fmask = pjoin(folder, 'mask.nii.gz')
         return fdata, fbval, fbvec, fmask
     if name == 'cti_rat1':
-        _, folder = fetch_cti_rat_data()
+        _, folder = fetch_cti_rat1()
         fdata = pjoin(folder, 'Rat1_invivo_cti_data.nii')
         fbval1 = pjoin(folder, 'bvals1.bval')
         fbvec1 = pjoin(folder, 'bvec1.bvec')
