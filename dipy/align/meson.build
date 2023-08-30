@@ -19,12 +19,14 @@ endforeach
 
 python_sources = ['__init__.py',
   '_public.py',
+  'cpd.py',
   'imaffine.py',
   'imwarp.py',
   'metrics.py',
   'reslice.py',
   'scalespace.py',
   'streamlinear.py',
+  'streamwarp.py',
   ]
 
 

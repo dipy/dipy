@@ -1,6 +1,5 @@
 python_sources = [
   '__init__.py',
-  'app.py',
   'gmem.py',
   'panel.py',
   'plotting.py',
@@ -17,4 +16,5 @@ py3.install_sources(
 )
 
 
+subdir('horizon')
 subdir('tests')

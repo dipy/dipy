@@ -3,6 +3,7 @@ cython_sources = [
   'closest_peak_direction_getter',
   'pmf',
   'probabilistic_direction_getter',
+  'ptt_direction_getter',
   ]
 
 foreach ext: cython_sources

@@ -4,6 +4,7 @@ python_sources = [
   'test_bundles.py',
   'test_clustering.py',
   'test_feature.py',
+  'test_fss.py',
   'test_mask.py',
   'test_metric.py',
   'test_mrf.py',

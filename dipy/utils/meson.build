@@ -23,6 +23,7 @@ python_sources = [
   'optpkg.py',
   'parallel.py',
   'tripwire.py',
+  'volume.py',
   ]
 
 

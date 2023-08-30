@@ -6,6 +6,7 @@ python_sources = [
   'test_omp.py',
   'test_parallel.py',
   'test_tripwire.py',
+  'test_volume.py',
   ]
 
 
