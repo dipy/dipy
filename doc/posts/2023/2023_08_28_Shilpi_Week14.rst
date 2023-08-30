@@ -16,7 +16,7 @@ I also provided documentation to some functions in the test file such as ``_perp
 Also had to change the name of some functions to make it sound more relatable to what they were actually doing. 
 This week I almost finished with the CTI tutorial. The only thing remaining is to create a fetcher for the data so that all the users can download the data and use it. Currently the path given for the data retrieval is of my local system. 
 I also added some references and overall improved the wording and information in the tutorial. 
-I also finished up writing my final work report and get it reviewed by my mentors and then updated it.
+I also finished writing my final work report and got it reviewed by my mentors and then updated it.
 Finally, before pushing the file onto the main PR, I cleaned up the code by removing all the extra comments and some unnecessary code and overall made sure that the entire code was following the pep8 standard. 
 
 What is coming up Next Week 
