@@ -1,7 +1,7 @@
-git+https://github.com/mesonbuild/meson-python
+meson-python>=0.13
 ninja
 Cython>=0.29.21
 packaging>=20.0
 wheel
 numpy>=1.21.1
-git+https://github.com/scientific-python/devpy
+spin==0.5
