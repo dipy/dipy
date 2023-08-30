@@ -1,0 +1,27 @@
+Writing Tests & Making Documentation: Week 13
+=============================================
+
+.. post:: August 28, 2023
+     :author: Shilpi Prasad
+     :tags: google
+     :category: gsoc
+
+
+What I did this week
+~~~~~~~~~~~~~~~~~~~~
+
+This week I fixed the test for the isotropic source of kurtosis so now it's working for all DTDs. I also created tests for the ``K_micro`` function. Initially while running the test, I got some errors which made me look deeper into the actual function. The error was that I was doing sqrt of some elements when actually I was supposed to calculate square of them. Also I was using a '1/5' factor which was not actually required. On fixing these issues, the overall map image of ``K_micro`` improved significantly.
+Previously the multi-voxel test case was failing due to different eigenvalues in the isotropic total diffusion tensors simulations. Removing the eigenvalue assertion made the test pass, as verifying the kt, cvt, and evals values sufficed.
+I also provided documentation to some functions in the test file such as ``_perpendicular_directions_temp_`` and ``from_qte_to_cti`` etc. 
+Also had to change the name of some functions to make it sound more relatable to what they were actually doing. 
+This week I almost finished with the CTI tutorial. The only thing remaining is to create a fetcher for the data so that all the users can download the data and use it. Currently the path given for the data retrieval is of my local system. 
+I also added some references and overall improved the wording and information in the tutorial. 
+I also finished up writing my final work report and get it reviewed by my mentors and then updated it.
+Finally, before pushing the file onto the main PR, I cleaned up the code by removing all the extra comments and some unnecessary code and overall made sure that the entire code was following the pep8 standard. 
+
+What is coming up Next Week 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now that almost everything is completed and all the unit tests are passing, I'll just focus on getting the PR merged.
+At present, the merging of my PR is on hold as we're actively seeking a pair of reviewers who can conduct a thorough examination of the entire codebase and provide their expert feedback.
+Additionally, I'll try to get the QTI simulation merged as well .
