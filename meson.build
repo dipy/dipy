@@ -1,9 +1,9 @@
 project(
   'dipy',
-  'c', 'cpp',
-  version: '1.7.0dev0',
+  'c', 'cpp', 'cython',
+  version: '1.8.0dev0',
   license: 'BSD-3',
-  meson_version: '>= 0.64.0',
+  meson_version: '>= 1.1.0',
   default_options: [
     'buildtype=debugoptimized',
     'c_std=c99',
@@ -11,11 +11,19 @@ project(
   ],
 )
 
+# https://mesonbuild.com/Python-module.html
+py_mod = import('python')
+py3 = py_mod.find_installation(pure: false)
+py3_dep = py3.dependency()
+
 # filesystem Module to manage files and directories
 fs = import('fs')
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
+cy = meson.get_compiler('cython')
+
+cython = find_program('cython')
 
 # Check compiler is recent enough (see "Toolchain Roadmap" for details)
 if cc.get_id() == 'gcc'
@@ -28,6 +36,10 @@ elif cc.get_id() == 'msvc'
           'when building with MSVC')
   endif
 endif
+if not cy.version().version_compare('>=0.29.35')
+  error('SciPy requires Cython >= 0.29.35')
+endif
+
 
 # TODO: the below -Wno flags are all needed to silence warnings in
 # f2py-generated code. This should be fixed in f2py itself.
@@ -41,8 +53,8 @@ endif
 #add_project_arguments(_global_c_args, language : 'c')
 
 # We need -lm for all C code (assuming it uses math functions, which is safe to
-# assume for scikit-image). For C++ it isn't needed, because libstdc++/libc++ is
-# guaranteed to depend on it. For Fortran code, Meson already adds `-lm`.
+# assume for dipy). For C++ it isn't needed, because libstdc++/libc++ is
+# guaranteed to depend on it.
 m_dep = cc.find_library('m', required : false)
 if m_dep.found()
   add_project_link_arguments('-lm', language : 'c')
@@ -53,7 +65,7 @@ endif
 # use a linker script to avoid exporting those symbols (this is in addition to
 # Meson using `-fvisibility=hidden` for C and `-fvisibility-inlines-hidden` for
 # C++ code. See gh-15996 for details.
-_linker_script = meson.project_source_root() / 'skimage/_build_utils/link-version-pyinit.map'
+_linker_script = meson.project_source_root() / 'dipy/_build_utils/link-version-pyinit.map'
 version_link_args = ['-Wl,--version-script=' + _linker_script]
 # Note that FreeBSD only accepts version scripts when -shared is passed,
 # hence we need to pass that to `cc.links` explicitly (flag is already
@@ -62,14 +74,7 @@ if not cc.links('', name: '-Wl,--version-script', args: ['-shared', version_link
   version_link_args = []
 endif
 
-cython = find_program('cython')
 
 
-# https://mesonbuild.com/Python-module.html
-py_mod = import('python')
-# NOTE: with Meson >=0.64.0 we can add `pure: false` here and remove that line
-# everywhere else, see https://github.com/mesonbuild/meson/pull/10783.
-py3 = py_mod.find_installation()
-py3_dep = py3.dependency()
 
 subdir('dipy')
