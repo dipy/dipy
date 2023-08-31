@@ -95,9 +95,95 @@ incdir_numpy = run_command(py3,
 inc_np = include_directories(incdir_numpy)
 
 # ------------------------------------------------------------------------
-# Define openmp dependency for cython extensions
+# Define Optimisation for cython extensions
 # ------------------------------------------------------------------------
 omp = dependency('openmp', required: false)
+
+# SSE intrinsics
+sse2_cflags = []
+sse_prog = '''
+#if defined(__GNUC__)
+# if !defined(__amd64__) && !defined(__x86_64__)
+#   error "SSE2 intrinsics are only available on x86_64"
+# endif
+#elif defined (_MSC_VER) && !defined (_M_X64) && !defined (_M_AMD64)
+# error "SSE2 intrinsics not supported on x86 MSVC builds"
+#endif
+#if defined(__SSE__) || (_M_X64 > 0)
+# include <mmintrin.h>
+# include <xmmintrin.h>
+# include <emmintrin.h>
+#else
+# error "No SSE intrinsics available"
+#endif
+int main () {
+    __m128i a = _mm_set1_epi32 (0), b = _mm_set1_epi32 (0), c;
+    c = _mm_xor_si128 (a, b);
+    return 0;
+}'''
+
+if cc.get_id() != 'msvc'
+  test_sse2_cflags = ['-mfpmath=sse', '-msse', '-msse2']
+  # might need to check the processor type here
+  # arm neon flag: -mfpu=neon -mfloat-abi=softfp  # see test below
+  # freescale altivec flag: -maltivec -mabi=altivec
+else
+  test_sse2_cflags = ['/arch:SSE2']
+endif
+
+if cc.compiles(sse_prog, args: test_sse2_cflags, name: 'SSE intrinsics')
+  sse2_cflags = test_sse2_cflags
+  cython_c_args += test_sse2_cflags
+  cython_cpp_args = cython_c_args
+endif
+
+# ARM NEON intrinsics
+neon_prog = '''
+#if !defined (_MSC_VER) || defined (__clang__)
+# if !defined (_M_ARM64) && !defined (__aarch64__)
+#  ifndef __ARM_EABI__
+#   error "EABI is required (to be sure that calling conventions are compatible)"
+#  endif
+#   ifndef __ARM_NEON__
+#    error "No ARM NEON instructions available"
+#   endif
+# endif
+#endif
+#if defined (_MSC_VER) && (_MSC_VER < 1920) && defined (_M_ARM64)
+# include <arm64_neon.h>
+#else
+# include <arm_neon.h>
+#endif
+int main () {
+    const float32_t __v[4] = { 1, 2, 3, 4 }; \
+    const unsigned int __umask[4] = { \
+      0x80000000, \
+      0x80000000, \
+      0x80000000, \
+      0x80000000 \
+    }; \
+    const uint32x4_t __mask = vld1q_u32 (__umask); \
+    float32x4_t s = vld1q_f32 (__v); \
+    float32x4_t c = vreinterpretq_f32_u32 (veorq_u32 (vreinterpretq_u32_f32 (s), __mask)); \
+    return 0;
+}'''
+
+test_neon_cflags = []
+
+if cc.get_id() != 'msvc' and host_cpu_family != 'aarch64'
+  test_neon_cflags += ['-mfpu=neon']
+endif
+
+if host_system == 'android'  # dipy not in android but I keep it just in case
+  test_neon_cflags += ['-mfloat-abi=softfp']
+endif
+
+if cc.compiles(neon_prog, args: test_neon_cflags, name: 'ARM NEON intrinsics')
+  neon_cflags = test_neon_cflags
+  cython_c_args += neon_cflags
+  cython_cpp_args = cython_c_args
+endif
+
 
 # ------------------------------------------------------------------------
 #  include openmp

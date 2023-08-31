@@ -22,6 +22,8 @@ fs = import('fs')
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 cy = meson.get_compiler('cython')
+host_system = host_machine.system()
+host_cpu_family = host_machine.cpu_family()
 
 cython = find_program('cython')
 
