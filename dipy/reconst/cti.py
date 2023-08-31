@@ -165,6 +165,7 @@ class CorrelationTensorModel(ReconstModel):
 
         tol = 1e-6
         self.min_diffusivity = tol / -self.design_matrix.min()
+        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS'}
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -182,6 +183,7 @@ class CorrelationTensorModel(ReconstModel):
         data_thres = np.maximum(data, self.min_signal)
         params = self.fit_method(self.design_matrix, data_thres,
                                  self.inverse_design_matrix,
+                                 weights=self.weights,
                                  *self.args, **self.kwargs)
 
         return CorrelationTensorFit(self, params)

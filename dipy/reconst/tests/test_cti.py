@@ -3,7 +3,7 @@ import math
 
 from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.reconst.utils import cti_design_matrix as design_matrix
-from numpy.testing import (assert_array_almost_equal)
+from numpy.testing import (assert_array_almost_equal, assert_raises)
 from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
 from dipy.core.gradients import gradient_table
 import dipy.reconst.qti as qti
@@ -247,6 +247,11 @@ def test_cti_prediction():
             "CTI and QTI signals do not match!"
         )
 
+        # check the function predict of the CorrelationTensorFit object
+        ctiF = ctiM.fit(cti_pred_signals)
+        ctiF_pred = ctiF.predict(gtab1, gtab2, S0=S0)
+        assert_array_almost_equal(ctiF_pred, cti_pred_signals)
+
 
 def test_split_cti_param():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
@@ -289,6 +294,18 @@ def test_cti_fits():
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         evals, evecs, kt, ct = split_cti_params(cti_params)
 
+        # Testing the model with correct min_signal value
+        ctiM = cti.CorrelationTensorModel(gtab1, gtab2, min_signal=1)
+        cti_pred_signals = ctiM.predict(cti_params, S0=S0)
+        ctiF = ctiM.fit(cti_pred_signals)
+        evals, evecs, kt, ct = cti.split_cti_params(ctiF.model_params)
+        assert_array_almost_equal(evals, ctiF.evals)
+        assert_array_almost_equal(evecs, ctiF.evecs)
+        assert np.allclose(
+            kt, ctiF.kt), "kt doesn't match in test_split_cti_param "
+        assert np.allclose(
+            ct, ctiF.ct), "ct doesn't match in test_split_cti_param"
+        
         # Testing Multi-Voxel Fit
         CTI_data[0, 0, 0] = cti_pred_signals
         CTI_data[0, 1, 0] = cti_pred_signals
@@ -301,6 +318,18 @@ def test_cti_fits():
 
         multi_evals, _, multi_kt, multi_ct = split_cti_params(
             ctiF_multi.model_params)
+        assert np.allclose(evals, multi_evals), "Evals don't match"
+        assert np.allclose(kt, multi_kt), "K doesn't match"
+        assert np.allclose(ct, multi_ct), "C doesn't match"
+
+        # Check that it works with more than one voxel, and with a different S0
+        # in each voxel:
+        cti_multi_pred_signals = ctiM.predict(multi_params,
+                                              S0=100*np.ones(ctiF_multi.shape[:3]))
+        CTI_data = cti_multi_pred_signals
+        ctiF_multi_pred_signals = ctiM.fit(CTI_data)
+        multi_evals, _, multi_kt, multi_ct = split_cti_params(
+            ctiF_multi_pred_signals.model_params)
         assert np.allclose(evals, multi_evals), "Evals don't match"
         assert np.allclose(kt, multi_kt), "K doesn't match"
         assert np.allclose(ct, multi_ct), "C doesn't match"
@@ -416,3 +445,14 @@ def test_cti_fits():
         assert np.allclose(K_micro, ground_truth_K_micro), (
             "K_micro values don't match ground truth values"
             )
+
+
+def test_cti_errors():
+
+    # first error of CTI module is if a unknown fit method is given
+    assert_raises(ValueError, cti.CorrelationTensorModel, gtab1, gtab2,
+                  fit_method="")
+
+    # second error of CTI module is if a min_signal is defined as negative
+    assert_raises(ValueError, cti.CorrelationTensorModel, gtab1, gtab2,
+                  min_signal=-1)
