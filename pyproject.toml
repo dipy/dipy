@@ -35,11 +35,11 @@ classifiers = [
 dynamic = ['version']
 dependencies = [
     "cython>=0.29.24, !=0.29.29",
-    "numpy>=1.14.5",
-    "scipy>=1.1",
+    "numpy>=1.22.4",
+    "scipy>=1.8",
     "nibabel>=3.0.0",
-    "h5py>=2.8.0",
-    "packaging>=19.0",
+    "h5py>=3.1.0",
+    "packaging>=21",
     "tqdm>=4.30.0",
 ]
 
@@ -116,7 +116,7 @@ requires = [
     "numpy==1.22.4; python_version=='3.10' and platform_system=='Windows' and platform_python_implementation != 'PyPy'",
     "numpy==1.22.4; python_version=='3.10' and platform_system != 'Windows' and platform_python_implementation != 'PyPy'",
     "numpy==1.23.3; python_version=='3.11' and platform_python_implementation != 'PyPy'",
-    "numpy; python_version>='3.12'",
+    "numpy>=1.26.0b1; python_version>='3.12'",
     "numpy; python_version>='3.9' and platform_python_implementation=='PyPy'",
 ]
 
