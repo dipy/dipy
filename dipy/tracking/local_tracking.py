@@ -31,8 +31,9 @@ class LocalTracking(object):
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None, save_seeds=False):
+                 step_size, max_cross=None, maxlen=500, minlen=0,
+                 fixedstep=True, return_all=True, random_seed=None,
+                 save_seeds=False):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -59,6 +60,9 @@ class LocalTracking(object):
         maxlen : int
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
+        minlen : int
+            Minimum number of steps to track from seed. Can be useful
+            for filtering out unuseful streamlines.
         fixedstep : bool
             If true, a fixed stepsize is used, otherwise a variable step size
             is used.
@@ -91,6 +95,7 @@ class LocalTracking(object):
         self.fixed_stepsize = fixedstep
         self.max_cross = max_cross
         self.max_length = maxlen
+        self.min_length = minlen
         self.return_all = return_all
         self.random_seed = random_seed
         self.save_seeds = save_seeds
@@ -169,11 +174,13 @@ class LocalTracking(object):
 
                 # move to the next streamline if only the seed position
                 # and not return all
-                if len(streamline) > 1 or self.return_all:
-                    if self.save_seeds:
-                        yield streamline, s
-                    else:
-                        yield streamline
+                len_sl = len(streamline)
+                if len_sl >= self.min_length and len_sl <= self.max_length \
+                    or self.return_all:
+                        if self.save_seeds:
+                            yield streamline, s
+                        else:
+                            yield streamline
 
 
 class ParticleFilteringTracking(LocalTracking):
