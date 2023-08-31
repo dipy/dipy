@@ -62,7 +62,7 @@ class LocalTracking(object):
             infinite loops.
         minlen : int
             Minimum number of steps to track from seed. Can be useful
-            for filtering out unuseful streamlines.
+            for filtering out useless streamlines.
         fixedstep : bool
             If true, a fixed stepsize is used, otherwise a variable step size
             is used.
