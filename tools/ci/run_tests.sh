@@ -10,8 +10,6 @@ echo "Run the tests"
 # Change into an innocuous directory and find tests from installation
 mkdir for_testing
 cd for_testing
-# We need the setup.cfg for the pytest settings
-cp ../setup.cfg .
 # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
 echo "backend : agg" > matplotlibrc
 if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" == true ]; then

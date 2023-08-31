@@ -129,3 +129,6 @@ package = 'dipy'
 # TODO: Add custom commands
 #"Documentation" = [".spin/cmds.py:docs"]
 #"Metrics" = [".spin/cmds.py:asv", ".spin/cmds.py:coverage"]
+
+[tool.pytest.ini_options]
+addopts = "--ignore=dipy/testing/decorators.py"
