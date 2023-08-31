@@ -1,20 +1,21 @@
 python_sources = [
     '__init__.py',
-    'combined_workflow.py',
-    'io.py',
-    'reconst.py',
-    'tracking.py',
-    'denoise.py',
-    'mask.py',
-    'segment.py',
-    'viz.py',
     'align.py',
-    'docstring_parser.py',
-    'stats.py',
-    'workflow.py',
     'base.py',
+    'combined_workflow.py',
+    'denoise.py',
+    'docstring_parser.py',
     'flow_runner.py',
-    'multi_io.py'
+    'io.py',
+    'mask.py',
+    'multi_io.py',
+    'nn.py',
+    'reconst.py',
+    'segment.py',
+    'stats.py',
+    'tracking.py',
+    'viz.py',
+    'workflow.py',
 ]
 
 py3.install_sources(
