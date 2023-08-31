@@ -29,6 +29,8 @@ _cpp_Wno_cpp = cpp.get_supported_arguments('-Wno-cpp')
 _cpp_Wno_deprecated_declarations = cpp.get_supported_arguments('-Wno-deprecated-declarations')
 _cpp_Wno_class_memaccess = cpp.get_supported_arguments('-Wno-class-memaccess')
 _cpp_Wno_format_truncation = cpp.get_supported_arguments('-Wno-format-truncation')
+_cpp_Wno_format_extra_args = cpp.get_supported_arguments('-Wno-format-extra-args')
+_cpp_Wno_format = cpp.get_supported_arguments('-Wno-format')
 _cpp_Wno_non_virtual_dtor = cpp.get_supported_arguments('-Wno-non-virtual-dtor')
 _cpp_Wno_sign_compare = cpp.get_supported_arguments('-Wno-sign-compare')
 _cpp_Wno_switch = cpp.get_supported_arguments('-Wno-switch')
@@ -59,14 +61,24 @@ if is_windows
     # Silence warnings emitted by PyOS_snprintf for (%zd), see
     # https://github.com/rgommers/scipy/issues/118.
     # Use as c_args for extensions containing Cython code
-    cython_c_args += ['-Wno-format-extra-args', '-Wno-format']
+    cython_c_args += [_cpp_Wno_format_extra_args, _cpp_Wno_format]
   endif
+endif
+
+
+# Deal with M_PI & friends; add `use_math_defines` to c_args
+# Cython doesn't always get this correctly itself
+# explicitly add the define as a compiler flag for Cython-generated code.
+if is_windows
+  use_math_defines = ['-D_USE_MATH_DEFINES']
+else
+  use_math_defines = []
 endif
 
 # Suppress warning for deprecated Numpy API.
 # (Suppress warning messages emitted by #warning directives).
 # Replace with numpy_nodepr_api after Cython 3.0 is out
-cython_c_args += ['-Wno-cpp']
+cython_c_args += [_cpp_Wno_cpp, use_math_defines]
 cython_cpp_args = cython_c_args
 
 # ------------------------------------------------------------------------
@@ -81,6 +93,11 @@ incdir_numpy = run_command(py3,
 ).stdout().strip()
 
 inc_np = include_directories(incdir_numpy)
+
+# ------------------------------------------------------------------------
+# Define openmp dependency for cython extensions
+# ------------------------------------------------------------------------
+omp = dependency('openmp', required: false)
 
 # ------------------------------------------------------------------------
 #  include openmp
