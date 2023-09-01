@@ -567,7 +567,6 @@ def test_particle_filtering_tractography():
     pmf = np.zeros(list(simple_gm.shape) + [3])
     pmf[:, :, :, 1] = 1  # horizontal bundle
 
-    #inital_directions = np.array([[0, 1, 0]]).reshape([1, 1, 3])
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 30, sphere)
 
     pft_streamlines_generator = ParticleFilteringTracking(
@@ -1034,7 +1033,7 @@ def test_tracking_with_initial_directions():
                           [2., 4., 0.],
                           [2., 5., 0.]])]
 
-    # Test LocalTracking with inital directions
+    # Test LocalTracking with initial directions
     sc = ThresholdStoppingCriterion(mask, .5)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
                                                pmf_threshold=0.1)
@@ -1061,7 +1060,7 @@ def test_tracking_with_initial_directions():
     npt.assert_(allclose(streamlines[2], expected[1]))
     npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
 
-    # Test inital_directions with norm != 1 and not sphere vertices
+    # Test initial_directions with norm != 1 and not sphere vertices
     initial_directions = np.array([[[0, 0, 0], [2, 0, 0]],
                                    [[0.1, 0.8, 0], [-0.4, 0, 0]],
                                    [[0, 0, 0], [0.7, 0.6, -0.1]]])
@@ -1081,7 +1080,7 @@ def test_tracking_with_initial_directions():
                               return_all=True,
                               initial_directions=initial_directions[:1, :, :]))
 
-    # Test ParticleFilteringTracking with inital directions
+    # Test ParticleFilteringTracking with initial directions
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
                                                pmf_threshold=0.1)
     sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
