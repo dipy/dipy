@@ -1,3 +1,4 @@
+from logging import warn
 import warnings
 
 import nibabel as nib
@@ -1079,6 +1080,14 @@ def test_tracking_with_initial_directions():
         lambda: LocalTracking(dg, sc, seeds, np.eye(4), 0.2, max_cross=1,
                               return_all=True,
                               initial_directions=initial_directions[:1, :, :]))
+
+    # Test warning is raised for possible directional biases
+    npt.assert_warns(Warning,
+                     lambda: LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                           max_cross=2, return_all=False,
+                                           unidirectional=True,
+                                           randomize_forward_direction=False,
+                                           initial_directions=None))
 
     # Test ParticleFilteringTracking with initial directions
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
