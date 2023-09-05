@@ -202,6 +202,7 @@ _cython_tree = [
 
 # include some local folder
 # Todo: need more explicit name
+incdir_local = meson.current_build_dir()
 inc_local = include_directories('.')
 
 # ------------------------------------------------------------------------
@@ -225,7 +226,7 @@ py3.install_sources(
 # ------------------------------------------------------------------------
 
 cython_args = ['-3', '--fast-fail', '@EXTRA_ARGS@', '--output-file', '@OUTPUT@',
-               '--include-dir', '@BUILD_ROOT@',
+               '--include-dir', incdir_local,
                '@INPUT@']
 cython_cplus_args = ['--cplus'] + cython_args
 
