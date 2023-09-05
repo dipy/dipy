@@ -224,7 +224,7 @@ py3.install_sources(
 # Custom Meson Command line tools
 # ------------------------------------------------------------------------
 
-cython_args = ['-3', '--fast-fail', '--output-file', '@OUTPUT@',
+cython_args = ['-3', '--fast-fail', '@EXTRA_ARGS@', '--output-file', '@OUTPUT@',
                '--include-dir', incdir_local,
                '@INPUT@']
 cython_cplus_args = ['--cplus'] + cython_args

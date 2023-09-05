@@ -1,6 +1,11 @@
 cython_sources = ['interpolation',]
 
+cython_headers = ['interpolation.pxd',]
+
 foreach ext: cython_sources
+  if fs.exists(ext + '.pxd')
+    extra_args += ['--depfile', meson.current_source_dir() +'/'+ ext + '.pxd', ]
+  endif
   py3.extension_module(ext,
     cython_gen.process(ext + '.pyx'),
     c_args: cython_c_args,
@@ -30,7 +35,7 @@ python_sources = ['__init__.py',
 
 
 py3.install_sources(
-  python_sources,
+  python_sources + cython_headers,
   pure: false,
   subdir: 'dipy/core'
 )
