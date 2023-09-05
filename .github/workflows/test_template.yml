@@ -92,6 +92,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: defaults, conda-forge
         use-only-tar-bz2: true
+    - name: Set up PATH on Windows
+      # Needed to use GNU patch instead of Strawberry Perl patch
+      if: runner.os == 'Windows'
+      run: echo "C:\Program Files\Git\usr\bin" >> $env:GITHUB_PATH
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
