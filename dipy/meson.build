@@ -45,7 +45,8 @@ _cpp_Wno_int_in_bool_context = cpp.get_supported_arguments('-Wno-int-in-bool-con
 cython_c_args = []
 if is_windows
   # For mingw-w64, link statically against the UCRT.
-  gcc_link_args = ['-lucrt', '-static']
+  # automatic detect lto for now due to some issues.
+  gcc_link_args = ['-lucrt', '-static', '-flto=auto']
   if is_mingw
     add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
     # Force gcc to float64 long doubles for compatibility with MSVC
@@ -201,7 +202,6 @@ _cython_tree = [
 
 # include some local folder
 # Todo: need more explicit name
-incdir_local = meson.current_build_dir()
 inc_local = include_directories('.')
 
 # ------------------------------------------------------------------------
@@ -225,7 +225,7 @@ py3.install_sources(
 # ------------------------------------------------------------------------
 
 cython_args = ['-3', '--fast-fail', '@EXTRA_ARGS@', '--output-file', '@OUTPUT@',
-               '--include-dir', incdir_local,
+               '--include-dir', '@BUILD_ROOT@',
                '@INPUT@']
 cython_cplus_args = ['--cplus'] + cython_args
 

@@ -8,6 +8,7 @@ project(
     'buildtype=debugoptimized',
     'c_std=c99',
     'cpp_std=c++14',
+    'optimization=2',
   ],
 )
 

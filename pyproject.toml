@@ -131,4 +131,4 @@ package = 'dipy'
 #"Metrics" = [".spin/cmds.py:asv", ".spin/cmds.py:coverage"]
 
 [tool.pytest.ini_options]
-addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py'"
+addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
