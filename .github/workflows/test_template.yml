@@ -93,9 +93,16 @@ jobs:
         channels: defaults, conda-forge
         use-only-tar-bz2: true
     - name: Set up PATH on Windows
-      # Needed to use GNU patch instead of Strawberry Perl patch
+      # Needed to use GNU instead of Strawberry
       if: runner.os == 'Windows'
-      run: echo "C:\Program Files\Git\usr\bin" >> $env:GITHUB_PATH
+      run: |
+        echo "C:\Program Files\Git\usr\bin" >> $env:GITHUB_PATH
+        type gcc
+        echo $env:PATH
+        echo $env:GITHUB_PATH
+        ls "C:\Program Files\Git\usr\bin"
+        ls "C:/Program\ Files/Git/mingw64/bin/"
+        ls "C:/Program\ Files/Git/"
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
