@@ -94,14 +94,20 @@ jobs:
         use-only-tar-bz2: true
     - name: Set up PATH on Windows
       # Needed to use GNU instead of Strawberry
+      # find / -name "liblto_plugin*.dll" 2>/dev/null
       if: runner.os == 'Windows'
       run: |
-        which gcc >> $GITHUB_PATH
+        which gcc
         echo $GITHUB_PATH
         echo "---------------------------------"
         echo $PATH
         ls -l /c/ProgramData/Chocolatey/bin
-        find / -name "liblto_plugin*.dll" 2>/dev/null
+        echo "---------------------------------"
+        ls -l /mingw64/bin
+        echo "---------------------------------"
+        ls -l /c/ProgramData/Chocolatey/lib
+        echo "---------------------------------"
+        ls -l /mingw64/lib
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
