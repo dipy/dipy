@@ -98,8 +98,10 @@ jobs:
       run: |
         which gcc >> $GITHUB_PATH
         echo $GITHUB_PATH
+        echo "---------------------------------"
         echo $PATH
-        ls /c/ProgramData/Chocolatey/bin
+        ls -l /c/ProgramData/Chocolatey/bin
+        find / -name "liblto_plugin*.dll" 2>/dev/null
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
