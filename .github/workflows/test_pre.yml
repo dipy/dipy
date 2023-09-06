@@ -11,10 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  PRE:
+  PRE-py311:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.11", "3.12-dev"]'
+      python-version: '["3.11",]'
       use-pre: true
       extra-depends: scikit_learn scipy statsmodels pandas tables
+  PRE-py312-dev:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.12-dev", ]'
+      use-pre: true
