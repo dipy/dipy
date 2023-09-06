@@ -100,14 +100,7 @@ jobs:
         which gcc
         echo $GITHUB_PATH
         echo "---------------------------------"
-        echo $PATH
-        ls -l /c/ProgramData/Chocolatey/bin
-        echo "---------------------------------"
-        ls -l /mingw64/bin
-        echo "---------------------------------"
-        ls -l /c/ProgramData/Chocolatey/lib
-        echo "---------------------------------"
-        ls -l /mingw64/lib
+        locate liblto_plugin.dll
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
