@@ -59,11 +59,11 @@ class LocalTracking:
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
         maxlen : int, optional
-            Maximum number of steps to track from seed. Used to prevent
-            infinite loops.
+            Maximum length of generated streamlines. Longer streamlines will be
+            discarted if `return_all=False`.
         minlen : int, optional
-            Minimum number of steps to track from seed. Can be useful
-            for filtering out useless streamlines.
+            Minimum length of generated streamlines. Shorter streamlines will
+            be discarted if `return_all=False`.
         fixedstep : bool, optional
             If true, a fixed stepsize is used, otherwise a variable step size
             is used.
@@ -263,6 +263,7 @@ class ParticleFilteringTracking(LocalTracking):
         max_cross : int or None, optional
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
+<<<<<<< HEAD
         maxlen : int, optional
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
@@ -270,6 +271,16 @@ class ParticleFilteringTracking(LocalTracking):
             Minimum number of steps to track from seed. Can be useful
             for filtering out useless streamlines.
         pft_back_tracking_dist : float, optional
+=======
+        maxlen : int
+            Maximum number of steps to track from the seed position in both the
+            foward and the backward initial direction. The maximum length of
+            the generated streamlines can be 2 times maxlen when tracking in
+            both forward and backward directions (e.g. when
+            `unidirectional=False`). Used to prevent infinite loops.
+            By default `maxlen=500`.
+        pft_back_tracking_dist : float
+>>>>>>> DOC - improve maxlen parameter doc
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
             equal to back_tracking_dist + front_tracking_dist.
