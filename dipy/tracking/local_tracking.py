@@ -1,4 +1,5 @@
 import random
+from warnings import warn
 from collections.abc import Iterable
 
 import numpy as np
@@ -85,6 +86,9 @@ class LocalTracking(object):
             raise ValueError("step_size must be greater than 0.")
         if maxlen < 1:
             raise ValueError("maxlen must be greater than 0.")
+        if minlen >= maxlen:
+            maxlen = minlen + 2
+            warn("maxlen updated to be greater than minlen")
         if not isinstance(seeds, Iterable):
             raise ValueError("seeds should be (N,3) array.")
 
