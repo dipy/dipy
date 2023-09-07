@@ -53,7 +53,7 @@ if __name__ == '__main__':
     source_version = '.'.join([v.split('=')[1].strip(" '\n.")
                                for v in info_lines if re.match(
                                        '^_version_(major|minor|micro|extra)', v
-                                       )])
+                                       )]).strip('.')
     source_version = Version(source_version)
     print('***', source_version)
 

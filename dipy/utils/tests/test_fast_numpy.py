@@ -1,24 +1,9 @@
-import timeit
-
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal, assert_array_equal
-from dipy.utils.fast_numpy import (random, norm, normalize, dot, cross,
-                                   random_vector, random_perpendicular_vector,
-                                   random_point_within_circle)
+from numpy.testing import assert_, assert_almost_equal
+from dipy.utils.fast_numpy import random, random_point_within_circle
 
-
-def test_random():
-    # Test that random numbers are between 0 and 1 and that the mean is 0.5.
-    for _ in range(10):
-        vec = random()
-        assert_(vec < 1 and vec > 0)
-
-    random_number_list = []
-    for _ in range(10000):
-        random_number_list.append(random())
-    assert_almost_equal(np.mean(random_number_list), 0.5, decimal=1)
-
-
+"""
+# commented when changing cpdef to cdef in fast_numpy
 def test_norm():
     # Test that the norm equal numpy norm.
     for _ in range(10):
@@ -101,6 +86,19 @@ def test_random_perpendicular_vector():
         assert_(np.all(test >= -1))
         assert_(np.all(test <= 1))
         assert_almost_equal(np.dot(vec, test), 0)
+"""
+
+
+def test_random():
+    # Test that random numbers are between 0 and 1 and that the mean is 0.5.
+    for _ in range(10):
+        vec = random()
+        assert_(vec < 1 and vec > 0)
+
+    random_number_list = []
+    for _ in range(10000):
+        random_number_list.append(random())
+    assert_almost_equal(np.mean(random_number_list), 0.5, decimal=1)
 
 
 def test_random_point_within_circle():

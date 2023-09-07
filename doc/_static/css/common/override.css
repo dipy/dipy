@@ -1,0 +1,17 @@
+/* 
+This CSS file represents all the style changes to
+override the pydata-theme and sphinx.
+*/
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--pst-color-text-base);
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 2.5em;
+}
+
+.bd-sidebar-primary .sidebar-primary-items__end {
+  margin-top: 0 !important;
+}

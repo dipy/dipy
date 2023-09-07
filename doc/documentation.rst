@@ -1,10 +1,9 @@
 .. _documentation:
 
 Documentation
-===================
+===============
 
-Contents:
-
+.. This tree is helping populate the side navigation panel
 .. toctree::
    :maxdepth: 2
 
@@ -22,6 +21,9 @@ Contents:
    reference/index
    reference_cmd/index
    api_changes
+
+.. Main content will be displayed using the jinja template
+
 
 ..
    Indices and tables
