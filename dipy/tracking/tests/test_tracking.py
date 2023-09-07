@@ -461,7 +461,8 @@ def test_particle_filtering_tractography():
 
     # Test min and max length
     pft_streamlines_generator = ParticleFilteringTracking(
-        dg, sc, seeds, np.eye(4), step_size, maxlen=20, minlen=3)
+        dg, sc, seeds, np.eye(4), step_size, maxlen=20, minlen=3,
+        return_all=False)
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
     for s in pft_streamlines:
