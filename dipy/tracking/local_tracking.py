@@ -186,7 +186,7 @@ class LocalTracking(object):
 class ParticleFilteringTracking(LocalTracking):
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-                 step_size, max_cross=None, maxlen=500,
+                 step_size, max_cross=None, maxlen=500, minlen=0,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, save_seeds=False,
@@ -218,6 +218,9 @@ class ParticleFilteringTracking(LocalTracking):
         maxlen : int
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
+        minlen : int
+            Minimum number of steps to track from seed. Can be useful
+            for filtering out useless streamlines.
         pft_back_tracking_dist : float
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
@@ -296,6 +299,7 @@ class ParticleFilteringTracking(LocalTracking):
                                                         step_size,
                                                         max_cross,
                                                         maxlen,
+                                                        minlen,
                                                         True,
                                                         return_all,
                                                         random_seed,
