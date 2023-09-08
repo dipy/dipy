@@ -64,7 +64,8 @@ def test_ptt_tracking():
                                          stopping_criterion=sc,
                                          seeds=seed_coordinates,
                                          affine=affine,
-                                         maxlen=2)
+                                         maxlen=1,
+                                         minlen=1)
     streams = Streamlines(streamline_generator)
     npt.assert_almost_equal(np.linalg.norm(streams[0][0] - streams[0][1]), 0.2,
                             decimal=1)

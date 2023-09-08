@@ -436,7 +436,7 @@ def test_particle_filtering_tractography():
     npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
 
     # Test that all points are equally spaced
-    for l in [1, 2, 5, 10, 100]:
+    for l in [2, 3, 5, 10, 100]:
         pft_streamlines = ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
                                                     step_size, max_cross=1,
                                                     return_all=True, maxlen=l)
