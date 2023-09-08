@@ -15,7 +15,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
 from dipy.align.reslice import reslice
 from dipy.nn.utils import normalize, set_logger_level, transform_img
-from dipy.nn.utils import recover_img
+from dipy.nn.utils import recover_img, get_largest
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -304,7 +304,8 @@ class EVACPlus:
 
     def predict(self, T1, affine,
                 voxsize=(1, 1, 1), batch_size=None,
-                return_affine=False, return_prob=False):
+                return_affine=False, return_prob=False,
+                largest=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
 
@@ -342,6 +343,11 @@ class EVACPlus:
             Whether to return the probability map instead of a
             binary mask. Useful for testing.
             Default is False
+
+        largest : bool, optional
+            Whether to exclude only the largest background/foreground.
+            Useful for solving minor errors.
+            Default is True
 
         Returns
         -------
@@ -409,6 +415,8 @@ class EVACPlus:
                                  T1_img.shape)
             if return_prob == False:
                 output = np.where(output >= 0.5, 1, 0)
+            if largest:
+                output = get_largest(output)
             output_mask.append(output)
 
         if dim == 3:

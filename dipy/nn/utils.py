@@ -127,3 +127,32 @@ def recover_img(image, affine, ori_shape, scale=2):
     new_image, _ = reslice(image, np.eye(4), (scale, scale, scale), (1, 1, 1))
     recovered_img = affine_transform(new_image, affine, output_shape=ori_shape)
     return recovered_img
+
+def get_largest(binary_img):
+    r"""
+    Function to select only the largest background
+    This can resolve some holes that could be in the
+    segmentation output
+
+    Parameters
+    ----------
+    binary_img : np.ndarray
+        Binary image
+
+    Returns
+    -------
+    largest_img : np.ndarray
+    """
+    from scipy.ndimage.measurements import label
+    largest_img = np.zeros_like(binary_img)
+    chunks, n_chunk = label(np.abs(1-binary_img))
+    u, c = np.unique(chunks[chunks!=0], return_counts=True)
+    target = u[np.argmax(c)]
+    largest_img = np.where(chunks == target, 0, 1)
+
+    chunks, n_chunk = label(largest_img)
+    u, c = np.unique(chunks[chunks!=0], return_counts=True)
+    target = u[np.argmax(c)]
+    largest_img = np.where(chunks == target, 1, 0)
+
+    return largest_img
