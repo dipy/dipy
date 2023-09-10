@@ -31,8 +31,9 @@ class LocalTracking(object):
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None, save_seeds=False):
+                 step_size, max_cross=None, maxlen=500, minlen=2,
+                 fixedstep=True, return_all=True, random_seed=None,
+                 save_seeds=False):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -41,34 +42,37 @@ class LocalTracking(object):
             Used to get directions for fiber tracking.
         stopping_criterion : instance of StoppingCriterion
             Identifies endpoints and invalid points to inform tracking.
-        seeds : array (N, 3)
+        seeds : array (N, 3), optional
             Points to seed the tracking. Seed points should be given in point
             space of the track (see ``affine``).
-        affine : array (4, 4)
+        affine : array (4, 4), optional
             Coordinate space for the streamline point with respect to voxel
             indices of input data. This affine can contain scaling, rotational,
             and translational components but should not contain any shearing.
             An identity matrix can be used to generate streamlines in "voxel
             coordinates" as long as isotropic voxels were used to acquire the
             data.
-        step_size : float
+        step_size : float, optional
             Step size used for tracking.
-        max_cross : int or None
+        max_cross : int or None, optional
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
-        maxlen : int
+        maxlen : int, optional
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
-        fixedstep : bool
+        minlen : int, optional
+            Minimum number of steps to track from seed. Can be useful
+            for filtering out useless streamlines.
+        fixedstep : bool, optional
             If true, a fixed stepsize is used, otherwise a variable step size
             is used.
-        return_all : bool
+        return_all : bool, optional
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
-        random_seed : int
+        random_seed : int, optional
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
-        save_seeds : bool
+        save_seeds : bool, optional
             If True, return seeds alongside streamlines
         """
 
@@ -81,6 +85,8 @@ class LocalTracking(object):
             raise ValueError("step_size must be greater than 0.")
         if maxlen < 1:
             raise ValueError("maxlen must be greater than 0.")
+        if minlen > maxlen:
+            raise ValueError("maxlen must be greater than or equal to minlen")
         if not isinstance(seeds, Iterable):
             raise ValueError("seeds should be (N,3) array.")
 
@@ -91,6 +97,7 @@ class LocalTracking(object):
         self.fixed_stepsize = fixedstep
         self.max_cross = max_cross
         self.max_length = maxlen
+        self.min_length = minlen
         self.return_all = return_all
         self.random_seed = random_seed
         self.save_seeds = save_seeds
@@ -169,17 +176,19 @@ class LocalTracking(object):
 
                 # move to the next streamline if only the seed position
                 # and not return all
-                if len(streamline) > 1 or self.return_all:
-                    if self.save_seeds:
-                        yield streamline, s
-                    else:
-                        yield streamline
+                len_sl = len(streamline)
+                if len_sl >= self.min_length and len_sl <= self.max_length \
+                    or self.return_all:
+                        if self.save_seeds:
+                            yield streamline, s
+                        else:
+                            yield streamline
 
 
 class ParticleFilteringTracking(LocalTracking):
 
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-                 step_size, max_cross=None, maxlen=500,
+                 step_size, max_cross=None, maxlen=500, minlen=2,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, save_seeds=False,
@@ -205,34 +214,37 @@ class ParticleFilteringTracking(LocalTracking):
             data.
         step_size : float
             Step size used for tracking.
-        max_cross : int or None
+        max_cross : int or None, optional
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
-        maxlen : int
+        maxlen : int, optional
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
-        pft_back_tracking_dist : float
+        minlen : int, optional
+            Minimum number of steps to track from seed. Can be useful
+            for filtering out useless streamlines.
+        pft_back_tracking_dist : float, optional
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
             equal to back_tracking_dist + front_tracking_dist.
             By default this is set to 2 mm.
-        pft_front_tracking_dist : float
+        pft_front_tracking_dist : float, optional
             Distance in mm to run the particle filtering tractography after the
             the back track distance. The total particle filtering tractography
             distance is equal to back_tracking_dist + front_tracking_dist. By
             default this is set to 1 mm.
-        pft_max_trial : int
+        pft_max_trial : int, optional
             Maximum number of trial for the particle filtering tractography
             (Prevents infinite loops).
-        particle_count : int
+        particle_count : int, optional
             Number of particles to use in the particle filter.
-        return_all : bool
+        return_all : bool, optional
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
-        random_seed : int
+        random_seed : int, optional
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
-        save_seeds : bool
+        save_seeds : bool, optional
             If True, return seeds alongside streamlines
         min_wm_pve_before_stopping : int, optional
             Minimum white matter pve (1 - stopping_criterion.include_map -
@@ -289,6 +301,7 @@ class ParticleFilteringTracking(LocalTracking):
                                                         step_size,
                                                         max_cross,
                                                         maxlen,
+                                                        minlen,
                                                         True,
                                                         return_all,
                                                         random_seed,

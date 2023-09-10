@@ -436,7 +436,7 @@ def test_particle_filtering_tractography():
     npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
 
     # Test that all points are equally spaced
-    for l in [1, 2, 5, 10, 100]:
+    for l in [2, 3, 5, 10, 100]:
         pft_streamlines = ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
                                                     step_size, max_cross=1,
                                                     return_all=True, maxlen=l)
@@ -458,6 +458,16 @@ def test_particle_filtering_tractography():
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
     npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+
+    # Test min and max length
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size, maxlen=20, minlen=3,
+        return_all=False)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+
+    for s in pft_streamlines:
+        npt.assert_(len(s) >= 3)
+        npt.assert_(len(s) <= 20)
 
     # Test non WM seed position
     seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
