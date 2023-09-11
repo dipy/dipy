@@ -136,13 +136,16 @@ def test_roi_images():
     np.random.seed(42)
     img1 = np.random.rand(5, 5, 5)
     img2 = np.zeros((5, 5, 5))
-    img2[1, 1, 1] = 1
+    img2[2, 2, 2] = 1
     img3 = np.zeros((5, 5, 5))
-    img3[3, 3, 3] = 1
+    img3[0, :, :] = 1
     images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
     show_m = horizon(images=images, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 0)
+    arr = window.snapshot(show_m.scene)
+    report = window.analyze_snapshot(arr, colors=[(0, 0, 0), (255, 255, 255)])
+    npt.assert_array_equal(report.colors_found, [True, True])
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 2)
