@@ -657,7 +657,7 @@ def smooth_pinv(B, L):
     ----------
     B : array_like (n, m)
         Matrix to be inverted
-    L : array_like (n,)
+    L : array_like (m,)
 
     Returns
     -------
