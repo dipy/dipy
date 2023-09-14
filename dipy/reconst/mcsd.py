@@ -58,7 +58,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     return B, m, n
 
 
-class MultiShellResponse(object):
+class MultiShellResponse:
 
     def __init__(self, response, sh_order, shells, S0=None):
         """ Estimate Multi Shell response function for multiple tissues and
@@ -403,7 +403,7 @@ def solve_qp(P, Q, G, H):
     return opt
 
 
-class QpFitter(object):
+class QpFitter:
 
     def __init__(self, X, reg):
         r"""

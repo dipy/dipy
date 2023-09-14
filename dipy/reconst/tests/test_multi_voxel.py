@@ -102,7 +102,7 @@ def test_CallableArray():
 
 def test_multi_voxel_fit():
 
-    class SillyModel(object):
+    class SillyModel:
 
         @multi_voxel_fit
         def fit(self, data, mask=None):
@@ -111,7 +111,7 @@ def test_multi_voxel_fit():
         def predict(self, S0):
             return np.ones(10) * S0
 
-    class SillyFit(object):
+    class SillyFit:
 
         def __init__(self, model, data):
             self.model = model

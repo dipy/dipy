@@ -17,7 +17,7 @@ from nibabel.streamlines import ArraySequence as Streamlines
 __all__ = ['Dpy']
 
 
-class Dpy(object):
+class Dpy:
     def __init__(self, fname, mode='r', compression=0):
         """ Advanced storage system for tractography based on HDF5
 

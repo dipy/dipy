@@ -15,7 +15,7 @@ if Version(python_version) >= Version('3.10'):
 else:
     from collections import Mapping 
 
-class Reader(object):
+class Reader:
     """A line-based string reader.
 
     """

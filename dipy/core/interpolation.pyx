@@ -1098,7 +1098,7 @@ class OutsideImage(Exception):
     pass
 
 
-class Interpolator(object):
+class Interpolator:
     """Class to be subclassed by different interpolator types"""
     def __init__(self, data, voxel_size):
         self.data = data

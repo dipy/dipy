@@ -20,7 +20,7 @@ needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 
 # Object to hold module global data
-class _C(object):
+class _C:
     pass
 data = _C()
 

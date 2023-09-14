@@ -171,7 +171,7 @@ def test_sfm_sklearnlinearsolver():
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 
-    class EvenSillierSolver(object):
+    class EvenSillierSolver:
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 

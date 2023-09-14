@@ -5,7 +5,7 @@ import time
 from sphinx_gallery.scrapers import figure_rst
 
 
-class ImageFileScraper(object):
+class ImageFileScraper:
     def __init__(self):
         """Scrape image files that are already present in current folder."""
         self.embedded_images = {}

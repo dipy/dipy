@@ -33,7 +33,7 @@ HELP_MESSAGE = """
 """
 
 
-class Horizon(object):
+class Horizon:
 
     def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
                  cluster_thr=15.0, random_colors=None, length_gt=0,

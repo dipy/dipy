@@ -1,6 +1,6 @@
 # Shared objects across Horizon's systems
 
-class GlobalHorizon(object):
+class GlobalHorizon:
     def __init__(self):
         # window level sharing
         self.window_timer_cnt = 0

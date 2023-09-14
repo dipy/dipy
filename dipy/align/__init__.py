@@ -3,7 +3,7 @@ import numpy as np
 floating = np.float32
 
 
-class Bunch(object):
+class Bunch:
     def __init__(self, **kwds):
         r"""A 'bunch' of values (a replacement of Enum)
 

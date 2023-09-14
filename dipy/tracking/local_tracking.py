@@ -10,7 +10,7 @@ from dipy.tracking import utils
 from dipy.utils import fast_numpy
 
 
-class LocalTracking(object):
+class LocalTracking:
 
     @staticmethod
     def _get_voxel_size(affine):
