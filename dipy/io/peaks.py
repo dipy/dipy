@@ -41,7 +41,7 @@ def load_peaks(fname, verbose=False):
     """
 
     if os.path.splitext(fname)[1].lower() != '.pam5':
-        raise IOError('This function supports only PAM5 (HDF5) files')
+        raise OSError('This function supports only PAM5 (HDF5) files')
 
     f = h5py.File(fname, 'r')
 
@@ -52,7 +52,7 @@ def load_peaks(fname, verbose=False):
     version = f.attrs['version']
 
     if version != '0.0.1':
-        raise IOError('Incorrect PAM5 file version {0}'.format(version,))
+        raise OSError('Incorrect PAM5 file version {0}'.format(version,))
 
     try:
         affine = pamh['affine'][:]
@@ -136,7 +136,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     """
 
     if os.path.splitext(fname)[1] != '.pam5':
-        raise IOError('This function saves only PAM5 (HDF5) files')
+        raise OSError('This function saves only PAM5 (HDF5) files')
 
     if not (hasattr(pam, 'peak_dirs') and hasattr(pam, 'peak_values') and
             hasattr(pam, 'peak_indices')):

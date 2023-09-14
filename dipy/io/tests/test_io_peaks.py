@@ -62,7 +62,7 @@ def test_io_peaks():
         save_peaks(pjoin(tmpdir, fname4), pam, affine=None)
 
         fname5 = 'test5.pkm'
-        npt.assert_raises(IOError, save_peaks, pjoin(tmpdir, fname5), pam)
+        npt.assert_raises(OSError, save_peaks, pjoin(tmpdir, fname5), pam)
 
         pam.affine = np.eye(4)
         fname6 = 'test6.pam5'
@@ -78,7 +78,7 @@ def test_io_peaks():
         npt.assert_equal(pam_tmp.odf, None)
 
         fname7 = 'test7.paw'
-        npt.assert_raises(IOError, load_peaks, pjoin(tmpdir, fname7))
+        npt.assert_raises(OSError, load_peaks, pjoin(tmpdir, fname7))
 
         del pam.shm_coeff
         save_peaks(pjoin(tmpdir, fname6), pam, verbose=True)
@@ -106,7 +106,7 @@ def test_io_save_peaks_error():
 
         pam = PeaksAndMetrics()
 
-        npt.assert_raises(IOError, save_peaks, pjoin(tmpdir, 'test.pam'), pam)
+        npt.assert_raises(OSError, save_peaks, pjoin(tmpdir, 'test.pam'), pam)
         npt.assert_raises((ValueError, AttributeError), save_peaks,
                           pjoin(tmpdir, fname), pam)
 

@@ -280,4 +280,4 @@ class IOIterator:
                 input_args += [f for f in fname]
         for path in input_args:
             if len(glob(path)) == 0:
-                raise IOError('File not found: ' + path)
+                raise OSError('File not found: ' + path)

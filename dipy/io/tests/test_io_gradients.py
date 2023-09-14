@@ -42,7 +42,7 @@ def test_read_bvals_bvecs():
             for x in range(new_bvecs1.shape[0]):
                 bv_file1.write('%s %s\n' % (new_bvecs1[x][0],
                                             new_bvecs1[x][1]))
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+        npt.assert_raises(OSError, read_bvals_bvecs, fbvals,
                           fname)
 
         # These bvecs are saved as one long array:
@@ -50,7 +50,7 @@ def test_read_bvals_bvecs():
         new_bvecs2 = np.ravel(bvecs)
         with open(pjoin(tmpdir, fname), 'w') as bv_file2:
             np.save(bv_file2.name, new_bvecs2)
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+        npt.assert_raises(OSError, read_bvals_bvecs, fbvals,
                           fname)
 
         # There are less bvecs than bvals:
@@ -58,11 +58,11 @@ def test_read_bvals_bvecs():
         new_bvecs3 = bvecs[:-1, :]
         with open(pjoin(tmpdir, fname), 'w') as bv_file3:
             np.savetxt(bv_file3.name, new_bvecs3)
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+        npt.assert_raises(OSError, read_bvals_bvecs, fbvals,
                           fname)
 
         # You entered the bvecs on both sides:
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
+        npt.assert_raises(OSError, read_bvals_bvecs, fbvecs, fbvecs)
 
         # All possible delimiters should work
         bv_file4 = 'test_space.txt'
