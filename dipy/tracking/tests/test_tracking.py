@@ -965,24 +965,19 @@ def test_random_seed_initialization():
 
     sphere = HemiSphere.from_sphere(unit_octahedron)
     pmf = np.zeros((4,4,4,3))
+    x = np.array([0., 0, 0, 57.421434502602544])
+    y = np.array([0., 1, 2, 21.566539227085478])
+    z = np.array([1., 1, 1, 51.67881720942744])
 
-    # Create a seeds along
-    x = np.array([0., 0, 0, 0, 0, 0, 0, 0])
-    y = np.array([0., 1, 2, 3, 4, 5, 6, 7])
-    z = np.array([1., 1, 1, 0, 1, 1, 1, 1])
     seeds = np.column_stack([x, y, z])
-
-    # Set up tracking
     sc = BinaryStoppingCriterion(np.ones((4,4,4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
-    # valid streamlines only
     for rdm_seed in [None, 0, 1, 1234, 1010101010, -2]:
-        streamlines_generator = LocalTracking(direction_getter=dg,
-                                            stopping_criterion=sc,
-                                            seeds=seeds,
-                                            affine=np.eye(4),
-                                            step_size=1.,
-                                            return_all=False,
-                                            random_seed=rdm_seed)
-        streamlines = iter(streamlines_generator)
+        _ = iter(LocalTracking(direction_getter=dg,
+                               stopping_criterion=sc,
+                               seeds=seeds,
+                               affine=np.eye(4),
+                               step_size=1.,
+                               return_all=False,
+                               random_seed=rdm_seed))
