@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 =======================================================
 Tissue Classification of a T1-weighted Structural Image
