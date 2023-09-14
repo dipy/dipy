@@ -75,13 +75,13 @@ class LocalTracking:
             random.seed).
         save_seeds : bool, optional
             If True, return seeds alongside streamlines
-        unidirectional : bool
+        unidirectional : bool, optional
             If true, the tracking is performed only in the forward direction.
             The seed position will be the first point of all streamlines.
-        randomize_forward_direction : bool
+        randomize_forward_direction : bool, optional
             If true, the forward direction is randomized (multiplied by 1
             or -1). Otherwise, the provided forward direction is used.
-        initial_directions: array (N, npeaks, 3)
+        initial_directions: array (N, npeaks, 3), optional
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
             per voxel. If None, `direction_getter.initial_direction` is used.
@@ -263,24 +263,13 @@ class ParticleFilteringTracking(LocalTracking):
         max_cross : int or None, optional
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
-<<<<<<< HEAD
         maxlen : int, optional
-            Maximum number of steps to track from seed. Used to prevent
-            infinite loops.
+            Maximum length of generated streamlines. Longer streamlines will be
+            discarted if `return_all=False`.
         minlen : int, optional
-            Minimum number of steps to track from seed. Can be useful
-            for filtering out useless streamlines.
-        pft_back_tracking_dist : float, optional
-=======
-        maxlen : int
-            Maximum number of steps to track from the seed position in both the
-            foward and the backward initial direction. The maximum length of
-            the generated streamlines can be 2 times maxlen when tracking in
-            both forward and backward directions (e.g. when
-            `unidirectional=False`). Used to prevent infinite loops.
-            By default `maxlen=500`.
+            Minimum length of generated streamlines. Shorter streamlines will
+            be discarted if `return_all=False`.
         pft_back_tracking_dist : float
->>>>>>> DOC - improve maxlen parameter doc
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
             equal to back_tracking_dist + front_tracking_dist.
@@ -307,13 +296,13 @@ class ParticleFilteringTracking(LocalTracking):
             Minimum white matter pve (1 - stopping_criterion.include_map -
             stopping_criterion.exclude_map) to reach before allowing the
             tractography to stop.
-        unidirectional : bool
+        unidirectional : bool, optional
             If true, the tracking is performed only in the forward direction.
             The seed position will be the first point of all streamlines.
-        randomize_forward_direction : bool
+        randomize_forward_direction : bool, optional
             If true, the forward direction is randomized (multiplied by 1
             or -1). Otherwise, the provided forward direction is used.
-        initial_directions: array (N, npeaks, 3)
+        initial_directions: array (N, npeaks, 3), optional
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
             per voxel. If None, `direction_getter.initial_direction` is used.
