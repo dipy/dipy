@@ -9,11 +9,11 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 
 def test_EuDXDirectionGetter():
 
-    class SillyModel(object):
+    class SillyModel:
         def fit(self, data, mask=None):
             return SillyFit(self)
 
-    class SillyFit(object):
+    class SillyFit:
 
         def __init__(self, model):
             self.model = model

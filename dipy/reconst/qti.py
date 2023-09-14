@@ -713,7 +713,7 @@ class QtiModel(ReconstModel):
         return S
 
 
-class QtiFit(object):
+class QtiFit:
 
     def __init__(self, params):
         """Fitted QTI model.

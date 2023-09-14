@@ -25,7 +25,7 @@ class Identity:
         return idx
 
 
-class Cluster(object):
+class Cluster:
     """ Provides functionalities for interacting with a cluster.
 
     Useful container to retrieve index of elements grouped together. If
@@ -171,7 +171,7 @@ class ClusterCentroid(Cluster):
         return converged
 
 
-class ClusterMap(object):
+class ClusterMap:
     """ Provides functionalities for interacting with clustering outputs.
 
     Useful container to create, remove, retrieve and filter clusters.
@@ -392,7 +392,7 @@ class ClusterMapCentroid(ClusterMap):
         return [cluster.centroid for cluster in self.clusters]
 
 
-class Clustering(object):
+class Clustering:
     __metaclass__ = ABCMeta
 
     @abstractmethod

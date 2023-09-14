@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 =================================================================
 Estimating diffusion time dependent q-space indices using qt-dMRI

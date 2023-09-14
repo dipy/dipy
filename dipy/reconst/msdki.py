@@ -379,7 +379,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         return msdki_prediction(msdki_params, self.gtab, S0)
 
 
-class MeanDiffusionKurtosisFit(object):
+class MeanDiffusionKurtosisFit:
 
     def __init__(self, model, model_params, model_S0=None):
         """ Initialize a MeanDiffusionKurtosisFit class instance.

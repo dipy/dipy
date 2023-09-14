@@ -100,7 +100,7 @@ def get_direction_and_spacings(affine, dim):
     return A.dot(np.diag(1.0/scalings)), scalings
 
 
-class DiffeomorphicMap(object):
+class DiffeomorphicMap:
     def __init__(self,
                  dim,
                  disp_shape,
@@ -916,7 +916,7 @@ class DiffeomorphicMap(object):
         return simplified
 
 
-class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
+class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
     def __init__(self, metric=None):
         """ Diffeomorphic Registration
 

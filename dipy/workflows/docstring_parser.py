@@ -33,7 +33,7 @@ import textwrap
 from warnings import warn
 
 
-class Reader(object):
+class Reader:
     """A line-based string reader.
 
     """
@@ -114,7 +114,7 @@ def dedent_lines(lines):
     return textwrap.dedent("\n".join(lines)).split("\n")
 
 
-class NumpyDocString(object):
+class NumpyDocString:
     def __init__(self, docstring, config={}):
         docstring = textwrap.dedent(docstring).split('\n')
 

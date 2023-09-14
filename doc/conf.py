@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # dipy documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb  4 15:23:20 2010.
 #

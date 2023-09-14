@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ==========================================
 Crossing-preserving contextual enhancement

@@ -265,7 +265,7 @@ def test_odf_slicer(interactive=False):
         window.show(scene)
 
     # global_cm=True with colormap=None should raise an error
-    npt.assert_raises(IOError, actor.odf_slicer, odfs, sphere=sphere,
+    npt.assert_raises(OSError, actor.odf_slicer, odfs, sphere=sphere,
                       mask=None, scale=.25, colormap=None, norm=False,
                       global_cm=True)
 

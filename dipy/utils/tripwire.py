@@ -25,7 +25,7 @@ def is_tripwire(obj):
     return False
 
 
-class TripWire(object):
+class TripWire:
     """ Class raising error if used
 
     Standard use is to proxy modules that we could not import

@@ -44,16 +44,16 @@ def read_bvec_file(filename, atol=.001):
     b_values = np.loadtxt(bval)
     grad_table = np.loadtxt(bvec)
     if grad_table.shape[0] != 3:
-        raise IOError('bvec file should have three rows')
+        raise OSError('bvec file should have three rows')
     if b_values.ndim != 1:
-        raise IOError('bval file should have one row')
+        raise OSError('bval file should have one row')
     if b_values.shape[0] != grad_table.shape[1]:
-        raise IOError('the gradient file and b value file should'
+        raise OSError('the gradient file and b value file should'
                       'have the same number of columns')
 
     grad_norms = np.sqrt((grad_table**2).sum(0))
     if not np.allclose(grad_norms[b_values > 0], 1, atol=atol):
-        raise IOError('the magnitudes of the gradient directions' +
+        raise OSError('the magnitudes of the gradient directions' +
                       'are not within ' + str(atol) + ' of 1')
     grad_table[:, b_values > 0] = (grad_table[:, b_values > 0] /
                                    grad_norms[b_values > 0])
