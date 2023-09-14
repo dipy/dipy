@@ -11,7 +11,7 @@ register two bundles.
 First, we need to download static and moving bundles for this tutorial. Here,
 we two uncinate fasciculus bundles in the left hemisphere of the brain from:
 
-    `<hhttps://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733>`_
+    `<https://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733>`_
 
 
 Let's say we have moving bundle (bundle to be registered) named ``m_UF_L.trk``
