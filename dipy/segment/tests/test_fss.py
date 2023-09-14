@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from dipy.data import get_fnames
