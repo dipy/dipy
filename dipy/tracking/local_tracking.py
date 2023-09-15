@@ -170,13 +170,9 @@ class LocalTracking:
             if self.initial_directions is None:
                 directions = self.direction_getter.initial_direction(s)
             else:
-                directions = []
-                for d in self.initial_directions[i, :, :]:
-                    d_norm = np.linalg.norm(d)
-                    if d_norm > 0:
-                        new_d = d / d_norm
-                        directions.append(new_d)
-                directions = np.array(directions)
+                d_ns = np.linalg.norm(self.initial_directions[i, :, :], axis=1)
+                directions = self.initial_directions[i, d_ns > 0, :] \
+                    / d_ns[d_ns > 0, np.newaxis]
 
             if len(directions) == 0 and self.return_all:
                 # only the seed position
@@ -350,7 +346,7 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_steps = np.empty((2, self.particle_count), dtype=int)
         self.particle_stream_statuses = np.empty((2, self.particle_count),
                                                  dtype=int)
-         super(ParticleFilteringTracking, self).__init__(
+        super(ParticleFilteringTracking, self).__init__(
             direction_getter=direction_getter,
             stopping_criterion=stopping_criterion,
             seeds=seeds,
@@ -358,7 +354,7 @@ class ParticleFilteringTracking(LocalTracking):
             step_size=step_size,
             max_cross=max_cross,
             maxlen=maxlen,
-            minLen=minlen,
+            minlen=minlen,
             fixedstep=True,
             return_all=return_all,
             random_seed=random_seed,
