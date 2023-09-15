@@ -31,12 +31,12 @@ the diffusion tensor via the equations across the set of acquisitions:
 .. math::
 
    \log(A(\mathbf{q})/A(0)) = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
-      b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz}) 
+      b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz})
 
 The gradient field typically stays in the one gradient direction, in
 this case the relationship between $\mathbf{q}$ and the $b_{ij}$ is as
 follows. If we fill out the symmetric B-matrix as:
- 
+
 .. math::
 
    \mathbf{B} = \begin{pmatrix}
@@ -46,7 +46,7 @@ follows. If we fill out the symmetric B-matrix as:
                  \end{pmatrix}
 
 then $\mathbf{B}$ is equal to the rank 1 tensor
-$b\mathbf{g}\mathbf{g}^T$. One of the ways to recover $b$ and $\mathbf{g}$, 
+$b\mathbf{g}\mathbf{g}^T$. One of the ways to recover $b$ and $\mathbf{g}$,
 and hence $\mathbf{q}$, from
 $\mathbf{B}$ is to do a singular value decomposition of $\mathbf{B}:
 \mathbf{B} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T +

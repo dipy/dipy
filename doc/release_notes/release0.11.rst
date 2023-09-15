@@ -27,7 +27,7 @@ The following 16 authors contributed 271 commits.
 
 
 We closed a total of 144 issues, 55 pull requests and 89 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (55):

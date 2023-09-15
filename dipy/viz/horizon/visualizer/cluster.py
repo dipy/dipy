@@ -17,24 +17,24 @@ if has_fury:
 class ClustersVisualizer:
     def __init__(
         self, show_manager, scene, tractograms, enable_callbacks=True):
-        
+
         # TODO: Avoid passing the entire show manager to the visualizer
         self.__show_man = show_manager
         self.__scene = scene
         self.__tractograms = tractograms
         self.__enable_callbacks = enable_callbacks
-        
+
         self.__tractogram_clusters = {}
-        
+
         self.__first_time = True
         self.__tractogram_colors = []
-        
+
         self.__centroid_actors = {}
         self.__cluster_actors = {}
-        
+
         self.__lengths = []
         self.__sizes = []
-    
+
     def __apply_shader(self, dict_element):
         decl = \
             """
@@ -51,16 +51,16 @@ class ClustersVisualizer:
         shader_to_actor(dict_element['actor'], 'fragment', decl_code=decl)
         shader_to_actor(
             dict_element['actor'], 'fragment', impl_code=impl, block='light')
-        
+
         @calldata_type(VTK_OBJECT)
         def uniform_selected_callback(caller, event, calldata=None):
             program = calldata
             if program is not None:
                 program.SetUniformf('selected', dict_element['selected'])
-        
+
         add_shader_callback(
             dict_element['actor'], uniform_selected_callback, priority=100)
-    
+
     def __left_click_centroid_callback(self, obj, event):
         self.__centroid_actors[obj]['selected'] = (
             not self.__centroid_actors[obj]['selected'])
@@ -78,23 +78,23 @@ class ClustersVisualizer:
             self.__centroid_actors[ca]['expanded'] = 0
         # TODO: Find another way to rerender
         self.__show_man.render()
-    
+
     def add_cluster_actors(self, tract_idx, streamlines, thr, colors):
         # Saving the tractogram colors in case of reclustering
         if self.__first_time:
             self.__tractogram_colors.append(colors)
-        
+
         print(f'\nClustering threshold {thr}')
         clusters = qbx_and_merge(
             streamlines, [40, 30, 25, 20, thr])
         self.__tractogram_clusters[tract_idx] = clusters
         centroids = clusters.centroids
         print(f'Total number of centroids = {len(centroids)}')
-        
+
         lengths = [length(c) for c in centroids]
         self.__lengths.extend(lengths)
         lengths = np.array(lengths)
-        
+
         sizes = [len(c) for c in clusters]
         self.__sizes.extend(sizes)
         sizes = np.array(sizes)
@@ -128,10 +128,10 @@ class ClustersVisualizer:
                 'actor': centroid_actor, 'cluster': idx,
                 'tractogram': tract_idx, 'size': sizes[idx],
                 'length': lengths[idx], 'selected': 0, 'highlighted': 0}
-            
+
             self.__apply_shader(self.__centroid_actors[centroid_actor])
             self.__apply_shader(self.__cluster_actors[cluster_actor])
-            
+
             if self.__enable_callbacks:
                 centroid_actor.AddObserver(
                     'LeftButtonPressEvent',
@@ -139,7 +139,7 @@ class ClustersVisualizer:
                 cluster_actor.AddObserver(
                     'LeftButtonPressEvent',
                     self.__left_click_cluster_callback, 1.)
-    
+
     def recluster_tractograms(self, thr):
         for cent in self.__centroid_actors:
             self.__scene.rm(self.__centroid_actors[cent]['actor'])
@@ -150,31 +150,31 @@ class ClustersVisualizer:
         self.__cluster_actors = {}
         self.__lengths = []
         self.__sizes = []
-        
+
         # Keeping states of some attributes
         self.__first_time = False
-        
+
         for t, sft in enumerate(self.__tractograms):
             streamlines = sft.streamlines
             self.add_cluster_actors(
                         t, streamlines, thr, self.__tractogram_colors[t])
-    
+
     @property
     def centroid_actors(self):
         return self.__centroid_actors
-    
+
     @property
     def cluster_actors(self):
         return self.__cluster_actors
-    
+
     @property
     def lengths(self):
         return np.array(self.__lengths)
-    
+
     @property
     def sizes(self):
         return np.array(self.__sizes)
-    
+
     @property
     def tractogram_clusters(self):
         return self.__tractogram_clusters

@@ -390,7 +390,7 @@ def solve_qp(P, Q, G, H):
     elif Version(cvxpy.__version__) < Version('1.2'):
         msg = """Dipy does not support versions of cvxpy below 1.2."""
         raise ValueError(msg)
-    
+
     # setting up the problem
     prob = cvxpy.Problem(objective, constraints)
     try:

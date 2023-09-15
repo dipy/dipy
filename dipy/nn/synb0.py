@@ -77,7 +77,7 @@ class DecoderBlock(Layer):
 def UNet3D(input_shape):
     r"""
     Function to create model for Synb0
-    
+
     Parameters
     ----------
     input_shape : tuple
@@ -93,7 +93,7 @@ def UNet3D(input_shape):
                      strides=1, padding='same')(inputs)
     syn0 = EncoderBlock(64, kernel_size=3,
                         strides=1, padding='same')(x)
-    
+
     x = MaxPool3D()(syn0)
     x = EncoderBlock(64, kernel_size=3,
                      strides=1, padding='same')(x)
@@ -115,7 +115,7 @@ def UNet3D(input_shape):
     # Last layer without relu
     x = Conv3D(512, kernel_size=1,
                strides=1, padding='same')(x)
-    
+
     x = DecoderBlock(512, kernel_size=2,
                      strides=2, padding='valid')(x)
 
@@ -127,7 +127,7 @@ def UNet3D(input_shape):
                      strides=1, padding='same')(x)
     x = DecoderBlock(256, kernel_size=2,
                      strides=2, padding='valid')(x)
-    
+
     x = Concatenate()([x, syn1])
 
     x = DecoderBlock(128, kernel_size=3,
@@ -255,7 +255,7 @@ def UNet3D(input_shape):
                      strides=1, padding='same')(inputs)
     syn0 = EncoderBlock(64, kernel_size=3,
                         strides=1, padding='same')(x)
-    
+
     x = MaxPool3D()(syn0)
     x = EncoderBlock(64, kernel_size=3,
                      strides=1, padding='same')(x)
@@ -277,7 +277,7 @@ def UNet3D(input_shape):
     # Last layer without relu
     x = Conv3D(512, kernel_size=1,
                strides=1, padding='same')(x)
-    
+
     x = DecoderBlock(512, kernel_size=2,
                      strides=2, padding='valid')(x)
 
@@ -289,7 +289,7 @@ def UNet3D(input_shape):
                      strides=1, padding='same')(x)
     x = DecoderBlock(256, kernel_size=2,
                      strides=2, padding='valid')(x)
-    
+
     x = Concatenate()([x, syn1])
 
     x = DecoderBlock(128, kernel_size=3,
