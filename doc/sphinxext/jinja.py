@@ -5,7 +5,7 @@ from docutils.parsers.rst import directives
 from jinja2 import FileSystemLoader, Environment
 
 class JinjaDirective(Directive):
-    
+
   # As this directive will bring some content into rst file
   has_contnet = True
 
@@ -20,19 +20,19 @@ class JinjaDirective(Directive):
 
   # Defining app variable to access
   app = None
-  
+
   def run(self):
     # Creating a node for our content
     node = nodes.Element()
     node.document = self.state.document
-    
+
     # Fetching config
     conf = self.app.config
-    
+
     # Fetching the context from conf.py
     cxt = (conf.jinja_contexts[self.options.get("context")].copy()
             if self.options.get("context") else {})
-    
+
     # Loading the environment for Jinja parsing and new options
     env = Environment(
         loader=FileSystemLoader(conf.jinja_base, followlinks=True),

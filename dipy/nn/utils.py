@@ -103,7 +103,7 @@ def transform_img(image, affine, init_shape=(256, 256, 256), scale=2):
     transformed_img, _ = reslice(transformed_img, np.eye(4), (1, 1, 1),
                                  (scale, scale, scale))
     return transformed_img, affine2
-    
+
 def recover_img(image, affine, ori_shape, scale=2):
     r"""
     Function to recover image back to its original shape

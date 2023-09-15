@@ -30,7 +30,7 @@ The following 19 authors contributed 1176 commits.
 
 
 We closed a total of 388 issues, 155 pull requests and 233 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (155):
@@ -184,7 +184,7 @@ Pull Requests (155):
 * :ghpull:`308`: typos + pep stuf
 * :ghpull:`303`: BF: try and fix nibabel setup requirement
 * :ghpull:`304`: Update README.txt
-* :ghpull:`302`: Time for 0.8.0.dev! 
+* :ghpull:`302`: Time for 0.8.0.dev!
 * :ghpull:`299`: BF: Put back utils.length.
 * :ghpull:`301`: Updated info.py and copyright year
 * :ghpull:`300`: Bf fetcher bug on windows
@@ -268,7 +268,7 @@ Issues (233):
 * :ghissue:`479`: Report on coverage for old scipy.
 * :ghissue:`481`: BF - make examples was confusing files with similar names, fixed
 * :ghissue:`428`: WIP: refactor travis building
-* :ghissue:`429`: WIP: Refactor travising 
+* :ghissue:`429`: WIP: Refactor travising
 * :ghissue:`476`: Fix optimize defaults for older scipy versions for L-BFGS-B
 * :ghissue:`478`: TST: Increase the timeout on the Travis pip install
 * :ghissue:`477`: MAINT+TST: update minimum nibabel dependency
@@ -392,14 +392,14 @@ Issues (233):
 * :ghissue:`312`: Sphere and default used through the code
 * :ghissue:`305`: DOC: Some more details in installation instructions.
 * :ghissue:`314`: BF - callable response does not work
-* :ghissue:`16`: quickie: 'from raw data to tractographies' documentation implies dipy can't do anything with nonisotropic voxel sizes 
+* :ghissue:`16`: quickie: 'from raw data to tractographies' documentation implies dipy can't do anything with nonisotropic voxel sizes
 * :ghissue:`311`: Bf seeds from mask
 * :ghissue:`307`: Streamline_tools example stops working when I change density from 1 to 2
 * :ghissue:`241`: Wrong normalization in peaks_from_model
 * :ghissue:`248`: Clarify dsi example
 * :ghissue:`220`: Add ndindex to peaks_from_model
 * :ghissue:`253`: Parallel peaksFromModel timing out on buildbot
-* :ghissue:`256`: writing data to /tmp peaks_from_model 
+* :ghissue:`256`: writing data to /tmp peaks_from_model
 * :ghissue:`278`: tenmodel.bvec, not existing anymore?
 * :ghissue:`282`: fvtk documentation is incomprehensible
 * :ghissue:`228`: buildbot error in mask.py
@@ -410,7 +410,7 @@ Issues (233):
 * :ghissue:`31`: Plotting in test suite
 * :ghissue:`42`: RuntimeWarning in dti.py
 * :ghissue:`43`: Problems with edges and faces in create_half_unit_sphere
-* :ghissue:`53`: Is ravel_multi_index a new thing? 
+* :ghissue:`53`: Is ravel_multi_index a new thing?
 * :ghissue:`64`: Fix examples that rely on old API and removed data-sets
 * :ghissue:`67`: viz.projections.sph_projection is broken
 * :ghissue:`92`: dti.fa division by 0 warning in tests
@@ -420,7 +420,7 @@ Issues (233):
 * :ghissue:`308`: typos + pep stuf
 * :ghissue:`303`: BF: try and fix nibabel setup requirement
 * :ghissue:`304`: Update README.txt
-* :ghissue:`302`: Time for 0.8.0.dev! 
+* :ghissue:`302`: Time for 0.8.0.dev!
 * :ghissue:`299`: BF: Put back utils.length.
 * :ghissue:`301`: Updated info.py and copyright year
 * :ghissue:`300`: Bf fetcher bug on windows

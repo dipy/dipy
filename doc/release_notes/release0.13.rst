@@ -27,7 +27,7 @@ The following 13 authors contributed 212 commits.
 
 
 We closed a total of 115 issues, 39 pull requests and 76 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (39):
@@ -116,7 +116,7 @@ Issues (76):
 * :ghissue:`1319`: Correct white-space for fwdti example.
 * :ghissue:`1317`: reconst_fwdti.py example figures not being rendered
 * :ghissue:`1297`: Added eigh version of localpca to svd version
-* :ghissue:`1313`: No module named 'vtkCommonCore' 
+* :ghissue:`1313`: No module named 'vtkCommonCore'
 * :ghissue:`1318`: Mix framework with Cythonized func_mul
 * :ghissue:`1167`: Potential replacement for CVXOPT?
 * :ghissue:`1180`: WIP: replacing cvxopt with cvxpy.

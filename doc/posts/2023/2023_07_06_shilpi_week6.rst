@@ -16,16 +16,16 @@ Also, in order to maintain the coding standards of the previously implemented mo
 
 Therefore, because of all these changes I had to re-implement a lot of already implemented functions in CTI which also required changing the description of those functions and not only the code.
 
-But my major time went towards writing tests for these modified codes. While writing codes, I realized that a lot of the functions needed to be modified a bit. Also, I had to import several new libraries in order for the functions to work. 
+But my major time went towards writing tests for these modified codes. While writing codes, I realized that a lot of the functions needed to be modified a bit. Also, I had to import several new libraries in order for the functions to work.
 
 What Is coming up next week
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The testing part for the implemented method is not yet done correctly, as the signals don't yet match the expected output. So, I intend on re-implementing them by taking into consideration the suggestions provided by my mentor. This would require modifying code of some already implemented functions as well as re-writing the tests, particularly the generation of the eigenvalues and the eigen vectors. 
+The testing part for the implemented method is not yet done correctly, as the signals don't yet match the expected output. So, I intend on re-implementing them by taking into consideration the suggestions provided by my mentor. This would require modifying code of some already implemented functions as well as re-writing the tests, particularly the generation of the eigenvalues and the eigen vectors.
 
 
 Did I get stuck anywhere
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-I didn't exactly get stuck, but implementing the tests requires you to make sure that the shape of the tensors you're passing into a function is correct and is as expected. This took me a while to figure out. 
+I didn't exactly get stuck, but implementing the tests requires you to make sure that the shape of the tensors you're passing into a function is correct and is as expected. This took me a while to figure out.
 

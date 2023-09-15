@@ -11,11 +11,11 @@ What I did this week
 ~~~~~~~~~~~~~~~~~~~~
 This week I took a deep dive into VQ-VAE code. Here's a little bit about VQ-VAE -
 
-VQ-VAE is discretized VAE in latent space that helps in achieving high quality outputs. It varies from VAE by two points - use of discrete latent space, performing separate Prior training. VAE also showed impressive generative capabilities across data modalities - images, video, audio. 
+VQ-VAE is discretized VAE in latent space that helps in achieving high quality outputs. It varies from VAE by two points - use of discrete latent space, performing separate Prior training. VAE also showed impressive generative capabilities across data modalities - images, video, audio.
 
 By using discrete latent space, VQ-VAE bypasses the 'posterior collapse' mode seen in traditional VAE. Posterior collapse is when latent space is not utilized properly and collapses to similar vectors independent of input, thereby resulting in not many variations when generating outputs.
 
-Encoder, Decoder weights are trained along with L2 updates of embedding vectors. A categorical distribution is assumed of these latent embeddings and to truly capture the distribution of these vectors, these latents are further trained using PixelCNN model. 
+Encoder, Decoder weights are trained along with L2 updates of embedding vectors. A categorical distribution is assumed of these latent embeddings and to truly capture the distribution of these vectors, these latents are further trained using PixelCNN model.
 
 In the original paper, PixelCNN has shown to capture the distribution of data while also delivering rich detailing in generated output images. In the image space, PixelCNN decoder reconstructs a given input image with varying visual aspects such as colors, angles, lightning etc. This is achieved through autoregressive training with the help of masked convolutions. Auto regressive training coupled with categorical distribution sampling at the end of the pipeline facilitates PixelCNN to be an effective generative model.
 
