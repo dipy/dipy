@@ -21,7 +21,7 @@
         information metric the way `Optimizer` needs them. That is, given
         a set of transform parameters, it will use `ParzenJointHistogram`
         to compute the value and gradient of the joint intensity histogram
-        evaluated at the given parameters, and evaluate the the value and
+        evaluated at the given parameters, and evaluate the value and
         gradient of the histogram's mutual information.
 
     AffineRegistration: it runs the multi-resolution registration, putting
