@@ -962,22 +962,24 @@ def test_random_seed_initialization():
     """Test that the random generator can be initialized correctly with the
     tracking seeds.
     """
-
     sphere = HemiSphere.from_sphere(unit_octahedron)
-    pmf = np.zeros((4,4,4,3))
+    pmf = np.zeros((4, 4, 4, 3))
     x = np.array([0., 0, 0, 57.421434502602544])
     y = np.array([0., 1, 2, 21.566539227085478])
     z = np.array([1., 1, 1, 51.67881720942744])
 
-    seeds = np.column_stack([x, y, z])
-    sc = BinaryStoppingCriterion(np.ones((4,4,4)))
+    seeds = np.row_stack([np.column_stack([x, y, z]),
+                          np.random.random((10, 3))])
+    sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
-    for rdm_seed in [None, 0, 1, 1234, 1010101010, -2]:
-        _ = iter(LocalTracking(direction_getter=dg,
-                               stopping_criterion=sc,
-                               seeds=seeds,
-                               affine=np.eye(4),
-                               step_size=1.,
-                               return_all=False,
-                               random_seed=rdm_seed))
+    randoms_seeds = [None, 0, 1, -1] + list(np.random.random(10)) \
+        + list(np.random.randint(0, np.iinfo(np.int32).max, 10))
+
+    for rdm_seed in randoms_seeds:
+        _ = Streamlines(LocalTracking(direction_getter=dg,
+                                      stopping_criterion=sc,
+                                      seeds=seeds,
+                                      affine=np.eye(4),
+                                      step_size=1.,
+                                      random_seed=rdm_seed))
