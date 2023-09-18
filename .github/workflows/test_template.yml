@@ -98,9 +98,11 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         which gcc
+        which g++
         echo "---------------------------------"
         echo $GITHUB_PATH
         echo "---------------------------------"
+        echo $PATH
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY

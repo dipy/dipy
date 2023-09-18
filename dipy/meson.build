@@ -46,7 +46,7 @@ cython_c_args = []
 if is_windows
   # For mingw-w64, link statically against the UCRT.
   # automatic detect lto for now due to some issues.
-  gcc_link_args = ['-lucrt', '-static', '-flto=auto']
+  gcc_link_args = ['-lucrt', '-static', '-fno-use-linker-plugin']
   if is_mingw
     add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
     # Force gcc to float64 long doubles for compatibility with MSVC
