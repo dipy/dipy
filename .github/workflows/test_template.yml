@@ -103,6 +103,11 @@ jobs:
         echo $GITHUB_PATH
         echo "---------------------------------"
         echo $PATH
+        echo "---------------------------------"
+        ls /mingw64/bin/
+        echo "---------------------------------"
+        echo "/c/ProgramData/Chocolatey/bin" >> $PATH
+
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
