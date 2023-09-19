@@ -98,7 +98,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install rtools -y --no-progress --force --version=4.0.0.20220206
-        echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH
+        echo "c:\rtools40\ucrt64\bin;" >> $GITHUB_PATH
     - name: Set up PATH on Windows
       # Needed to use GNU instead of Strawberry
       # find / -name "liblto_plugin*.dll" 2>/dev/null
@@ -111,18 +111,19 @@ jobs:
         echo "---------------------------------"
         echo $PATH
         echo "---------------------------------"
-        ls /mingw64/bin/
+        ls c:\rtools40\ucrt64\bin
         echo "---------------------------------"
         echo "PKG_CONFIG_PATH=c:\opt\64\lib\pkgconfig;" >> $GITHUB_ENV
         echo "---------------------------------"
-    - name: Install DIPY
-      # if runner.os != 'Windows'
-      run: tools/ci/install.sh
+        echo $GITHUB_ENV
     - name: Install DIPY
       if: runner.os == 'Windows'
       env:
         CC: clang-cl
         CXX: clang-cl
+      run: tools/ci/install.sh
+    - name: Install DIPY
+    #   # if runner.os != 'Windows'
       run: tools/ci/install.sh
     - name: Setup Headless
       if: ${{ inputs.enable-viz-tests }}
