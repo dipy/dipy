@@ -99,29 +99,8 @@ jobs:
       run: |
         choco install rtools -y --no-progress --force --version=4.0.0.20220206
         echo "/c/rtools40/ucrt64/bin;" >> $GITHUB_PATH
-    - name: Set up PATH on Windows
-      if: runner.os == 'Windows'
-      run: |
-        which gcc
-        which g++
-        echo "---------------------------------"
-        echo $GITHUB_PATH
-        echo "---------------------------------"
-        echo $PATH
-        echo "---------------------------------"
-        ls /c/rtools40/ucrt64/bin
-        echo "---------------------------------"
         echo "PKG_CONFIG_PATH=/c/opt/64/lib/pkgconfig;" >> $GITHUB_ENV
-        echo "---------------------------------"
-        echo $GITHUB_ENV
     - name: Install DIPY
-      #   # if runner.os != 'Windows'
-      run: tools/ci/install.sh
-    - name: Install DIPY
-      if: runner.os == 'Windows'
-      env:
-        CC: clang-cl
-        CXX: clang-cl
       run: tools/ci/install.sh
     - name: Setup Headless
       if: ${{ inputs.enable-viz-tests }}
@@ -144,7 +123,3 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         verbose: true
-    # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    # - name: Setup tmate session
-    #   if: ${{ failure() }}
-    #   uses: mxschmitt/action-tmate@v3
