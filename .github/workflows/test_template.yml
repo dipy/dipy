@@ -92,22 +92,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: defaults, conda-forge
         use-only-tar-bz2: true
-    - name: Set up PATH on Windows
-      # Needed to use GNU instead of Strawberry
-      # find / -name "liblto_plugin*.dll" 2>/dev/null
-      if: runner.os == 'Windows'
-      run: |
-        which gcc
-        which g++
-        echo "---------------------------------"
-        echo $GITHUB_PATH
-        echo "---------------------------------"
-        echo $PATH
-        echo "---------------------------------"
-        ls /mingw64/bin/
-        echo "---------------------------------"
-        echo "/c/ProgramData/Chocolatey/bin" >> $GITHUB_PATH
-
     - name: Install Dependencies
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
@@ -116,6 +100,18 @@ jobs:
       if: ${{ inputs.enable-viz-tests }}
       run: tools/ci/setup_headless.sh
     - name: Run the Tests
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/run_tests.sh || echo "::warning::Experimental Job so failure ignored!"
+        else
+          tools/ci/run_tests.sh
+        fi
+    - name: Run the Tests
+      if: runner.os == 'Windows'
+      env:
+        CC: clang-cl
+        CXX: clang-cl
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
           tools/ci/run_tests.sh || echo "::warning::Experimental Job so failure ignored!"
