@@ -4,9 +4,11 @@ from numpy.testing import (assert_,
                            assert_array_almost_equal,
                            assert_raises)
 import pytest
+
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.denspeed import (add_padding_reflection, remove_padding)
 from dipy.utils.omp import cpu_count, have_openmp
+from dipy.testing import assert_greater
 from time import time
 
 
@@ -135,4 +137,4 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
     if cpu_count() == 2:
 
-        assert_equal(duration_2core < duration_1core, True)
+        assert_greater(duration_1core, duration_2core)

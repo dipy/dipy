@@ -16,7 +16,7 @@ fi
 if [ "$INSTALL_TYPE" == "setup" ]; then
     python setup.py install
 elif [ "$INSTALL_TYPE" == "pip" ]; then
-    $PIPI .
+    $PIPI -vv .
 elif [ "$INSTALL_TYPE" == "sdist" ]; then
     # python -m pep517.build
     python setup_egg.py egg_info  # check egg_info while we're here
@@ -30,7 +30,7 @@ elif [ "$INSTALL_TYPE" == "requirements" ]; then
     $PIPI -r requirements.txt
     python setup.py install
 elif [ "$INSTALL_TYPE" == "conda" ]; then
-    $PIPI .
+    $PIPI -vv .
 fi
 
 set +ex
