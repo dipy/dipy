@@ -647,7 +647,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     ----------
     gtab : GradientTable
         The nominal gradient table with which the data were acquired.
-    affines : list or ndarray of shape (n, 4, 4) or (n, 3, 3)
+    affines : list or ndarray of shape (4, 4, n) or (3, 3, n)
         Each entry in this list or array contain either an affine
         transformation (4,4) or a rotation matrix (3, 3).
         In both cases, the transformations encode the rotation that was applied
@@ -672,6 +672,9 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
         e_s += "non-zero gradients"
         raise ValueError(e_s)
 
+    # moving axis to make life easier
+    affines = np.moveaxis(affines, -1, 0)
+    
     for i, aff in enumerate(affines):
         if aff.shape == (4, 4):
             # This must be an affine!

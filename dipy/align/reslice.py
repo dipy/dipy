@@ -87,7 +87,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                   'mode': mode, 'cval': cval}
         if data.ndim == 3:
             data2 = affine_transform(input=data, **kwargs)
-        if data.ndim == 4:
+        elif data.ndim == 4:
             data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
 
             if num_processes == 1:
@@ -106,6 +106,9 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res
                 pool.close()
+        else:
+            raise ValueError("dimension of data should be 3 or 4 but you"
+                         " provided %d" % data.ndim)
 
         Rx = np.eye(4)
         Rx[:3, :3] = np.diag(R)
