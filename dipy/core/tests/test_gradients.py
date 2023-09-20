@@ -367,9 +367,9 @@ def test_reorient_bvecs():
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     # The simple case: all affines are identity
-    affs = np.zeros((6, 4, 4))
+    affs = np.zeros((4, 4, 6))
     for i in range(4):
-        affs[:, i, i] = 1
+        affs[i, i, :] = 1
 
     # We should get back the same b-vectors
     new_gt = reorient_bvecs(gt, affs)
@@ -389,15 +389,16 @@ def test_reorient_bvecs():
         rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3],
                                   bvecs[i])
 
+    rotation_affines = np.stack(rotation_affines, axis=-1)
     # Copy over the rotation affines
     full_affines = rotation_affines[:]
     # And add some scaling and translation to each one to make this harder
-    for i in range(len(full_affines)):
-        full_affines[i] = np.dot(full_affines[i],
-                                 np.array([[2.5, 0, 0, -10],
-                                           [0, 2.2, 0, 20],
-                                           [0, 0, 1, 0],
-                                           [0, 0, 0, 1]]))
+    for i in range(full_affines.shape[-1]):
+        full_affines[..., i] = np.dot(full_affines[..., i],
+                                      np.array([[2.5, 0, 0, -10],
+                                                [0, 2.2, 0, 20],
+                                                [0, 0, 1, 0],
+                                                [0, 0, 0, 1]]))
 
     gt_rot = gradient_table_from_bvals_bvecs(bvals,
                                              rotated_bvecs, b0_threshold=0)
@@ -408,7 +409,7 @@ def test_reorient_bvecs():
 
     # We should be able to pass just the 3-by-3 rotation components to the same
     # effect
-    new_gt = reorient_bvecs(gt_rot, np.array(rotation_affines)[:, :3, :3])
+    new_gt = reorient_bvecs(gt_rot, np.array(rotation_affines)[:3, :3])
     npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
 
     # Verify that giving the wrong number of affines raises an error:
@@ -423,9 +424,10 @@ def test_reorient_bvecs():
                                        [0, 1, 0, 0],
                                        [0, 0, 1, 0],
                                        [0, 0, 0, 1]]))
+    shear_affines = np.stack(shear_affines, axis=-1)
     # atol is set to 1 here to do the scaling verification here,
     # so that the reorient_bvecs function does not throw an error itself
-    new_gt = reorient_bvecs(gt, np.array(shear_affines)[:, :3, :3], atol=1)
+    new_gt = reorient_bvecs(gt, shear_affines[:3, :3], atol=1)
     bvecs_close_to_1 = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1) <= 0.001
     npt.assert_(np.all(bvecs_close_to_1))
 
