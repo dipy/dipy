@@ -52,7 +52,7 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
     return np.unique(b)
 
 
-class GradientTable(object):
+class GradientTable:
     """Diffusion gradient information
 
     Parameters

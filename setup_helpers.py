@@ -235,7 +235,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
     return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 
 
-class SetupDependency(object):
+class SetupDependency:
     """ SetupDependency class
 
     Parameters
@@ -304,7 +304,7 @@ class SetupDependency(object):
         setuptools_kwargs[self.req_type] = old_reqs + [new_req]
 
 
-class Bunch(object):
+class Bunch:
     def __init__(self, vars):
         for key, name in vars.items():
             if key.startswith('__'):

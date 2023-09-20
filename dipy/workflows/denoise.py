@@ -1,4 +1,3 @@
-
 import logging
 import shutil
 import numpy as np
@@ -91,8 +90,8 @@ class Patch2SelfFlow(Workflow):
 
                 denoised_data = patch2self(
                     data, bvals, model=model, b0_threshold=b0_threshold,
-                    alpha=alpha, verbose=verbose, patch_radius=patch_radius, 
-                    b0_denoising=b0_denoising, 
+                    alpha=alpha, verbose=verbose, patch_radius=patch_radius,
+                    b0_denoising=b0_denoising,
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
                 )

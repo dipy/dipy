@@ -1,4 +1,3 @@
-
 from warnings import warn
 from math import factorial
 from packaging.version import Version

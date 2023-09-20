@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ==================================
 Fiber to bundle coherence measures

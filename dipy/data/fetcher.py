@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import contextlib
 import logging
@@ -1972,7 +1971,6 @@ def fetch_hbn(subjects, path=None):
         my_path = path
 
     base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
-
     if not os.path.exists(base_dir):
         os.makedirs(base_dir, exist_ok=True)
 
@@ -2009,13 +2007,14 @@ def fetch_hbn(subjects, path=None):
         for remote in file_list:
             full = remote.split(
                 "Projects")[-1][1:].replace("/BIDS_curated", "")
-            local = op.join(dipy_home, full)
+            local = op.join(my_path, full)
             data_files[local] = remote
 
     download_files = {}
     for k in data_files.keys():
         if not op.exists(k):
             download_files[k] = data_files[k]
+
     if len(download_files.keys()):
         with tqdm(total=len(download_files.keys())) as pbar:
             for k in download_files.keys():

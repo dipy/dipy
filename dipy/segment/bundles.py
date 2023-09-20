@@ -209,7 +209,7 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=(5, 3, 1.5),
     return ba_value
 
 
-class RecoBundles(object):
+class RecoBundles:
 
     def __init__(self, streamlines,  greater_than=50, less_than=1000000,
                  cluster_map=None, clust_thr=15, nb_pts=20,

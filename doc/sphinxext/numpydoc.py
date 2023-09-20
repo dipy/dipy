@@ -141,7 +141,7 @@ from sphinx.domains.c import CDomain
 from sphinx.domains.python import PythonDomain
 
 
-class ManglingDomainBase(object):
+class ManglingDomainBase:
     directive_mangling_map = {}
 
     def __init__(self, *a, **kw):

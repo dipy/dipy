@@ -33,7 +33,7 @@ HELP_MESSAGE = """
 """
 
 
-class Horizon(object):
+class Horizon:
 
     def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
                  cluster_thr=15.0, random_colors=None, length_gt=0,
@@ -151,19 +151,19 @@ class Horizon(object):
                 self.random_colors = ['tracts', 'rois']
         else:
             self.random_colors = []
-        
+
         self.__clusters_visualizer = None
         self.__tabs = []
         self.__tab_mgr = None
-        
+
         self.__help_visible = True
-        
+
         # TODO: Move to another class/module
         self.__hide_centroids = True
         self.__select_all = False
-        
+
         self.__win_size = (0, 0)
-    
+
     # TODO: Move to another class/module
     def __expand(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
@@ -181,7 +181,7 @@ class Horizon(object):
                         cent.VisibilityOff()
                         centroid_actors[cent]['expanded'] = 1
         self.show_m.render()
-    
+
     # TODO: Move to another class/module
     def __hide(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
@@ -202,7 +202,7 @@ class Horizon(object):
                         cent.VisibilityOn()
         self.__hide_centroids = not self.__hide_centroids
         self.show_m.render()
-    
+
     # TODO: Move to another class/module
     def __invert(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
@@ -221,7 +221,7 @@ class Horizon(object):
                 cluster_actors[clus]['selected'] = (
                     centroid_actors[cent]['selected'])
         self.show_m.render()
-    
+
     def __key_press_events(self, obj, event):
         key = obj.GetKeySym()
         # TODO: Move to another class/module
@@ -254,7 +254,7 @@ class Horizon(object):
                 self.__save()
             if key == 'y' or key == 'Y':
                 self.__new_window()
-    
+
     # TODO: Move to another class/module
     def __new_window(self):
         cluster_actors = self.__clusters_visualizer.cluster_actors
@@ -277,7 +277,7 @@ class Horizon(object):
             clusters_gt=0, world_coords=True, interactive=True)
         ren2 = hz2.build_scene()
         hz2.build_show(ren2)
-    
+
     # TODO: Move to another class/module
     def __reset(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
@@ -293,7 +293,7 @@ class Horizon(object):
                 cent.VisibilityOn()
                 centroid_actors[cent]['expanded'] = 0
         self.show_m.render()
-    
+
     # TODO: Move to another class/module
     def __save(self):
         cluster_actors = self.__clusters_visualizer.cluster_actors
@@ -312,7 +312,7 @@ class Horizon(object):
             saving_streamlines, self.tractograms[0], Space.RASMM)
         save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
         print('Saved!')
-    
+
     # TODO: Move to another class/module
     def __show_all(self):
         centroid_actors = self.__clusters_visualizer.centroid_actors
@@ -342,7 +342,7 @@ class Horizon(object):
                         centroid_actors[cent]['selected'])
             self.__select_all = True
         self.show_m.render()
-    
+
     def __win_callback(self, obj, event):
         if self.__win_size != obj.GetSize():
             self.__win_size = obj.GetSize()
@@ -363,48 +363,48 @@ class Horizon(object):
         return scene
 
     def build_show(self, scene):
-        
+
         title = 'Horizon ' + horizon_version
         self.show_m = window.ShowManager(
             scene, title=title, size=(1920, 1080), reset_camera=False,
             order_transparent=self.order_transparent)
-        
+
         if len(self.tractograms) > 0:
-            
+
             if self.cluster:
                 self.__clusters_visualizer = ClustersVisualizer(
                     self.show_m, scene, self.tractograms)
-            
+
             color_ind = 0
-            
+
             for t, sft in enumerate(self.tractograms):
                 streamlines = sft.streamlines
-                
+
                 if 'tracts' in self.random_colors:
                     colors = next(self.color_gen)
                 else:
                     colors = None
-                
+
                 if not self.world_coords:
                     # TODO: Get affine from a StatefullTractogram
                     raise ValueError(
                         'Currently native coordinates are not supported for '
                         'streamlines.')
-                
+
                 if self.cluster:
                     self.__clusters_visualizer.add_cluster_actors(
                         t, streamlines, self.cluster_thr, colors)
                 else:
                     if self.buan:
                         colors = self.buan_colors[color_ind]
-                    
+
                     streamline_actor = actor.line(streamlines, colors=colors)
                     streamline_actor.GetProperty().SetEdgeVisibility(1)
                     streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
                     streamline_actor.GetProperty().SetLineWidth(6)
                     streamline_actor.GetProperty().SetOpacity(1)
                     scene.add(streamline_actor)
-                
+
                 color_ind += 1
 
             if self.cluster:
@@ -439,11 +439,13 @@ class Horizon(object):
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
-                        warnings.warn(
-                            'Your data does not have any contrast. Please, '
-                            'check the value range of your data. If you want '
-                            'to visualize binary images use the --roi_images '
-                            'flag.')
+                        slices_viz = SlicesVisualizer(
+                            self.show_m.iren, scene, data, affine=affine,
+                            world_coords=self.world_coords,
+                            percentiles=[0, 100])
+                        self.__tabs.append(SlicesTab(
+                            slices_viz, id=img_count + 1))
+                        img_count += 1
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
@@ -453,20 +455,20 @@ class Horizon(object):
                     img_count += 1
             if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
-        
+
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
             scene.add(peak_actor)
             self.__tabs.append(PeaksTab(peak_actor))
-        
+
         else:
             data = None
             affine = None
             pam = None
-        
+
         self.__win_size = scene.GetSize()
-        
+
         if len(self.__tabs) > 0:
             self.__tab_mgr = TabManager(self.__tabs, self.__win_size)
             scene.add(self.__tab_mgr.tab_ui)

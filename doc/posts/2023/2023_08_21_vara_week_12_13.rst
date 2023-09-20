@@ -15,7 +15,7 @@ Monai's VQVAE results on T1-weighted NFBS dataset, 125 samples, for batch size o
    2. dipy's ``resize`` & scipy's ``affine_transform`` scale the volume to (128,128,128,1) shape & (1,1,1) voxel size
    3. MinMax normalization to limit the range of intensities to (0,1)
 
-Using existing training parameters, carried out two experiments, one on CC359 alone & another on both datasets combined. Additionally, I made a slight modification in the loss definition by attributing different weights of 0.5 & 1 to background & foreground pixels compared to equal weights from previous experiments. This resulted in faster convergence as shown in the red, blue & purple lines in the combined plot shown below. (Naming convention for each each training curve is ``B<batch_size>-<dataset_used>``, where CC=CC359, NFBS=NFBS, both=[NFBS,CC359])
+Using existing training parameters, carried out two experiments, one on CC359 alone & another on both datasets combined. Additionally, I made a slight modification in the loss definition by attributing different weights of 0.5 & 1 to background & foreground pixels compared to equal weights from previous experiments. This resulted in faster convergence as shown in the red, blue & purple lines in the combined plot shown below. (Naming convention for each training curve is ``B<batch_size>-<dataset_used>``, where CC=CC359, NFBS=NFBS, both=[NFBS,CC359])
 
 .. image:: /doc/_static/vqvae3d-monai-training-plots.png
    :alt: Combined trainings plots for all experiments
@@ -27,13 +27,13 @@ Inference results on the best performing model, B12-both, is shown below, where 
    :alt: VQVAE-Monai-B12-both reconstructions & originals showing equally spaced 5 slices for 2 different test samples
    :width: 800
 
-Here's a similar visualization of the inference on the next best performing model, B12-CC. 
+Here's a similar visualization of the inference on the next best performing model, B12-CC.
 
 .. image:: /doc/_static/vqvae-monai-B12-CC.png
    :alt: VQVAE-Monai-B12-CC reconstructions & originals showing equally spaced 5 slices for 2 different test samples
    :width: 800
 
-This shows that our training not only converged quickly but also improved visually. Here's a comparison of our current best performing model i.e., VQVAE-Monai-B12-both & the previous one on NFBS i.e., VQVAE-Monai-B5-NFBS. The test reconstruction loss is 0.0013 & 0.0015 respectively. 
+This shows that our training not only converged quickly but also improved visually. Here's a comparison of our current best performing model i.e., VQVAE-Monai-B12-both & the previous one on NFBS i.e., VQVAE-Monai-B5-NFBS. The test reconstruction loss is 0.0013 & 0.0015 respectively.
 
 .. image:: /doc/_static/vqvae-reconstructions-comparison.png
    :alt: VQVAE reconstruction comparison for B12-both & B5-NFBS

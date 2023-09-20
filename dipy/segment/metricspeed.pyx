@@ -13,7 +13,7 @@ import math
 cdef double PI = math.pi
 
 
-cdef class Metric(object):
+cdef class Metric:
     """ Computes a distance between two sequential data.
 
     A sequence of N-dimensional points is represented as a 2D array with

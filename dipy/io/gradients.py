@@ -62,7 +62,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         return bvals, bvecs
 
     if 3 not in bvecs.shape:
-        raise IOError('bvec file should have three rows')
+        raise OSError('bvec file should have three rows')
     if bvecs.ndim != 2:
         bvecs = bvecs[None, ...]
         bvals = bvals[None, ...]
@@ -78,9 +78,9 @@ def read_bvals_bvecs(fbvals, fbvecs):
         return bvals, bvecs
 
     if len(bvals.shape) > 1:
-        raise IOError('bval file should have one row')
+        raise OSError('bval file should have one row')
 
     if bvals.shape[0] != bvecs.shape[0]:
-        raise IOError('b-values and b-vectors shapes do not correspond')
+        raise OSError('b-values and b-vectors shapes do not correspond')
 
     return bvals, bvecs

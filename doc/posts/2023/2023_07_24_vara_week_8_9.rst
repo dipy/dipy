@@ -16,13 +16,13 @@ We observed in our previous results that the Diffusion Model's performance may d
 MONAI is an open source organization for Machine Learning in Medical Imaging, it has repositories and tutorials for various high performing networks tested on multiple Medical Image datasets. We adopted the deep learning architecture for VQVAE from MONAI's PyTorch implementation that was trained & tested on BRATS(400 data elements). The predominant difference is that the encoder & the decoder of VQVAE use Residual units differently than our existing setup. These Residual units are alternated between downsampling/upsampling convolutions in the encoder/decoder. Additionally, MONAI's VectorQuantizer uses non-trainable embeddings with statistical updates(Laplace Smoothing) on them at every iteration.
 
 
-I implemented MONAI's VQVAE architecture in Tensorflow from scratch, excluding the VectorQuantizer. This architecture has 46.5M trainable parameters. The training objective is to minimize the sum of reconstruction & quantization loss - same training paradigm as our previous experiments. In addition, to address the checkerboard artifacts, I referred to the `Sub-Pixel Convolution paper <https://arxiv.org/abs/1707.02937>`_. 
+I implemented MONAI's VQVAE architecture in Tensorflow from scratch, excluding the VectorQuantizer. This architecture has 46.5M trainable parameters. The training objective is to minimize the sum of reconstruction & quantization loss - same training paradigm as our previous experiments. In addition, to address the checkerboard artifacts, I referred to the `Sub-Pixel Convolution paper <https://arxiv.org/abs/1707.02937>`_.
 
-This paper proposes two methods to overcome the deconvolution overlap, a phenomenon that causes checkerboarded outputs in deconvolution/upsampling layers. These two methods are - Sub Pixel Convolution & NN Resize Convolution. 
+This paper proposes two methods to overcome the deconvolution overlap, a phenomenon that causes checkerboarded outputs in deconvolution/upsampling layers. These two methods are - Sub Pixel Convolution & NN Resize Convolution.
 
-For an upsampling rate :math:`r`, Sub Pixel Convolution outputs :math:`3r^2` output channels & later reshuffles channel dimension along spatial dimensions (upsamples them by :math:`r` across each) resulting in 3(desired) output channels. 
+For an upsampling rate :math:`r`, Sub Pixel Convolution outputs :math:`3r^2` output channels & later reshuffles channel dimension along spatial dimensions (upsamples them by :math:`r` across each) resulting in 3(desired) output channels.
 
-Whereas NN Resize performs interpolation on the kernel to upsample its size by :math:`r` before carrying out convolution that outputs 3 channels. The former method relies on shuffling & the later method relies on nearest neighbor interpolation to obtain an upsampled output respectively. 
+Whereas NN Resize performs interpolation on the kernel to upsample its size by :math:`r` before carrying out convolution that outputs 3 channels. The former method relies on shuffling & the later method relies on nearest neighbor interpolation to obtain an upsampled output respectively.
 
 Both methods have shown to perform better qualitatively in dealing with the checkerboards, on random initialization. The authors also go ahead and prove mathematically that with an efficient initialization, both methods prove to be equivalent. They call it the ICNR initialization - Initialization of Convolution with NN Resize.
 

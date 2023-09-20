@@ -333,7 +333,7 @@ def test_mppca_returned_sigma():
         msigma = np.mean(sigma)
         std_error = abs(msigma - std_gt)/std_gt * 100
 
-        # if #noise_eigenvals >> #signal_eigenvals, variance should be well estimated 
+        # if #noise_eigenvals >> #signal_eigenvals, variance should be well estimated
         # this is more likely achieved if #samples > #features
         if PR > 1:
             assert_(std_error < 5)
