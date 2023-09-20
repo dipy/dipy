@@ -16,7 +16,6 @@ import os
 import os.path as op
 import sys
 import shutil
-import io
 from subprocess import check_call
 from glob import glob
 from time import time
@@ -66,7 +65,7 @@ if not os.getcwd().endswith(op.join('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
-with io.open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
+with open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
     eg_index_contents = f.read()
 
 # Here I am adding an extra step. The list of examples to be executed need
@@ -76,7 +75,7 @@ with io.open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
 flist_name = op.join(op.dirname(os.getcwd()), 'examples',
                      'valid_examples.txt')
 
-with io.open(flist_name, "r", encoding="utf8") as flist:
+with open(flist_name, "r", encoding="utf8") as flist:
     validated_examples = flist.readlines()
 
 # Parse "#" in lines
@@ -143,7 +142,7 @@ name = ''
 def run_script():
     namespace = {}
     t1 = time()
-    with io.open(script, encoding="utf8") as f:
+    with open(script, encoding="utf8") as f:
         exec(f.read(), namespace)
     t2 = time()
     print("That took %.2f seconds to run" % (t2 - t1))

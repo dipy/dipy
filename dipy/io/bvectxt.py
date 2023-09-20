@@ -1,4 +1,3 @@
-
 from os.path import splitext
 import numpy as np
 
