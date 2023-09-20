@@ -674,7 +674,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
 
     # moving axis to make life easier
     affines = np.moveaxis(affines, -1, 0)
-    
+
     for i, aff in enumerate(affines):
         if aff.shape == (4, 4):
             # This must be an affine!

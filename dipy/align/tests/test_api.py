@@ -295,9 +295,11 @@ def test_streamline_registration():
             npt.assert_almost_equal(aligned[0], sl1[0], decimal=5)
             npt.assert_almost_equal(aligned[1], sl1[1], decimal=5)
 
+
 def test_register_dwi_series_multi_b0():
     # Test if register_dwi_series works with multiple b0 images
-    dwi_fname, dwi_bval_fname, dwi_bvec_fname = dpd.get_fnames('sherbrooke_3shell')
+    dwi_fname, dwi_bval_fname, \
+        dwi_bvec_fname = dpd.get_fnames('sherbrooke_3shell')
     data, affine = load_nifti(dwi_fname)
     bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 

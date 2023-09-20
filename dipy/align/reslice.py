@@ -108,7 +108,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                 pool.close()
         else:
             raise ValueError("dimension of data should be 3 or 4 but you"
-                         " provided %d" % data.ndim)
+                             " provided %d" % data.ndim)
 
         Rx = np.eye(4)
         Rx[:3, :3] = np.diag(R)
