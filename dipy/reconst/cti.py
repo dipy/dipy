@@ -17,10 +17,13 @@ from dipy.core.onetime import auto_attr
 
 
 def split_cti_params(cti_params):
-    r"""Extract the diffusion tensor eigenvalues, the diffusion tensor
+    r"""Splits CTI params into DTI, DKI, CTI portions.
+
+    Extract the diffusion tensor eigenvalues, the diffusion tensor
     eigenvector matrix, and the 21 independent elements of the covariance
     tensor, and the 15 independent elements of the kurtosis tensor from the
     model parameters estimated from the CTI model
+
     Parameters:
     -----------
         params: numpy.ndarray (..., 48)
@@ -58,7 +61,7 @@ def split_cti_params(cti_params):
 
 
 def cti_prediction(cti_params, gtab1, gtab2, S0=1):
-    """Predict a signal given correlation tensor imaging parameters
+    """Predict a signal given correlation tensor imaging parameters.
 
         Parameters
         ----------
@@ -83,7 +86,7 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
         Returns
         -------
         S : ndarray
-            Simulated signal based on the CTI model:
+            Simulated signal based on the CTI model
 
     """
     evals, evecs, kt, ct = split_cti_params(cti_params)
@@ -169,12 +172,12 @@ class CorrelationTensorModel(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
-        """ Fit method of the CTI model class
+        """ Fit method of the CTI model class.
 
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            4D array of dMRI data.
 
         mask : array
             A boolean array of the same shape as data.shape[-1]. It
@@ -225,9 +228,6 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     def __init__(self, model, model_params):
         """ Initialize a CorrelationTensorFit class instance.
-
-        Since CTI is an extension of DKI, class instance is defined as subclass
-        of the DiffusionKurtosis from dki.py
 
         Parameters
         ----------
@@ -289,17 +289,23 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
             Notes
             -----
-            The K_aniso is defined as :
+            The K_aniso is defined as[1]_:
 
             :math::
 
             \[K_{aniso} = \frac{6}{5} \cdot \frac{\langle V_{\lambda}(D_c)
                                                   \rangle}{\overline{D}^2}\]
 
-        where: \(K_{aniso}\) is the anisotropic kurtosis,
-            \(\langle V_{\lambda}(D_c) \rangle\) represents the mean of the
+        where: $K_{aniso}$ is the anisotropic kurtosis,
+            $\langle V_{\lambda}(D_c) \rangle$ represents the mean of the
             variance of eigenvalues of the diffusion tensor,
-            \(\overline{D}\) is the mean of the diffusion tensor.
+            $\overline{D}$ is the mean of the diffusion tensor.
+
+        References
+        ----------
+        .. [1]  [NetoHe2020] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2020.
+                Correlation tensor magnetic resonance imaging. Neuroimage 211.
+                doi: 10.1016/j.neuroimage.2020.116605
         """
         C = self.ct
         D = self.quadratic_form
@@ -326,9 +332,9 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         The K_iso is defined as :
 
         :math::
-            \[K_{iso} = 3 \cdot \frac{V({\overline{D}^c})}{\overline{D}^2}\]
+            $$ K_{\text{iso}} = 3 \cdot \frac{V(\overline{D}^c)}{\overline{D}^2} $$
 
-        where: \(K_{iso}\) is the isotropic kurtosis,
+        where: $ K_{\text{iso}} $ is the isotropic kurtosis,
             \(V({\overline{D}^c})\) represents the variance of the diffusion
             tensor raised to the power c,
             \(\overline{D}\) is the mean of the diffusion tensor.
@@ -343,11 +349,11 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     @auto_attr
     def K_total(self):
-        r""" Returns the total excess Kurtosis. (K_total)
+        r""" Returns the total excess kurtosis.
 
             Notes
             -----
-            The K_total is defined as :
+            $K_total$ is defined as :
 
             :math::
                 \[\Psi = \frac{2}{5} \cdot \frac{D_{11}^2 + D_{22}^2 + D_{33}^2
@@ -369,7 +375,6 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         mean_K = self.mkt()
         D = self.quadratic_form
-        # mean_D = np.trace(D) / 3
         mean_D = self.md
         psi = 2 / 5 * ((D[..., 0, 0]**2 + D[..., 1, 1]**2
                         + D[..., 2, 2]**2

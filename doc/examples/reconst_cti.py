@@ -3,11 +3,11 @@
 Reconstruction of the diffusion signal with the correlation tensor model
 ========================================================================
 
-The Correlation Tensor MRI (CTI) is a method that uses double diffusion
-encoding data to resolve sources of kurtosis. Compared to the Q-space
-Trajectory Imaging
+Correlation Tensor MRI (CTI) is a method that uses double diffusion
+encoding data to resolve sources of kurtosis. It is similar to the Q-space
+Trajectory Imaging method
 (see :ref:`sphx_glr_examples_built_reconstruction_reconst_qti.py`) [NetoHe2020]_.
-Therefore, in addition to the kurtosis sources associated with diffusion
+However, in addition to the kurtosis sources associated with diffusion
 variance across compartments (``K_aniso`` and ``K_iso``, which are related to
 microscopic anisotropy and the variance of the mean diffusivities of
 compartments, respectively), CTI also measures K_micro. This quantifies
@@ -16,11 +16,10 @@ component tissue representation, such as restricted diffusion, exchange,
 and structural disorder in compartments like cross-sectional variance
 [NovelloL2022]_ [AlvesR2022]_.
 
-While the CorrelationTensorModel was initiated using the class instance of the
-DiffusionKurtosisTensorFit to capture common attributes, their expressions for
-representing the diffusion-weighted signal differ significantly. This
-distinction in representation necessitated a change in the ``design matrix``
-for CTI.
+Although the CorrelationTensorModel and the DiffusionKurtosisTensorFit may
+share some similarities, they have significantly different representations for
+the diffusion-weighted signal. This difference leads to the necessity for a
+unique ``design matrix`` specifically for CTI.
 The CorrelationTensorModel expresses the diffusion-weighted signal as:
 
 .. math::
@@ -81,10 +80,10 @@ In this example, the function ``load_nifti`` is used to load the CTI data from
 the file ``RB_invivo_cti_data_f3.nii`` and returns the data as a nibabel
 Nifti1Image object along with the affine transformation. The b-values and
 b-vectors for two different gradient tables are loaded from ``bvals1.bval`` and
-``bvec1.bvec``, and ``bvals2.bval`` and ``bvec2.bvec`` respectively using the
+``bvec1.bvec``, and ``bvals2.bval`` and ``bvec2.bvec``, respectively, using the
 ``read_bvals_bvecs`` function. For CTI reconstruction in DIPY, we need to
-define the b-values and b-vectors for each diffusion epoch on separate gradient
-table, as done in the above line of code.
+define the b-values and b-vectors for each diffusion epoch in separate gradient
+tables, as done in the above line of code.
 """
 gtab1 = gradient_table(bvals1, bvecs1)
 gtab2 = gradient_table(bvals2, bvecs2)
@@ -108,7 +107,7 @@ ctifit = ctimodel.fit(data, mask=mask)
 """
 The fit method for the CTI model produces a CorrelationTensorFit object, which
 contains the attributes of both the DKI and DTI models. Given that CTI is a
-layered model built upon the DKI, which itself extends the DTI model, the
+built upon DKI, which itself extends the DTI model, the
 CorrelationTensorFit instance captures a comprehensive set of parameters and
 attributes from these underlying models.
 
@@ -125,8 +124,10 @@ MK = ctifit.mk()
 AK = ctifit.ak()
 RK = ctifit.rk()
 """
-Below we draw a feature map of the 3 different sources of kurtosis which can
-exclusively be calculated from the CTI model.
+However, in addition to these metrics, CTI also provides unique sources of
+information, not available in DTI and DKI. Below we draw a feature map of the 3
+different sources of kurtosis which can exclusively be calculated from the CTI
+model.
 """
 kiso_map = ctifit.K_iso
 kaniso_map = ctifit.K_aniso
