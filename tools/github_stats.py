@@ -147,13 +147,11 @@ if __name__ == "__main__":
             tag = sys.argv[1]
     else:
         tag = check_output(['git', 'describe', '--abbrev=0'],
-                           universal_newlines=True).strip()
+                           text=True).strip()
 
     if tag:
         cmd = ['git', 'log', '-1', '--format=%ai', tag]
-        tagday, tz = check_output(cmd,
-                                  universal_newlines=True).strip().rsplit(' ',
-                                                                          1)
+        tagday, tz = check_output(cmd, text=True).strip().rsplit(' ', 1)
         since = datetime.strptime(tagday, "%Y-%m-%d %H:%M:%S")
     else:
         since = datetime.now() - timedelta(days=days)
@@ -186,10 +184,10 @@ if __name__ == "__main__":
         # print git info, in addition to GitHub info:
         since_tag = tag + '..'
         cmd = ['git', 'log', '--oneline', since_tag]
-        ncommits = len(check_output(cmd, universal_newlines=True).splitlines())
+        ncommits = len(check_output(cmd, text=True).splitlines())
 
         author_cmd = ['git', 'log', '--format=* %aN', since_tag]
-        all_authors = check_output(author_cmd, universal_newlines=True) \
+        all_authors = check_output(author_cmd, text=True) \
             .splitlines()
         unique_authors = sorted(set(all_authors))
 

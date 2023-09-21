@@ -1,5 +1,4 @@
 import fnmatch
-import io
 import sys
 import os
 import shutil
@@ -244,7 +243,7 @@ def prepare_gallery(app=None):
                 logger.warning(msg)
                 continue
 
-            with io.open(Path(examples_dir, filename), encoding="utf8") as f:
+            with open(Path(examples_dir, filename), encoding="utf8") as f:
                 xfile = f.readlines()
 
             new_name = None

@@ -853,7 +853,7 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
 
     Parameters
     ----------
-    streamlines : Streamlines generator
+    tracking_output : Streamlines generator
         Either streamlines (list, ArraySequence) or a tuple with streamlines
         and seeds together
     affine : array (4, 4)
@@ -868,22 +868,16 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
         If save_seeds is True, also return a generator for the
         transformed seeds.
     """
-    if save_seeds:
-        streamlines, seeds = zip(*tracking_output)
-    else:
-        streamlines = tracking_output
-        seeds = None
-
     lin_T = affine[:3, :3].T.copy()
     offset = affine[:3, 3].copy()
     yield
     # End of initialization
 
-    if seeds is not None:
-        for sl, seed in zip(streamlines, seeds):
+    if save_seeds:
+        for sl, seed in tracking_output:
             yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
     else:
-        for sl in streamlines:
+        for sl in tracking_output:
             yield np.dot(sl, lin_T) + offset
 
 

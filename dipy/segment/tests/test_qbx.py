@@ -238,7 +238,7 @@ def test_qbx_and_merge():
 
     assert_equal(len(qbx_centroids) > len(qbxm_centroids), True)
 
-    # check that refdata clusters return streamlines in qbx_and_merge    
+    # check that refdata clusters return streamlines in qbx_and_merge
     streamline_idx =qbxm_clusters[0].indices[0]
-    assert_array_equal(qbxm_clusters[0][0], streamlines[streamline_idx]) 
+    assert_array_equal(qbxm_clusters[0][0], streamlines[streamline_idx])
 

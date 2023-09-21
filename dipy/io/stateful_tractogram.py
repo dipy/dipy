@@ -45,7 +45,7 @@ class Origin(enum.Enum):
     TRACKVIS = 'corner'
 
 
-class StatefulTractogram(object):
+class StatefulTractogram:
     """ Class for stateful representation of collections of streamlines
     Object designed to be identical no matter the file format
     (trk, tck, vtk, fib, dpy). Facilitate transformation between space and

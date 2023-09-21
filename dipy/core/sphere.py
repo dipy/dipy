@@ -1,4 +1,3 @@
-
 import numpy as np
 import warnings
 
@@ -121,7 +120,7 @@ def unique_sets(sets, return_inverse=False):
         return uniqsets
 
 
-class Sphere(object):
+class Sphere:
     """Points on the unit sphere.
 
     The sphere can be constructed using one of three conventions::

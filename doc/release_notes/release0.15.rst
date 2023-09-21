@@ -41,7 +41,7 @@ The following 30 authors contributed 676 commits.
 
 
 We closed a total of 287 issues, 93 pull requests and 194 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (93):
@@ -61,7 +61,7 @@ Pull Requests (93):
 * :ghpull:`1670`: fixed RecoBundle workflow, SLR reference, and updated fetcher.py
 * :ghpull:`1669`: Flow csd sh order
 * :ghpull:`1659`: From dipy.viz to FURY
-* :ghpull:`1621`: workflows : warn user for strange b0 threshold 
+* :ghpull:`1621`: workflows : warn user for strange b0 threshold
 * :ghpull:`1657`: DOC: Add spherical harmonics basis documentation.
 * :ghpull:`1660`: OPT - moved the tolerance check outside of the for loop
 * :ghpull:`1658`: STYLE: Honor 'descoteaux'and 'tournier' SH basis naming.
@@ -85,7 +85,7 @@ Pull Requests (93):
 * :ghpull:`1584`: Added Examples
 * :ghpull:`1554`: Checking if the input file or directory exists when running a workflow
 * :ghpull:`1528`: Show spheres with different radii, colors and opacities + add timers + add exit a + resolve issue with imread
-* :ghpull:`1526`: Eigenvalue - eigenvector array compatibility check 
+* :ghpull:`1526`: Eigenvalue - eigenvector array compatibility check
 * :ghpull:`1628`: Adding python 3.7 on travis
 * :ghpull:`1623`: NF: Convert between 4D DEC FA and 3D 24 bit representation.
 * :ghpull:`1622`: [Fix] viz slice example
@@ -96,14 +96,14 @@ Pull Requests (93):
 * :ghpull:`1583`: Fix the relative SF threshold Issue
 * :ghpull:`1602`: Fix random seed in tracking
 * :ghpull:`1609`: [DOC] update dependencies file
-* :ghpull:`1560`: Removed affine matrices from tracking. 
+* :ghpull:`1560`: Removed affine matrices from tracking.
 * :ghpull:`1593`: Removed event.abort for release events
 * :ghpull:`1597`: Upgrade nibabel minimum version
 * :ghpull:`1601`: Fix: Decrease Nosetest warning
 * :ghpull:`1515`: RF: Use the new Streamlines API for orienting of streamlines.
 * :ghpull:`1590`: Revert 1570 file menu
 * :ghpull:`1589`: Fix calculation of highest order for a sh basis set
-* :ghpull:`1580`: Allow PRE=1 job to fail  
+* :ghpull:`1580`: Allow PRE=1 job to fail
 * :ghpull:`1533`: Show message if number of arguments mismatch between the doc string and the run method.
 * :ghpull:`1523`: Showing help when no input parameters are given and suppress warnings for cmds
 * :ghpull:`1543`: Update the default out_strategy to create the output in the current working directory
@@ -180,7 +180,7 @@ Issues (194):
 * :ghissue:`1668`: One issue on handling HCP data -- HCP b vectors raise NaN in the gradient table
 * :ghissue:`1662`: Remove the points added outside of a mask. Fix the related tests.
 * :ghissue:`1659`: From dipy.viz to FURY
-* :ghissue:`1621`: workflows : warn user for strange b0 threshold 
+* :ghissue:`1621`: workflows : warn user for strange b0 threshold
 * :ghissue:`1657`: DOC: Add spherical harmonics basis documentation.
 * :ghissue:`1296`: Need of a travis bot that runs ana/mini/conda and vtk=7.1.0+
 * :ghissue:`1660`: OPT - moved the tolerance check outside of the for loop
@@ -216,27 +216,27 @@ Issues (194):
 * :ghissue:`928`: dipy.viz.colormap crash on single fibers
 * :ghissue:`923`: change size of colorbar in viz module
 * :ghissue:`854`: VTK and Python 3 support in fvtk
-* :ghissue:`759`: How to resolve python-vtk6 link issues in Ubuntu 
+* :ghissue:`759`: How to resolve python-vtk6 link issues in Ubuntu
 * :ghissue:`647`: fvtk contour function ignores voxsz parameter
 * :ghissue:`646`: Dipy visualization with missing (?) affine parameter
 * :ghissue:`645`: Dipy visualization (fvtk) crash when saving series of images
-* :ghissue:`353`: fvtk.label won't show up if called twice 
+* :ghissue:`353`: fvtk.label won't show up if called twice
 * :ghissue:`787`: TST: Add an appveyor starter file.
 * :ghissue:`1642`: Test that you can use the 724 symmetric sphere in PAM.
 * :ghissue:`1641`: changed vertices to float64 in evenly_distributed_sphere_642.npz
 * :ghissue:`1203`: Some bots might need a newer version of nibabel
 * :ghissue:`1156`: Deterministic tracking workflow
 * :ghissue:`642`: WIP - NF parallel framework
-* :ghissue:`1135`: WIP : Multiprocessing - implemented a parallel_voxel_fit decorator 
+* :ghissue:`1135`: WIP : Multiprocessing - implemented a parallel_voxel_fit decorator
 * :ghissue:`387`: References do not render correctly in SHORE example
 * :ghissue:`442`: Allow length and set_number_of_points to work with generators
 * :ghissue:`558`: Allow setting of the zoom on fvtk ren objects
 * :ghissue:`1236`: bundle visualisation using nibabel API: wrong colormap
-* :ghissue:`1389`: VTK 8: minimal version? 
+* :ghissue:`1389`: VTK 8: minimal version?
 * :ghissue:`1519`: Scipy stopped supporting scipy.misc.imread
 * :ghissue:`1596`: Reproducibility in PFT tracking
 * :ghissue:`1614`: for GSoC NODDIx_PR
-* :ghissue:`1576`: [WIP] Needs Optimization and Cleaning 
+* :ghissue:`1576`: [WIP] Needs Optimization and Cleaning
 * :ghissue:`1564`: Added scroll bar to ListBox2D
 * :ghissue:`1636`: Fixed broken link.
 * :ghissue:`1584`: Added Examples
@@ -244,7 +244,7 @@ Issues (194):
 * :ghissue:`1554`: Checking if the input file or directory exists when running a workflow
 * :ghissue:`1528`: Show spheres with different radii, colors and opacities + add timers + add exit a + resolve issue with imread
 * :ghissue:`1108`: Local PCA Slow Version
-* :ghissue:`1526`: Eigenvalue - eigenvector array compatibility check 
+* :ghissue:`1526`: Eigenvalue - eigenvector array compatibility check
 * :ghissue:`1628`: Adding python 3.7 on travis
 * :ghissue:`1623`: NF: Convert between 4D DEC FA and 3D 24 bit representation.
 * :ghissue:`1622`: [Fix] viz slice example
@@ -267,7 +267,7 @@ Issues (194):
 * :ghissue:`1610`: Tortoise - sub
 * :ghissue:`1607`: Reminder to add in the docs that users will need to update nibabel to 2.3.0 during the next release
 * :ghissue:`1609`: [DOC] update dependencies file
-* :ghissue:`1560`: Removed affine matrices from tracking. 
+* :ghissue:`1560`: Removed affine matrices from tracking.
 * :ghissue:`1593`: Removed event.abort for release events
 * :ghissue:`1586`: Slider breaks interaction in viz_advanced example
 * :ghissue:`1597`: Upgrade nibabel minimum version
@@ -279,10 +279,10 @@ Issues (194):
 * :ghissue:`1589`: Fix calculation of highest order for a sh basis set
 * :ghissue:`1577`: Revert "Added File Menu element to viz.ui"
 * :ghissue:`1571`: WIP: multi-threaded on affine registration
-* :ghissue:`1580`: Allow PRE=1 job to fail  
+* :ghissue:`1580`: Allow PRE=1 job to fail
 * :ghissue:`1533`: Show message if number of arguments mismatch between the doc string and the run method.
 * :ghissue:`1523`: Showing help when no input parameters are given and suppress warnings for cmds
-* :ghissue:`1579`: Error on PRE=1 (cython / numpy) 
+* :ghissue:`1579`: Error on PRE=1 (cython / numpy)
 * :ghissue:`1543`: Update the default out_strategy to create the output in the current working directory
 * :ghissue:`1433`: New version of h5py messing with us?
 * :ghissue:`1541`: demon registration, unstable?
@@ -300,7 +300,7 @@ Issues (194):
 * :ghissue:`1555`: Fix bug in actor.label
 * :ghissue:`1551`: Actor.label not working anymore
 * :ghissue:`1522`: Image element in dipy.viz.ui
-* :ghissue:`1549`: CVXPY installation on >3.5 
+* :ghissue:`1549`: CVXPY installation on >3.5
 * :ghissue:`1355`: WIP: ENH: UI Listbox
 * :ghissue:`1562`: Should we retire our Python 3.5 travis builds?
 * :ghissue:`1550`: Memory error when running rigid transform

@@ -1,7 +1,7 @@
 from dipy.segment.cythonutils cimport Data2D, Shape
 cimport numpy as cnp
 
-cdef class Feature(object):
+cdef class Feature:
     cdef int is_order_invariant
 
     cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *

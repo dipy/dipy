@@ -196,7 +196,7 @@ lpt_streamlines_vox = select_random_set_of_streamlines(lpt_sft.streamlines,
 rpt_streamlines_vox = select_random_set_of_streamlines(rpt_sft.streamlines,
                                                        1000)
 
-# Same dimensions for every stateful tractogram, can be re-use
+# Same dimensions for every stateful tractogram, can be reused
 affine, dimensions, voxel_sizes, voxel_order = cc_sft.space_attributes
 cc_density = density_map(cc_streamlines_vox, np.eye(4), dimensions)
 laf_density = density_map(laf_streamlines_vox, np.eye(4), dimensions)

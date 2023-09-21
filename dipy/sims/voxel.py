@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import numpy as np
 from numpy import dot
 from dipy.core.geometry import sphere2cart

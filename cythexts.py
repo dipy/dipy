@@ -44,7 +44,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
             c_fname = base + '.c'
             try:
                 c_file = open(c_fname, 'rb')
-            except IOError:
+            except OSError:
                 return False
             c_hash = sha1(c_file.read()).hexdigest()
             stamps[source_hash] = source
@@ -52,7 +52,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
     # Read stamps from hash_stamp_fname; check in stamps dictionary
     try:
         stamp_file = open(hash_stamp_fname, 'rt')
-    except IOError:
+    except OSError:
         return False
     for line in stamp_file:
         if line.startswith('#'):

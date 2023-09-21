@@ -60,7 +60,7 @@ def sphere2cart(r, theta, phi):
     Returns
     -------
     x : array
-       x coordinate(s) in Cartesion space
+       x coordinate(s) in Cartesian space
     y : array
        y coordinate(s) in Cartesian space
     z : array
@@ -529,7 +529,7 @@ def lambert_equal_area_projection_cart(x, y, z):
     Parameters
     ----------
     x : array_like
-       x coordinate in Cartesion space
+       x coordinate in Cartesian space
     y : array_like
        y coordinate in Cartesian space
     z : array_like

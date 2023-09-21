@@ -382,7 +382,7 @@ def make_fake_signal():
     return S1 + S2, gtab, np.vstack([a, b])
 
 
-class TestQballModel(object):
+class TestQballModel:
 
     model = QballModel
 

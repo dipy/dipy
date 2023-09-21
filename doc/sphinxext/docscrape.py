@@ -11,11 +11,11 @@ from packaging.version import Version
 
 python_version = '.'.join(str(x) for x in sys.version_info[:2])
 if Version(python_version) >= Version('3.10'):
-    from collections.abc import Mapping 
+    from collections.abc import Mapping
 else:
-    from collections import Mapping 
+    from collections import Mapping
 
-class Reader(object):
+class Reader:
     """A line-based string reader.
 
     """

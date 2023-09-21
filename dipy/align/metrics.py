@@ -11,7 +11,7 @@ from dipy.align import expectmax as em
 from dipy.align import floating
 
 
-class SimilarityMetric(object, metaclass=abc.ABCMeta):
+class SimilarityMetric(metaclass=abc.ABCMeta):
     def __init__(self, dim):
         r""" Similarity Metric abstract class
 

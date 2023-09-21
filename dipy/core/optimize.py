@@ -12,7 +12,7 @@ from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
-class Optimizer(object):
+class Optimizer:
 
     def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None,
                  hess=None, hessp=None, bounds=None, constraints=(),
@@ -294,7 +294,7 @@ def sparse_nnls(y, X,
         iteration += 1
 
 
-class SKLearnLinearSolver(object, metaclass=abc.ABCMeta):
+class SKLearnLinearSolver(metaclass=abc.ABCMeta):
     """
     Provide a sklearn-like uniform interface to algorithms that solve problems
     of the form: $y = Ax$ for $x$

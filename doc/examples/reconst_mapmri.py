@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 =================================================================
 Continuous and analytical diffusion signal modelling with MAP-MRI

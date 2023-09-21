@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # dipy documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb  4 15:23:20 2010.
 #
@@ -84,8 +82,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'dipy'
-copyright = u'2008-2023, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
+project = 'dipy'
+copyright = '2008-2023, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -232,8 +230,8 @@ htmlhelp_basename = 'dipydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'dipy.tex', u'dipy Documentation',
-   u'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
+  ('index', 'dipy.tex', 'dipy Documentation',
+   'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

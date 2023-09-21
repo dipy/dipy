@@ -120,7 +120,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
 
 
 
-cdef class QuickBundlesX(object):
+cdef class QuickBundlesX:
 
     def __init__(self, features_shape, levels_thresholds, Metric metric):
         self.metric = metric
@@ -490,7 +490,7 @@ cdef class ClustersCentroid(Clusters):
         return Clusters.c_create_cluster(self)
 
 
-cdef class QuickBundles(object):
+cdef class QuickBundles:
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
                  int max_nb_clusters=BIGGEST_INT):
         self.metric = metric

@@ -657,7 +657,7 @@ def smooth_pinv(B, L):
     ----------
     B : array_like (n, m)
         Matrix to be inverted
-    L : array_like (n,)
+    L : array_like (m,)
 
     Returns
     -------
@@ -1067,7 +1067,7 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     return boot_data
 
 
-class ResidualBootstrapWrapper(object):
+class ResidualBootstrapWrapper:
     """Returns a residual bootstrap sample of the signal_object when indexed
 
     Wraps a signal_object, this signal object can be an interpolator. When

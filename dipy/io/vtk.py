@@ -1,4 +1,3 @@
-
 import numpy as np
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package

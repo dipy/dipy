@@ -74,7 +74,7 @@ cdef class ClustersCentroid(Clusters):
     cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1
 
 
-cdef class QuickBundles(object):
+cdef class QuickBundles:
     cdef Shape features_shape
     cdef Data2D features
     cdef Data2D features_flip
@@ -92,7 +92,7 @@ cdef class QuickBundles(object):
     cdef object _build_clustermap(self)
 
 
-cdef class QuickBundlesX(object):
+cdef class QuickBundlesX:
     cdef CentroidNode* root
     cdef Metric metric
     cdef Shape features_shape

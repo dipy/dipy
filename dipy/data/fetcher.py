@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import contextlib
 import logging
@@ -584,6 +583,24 @@ fetch_qte_lte_pte = _make_fetcher(
     data_size='41.5 MB')
 
 
+fetch_cti_rat1 = _make_fetcher(
+    'fetch_cti_rat1',
+    pjoin(dipy_home, 'cti_rat1'),
+    'https://zenodo.org/record/8276773/files/',
+    ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
+     'bvals2.bval', 'bvec2.bvec', 'Rat1_mask.nii'],
+    ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
+     'bvals2.bval', 'bvec2.bvec', 'Rat1_mask.nii'],
+    ['2f855e7826f359d80cfd6f094d3a7008', '1deed2a91e20104ca42d7482cc096a9a',
+     '40a4f5131b8a64608d16b0c6c5ad0837', '1979c7dc074e00f01103cbdf83ed78db',
+     '653d9344060803d5576f43c65ce45ccb', '34bc3d5acea9442d05ef185717780440'],
+    doc='Download Rat Brain DDE data for CTI reconstruction'
+    + ' (Rat #1 data from Henriques et al. MRM 2021).',
+    data_size='152.92 MB',
+    msg=("More details about the data are available in the paper: " +
+         "https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.28938"))
+
+
 fetch_fury_surface = _make_fetcher(
     "fetch_fury_surface",
     pjoin(dipy_home, 'fury_surface'),
@@ -855,6 +872,15 @@ def get_fnames(name='small_64D'):
         fbvec = pjoin(folder, 'lte-pte.bvec')
         fmask = pjoin(folder, 'mask.nii.gz')
         return fdata, fbval, fbvec, fmask
+    if name == 'cti_rat1':
+        _, folder = fetch_cti_rat1()
+        fdata = pjoin(folder, 'Rat1_invivo_cti_data.nii')
+        fbval1 = pjoin(folder, 'bvals1.bval')
+        fbvec1 = pjoin(folder, 'bvec1.bvec')
+        fbval2 = pjoin(folder, 'bvals2.bval')
+        fbvec2 = pjoin(folder, 'bvec2.bvec')
+        fmask = pjoin(folder, 'Rat1_mask.nii')
+        return fdata, fbval1, fbvec1, fbval2, fbvec2, fmask
     if name == 'fury_surface':
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
@@ -1945,7 +1971,6 @@ def fetch_hbn(subjects, path=None):
         my_path = path
 
     base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
-
     if not os.path.exists(base_dir):
         os.makedirs(base_dir, exist_ok=True)
 
@@ -1982,13 +2007,14 @@ def fetch_hbn(subjects, path=None):
         for remote in file_list:
             full = remote.split(
                 "Projects")[-1][1:].replace("/BIDS_curated", "")
-            local = op.join(dipy_home, full)
+            local = op.join(my_path, full)
             data_files[local] = remote
 
     download_files = {}
     for k in data_files.keys():
         if not op.exists(k):
             download_files[k] = data_files[k]
+
     if len(download_files.keys()):
         with tqdm(total=len(download_files.keys())) as pbar:
             for k in download_files.keys():
