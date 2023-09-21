@@ -667,7 +667,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     """
     new_bvecs = gtab.bvecs[~gtab.b0s_mask]
 
-    if new_bvecs.shape[0] != len(affines):
+    if new_bvecs.shape[0] != affines.shape[-1]:
         e_s = "Number of affine transformations must match number of "
         e_s += "non-zero gradients"
         raise ValueError(e_s)
