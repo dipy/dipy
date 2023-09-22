@@ -149,3 +149,9 @@ def test_roi_images():
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 2)
+
+def test_small_horizon_import():
+    
+    from dipy.viz import horizon as Horizon
+
+    assert Horizon == horizon
