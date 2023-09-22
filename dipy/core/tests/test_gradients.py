@@ -413,7 +413,7 @@ def test_reorient_bvecs():
     npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
 
     # Verify that giving the wrong number of affines raises an error:
-    np.concatenate([full_affines, np.zeros((4, 4, 1))])
+    full_affines = np.concatenate([full_affines, np.zeros((4, 4, 1))], axis=-1)
     npt.assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
 
     # Shear components in the matrix need to be decomposed into rotation only,
