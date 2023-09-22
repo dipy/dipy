@@ -24,3 +24,4 @@ jobs:
       runs-on: '["ubuntu-latest", ]'
       python-version: '["3.12-dev", ]'
       use-pre: true
+      depends: cython!=0.29.29 numpy scipy h5py nibabel tqdm packaging
