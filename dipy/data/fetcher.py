@@ -1875,7 +1875,7 @@ def fetch_hcp(subjects,
     data_files = {}
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
@@ -1978,7 +1978,7 @@ def fetch_hbn(subjects, path=None):
 
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
