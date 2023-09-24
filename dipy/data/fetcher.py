@@ -213,7 +213,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         if unzip:
             for f in local_fnames:
                 split_ext = op.splitext(f)
-                if split_ext[-1] == '.gz' or split_ext[-1] == '.bz2':
+                if split_ext[-1] in ('.gz', '.bz2'):
                     if op.splitext(split_ext[0])[-1] == '.tar':
                         ar = tarfile.open(pjoin(folder, f))
                         ar.extractall(path=folder)
