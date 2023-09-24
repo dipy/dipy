@@ -162,8 +162,6 @@ def reg_func(figname, static_mask=None, moving_mask=None):
     regtools.overlay_slices(static, xformed_img, None, 2,
                             "Static", "Transformed", figname)
 
-    return
-
 
 """
 Now we can run this function and hopefully get the same result.

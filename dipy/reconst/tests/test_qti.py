@@ -81,7 +81,6 @@ def test_cvxpy_1x6_to_3x3():
         npt.assert_array_almost_equal(qti.cvxpy_1x6_to_3x3(V).value, T)
         npt.assert_array_almost_equal(
             qti.cvxpy_1x6_to_3x3(qti.from_3x3_to_6x1(T)).value, T)
-    return
 
 
 def test_cvxpy_1x21_to_6x6():
@@ -99,7 +98,6 @@ def test_cvxpy_1x21_to_6x6():
         npt.assert_array_almost_equal(qti.cvxpy_1x21_to_6x6(V).value, T)
         npt.assert_array_almost_equal(
             qti.cvxpy_1x21_to_6x6(qti.from_6x6_to_21x1(T)).value, T)
-    return
 
 
 def test_helper_tensors():
