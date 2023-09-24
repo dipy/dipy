@@ -245,7 +245,7 @@ def test_tracking_max_angle():
 
     for sphere in [get_sphere('repulsion100'),
                    HemiSphere.from_sphere(get_sphere('repulsion100'))]:
-        shape_img = list([5, 5, 5])
+        shape_img = [5, 5, 5]
         shape_img.extend([sphere.vertices.shape[0]])
         mask = np.ones(shape_img[:3])
         affine = np.eye(4)
