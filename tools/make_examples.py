@@ -88,18 +88,17 @@ validated_examples = list(filter(None, validated_examples))
 for example in validated_examples:
     fullpath = op.join(EG_SRC_DIR, example)
     if not example.endswith(".py"):
-        print("%s not a python file, skipping." % example)
+        print(f"{example} not a python file, skipping.")
         continue
     elif not op.isfile(fullpath):
-        print("Cannot find file, %s, skipping." % example)
+        print(f"Cannot find file, {example}, skipping.")
         continue
     shutil.copyfile(fullpath, example)
 
     # Check that example file is included in the docs
     file_root = example[:-3]
     if file_root not in eg_index_contents:
-        msg = "Example, %s, not in index file %s."
-        msg = msg % (example, EG_INDEX_FNAME)
+        msg = f"Example, {example}, not in index file {EG_INDEX_FNAME}."
         print(msg)
 
 # Run the conversion from .py to rst file
@@ -145,7 +144,7 @@ def run_script():
     with open(script, encoding="utf8") as f:
         exec(f.read(), namespace)
     t2 = time()
-    print("That took %.2f seconds to run" % (t2 - t1))
+    print(f"That took {t2 - t1:.2f} seconds to run")
     plt.close('all')
     del namespace
 

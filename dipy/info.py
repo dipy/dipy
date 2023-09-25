@@ -13,10 +13,7 @@ _version_extra = 'dev0'
 # _version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
-__version__ = "%s.%s.%s%s" % (_version_major,
-                              _version_minor,
-                              _version_micro,
-                              _version_extra)
+__version__ = f"{_version_major}.{_version_minor}.{_version_micro}{_version_extra}"
 
 CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Environment :: Console",

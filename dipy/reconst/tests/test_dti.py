@@ -169,8 +169,8 @@ def test_tensor_model():
         model = dti.TensorModel(gtab, fit_method=lambda *args, **kwargs: 42)
         fit = model.fit_method()
     except Exception as exc:
-        assert False, "TensorModel should accept custom fit methods: %s" % exc
-    assert fit == 42, "Custom fit method for TensorModel returned %s." % fit
+        assert False, f"TensorModel should accept custom fit methods: {exc}"
+    assert fit == 42, f"Custom fit method for TensorModel returned {fit}."
 
     # Test multi-voxel data
     data = np.zeros((3, Y.shape[1]))

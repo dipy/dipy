@@ -33,7 +33,7 @@ def dollars_to_math(source):
     def repl(matchobj):
         global _data
         s = matchobj.group(0)
-        t = "___XXX_REPL_%d___" % len(_data)
+        t = f"___XXX_REPL_{len(_data)}___"
         _data[t] = s
         return t
     s = re.sub(r"({[^{}$]*\$[^{}$]*\$[^{}]*})", repl, s)

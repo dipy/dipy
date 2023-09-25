@@ -266,9 +266,9 @@ class RecoBundles:
         self.nb_streamlines = len(self.streamlines)
         self.verbose = verbose
         if self.verbose:
-            logger.info("target brain streamlines length = %s" % len(streamlines))
-            logger.info("After refining target brain streamlines" +
-                        "length = %s" % len(self.streamlines))
+            logger.info(f"target brain streamlines length = {len(streamlines)}")
+            logger.info(f"After refining target brain streamlines"
+                        f" length = {len(self.streamlines)}")
 
         self.start_thr = [40, 25, 20]
         if rng is None:
@@ -289,20 +289,17 @@ class RecoBundles:
             self.indices = [cluster.indices for cluster in self.cluster_map]
 
             if self.verbose:
-                logger.info(' Streamlines have %d centroids'
-                            % (self.nb_centroids,))
-                logger.info(' Total loading duration %0.3f s\n'
-                            % (time() - t,))
+                logger.info(f' Streamlines have {self.nb_centroids} centroids')
+                logger.info(f' Total loading duration {time() - t:0.3f} s\n')
 
     def _cluster_streamlines(self, clust_thr, nb_pts):
 
         if self.verbose:
             t = time()
             logger.info('# Cluster streamlines using QBx')
-            logger.info(' Tractogram has %d streamlines'
-                        % (len(self.streamlines), ))
-            logger.info(' Size is %0.3f MB' % (nbytes(self.streamlines),))
-            logger.info(' Distance threshold %0.3f' % (clust_thr,))
+            logger.info(f' Tractogram has {len(self.streamlines)} streamlines')
+            logger.info(f' Size is {nbytes(self.streamlines):0.3f} MB')
+            logger.info(f' Distance threshold {clust_thr:0.3f}')
 
         # TODO this needs to become a default parameter
         thresholds = self.start_thr + [clust_thr]
@@ -317,9 +314,8 @@ class RecoBundles:
         self.indices = [cluster.indices for cluster in self.cluster_map]
 
         if self.verbose:
-            logger.info(' Streamlines have %d centroids'
-                        % (self.nb_centroids,))
-            logger.info(' Total duration %0.3f s\n' % (time() - t,))
+            logger.info(f' Streamlines have {self.nb_centroids} centroids')
+            logger.info(f' Total duration {time() - t:0.3f} s\n')
 
     @deprecated_params('slr_num_threads', 'num_threads', since='1.4',
                        until='1.5')
@@ -454,8 +450,8 @@ class RecoBundles:
             pruning_thr=pruning_thr,
             pruning_distance=pruning_distance)
         if self.verbose:
-            logger.info('Total duration of recognition time is %0.3f s\n'
-                        % (time()-t,))
+            logger.info(f'Total duration of recognition time'
+                        f' is {time()-t:0.3f} s\n')
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -604,8 +600,8 @@ class RecoBundles:
             pruning_distance=pruning_distance)
 
         if self.verbose:
-            logger.info('Total duration of recognition time is %0.3f s\n'
-                        % (time()-t,))
+            logger.info(f'Total duration of recognition time'
+                        f' is {time()-t:0.3f} s\n')
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -664,9 +660,8 @@ class RecoBundles:
         if self.verbose:
             t = time()
             logger.info('# Cluster model bundle using QBX')
-            logger.info(' Model bundle has %d streamlines'
-                        % (len(model_bundle), ))
-            logger.info(' Distance threshold %0.3f' % (model_clust_thr,))
+            logger.info(f' Model bundle has {len(model_bundle)} streamlines')
+            logger.info(f' Distance threshold {model_clust_thr:0.3f}')
         thresholds = self.start_thr + [model_clust_thr]
 
         model_cluster_map = qbx_and_merge(model_bundle, thresholds,
@@ -676,9 +671,8 @@ class RecoBundles:
         model_centroids = model_cluster_map.centroids
         nb_model_centroids = len(model_centroids)
         if self.verbose:
-            logger.info(' Model bundle has %d centroids'
-                        % (nb_model_centroids,))
-            logger.info(' Duration %0.3f s\n' % (time() - t, ))
+            logger.info(f' Model bundle has {nb_model_centroids} centroids')
+            logger.info(f' Duration {time() - t:0.3f} s\n')
         return model_centroids
 
     def _reduce_search_space(self, model_centroids,
@@ -686,8 +680,8 @@ class RecoBundles:
         if self.verbose:
             t = time()
             logger.info('# Reduce search space')
-            logger.info(' Reduction threshold %0.3f' % (reduction_thr,))
-            logger.info(' Reduction distance {}'.format(reduction_distance))
+            logger.info(f' Reduction threshold {reduction_thr:0.3f}')
+            logger.info(f' Reduction distance {reduction_distance}')
 
         if reduction_distance.lower() == 'mdf':
             if self.verbose:
@@ -721,9 +715,9 @@ class RecoBundles:
                             'No bundle recognition')
             return Streamlines([]), []
         if self.verbose:
-            logger.info(' Number of neighbor streamlines %d' %
-                        (nb_neighb_streamlines,))
-            logger.info(' Duration %0.3f s\n' % (time() - t,))
+            logger.info(f' Number of neighbor streamlines'
+                        f' {nb_neighb_streamlines}')
+            logger.info(f' Duration {time() - t:0.3f} s\n')
 
         return neighb_streamlines, neighb_indices
 
@@ -773,17 +767,17 @@ class RecoBundles:
         slr_iterations = slm.iterations
 
         if self.verbose:
-            logger.info(' Square-root of BMD is %.3f' % (np.sqrt(slr_bmd),))
+            logger.info(f' Square-root of BMD is {np.sqrt(slr_bmd):.3f}')
             if slr_iterations is not None:
-                logger.info(' Number of iterations %d' % (slr_iterations,))
-            logger.info(' Matrix size {}'.format(slm.matrix.shape))
+                logger.info(f' Number of iterations {slr_iterations}')
+            logger.info(f' Matrix size {slm.matrix.shape}')
             original = np.get_printoptions()
             np.set_printoptions(3, suppress=True)
             logger.info(transf_matrix)
             logger.info(slm.xopt)
             np.set_printoptions(**original)
 
-            logger.info(' Duration %0.3f s\n' % (time() - t,))
+            logger.info(f' Duration {time() - t:0.3f} s\n')
 
         return transf_streamlines, slr_bmd
 
@@ -798,8 +792,8 @@ class RecoBundles:
                 logger.info('Pruning_thr has to be greater or equal to 0')
 
             logger.info('# Prune streamlines using the MDF distance')
-            logger.info(' Pruning threshold %0.3f' % (pruning_thr,))
-            logger.info(' Pruning distance {}'.format(pruning_distance))
+            logger.info(f' Pruning threshold {pruning_thr:0.3f}')
+            logger.info(f' Pruning distance {pruning_distance}')
             t = time()
 
         thresholds = [40, 30, 20, 10, mdf_thr]
@@ -808,7 +802,7 @@ class RecoBundles:
                                             select_randomly=500000,
                                             rng=self.rng)
         if self.verbose:
-            logger.info(' QB Duration %0.3f s\n' % (time() - t, ))
+            logger.info(f' QB Duration {time() - t:0.3f} s\n')
 
         rtransf_centroids = rtransf_cluster_map.centroids
 
@@ -848,10 +842,9 @@ class RecoBundles:
         final_indices = [initial_indices[i] for i in pruned_indices]
         labels = final_indices
         if self.verbose:
-            msg = ' Number of centroids: %d'
-            logger.info(msg % (len(rtransf_centroids),))
-            msg = ' Number of streamlines after pruning: %d'
-            logger.info(msg % (len(pruned_streamlines),))
-            logger.info(' Duration %0.3f s\n' % (time() - t, ))
+            logger.info(f' Number of centroids: {len(rtransf_centroids)}')
+            logger.info(f' Number of streamlines after pruning:'
+                        f' {len(pruned_streamlines)}')
+            logger.info(f' Duration {time() - t:0.3f} s\n')
 
         return pruned_streamlines, labels

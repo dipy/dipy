@@ -48,7 +48,7 @@ def get_paged_request(url):
     """Get a full list, handling APIv3's paging."""
     results = []
     while url:
-        print("fetching %s" % url, file=sys.stderr)
+        print(f"fetching {url}", file=sys.stderr)
         f = urlopen(url)
         results.extend(json.load(f))
         links = parse_link_header(f.headers)
@@ -59,8 +59,10 @@ def get_paged_request(url):
 def get_issues(project="dipy/dipy", state="closed", pulls=False):
     """Get a list of the issues from the Github API."""
     which = 'pulls' if pulls else 'issues'
-    url = "https://api.github.com/repos/%s/%s?state=%s&per_page=%i" \
-          % (project, which, state, PER_PAGE)
+    url = (
+        f"https://api.github.com/repos/{project}/{which}"
+        f"?state={state}&per_page={PER_PAGE}"
+    )
     return get_paged_request(url)
 
 
@@ -96,9 +98,10 @@ def issues_closed_since(period=LAST_RELEASE, project="dipy/dipy", pulls=False):
 
     if isinstance(period, timedelta):
         period = datetime.now() - period
-    url = "https://api.github.com/repos/%s/%s?state=closed&sort=updated&" \
-          "since=%s&per_page=%i" % (project, which, period.strftime(ISO8601),
-                                    PER_PAGE)
+    url = (
+        f"https://api.github.com/repos/{project}/{which}?state=closed"
+        f"&sort=updated&since={period.strftime(ISO8601)}&per_page={PER_PAGE}"
+    )
 
     allclosed = get_paged_request(url)
     # allclosed = get_issues(project=project, state='closed', pulls=pulls,
@@ -156,7 +159,7 @@ if __name__ == "__main__":
     else:
         since = datetime.now() - timedelta(days=days)
 
-    print("fetching GitHub stats since %s (tag: %s)" % (since, tag),
+    print(f"fetching GitHub stats since {since} (tag: {tag})",
           file=sys.stderr)
     # turn off to play interactively without redownloading, use %run -i
     if 1:
@@ -175,7 +178,7 @@ if __name__ == "__main__":
     print()
     since_day = since.strftime("%Y/%m/%d")
     today = datetime.today().strftime("%Y/%m/%d")
-    print("GitHub stats for %s - %s (tag: %s)" % (since_day, today, tag))
+    print(f"GitHub stats for {since_day} - {today} (tag: {tag})")
     print()
     print("These lists are automatically generated, and may be incomplete or"
           " contain duplicates.")
@@ -201,14 +204,13 @@ if __name__ == "__main__":
             print()
 
             print()
-            print("We closed a total of %d issues, %d pull requests and %d"
-                  " regular issues;\n"
+            print(f"We closed a total of {n_total} issues,"
+                  f" {n_pulls} pull requests and {n_issues} regular issues;\n"
                   "this is the full list (generated with the script \n"
-                  ":file:`tools/github_stats.py`):" % (n_total, n_pulls,
-                                                       n_issues))
+                  ":file:`tools/github_stats.py`):")
             print()
-            print('Pull Requests (%d):\n' % n_pulls)
+            print(f'Pull Requests ({n_pulls}):\n')
             report(pulls, show_urls)
             print()
-            print('Issues (%d):\n' % n_issues)
+            print(g'Issues ({n_issues}):\n')
             report(issues, show_urls)
