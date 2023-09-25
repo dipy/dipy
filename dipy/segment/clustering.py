@@ -72,7 +72,7 @@ class Cluster:
 
             When `idx` is either a slice or a list, returns a list of elements.
         """
-        if isinstance(idx, int) or isinstance(idx, np.integer):
+        if isinstance(idx, (int, np.integer)):
             return self.refdata[self.indices[idx]]
         elif type(idx) is slice:
             return [self.refdata[i] for i in self.indices[idx]]

@@ -60,7 +60,7 @@ class Profiler:
 
             ext = os.path.splitext(call)[1].lower()
             print('ext', ext)
-            if ext == '.py' or ext == '.pyx':  # python/cython file
+            if ext in ('.py', '.pyx'):  # python/cython file
                 print('profiling python/cython file ...')
                 subprocess.call(['python', '-m', 'cProfile',
                                  '-o', 'profile.prof', call])

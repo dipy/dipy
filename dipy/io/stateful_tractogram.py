@@ -645,7 +645,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from vox to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _voxmm_to_vox(self):
         """ Unsafe function to transform streamlines """
@@ -657,7 +656,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from voxmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _vox_to_rasmm(self):
         """ Unsafe function to transform streamlines """
@@ -668,7 +666,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from vox to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _rasmm_to_vox(self):
         """ Unsafe function to transform streamlines """
@@ -679,7 +676,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from rasmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _voxmm_to_rasmm(self):
         """ Unsafe function to transform streamlines """
@@ -692,7 +688,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from voxmm to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _rasmm_to_voxmm(self):
         """ Unsafe function to transform streamlines """
@@ -705,7 +700,6 @@ class StatefulTractogram:
             logger.debug('Moved streamlines from rasmm to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _shift_voxel_origin(self):
         """ Unsafe function to switch the origin from center to corner

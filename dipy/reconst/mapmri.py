@@ -256,8 +256,7 @@ class MapmriModel(ReconstModel, Cache):
             if isinstance(laplacian_weighting, str):
                 if not laplacian_weighting == 'GCV':
                     raise ValueError(msg)
-            elif (isinstance(laplacian_weighting, float) or
-                    isinstance(laplacian_weighting, np.ndarray)):
+            elif isinstance(laplacian_weighting, (float, np.ndarray)):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting

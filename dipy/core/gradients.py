@@ -142,10 +142,10 @@ class GradientTable:
                         b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
                                         * bval)
                 self.btens = b_tensors
-            elif (isinstance(btens, np.ndarray) and (btens.shape ==
-                    (gradients.shape[0],) or (btens.shape ==
-                    (gradients.shape[0], 1)) or (btens.shape == (1,
-                    gradients.shape[0])))):
+            elif (isinstance(btens, np.ndarray)
+                  and btens.shape in ((gradients.shape[0],),
+                                      (gradients.shape[0], 1),
+                                      (1, gradients.shape[0]))):
                 b_tensors = np.zeros((len(self.bvals), 3, 3))
                 if btens.shape == (1, gradients.shape[0]):
                     btens = btens.reshape((gradients.shape[0], 1))

@@ -69,10 +69,10 @@ if __name__ == '__main__':
     sh("git pull origin gh-pages")
 
     # check if docs for current version exists
-    if (os.path.exists(source_version)) and (dev is not True):
+    if os.path.exists(source_version) and not dev:
         print("docs for current version already exists")
     else:
-        if dev is True:
+        if dev:
             print("Re-building docs for development version")
         else:
             print("Building docs for a release")
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         sh("make json")
         sh("cp -r _build/json %s/" % (docs_repo_path,))
         cd(docs_repo_path)
-        if dev is True:
+        if dev:
             try:
                 sh("rm -r %s" % (source_version,))
             except:

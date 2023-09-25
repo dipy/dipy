@@ -191,7 +191,7 @@ if __name__ == "__main__":
             .splitlines()
         unique_authors = sorted(set(all_authors))
 
-        if len(unique_authors) == 0:
+        if not unique_authors:
             print("No commits during this period.")
         else:
             print("The following %i authors contributed %i commits." %
