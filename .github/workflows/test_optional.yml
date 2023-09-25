@@ -21,4 +21,5 @@ jobs:
     with:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
-      extra-depends: scikit-learn pandas statsmodels pytables scipy
+      depends: cython!=0.29.29 numpy==1.25.0 matplotlib h5py nibabel cvxpy tqdm
+      extra-depends: scikit-learn pandas statsmodels pytables scipy==1.10.1
