@@ -43,7 +43,7 @@ api:
 	@echo "Build API docs...done."
 
 examples-clean:
-	rm -rf examples_revamped
+	rm -rf examples_revamped auto_examples
 	-cd examples_built && rm -rf *.py *.rst *.png fig *.zip *.db *.examples
 
 examples-clean-tgz: examples-clean examples-tgz
