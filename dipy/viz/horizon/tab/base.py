@@ -11,6 +11,9 @@ if has_fury:
 
 
 class HorizonTab(ABC):
+    """
+    API definition for Tabs in Horizon
+    """
     @abstractmethod
     def build(self, tab_id, tab_ui):
         pass
@@ -21,6 +24,14 @@ class HorizonTab(ABC):
         pass
 
 class TabManager:
+    """
+    Display different Tabs
+
+    Attributes
+    ----------
+    tab_ui: TabUI
+        FURY ui element to display different tabs
+    """
     def __init__(self, tabs, win_size):
         num_tabs = len(tabs)
         win_width, win_height = win_size
@@ -41,6 +52,14 @@ class TabManager:
             tab.build(id, self.__tab_ui)
 
     def reposition(self, win_size):
+        """
+        Repositions tabs section on the window
+
+        Parameters
+        ----------
+        win_size: Tuple
+            Contains (win_width, win_height)
+        """
         win_width, win_height = win_size
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
         self.__tab_ui.position = (x_pad, 5)
@@ -79,14 +98,28 @@ def build_label(text, font_size=16, bold=False):
 
     return label
 
-
+# TODO: Move these functions to theme folder.
 def color_single_slider(slider):
+    """
+    Apply horizon theme colors to slider
+
+    Parameters
+    ----------
+    slider: LineSlider2D
+    """
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
     slider.active_color = (.9, .4, .0)
     slider.handle.color = (1., .5, .0)
 
 def color_double_slider(slider):
+    """
+    Apply horizon theme colors to slider
+
+    Parameters
+    ----------
+    slider: LineDoubleSlider2D
+    """
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
     slider.active_color = (.9, .4, .0)
