@@ -5,7 +5,7 @@ source tools/ci/activate_env.sh
 
 set -ex
 
-PIPI="pip install --timeout=60"
+PIPI="pip install --timeout=60 -Ccompile-args=-v"
 
 if [ "$USE_PRE" == "1" ] || [ "$USE_PRE" == true ]; then
     PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
