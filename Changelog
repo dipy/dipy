@@ -24,6 +24,9 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.8.0 (Friday, October 13, 2023)
+
+
 * 1.7.0 (Sunday, April 23, 2023)
 
 - NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
