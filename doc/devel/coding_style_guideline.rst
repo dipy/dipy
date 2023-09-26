@@ -118,7 +118,7 @@ body::
 
 Using C libraries
 -----------------
-The ``cimport``'s should follow the same rules defined in PEP8 for ``import``
+The ``cimport``'s should follow the same rules defined in PEP8_ for ``import``
 statements. If a module is both *imported* and *cimported*, the ``cimport``
 should come before the ``import``.
 
@@ -270,5 +270,8 @@ References
    library for the analysis of diffusion MRI data.
    <http://journal.frontiersin.org/Journal/10.3389/fninf.2014.00008/abstract>`_
    Frontiers in Neuroinformatics, vol.8, no.8.
+
+.. _DIPY: http://dipy.org/
+.. _PEP8: https://peps.python.org/pep-0008/
 
 .. include:: ../links_names.inc
