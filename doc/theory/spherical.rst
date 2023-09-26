@@ -62,7 +62,7 @@ in that order.
 Here is a good illustration we made from the scripts kindly provided by `Jorge
 Stolfi`_ on Wikipedia.
 
-.. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
+.. _`Jorge Stolfi`: https://commons.wikimedia.org/wiki/User:Jorge_Stolfi
 
 .. image:: spherical_coordinates.png
 

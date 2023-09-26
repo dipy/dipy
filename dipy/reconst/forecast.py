@@ -43,7 +43,7 @@ class ForecastModel(OdfModel, Cache):
 
     Notes
     -----
-    The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
+    The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
 
     def __init__(self,

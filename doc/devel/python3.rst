@@ -9,9 +9,9 @@ Python 2 and Python 3 versions, please follow these instructions.
 
 There is useful advice here:
 
-* http://docs.python.org/3/howto/pyporting.html
+* https://docs.python.org/3/howto/pyporting.html
 * http://python3porting.com/differences.html
-* http://ptgmedia.pearsoncmg.com/imprint_downloads/informit/promotions/python/python2python3.pdf
+* https://ptgmedia.pearsoncmg.com/imprint_downloads/informit/promotions/python/python2python3.pdf
 
 **************
 Future imports
@@ -48,7 +48,7 @@ modules that have moved between the versions with (e.g.)::
 
     from dipy.utils.six.moves import configparser
 
-See the ``six.py`` code and `the six.py docs <http://pythonhosted.org/six>`_.
+See the ``six.py`` code and `the six.py docs <https://six.readthedocs.io/>`_.
 
 *************
 Range, xrange

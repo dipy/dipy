@@ -44,9 +44,9 @@ class Profiler:
 
     References
     ----------
-    http://docs.cython.org/src/tutorial/profiling_tutorial.html
-    http://docs.python.org/library/profile.html
-    http://packages.python.org/line_profiler/
+    https://docs.cython.org/src/tutorial/profiling_tutorial.html
+    https://docs.python.org/library/profile.html
+    https://github.com/rkern/line_profiler
 
     """
 

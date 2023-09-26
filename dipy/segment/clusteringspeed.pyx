@@ -396,7 +396,7 @@ cdef class ClustersCentroid(Clusters):
         Notes
         -----
         The `__dealloc__` method of the superclass is automatically called:
-        http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        https://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):

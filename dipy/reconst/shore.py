@@ -61,7 +61,7 @@ class ShoreModel(Cache):
 
     Notes
     -----
-    The implementation of SHORE depends on CVXPY (http://www.cvxpy.org/).
+    The implementation of SHORE depends on CVXPY (https://www.cvxpy.org/).
     """
 
     def __init__(self,
@@ -126,7 +126,7 @@ class ShoreModel(Cache):
             millimeters. By default 20e-03 mm.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See http://www.cvxpy.org/ for
+            with a particular cvxpy solver. See https://www.cvxpy.org/ for
             details.
             Default: None (cvxpy chooses its own solver)
 

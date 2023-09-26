@@ -266,7 +266,7 @@ cdef void _trilinear_interpolation_iso(double *X,
     # weights
     # the weights are actually the volumes of the 8 smaller boxes that define
     # the initial rectangular box for more on trilinear have a look here
-    # http://en.wikipedia.org/wiki/Trilinear_interpolation
+    # https://en.wikipedia.org/wiki/Trilinear_interpolation
     # http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
     W[0]=nd[0] * nd[1] * nd[2]
     W[1]= d[0] * nd[1] * nd[2]

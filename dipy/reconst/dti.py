@@ -344,7 +344,7 @@ def determinant(q_form):
     """
 
     # Following the conventions used here:
-    # http://en.wikipedia.org/wiki/Determinant
+    # https://en.wikipedia.org/wiki/Determinant
     aei = q_form[..., 0, 0] * q_form[..., 1, 1] * q_form[..., 2, 2]
     bfg = q_form[..., 0, 1] * q_form[..., 1, 2] * q_form[..., 2, 0]
     cdh = q_form[..., 0, 2] * q_form[..., 1, 0] * q_form[..., 2, 1]

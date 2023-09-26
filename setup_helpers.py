@@ -139,7 +139,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                     return False
                 try:
                     # Link shared lib rather then executable to avoid
-                    # http://bugs.python.org/issue4431 with MSVC 10+
+                    # https://github.com/python/cpython/issues/48681 with MSVC 10+
                     cc.link_shared_lib(objects, "testlib",
                                        extra_postargs=link_flags)
                 except (LinkError, TypeError):
