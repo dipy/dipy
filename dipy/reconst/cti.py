@@ -16,6 +16,82 @@ from dipy.reconst.dti import (
 from dipy.core.onetime import auto_attr
 
 
+def from_qte_to_cti(C):
+    """
+    Rescales the qte C elements to the C elements used in CTI.
+
+    Parameters
+    ----------
+    C: array(..., 21)
+        Twenty-one elements of the covariance tensor in voigt notation plus
+        some extra scaling factors.
+
+    Returns
+    -------
+    ccti: array(..., 21)
+        Covariance Tensor Elements with no hidden factors.
+    """
+    const = np.sqrt(2)
+    ccti = np.zeros((21, 1))
+    ccti[0] = C[0]
+    ccti[1] = C[1]
+    ccti[2] = C[2]
+    ccti[3] = C[3] / const
+    ccti[4] = C[4] / const
+    ccti[5] = C[5] / const
+    ccti[6] = C[6] / 2
+    ccti[7] = C[7] / 2
+    ccti[8] = C[8] / 2
+    ccti[9] = C[9] / 2
+    ccti[10] = C[10] / 2
+    ccti[11] = C[11] / 2
+    ccti[12] = C[12] / 2
+    ccti[13] = C[13] / 2
+    ccti[14] = C[14] / 2
+    ccti[15] = C[15] / 2
+    ccti[16] = C[16] / 2
+    ccti[17] = C[17] / 2
+    ccti[18] = C[18] / (2 * const)
+    ccti[19] = C[19] / (2 * const)
+    ccti[20] = C[20] / (2 * const)
+    return ccti
+
+
+def multi_gaussian_k_from_c(ccti, MD):
+    """
+    Computes the multiple Gaussian diffusion kurtosis tensor from the
+    covariance tensor.
+
+    Parameters
+    ----------
+    ccti: array(..., 21)
+        Covariance Tensor Elements with no hidden factors.
+    MD: Mean Diffusivity (MD) of a diffusion tensor.
+
+    Returns
+    -------
+    K: array (..., 15)
+        Fifteen elements of the kurtosis tensor
+    """
+    K = np.zeros((15, 1))
+    K[0] = 3 * ccti[0] / (MD ** 2)
+    K[1] = 3 * ccti[1] / (MD ** 2)
+    K[2] = 3 * ccti[2] / (MD ** 2)
+    K[3] = 3 * ccti[8] / (MD ** 2)
+    K[4] = 3 * ccti[7] / (MD ** 2)
+    K[5] = 3 * ccti[11] / (MD ** 2)
+    K[6] = 3 * ccti[9] / (MD ** 2)
+    K[7] = 3 * ccti[13] / (MD ** 2)
+    K[8] = 3 * ccti[12] / (MD ** 2)
+    K[9] = (ccti[5] + 2 * ccti[17]) / (MD**2)
+    K[10] = (ccti[4] + 2 * ccti[16]) / (MD**2)
+    K[11] = (ccti[3] + 2 * ccti[15]) / (MD**2)
+    K[12] = (ccti[6] + 2 * ccti[19]) / (MD**2)
+    K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
+    K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
+    return K
+
+
 def split_cti_params(cti_params):
     r"""Splits CTI params into DTI, DKI, CTI portions.
 
@@ -24,8 +100,8 @@ def split_cti_params(cti_params):
     tensor, and the 15 independent elements of the kurtosis tensor from the
     model parameters estimated from the CTI model
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
         params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
         Parameters are ordered as follows:
@@ -35,23 +111,19 @@ def split_cti_params(cti_params):
             first, second and third coordinates of the eigenvector
             3. Fifteen elements of the kurtosis tensor
             4. Twenty-One elements of the covariance tensor
-        S0 : float or ndarray (optional)
-            The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
 
-        Returns
-        -------
-        evals : array (..., 3)
-            Eigenvalues from eigen decomposition of the tensor.
-        evecs : array (..., 3)
-            Associated eigenvectors from eigen decomposition of the tensor.
-            Eigenvectors are columnar (e.g. evecs[:,j] is associated with
-            evals[j])
-        kt : array (..., 15)
-            Fifteen elements of the kurtosis tensor
-        ct: array(..., 21)
-            Twenty-one elements of the covariance tensor
-
+    Returns
+    -------
+    evals : array (..., 3)
+        Eigenvalues from eigen decomposition of the tensor.
+    evecs : array (..., 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. evecs[:,j] is associated with
+        evals[j])
+    kt : array (..., 15)
+        Fifteen elements of the kurtosis tensor
+    ct: array(..., 21)
+        Twenty-one elements of the covariance tensor
        """
     evals = cti_params[..., :3]
     evecs = cti_params[..., 3:12].reshape(cti_params.shape[:-1] + (3, 3))
@@ -131,9 +203,9 @@ class CorrelationTensorModel(ReconstModel):
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        fit_method : str or callable
-        args, kwargs : arguments and key-word arguments passed to the
-        fit_method.
+        fit_method : str or callable, optional
+        args, kwargs :
+            arguments and key-word arguments passed to the fit_method.
 
         """
         self.gtab1 = gtab1
@@ -179,7 +251,7 @@ class CorrelationTensorModel(ReconstModel):
         data : array
             4D array of dMRI data.
 
-        mask : array
+        mask : array, optional
             A boolean array of the same shape as data.shape[-1]. It
             designates which coordinates in the data should be analyzed.
         """
@@ -194,8 +266,8 @@ class CorrelationTensorModel(ReconstModel):
     def predict(self, cti_params, S0=1):
         """Predict a signal for the CTI model class instance given parameters
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
         Parameters are ordered as follows:
@@ -320,7 +392,11 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                                  + D[..., 0, 2] ** 2
                                  + C[..., 15] + D[..., 1, 2] ** 2))
         mean_D = np.trace(D) / 3
-        K_aniso = (6/5) * (Variance / (mean_D ** 2))
+        if mean_D == 0:
+            K_aniso = 0
+        else:
+            K_aniso = (6/5) * (Variance / (mean_D ** 2))
+
         return K_aniso
 
     @property
@@ -344,7 +420,10 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         mean_D = self.md
         Variance = 1/9 * (C[..., 0] + C[..., 1] + C[..., 2] + 2 * C[..., 5]
                           + 2 * C[..., 4] + 2 * C[..., 3])
-        K_iso = 3 * (Variance / (mean_D ** 2))
+        if mean_D == 0:
+            K_iso = 0
+        else:
+            K_iso = 3 * (Variance / (mean_D ** 2))
         return K_iso
 
     @auto_attr
@@ -376,10 +455,13 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         mean_K = self.mkt()
         D = self.quadratic_form
         mean_D = self.md
-        psi = 2 / 5 * ((D[..., 0, 0]**2 + D[..., 1, 1]**2
-                        + D[..., 2, 2]**2
-                        + 2 * D[..., 0, 1]**2 + 2 * D[..., 0, 2]**2
-                        + D[..., 1, 2]**2) / (mean_D ** 2)) - (6/5)
+        if mean_D == 0:
+            psi = 0
+        else:
+            psi = 2 / 5 * ((D[..., 0, 0]**2 + D[..., 1, 1]**2
+                            + D[..., 2, 2]**2
+                            + 2 * D[..., 0, 1]**2 + 2 * D[..., 0, 2]**2
+                            + D[..., 1, 2]**2) / (mean_D ** 2)) - (6/5)
 
         return mean_K + psi
 

@@ -76,14 +76,14 @@ data, affine = load_nifti(fdata)
 bvals1, bvecs1 = read_bvals_bvecs(fbvals1, fbvecs1)
 bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
 """
-In this example, the function ``load_nifti`` is used to load the CTI data from
-the file ``RB_invivo_cti_data_f3.nii`` and returns the data as a nibabel
-Nifti1Image object along with the affine transformation. The b-values and
-b-vectors for two different gradient tables are loaded from ``bvals1.bval`` and
-``bvec1.bvec``, and ``bvals2.bval`` and ``bvec2.bvec``, respectively, using the
-``read_bvals_bvecs`` function. For CTI reconstruction in DIPY, we need to
-define the b-values and b-vectors for each diffusion epoch in separate gradient
-tables, as done in the above line of code.
+In this example, the function load_nifti is used to load the CTI data saved in
+filefdata and returns the data as a nibabel Nifti1Image object along with the
+affine transformation. The b-values and b-vectors for two different gradient
+tables are loaded from ``bvals1.bval`` and ``bvec1.bvec``, and ``bvals2.bval``
+and ``bvec2.bvec``, respectively, using the ``read_bvals_bvecs`` function. For
+CTI reconstruction in DIPY, we need to define the b-values and b-vectors for
+each diffusion epoch in separate gradient tables, as done in the above line of
+code.
 """
 gtab1 = gradient_table(bvals1, bvecs1)
 gtab2 = gradient_table(bvals2, bvecs2)

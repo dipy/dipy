@@ -10,7 +10,8 @@ import dipy.reconst.qti as qti
 import dipy.reconst.cti as cti
 from dipy.reconst.dti import (
     decompose_tensor, mean_diffusivity)
-from dipy.reconst.cti import (split_cti_params, ls_fit_cti)
+from dipy.reconst.cti import (split_cti_params, ls_fit_cti,
+                              multi_gaussian_k_from_c, from_qte_to_cti)
 from dipy.reconst.dki import (mean_kurtosis,
                               axial_kurtosis, radial_kurtosis,
                               mean_kurtosis_tensor,
@@ -153,82 +154,6 @@ def construct_cti_params(evals, evecs, kt, fct):
     return np.squeeze(cti_params)
 
 
-def from_qte_to_cti(C):
-    """
-    Rescales the qte C elements to the C elements used in CTI.
-
-    Parameters
-    ----------
-    C: array(..., 21)
-        Twenty-one elements of the covariance tensor in voigt notation plus
-        some extra scaling factors.
-
-    Returns
-    -------
-    ccti: array(..., 21)
-        Covariance Tensor Elements with no hidden factors.
-    """
-    const = np.sqrt(2)
-    ccti = np.zeros((21, 1))
-    ccti[0] = C[0]
-    ccti[1] = C[1]
-    ccti[2] = C[2]
-    ccti[3] = C[3] / const
-    ccti[4] = C[4] / const
-    ccti[5] = C[5] / const
-    ccti[6] = C[6] / 2
-    ccti[7] = C[7] / 2
-    ccti[8] = C[8] / 2
-    ccti[9] = C[9] / 2
-    ccti[10] = C[10] / 2
-    ccti[11] = C[11] / 2
-    ccti[12] = C[12] / 2
-    ccti[13] = C[13] / 2
-    ccti[14] = C[14] / 2
-    ccti[15] = C[15] / 2
-    ccti[16] = C[16] / 2
-    ccti[17] = C[17] / 2
-    ccti[18] = C[18] / (2 * const)
-    ccti[19] = C[19] / (2 * const)
-    ccti[20] = C[20] / (2 * const)
-    return ccti
-
-
-def multi_gaussian_k_from_c(ccti, MD):
-    """
-    Computes the multiple Gaussian diffusion kurtosis tensor from the
-    covariance tensor.
-
-    Parameters
-    ----------
-    ccti: array(..., 21)
-        Covariance Tensor Elements with no hidden factors.
-    MD: Mean Diffusivity (MD) of a diffusion tensor.
-
-    Returns
-    -------
-    K: array (..., 15)
-        Fifteen elements of the kurtosis tensor
-    """
-    K = np.zeros((15, 1))
-    K[0] = 3 * ccti[0] / (MD ** 2)
-    K[1] = 3 * ccti[1] / (MD ** 2)
-    K[2] = 3 * ccti[2] / (MD ** 2)
-    K[3] = 3 * ccti[8] / (MD ** 2)
-    K[4] = 3 * ccti[7] / (MD ** 2)
-    K[5] = 3 * ccti[11] / (MD ** 2)
-    K[6] = 3 * ccti[9] / (MD ** 2)
-    K[7] = 3 * ccti[13] / (MD ** 2)
-    K[8] = 3 * ccti[12] / (MD ** 2)
-    K[9] = (ccti[5] + 2 * ccti[17]) / (MD**2)
-    K[10] = (ccti[4] + 2 * ccti[16]) / (MD**2)
-    K[11] = (ccti[3] + 2 * ccti[15]) / (MD**2)
-    K[12] = (ccti[6] + 2 * ccti[19]) / (MD**2)
-    K[13] = (ccti[10] + 2 * ccti[20]) / (MD**2)
-    K[14] = (ccti[14] + 2 * ccti[18]) / (MD**2)
-    return K
-
-
 def test_cti_prediction():
     ctiM = cti.CorrelationTensorModel(gtab1, gtab2)
     for DTD in DTDs:
@@ -305,7 +230,7 @@ def test_cti_fits():
             kt, ctiF.kt), "kt doesn't match in test_split_cti_param "
         assert np.allclose(
             ct, ctiF.ct), "ct doesn't match in test_split_cti_param"
-        
+
         # Testing Multi-Voxel Fit
         CTI_data[0, 0, 0] = cti_pred_signals
         CTI_data[0, 1, 0] = cti_pred_signals
@@ -325,7 +250,9 @@ def test_cti_fits():
         # Check that it works with more than one voxel, and with a different S0
         # in each voxel:
         cti_multi_pred_signals = ctiM.predict(multi_params,
-                                              S0=100*np.ones(ctiF_multi.shape[:3]))
+                                              S0=100*np.ones(
+                                                  ctiF_multi.shape[:3])
+                                              )
         CTI_data = cti_multi_pred_signals
         ctiF_multi_pred_signals = ctiM.fit(CTI_data)
         multi_evals, _, multi_kt, multi_ct = split_cti_params(
@@ -456,3 +383,13 @@ def test_cti_errors():
     # second error of CTI module is if a min_signal is defined as negative
     assert_raises(ValueError, cti.CorrelationTensorModel, gtab1, gtab2,
                   min_signal=-1)
+
+
+def test_cti_design_matrix():
+    A1 = design_matrix(gtab1, gtab2)
+    A2 = design_matrix(gtab2, gtab1)
+    # Check if the two matrices are the same
+    assert np.allclose(A1, A2), (
+        "The design matrices are not symmetric for different gradient"
+        "directions order."
+        )
