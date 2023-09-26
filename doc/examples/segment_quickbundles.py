@@ -166,4 +166,4 @@ References
                     tractography simplification, Frontiers in Neuroscience, vol
                     6, no 175, 2012.
 
-"""
+"""  # noqa: E501
