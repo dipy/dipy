@@ -291,7 +291,7 @@ class RecoBundles:
             if self.verbose:
                 logger.info(' Streamlines have %d centroids'
                             % (self.nb_centroids,))
-                logger.info(' Total loading duration %0.3f sec. \n'
+                logger.info(' Total loading duration %0.3f s\n'
                             % (time() - t,))
 
     def _cluster_streamlines(self, clust_thr, nb_pts):
@@ -319,7 +319,7 @@ class RecoBundles:
         if self.verbose:
             logger.info(' Streamlines have %d centroids'
                         % (self.nb_centroids,))
-            logger.info(' Total duration %0.3f sec. \n' % (time() - t,))
+            logger.info(' Total duration %0.3f s\n' % (time() - t,))
 
     @deprecated_params('slr_num_threads', 'num_threads', since='1.4',
                        until='1.5')
@@ -454,7 +454,7 @@ class RecoBundles:
             pruning_thr=pruning_thr,
             pruning_distance=pruning_distance)
         if self.verbose:
-            logger.info('Total duration of recognition time is %0.3f sec.\n'
+            logger.info('Total duration of recognition time is %0.3f s\n'
                         % (time()-t,))
 
         return pruned_streamlines, self.filtered_indices[labels]
@@ -604,7 +604,7 @@ class RecoBundles:
             pruning_distance=pruning_distance)
 
         if self.verbose:
-            logger.info('Total duration of recognition time is %0.3f sec.\n'
+            logger.info('Total duration of recognition time is %0.3f s\n'
                         % (time()-t,))
 
         return pruned_streamlines, self.filtered_indices[labels]
@@ -678,7 +678,7 @@ class RecoBundles:
         if self.verbose:
             logger.info(' Model bundle has %d centroids'
                         % (nb_model_centroids,))
-            logger.info(' Duration %0.3f sec. \n' % (time() - t, ))
+            logger.info(' Duration %0.3f s\n' % (time() - t, ))
         return model_centroids
 
     def _reduce_search_space(self, model_centroids,
@@ -723,7 +723,7 @@ class RecoBundles:
         if self.verbose:
             logger.info(' Number of neighbor streamlines %d' %
                         (nb_neighb_streamlines,))
-            logger.info(' Duration %0.3f sec. \n' % (time() - t,))
+            logger.info(' Duration %0.3f s\n' % (time() - t,))
 
         return neighb_streamlines, neighb_indices
 
@@ -783,7 +783,7 @@ class RecoBundles:
             logger.info(slm.xopt)
             np.set_printoptions(**original)
 
-            logger.info(' Duration %0.3f sec. \n' % (time() - t,))
+            logger.info(' Duration %0.3f s\n' % (time() - t,))
 
         return transf_streamlines, slr_bmd
 
@@ -808,7 +808,7 @@ class RecoBundles:
                                             select_randomly=500000,
                                             rng=self.rng)
         if self.verbose:
-            logger.info(' QB Duration %0.3f sec. \n' % (time() - t, ))
+            logger.info(' QB Duration %0.3f s\n' % (time() - t, ))
 
         rtransf_centroids = rtransf_cluster_map.centroids
 
@@ -852,6 +852,6 @@ class RecoBundles:
             logger.info(msg % (len(rtransf_centroids),))
             msg = ' Number of streamlines after pruning: %d'
             logger.info(msg % (len(pruned_streamlines),))
-            logger.info(' Duration %0.3f sec. \n' % (time() - t, ))
+            logger.info(' Duration %0.3f s\n' % (time() - t, ))
 
         return pruned_streamlines, labels
