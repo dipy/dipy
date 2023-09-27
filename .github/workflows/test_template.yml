@@ -98,6 +98,7 @@ jobs:
           tools/ci/install_dependencies.sh || echo "::warning::Experimental Job so Install Dependencies failure ignored!"
         else
           tools/ci/install_dependencies.sh
+        fi
     - name: Install rtools (mingw-w64)
       if: runner.os == 'Windows'
       run: |
@@ -114,6 +115,7 @@ jobs:
           tools/ci/install.sh || echo "::warning::Experimental Job so Install DIPY failure ignored!"
         else
           tools/ci/install.sh
+        fi
     - name: Setup Headless
       if: ${{ inputs.enable-viz-tests }}
       run: tools/ci/setup_headless.sh

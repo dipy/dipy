@@ -64,6 +64,7 @@ test = [
     "coverage",
     "coveralls",
     "codecov",
+    "asv",
 ]
 docs = [
     "cython",
@@ -124,11 +125,11 @@ requires = [
 package = 'dipy'
 
 [tool.spin.commands]
-"Build" = ["spin.build", "spin.test"]
-"Environments" = ["spin.shell", "spin.ipython", "spin.python"]
+Build = ["spin.build", "spin.test"]
+Environments = ["spin.shell", "spin.ipython", "spin.python"]
 # TODO: Add custom commands
 #"Documentation" = [".spin/cmds.py:docs"]
-#"Metrics" = [".spin/cmds.py:asv", ".spin/cmds.py:coverage"]
+Metrics = [".spin/cmds.py:asv",]   # ".spin/cmds.py:coverage"]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"

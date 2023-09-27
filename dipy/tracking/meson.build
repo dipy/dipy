@@ -50,5 +50,4 @@ py3.install_sources(
 )
 
 
-subdir('benchmarks')
 subdir('tests')
