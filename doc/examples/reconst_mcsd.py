@@ -310,8 +310,8 @@ gm_sh_coeff = sh_coeff[..., 1]
 wm_sh_coeff = mcsd_fit.shm_coeff
 
 """
-The model allows to predict a signal from sh coefficients. There are two ways of
-doing this.
+The model allows one to predict a signal from sh coefficients. There are two
+ways of doing this.
 """
 
 mcsd_pred = mcsd_fit.predict()
