@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Script to pack built examples into suitably named archive
 
 Usage %s output_dir [doc_dir]

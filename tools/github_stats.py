@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Simple tools to query github.com and gather stats about issues.
 
 Taken from ipython

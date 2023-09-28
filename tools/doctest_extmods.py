@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Run doctests in extension modules of <pkg_name>
 
 Collect extension modules in <pkg_name>
