@@ -98,7 +98,7 @@ class QtdmriModel(Cache):
             stability problem.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See See http://www.cvxpy.org/ for
+            with a particular cvxpy solver. See See https://www.cvxpy.org/ for
             details. Default: ECOS.
 
         References

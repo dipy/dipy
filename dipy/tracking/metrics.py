@@ -240,7 +240,7 @@ def frenet_serret(xyz):
     only 2D (planar), but the equations are still valid.
 
     Similar to
-    http://www.mathworks.com/matlabcentral/fileexchange/11169
+    https://www.mathworks.com/matlabcentral/fileexchange/11169-frenet
 
     In the following equations the prime ($'$) indicates differentiation
     with respect to the parameter $s$ of a parametrised curve $\mathbf{r}(s)$.
@@ -487,8 +487,8 @@ def intersect_sphere(xyz, center, radius):
     Notes
     -----
     The ray to sphere intersection method used here is similar with
-    http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/
-    http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/source.cpp
+    https://paulbourke.net/geometry/circlesphere/
+    https://paulbourke.net/geometry/circlesphere/source.cpp
     we just applied it for every segment neglecting the intersections where
     the intersecting points are not inside the segment
     """
@@ -600,7 +600,7 @@ def inside_sphere_points(xyz, center, radius):
 
 def spline(xyz, s=3, k=2, nest=-1):
     """ Generate B-splines as documented in
-    http://www.scipy.org/Cookbook/Interpolation
+    https://scipy-cookbook.readthedocs.io/items/Interpolation.html
 
     The scipy.interpolate packages wraps the netlib FITPACK routines
     (Dierckx) for calculating smoothing splines for various kinds of

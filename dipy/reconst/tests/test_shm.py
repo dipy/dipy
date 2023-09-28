@@ -67,7 +67,7 @@ def test_sph_harm_ind_list():
 
 def test_real_sh_descoteaux_from_index():
     # Tests derived from tables in
-    # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
+    # https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
     # where real spherical harmonic $Y^m_n$ is defined to be:
     #    Real($Y^m_n$) * sqrt(2) if m > 0
     #    $Y^m_n$                 if m == 0
@@ -853,7 +853,7 @@ def test_anisotropic_power():
 
 def test_calculate_max_order():
     """Based on the table in:
-    http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
+    https://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
     """
     orders = [2, 4, 6, 8, 10, 12]
     n_coeffs_sym = [6, 15, 28, 45, 66, 91]

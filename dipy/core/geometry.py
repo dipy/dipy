@@ -70,8 +70,8 @@ def sphere2cart(r, theta, phi):
     -----
     See these pages:
 
-    * http://en.wikipedia.org/wiki/Spherical_coordinate_system
-    * http://mathworld.wolfram.com/SphericalCoordinates.html
+    * https://en.wikipedia.org/wiki/Spherical_coordinate_system
+    * https://mathworld.wolfram.com/SphericalCoordinates.html
 
     for excellent discussion of the many different conventions
     possible.  Here we use the physics conventions, used in the
@@ -548,8 +548,8 @@ def lambert_equal_area_projection_cart(x, y, z):
 def euler_matrix(ai, aj, ak, axes='sxyz'):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
 
-    Code modified from the work of Christoph Gohlke link provided here
-    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    Code modified from the work of Christoph Gohlke, link provided here
+    https://github.com/cgohlke/transformations/blob/master/transformations/transformations.py
 
     Parameters
     ----------
@@ -560,8 +560,8 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     -------
     matrix : ndarray (4, 4)
 
-    Code modified from the work of Christoph Gohlke link provided here
-    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    Code modified from the work of Christoph Gohlke, link provided here
+    https://github.com/cgohlke/transformations/blob/master/transformations/transformations.py
 
     Examples
     --------
@@ -627,8 +627,8 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None,
     """Return 4x4 transformation matrix from sequence of
     transformations.
 
-    Code modified from the work of Christoph Gohlke link provided here
-    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    Code modified from the work of Christoph Gohlke, link provided here
+    https://github.com/cgohlke/transformations/blob/master/transformations/transformations.py
 
     This is the inverse of the ``decompose_matrix`` function.
 
@@ -694,8 +694,9 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None,
 def decompose_matrix(matrix):
     """Return sequence of transformations from transformation matrix.
 
-    Code modified from the excellent work of Christoph Gohlke link provided
-    here: http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    Code modified from the excellent work of Christoph Gohlke, link
+    provided here:
+    https://github.com/cgohlke/transformations/blob/master/transformations/transformations.py
 
     Parameters
     ----------
@@ -982,9 +983,10 @@ def perpendicular_directions(v, num=30, half=False):
         \frac{v_{y}v_{z}\sin(a_{i})+v_{x}\cos(a_{i})}
         {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}} \right  ]
 
-    For more details on this calculation, see ` here <http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicular.html>`_.
+    For more details on this calculation, see
+    `here <https://gsoc2015dipydki.blogspot.com/2015/07/rnh-post-8-computing-perpendicular.html>`_.
 
-    """
+    """  # noqa: E501
     v = np.array(v, dtype=float)
 
     # Float error used for floats comparison

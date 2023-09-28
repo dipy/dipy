@@ -58,8 +58,8 @@ You can find our sources and single-click downloads:
 * Documentation_ for all releases and current development tree.
 * Download as a tar/zip file the `current trunk`_.
 
-.. _main repository: http://github.com/dipy/dipy
-.. _Documentation: http://dipy.org
+.. _main repository: https://github.com/dipy/dipy
+.. _Documentation: https://dipy.org
 .. _current trunk: https://github.com/dipy/dipy/archive/master.zip
 
 License

@@ -150,7 +150,7 @@ Ask for your changes to be reviewed or merged
 When you are ready to ask for someone to review your code and consider a merge:
 
 #. Go to the URL of your forked repo, say
-   ``http://github.com/your-user-name/dipy``.
+   ``https://github.com/your-user-name/dipy``.
 #. Use the 'Branch' dropdown menu near the top left of the page to
    select the branch with your changes:
 
@@ -192,7 +192,7 @@ share it via github.
 First fork dipy into your account, as from :ref:`forking`.
 
 Then, go to your forked repository github page, say
-``http://github.com/your-user-name/dipy``
+``https://github.com/your-user-name/dipy``
 
 Click on the 'Settings' on the right, then 'Collaborators' on the left, and add anyone else to the repo as a
 collaborator:

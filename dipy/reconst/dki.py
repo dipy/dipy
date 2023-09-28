@@ -240,7 +240,7 @@ def _F1m(a, b, c):
     """
     # Eigenvalues are considered equal if they are not 2.5% different to each
     # other. This value is adjusted according to the analysis reported in:
-    # http://gsoc2015dipydki.blogspot.co.uk/2015/08/rnh-post-13-start-wrapping-up-test.html
+    # https://gsoc2015dipydki.blogspot.com/2015/08/rnh-post-13-start-wrapping-up-test.html
     er = 2.5e-2
 
     # Initialize F1
@@ -329,7 +329,7 @@ def _F2m(a, b, c):
     """
     # Eigenvalues are considered equal if they are not 2.5% different to each
     # other. This value is adjusted according to the analysis reported in:
-    # http://gsoc2015dipydki.blogspot.co.uk/2015/08/rnh-post-13-start-wrapping-up-test.html
+    # https://gsoc2015dipydki.blogspot.com/2015/08/rnh-post-13-start-wrapping-up-test.html
     er = 2.5e-2
 
     # Initialize F2
@@ -2276,7 +2276,7 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
         are replaced with `min_diffusivity`.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint with a
-        particular cvxpy solver. See http://www.cvxpy.org/ for details.
+        particular cvxpy solver. See https://www.cvxpy.org/ for details.
         Default: None (cvxpy chooses its own solver).
 
     Returns
