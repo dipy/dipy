@@ -88,8 +88,8 @@ Ubuntu/Debian
 
 ::
 
-    sudo apt-get install python-dev python-setuptools
-    sudo apt-get install python-numpy python-scipy
+    sudo apt-get install python3-dev python3-setuptools
+    sudo apt-get install python3-numpy python3-scipy
     sudo apt-get install cython
 
 then::
@@ -101,7 +101,7 @@ then::
 
 You might want the optional packages too (highly recommended)::
 
-    sudo apt-get install ipython python-h5py python-vtk python-matplotlib
+    sudo apt-get install ipython python3-h5py python3-vtk python3-matplotlib
 
 
 Now follow :ref:`install-source-nix`.
@@ -123,7 +123,7 @@ used with your specific version of python.
 
 For getting this information, type this command in shell like ``cmd`` or Powershell_::
 
-    python -c "import platform;print(platform.python_compiler())"
+    python3 -c "import platform;print(platform.python_compiler())"
 
 This command should print information of this form::
 
@@ -274,7 +274,7 @@ version in the system: the ``Sphinx`` package used should correspond to that of
 the virtual environment where ``DIPY`` lives. This can be solved by specifying
 the path to the ``Sphinx`` package in the virtual environment::
 
-    make html SPHINXBUILD='python <path_to_sphinx>/sphinx-build'
+    make html SPHINXBUILD='python3 <path_to_sphinx>/sphinx-build'
 
 
 .. include:: ../links_names.inc

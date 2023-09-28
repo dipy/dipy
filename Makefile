@@ -3,7 +3,7 @@
 # the setup.py file, this Makefile is just meant as a command
 # convenience/reminder while doing development.
 
-PYTHON ?= python
+PYTHON ?= python3
 PKGDIR=dipy
 DOCSRC_DIR=doc
 DOCDIR=${PKGDIR}/${DOCSRC_DIR}
@@ -89,4 +89,4 @@ build-stamp-source:
 
 # Checks to see if local files pass formatting rules
 format:
-	python -m pycodestyle dipy
+	$(PYTHON) -m pycodestyle dipy
