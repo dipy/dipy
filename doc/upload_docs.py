@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Script to upload docs to gh-pages branch of dipy_web that will be
 # automatically detected by the dipy website.
 import os
