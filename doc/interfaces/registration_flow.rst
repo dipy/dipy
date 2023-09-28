@@ -28,7 +28,7 @@ the process, to achieve the goal.
 The DIPY image registration workflow applies the specified type of
 transformation to the input images, and hence, users are expected to choose the
 type of transformation that best matches the requirements of their problem.
-Alternatively, the workflow allows to perform registration in a progressive
+Alternatively, the workflow allows one to perform registration in a progressive
 manner. For example, using affine registration with ``progressive`` set to
 ``True`` will involve center of mass, translation, rigid body and full affine
 registration; meanwhile, if ``progressive`` is set to ``False`` for an affine
