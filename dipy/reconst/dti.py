@@ -1962,17 +1962,17 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
                     C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
-                    gmm = C**2 / (C**2 + residuals**2)**2
+                    denominator = (C**2 + residuals**2)**2
+                    gmm = np.divide(C**2, denominator,
+                                    out=np.zeros_like(denominator),
+                                    where=denominator != 0)
 
                     # Do nlls with GMM-weighting:
                     if jac:
-                        this_param, status = opt.leastsq(nlls.err_func,
-                                                         start_params,
-                                                         args=(design_matrix,
-                                                               flat_data[vox],
-                                                               'gmm',
-                                                               gmm),
-                                                         Dfun=nlls.jacobian_func)
+                        this_param, status = opt.leastsq(
+                            nlls.err_func, start_params,
+                            args=(design_matrix, flat_data[vox], 'gmm', gmm),
+                            Dfun=nlls.jacobian_func)
                     else:
                         this_param, status = opt.leastsq(nlls.err_func,
                                                          start_params,
