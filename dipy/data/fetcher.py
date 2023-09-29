@@ -2002,6 +2002,8 @@ def fetch_hbn(subjects, path=None):
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
         if not os.path.exists(sub_dir):
+            os.makedirs(os.path.join(sub_dir, 'anat'), exist_ok=True)
+            os.makedirs(os.path.join(sub_dir, 'figures'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
         for remote in file_list:
