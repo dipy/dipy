@@ -1993,7 +1993,7 @@ def fetch_hbn(subjects, path=None):
 
         query = client.list_objects(
             Bucket="fcp-indi",
-            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/")  # noqa
         query_content = query.get('Contents', None)
         if query_content is None:
             raise ValueError(
