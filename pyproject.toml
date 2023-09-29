@@ -45,7 +45,12 @@ dependencies = [
 
 
 [project.optional-dependencies]
-build = [
+all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
+style = ["flake8", "isort"]
+viz = ["fury>=0.9.0", "matplotlib"]
+test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
+ml = ["scikit_learn", "pandas", "statsmodels", "tables", "tensorflow"]
+dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
     'wheel',
@@ -53,49 +58,29 @@ build = [
     'packaging>=21',
     'ninja',
     'Cython>=0.29.32',
-    'pythran',
     'numpy>=1.22',
     # Developer UI
     'spin==0.5',
     'build',
 ]
-test = [
-    "pytest",
-    "coverage",
-    "coveralls",
-    "codecov",
-    "asv",
-]
-docs = [
-    "cython",
-    "numpy",
-    "scipy",
-    "nibabel>=3.0.0",
-    "h5py",
-    "h5py<3.0.0; sys_platform == 'win32'",
-    "cvxpy",
-    "pandas",
-    "tables",
-    "matplotlib",
-    "fury>=0.8.0",
-    "scikit-learn",
-    "scikit-image",
-    "statsmodels",
-    "boto3"
-]
-viz = [
-    "fury>=0.9.0",
-    "matplotlib"
-]
-ml = [
-    "scikit_learn",
-    "pandas",
-    "statsmodels",
-    "tables",
-    "tensorflow"
-]
 
-all = [
+extra = ["dipy[viz, ml]",
+         "cvxpy",
+         "scikit-image",
+         "boto3"
+        ]
+
+doc = [
+    "numpydoc",
+    "sphinx ~= 5.3",
+    "texext",
+    "tomli; python_version < \"3.11\"",
+    "sphinxcontrib-bibtex",
+    "sphinx_design",
+    "sphinx-gallery>=0.10.0",
+    "tomli>=2.0.1",
+    "grg-sphinx-theme>=0.2.0",
+    "Jinja2"
 ]
 
 
