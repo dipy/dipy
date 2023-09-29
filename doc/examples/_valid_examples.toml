@@ -66,6 +66,7 @@ Note: Some reconstruction models do not have a tutorial yet
 
 .. include:: ../reconstruction_models_list.rst
 
+
 """
 position = 7
 enable = true
@@ -73,6 +74,7 @@ files = [
     "kfold_xval.py",
     "reconst_csa.py",
     "reconst_csd.py",
+    "reconst_cti.py",
     "reconst_mcsd.py",
     "reconst_dki.py",
     "reconst_dki_micro.py",

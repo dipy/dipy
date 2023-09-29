@@ -53,7 +53,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
               'github',
-              'jinja'
+              'jinja',
+              'sphinx_design',
 ]
 
 # Providing different contexts for the jinja directive
@@ -158,11 +159,11 @@ html_theme_options = {
         "children": [
           {
             "name": "Quick Start",
-            "url": "documentation",
+            "url": "index",
           },
           {
             "name": "Tutorials",
-            "url": "tutorials",
+            "url": "examples_built/index",
           },
           {
             "name": "Recipes",
@@ -170,17 +171,15 @@ html_theme_options = {
           },
           {
             "name": "CLI / Workflows",
-            "url": "cli",
+            "url": "interfaces/index",
           },
           {
             "name": "API",
-            "url": "reference",
-            "link_type": "inter"
+            "url": "reference/index",
           },
           {
             "name": "CLI API",
-            "url": "reference",
-            "link_type": "inter"
+            "url": "reference_cmd/index",
           }
         ]
      },
@@ -242,7 +241,8 @@ html_theme_options = {
                   },
                   {
                     "name": "Blog",
-                    "url": "blog"
+                    "url": "https://dipy.org/blog",
+                    "link_type": "inter"
                   },
                   {
                     "name": "Youtube",
@@ -257,7 +257,7 @@ html_theme_options = {
                   {
                     "name": "Live Chat (Gitter)",
                     "url": "https://app.gitter.im/#/room/%23dipy_dipy:gitter.im",
-                    "external": True
+                    "link_type": "external"
                   },
                   {
                     "name": "Github Discussions",
