@@ -529,7 +529,7 @@ sphinx_gallery_conf = {
      # path to your examples scripts
      'examples_dirs': ['examples_revamped', ],
      # path where to save gallery generated examples
-    #  'gallery_dirs': ['examples_built', ],
+     'gallery_dirs': ['examples_built', ],
      'subsection_order': ExplicitOrder(ordered_folders),
      'image_scrapers': (sc),
      'backreferences_dir': 'examples_built',
