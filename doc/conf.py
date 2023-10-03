@@ -150,6 +150,10 @@ html_style = 'css/dipy.css'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+  "switcher": {"json_url": "https://docs.dipy.org/dev/_static/version_switcher.json",
+               "version_match": "1.8.0", },
+  "check_switcher": False,
+  "navbar_end": ["search-field.html", "version-switcher", "navbar-icon-links.html"],
   "secondary_sidebar_items": ["page-toc"],
   "show_toc_level": 1,
   "navbar_center": ["components/navbar-links.html"],
@@ -235,6 +239,11 @@ html_theme_options = {
               "name": "News",
               "children": [
                   {
+                    "name": "Calendar",
+                    "url": "https://dipy.org/calendar",
+                    "link_type": "inter"
+                  },
+                  {
                     "name": "Newsletters",
                     "url": "https://mail.python.org/mailman3/lists/dipy.python.org/",
                     "link_type": "external"
@@ -273,7 +282,8 @@ html_theme_options = {
         "children": [
           {
             "name": "Team",
-            "url": "team",
+            "url": "https://dipy.org/team",
+            "link_type": "inter"
           },
           {
             "name": "FAQ",
