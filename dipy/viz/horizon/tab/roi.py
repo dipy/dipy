@@ -1,5 +1,6 @@
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider,
+                                  ROIS_TAB)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -9,6 +10,7 @@ if has_fury:
 
 class ROIsTab(HorizonTab):
     def __init__(self, contour_actors):
+        super().__init__(ROIS_TAB)
         self.__actors = contour_actors
         self.__name = 'ROIs'
 
@@ -38,9 +40,10 @@ class ROIsTab(HorizonTab):
         for contour in self.__actors:
             contour.GetProperty().SetOpacity(opacity)
 
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, tab_manager):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        ROIsTab.tab_manager = tab_manager
 
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_opacity, (.02, .85))

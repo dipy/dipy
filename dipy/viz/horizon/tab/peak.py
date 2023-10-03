@@ -2,7 +2,7 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
-                                  color_single_slider)
+                                  color_single_slider, PEAKS_TAB)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -12,6 +12,7 @@ if has_fury:
 
 class PeaksTab(HorizonTab):
     def __init__(self, peak_actor):
+        super().__init__(PEAKS_TAB)
         self.__actor = peak_actor
         self.__name = 'Peaks'
 
@@ -192,9 +193,10 @@ class PeaksTab(HorizonTab):
             self.__hide_range_sliders()
             self.__show_cross_section_sliders()
 
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, tab_manager):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        PeaksTab.tab_manager = tab_manager
 
         x_pos = .02
 

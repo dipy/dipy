@@ -4,7 +4,7 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
-                                  color_single_slider)
+                                  color_single_slider, SLICES_TAB)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -15,7 +15,7 @@ if has_fury:
 
 class SlicesTab(HorizonTab):
     def __init__(self, slices_visualizer, id=0):
-
+        super().__init__(SLICES_TAB)
         self.__visualizer = slices_visualizer
 
         self.__actors = self.__visualizer.slice_actors
@@ -80,9 +80,12 @@ class SlicesTab(HorizonTab):
         color_single_slider(self.__slider_slice_y)
         color_single_slider(self.__slider_slice_z)
 
-        self.__slider_slice_x.on_change = self.__change_slice_x
-        self.__slider_slice_y.on_change = self.__change_slice_y
-        self.__slider_slice_z.on_change = self.__change_slice_z
+        self.__slider_slice_x.on_moving_slider = self.__change_slice_x
+        self.__slider_slice_x.on_value_changed = self._adjust_slice_x
+        self.__slider_slice_y.on_moving_slider = self.__change_slice_y
+        self.__slider_slice_y.on_value_changed = self._adjust_slice_y
+        self.__slider_slice_z.on_moving_slider = self.__change_slice_z
+        self.__slider_slice_z.on_value_changed = self._adjust_slice_z
 
         icon_files = []
         icon_files.append(('minus', read_viz_icons(fname='minus.png')))
@@ -207,23 +210,50 @@ class SlicesTab(HorizonTab):
     def __change_picked_voxel(self, message):
         self.__label_picked_voxel.message = message
 
-    def __change_slice_x(self, slider):
-        self.__selected_slice_x = int(np.rint(slider.value))
+    def __change_slice_x(self, slider, syncronized_value=None):
+        if syncronized_value:
+            self.__selected_slice_x = int(np.rint(syncronized_value))
+        else:
+            self.__selected_slice_x = int(np.rint(slider.value))
+            SlicesTab.tab_manager.syncronize_slices(
+                self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
+                self.__selected_slice_z)
         self.__actors[0].display_extent(
             self.__selected_slice_x, self.__selected_slice_x,
             0, self.__data_shape[1] - 1, 0, self.__data_shape[2] - 1)
 
-    def __change_slice_y(self, slider):
-        self.__selected_slice_y = int(np.rint(slider.value))
+    def _adjust_slice_x(self, slider):
+        self.__change_slice_x(slider, slider.value)
+
+    def __change_slice_y(self, slider, syncronized_value=None):
+        if syncronized_value:
+            self.__selected_slice_y = int(np.rint(syncronized_value))
+        else:
+            self.__selected_slice_y = int(np.rint(slider.value))
+            SlicesTab.tab_manager.syncronize_slices(
+                self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
+                self.__selected_slice_z)
         self.__actors[1].display_extent(
             0, self.__data_shape[0] - 1, self.__selected_slice_y,
             self.__selected_slice_y, 0, self.__data_shape[2] - 1)
 
-    def __change_slice_z(self, slider):
-        self.__selected_slice_z = int(np.rint(slider.value))
+    def _adjust_slice_y(self, slider):
+        self.__change_slice_y(slider, slider.value)
+
+    def __change_slice_z(self, slider, syncronized_value=None):
+        if syncronized_value:
+            self.__selected_slice_z = int(np.rint(syncronized_value))
+        else:
+            self.__selected_slice_z = int(np.rint(slider.value))
+            SlicesTab.tab_manager.syncronize_slices(
+                self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
+                self.__selected_slice_z)
         self.__actors[2].display_extent(
             0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1,
             self.__selected_slice_z, self.__selected_slice_z)
+
+    def _adjust_slice_z(self, slider):
+        self.__change_slice_z(slider, slider.value)
 
     def __change_slice_visibility_x(self, i_ren, _obj, _button):
         self.__slice_visibility_x = not self.__slice_visibility_x
@@ -325,9 +355,32 @@ class SlicesTab(HorizonTab):
         self.__slider_slice_z.set_visibility(self.__slice_visibility_z)
         self.__actors[2].SetVisibility(self.__slice_visibility_z)
 
-    def build(self, tab_id, tab_ui):
+    def update_slices(self, x_slice, y_slice, z_slice):
+        """
+        Updates slicer positions
+
+        Parameters
+        ----------
+        x_slice: float
+            x-value where the slicer should be placed
+        y_slice: float
+            y-value where the slicer should be placed
+        z_slice: float
+            z-value where the slicer should be placed
+        """
+        if not self.__slider_slice_x.value == x_slice:
+            self.__slider_slice_x.value = x_slice
+
+        if not self.__slider_slice_y.value == y_slice:
+            self.__slider_slice_y.value = y_slice
+
+        if not self.__slider_slice_z.value == z_slice:
+            self.__slider_slice_z.value = z_slice
+
+    def build(self, tab_id, tab_ui, tab_manager):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        SlicesTab.tab_manager = tab_manager
 
         x_pos = .02
 
@@ -396,3 +449,7 @@ class SlicesTab(HorizonTab):
     @property
     def name(self):
         return self.__name
+
+    @property
+    def tab_id(self):
+        return self.__tab_id

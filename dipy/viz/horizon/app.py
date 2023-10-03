@@ -11,6 +11,7 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
+from dipy.viz.horizon.util import check_img_shapes
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -426,6 +427,7 @@ class Horizon:
                 roi_color = self.__roi_colors
             roi_actors = []
             img_count = 0
+            synchronize_slices = check_img_shapes(self.images)
             for img in self.images:
                 data, affine = img
                 self.vox2ras = affine
@@ -470,7 +472,8 @@ class Horizon:
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
-            self.__tab_mgr = TabManager(self.__tabs, self.__win_size)
+            self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
+                                        synchronize_slices)
             scene.add(self.__tab_mgr.tab_ui)
 
         self.show_m.initialize()
