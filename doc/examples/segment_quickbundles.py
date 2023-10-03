@@ -155,7 +155,7 @@ Finally, here is a video of QuickBundles applied on a larger dataset.
 
 .. raw:: html
 
-    <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
+    <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 
 .. include:: ../links_names.inc
 
@@ -166,4 +166,4 @@ References
                     tractography simplification, Frontiers in Neuroscience, vol
                     6, no 175, 2012.
 
-"""
+"""  # noqa: E501

@@ -344,7 +344,7 @@ def determinant(q_form):
     """
 
     # Following the conventions used here:
-    # http://en.wikipedia.org/wiki/Determinant
+    # https://en.wikipedia.org/wiki/Determinant
     aei = q_form[..., 0, 0] * q_form[..., 1, 1] * q_form[..., 2, 2]
     bfg = q_form[..., 0, 1] * q_form[..., 1, 2] * q_form[..., 2, 0]
     cdh = q_form[..., 0, 2] * q_form[..., 1, 0] * q_form[..., 2, 1]
@@ -1962,17 +1962,17 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
                     C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
-                    gmm = C**2 / (C**2 + residuals**2)**2
+                    denominator = (C**2 + residuals**2)**2
+                    gmm = np.divide(C**2, denominator,
+                                    out=np.zeros_like(denominator),
+                                    where=denominator != 0)
 
                     # Do nlls with GMM-weighting:
                     if jac:
-                        this_param, status = opt.leastsq(nlls.err_func,
-                                                         start_params,
-                                                         args=(design_matrix,
-                                                               flat_data[vox],
-                                                               'gmm',
-                                                               gmm),
-                                                         Dfun=nlls.jacobian_func)
+                        this_param, status = opt.leastsq(
+                            nlls.err_func, start_params,
+                            args=(design_matrix, flat_data[vox], 'gmm', gmm),
+                            Dfun=nlls.jacobian_func)
                     else:
                         this_param, status = opt.leastsq(nlls.err_func,
                                                          start_params,

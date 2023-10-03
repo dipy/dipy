@@ -213,7 +213,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         if unzip:
             for f in local_fnames:
                 split_ext = op.splitext(f)
-                if split_ext[-1] == '.gz' or split_ext[-1] == '.bz2':
+                if split_ext[-1] in ('.gz', '.bz2'):
                     if op.splitext(split_ext[0])[-1] == '.tar':
                         ar = tarfile.open(pjoin(folder, f))
                         ar.extractall(path=folder)
@@ -377,7 +377,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
     msg="See DSI203_license.txt for LICENSE. For the complete datasets" +
-        " please visit http://dsi-studio.labsolver.org",
+        " please visit https://dsi-studio.labsolver.org",
     data_size="91MB")
 
 fetch_syn_data = _make_fetcher(
@@ -1227,7 +1227,7 @@ mni_notes = \
     Notes
     -----
     The templates were downloaded from the MNI (McGill University)
-    `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    `website <https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
     in July 2015.
 
     The following publications should be referenced when using these templates:
@@ -1875,7 +1875,7 @@ def fetch_hcp(subjects,
     data_files = {}
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
@@ -1978,7 +1978,7 @@ def fetch_hbn(subjects, path=None):
 
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
@@ -1993,7 +1993,7 @@ def fetch_hbn(subjects, path=None):
 
         query = client.list_objects(
             Bucket="fcp-indi",
-            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/")  # noqa
         query_content = query.get('Contents', None)
         if query_content is None:
             raise ValueError(
@@ -2002,6 +2002,8 @@ def fetch_hbn(subjects, path=None):
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
         if not os.path.exists(sub_dir):
+            os.makedirs(os.path.join(sub_dir, 'anat'), exist_ok=True)
+            os.makedirs(os.path.join(sub_dir, 'figures'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
         for remote in file_list:

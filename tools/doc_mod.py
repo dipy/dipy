@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Make documentation for module
 
 Depends on some guessed filepaths

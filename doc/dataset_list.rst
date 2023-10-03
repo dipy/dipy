@@ -33,7 +33,7 @@
         <td>Tractogram file formats (`.dpy`, `.fib`, `.tck`, `.trk`)</td>
         <td></td>
         <td>bundle_file_formats_example</td>
-        <td>Rheault, F. (2019). Bundles for tractography file format testing and example (Version 1.0) [Data set]. Zenodo. http://doi.org/10.5281/zenodo.3352379</td>
+        <td>Rheault, F. (2019). Bundles for tractography file format testing and example (Version 1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.3352379</td>
     </tr>
     <tr>
         <td>CENIR HCP-like dataset</td>
@@ -57,7 +57,7 @@
         <td>Tractogram file formats (`.dpy`, `.fib`, `.tck`, `.trk`)</td>
         <td></td>
         <td>gold_standard_io</td>
-        <td>Rheault, F. (2019). Gold standard for tractogram io testing (Version 1.0) [Data set]. Zenodo. http://doi.org/10.5281/zenodo.2651349</td>
+        <td>Rheault, F. (2019). Gold standard for tractogram io testing (Version 1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.2651349</td>
     </tr>
     <tr>
         <td>HCP842 bundle atlas</td>
@@ -105,7 +105,7 @@
         <td>MNI 2009a T1, T2; 2009c T1, T1 mask</td>
         <td></td>
         <td>mni_template</td>
-        <td>Fonov, V.S., Evans, A.C., Botteron, K., Almli, C.R., McKinstry, R.C., Collins, D.L., BDCG. Unbiased average age-appropriate atlases for pediatric studies. NeuroImage, Volume 54, Issue 1, January 2011, ISSN 1053–8119, doi:10.1016/j.neuroimage.2010.07.033; Fonov, V.S., Evans, A.C., McKinstry, R.C., Almli, C.R., Collins, D.L. Unbiased nonlinear average age-appropriate brain templates from birth to adulthood, NeuroImage, Volume 47, Supplement 1, July 2009, Page S102 Organization for Human Brain Mapping 2009 Annual Meeting, doi:10.1016/S1053-8119(09)70884-5 <a href='http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009'>ICBM 152 Nonlinear atlases version 2009</a> </td>
+        <td>Fonov, V.S., Evans, A.C., Botteron, K., Almli, C.R., McKinstry, R.C., Collins, D.L., BDCG. Unbiased average age-appropriate atlases for pediatric studies. NeuroImage, Volume 54, Issue 1, January 2011, ISSN 1053–8119, doi:10.1016/j.neuroimage.2010.07.033; Fonov, V.S., Evans, A.C., McKinstry, R.C., Almli, C.R., Collins, D.L. Unbiased nonlinear average age-appropriate brain templates from birth to adulthood, NeuroImage, Volume 47, Supplement 1, July 2009, Page S102 Organization for Human Brain Mapping 2009 Annual Meeting, doi:10.1016/S1053-8119(09)70884-5 <a href='https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009'>ICBM 152 Nonlinear atlases version 2009</a> </td>
     </tr>
     <tr>
         <td>qt-dMRI C57Bl6 mice dataset</td>
@@ -113,7 +113,7 @@
         <td>2 C57Bl6 mice test-retest qt-dMRI; Corpus callosum (CC) bundle masks</td>
         <td></td>
         <td>qtdMRI_test_retest_2subjects</td>
-        <td>Wassermann, D., Santin, M., Philippe, A.-C., Fick, R., Deriche, R., Lehericy, S., Petiet, A. (2017). Test-Retest qt-dMRI datasets for "Non-Parametric GraphNet-Regularized Representation of dMRI in Space and Time" [Data set]. Zenodo. http://doi.org/10.5281/zenodo.996889</td>
+        <td>Wassermann, D., Santin, M., Philippe, A.-C., Fick, R., Deriche, R., Lehericy, S., Petiet, A. (2017). Test-Retest qt-dMRI datasets for "Non-Parametric GraphNet-Regularized Representation of dMRI in Space and Time" [Data set]. Zenodo. https://doi.org/10.5281/zenodo.996889</td>
     </tr>
     <tr>
         <td>SCIL b0</td>

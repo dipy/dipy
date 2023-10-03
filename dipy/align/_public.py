@@ -477,7 +477,7 @@ def affine_registration(moving, static,
                     break
         if not isinstance(func, str) or func not in _METHOD_DICT:
             raise ValueError(f'pipeline[{fi}] must be one of '
-                             f'{list(_METHOD_DICT)}, got {repr(func)}')
+                             f'{list(_METHOD_DICT)}, got {func!r}')
 
     if pipeline == ["center_of_mass"] and ret_metric:
         raise ValueError("center of mass registration cannot return any "

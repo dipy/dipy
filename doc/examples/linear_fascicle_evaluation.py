@@ -374,7 +374,7 @@ streamlines generated in
 <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
 
 For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
-webpage <http://francopestilli.github.io/life/>`_.
+webpage <https://francopestilli.github.io/life/>`_.
 
 References
 ----------

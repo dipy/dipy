@@ -7,7 +7,7 @@ from dipy.denoise import nlmeans_block
  Code adapted from
 
  WAVELET SOFTWARE AT POLYTECHNIC UNIVERSITY, BROOKLYN, NY
- http://taco.poly.edu/WaveletSoftware/
+ https://eeweb.engineering.nyu.edu/iselesni/WaveletSoftware/
 """
 
 

@@ -148,9 +148,9 @@ class LocalTracking:
             directions = directions[:self.max_cross]
             for first_step in directions:
                 stepsF, stream_status = self._tracker(s, first_step, F)
-                if not (self.return_all or
-                        stream_status == StreamlineStatus.ENDPOINT or
-                        stream_status == StreamlineStatus.OUTSIDEIMAGE):
+                if not (self.return_all
+                        or stream_status in (StreamlineStatus.ENDPOINT,
+                                             StreamlineStatus.OUTSIDEIMAGE)):
                     continue
                 if stepsF > 1:
                     # Use the opposite of the first selected orientation for
@@ -164,9 +164,9 @@ class LocalTracking:
                 else:
                     first_step = -first_step
                 stepsB, stream_status = self._tracker(s, first_step, B)
-                if not (self.return_all or
-                        stream_status == StreamlineStatus.ENDPOINT or
-                        stream_status == StreamlineStatus.OUTSIDEIMAGE):
+                if not (self.return_all
+                        or stream_status in (StreamlineStatus.ENDPOINT,
+                                             StreamlineStatus.OUTSIDEIMAGE)):
                     continue
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()

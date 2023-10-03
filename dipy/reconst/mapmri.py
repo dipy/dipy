@@ -180,7 +180,7 @@ class MapmriModel(ReconstModel, Cache):
             D=0.7e-3 _[5].
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See http://www.cvxpy.org/ for
+            with a particular cvxpy solver. See https://www.cvxpy.org/ for
             details.
             Default: None (cvxpy chooses its own solver)
 
@@ -256,8 +256,7 @@ class MapmriModel(ReconstModel, Cache):
             if isinstance(laplacian_weighting, str):
                 if not laplacian_weighting == 'GCV':
                     raise ValueError(msg)
-            elif (isinstance(laplacian_weighting, float) or
-                    isinstance(laplacian_weighting, np.ndarray)):
+            elif isinstance(laplacian_weighting, (float, np.ndarray)):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting

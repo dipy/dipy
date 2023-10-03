@@ -227,7 +227,7 @@ class Horizon:
         # TODO: Move to another class/module
         if self.cluster:
             # retract help panel
-            if key == 'o' or key == 'O':
+            if key in ('o', 'O'):
                 panel_size = self.help_panel._get_size()
                 if self.__help_visible:
                     new_pos = np.array(self.__win_size) - 10
@@ -237,22 +237,22 @@ class Horizon:
                     self.__help_visible = True
                 self.help_panel._set_position(new_pos)
                 self.show_m.render()
-            if key == 'a' or key == 'A':
+            if key in ('a', 'A'):
                 self.__show_all()
-            if key == 'e' or key == 'E':
+            if key in ('e', 'E'):
                 self.__expand()
             # hide on/off unselected centroids
-            if key == 'h' or key == 'H':
+            if key in ('h', 'H'):
                 self.__hide()
             # invert selection
-            if key == 'i' or key == 'I':
+            if key in ('i', 'I'):
                 self.__invert()
-            if key == 'r' or key == 'R':
+            if key in ('r', 'R'):
                 self.__reset()
             # save current result
-            if key == 's' or key == 'S':
+            if key in ('s', 'S'):
                 self.__save()
-            if key == 'y' or key == 'Y':
+            if key in ('y', 'Y'):
                 self.__new_window()
 
     # TODO: Move to another class/module

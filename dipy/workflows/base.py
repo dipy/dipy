@@ -113,7 +113,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             ' '.join(npds['Extended Summary']))
 
         if npds['References']:
-            ref_text = [text if text else "\n" for text in npds['References']]
+            ref_text = [text or "\n" for text in npds['References']]
             ref_idx = self.epilog.find('References: \n') + \
                 len('References: \n')
             self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],

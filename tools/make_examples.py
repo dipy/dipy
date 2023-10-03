@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Run the py->rst conversion and run all examples.
 
 Steps are:

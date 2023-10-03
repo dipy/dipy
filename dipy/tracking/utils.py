@@ -707,9 +707,9 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         return False
     if len(roi_coords) == 0:
         return False
-    if mode == "any" or mode == "all":
+    if mode in ("any", "all"):
         s = streamline
-    elif mode == "either_end" or mode == "both_end":
+    elif mode in ("either_end", "both_end"):
         # 'end' modes, use a streamline with 2 nodes:
         s = np.vstack([streamline[0], streamline[-1]])
     else:
@@ -720,7 +720,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
 
     dist = cdist(s, roi_coords, 'euclidean')
 
-    if mode == "any" or mode == "either_end":
+    if mode in ("any", "either_end"):
         return np.min(dist) <= tol
     else:
         return np.all(np.min(dist, -1) <= tol)

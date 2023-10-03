@@ -34,7 +34,7 @@ To run the Gibbs unringing method, we need to specify the path to the input
 data. This path may contain wildcards to process multiple inputs at once.
 You can also specify the optional arguments. In this case, we will be
 specifying the number of processes (``num_processes``) and output directory
-(``out_dir``). The number of processes allows to exploit the available
+(``out_dir``). The number of processes allows one to exploit the available
 computational power and accelerate the processing. The maximum number of
 processes available depends on the CPU of the computer, so users are expected
 to set an appropriate value based on their platform. Set ``num_processes`` to

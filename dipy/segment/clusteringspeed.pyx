@@ -305,7 +305,7 @@ cdef class QuickBundlesX:
 cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
 
-    This class allows to create clusters and assign elements to them.
+    This class allows one to create clusters and assign elements to them.
     Assignments of a cluster are represented as a list of element indices.
     """
     def __init__(Clusters self):
@@ -366,7 +366,7 @@ cdef class ClustersCentroid(Clusters):
     """ Provides Cython functionalities to interact with clustering outputs
     having the notion of cluster's centroid.
 
-    This class allows to create clusters, assign elements to them and
+    This class allows one to create clusters, assign elements to them and
     update their centroid.
 
     Parameters
@@ -396,7 +396,7 @@ cdef class ClustersCentroid(Clusters):
         Notes
         -----
         The `__dealloc__` method of the superclass is automatically called:
-        http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        https://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):

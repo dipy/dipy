@@ -98,7 +98,7 @@ class QtdmriModel(Cache):
             stability problem.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See See http://www.cvxpy.org/ for
+            with a particular cvxpy solver. See See https://www.cvxpy.org/ for
             details. Default: ECOS.
 
         References
@@ -1816,8 +1816,7 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     input_stuff = (data, M, MMt, K, LR)
 
     bounds = ((1e-5, 1),)
-    res = fmin_l_bfgs_b(lambda x,
-                        input_stuff: GCV_cost_function(x, input_stuff),
+    res = fmin_l_bfgs_b(GCV_cost_function,
                         startpoint, args=(input_stuff,), approx_grad=True,
                         bounds=bounds, disp=False, pgtol=1e-10, factr=10.)
     return res[0][0]
