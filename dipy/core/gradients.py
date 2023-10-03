@@ -665,6 +665,16 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
        Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
        MRM, 61: 1336-1349
     """
+    if isinstance(affines, list):
+        affines = np.stack(affines, axis=-1)
+
+    if affines.shape[0] != affines.shape[1]:
+        msg = '''reorient_bvecs has changed to require affines as
+        (4, 4, n) or (3, 3, n). Shape of (n, 4, 4) or (n, 3, 3)
+        will be deprecated in the future.'''
+        warn(msg, UserWarning)
+        affines = np.moveaxis(affines, 0, -1)
+
     new_bvecs = gtab.bvecs[~gtab.b0s_mask]
 
     if new_bvecs.shape[0] != affines.shape[-1]:
