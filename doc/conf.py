@@ -292,7 +292,7 @@ html_theme_options = {
           },
           {
             "name": "Mission Statement",
-            "url": "mission",
+            "url": "user_guide/mission",
           },
           {
             "name": "Releases",
@@ -349,7 +349,7 @@ html_theme_options = {
       "links": [
         {
           "name": "Developers",
-          "link": "team"
+          "link": "https://dipy.org/team"
         },
         {
           "name": "Support",
@@ -358,16 +358,15 @@ html_theme_options = {
         },
         {
           "name": "Download",
-          "link": "installation"
+          "link": "user_guide/installation"
         },
         {
           "name": "Get Started",
-          "link": "https://dipy.org/contributors/"
+          "link": "user_guide/getting_started"
         },
         {
           "name": "Tutorials",
-          "link": "https://docs.dipy.org/tutorials/",
-          "link_type": "external"
+          "link": "examples_built/index"
         },
         {
           "name": "Videos",
