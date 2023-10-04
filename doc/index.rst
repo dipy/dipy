@@ -146,14 +146,17 @@ We acknowledge support from the following organizations:
    user_guide/index
    examples_built/index
    interfaces/index
-   faq
-   developers
-   cite
    devel/index
    theory/index
    reference/index
    reference_cmd/index
    api_changes
+   stateoftheart
+   old_highlights
+   old_news
+   glossary
+   faq
+   cite
 
 .. Main content will be displayed using the jinja template
 

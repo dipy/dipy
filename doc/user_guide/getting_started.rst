@@ -40,12 +40,4 @@ Next Steps
 
 You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`examples`.
 
-.. We need the following toctree directive to include the documentation
-.. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html
-.. toctree::
-   :hidden:
-
-   documentation
-   stateoftheart
-
 .. include:: ../links_names.inc

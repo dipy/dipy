@@ -12,4 +12,4 @@ python-vtk_ (for visualisation), matplotlib_ (for scientific plotting), and
 ipython_ (for interaction with the code and its results). cvxpy_ is required for
 some modules.
 
-.. include:: links_names.inc
+.. include:: ../links_names.inc

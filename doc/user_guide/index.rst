@@ -11,6 +11,6 @@ DIPY User Guide
    introduction
    mission
    installation
+   dependencies
    getting_started
    data
-   faq
