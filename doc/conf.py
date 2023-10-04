@@ -349,7 +349,8 @@ html_theme_options = {
       "links": [
         {
           "name": "Developers",
-          "link": "https://dipy.org/team"
+          "link": "https://dipy.org/team",
+          "link_type": "inter"
         },
         {
           "name": "Support",
