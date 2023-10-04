@@ -259,7 +259,6 @@ class EVACPlus:
         self.model = init_model()
         self.fetch_default_weights()
 
-
     def fetch_default_weights(self):
         r"""
         Load the model pre-training weights to use for the fitting.
@@ -351,7 +350,6 @@ class EVACPlus:
         affine : np.ndarray (...) or (batch, ...)
             affine matrix of mask
             only if return_affine is True
-
         """
 
         voxsize = np.array(voxsize)
@@ -374,7 +372,6 @@ class EVACPlus:
         else:
             raise ValueError("T1 data should be a np.ndarray of dimension 3 or"
                              "a list/tuple of it")
-
 
         input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))
