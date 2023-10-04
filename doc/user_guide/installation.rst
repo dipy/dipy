@@ -439,4 +439,5 @@ the path to the ``Sphinx`` package in the virtual environment::
 
     make html SPHINXBUILD='python <path_to_sphinx>/sphinx-build'
 
-.. include:: links_names.inc
+
+.. include:: ../links_names.inc

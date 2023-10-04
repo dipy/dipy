@@ -56,7 +56,7 @@
      - :bdg-danger:`No`
      - HARDI data (preferably 7T) with at least 200 diffusion images at b=3000 s/mm^2, or multi-shell data with high angular resolution
      - `Aganj 2010 <https://www.ncbi.nlm.nih.gov/pubmed/20535807>`__
-   * - :ref:`Westins CSA`
+   * - Westins CSA
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
@@ -74,7 +74,7 @@
      - :bdg-danger:`No`
      -
      - Fadnavis 2019
-   * - :ref:`SDT`
+   * - SDT
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
@@ -128,7 +128,7 @@
      - :bdg-danger:`No`
      -
      - `Tom Dela Haije < https://doi.org/10.1016/j.neuroimage.2019.116405>`__
-   * - :ref:`MAPL`
+   * - MAPL
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
@@ -170,7 +170,7 @@
      - :bdg-danger:`No`
      - At least one b=0, minimum of 39 acquisitions with spherical and linear encoding; optimal 120 (see `Morez 2023 <https://doi.org/10.1002/hbm.26175>`__), ideal 217 see `Herberthson 2021 Table 1 <https://www.sciencedirect.com/science/article/pii/S1053811921004754?via%3Dihub#tbl0001>`__
      - `Herberthson 2021 <https://doi.org/10.1016/j.neuroimage.2021.118198>`__, `Morez 2023 <https://doi.org/10.1002/hbm.26175>`__
-   * - :ref:`Ball & Stick`
+   * - Ball & Stick
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
@@ -182,7 +182,7 @@
      - :bdg-danger:`No`
      - Minimum 200 volumes of multi-spherical dMRI (multi-shell, multi-diffusion time; varying gradient directions, gradient strengths, and diffusion times)
      - Fick 2017
-   * - :ref:`Power Map`
+   * - Power Map
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`

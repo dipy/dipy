@@ -1,7 +1,7 @@
  .. _development:
 
-DIPY development
-================
+DIPY Developer Guide
+====================
 
 .. toctree::
    :maxdepth: 2

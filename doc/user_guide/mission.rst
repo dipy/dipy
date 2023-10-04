@@ -17,4 +17,4 @@ We hope that, if we fail to do this, you will let us know and we will try and ma
 
 See also :ref:`introduction`
 
-.. include:: links_names.inc
+.. include:: ../links_names.inc

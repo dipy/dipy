@@ -153,6 +153,7 @@ html_theme_options = {
   "switcher": {"json_url": "https://docs.dipy.org/dev/_static/version_switcher.json",
                "version_match": "1.8.0", },
   "check_switcher": False,
+  "show_version_warning_banner": True,
   "navbar_end": ["search-field.html", "version-switcher", "navbar-icon-links.html"],
   "secondary_sidebar_items": ["page-toc"],
   "show_toc_level": 1,
@@ -162,7 +163,7 @@ html_theme_options = {
         "name": "Docs",
         "children": [
           {
-            "name": "Quick Start",
+            "name": "Overview",
             "url": "index",
           },
           {
@@ -295,7 +296,7 @@ html_theme_options = {
           },
           {
             "name": "Releases",
-            "url": "releases",
+            "url": "stateoftheart",
           },
           {
             "name": "Cite",
@@ -460,7 +461,7 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {'index': 'indexsidebar.html'}
+html_sidebars = {'index': []}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.

@@ -7,7 +7,8 @@
     {
         "name": "1.8.0 (stable)",
         "version":"1.8.0",
-        "url": "https://docs.dipy.org/1.8.0/"
+        "url": "https://docs.dipy.org/1.8.0/",
+        "preferred": true
     },
     {
         "name": "1.0.0",

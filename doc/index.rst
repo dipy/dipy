@@ -1,15 +1,89 @@
 .. _home:
 
-###########################
-Diffusion Imaging In Python
-###########################
+Diffusion Imaging In Python - Documentation
+===========================================
 
-DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
-spatial normalization, signal processing, machine learning, statistical analysis
-and visualization of medical images. Additionally, it contains
-specialized methods for computational anatomy including diffusion,
-perfusion and structural imaging.
+.. container:: index-paragraph
 
+   DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+   spatial normalization, signal processing, machine learning, statistical analysis
+   and visualization of medical images. Additionally, it contains
+   specialized methods for computational anatomy including diffusion,
+   perfusion and structural imaging.
+
+   DIPY is part of the `NiPy ecosystem <https://nipy.org/>`__.
+
+
+***********
+Quick links
+***********
+
+.. grid:: 2
+    :gutter: 3
+
+    .. grid-item-card:: :octicon:`rocket` Get started
+        :link: user_guide/installation
+        :link-type: any
+
+        New to DIPY_? Start with our installation guide and DIPY key
+        concepts.
+
+    .. grid-item-card:: :octicon:`image` Tutorials
+        :link: examples_built/index
+        :link-type: any
+
+        Browse our tutorials gallery.
+
+    .. grid-item-card:: :octicon:`image` Recipes
+        :link: recipes/index
+        :link-type: any
+
+        How to do ....?  This dedicated section will provide you quick and direct answer.
+
+    .. grid-item-card:: :octicon:`zap` Workflows
+        :link: interfaces/index
+        :link-type: any
+
+        Not confortable with coding? we have command line interfaces for you.
+        An easy way to use DIPY_ via a terminal.
+
+    .. grid-item-card:: :octicon:`rocket` Theory
+        :link: theory/index
+        :link-type: any
+
+        Back to the basics. Learn the theory behind the methods implemented in DIPY_.
+
+    .. grid-item-card:: :octicon:`tools` Developer Guide
+        :link: development
+        :link-type: any
+
+        Saw a typo? Found a bug? Want to improve a function? Learn how to
+        contribute to DIPY_!
+
+    .. grid-item-card:: :octicon:`repo` API reference
+        :link: reference/index
+        :link-type: any
+
+        A detailed description of DIPY public Python API.
+
+    .. grid-item-card:: :octicon:`repo` Workflows API reference
+        :link: reference_cmd/index
+        :link-type: any
+
+        A detailed description of all the DIPY workflows command line.
+
+    .. grid-item-card:: :octicon:`history` Release notes
+        :link: stateoftheart
+        :link-type: any
+
+        Upgrading from a previous version? See what's new and changed between
+        each release of DIPY_.
+
+    .. grid-item-card:: :octicon:`comment-discussion` Get help :octicon:`link-external`
+        :link: https://github.com/dipy/dipy/discussions
+
+        Need help with your processing? Ask us and a large
+        neuroimaging community.
 
 
 **********
@@ -43,58 +117,7 @@ Announcements
 
 
 
-
-
 See some of our :ref:`Past Announcements <old_news>`
-
-
-***************
-Getting Started
-***************
-
-Here is a quick snippet showing how to calculate `color FA` also known as the
-DEC map. We use a Tensor model to reconstruct the datasets which are
-saved in a Nifti file along with the b-values and b-vectors which are saved as
-text files. Finally, we save our result as a Nifti file ::
-
-    fdwi = 'dwi.nii.gz'
-    fbval = 'dwi.bval'
-    fbvec = 'dwi.bvec'
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.io import read_bvals_bvecs
-    from dipy.core.gradients import gradient_table
-    from dipy.reconst.dti import TensorModel
-
-    data, affine = load_nifti(fdwi)
-    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
-
-    tenmodel = TensorModel(gtab)
-    tenfit = tenmodel.fit(data)
-
-    save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
-
-As an exercise, you can try to calculate `color FA` with your datasets. You will need
-to replace the filepaths `fdwi`, `fbval` and `fbvec`. Here is what
-a slice should look like.
-
-.. image:: _static/colorfa.png
-    :align: center
-
-**********
-Next Steps
-**********
-
-You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`documentation`.
-
-.. We need the following toctree directive to include the documentation
-.. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html
-.. toctree::
-   :hidden:
-
-   documentation
-   stateoftheart
 
 *******
 Support
@@ -115,6 +138,24 @@ We acknowledge support from the following organizations:
 - The International Neuroinformatics Coordination Facility.
 
 
+.. This tree is helping populate the side navigation panel
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   user_guide/index
+   examples_built/index
+   interfaces/index
+   faq
+   developers
+   cite
+   devel/index
+   theory/index
+   reference/index
+   reference_cmd/index
+   api_changes
+
+.. Main content will be displayed using the jinja template
 
 
 .. include:: links_names.inc

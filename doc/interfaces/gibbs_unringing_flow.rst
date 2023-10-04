@@ -55,10 +55,8 @@ Note: Users are recommended to zoom on each image by clicking on them to see
 the Gibbs unringing effect.
 
 .. |image1| image:: https://github.com/dipy/dipy_data/blob/master/t1_brain_denoised_gibbs_unringing.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image2| image:: https://github.com/dipy/dipy_data/blob/master/t1_brain_denoised_gibbs_unringing_after.png?raw=true
-   :scale: 100%
    :align: middle
 
 +--------------------------+--------------------------+

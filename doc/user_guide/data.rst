@@ -4,20 +4,9 @@
 Data
 ====
 
-.. toctree::
-   :maxdepth: 1
-
-.. contents::
-   :depth: 2
-
-
---------
-Datasets
---------
-
-Details about datasets available in DIPY are described in the table below:
-
-.. include:: dataset_list.rst
+--------------------
+How to get some data
+--------------------
 
 The list of datasets can be retrieved using::
 
@@ -49,3 +38,13 @@ or::
     from dipy.data import fetch_bundle_fa_hcp
 
     files, folder = fetch_bundle_fa_hcp()
+
+
+-------------
+Datasets List
+-------------
+
+Details about datasets available in DIPY are described in the table below:
+
+.. include:: dataset_list.rst
+
