@@ -15,7 +15,7 @@ def c(cmd):
     stat = os.system(cmd)
     #stat = 0  # Uncomment this and comment previous to run in debug mode
     if stat:
-        raise SystemExit("Command %s failed with code: %s" % (cmd, stat))
+        raise SystemExit(f"Command {cmd} failed with code: {stat}")
 
 
 def get_dipydir():
@@ -31,7 +31,7 @@ def get_dipydir():
 
     cd(dipydir)
     if not os.path.isdir('dipy') and os.path.isfile('setup.py'):
-        raise SystemExit('Invalid dipy directory: %s' % dipydir)
+        raise SystemExit(f'Invalid dipy directory: {dipydir}')
     return dipydir
 
 # import compileall and then get dir os.path.split

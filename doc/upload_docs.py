@@ -11,7 +11,7 @@ from subprocess import check_call
 def sh(cmd):
     """Execute command in a subshell, return status code."""
     print("--------------------------------------------------")
-    print("Executing: %s" % (cmd, ))
+    print(f"Executing: {cmd}")
     print("--------------------------------------------------")
     return check_call(cmd, shell=True)
 
@@ -44,9 +44,9 @@ if __name__ == '__main__':
     # pull current docs_repo
     if not os.path.exists(docs_repo_path):
         print("docs_repo not found, pulling from git..")
-        sh("git clone %s %s" % (docs_repo_url, docs_repo_path))
+        sh(f"git clone {docs_repo_url} {docs_repo_path}")
     cd(docs_repo_path)
-    print("Moved to " + os.getcwd())
+    print(f"Moved to {os.getcwd()}")
     try:
         sh("git checkout gh-pages")
     except:
@@ -87,14 +87,14 @@ if __name__ == '__main__':
         sh("make api")
         sh("make rstexamples")
         sh("make json")
-        sh("cp -r _build/json %s/" % (docs_repo_path,))
+        sh(f"cp -r _build/json {docs_repo_path}/")
         cd(docs_repo_path)
         if dev:
             try:
-                sh("rm -r %s" % (source_version,))
+                sh(f"rm -r {source_version}")
             except:
                 pass
-        sh("mv json %s" % (source_version,))
+        sh(f"mv json {source_version}")
         sh("git add .")
-        sh("git commit -m \"Add docs for %s\"" % (source_version,))
+        sh(f"git commit -m \"Add docs for {source_version}\"")
         sh("git push origin gh-pages")

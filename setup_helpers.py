@@ -75,7 +75,7 @@ class install_scripts_bat(install_scripts):
             froot, ext = splitext(fname)
             bat_file = pjoin(pth, froot + '.bat')
             bat_contents = BAT_TEMPLATE.replace('{FNAME}', fname)
-            log.info("Making %s wrapper for %s" % (bat_file, filepath))
+            log.info(f"Making {bat_file} wrapper for {filepath}")
             if self.dry_run:
                 continue
             with open(bat_file, 'wt') as fobj:

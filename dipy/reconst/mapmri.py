@@ -237,22 +237,21 @@ class MapmriModel(ReconstModel, Cache):
         """
 
         if np.sum(gtab.b0s_mask) == 0:
-            msg = "gtab does not have any b0s, check in the gradient_table "
-            msg += "if b0_threshold needs to be increased."
-            raise ValueError(msg)
+            raise ValueError("gtab does not have any b0s, check in the "
+                             "gradient_table if b0_threshold needs to be "
+                             "increased.")
         self.gtab = gtab
 
         if radial_order < 0 or radial_order % 2:
-            msg = "radial_order must be a positive, even number."
-            raise ValueError(msg)
+            raise ValueError("radial_order must be a positive, even number.")
         self.radial_order = radial_order
 
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
 
         if laplacian_regularization:
-            msg = "Laplacian Regularization weighting must be 'GCV', "
-            msg += "a positive float or an array of positive floats."
+            msg = ("Laplacian Regularization weighting must be 'GCV',"
+                   " a positive float or an array of positive floats.")
             if isinstance(laplacian_weighting, str):
                 if not laplacian_weighting == 'GCV':
                     raise ValueError(msg)
@@ -267,21 +266,19 @@ class MapmriModel(ReconstModel, Cache):
                 raise ValueError('CVXPY package needed to enforce constraints.')
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-                    msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
-                    msg += " was expected."
-                    raise ValueError(msg)
+                    installed_solvers = ', '.join(cvxpy.installed_solvers())
+                    raise ValueError(f"Input `cvxpy_solver` was set to"
+                                     f" {cvxpy_solver}. One of"
+                                     f" {installed_solvers} was expected.")
             self.cvxpy_solver = cvxpy_solver
             if global_constraints:
                 if not anisotropic_scaling:
-                    msg = 'Global constraints only available for'
-                    msg += ' anistropic_scaling=True.'
-                    raise ValueError(msg)
+                    raise ValueError('Global constraints only available for'
+                                     ' anistropic_scaling=True.')
                 if radial_order > 10:
                     self.sdp_constraints = load_sdp_constraints('hermite', 10)
-                    msg = 'Global constraints are currently supported for'
-                    msg += ' radial_order <= 10.'
-                    warn(msg)
+                    warn('Global constraints are currently supported for'
+                         ' radial_order <= 10.')
                 else:
                     self.sdp_constraints = load_sdp_constraints('hermite',
                                                                 radial_order)
@@ -592,9 +589,8 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         if self.model.anisotropic_scaling:
-            msg = 'odf in spherical harmonics not yet implemented for '
-            msg += 'anisotropic implementation'
-            raise ValueError(msg)
+            raise ValueError('odf in spherical harmonics not yet implemented '
+                             'for anisotropic implementation')
         I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
 
         if I is None:
@@ -841,13 +837,11 @@ class MapmriFit(ReconstFit):
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
-            msg = 'model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [2].'
-            warn(msg)
+            warn('model bval_threshold must be lower than 2000 for the '
+                 'non_Gaussianity to be physically meaningful [2].')
         if not self.model.anisotropic_scaling:
-            msg = 'Parallel non-Gaussianity is not defined using '
-            msg += 'isotropic scaling.'
-            raise ValueError(msg)
+            raise ValueError('Parallel non-Gaussianity is not defined using '
+                             'isotropic scaling.')
 
         coef = self._mapmri_coef
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
@@ -869,13 +863,11 @@ class MapmriFit(ReconstFit):
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
-            msg = 'Model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [2].'
-            warn(msg)
+            warn('Model bval_threshold must be lower than 2000 for the '
+                 'non_Gaussianity to be physically meaningful [2].')
         if not self.model.anisotropic_scaling:
-            msg = 'Parallel non-Gaussianity is not defined using '
-            msg += 'isotropic scaling.'
-            raise ValueError(msg)
+            raise ValueError('Parallel non-Gaussianity is not defined using '
+                             'isotropic scaling.')
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
@@ -909,13 +901,11 @@ class MapmriFit(ReconstFit):
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
-            msg = 'model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [2].'
-            warn(msg)
+            warn('model bval_threshold must be lower than 2000 for the '
+                 'non_Gaussianity to be physically meaningful [2].')
         if not self.model.anisotropic_scaling:
-            msg = 'Parallel non-Gaussianity is not defined using '
-            msg += 'isotropic scaling.'
-            raise ValueError(msg)
+            raise ValueError('Parallel non-Gaussianity is not defined using '
+                             'isotropic scaling.')
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
