@@ -5,6 +5,12 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.8.0 changes
+------------------
+**Gradients**
+
+- Change in ``dip.core.gradients``, function ``reorient_bvecs`` now requires the affine to have a shape of (4, 4, n) or (3, 3, n)
+
 DIPY 1.7.0 changes
 ------------------
 
