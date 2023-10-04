@@ -830,3 +830,28 @@ def test_reorient_vectors():
         npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'iar', axis=1),
                                result)
     bvec = np.arange(12).reshape((3, 4))
+
+
+def test_affine_input_change():
+    sq2 = np.sqrt(2) / 2
+    bvals = np.concatenate([[0], np.ones(6) * 1000])
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
+
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
+    
+    # Wrong affine dimension
+    affs = np.zeros((6, 4, 4))
+    for i in range(4):
+        affs[:, i, i] = 1
+
+    npt.assert_warns(Warning, reorient_bvecs, gt, affs)
+
+    # Check if list still works
+    affs = [np.eye(4) for _ in range(6)]
+    _ = reorient_bvecs(gt, affs)

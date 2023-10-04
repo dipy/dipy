@@ -671,7 +671,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     if affines.shape[0] != affines.shape[1]:
         msg = '''reorient_bvecs has changed to require affines as
         (4, 4, n) or (3, 3, n). Shape of (n, 4, 4) or (n, 3, 3)
-        will be deprecated in the future.'''
+        is deprecated and will fail in the future.'''
         warn(msg, UserWarning)
         affines = np.moveaxis(affines, 0, -1)
 
