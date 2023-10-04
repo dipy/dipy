@@ -44,7 +44,7 @@ Quick links
         :link: interfaces/index
         :link-type: any
 
-        Not confortable with coding? we have command line interfaces for you.
+        Not comfortable with coding? we have command line interfaces for you.
         An easy way to use DIPY_ via a terminal.
 
     .. grid-item-card:: :octicon:`rocket` Theory
