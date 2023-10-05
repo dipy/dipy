@@ -74,7 +74,7 @@ class TabManager:
 
     def syncronize_slices(self, active_tab_id, x_value, y_value, z_value):
         """
-        Syncronize slicers for all the images
+        Synchronize slicers for all the images
 
         Parameters
         ----------
