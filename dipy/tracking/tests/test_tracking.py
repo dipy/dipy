@@ -973,7 +973,8 @@ def test_random_seed_initialization():
     sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
-    randoms_seeds = [None, 0, 1, -1] + list(np.random.random(10)) \
+    randoms_seeds = [None, 0, 1, -1, np.iinfo(np.uint32).max + 1] \
+        + list(np.random.random(10)) \
         + list(np.random.randint(0, np.iinfo(np.int32).max, 10))
 
     for rdm_seed in randoms_seeds:
