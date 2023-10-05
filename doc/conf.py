@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # dipy documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb  4 15:23:20 2010.
 #
@@ -15,6 +13,7 @@ import os
 import re
 import sys
 import ablog
+import json
 
 # Doc generation depends on being able to import dipy
 try:
@@ -39,6 +38,7 @@ rel = {}
 with open(os.path.join('..', 'dipy', 'info.py')) as f:
     exec(f.read(), rel)
 
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
@@ -54,7 +54,14 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
               'github',
-              'ablog']
+              'ablog',
+              'jinja'
+]
+
+# Providing different contexts for the jinja directive
+jinja_contexts = {
+    "documentation": json.load(open("./context/documentation.json"))
+}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -75,8 +82,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'dipy'
-copyright = u'2008-2023, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
+project = 'dipy'
+copyright = '2008-2023, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -133,17 +140,20 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'sphinxdoc'
+html_theme = "pydata_sphinx_theme"
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'dipy.css'
+html_style = 'css/dipy.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+  "secondary_sidebar_items": ["page-toc"],
+  "show_toc_level": 2
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -220,8 +230,8 @@ htmlhelp_basename = 'dipydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'dipy.tex', u'dipy Documentation',
-   u'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
+  ('index', 'dipy.tex', 'dipy Documentation',
+   'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -257,17 +267,17 @@ sphinx_gallery_conf = {
      # path to your examples scripts
      'examples_dirs': ['examples_revamped', ],
      # path where to save gallery generated examples
-     'gallery_dirs': ['examples_built', ],
+    #  'gallery_dirs': ['examples_built', ],
      'subsection_order': ExplicitOrder(ordered_folders),
      'image_scrapers': (sc),
      'backreferences_dir': 'examples_built',
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': '_static/dipy_full_logo.png',
+     'default_thumb_file': '_static/dipy-logo.png',
      'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {'https://docs.python.org/': None}
 

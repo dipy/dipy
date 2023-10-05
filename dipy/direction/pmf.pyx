@@ -15,21 +15,41 @@ cdef class PmfGen:
     def __init__(self,
                  double[:, :, :, :] data,
                  object sphere):
-        self.data = np.asarray(data, dtype=float)
+        self.data = np.asarray(data, dtype=float, order='C')
         self.sphere = sphere
+        self.vertices = np.asarray(sphere.vertices, dtype=float)
+        self.nbr_vertices = self.vertices.shape[0]
 
     cpdef double[:] get_pmf(self, double[::1] point):
         pass
+
+    cdef int find_closest(self, double[::1] xyz) nogil:
+        cdef:
+            double cos_max = 0
+            double cos_sim
+            int idx = 0
+            int i
+
+        for i in range(self.nbr_vertices):
+            cos_sim = self.vertices[i][0] * xyz[0] \
+                    + self.vertices[i][1] * xyz[1] \
+                    + self.vertices[i][2] * xyz[2]
+            if cos_sim < 0:
+                cos_sim = cos_sim * -1
+            if cos_sim > cos_max:
+                cos_max = cos_sim
+                idx = i
+        return idx
 
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
-        cdef int idx = self.sphere.find_closest(xyz)
+        cdef int idx = self.find_closest(xyz)
         return self.get_pmf(point)[idx]
 
-    cdef void __clear_pmf(self):
+    cdef void __clear_pmf(self) nogil:
         cdef:
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp i
@@ -55,6 +75,22 @@ cdef class SimplePmfGen(PmfGen):
         if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf
+
+    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        cdef:
+            int idx
+
+        idx = self.find_closest(xyz)
+
+        if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+                                     &point[0],
+                                     self.pmf[0:1]) != 0:
+            PmfGen.__clear_pmf(self)
+        return self.pmf[0]
 
 
 cdef class SHCoeffPmfGen(PmfGen):
@@ -91,7 +127,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             for i in range(len_pmf):
                 _sum = 0
                 for j in range(len_B):
-                    _sum += self.B[i, j] * self.coeff[j]
+                    _sum = _sum + (self.B[i, j] * self.coeff[j])
                 self.pmf[i] = _sum
         return self.pmf
 

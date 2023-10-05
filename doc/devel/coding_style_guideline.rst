@@ -188,7 +188,7 @@ Other ``for``-loop constructs are deprecated and must be avoided.
 -------------
 Documentation
 -------------
-DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to
+DIPY uses `Sphinx <https://www.sphinx-doc.org/en/master/index.html>`_ to
 generate documentation. We welcome contributions of examples, and suggestions
 for changes in the documentation, but please make sure that changes that are
 introduced render properly into the HTML format that is used for the DIPY
@@ -198,7 +198,7 @@ DIPY follows the `numpy docstring standard <https://github.com/numpy/numpy/blob/
 for documenting modules, classes, functions, and examples.
 
 The documentation includes an extensive library of
-`examples <http://dipy.org/examples_index.html>`_. These are Python files that
+`examples <https://dipy.org/examples_index.html>`_. These are Python files that
 are stored in the ``doc/examples`` folder and contain code to execute the
 example, interleaved with multi-line comments that contain explanations of the
 blocks of code. Examples demonstrate how to perform processing (segmentation,
@@ -220,9 +220,9 @@ backgrounds of DIPY, installation instructions, description of the
 contribution process, etc.
 
 Again, both sets of files use the `reStructuredText markup language
-<http://www.sphinx-doc.org/en/stable/rest.html>`_ for comments. Sphinx parses
-the files to produce the contents that are later rendered in the DIPY_
-website.
+<https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_
+for comments. Sphinx parses the files to produce the contents that are
+later rendered in the DIPY_ website.
 
 The Python examples are compiled, output images produced and corresponding
 ``.rst`` files produced so that the comments can be appropriately displayed
@@ -268,7 +268,7 @@ References
 .. [Garyfallidis2014] Garyfallidis E, Brett M, Amirbekian B, Rokem A, van der
    Walt S, Descoteaux M, Nimmo-Smith I and Dipy Contributors (2014). `Dipy, a
    library for the analysis of diffusion MRI data.
-   <http://journal.frontiersin.org/Journal/10.3389/fninf.2014.00008/abstract>`_
+   <https://www.frontiersin.org/articles/10.3389/fninf.2014.00008/>`_
    Frontiers in Neuroinformatics, vol.8, no.8.
 
 .. include:: ../links_names.inc

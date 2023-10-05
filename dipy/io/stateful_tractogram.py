@@ -45,7 +45,7 @@ class Origin(enum.Enum):
     TRACKVIS = 'corner'
 
 
-class StatefulTractogram(object):
+class StatefulTractogram:
     """ Class for stateful representation of collections of streamlines
     Object designed to be identical no matter the file format
     (trk, tck, vtk, fib, dpy). Facilitate transformation between space and
@@ -644,11 +644,10 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOXMM
-                logger.debug('Moved streamlines from vox to voxmm.')
+            self._space = Space.VOXMM
+            logger.debug('Moved streamlines from vox to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _voxmm_to_vox(self):
         """ Unsafe function to transform streamlines """
@@ -656,33 +655,30 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOX
-                logger.debug('Moved streamlines from voxmm to vox.')
+            self._space = Space.VOX
+            logger.debug('Moved streamlines from voxmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _vox_to_rasmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._affine)
-                self._space = Space.RASMM
-                logger.debug('Moved streamlines from vox to rasmm.')
+            self._space = Space.RASMM
+            logger.debug('Moved streamlines from vox to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _rasmm_to_vox(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
-                self._space = Space.VOX
-                logger.debug('Moved streamlines from rasmm to vox.')
+            self._space = Space.VOX
+            logger.debug('Moved streamlines from rasmm to vox.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _voxmm_to_rasmm(self):
         """ Unsafe function to transform streamlines """
@@ -691,11 +687,10 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
-                self._space = Space.RASMM
-                logger.debug('Moved streamlines from voxmm to rasmm.')
+            self._space = Space.RASMM
+            logger.debug('Moved streamlines from voxmm to rasmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _rasmm_to_voxmm(self):
         """ Unsafe function to transform streamlines """
@@ -704,29 +699,27 @@ class StatefulTractogram(object):
                 self._tractogram.apply_affine(self._inv_affine)
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
-                self._space = Space.VOXMM
-                logger.debug('Moved streamlines from rasmm to voxmm.')
+            self._space = Space.VOXMM
+            logger.debug('Moved streamlines from rasmm to voxmm.')
         else:
             logger.warning('Wrong initial space for this function.')
-            return
 
     def _shift_voxel_origin(self):
         """ Unsafe function to switch the origin from center to corner
         and vice versa """
-        if not self.streamlines:
-            return
+        if self.streamlines:
+            shift = np.asarray([0.5, 0.5, 0.5])
+            if self._space == Space.VOXMM:
+                shift = shift * self._voxel_sizes
+            elif self._space == Space.RASMM:
+                tmp_affine = np.eye(4)
+                tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
+                shift = apply_affine(tmp_affine, shift)
+            if self._origin == Origin.TRACKVIS:
+                shift *= -1
 
-        shift = np.asarray([0.5, 0.5, 0.5])
-        if self._space == Space.VOXMM:
-            shift = shift * self._voxel_sizes
-        elif self._space == Space.RASMM:
-            tmp_affine = np.eye(4)
-            tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
-            shift = apply_affine(tmp_affine, shift)
-        if self._origin == Origin.TRACKVIS:
-            shift *= -1
+            self._tractogram.streamlines._data += shift
 
-        self._tractogram.streamlines._data += shift
         if self._origin == Origin.NIFTI:
             logger.debug('Origin moved to the corner of voxel.')
             self._origin = Origin.TRACKVIS

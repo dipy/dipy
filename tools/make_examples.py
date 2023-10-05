@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Run the py->rst conversion and run all examples.
 
 Steps are:
@@ -16,7 +16,6 @@ import os
 import os.path as op
 import sys
 import shutil
-import io
 from subprocess import check_call
 from glob import glob
 from time import time
@@ -66,7 +65,7 @@ if not os.getcwd().endswith(op.join('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
-with io.open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
+with open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
     eg_index_contents = f.read()
 
 # Here I am adding an extra step. The list of examples to be executed need
@@ -76,7 +75,7 @@ with io.open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
 flist_name = op.join(op.dirname(os.getcwd()), 'examples',
                      'valid_examples.txt')
 
-with io.open(flist_name, "r", encoding="utf8") as flist:
+with open(flist_name, "r", encoding="utf8") as flist:
     validated_examples = flist.readlines()
 
 # Parse "#" in lines
@@ -89,18 +88,17 @@ validated_examples = list(filter(None, validated_examples))
 for example in validated_examples:
     fullpath = op.join(EG_SRC_DIR, example)
     if not example.endswith(".py"):
-        print("%s not a python file, skipping." % example)
+        print(f"{example} not a python file, skipping.")
         continue
     elif not op.isfile(fullpath):
-        print("Cannot find file, %s, skipping." % example)
+        print(f"Cannot find file, {example}, skipping.")
         continue
     shutil.copyfile(fullpath, example)
 
     # Check that example file is included in the docs
     file_root = example[:-3]
     if file_root not in eg_index_contents:
-        msg = "Example, %s, not in index file %s."
-        msg = msg % (example, EG_INDEX_FNAME)
+        msg = f"Example, {example}, not in index file {EG_INDEX_FNAME}."
         print(msg)
 
 # Run the conversion from .py to rst file
@@ -143,10 +141,10 @@ name = ''
 def run_script():
     namespace = {}
     t1 = time()
-    with io.open(script, encoding="utf8") as f:
+    with open(script, encoding="utf8") as f:
         exec(f.read(), namespace)
     t2 = time()
-    print("That took %.2f seconds to run" % (t2 - t1))
+    print(f"That took {t2 - t1:.2f} seconds to run")
     plt.close('all')
     del namespace
 

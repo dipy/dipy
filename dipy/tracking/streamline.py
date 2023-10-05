@@ -630,9 +630,7 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
         coordinate along the length of each streamline
     """
     data = data.astype(float)
-    if (isinstance(streamlines, list) or
-            isinstance(streamlines, types.GeneratorType) or
-            isinstance(streamlines, Streamlines)):
+    if isinstance(streamlines, (list, types.GeneratorType, Streamlines)):
         streamlines = transform_streamlines(streamlines,
                                             np.linalg.inv(affine))
         vals = []

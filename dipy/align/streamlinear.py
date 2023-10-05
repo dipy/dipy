@@ -27,7 +27,7 @@ DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
 logger = logging.getLogger(__name__)
 
 
-class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
+class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
 
     def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration.
@@ -284,7 +284,7 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
         return bundle_min_distance(x_moving, static, self.moving)
 
 
-class StreamlineLinearRegistration(object):
+class StreamlineLinearRegistration:
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None, evolution=False,
@@ -536,7 +536,7 @@ class StreamlineLinearRegistration(object):
         raise ValueError('Wrong input')
 
 
-class StreamlineRegistrationMap(object):
+class StreamlineRegistrationMap:
 
     def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
         r""" A map holding the optimum affine matrix and some other parameters
@@ -906,8 +906,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
     if verbose:
         logger.info('Progressive Registration is Enabled')
 
-    if x0 == 'translation' or x0 == 'rigid' or \
-       x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+    if x0 in ('translation', 'rigid', 'similarity', 'scaling', 'affine'):
         if verbose:
             logger.info(' Translation  (3 parameters)...')
         slr_t = StreamlineLinearRegistration(metric=metric,
@@ -917,8 +916,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
 
         slm_t = slr_t.optimize(static, moving)
 
-    if x0 == 'rigid' or x0 == 'similarity' or \
-       x0 == 'scaling' or x0 == 'affine':
+    if x0 in ('rigid', 'similarity', 'scaling', 'affine'):
 
         x_translation = slm_t.xopt
         x = np.zeros(6)
@@ -931,7 +929,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
                                              method=method)
         slm_r = slr_r.optimize(static, moving)
 
-    if x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+    if x0 in ('similarity', 'scaling', 'affine'):
 
         x_rigid = slm_r.xopt
         x = np.zeros(7)
@@ -945,7 +943,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
                                              method=method)
         slm_s = slr_s.optimize(static, moving)
 
-    if x0 == 'scaling' or x0 == 'affine':
+    if x0 in ('scaling', 'affine'):
 
         x_similarity = slm_s.xopt
         x = np.zeros(9)

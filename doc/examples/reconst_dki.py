@@ -336,7 +336,7 @@ References
                 kurtosis imaging of the healthy human brain. Master
                 Dissertation Bachelor and Master Programin Biomedical
                 Engineering and Biophysics, Faculty of Sciences.
-                http://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
+                https://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
 .. [Hansen2013] Hansen B, Lund TE, Sangill R, and Jespersen SN (2013).
                 Experimentally and computationally393fast method for estimation
                 of a mean kurtosis. Magnetic Resonance in Medicine 69,

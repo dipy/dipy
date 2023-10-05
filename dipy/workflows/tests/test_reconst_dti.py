@@ -70,7 +70,7 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
 
         evecs_path = dti_flow.last_generated_outputs['out_evec']
         evecs_data = load_nifti_data(evecs_path)
-        assert_equal(evecs_data.shape[-2:], tuple((3, 3)))
+        assert_equal(evecs_data.shape[-2:], (3, 3))
         assert_equal(evecs_data.shape[:-2], volume.shape[:-1])
 
         evals_path = dti_flow.last_generated_outputs['out_eval']

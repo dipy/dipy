@@ -25,7 +25,7 @@ class Identity:
         return idx
 
 
-class Cluster(object):
+class Cluster:
     """ Provides functionalities for interacting with a cluster.
 
     Useful container to retrieve index of elements grouped together. If
@@ -72,7 +72,7 @@ class Cluster(object):
 
             When `idx` is either a slice or a list, returns a list of elements.
         """
-        if isinstance(idx, int) or isinstance(idx, np.integer):
+        if isinstance(idx, (int, np.integer)):
             return self.refdata[self.indices[idx]]
         elif type(idx) is slice:
             return [self.refdata[i] for i in self.indices[idx]]
@@ -171,7 +171,7 @@ class ClusterCentroid(Cluster):
         return converged
 
 
-class ClusterMap(object):
+class ClusterMap:
     """ Provides functionalities for interacting with clustering outputs.
 
     Useful container to create, remove, retrieve and filter clusters.
@@ -392,7 +392,7 @@ class ClusterMapCentroid(ClusterMap):
         return [cluster.centroid for cluster in self.clusters]
 
 
-class Clustering(object):
+class Clustering:
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -727,7 +727,7 @@ def qbx_and_merge(streamlines, thresholds,
     if verbose:
         logger.info(' Resampled to {} points'.format(nb_pts))
         logger.info(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-        logger.info(' Duration of resampling is %0.3f sec.' % (time() - t,))
+        logger.info(' Duration of resampling is %0.3f s' % (time() - t,))
         logger.info(' QBX phase starting...')
 
     qbx = QuickBundlesX(thresholds,
@@ -765,6 +765,6 @@ def qbx_and_merge(streamlines, thresholds,
         logger.info(' QuickBundlesX time for %d random streamlines'
                     % (select_randomly,))
 
-        logger.info(' Duration %0.3f sec. \n' % (time() - t1,))
+        logger.info(' Duration %0.3f s\n' % (time() - t1,))
 
     return merged_cluster_map

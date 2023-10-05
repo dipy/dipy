@@ -36,7 +36,7 @@ The following 24 authors contributed 645 commits.
 
 
 We closed a total of 215 issues, 70 pull requests and 145 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (70):
@@ -92,7 +92,7 @@ Pull Requests (70):
 * :ghpull:`1384`: NF - Particle Filtering Tractography (merge)
 * :ghpull:`1411`: Added eddy_rotated_bvecs extension
 * :ghpull:`1407`: [MRG] Default colormap changed in examples
-* :ghpull:`1408`: Updated color map in reconst_csa.py and reconst_forecast.py 
+* :ghpull:`1408`: Updated color map in reconst_csa.py and reconst_forecast.py
 * :ghpull:`1406`: [MRG] assert_true which checks for equality replaced with assert_equal
 * :ghpull:`1347`: Replacing fvtk by the new viz API
 * :ghpull:`1322`: Forecast
@@ -221,10 +221,10 @@ Issues (145):
 * :ghissue:`1410`: BF: Added .eddy_rotated_bvecs extension support
 * :ghissue:`1407`: [MRG] Default colormap changed in examples
 * :ghissue:`1403`: Avoid promoting jet color map in examples
-* :ghissue:`1408`: Updated color map in reconst_csa.py and reconst_forecast.py 
+* :ghissue:`1408`: Updated color map in reconst_csa.py and reconst_forecast.py
 * :ghissue:`1406`: [MRG] assert_true which checks for equality replaced with assert_equal
 * :ghissue:`1387`: Assert equality, instead of asserting that `a == b` is true
-* :ghissue:`1405`: Error using CSD model on data 
+* :ghissue:`1405`: Error using CSD model on data
 * :ghissue:`1347`: Replacing fvtk by the new viz API
 * :ghissue:`1402`: [Question] rint() or round()
 * :ghissue:`1321`: mapfit_laplacian_aniso (high non-Gaussianity, NG values in CSF)

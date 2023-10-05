@@ -26,7 +26,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
 
     References
     ----------
-    .. [1] http://mathworld.wolfram.com/SpherePointPicking.html.
+    .. [1] https://mathworld.wolfram.com/SpherePointPicking.html.
 
     Returns
     -------

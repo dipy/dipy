@@ -79,7 +79,7 @@ to show that we calculate the mean square error on this two measures.
 """
 
 mse = np.sum((rtop_signal - rtop_pdf) ** 2) / rtop_signal.size
-print("MSE = %f" % mse)
+print(f"MSE = {mse:f}")
 
 """
 MSE = 0.000000

@@ -17,7 +17,7 @@ from nibabel.streamlines import ArraySequence as Streamlines
 __all__ = ['Dpy']
 
 
-class Dpy(object):
+class Dpy:
     def __init__(self, fname, mode='r', compression=0):
         """ Advanced storage system for tractography based on HDF5
 
@@ -60,7 +60,7 @@ class Dpy(object):
 
         if self.mode == 'w':
 
-            self.f.attrs['version'] = u'0.0.1'
+            self.f.attrs['version'] = '0.0.1'
 
             self.streamlines = self.f.create_group('streamlines')
 

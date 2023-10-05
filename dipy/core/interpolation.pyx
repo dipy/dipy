@@ -221,13 +221,13 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
         double *rs=<double *> cnp.PyArray_DATA(result)
 
     if not cnp.PyArray_CHKFLAGS(data, cnp.NPY_ARRAY_C_CONTIGUOUS):
-        raise ValueError(u"data is not C contiguous")
+        raise ValueError("data is not C contiguous")
     if not cnp.PyArray_CHKFLAGS(points, cnp.NPY_ARRAY_C_CONTIGUOUS):
-        raise ValueError(u"points is not C contiguous")
+        raise ValueError("points is not C contiguous")
     if not cnp.PyArray_CHKFLAGS(data_strides, cnp.NPY_ARRAY_C_CONTIGUOUS):
-        raise ValueError(u"data_strides is not C contiguous")
+        raise ValueError("data_strides is not C contiguous")
     if not cnp.PyArray_CHKFLAGS(result, cnp.NPY_ARRAY_C_CONTIGUOUS):
-        raise ValueError(u"result is not C contiguous")
+        raise ValueError("result is not C contiguous")
     with nogil:
         for i in range(len_points):
             _trilinear_interpolation_iso(&ps[i * 3],
@@ -266,7 +266,7 @@ cdef void _trilinear_interpolation_iso(double *X,
     # weights
     # the weights are actually the volumes of the 8 smaller boxes that define
     # the initial rectangular box for more on trilinear have a look here
-    # http://en.wikipedia.org/wiki/Trilinear_interpolation
+    # https://en.wikipedia.org/wiki/Trilinear_interpolation
     # http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
     W[0]=nd[0] * nd[1] * nd[2]
     W[1]= d[0] * nd[1] * nd[2]
@@ -1098,7 +1098,7 @@ class OutsideImage(Exception):
     pass
 
 
-class Interpolator(object):
+class Interpolator:
     """Class to be subclassed by different interpolator types"""
     def __init__(self, data, voxel_size):
         self.data = data

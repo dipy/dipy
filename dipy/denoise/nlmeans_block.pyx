@@ -206,7 +206,7 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
     nz : integer
         nz coordinate of second patch's center
     block_radius : integer
-        block radius for which the distince is computed for
+        block radius for which the distance is computed for
     """
 
     cdef double acu, distancetotal

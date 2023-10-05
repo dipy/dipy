@@ -118,7 +118,7 @@ region.
 
 mean_signal = np.mean(data[mask_cc_part], axis=0)
 
-"""Now, we need a good background estimation. We will re-use the brain mask
+"""Now, we need a good background estimation. We will reuse the brain mask
 computed before and invert it to catch the outside of the brain. This could
 also be determined manually with a ROI in the background.
 [Warning: Certain MR manufacturers mask out the outside of the brain with 0's.

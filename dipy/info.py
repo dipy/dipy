@@ -13,10 +13,7 @@ _version_extra = 'dev0'
 # _version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
-__version__ = "%s.%s.%s%s" % (_version_major,
-                              _version_minor,
-                              _version_micro,
-                              _version_extra)
+__version__ = f"{_version_major}.{_version_minor}.{_version_micro}{_version_extra}"
 
 CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Environment :: Console",
@@ -58,8 +55,8 @@ You can find our sources and single-click downloads:
 * Documentation_ for all releases and current development tree.
 * Download as a tar/zip file the `current trunk`_.
 
-.. _main repository: http://github.com/dipy/dipy
-.. _Documentation: http://dipy.org
+.. _main repository: https://github.com/dipy/dipy
+.. _Documentation: https://dipy.org
 .. _current trunk: https://github.com/dipy/dipy/archive/master.zip
 
 License

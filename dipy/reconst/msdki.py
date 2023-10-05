@@ -252,7 +252,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
     params = msdki_params.copy()
     params[..., 1] = params[..., 1] * params[..., 0] ** 2
 
-    if isinstance(S0, float) or isinstance(S0, int):
+    if isinstance(S0, (float, int)):
         pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
     elif S0.size == 1:
         pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
@@ -379,7 +379,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         return msdki_prediction(msdki_params, self.gtab, S0)
 
 
-class MeanDiffusionKurtosisFit(object):
+class MeanDiffusionKurtosisFit:
 
     def __init__(self, model, model_params, model_S0=None):
         """ Initialize a MeanDiffusionKurtosisFit class instance.

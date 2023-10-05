@@ -1,4 +1,3 @@
-
 from packaging.version import Version
 
 import nibabel as nib

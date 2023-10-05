@@ -141,16 +141,16 @@ Practical
 7. **I have problems reading my dicom files using nibabel, what should I do?**
 
   Use Chris Rorden's dcm2nii to transform them into nifti files.
-  http://www.cabiatl.com/mricro/mricron/dcm2nii.html
+  https://people.cas.sc.edu/rorden/mricron/dcm2nii.html
   Or you can make your own reader using pydicom.
-  http://code.google.com/p/pydicom/
+  https://pydicom.github.io/
   and then use nibabel to store the data as nifti.
 
 8. **Where can I find diffusion data?**
 
   There are many sources for openly available diffusion MRI. the :mod:`dipy.data` module can be used to download some sample datasets that we use in our examples. In addition there are a lot of large research-grade datasets available through the following sources:
 
-    - http://fcon_1000.projects.nitrc.org/
+    - https://fcon_1000.projects.nitrc.org/
     - https://www.humanconnectome.org/
     - https://openneuro.org/
 

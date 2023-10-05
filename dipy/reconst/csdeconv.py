@@ -132,7 +132,7 @@ def response_from_mask(gtab, data, mask):
     return response_from_mask_ssst(gtab, data, mask)
 
 
-class AxSymShResponse(object):
+class AxSymShResponse:
     """A simple wrapper for response functions represented using only axially
     symmetric, even spherical harmonic functions (ie, m == 0 and n even).
 

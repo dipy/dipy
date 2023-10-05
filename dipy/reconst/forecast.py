@@ -1,4 +1,3 @@
-
 from warnings import warn
 from packaging.version import Version
 
@@ -44,7 +43,7 @@ class ForecastModel(OdfModel, Cache):
 
     Notes
     -----
-    The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
+    The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
 
     def __init__(self,
@@ -221,9 +220,7 @@ class ForecastModel(OdfModel, Cache):
         d_perp = np.cos(x[1])**2 * 3e-03
 
         if d_perp >= d_par:
-            temp = d_par
-            d_par = d_perp
-            d_perp = temp
+            d_par, d_perp = d_perp, d_par
 
         # round to avoid memory explosion
         diff_key = str(int(np.round(d_par * 1e05))) + \
@@ -440,9 +437,7 @@ def forecast_error_func(x, b_unique, E):
     d_perp = np.cos(x[1])**2 * 3e-03
 
     if d_perp >= d_par:
-        temp = d_par
-        d_par = d_perp
-        d_perp = temp
+        d_par, d_perp = d_perp, d_par
 
     E_reconst = 0.5 * np.exp(-b_unique * d_perp) * psi_l(0, (b_unique * (d_par - d_perp)))
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Script to pack built examples into suitably named archive
 
 Usage %s output_dir [doc_dir]
@@ -42,7 +42,7 @@ if os.path.isdir(eg_out_dir):
 
 
 def ignorandi(src, names):
-    return [name for name in names if name == 'README' or name == '.gitignore']
+    return [name for name in names if name in ('README', '.gitignore')]
 
 
 shutil.copytree(eg_built_dir, eg_out_dir, ignore=ignorandi)

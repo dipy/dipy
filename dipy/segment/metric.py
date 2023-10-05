@@ -1,4 +1,3 @@
-
 __all__ = ["MinimumAverageDirectFlipMetric", "Metric", "CosineMetric",
            "AveragePointwiseEuclideanMetric", "EuclideanMetric", "dist",
             "mdf", "mean_manhattan_distance", "mean_euclidean_distance"]
