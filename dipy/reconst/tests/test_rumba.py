@@ -218,17 +218,17 @@ def test_mvoxel_rumba():
         assert_equal(pred_sig_3, pred_sig_4)
         assert_equal(pred_sig_1, pred_sig_3)
         assert_equal(data.shape, pred_sig_1.shape)
-        assert_equal(np.alltrue(np.isreal(pred_sig_1)), True)
-        assert_equal(np.alltrue(pred_sig_1 > 0), True)
+        assert_equal(np.all(np.isreal(pred_sig_1)), True)
+        assert_equal(np.all(pred_sig_1 > 0), True)
 
         # Verify shape, positivity, realness of results
         assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
-        assert_equal(np.alltrue(np.isreal(odf)), True)
-        assert_equal(np.alltrue(odf > 0), True)
+        assert_equal(np.all(np.isreal(odf)), True)
+        assert_equal(np.all(odf > 0), True)
 
         assert_equal(data.shape[:-1], f_iso.shape)
-        assert_equal(np.alltrue(np.isreal(f_iso)), True)
-        assert_equal(np.alltrue(f_iso > 0), True)
+        assert_equal(np.all(np.isreal(f_iso)), True)
+        assert_equal(np.all(f_iso > 0), True)
 
         # Verify properties of fODF and volume fractions
         assert_equal(f_iso, f_gm + f_csf)
@@ -345,12 +345,12 @@ def test_mvoxel_global_fit():
 
         # Verify shape, positivity, realness of results
         assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
-        assert_equal(np.alltrue(np.isreal(odf)), True)
-        assert_equal(np.alltrue(odf > 0), True)
+        assert_equal(np.all(np.isreal(odf)), True)
+        assert_equal(np.all(odf > 0), True)
 
         assert_equal(data.shape[:-1], f_iso.shape)
-        assert_equal(np.alltrue(np.isreal(f_iso)), True)
-        assert_equal(np.alltrue(f_iso > 0), True)
+        assert_equal(np.all(np.isreal(f_iso)), True)
+        assert_equal(np.all(f_iso > 0), True)
 
         # Verify normalization
         assert_equal(f_iso, f_gm + f_csf)

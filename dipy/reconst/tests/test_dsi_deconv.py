@@ -63,4 +63,4 @@ def test_multivox_dsi():
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()
     assert_equal(data.shape[:-1] + (35, 35, 35), PDF.shape)
-    assert_equal(np.alltrue(np.isreal(PDF)), True)
+    assert_equal(np.all(np.isreal(PDF)), True)
