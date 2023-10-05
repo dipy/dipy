@@ -422,6 +422,7 @@ class Horizon:
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
 
+        synchronize_slices = False
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors
