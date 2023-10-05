@@ -109,7 +109,7 @@ class LocalTracking:
             raise ValueError("initial_directions and seeds must have the "
                              + "same shape[0].")
         if (initial_directions is None and unidirectional and
-                self.randomize_forward_direction is False):
+                not self.randomize_forward_direction):
             warn("Unidirectional tractography will be performed "
                  + "without providing initial directions nor "
                  + "randomizing extracted initial forward "
@@ -170,6 +170,8 @@ class LocalTracking:
             if self.initial_directions is None:
                 directions = self.direction_getter.initial_direction(s)
             else:
+                # normalize the initial directions.
+                # initial directions with norm 0 are removed.
                 d_ns = np.linalg.norm(self.initial_directions[i, :, :], axis=1)
                 directions = self.initial_directions[i, d_ns > 0, :] \
                     / d_ns[d_ns > 0, np.newaxis]
