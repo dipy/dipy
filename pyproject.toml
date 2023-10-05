@@ -4,9 +4,11 @@ description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
 requires-python = ">=3.9"
-authors = [{ name = "Elefterios Garyfallidis", email = "neuroimaging@python.org" }]
+authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
-    {name = "dipy developers", email="dipy@python.org"},
+    {name = "Elefterios Garyfallidis", email="neuroimaging@python.org"},
+    {name = "Ariel Rokem", email="neuroimaging@python.org"}
+    {name = "Serge Koudoro", email="neuroimaging@python.org"},
 ]
 keywords = ["dipy", "diffusionimaging", "dti", "tracking", "tractography",
             "diffusionmri", "mri", "tractometry", "connectomics", "brain",
@@ -27,6 +29,7 @@ classifiers = [
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Software Development :: Libraries",
     'Topic :: Scientific/Engineering',
+    "Operating System :: OS Independent",
     'Operating System :: Microsoft :: Windows',
     'Operating System :: POSIX',
     'Operating System :: Unix',
@@ -49,7 +52,7 @@ all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
 style = ["flake8", "isort"]
 viz = ["fury>=0.9.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels", "tables", "tensorflow"]
+ml = ["scikit_learn", "pandas", "statsmodels", "tables", "tensorflow",  "tensorflow-addons"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
