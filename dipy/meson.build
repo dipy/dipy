@@ -237,13 +237,29 @@ _cython_tree = [
 incdir_local = meson.current_build_dir()
 inc_local = include_directories('.')
 
+
+# ------------------------------------------------------------------------
+# Manage version file
+# ------------------------------------------------------------------------
+dipy_dir = py3.get_install_dir() / 'dipy'
+
+generate_version = custom_target(
+  'generate-version',
+  install: true,
+  build_always_stale: true,
+  build_by_default: true,
+  output: 'version.py',
+  input: '../tools/version_utils.py',
+  command: [py3, '@INPUT@', '--source-root', '@SOURCE_ROOT@'],
+  install_dir: dipy_dir
+)
+
 # ------------------------------------------------------------------------
 # Include Python Sources
 # ------------------------------------------------------------------------
 python_sources = [
   '__init__.py',
   'conftest.py',
-  'info.py',
   'pkg_info.py'
 ]
 
