@@ -105,13 +105,14 @@ def git_version(cwd):
                                 'HEAD'])
         GIT_REVISION = out.strip().decode('ascii')[:7]
 
-        # We need a version number that's regularly incrementing for newer commits,
-        # so the sort order in a wheelhouse of nightly builds is correct (see
-        # https://github.com/MacPython/scipy-wheels/issues/114). It should also be
-        # a reproducible version number, so don't rely on date/time but base it on
-        # commit history. This gives the commit count since the previous branch
-        # point from the current branch (assuming a full `git clone`, it may be
-        # less if `--depth` was used - commonly the default in CI):
+        # We need a version number that's regularly incrementing for newer
+        # commits, so the sort order in a wheelhouse of nightly builds is
+        # correct (see https://github.com/MacPython/scipy-wheels/issues/114).
+        # It should also be a reproducible version number, so don't rely on
+        # date/time but base it on commit history. This gives the commit
+        # count since the previous branch point from the current branch
+        # (assuming a full `git clone`, it may be less if `--depth` was
+        # used - commonly the default in CI):
         prev_version_tag = '^{}.{}.0'.format(MAJOR, MINOR - 2)
         out = _minimal_ext_cmd(['git', '--git-dir', git_dir,
                                 'rev-list', 'HEAD', prev_version_tag,
@@ -128,7 +129,8 @@ def git_version(cwd):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", type=str, default='.',
-                        help="Relative path to the root of the source directory")
+                        help="Relative path to the root of the "
+                             "source directory")
     args = parser.parse_args()
 
     write_version_py(args.source_root)
