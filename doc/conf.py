@@ -33,7 +33,7 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # -- General configuration -----------------------------------------------------
 
-# We load the nibabel release info into a dict by explicit execution
+# We load the DIPY release info into a dict by explicit execution
 rel = {}
 with open(os.path.join('..', 'dipy', 'info.py')) as f:
     exec(f.read(), rel)
