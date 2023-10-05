@@ -72,7 +72,7 @@ class TabManager:
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
         self.__tab_ui.position = (x_pad, 5)
 
-    def syncronize_slices(self, active_tab_id, x_value, y_value, z_value):
+    def synchronize_slices(self, active_tab_id, x_value, y_value, z_value):
         """
         Synchronize slicers for all the images
 

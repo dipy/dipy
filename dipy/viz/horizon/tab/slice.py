@@ -210,12 +210,12 @@ class SlicesTab(HorizonTab):
     def __change_picked_voxel(self, message):
         self.__label_picked_voxel.message = message
 
-    def __change_slice_x(self, slider, syncronized_value=None):
-        if syncronized_value:
-            self.__selected_slice_x = int(np.rint(syncronized_value))
+    def __change_slice_x(self, slider, synchronized_value=None):
+        if synchronized_value:
+            self.__selected_slice_x = int(np.rint(synchronized_value))
         else:
             self.__selected_slice_x = int(np.rint(slider.value))
-            SlicesTab.tab_manager.syncronize_slices(
+            SlicesTab.tab_manager.synchronize_slices(
                 self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
                 self.__selected_slice_z)
         self.__actors[0].display_extent(
@@ -225,12 +225,12 @@ class SlicesTab(HorizonTab):
     def _adjust_slice_x(self, slider):
         self.__change_slice_x(slider, slider.value)
 
-    def __change_slice_y(self, slider, syncronized_value=None):
-        if syncronized_value:
-            self.__selected_slice_y = int(np.rint(syncronized_value))
+    def __change_slice_y(self, slider, synchronized_value=None):
+        if synchronized_value:
+            self.__selected_slice_y = int(np.rint(synchronized_value))
         else:
             self.__selected_slice_y = int(np.rint(slider.value))
-            SlicesTab.tab_manager.syncronize_slices(
+            SlicesTab.tab_manager.synchronize_slices(
                 self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
                 self.__selected_slice_z)
         self.__actors[1].display_extent(
@@ -240,12 +240,12 @@ class SlicesTab(HorizonTab):
     def _adjust_slice_y(self, slider):
         self.__change_slice_y(slider, slider.value)
 
-    def __change_slice_z(self, slider, syncronized_value=None):
-        if syncronized_value:
-            self.__selected_slice_z = int(np.rint(syncronized_value))
+    def __change_slice_z(self, slider, synchronized_value=None):
+        if synchronized_value:
+            self.__selected_slice_z = int(np.rint(synchronized_value))
         else:
             self.__selected_slice_z = int(np.rint(slider.value))
-            SlicesTab.tab_manager.syncronize_slices(
+            SlicesTab.tab_manager.synchronize_slices(
                 self.__tab_id, self.__selected_slice_x, self.__selected_slice_y,
                 self.__selected_slice_z)
         self.__actors[2].display_extent(
