@@ -451,7 +451,7 @@ def _ols_fit(data, mask, X, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size = len(data_masked)
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
@@ -492,7 +492,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size = len(data_masked)
     if step >= size:  # Fit over all data simultaneously
@@ -553,7 +553,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         raise ValueError(
                     'The selected solver is not available')
 
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size, nvols = data_masked.shape
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
