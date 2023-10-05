@@ -453,6 +453,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         Response function of the CSF tissue, for each bvals.
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
+    tol : int, optional
+        Tolerance gap for b-values clustering.
 
     Returns
     -------
@@ -739,6 +741,8 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     gtab : GradientTable
     data : ndarray
         diffusion data
+    tol : int, optional
+        Tolerance gap for b-values clustering.
     roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
