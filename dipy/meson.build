@@ -129,13 +129,45 @@ if cc.get_id() != 'msvc'
   # arm neon flag: -mfpu=neon -mfloat-abi=softfp  # see test below
   # freescale altivec flag: -maltivec -mabi=altivec
 else
-  test_sse2_cflags = ['/arch:SSE2']
+  test_sse2_cflags = ['/arch:SSE2']  # SSE2 support is only available in 32 bit mode.
 endif
 
 if cc.compiles(sse_prog, args: test_sse2_cflags, name: 'SSE intrinsics')
   sse2_cflags = test_sse2_cflags
   cython_c_args += test_sse2_cflags
   cython_cpp_args = cython_c_args
+endif
+
+if host_cpu_family in ['x86', 'x86_64']
+  x86_intrinsics = []
+  if cc.get_id() == 'msvc'
+    x86_intrinsics = [
+      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['/ARCH:AVX'] ],
+      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_setzero_si256()', ['/ARCH:AVX2'] ],
+      [ 'AVX512', 'immintrin.h', '__m512', '_mm512_setzero_si512()', ['/ARCH:AVX512'] ],
+    ]
+  else
+    x86_intrinsics = [
+      # [ 'SSE', 'xmmintrin.h', '__m128', '_mm_setzero_ps()', ['-msse'] ],
+      # [ 'SSE2', 'emmintrin.h', '__m128i', '_mm_setzero_si128()', ['-msse2'] ],
+      [ 'SSE4.1', 'smmintrin.h', '__m128i', '_mm_setzero_si128(); mtest = _mm_cmpeq_epi64(mtest, mtest)', ['-msse4.1'] ],
+      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['-mavx'] ],
+    ]
+  endif
+
+  foreach intrin : x86_intrinsics
+    intrin_check = '''#include <@0@>
+                      int main (int argc, char ** argv) {
+                        static @1@ mtest;
+                        mtest = @2@;
+                        return *((unsigned char *) &mtest) != 0;
+                      }'''.format(intrin[1],intrin[2],intrin[3])
+    intrin_name = intrin[0]
+    if cc.links(intrin_check, name : 'compiler supports @0@ intrinsics'.format(intrin_name))
+      cython_c_args +=  intrin[4]
+      cython_cpp_args = cython_c_args
+    endif
+  endforeach
 endif
 
 # ARM NEON intrinsics
