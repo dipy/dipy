@@ -64,7 +64,7 @@ def test_multivox_dsi():
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()
     assert_equal(data.shape[:-1] + (17, 17, 17), PDF.shape)
-    assert_equal(np.alltrue(np.isreal(PDF)), True)
+    assert_equal(np.all(np.isreal(PDF)), True)
 
 
 def test_multib0_dsi():
@@ -79,7 +79,7 @@ def test_multib0_dsi():
     pdf = dsfit.pdf()
     dsfit.odf(default_sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
-    assert_equal(np.alltrue(np.isreal(pdf)), True)
+    assert_equal(np.all(np.isreal(pdf)), True)
 
     # And again, with one more b0 measurement (two in total):
     new_data = np.concatenate([data, data[..., 0, None]], -1)
@@ -91,7 +91,7 @@ def test_multib0_dsi():
     pdf = dsfit.pdf()
     dsfit.odf(default_sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
-    assert_equal(np.alltrue(np.isreal(pdf)), True)
+    assert_equal(np.all(np.isreal(pdf)), True)
 
 
 def sticks_and_ball_dummies(gtab):

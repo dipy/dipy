@@ -93,4 +93,4 @@ def test_multivox_shore():
         asmfit = asm.fit(data)
     c_shore = asmfit.shore_coeff
     npt.assert_equal(c_shore.shape[0:3], data.shape[0:3])
-    npt.assert_equal(np.alltrue(np.isreal(c_shore)), True)
+    npt.assert_equal(np.all(np.isreal(c_shore)), True)
