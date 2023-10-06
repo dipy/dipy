@@ -134,7 +134,7 @@ class LocalTracking:
             # Set the random seed in numpy, random and fast_numpy (libc.stdlib)
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
-                    % (2**32 - 1)
+                    % (np.iinfo(np.uint32).max - 1)
                 random.seed(s_random_seed)
                 np.random.seed(s_random_seed)
                 fast_numpy.seed(s_random_seed)
