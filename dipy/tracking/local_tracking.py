@@ -1,6 +1,6 @@
 import random
 from collections.abc import Iterable
-
+from warnings import warn
 import numpy as np
 
 from dipy.tracking.localtrack import local_tracker, pft_tracker
@@ -33,7 +33,8 @@ class LocalTracking:
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
                  step_size, max_cross=None, maxlen=500, minlen=2,
                  fixedstep=True, return_all=True, random_seed=None,
-                 save_seeds=False):
+                 save_seeds=False, unidirectional=False,
+                 randomize_forward_direction=False, initial_directions=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -58,11 +59,11 @@ class LocalTracking:
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
         maxlen : int, optional
-            Maximum number of steps to track from seed. Used to prevent
-            infinite loops.
+            Maximum length of generated streamlines. Longer streamlines will be
+            discarted if `return_all=False`.
         minlen : int, optional
-            Minimum number of steps to track from seed. Can be useful
-            for filtering out useless streamlines.
+            Minimum length of generated streamlines. Shorter streamlines will
+            be discarted if `return_all=False`.
         fixedstep : bool, optional
             If true, a fixed stepsize is used, otherwise a variable step size
             is used.
@@ -74,11 +75,25 @@ class LocalTracking:
             random.seed).
         save_seeds : bool, optional
             If True, return seeds alongside streamlines
+        unidirectional : bool, optional
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool, optional
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
+        initial_directions: array (N, npeaks, 3), optional
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel. If None, `direction_getter.initial_direction` is used.
         """
 
         self.direction_getter = direction_getter
         self.stopping_criterion = stopping_criterion
         self.seeds = seeds
+        self.unidirectional = unidirectional
+        self.randomize_forward_direction = randomize_forward_direction
+        self.initial_directions = initial_directions
+
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         if step_size <= 0:
@@ -89,6 +104,19 @@ class LocalTracking:
             raise ValueError("maxlen must be greater than or equal to minlen")
         if not isinstance(seeds, Iterable):
             raise ValueError("seeds should be (N,3) array.")
+        if (initial_directions is not None and
+                seeds.shape[0] != initial_directions.shape[0]):
+            raise ValueError("initial_directions and seeds must have the "
+                             + "same shape[0].")
+        if (initial_directions is None and unidirectional and
+                not self.randomize_forward_direction):
+            warn("Unidirectional tractography will be performed "
+                 + "without providing initial directions nor "
+                 + "randomizing extracted initial forward "
+                 + "directions. This may introduce directional "
+                 + "biases in the reconstructed streamlines. "
+                 + "See ``initial_directions`` and "
+                 + "``randomize_forward_direction`` parameters.")
 
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
@@ -129,45 +157,60 @@ class LocalTracking:
 
         F = np.empty((self.max_length + 1, 3), dtype=float)
         B = F.copy()
-        for s in self.seeds:
+        for i, s in enumerate(self.seeds):
             s = np.dot(lin, s) + offset
-            # Set the random seed in numpy, random and fast_numpy (libc.stdlib)
+            # Set the random seed in numpy, random and fast_numpy (lic.stdlib)
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
                     % (np.iinfo(np.uint32).max - 1)
                 random.seed(s_random_seed)
                 np.random.seed(s_random_seed)
                 fast_numpy.seed(s_random_seed)
-            directions = self.direction_getter.initial_direction(s)
-            if directions.size == 0 and self.return_all:
+
+            if self.initial_directions is None:
+                directions = self.direction_getter.initial_direction(s)
+            else:
+                # normalize the initial directions.
+                # initial directions with norm 0 are removed.
+                d_ns = np.linalg.norm(self.initial_directions[i, :, :], axis=1)
+                directions = self.initial_directions[i, d_ns > 0, :] \
+                    / d_ns[d_ns > 0, np.newaxis]
+
+            if len(directions) == 0 and self.return_all:
                 # only the seed position
                 if self.save_seeds:
                     yield [s], s
                 else:
                     yield [s]
+
+            if self.randomize_forward_direction:
+                directions = [d * random.choice([1, -1]) for d in directions]
+
             directions = directions[:self.max_cross]
+
             for first_step in directions:
+                stepsF = stepsB = 1
                 stepsF, stream_status = self._tracker(s, first_step, F)
                 if not (self.return_all
                         or stream_status in (StreamlineStatus.ENDPOINT,
                                              StreamlineStatus.OUTSIDEIMAGE)):
                     continue
-                if stepsF > 1:
-                    # Use the opposite of the first selected orientation for
-                    # the backward tracking segment
-                    opposite_step = F[0] - F[1]
-                    opposite_step_norm = np.linalg.norm(opposite_step)
-                    if opposite_step_norm > 0:
-                        first_step = opposite_step / opposite_step_norm
-                    else:
-                        first_step = -first_step
-                else:
+
+                if not self.unidirectional:
                     first_step = -first_step
-                stepsB, stream_status = self._tracker(s, first_step, B)
-                if not (self.return_all
-                        or stream_status in (StreamlineStatus.ENDPOINT,
-                                             StreamlineStatus.OUTSIDEIMAGE)):
-                    continue
+                    if stepsF > 1:
+                        # Use the opposite of the first selected orientation for
+                        # the backward tracking segment
+                        opposite_step = F[0] - F[1]
+                        opposite_step_norm = np.linalg.norm(opposite_step)
+                        if opposite_step_norm > 0:
+                            first_step = opposite_step / opposite_step_norm
+                    stepsB, stream_status = self._tracker(s, first_step, B)
+                    if not (self.return_all or
+                            stream_status in (StreamlineStatus.ENDPOINT,
+                                              StreamlineStatus.OUTSIDEIMAGE)):
+                        continue
+
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
@@ -192,7 +235,8 @@ class ParticleFilteringTracking(LocalTracking):
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, save_seeds=False,
-                 min_wm_pve_before_stopping=0):
+                 min_wm_pve_before_stopping=0, unidirectional=False,
+                 randomize_forward_direction=False, initial_directions=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -218,12 +262,12 @@ class ParticleFilteringTracking(LocalTracking):
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
         maxlen : int, optional
-            Maximum number of steps to track from seed. Used to prevent
-            infinite loops.
+            Maximum length of generated streamlines. Longer streamlines will be
+            discarted if `return_all=False`.
         minlen : int, optional
-            Minimum number of steps to track from seed. Can be useful
-            for filtering out useless streamlines.
-        pft_back_tracking_dist : float, optional
+            Minimum length of generated streamlines. Shorter streamlines will
+            be discarted if `return_all=False`.
+        pft_back_tracking_dist : float
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
             equal to back_tracking_dist + front_tracking_dist.
@@ -250,6 +294,16 @@ class ParticleFilteringTracking(LocalTracking):
             Minimum white matter pve (1 - stopping_criterion.include_map -
             stopping_criterion.exclude_map) to reach before allowing the
             tractography to stop.
+        unidirectional : bool, optional
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool, optional
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
+        initial_directions: array (N, npeaks, 3), optional
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel. If None, `direction_getter.initial_direction` is used.
 
 
         References
@@ -294,18 +348,22 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_steps = np.empty((2, self.particle_count), dtype=int)
         self.particle_stream_statuses = np.empty((2, self.particle_count),
                                                  dtype=int)
-        super(ParticleFilteringTracking, self).__init__(direction_getter,
-                                                        stopping_criterion,
-                                                        seeds,
-                                                        affine,
-                                                        step_size,
-                                                        max_cross,
-                                                        maxlen,
-                                                        minlen,
-                                                        True,
-                                                        return_all,
-                                                        random_seed,
-                                                        save_seeds)
+        super(ParticleFilteringTracking, self).__init__(
+            direction_getter=direction_getter,
+            stopping_criterion=stopping_criterion,
+            seeds=seeds,
+            affine=affine,
+            step_size=step_size,
+            max_cross=max_cross,
+            maxlen=maxlen,
+            minlen=minlen,
+            fixedstep=True,
+            return_all=return_all,
+            random_seed=random_seed,
+            save_seeds=save_seeds,
+            unidirectional=unidirectional,
+            randomize_forward_direction=randomize_forward_direction,
+            initial_directions=initial_directions)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
