@@ -77,6 +77,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     elif extension in ['.trx']:
         trx = tmm.TrxFile.from_sft(sft)
         tmm.save(trx, filename)
+        trx.close()
 
     logging.debug('Save %s with %s streamlines in %s seconds.',
                   filename, len(sft), round(time.time() - timer, 3))
@@ -171,6 +172,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                              origin=Origin.NIFTI,
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
+    trx.close()
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
