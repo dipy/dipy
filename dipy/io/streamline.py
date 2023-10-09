@@ -172,7 +172,8 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                              origin=Origin.NIFTI,
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
-    trx.close()
+    if extension in ['.trx']:
+        trx_obj.close()
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
