@@ -414,7 +414,7 @@ html_theme_options = {
         },
         {
           "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",
-          "link": "https://escience.washington.edu/tag/alfred-p-sloan-foundation/",
+          "link": "https://escience.washington.edu",
           "link_type": "external"
         },
         {

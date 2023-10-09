@@ -17,8 +17,8 @@ Examples
     *fully functioning* python scripts, which are available as part of the
     source distribution in the `doc/examples` folder.
 
-    If you want to replicate a particular analysis or visualization, simply copy
-    or download the relevant `.py` script from the source distribution, edit out
+    If you want to replicate a particular analysis or visualization, copy
+    or download the relevant `.py` script, edit out
     the body of the text of the example and alter it to your purpose.
 
 
