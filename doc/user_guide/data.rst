@@ -5,7 +5,7 @@ Data
 ====
 
 --------------------
-How to get some data
+How to get data
 --------------------
 
 The list of datasets can be retrieved using::
