@@ -14,6 +14,7 @@ from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import is_header_compatible
 
+import trx.trx_file_memmap as tmm
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
@@ -30,27 +31,46 @@ with open(filepath_dix['streamlines_data.json']) as json_file:
     streamlines_data = dict(json.load(json_file))
 
 
+def test_direct_trx_loading():
+    trx = tmm.load(filepath_dix['gs.trx'])
+    tmp_dir = deepcopy(trx._uncompressed_folder_handle)
+    assert os.path.isdir(tmp_dir.name)
+    sft = trx.to_sft()
+
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
+
+    trx.close()
+    assert not os.path.isdir(tmp_dir.name)
+
+    assert_allclose(sft.streamlines._data, tmp_points_rasmm,
+                    rtol=1e-04, atol=1e-06)
+    sft.to_vox()
+    assert_allclose(sft.streamlines._data, tmp_points_vox,
+                    rtol=1e-04, atol=1e-06)
+
+
 def test_trk_equal_in_vox_space():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
-    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
-    assert_allclose(tmp_points_rasmm,
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_vox,
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def test_tck_equal_in_vox_space():
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
-    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
-    assert_allclose(tmp_points_rasmm,
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_vox,
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def test_trx_equal_in_vox_space():
     sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
-    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
-    assert_allclose(tmp_points_rasmm,
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_vox,
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
@@ -60,16 +80,16 @@ def test_fib_equal_in_vox_space():
         return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
-    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
-    assert_allclose(tmp_points_rasmm,
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_vox,
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def test_dpy_equal_in_vox_space():
     sft = load_tractogram(filepath_dix['gs.dpy'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
-    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
-    assert_allclose(tmp_points_rasmm,
+    tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_vox,
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
