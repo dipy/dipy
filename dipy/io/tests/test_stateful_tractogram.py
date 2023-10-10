@@ -30,18 +30,21 @@ with open(filepath_dix['points_data.json']) as json_file:
 with open(filepath_dix['streamlines_data.json']) as json_file:
     streamlines_data = dict(json.load(json_file))
 
+os.environ['TRX_TMPDIR'] = os.path.join(os.path.expanduser('~'),
+                                        '.dipy')
+
 
 def test_direct_trx_loading():
     trx = tmm.load(filepath_dix['gs.trx'])
-    tmp_dir = deepcopy(trx._uncompressed_folder_handle)
-    assert os.path.isdir(tmp_dir.name)
+    tmp_dir = deepcopy(trx._uncompressed_folder_handle.name)
+    assert os.path.isdir(tmp_dir)
     sft = trx.to_sft()
 
     tmp_points_vox = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
 
     trx.close()
-    assert not os.path.isdir(tmp_dir.name)
+    assert not os.path.isdir(tmp_dir)
 
     assert_allclose(sft.streamlines._data, tmp_points_rasmm,
                     rtol=1e-04, atol=1e-06)
