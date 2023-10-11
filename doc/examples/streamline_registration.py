@@ -14,50 +14,66 @@ approaches on tractography the work by Green et al. [Greene17]_ can be read.
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
 process of tracking and finding these streamlines is fully demonstrated in
-the :ref:`streamline_tools` example. If this example has been run, we can read
-the streamlines from file. Otherwise, we'll run that example first, by
-importing it. This provides us with all of the variables that were created in
-that example.
+the :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools`
+example.
 
-In order to get the deformation field, we will first use two b0 volumes. Both
-moving and static images are assumed to be in RAS. The first one will be the
-b0 from the Stanford HARDI dataset:
 
 """
 
 from os.path import join as pjoin
 
 import numpy as np
-import nibabel as nib
 
+from dipy.align import affine_registration, syn_registration
+from dipy.align.reslice import reslice
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
+from dipy.data import get_fnames, fetch_stanford_tracks
+from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.io.image import load_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram, load_tractogram
+from dipy.segment.mask import median_otsu
+from dipy.tracking.streamline import transform_streamlines
+from dipy.viz import regtools, has_fury, horizon
+
+"""
+In order to get the deformation field, we will first use two b0 volumes. Both
+moving and static images are assumed to be in RAS. The first one will be the
+b0 from the Stanford HARDI dataset:
+"""
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
-data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
-vox_size = hardi_img.header.get_zooms()[0]
-bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+dwi_data, dwi_affine, dwi_img = load_nifti(hardi_fname, return_img=True)
+dwi_vox_size = dwi_img.header.get_zooms()[0]
+dwi_bvals, dwi_bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(dwi_bvals, dwi_bvecs)
 
 """
-The second one will be the T2-contrast MNI template image, which we'll need to
-reslice to 2x2x2 mm isotropic voxel resolution to match the HARDI data.
-
+The second one will be the T2-contrast MNI template image. The resolution of
+the MNI template is 1x1x1 mm. However, the resolution of the Stanford HARDI
+diffusion data is 2x2x2 mm. Thus, we'll need to reslice to 2x2x2 mm isotropic
+voxel resolution to match the HARDI data.
 """
-
-from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
-from dipy.align.reslice import reslice
 
 fetch_mni_template()
 img_t2_mni = read_mni_template(version="a", contrast="T2")
+t2_mni_data, t2_mni_affine = img_t2_mni.get_fdata(), img_t2_mni.affine
+t2_mni_voxel_size = img_t2_mni.header.get_zooms()[:3]
+new_voxel_size = (2., 2., 2.)
 
-new_zooms = (2., 2., 2.)
-data2, affine2 = reslice(np.asarray(img_t2_mni.dataobj), img_t2_mni.affine,
-                         img_t2_mni.header.get_zooms(), new_zooms)
-img_t2_mni = nib.Nifti1Image(data2, affine=affine2)
+t2_resliced_data, t2_resliced_affine = reslice(
+   t2_mni_data, t2_mni_affine, t2_mni_voxel_size, new_voxel_size)
+
+"""
+We remove the skull of the dwi_data. For this, we need to get the b0 volumes
+indexes.
+
+"""
+
+b0_idx_stanford = np.where(gtab.b0s_mask)[0].tolist()
+dwi_data_noskull, _ = median_otsu(dwi_data, vol_idx=b0_idx_stanford, numpass=6)
 
 """
 We filter the diffusion data from the Stanford HARDI dataset to find all the b0
@@ -65,28 +81,15 @@ images.
 
 """
 
-b0_idx_stanford = np.where(gtab.b0s_mask)[0]
-b0_data_stanford = data[..., b0_idx_stanford]
-
-"""
-We then remove the skull from them:
-
-"""
-
-from dipy.segment.mask import median_otsu
-
-b0_masked_stanford, _ = median_otsu(b0_data_stanford,
-                vol_idx=list(range(b0_data_stanford.shape[-1])),
-                median_radius=4, numpass=4)
+b0_data_stanford = dwi_data_noskull[..., gtab.b0s_mask]
 
 """
 And go on to compute the Stanford HARDI dataset mean b0 image.
 
 """
 
-mean_b0_masked_stanford = np.mean(b0_masked_stanford, axis=3,
-                                  dtype=data.dtype)
-
+mean_b0_masked_stanford = np.mean(b0_data_stanford, axis=3,
+                                  dtype=dwi_data.dtype)
 
 """
 We will register the mean b0 to the MNI T2 image template non-rigidly to
@@ -102,69 +105,17 @@ We will first perform an affine registration to roughly align the two volumes:
 
 """
 
-from dipy.align.imaffine import (MutualInformationMetric, AffineRegistration,
-                                 transform_origins)
-from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
-                                   AffineTransform3D)
-
-static = np.asarray(img_t2_mni.dataobj)
-static_affine = img_t2_mni.affine
-moving = mean_b0_masked_stanford
-moving_affine = hardi_img.affine
-
-"""
-We estimate an affine that maps the origin of the moving image to that of the
-static image. We can then use this later to account for the offsets of each
-image.
-
-"""
-
-affine_map = transform_origins(static, static_affine, moving, moving_affine)
-
-"""
-We specify the mismatch metric:
-
-"""
-
-nbins = 32
-sampling_prop = None
-metric = MutualInformationMetric(nbins, sampling_prop)
-
-"""
-As well as the optimization strategy:
-
-"""
-
-level_iters = [10, 10, 5]
+pipeline = ["center_of_mass", "translation", "rigid", "rigid_isoscaling",
+            "rigid_scaling", "affine"]
+level_iters = [10000, 1000, 100]
 sigmas = [3.0, 1.0, 0.0]
 factors = [4, 2, 1]
-affine_reg = AffineRegistration(metric=metric, level_iters=level_iters,
-                                sigmas=sigmas, factors=factors)
-transform = TranslationTransform3D()
 
-params0 = None
-translation = affine_reg.optimize(static, moving, transform, params0,
-                                  static_affine, moving_affine)
-transformed = translation.transform(moving)
-transform = RigidTransform3D()
 
-rigid_map = affine_reg.optimize(static, moving, transform, params0,
-                                static_affine, moving_affine,
-                                starting_affine=translation.affine)
-transformed = rigid_map.transform(moving)
-transform = AffineTransform3D()
-
-"""
-We bump up the iterations to get a more exact fit:
-
-"""
-
-affine_reg.level_iters = [1000, 1000, 100]
-highres_map = affine_reg.optimize(static, moving, transform, params0,
-                                  static_affine, moving_affine,
-                                  starting_affine=rigid_map.affine)
-transformed = highres_map.transform(moving)
-
+warped_b0, warped_b0_affine = affine_registration(
+        mean_b0_masked_stanford, t2_resliced_data, moving_affine=dwi_affine,
+        static_affine=t2_resliced_affine, pipeline=pipeline,
+        level_iters=level_iters, sigmas=sigmas, factors=factors)
 
 """
 We now perform the non-rigid deformation using the Symmetric Diffeomorphic
@@ -173,30 +124,24 @@ implemented in the ANTs software [Avants11]_):
 
 """
 
-from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric
-
-metric = CCMetric(3)
 level_iters = [10, 10, 5]
-sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 
-mapping = sdr.optimize(static, moving, static_affine, moving_affine,
-                       highres_map.affine)
-warped_moving = mapping.transform(moving)
+final_warped_b0, mapping = syn_registration(
+   mean_b0_masked_stanford, t2_resliced_data, moving_affine=dwi_affine,
+   static_affine=t2_resliced_affine, prealign=warped_b0_affine,
+   level_iters=level_iters)
 
 """
 We show the registration result with:
 
 """
 
-from dipy.viz import regtools
-
-regtools.overlay_slices(static, warped_moving, None, 0, 'Static', 'Moving',
-                        'transformed_sagittal.png')
-regtools.overlay_slices(static, warped_moving, None, 1, 'Static', 'Moving',
-                        'transformed_coronal.png')
-regtools.overlay_slices(static, warped_moving, None, 2, 'Static', 'Moving',
-                        'transformed_axial.png')
+regtools.overlay_slices(t2_resliced_data, final_warped_b0, None, 0, 'Static',
+                        'Moving', 'transformed_sagittal.png')
+regtools.overlay_slices(t2_resliced_data, final_warped_b0, None, 1, 'Static',
+                        'Moving', 'transformed_coronal.png')
+regtools.overlay_slices(t2_resliced_data, final_warped_b0, None, 2, 'Static',
+                        'Moving', 'transformed_axial.png')
 
 """
 .. figure:: transformed_sagittal.png
@@ -217,9 +162,6 @@ Those streamlines were generated during the :ref:`streamline_tools` example.
 We read the streamlines from file in voxel space:
 
 """
-from dipy.data import fetch_stanford_tracks
-from dipy.io.streamline import load_tractogram
-
 
 streamlines_files = fetch_stanford_tracks()
 lr_superiorfrontal_path = pjoin(streamlines_files[1],
@@ -229,114 +171,74 @@ sft = load_tractogram(lr_superiorfrontal_path, 'same')
 
 
 """
-We then apply the obtained deformation field to the streamlines. Note that the
-process can be sensitive to image orientation and voxel resolution. Thus, we
-first apply the non-rigid warping and simultaneously apply a computed rigid
-affine transformation whose extents must be corrected to account for the
-different voxel grids of the moving and static images.
-
+The affine registration give already quite good result. We could use its
+mapping to transform the streamlines to the anatomical space (MNI T2 image).
+For that, we use `transform_streamlines` and `warped_b0_affine`. Do not forget
+that `warp_b0_affine` is the affine transformation from the mean b0 image to
+the T2 template image. Thus, you typically need to apply the inverse
+transformation of the affine transformation matrix that was used to register
+the two images. This is because the transformation matrix describes how points
+in one image (mean_b0) are mapped to points in the other image (mni T2), and
+to move points from the warped_b0 space to the t2 space, you need to "undo"
+this transformation.
 """
 
-from dipy.tracking.streamline import deform_streamlines
+mni_t2_streamlines_using_affine_reg = transform_streamlines(
+        sft.streamlines, np.linalg.inv(warped_b0_affine))
 
-# Create an isocentered affine
-target_isocenter = np.diag(np.array([-vox_size, vox_size, vox_size, 1]))
-
-# Take the off-origin affine capturing the extent contrast between the mean b0
-# image and the template
-origin_affine = affine_map.affine.copy()
+sft_in_t2_using_aff_reg = StatefulTractogram(
+      mni_t2_streamlines_using_affine_reg, img_t2_mni, Space.RASMM)
 
 """
-In order to align the FOV of the template and the mirror image of the
-streamlines, we first need to flip the sign on the x-offset and y-offset so
-that we get the mirror image of the forward deformation field.
-
-We need to use the information about the origin offsets (i.e. between the
-static and moving images) that we obtained using :meth:`transform_origins`:
-
+Let's visualize the streamlines in the MNI T2 space. Switch the interactive
+variable to True if you want to explore the visualization in an interactive
+window.
 """
 
-origin_affine[0][3] = -origin_affine[0][3]
-origin_affine[1][3] = -origin_affine[1][3]
-
-"""
-:meth:`transform_origins` returns this affine transformation with (1, 1, 1)
-zooms and not (2, 2, 2), which means that the offsets need to be scaled by 2.
-Thus, we scale z by the voxel size:
-
-"""
-
-origin_affine[2][3] = origin_affine[2][3]/vox_size
-
-"""
-But when scaling the z-offset, we are also implicitly scaling the y-offset as
-well (by 1/2).Thus we need to correct for this by only scaling the y by the
-square of the voxel size (1/4, and not 1/2):
-
-"""
-
-origin_affine[1][3] = origin_affine[1][3]/vox_size**2
-
-# Apply the deformation and correct for the extents
-mni_streamlines = deform_streamlines(
-    sft.streamlines, deform_field=mapping.get_forward_field(),
-    stream_to_current_grid=target_isocenter,
-    current_grid_to_world=origin_affine, stream_to_ref_grid=target_isocenter,
-    ref_grid_to_world=np.eye(4))
-
-"""
-We display the original streamlines and the registered streamlines:
-
-"""
-
-from dipy.viz import has_fury
-
-
-def show_template_bundles(bundles, show=True, fname=None):
-
-    scene = window.Scene()
-    template_actor = actor.slicer(static)
-    scene.add(template_actor)
-
-    lines_actor = actor.streamtube(bundles, window.colors.orange,
-                                   linewidth=0.3)
-    scene.add(lines_actor)
-
-    if show:
-        window.show(scene)
-    if fname is not None:
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
-
+interactive = False
 
 if has_fury:
+    horizon(tractograms=[sft_in_t2_using_aff_reg],
+            images=[(t2_mni_data, t2_mni_affine)],
+            interactive=interactive, world_coords=True,
+            out_png='streamlines_DSN_MNI_aff_reg.png')
 
-    from fury import actor, window
-
-    show_template_bundles(mni_streamlines, show=False,
-                          fname='streamlines_DSN_MNI.png')
-
-    """
-    .. figure:: streamlines_DSN_MNI.png
-       :align: center
-
-       Streamlines before and after registration.
-
-    The corpus callosum bundles have been deformed to adapt to the MNI
-    template space.
-
-    """
 
 """
-Finally, we save the registered streamlines:
+To get better result, we use the mapping obtain by Symmetric Diffeomorphic
+Registration (SyN). Then, we can visualize the corpus callosum bundles
+that have been deformed to adapt to the MNI template space.
 
 """
 
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram
+mni_t2_streamlines_using_syn = mapping.transform_points_inverse(
+    sft.streamlines)
 
-sft = StatefulTractogram(mni_streamlines, img_t2_mni, Space.RASMM)
+sft_in_t2_using_syn = StatefulTractogram(
+    mni_t2_streamlines_using_syn, img_t2_mni, Space.RASMM)
 
-save_tractogram(sft, 'mni-lr-superiorfrontal.trk', bbox_valid_check=False)
+if has_fury:
+    horizon(tractograms=[sft_in_t2_using_syn],
+            images=[(t2_mni_data, t2_mni_affine)],
+            interactive=interactive, world_coords=True,
+            out_png='streamlines_DSN_MNI_syn.png')
+
+
+"""
+
+Finally, we save the two registered streamlines:
+- `mni-lr-sft_in_t2_using_aff_reg.trk` is the streamlines registered using the
+    affine registration.
+- `sft_in_t2_using_syn` is the streamlines registered using the
+    SyN registration and prealigned with the affine registration.
+
+"""
+
+save_tractogram(sft_in_t2_using_aff_reg, 'mni-lr-superiorfrontal_aff_reg.trk',
+                bbox_valid_check=False)
+
+save_tractogram(sft_in_t2_using_syn, 'mni-lr-superiorfrontal_syn.trk',
+                bbox_valid_check=False)
 
 
 """

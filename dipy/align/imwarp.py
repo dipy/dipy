@@ -651,28 +651,46 @@ class DiffeomorphicMap:
 
     def transform_points(self, points, coord2world=None,
                          world2coord=None):
-        if isinstance(points, Streamlines):
-            points = points.get_data()
+
+        is_streamline_obj = isinstance(points, Streamlines)
+        data = points.get_data() if is_streamline_obj else points
 
         if self.is_inverse:
-            out = self._warp_coordinates_backward(points, coord2world,
+            out = self._warp_coordinates_backward(data, coord2world,
                                                   world2coord)
         else:
-            out = self._warp_coordinates_forward(points, coord2world,
+            out = self._warp_coordinates_forward(data, coord2world,
                                                  world2coord)
+        if is_streamline_obj:
+            old_data_dtype = points._data.dtype
+            old_offsets_dtype = points._offsets.dtype
+            streamlines = points.copy()
+            streamlines._offsets = points._offsets.astype(old_offsets_dtype)
+            streamlines._data = out.astype(old_data_dtype)
+            return streamlines
+
         return out
 
     def transform_points_inverse(self, points, coord2world=None,
                                  world2coord=None):
-        if isinstance(points, Streamlines):
-            points = points.get_data()
+
+        is_streamline_obj = isinstance(points, Streamlines)
+        data = points.get_data() if is_streamline_obj else points
 
         if self.is_inverse:
-            out = self._warp_coordinates_forward(points, coord2world,
+            out = self._warp_coordinates_forward(data, coord2world,
                                                  world2coord)
         else:
-            out = self._warp_coordinates_backward(points, coord2world,
+            out = self._warp_coordinates_backward(data, coord2world,
                                                   world2coord)
+        if is_streamline_obj:
+            old_data_dtype = points._data.dtype
+            old_offsets_dtype = points._offsets.dtype
+            streamlines = points.copy()
+            streamlines._offsets = points._offsets.astype(old_offsets_dtype)
+            streamlines._data = out.astype(old_data_dtype)
+            return streamlines
+
         return out
 
     def inverse(self):
