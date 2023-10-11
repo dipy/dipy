@@ -1,6 +1,6 @@
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal
-from dipy.utils.fast_numpy import random, random_point_within_circle
+from numpy.testing import assert_, assert_almost_equal, assert_raises
+from dipy.utils.fast_numpy import random, seed, random_point_within_circle
 
 """
 # commented when changing cpdef to cdef in fast_numpy
@@ -99,6 +99,12 @@ def test_random():
     for _ in range(10000):
         random_number_list.append(random())
     assert_almost_equal(np.mean(random_number_list), 0.5, decimal=1)
+
+    # Test the random generator seed input
+    for s in [0, 1, np.iinfo(np.uint32).max]:
+        seed(s)
+    for s in [np.iinfo(np.uint32).max + 1, -1]:
+        assert_raises(OverflowError, seed, s)
 
 
 def test_random_point_within_circle():

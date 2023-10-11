@@ -185,7 +185,7 @@ cpdef double random() nogil:
     return rand() / float(RAND_MAX)
 
 
-cpdef void seed(int s) nogil:
+cpdef void seed(cnp.npy_uint32 s) nogil:
     """Set the random seed of stdlib.
 
     Parameters
