@@ -171,7 +171,7 @@ sft = load_tractogram(lr_superiorfrontal_path, 'same')
 
 
 """
-The affine registration give already quite good result. We could use its
+The affine registration already gives a pretty good result. We could use its
 mapping to transform the streamlines to the anatomical space (MNI T2 image).
 For that, we use `transform_streamlines` and `warped_b0_affine`. Do not forget
 that `warp_b0_affine` is the affine transformation from the mean b0 image to
