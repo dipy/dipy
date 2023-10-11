@@ -3,15 +3,17 @@ import tempfile
 import pytest
 
 from dipy.data import fetch_gold_standard_io
+from dipy.io.streamline import load_tractogram
 from dipy.io.utils import (create_nifti_header,
                            decfa, decfa_to_float,
                            get_reference_info,
                            is_reference_info_valid,
                            read_img_arr_or_path)
 
-from nibabel import Nifti1Image, save
+import nibabel as nib
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
+import trx.trx_file_memmap as tmm
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()
@@ -22,7 +24,7 @@ for filename in files:
 def test_decfa():
     data_orig = np.zeros((4, 4, 4, 3))
     data_orig[0, 0, 0] = np.array([1, 0, 0])
-    img_orig = Nifti1Image(data_orig, np.eye(4))
+    img_orig = nib.Nifti1Image(data_orig, np.eye(4))
     img_new = decfa(img_orig)
     data_new = np.asanyarray(img_new.dataobj)
     assert data_new[0, 0, 0] == np.array((1, 0, 0),
@@ -39,7 +41,7 @@ def test_decfa():
 
     data_orig = np.zeros((4, 4, 4, 3))
     data_orig[0, 0, 0] = np.array([0.1, 0, 0])
-    img_orig = Nifti1Image(data_orig, np.eye(4))
+    img_orig = nib.Nifti1Image(data_orig, np.eye(4))
     img_new = decfa(img_orig, scale=True)
     data_new = np.asanyarray(img_new.dataobj)
     assert data_new[0, 0, 0] == np.array((25, 0, 0),
@@ -123,7 +125,7 @@ def reference_info_zero_affine():
         return False
 
 
-def test_reference_info_identical():
+def test_reference_trk_info_identical():
     tuple_1 = get_reference_info(filepath_dix['gs.trk'])
     tuple_2 = get_reference_info(filepath_dix['gs.nii'])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
@@ -135,6 +137,41 @@ def test_reference_info_identical():
     assert voxel_order_1 == voxel_order_2
 
 
+def test_reference_trx_info_identical():
+    tuple_1 = get_reference_info(filepath_dix['gs.trx'])
+    tuple_2 = get_reference_info(filepath_dix['gs.nii'])
+    affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
+    affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
+
+    assert_allclose(affine_1, affine_2)
+    assert_array_equal(dimensions_1, dimensions_2)
+    assert_allclose(voxel_sizes_1, voxel_sizes_2)
+    assert voxel_order_1 == voxel_order_2
+
+
+def test_reference_files_trx_info_identical():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], 'same')
+    sft_2 = load_tractogram(filepath_dix['gs.trx'], 'same')
+    img = nib.load(filepath_dix['gs.nii'])
+
+    tuple_1 = get_reference_info(sft_1)
+    tuple_2 = get_reference_info(sft_2)
+    tuple_3 = get_reference_info(img)
+    affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
+    affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
+    affine_3, dimensions_3, voxel_sizes_3, voxel_order_3 = tuple_3
+
+    assert_allclose(affine_1, affine_2)
+    assert_array_equal(dimensions_1, dimensions_2)
+    assert_allclose(voxel_sizes_1, voxel_sizes_2)
+    assert voxel_order_1 == voxel_order_2
+
+    assert_allclose(affine_1, affine_3)
+    assert_array_equal(dimensions_1, dimensions_3)
+    assert_allclose(voxel_sizes_1, voxel_sizes_3)
+    assert voxel_order_1 == voxel_order_3
+
+
 def test_all_zeros_affine():
     assert_(not reference_info_zero_affine(),
             msg='An all zeros affine should not be valid')
@@ -144,9 +181,9 @@ def test_read_img_arr_or_path():
     data = np.random.rand(4, 4, 4, 3)
     aff = np.eye(4)
     aff[:3, :] = np.random.randn(3, 4)
-    img = Nifti1Image(data, aff)
+    img = nib.Nifti1Image(data, aff)
     path = tempfile.NamedTemporaryFile().name + '.nii.gz'
-    save(img, path)
+    nib.save(img, path)
     for this in [data, img, path]:
         dd, aa = read_img_arr_or_path(this, affine=aff)
         assert np.allclose(dd, data)
