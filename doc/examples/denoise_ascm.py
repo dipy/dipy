@@ -128,7 +128,7 @@ print("The ascm result saved in denoised_ascm.png")
 #
 # .. figure:: denoised_ascm.png
 #    :align: center
-#    :caption: Showing the axial slice without (left) and with (middle) 
+#    :caption: Showing the axial slice without (left) and with (middle)
 #              ASCM denoising.
 #
 # From the above figure we can see that the residual is really uniform in nature
