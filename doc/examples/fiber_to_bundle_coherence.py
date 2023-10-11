@@ -11,7 +11,7 @@ poorly aligned with their neighbors, as shown in the figure below.
 
 .. _fiber_to_bundle_coherence:
 
-.. figure:: _static/fbc_illustration.png
+.. figure:: /_static/images/examples/fbc_illustration.png
    :scale: 60 %
    :align: center
 

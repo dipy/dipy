@@ -132,10 +132,6 @@ plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
 plt.show()
 
 """
-.. figure:: probabilities.png
-   :align: center
-   :scale: 120
-
    These are the probability maps of each of the three tissue classes.
 
 .. [Zhang2001] Zhang, Y., Brady, M. and Smith, S. Segmentation of Brain MR

@@ -60,10 +60,10 @@ be subtle or even hardly noticeable, apparent or visible, depending on the
 choice. Users are encouraged to carefully choose the parameters.
 
 .. |image1| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
-   :scale: 100%
+
    :align: middle
 .. |image2| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
-   :scale: 100%
+
    :align: middle
 
 +--------------------+--------------------+
@@ -167,46 +167,32 @@ Overview of Denoising Methods
 Note: Users are recommended to zoom (click on each image) to see the denoising effect.
 
 .. |image7| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_original.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image8| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_LPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image9| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_denoise_MPPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image10| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_NLMEANS.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image11| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image12| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image13| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_MPPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image14| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_NLMEANS.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image15| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_original.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image16| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_LPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image17| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_MPPCA.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image18| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_NLMEANS.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image19| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_original.png?raw=true
-   :scale: 100%
    :align: middle
 .. |image20| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_NLMEANS.png?raw=true
-   :scale: 100%
    :align: middle
 
 Diffusion
