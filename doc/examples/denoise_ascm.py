@@ -123,18 +123,17 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
 
 print("The ascm result saved in denoised_ascm.png")
 
-"""
-.. figure:: denoised_ascm.png
-   :align: center
 
-   Showing the axial slice without (left) and with (middle) ASCM denoising.
-"""
-
-"""
-From the above figure we can see that the residual is really uniform in nature
-which dictates that ASCM denoises the data while preserving the sharpness of
-the features.
-"""
+############################################################################
+#
+# .. figure:: denoised_ascm.png
+#    :align: center
+#    :caption: Showing the axial slice without (left) and with (middle) 
+#              ASCM denoising.
+#
+# From the above figure we can see that the residual is really uniform in nature
+# which dictates that ASCM denoises the data while preserving the sharpness of
+# the features.
 
 save_nifti('denoised_ascm.nii.gz', den_final, affine)
 
