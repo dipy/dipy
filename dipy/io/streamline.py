@@ -159,21 +159,19 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         dpy_obj = Dpy(filename, mode='r')
         streamlines = list(dpy_obj.read_tracks())
         dpy_obj.close()
-    elif extension in ['.trx']:
+
+    if extension in ['.trx']:
         trx_obj = tmm.load(filename)
-        streamlines = trx_obj.streamlines
-        data_per_point = trx_obj.data_per_vertex
-        data_per_streamline = trx_obj.data_per_streamline
+        sft = trx.to_sft()
+        trx_obj.close()
+    else:
+        sft = StatefulTractogram(streamlines, reference, Space.RASMM,
+                                 origin=Origin.NIFTI,
+                                 data_per_point=data_per_point,
+                                 data_per_streamline=data_per_streamline)
 
     logging.debug('Load %s with %s streamlines in %s seconds.',
-                  filename, len(streamlines), round(time.time() - timer, 3))
-
-    sft = StatefulTractogram(streamlines, reference, Space.RASMM,
-                             origin=Origin.NIFTI,
-                             data_per_point=data_per_point,
-                             data_per_streamline=data_per_streamline)
-    if extension in ['.trx']:
-        trx_obj.close()
+                  filename, len(sft), round(time.time() - timer, 3))
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
