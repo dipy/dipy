@@ -30,9 +30,6 @@ with open(filepath_dix['points_data.json']) as json_file:
 with open(filepath_dix['streamlines_data.json']) as json_file:
     streamlines_data = dict(json.load(json_file))
 
-os.environ['TRX_TMPDIR'] = os.path.join(os.path.expanduser('~'),
-                                        '.dipy')
-
 
 def test_direct_trx_loading():
     trx = tmm.load(filepath_dix['gs.trx'])
