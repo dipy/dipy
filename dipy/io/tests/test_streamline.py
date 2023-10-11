@@ -153,9 +153,9 @@ streamlines = Streamlines([streamline[[0, 10]], streamline,
 
 
 def io_tractogram(extension):
-    with TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmp_dir:
         fname = 'test.{}'.format(extension)
-        fpath = os.path.join(tmpdir, fname)
+        fpath = os.path.join(tmp_dir, fname)
 
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
@@ -211,8 +211,8 @@ def test_io_dpy():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
-    with TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'test.fib')
+    with TemporaryDirectory() as tmp_dir:
+        fname = os.path.join(tmp_dir, 'test.fib')
 
         # Test save
         save_vtk_streamlines(streamlines, fname, binary=True)
@@ -223,8 +223,8 @@ def test_low_io_vtk():
 
 def trk_loader(filename):
     try:
-        with TemporaryDirectory() as tmpdir:
-            load_trk(os.path.join(tmpdir, filename), filepath_dix['gs.nii'])
+        with TemporaryDirectory() as tmp_dir:
+            load_trk(os.path.join(tmp_dir, filename), filepath_dix['gs.nii'])
         return True
     except ValueError:
         return False
@@ -234,8 +234,8 @@ def trk_saver(filename):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
 
     try:
-        with TemporaryDirectory() as tmpdir:
-            save_trk(sft, os.path.join(tmpdir, filename))
+        with TemporaryDirectory() as tmp_dir:
+            save_trk(sft, os.path.join(tmp_dir, filename))
         return True
     except ValueError:
         return False
