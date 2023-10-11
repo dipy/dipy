@@ -78,7 +78,7 @@ NIBABEL_MIN_VERSION = '4.0.0'
 H5PY_MIN_VERSION = '3.7.0'
 PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
-TRX_MIN_VERSION = '0.2.4'
+TRX_MIN_VERSION = '0.2.5'
 
 # Main setup parameters
 NAME                = 'dipy'
