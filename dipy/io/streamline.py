@@ -162,7 +162,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
     if extension in ['.trx']:
         trx_obj = tmm.load(filename)
-        sft = trx.to_sft()
+        sft = trx_obj.to_sft()
         trx_obj.close()
     else:
         sft = StatefulTractogram(streamlines, reference, Space.RASMM,
