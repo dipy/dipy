@@ -316,7 +316,7 @@ class DiffeomorphicMap:
 
     def _warp_coordinates_backward(self, points, coord2world=None,
                                    world2coord=None):
-        r"""Warps the list of points in the backward direction
+        """Warps the list of points in the backward direction
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -649,30 +649,76 @@ class DiffeomorphicMap:
                                          out_grid2world)
         return np.asarray(warped)
 
-    def transform_points(self, points, coord2world=None,
-                         world2coord=None):
-        if isinstance(points, Streamlines):
-            points = points.get_data()
+    def transform_points(self, points, coord2world=None, world2coord=None):
+        """Warp the list of points in the forward direction.
 
-        if self.is_inverse:
-            out = self._warp_coordinates_backward(points, coord2world,
-                                                  world2coord)
-        else:
-            out = self._warp_coordinates_forward(points, coord2world,
-                                                 world2coord)
-        return out
+        Applies this diffeomorphic map to the list of points (or streamlines)
+        given by `points`. We assume that the points' coordinates are mapped
+        to world coordinates by applying the `coord2world` affine transform.
+        The warped coordinates are given in world coordinates unless
+        `world2coord` affine transform is specified, in which case the warped
+        points will be transformed to the corresponding coordinate system.
+
+        Parameters
+        ----------
+        points : array, shape (N, dim) or Streamlines object
+
+        coord2world : array, shape (dim+1, dim+1), optional
+            affine matrix mapping points to world coordinates
+
+        world2coord : array, shape (dim+1, dim+1), optional
+            affine matrix mapping world coordinates to points
+
+        """
+        return self._transform_coordinates(points, coord2world, world2coord,
+                                           inverse=self.is_inverse)
 
     def transform_points_inverse(self, points, coord2world=None,
                                  world2coord=None):
-        if isinstance(points, Streamlines):
-            points = points.get_data()
+        """Warp the list of points in the backward direction.
 
-        if self.is_inverse:
-            out = self._warp_coordinates_forward(points, coord2world,
-                                                 world2coord)
-        else:
-            out = self._warp_coordinates_backward(points, coord2world,
+        Applies this diffeomorphic map to the list of points (or streamlines)
+        given by `points`. We assume that the points' coordinates are mapped
+        to world coordinates by applying the `coord2world` affine transform.
+        The warped coordinates are given in world coordinates unless
+        `world2coord` affine transform is specified, in which case the warped
+        points will be transformed to the corresponding coordinate system.
+
+        Parameters
+        ----------
+        points : array, shape (N, dim) or Streamlines object
+
+        coord2world : array, shape (dim+1, dim+1), optional
+            affine matrix mapping points to world coordinates
+
+        world2coord : array, shape (dim+1, dim+1), optional
+            affine matrix mapping world coordinates to points
+
+        """
+        return self._transform_coordinates(points, coord2world, world2coord,
+                                           inverse=not self.is_inverse)
+
+    def _transform_coordinates(self, points, coord2world, world2coord,
+                               inverse=False):
+
+        is_streamline_obj = isinstance(points, Streamlines)
+        data = points.get_data() if is_streamline_obj else points
+
+        if inverse:
+            out = self._warp_coordinates_backward(data, coord2world,
                                                   world2coord)
+        else:
+            out = self._warp_coordinates_forward(data, coord2world,
+                                                 world2coord)
+
+        if is_streamline_obj:
+            old_data_dtype = points._data.dtype
+            old_offsets_dtype = points._offsets.dtype
+            streamlines = points.copy()
+            streamlines._offsets = points._offsets.astype(old_offsets_dtype)
+            streamlines._data = out.astype(old_data_dtype)
+            return streamlines
+
         return out
 
     def inverse(self):
