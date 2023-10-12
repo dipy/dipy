@@ -242,11 +242,11 @@ def split_name_with_gz(filename):
     """
     base, ext = os.path.splitext(filename)
 
-    if ext == ".gz":
+    if ext.lower() == ".gz":
         # Test if we have a .nii additional extension
         temp_base, add_ext = os.path.splitext(base)
 
-        if add_ext == ".nii" or add_ext == ".trk":
+        if add_ext.lower() == ".nii" or add_ext.lower() == ".trk":
             ext = add_ext + ext
             base = temp_base
 
@@ -276,6 +276,7 @@ def get_reference_info(reference):
     is_trx = False
     if isinstance(reference, str):
         _, ext = split_name_with_gz(reference)
+        ext = ext.lower()
         if ext in ['.nii', '.nii.gz']:
             header = nib.load(reference).header
             is_nifti = True

@@ -125,7 +125,7 @@ def reference_info_zero_affine():
         return False
 
 
-def test_reference_trk_info_identical():
+def test_reference_trk_file_info_identical():
     tuple_1 = get_reference_info(filepath_dix['gs.trk'])
     tuple_2 = get_reference_info(filepath_dix['gs.nii'])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
@@ -137,7 +137,7 @@ def test_reference_trk_info_identical():
     assert voxel_order_1 == voxel_order_2
 
 
-def test_reference_trx_info_identical():
+def test_reference_trx_file_info_identical():
     tuple_1 = get_reference_info(filepath_dix['gs.trx'])
     tuple_2 = get_reference_info(filepath_dix['gs.nii'])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
@@ -149,14 +149,37 @@ def test_reference_trx_info_identical():
     assert voxel_order_1 == voxel_order_2
 
 
-def test_reference_files_trx_info_identical():
-    sft_1 = load_tractogram(filepath_dix['gs.trk'], 'same')
-    sft_2 = load_tractogram(filepath_dix['gs.trx'], 'same')
+def test_reference_obj_info_identical():
+    sft = load_tractogram(filepath_dix['gs.trk'], 'same')
+    trx = tmm.load(filepath_dix['gs.trx'])
     img = nib.load(filepath_dix['gs.nii'])
 
-    tuple_1 = get_reference_info(sft_1)
-    tuple_2 = get_reference_info(sft_2)
+    tuple_1 = get_reference_info(sft)
+    tuple_2 = get_reference_info(trx)
     tuple_3 = get_reference_info(img)
+    affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
+    affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
+    affine_3, dimensions_3, voxel_sizes_3, voxel_order_3 = tuple_3
+
+    assert_allclose(affine_1, affine_2)
+    assert_array_equal(dimensions_1, dimensions_2)
+    assert_allclose(voxel_sizes_1, voxel_sizes_2)
+    assert voxel_order_1 == voxel_order_2
+
+    assert_allclose(affine_1, affine_3)
+    assert_array_equal(dimensions_1, dimensions_3)
+    assert_allclose(voxel_sizes_1, voxel_sizes_3)
+    assert voxel_order_1 == voxel_order_3
+
+
+def test_reference_header_info_identical():
+    trk = nib.streamlines.load(filepath_dix['gs.trk'])
+    trx = tmm.load(filepath_dix['gs.trx'])
+    img = nib.load(filepath_dix['gs.nii'])
+
+    tuple_1 = get_reference_info(trk.header)
+    tuple_2 = get_reference_info(trx.header)
+    tuple_3 = get_reference_info(img.header)
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
     affine_3, dimensions_3, voxel_sizes_3, voxel_order_3 = tuple_3
