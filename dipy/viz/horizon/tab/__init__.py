@@ -1,4 +1,5 @@
 from dipy.viz.horizon.tab.base import (HorizonTab, TabManager, build_label,
+                                       build_slider, build_checkbox,
                                        color_double_slider,
                                        color_single_slider, SLICES_TAB,
                                        CLUSTERS_TAB, ROIS_TAB, PEAKS_TAB)
@@ -9,5 +10,6 @@ from dipy.viz.horizon.tab.slice import SlicesTab
 
 __all__ = [
     'HorizonTab', 'TabManager', 'ClustersTab', 'PeaksTab', 'ROIsTab',
-    'SlicesTab', 'build_label', 'color_double_slider', 'color_single_slider',
-    'SLICES_TAB', 'CLUSTERS_TAB', 'ROIS_TAB', 'PEAKS_TAB']
+    'SlicesTab', 'build_label', 'build_slider', 'build_checkbox',
+    'color_double_slider', 'color_single_slider', 'SLICES_TAB', 'CLUSTERS_TAB',
+    'ROIS_TAB', 'PEAKS_TAB']

@@ -363,6 +363,12 @@ class Horizon:
         scene.background(self.bg_color)
         return scene
 
+    def _show_force_render(self, _element):
+        """
+        Callback function for lower level elements to force render.
+        """
+        self.show_m.render()
+
     def build_show(self, scene):
 
         title = 'Horizon ' + horizon_version
@@ -447,14 +453,16 @@ class Horizon:
                             world_coords=self.world_coords,
                             percentiles=[0, 100])
                         self.__tabs.append(SlicesTab(
-                            slices_viz, id=img_count + 1))
+                            slices_viz, slice_id=img_count + 1,
+                            force_render=self._show_force_render))
                         img_count += 1
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
                         world_coords=self.world_coords)
                     self.__tabs.append(SlicesTab(
-                        slices_viz, id=img_count + 1))
+                        slices_viz, slice_id=img_count + 1,
+                        force_render=self._show_force_render))
                     img_count += 1
             if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
