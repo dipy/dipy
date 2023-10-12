@@ -7,6 +7,7 @@ import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
+import trx.trx_file_memmap as tmm
 
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
@@ -35,7 +36,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -73,6 +74,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         dpy_obj = Dpy(filename, mode='w')
         dpy_obj.write_tracks(sft.streamlines)
         dpy_obj.close()
+    elif extension in ['.trx']:
+        trx = tmm.TrxFile.from_sft(sft)
+        tmm.save(trx, filename)
+        trx.close()
 
     logging.debug('Save %s with %s streamlines in %s seconds.',
                   filename, len(sft), round(time.time() - timer, 3))
@@ -116,7 +121,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
@@ -125,7 +130,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         return False
 
     if reference == 'same':
-        if extension == '.trk':
+        if extension in ['.trk', '.trx']:
             reference = filename
         else:
             logging.error('Reference must be provided, "same" is only '
@@ -154,13 +159,19 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         dpy_obj = Dpy(filename, mode='r')
         streamlines = list(dpy_obj.read_tracks())
         dpy_obj.close()
-    logging.debug('Load %s with %s streamlines in %s seconds.',
-                  filename, len(streamlines), round(time.time() - timer, 3))
 
-    sft = StatefulTractogram(streamlines, reference, Space.RASMM,
-                             origin=Origin.NIFTI,
-                             data_per_point=data_per_point,
-                             data_per_streamline=data_per_streamline)
+    if extension in ['.trx']:
+        trx_obj = tmm.load(filename)
+        sft = trx_obj.to_sft()
+        trx_obj.close()
+    else:
+        sft = StatefulTractogram(streamlines, reference, Space.RASMM,
+                                 origin=Origin.NIFTI,
+                                 data_per_point=data_per_point,
+                                 data_per_streamline=data_per_streamline)
+
+    logging.debug('Load %s with %s streamlines in %s seconds.',
+                  filename, len(sft), round(time.time() - timer, 3))
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
@@ -237,12 +248,14 @@ def save_generator(ttype):
 
 load_trk = load_generator('.trk')
 load_tck = load_generator('.tck')
+load_trx = load_generator('.trx')
 load_vtk = load_generator('.vtk')
 load_vtp = load_generator('.vtp')
 load_fib = load_generator('.fib')
 load_dpy = load_generator('.dpy')
 save_trk = save_generator('.trk')
 save_tck = save_generator('.tck')
+save_trx = save_generator('.trx')
 save_vtk = save_generator('.vtk')
 save_vtp = save_generator('.vtp')
 save_fib = save_generator('.fib')
