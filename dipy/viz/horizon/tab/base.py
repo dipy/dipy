@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import warnings
 from abc import ABC, abstractmethod
 
@@ -17,6 +18,14 @@ ROIS_TAB = 'ROIs Tab'
 PEAKS_TAB = 'Peaks Tab'
 
 
+@dataclass
+class HorizonUIElement:
+    """
+    Dataclass to define properties of horizon ui elements
+    """
+    visibilty = None
+    value = None
+    obj = None
 class HorizonTab(ABC):
     tab_manager = None
 
@@ -135,6 +144,15 @@ def build_label(text, font_size=16, bold=False):
 
     return label
 
+def build_single_slider(
+        initial_value,
+        max_value,
+        min_value=0,
+        text_template='{ratio:.0%}',
+        on_move_slider=lambda _slider: None,
+        on_value_change=lambda _slider: None,
+        on_change=lambda _slider: None
+):
 
 def color_single_slider(slider):
     slider.default_color = (1., .5, .0)
