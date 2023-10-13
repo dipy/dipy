@@ -1352,7 +1352,7 @@ def iter_fit_tensor(step=1e4):
                 if extra_i is not None:
                     for key in extra_i:
                         if i == 0: extra[key] = np.empty(data.shape)
-                        extra[key][i:i + step] = extra_i
+                        extra[key][i:i + step] = extra_i[key]
                 else:
                     if i == 0: extra = None
 
