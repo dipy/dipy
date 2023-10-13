@@ -44,6 +44,7 @@ dependencies = [
     "h5py>=3.1.0",
     "packaging>=21",
     "tqdm>=4.30.0",
+    "trx-python>=0.2.9",
 ]
 
 
