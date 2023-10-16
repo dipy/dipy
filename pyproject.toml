@@ -6,7 +6,7 @@ readme = "README.rst"
 requires-python = ">=3.9"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
-    {name = "Elefterios Garyfallidis", email="neuroimaging@python.org"},
+    {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
     {name = "Ariel Rokem", email="neuroimaging@python.org"},
     {name = "Serge Koudoro", email="neuroimaging@python.org"},
 ]
