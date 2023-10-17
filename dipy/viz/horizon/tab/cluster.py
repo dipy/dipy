@@ -1,8 +1,7 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider,
-                                  CLUSTERS_TAB)
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -12,7 +11,6 @@ if has_fury:
 
 class ClustersTab(HorizonTab):
     def __init__(self, clusters_visualizer, threshold):
-        super().__init__(CLUSTERS_TAB)
         self.__visualizer = clusters_visualizer
 
         self.__centroid_actors = self.__visualizer.centroid_actors
@@ -126,10 +124,9 @@ class ClustersTab(HorizonTab):
             else:
                 self.__cluster_actors[k]['actor'].SetVisibility(True)
 
-    def build(self, tab_id, tab_ui, tab_manager):
+    def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
-        ClustersTab.tab_manager = tab_manager
 
         x_pos = .02
 
@@ -152,3 +149,7 @@ class ClustersTab(HorizonTab):
     @property
     def name(self):
         return self.__name
+
+    @property
+    def tab_type(self):
+        return 'clusters_tab'

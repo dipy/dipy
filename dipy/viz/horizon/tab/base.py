@@ -11,12 +11,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from fury import ui
-
-# Tab Types
-SLICES_TAB = 'Slices Tab'
-CLUSTERS_TAB = 'Clusters Tab'
-ROIS_TAB = 'ROIs Tab'
-PEAKS_TAB = 'Peaks Tab'
+    from fury.data import read_viz_icons
 
 
 @dataclass
@@ -27,23 +22,20 @@ class HorizonUIElement:
     visibility: bool
     selected_value: Any
     obj: Any
+    position = (0, 0)
 
 @dataclass
-class HorizonSlider:
+class HorizonCombineElement:
     """
     Dataclass to define HorizonSlider
     """
     label: HorizonUIElement
-    slider: HorizonUIElement
+    element: HorizonUIElement
 
 class HorizonTab(ABC):
-    tab_manager = None
-
-    def __init__(self, tab_type=None):
-        self._tab_type = tab_type
 
     @abstractmethod
-    def build(self, tab_id, tab_ui, tab_manager):
+    def build(self, tab_id, tab_ui):
         pass
 
     @property
@@ -52,11 +44,9 @@ class HorizonTab(ABC):
         pass
 
     @property
+    @abstractmethod
     def tab_type(self):
-        """
-        Type of the tab defined
-        """
-        return self._tab_type
+        pass
 
 
 class TabManager:
@@ -84,7 +74,9 @@ class TabManager:
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = ' ' + tab.name
             self.__tab_ui.tabs[id].title_font_size = 18
-            tab.build(id, self.__tab_ui, self)
+            tab.build(id, self.__tab_ui)
+            if tab.tab_type == 'slices_tab':
+                tab.on_slice_change = self.synchronize_slices
 
     def reposition(self, win_size):
         win_width, win_height = win_size
@@ -112,7 +104,7 @@ class TabManager:
 
         slices_tabs = list(
             filter(
-                lambda x: x.tab_type == SLICES_TAB
+                lambda x: x.tab_type == 'slices_tab'
                 and not x.tab_id == active_tab_id, self._tabs
             )
         )
@@ -212,7 +204,9 @@ def build_slider(
     Return
     ------
 
-    {label: HorizonUIElement, slider: HorizonUIElement}
+    HorizonCombineElement(
+        label: HorizonUIElement,
+        element(slider): HorizonUIElement)
     """
 
     slider_label = build_label(
@@ -262,7 +256,7 @@ def build_slider(
         slider.handles[1].color = (1., .5, .0)
 
     # Generate HorizonSlider
-    return HorizonSlider(
+    return HorizonCombineElement(
         HorizonUIElement(True, label, slider_label),
         HorizonUIElement(True, initial_value, slider)
     )
@@ -286,7 +280,7 @@ def build_checkbox(
     checked_labels: list(str), optional
         List of labels that are checked on setting up.
     padding : float, optional
-        The distance between two adjacent options
+        The distance between two adjacent optionselement
     font_size : int, optional
         Size of the text font.
     on_change : callback
@@ -316,6 +310,98 @@ def build_checkbox(
     checkboxes.on_change = on_change
 
     return HorizonUIElement(True, checked_labels, checkboxes)
+
+
+# TODO: There should be FURY ui element created
+def build_switcher(
+        items=None,
+        label='',
+        initial_selection=0,
+        on_prev_clicked=lambda _selected_value: None,
+        on_next_clicked=lambda _selected_value: None,
+        on_value_changed=lambda _selected_idx, _selected_value: None,
+):
+    """
+    Creates horizon theme switcher
+
+    Parameters
+    ----------
+
+    items : list
+        dictionaries with keys 'label' and 'value'. Label will be used to show
+        it to user and value will be used for selection.
+    label : str
+        label for the switcher.
+    initial_selection : int
+        index of the selected item initially.
+    on_prev_clicked : callback
+        method providing a callback when prev value is selected in switcher.
+    on_next_clicked : callback
+        method providing a callback when next value is selected in switcher.
+    on_value_changed : callback
+        method providing a callback when either prev or next value selected in
+        switcher.
+
+    Returns
+    -------
+
+    HorizonCombineElement(
+        label: HorizonUIElement,
+        element(switcher): HorizonUIElement)
+
+    switcher: consists 'obj' which is an array providing FURY UI elements used.
+    """
+    # return if there are no items passed
+    if items is None:
+        warnings.warn('No items passed in switcher')
+        return
+
+    num_items = len(items)
+
+    switch_label = build_label(text=label)
+    selection_label = build_label(text=items[initial_selection]['label'])
+
+    left_button = ui.Button2D(
+            icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
+            size=(25, 25))
+    right_button = ui.Button2D(
+            icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
+            size=(25, 25))
+
+    switcher = HorizonUIElement(True,
+                                [initial_selection, items[initial_selection]],
+                                [left_button, selection_label, right_button])
+
+    def left_clicked(_i_ren, _obj, _button):
+        selected_id = switcher.selected_value[0] - 1
+        if selected_id < 0:
+            selected_id = num_items - 1
+        value_changed(selected_id)
+        on_prev_clicked(items[selected_id]['value'])
+        on_value_changed(selected_id, items[selected_id]['value'])
+
+    def right_clicked(_i_ren, _obj, _button):
+        selected_id = switcher.selected_value[0] + 1
+        if selected_id >= num_items:
+            selected_id = 0
+        value_changed(selected_id)
+        on_next_clicked(items[selected_id]['value'])
+        on_value_changed(selected_id, items[selected_id]['value'])
+
+    def value_changed(selected_id):
+        switcher.selected_value[0] = selected_id
+        switcher.selected_value[1] = items[selected_id]['value']
+        selection_label.message = items[selected_id]['label']
+
+
+    left_button.on_left_mouse_button_clicked = left_clicked
+    right_button.on_left_mouse_button_clicked = right_clicked
+
+    return HorizonCombineElement(
+        HorizonUIElement(True, label, switch_label),
+        switcher
+    )
+
 
 def color_single_slider(slider):
     slider.default_color = (1., .5, .0)
