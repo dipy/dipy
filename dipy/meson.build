@@ -273,7 +273,7 @@ py3.install_sources(
 # Manage datafiles
 # ------------------------------------------------------------------------
 
-data_install_dir = join_paths(get_option('datadir'), 'share', 'doc', meson.project_name())
+data_install_dir = join_paths(get_option('datadir'), 'doc', meson.project_name())
 ex_file_excludes = ['_valid_examples.toml', '.gitignore', 'README.md']
 install_subdir('../doc/examples',
   install_dir: data_install_dir,
