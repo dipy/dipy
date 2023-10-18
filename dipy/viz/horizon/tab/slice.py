@@ -15,6 +15,7 @@ if has_fury:
 class SlicesTab(HorizonTab):
     def __init__(self, slices_visualizer, slice_id=0,
                  force_render=lambda _element: None ):
+        super().__init__()
         self._visualizer = slices_visualizer
 
         if slice_id == 0:
@@ -24,7 +25,6 @@ class SlicesTab(HorizonTab):
 
         self._force_render = force_render
         self._tab_id = 0
-        self._tab_ui = None
 
         # Providing callback to synchronize slices
         self.on_slice_change = lambda _tab_id, _x, _y, _z: None
@@ -37,6 +37,7 @@ class SlicesTab(HorizonTab):
             on_change=self._change_opacity,
             label='Opacity'
         )
+        self.register_elements(self._slice_opacity)
 
         # Slice X slider
         self._slice_x = build_slider(
@@ -47,10 +48,13 @@ class SlicesTab(HorizonTab):
             on_value_changed=self._adjust_slice_x,
             label='X Slice'
         )
+        self.register_elements(self._slice_x)
+
         self._slice_x_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
             on_change=self._change_slice_visibility_x)
+        self.register_elements(self._slice_x_toggle)
 
         # Slice Y slider
         self._slice_y = build_slider(
@@ -61,10 +65,13 @@ class SlicesTab(HorizonTab):
             on_value_changed=self._adjust_slice_y,
             label='Y Slice'
         )
+        self.register_elements(self._slice_y)
+
         self._slice_y_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
             on_change=self._change_slice_visibility_y)
+        self.register_elements(self._slice_y_toggle)
 
         # Slice Z slider
         self._slice_z = build_slider(
@@ -75,11 +82,13 @@ class SlicesTab(HorizonTab):
             on_value_changed=self._adjust_slice_z,
             label='Z Slice'
         )
+        self.register_elements(self._slice_z)
+
         self._slice_z_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
             on_change=self._change_slice_visibility_z)
-
+        self.register_elements(self._slice_z_toggle)
 
         # Slider for intensities
         self._intensities = build_slider(
@@ -91,6 +100,7 @@ class SlicesTab(HorizonTab):
             label='Intensities',
             is_double_slider=True
         )
+        self.register_elements(self._intensities)
 
         # Switcher for colormap
         self._supported_colormap = [
@@ -111,11 +121,14 @@ class SlicesTab(HorizonTab):
             label='Colormap',
             on_value_changed=self._change_color_map
         )
+        self.register_elements(self._colormap_switcher)
 
         # Text section for voxel
-        self.__picker_label_voxel = build_label(text='Voxel')
-        self.__label_picked_voxel = build_label(text='')
-        self._visualizer.register_picker_callback(self.__change_picked_voxel)
+        self._voxel_label = build_label(text='Voxel')
+        self.register_elements(self._voxel_label)
+        self._voxel_data = build_label(text='')
+        self.register_elements(self._voxel_data)
+        self._visualizer.register_picker_callback(self._change_picked_voxel)
 
         # Slider for volume if data provided have volume information
         if len(self._visualizer.data_shape) == 4:
@@ -126,7 +139,7 @@ class SlicesTab(HorizonTab):
                 text_template='{value:.0f}',
                 label='Volume'
             )
-
+            self.register_elements(self._volume)
 
     def _change_color_map(self, _idx, _value):
         self._update_colormap()
@@ -141,8 +154,9 @@ class SlicesTab(HorizonTab):
         self._slice_opacity.element.selected_value = slider.value
         self._update_opacities()
 
-    def __change_picked_voxel(self, message):
-        self.__label_picked_voxel.message = message
+    def _change_picked_voxel(self, message):
+        self._voxel_data.obj.message = message
+        self._voxel_data.selected_value = message
 
     # Slice change callbacks
     def _change_slice_x(self, slider, synchronized_value=None):
@@ -311,73 +325,44 @@ class SlicesTab(HorizonTab):
         if not self._slice_z.element.obj.value == z_slice:
             self._slice_z.element.obj.value = z_slice
 
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, _tab_ui):
         self._tab_id = tab_id
-        self._tab_ui = tab_ui
 
         x_pos = .02
-
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_x_toggle.obj, (x_pos, .62))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_y_toggle.obj, (x_pos, .38))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_z_toggle.obj, (x_pos, .15))
+        self._slice_x_toggle.position = (x_pos, .62)
+        self._slice_y_toggle.position = (x_pos, .62)
+        self._slice_z_toggle.position = (x_pos, .62)
 
         x_pos = .05
-
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_opacity.label.obj, (x_pos, .85))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_x.label.obj, (x_pos, .62))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_y.label.obj, (x_pos, .38))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_z.label.obj, (x_pos, .15))
+        self._slice_opacity.label.position = (x_pos, .85)
+        self._slice_x.label.position = (x_pos, .62)
+        self._slice_y.label.position = (x_pos, .38)
+        self._slice_z.label.position = (x_pos, .15)
 
         x_pos = .10
-
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_opacity.element.obj, (x_pos, .85))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_x.element.obj, (x_pos, .62))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_y.element.obj, (x_pos, .38))
-        self._tab_ui.add_element(
-            self._tab_id, self._slice_z.element.obj, (x_pos, .15))
+        self._slice_opacity.element.position = (x_pos, .85)
+        self._slice_x.element.position = (x_pos, .62)
+        self._slice_y.element.position = (x_pos, .38)
+        self._slice_z.element.position = (x_pos, .15)
 
         x_pos = .52
-
-        self._tab_ui.add_element(
-            self._tab_id, self._intensities.label.obj, (x_pos, .85))
-        self._tab_ui.add_element(
-            self._tab_id, self._colormap_switcher.label.obj, (x_pos, .56))
-        self._tab_ui.add_element(
-            self._tab_id, self.__picker_label_voxel, (x_pos, .38))
+        self._intensities.label.position = (x_pos, .85)
+        self._colormap_switcher.label.position = (x_pos, .56)
+        self._voxel_label.position = (x_pos, .38)
 
         x_pos = .60
+        self._intensities.element.position = (x_pos, .85)
+        self._colormap_switcher.element.position = [
+            (x_pos, .54), (0.63, .54), (0.69, .54)
+        ]
+        self._voxel_data.position = (x_pos, .38)
 
-        self._tab_ui.add_element(
-            self._tab_id, self._intensities.element.obj, (x_pos, .85))
-        self._tab_ui.add_element(
-            self._tab_id, self._colormap_switcher.element.obj[0], (x_pos, .54))
-        self._tab_ui.add_element(
-            self._tab_id, self._colormap_switcher.element.obj[1], (.63, .56))
-        self._tab_ui.add_element(
-            self._tab_id, self._colormap_switcher.element.obj[2], (.69, .54))
-        self._tab_ui.add_element(
-            self._tab_id, self.__label_picked_voxel, (x_pos, .38))
-
-        data_ndim = len(self._visualizer.data_shape)
-
-        if data_ndim == 4:
+        if len(self._visualizer.data_shape) == 4:
             x_pos = .52
-            self._tab_ui.add_element(
-                self._tab_id, self._volume.label.obj, (x_pos, .15))
+            self._volume.label.position(x_pos, .15)
 
             x_pos = .60
-            self._tab_ui.add_element(
-                self._tab_id, self._volume.element.obj, (x_pos, .15))
+            self._volume.element.position = (x_pos, .15)
 
     @property
     def name(self):

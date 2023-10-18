@@ -34,9 +34,22 @@ class HorizonCombineElement:
 
 class HorizonTab(ABC):
 
+    def __init__(self):
+        self._elements = []
+
     @abstractmethod
     def build(self, tab_id, tab_ui):
         pass
+
+    def register_elements(self, elements):
+        """
+        Register elements for rendering
+        """
+        if hasattr(elements, 'label'):
+            self._elements.append(elements.label)
+            self._elements.append(elements.element)
+        else:
+            self._elements.append(elements)
 
     @property
     @abstractmethod
@@ -48,6 +61,12 @@ class HorizonTab(ABC):
     def tab_type(self):
         pass
 
+    @property
+    def elements(self):
+        """
+        list of underlying FURY ui elements in the tab.
+        """
+        return self._elements
 
 class TabManager:
     def __init__(self, tabs, win_size, synchronize_slices=False):
@@ -66,22 +85,35 @@ class TabManager:
         self.__tab_size = (1280, 240)
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
 
-        self.__tab_ui = ui.TabUI(
+        self._tab_ui = ui.TabUI(
             position=(x_pad, 5), size=self.__tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
             draggable=True, startup_tab_id=0)
 
-        for id, tab in enumerate(tabs):
-            self.__tab_ui.tabs[id].title = ' ' + tab.name
-            self.__tab_ui.tabs[id].title_font_size = 18
-            tab.build(id, self.__tab_ui)
+        for tab_id, tab in enumerate(tabs):
+            self._tab_ui.tabs[tab_id].title = ' ' + tab.name
+            self._tab_ui.tabs[tab_id].title_font_size = 18
+            tab.build(tab_id, self._tab_ui)
             if tab.tab_type == 'slices_tab':
                 tab.on_slice_change = self.synchronize_slices
+                self._render_tab_elements(tab_id, tab.elements)
+
+    def _render_tab_elements(self, tab_id, elements):
+        print(elements)
+        print('I am here')
+        for element in elements:
+            # Checking if the element has multiple components e.g. switcher
+            # It is to support element not directly present in FURY
+            if isinstance(element.position, list):
+                for i, position in enumerate(element.position):
+                    self._tab_ui.add_element(tab_id, element.obj[i], position)
+            else:
+                self._tab_ui.add_element(tab_id, element.obj, element.position)
 
     def reposition(self, win_size):
         win_width, win_height = win_size
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
-        self.__tab_ui.position = (x_pad, 5)
+        self._tab_ui.position = (x_pad, 5)
 
     def synchronize_slices(self, active_tab_id, x_value, y_value, z_value):
         """
@@ -114,10 +146,10 @@ class TabManager:
 
     @property
     def tab_ui(self):
-        return self.__tab_ui
+        return self._tab_ui
 
 
-def build_label(text, font_size=16, bold=False):
+def build_label(text, font_size=16, bold=False, is_horizon_label=True):
     """
     Simple utility function to build labels
 
@@ -144,6 +176,8 @@ def build_label(text, font_size=16, bold=False):
     label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
     label.color = (0.7, 0.7, 0.7)
 
+    if is_horizon_label:
+        return HorizonUIElement(True, text, label)
     return label
 
 def build_slider(
@@ -257,7 +291,7 @@ def build_slider(
 
     # Generate HorizonSlider
     return HorizonCombineElement(
-        HorizonUIElement(True, label, slider_label),
+        slider_label,
         HorizonUIElement(True, initial_value, slider)
     )
 
@@ -280,7 +314,7 @@ def build_checkbox(
     checked_labels: list(str), optional
         List of labels that are checked on setting up.
     padding : float, optional
-        The distance between two adjacent optionselement
+        The distance between two adjacent options element
     font_size : int, optional
         Size of the text font.
     on_change : callback
@@ -359,7 +393,8 @@ def build_switcher(
     num_items = len(items)
 
     switch_label = build_label(text=label)
-    selection_label = build_label(text=items[initial_selection]['label'])
+    selection_label = build_label(
+        text=items[initial_selection]['label'], is_horizon_label=False)
 
     left_button = ui.Button2D(
             icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
@@ -398,7 +433,7 @@ def build_switcher(
     right_button.on_left_mouse_button_clicked = right_clicked
 
     return HorizonCombineElement(
-        HorizonUIElement(True, label, switch_label),
+        switch_label,
         switcher
     )
 
