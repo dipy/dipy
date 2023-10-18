@@ -17,13 +17,7 @@ if has_fury:
 @dataclass
 class HorizonUIElement:
     """
-    Dataclass to define properties of horizon ui elements
-
-    Attributes
-    ----------
-
-    visibility : bool
-        horizon state of the fury element
+    Dataclass to define properties of horizon ui elements.
     """
     visibility: bool
     selected_value: Any
