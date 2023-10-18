@@ -330,8 +330,8 @@ class SlicesTab(HorizonTab):
 
         x_pos = .02
         self._slice_x_toggle.position = (x_pos, .62)
-        self._slice_y_toggle.position = (x_pos, .62)
-        self._slice_z_toggle.position = (x_pos, .62)
+        self._slice_y_toggle.position = (x_pos, .38)
+        self._slice_z_toggle.position = (x_pos, .15)
 
         x_pos = .05
         self._slice_opacity.label.position = (x_pos, .85)
@@ -370,6 +370,9 @@ class SlicesTab(HorizonTab):
 
     @property
     def tab_id(self):
+        """
+        Id of the tab.
+        """
         return self._tab_id
 
     @property

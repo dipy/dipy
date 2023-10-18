@@ -26,7 +26,8 @@ class ClustersTab(HorizonTab):
         fs = 16
         tt = '{value:.0f}'
 
-        self.__slider_label_size = build_label(text='Size')
+        self.__slider_label_size = build_label(
+            text='Size', is_horizon_label=False)
 
         sizes = self.__visualizer.sizes
         self.__selected_size = np.percentile(sizes, 50)
@@ -41,7 +42,8 @@ class ClustersTab(HorizonTab):
         self.__slider_size.handle_events(self.__slider_size.handle.actor)
         self.__slider_size.on_left_mouse_button_released = self.__change_size
 
-        self.__slider_label_length = build_label(text='Length')
+        self.__slider_label_length = build_label(
+            text='Length', is_horizon_label=False)
 
         lengths = self.__visualizer.lengths
         self.__selected_length = np.percentile(lengths, 25)
@@ -57,7 +59,8 @@ class ClustersTab(HorizonTab):
         self.__slider_length.on_left_mouse_button_released = (
             self.__change_length)
 
-        self.__slider_label_threshold = build_label(text='Threshold')
+        self.__slider_label_threshold = build_label(
+            text='Threshold', is_horizon_label=False)
 
         self.__selected_threshold = threshold
 

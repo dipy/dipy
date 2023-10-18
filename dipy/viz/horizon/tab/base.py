@@ -18,6 +18,12 @@ if has_fury:
 class HorizonUIElement:
     """
     Dataclass to define properties of horizon ui elements
+
+    Attributes
+    ----------
+
+    visibility : bool
+        horizon state of the fury element
     """
     visibility: bool
     selected_value: Any
@@ -33,18 +39,42 @@ class HorizonCombineElement:
     element: HorizonUIElement
 
 class HorizonTab(ABC):
+    """
+    Base for different tabs available in horizon.
+    """
 
     def __init__(self):
         self._elements = []
 
     @abstractmethod
     def build(self, tab_id, tab_ui):
-        pass
+        """
+        Build all the elements under the tab.
+
+        Parameters
+        ----------
+
+        tab_id : int
+            Id of the tab.
+        tab_ui : TabUI
+            FURY TabUI object for tabs panel.
+
+        NOTE: tab_ui will removed once every all tabs adapt new build
+            architecture.
+        """
+
 
     def register_elements(self, elements):
         """
-        Register elements for rendering
+        Register elements for rendering.
+
+        Parameters
+        ----------
+
+        elements : HorizonUIElement (HorizonCombineElement)
         """
+
+        # Check if the elements is a type of HorizonCombineElement
         if hasattr(elements, 'label'):
             self._elements.append(elements.label)
             self._elements.append(elements.element)
@@ -54,12 +84,16 @@ class HorizonTab(ABC):
     @property
     @abstractmethod
     def name(self):
-        pass
+        """
+        Name of the tab
+        """
 
     @property
     @abstractmethod
     def tab_type(self):
-        pass
+        """
+        Type of the tab.
+        """
 
     @property
     def elements(self):
@@ -69,6 +103,15 @@ class HorizonTab(ABC):
         return self._elements
 
 class TabManager:
+    """
+    A Manager for tabs of the table panel.
+
+    Attributes
+    ----------
+
+    tab_ui : TabUI
+        Underlying FURY TabUI object.
+    """
     def __init__(self, tabs, win_size, synchronize_slices=False):
         num_tabs = len(tabs)
         self._tabs = tabs
@@ -78,7 +121,7 @@ class TabManager:
                 + 'synchronization of slices will not work'
             warnings.warn(msg)
 
-        win_width, win_height = win_size
+        win_width, _win_height = win_size
 
         # TODO: Add dynamic sizing
         # tab_size = (np.rint(win_width / 1.5), np.rint(win_height / 4.5))
@@ -96,11 +139,10 @@ class TabManager:
             tab.build(tab_id, self._tab_ui)
             if tab.tab_type == 'slices_tab':
                 tab.on_slice_change = self.synchronize_slices
+                # TODO: Needed to move outside once all the tab adapt new build
                 self._render_tab_elements(tab_id, tab.elements)
 
     def _render_tab_elements(self, tab_id, elements):
-        print(elements)
-        print('I am here')
         for element in elements:
             # Checking if the element has multiple components e.g. switcher
             # It is to support element not directly present in FURY
@@ -111,7 +153,16 @@ class TabManager:
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
     def reposition(self, win_size):
-        win_width, win_height = win_size
+        """
+        Reposition the tabs panel.
+
+        Parameters
+        ----------
+
+        win_size : (float, float)
+            size of the horizon window.
+        """
+        win_width, _win_height = win_size
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
         self._tab_ui.position = (x_pad, 5)
 
@@ -146,6 +197,9 @@ class TabManager:
 
     @property
     def tab_ui(self):
+        """
+        FURY TabUI object.
+        """
         return self._tab_ui
 
 
@@ -403,8 +457,8 @@ def build_switcher(
             icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
             size=(25, 25))
 
-    switcher = HorizonUIElement(True,
-                                [initial_selection, items[initial_selection]],
+    switcher = HorizonUIElement(True, [initial_selection,
+                                 items[initial_selection]['value']],
                                 [left_button, selection_label, right_button])
 
     def left_clicked(_i_ren, _obj, _button):
@@ -437,7 +491,8 @@ def build_switcher(
         switcher
     )
 
-
+# TODO: These methods are included in build_slider
+# These should removed once all the tabs adapts the build_slider method
 def color_single_slider(slider):
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
