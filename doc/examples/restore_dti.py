@@ -126,10 +126,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tensor_ellipsoids_wls.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Tensor Ellipsoids.
+Tensor Ellipsoids.
 """
 
 scene.clear()
@@ -166,10 +165,10 @@ if interactive:
 In places where the tensor model is particularly sensitive to noise, the
 resulting tensor field will be distorted
 
-.. figure:: tensor_ellipsoids_wls_noisy.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Tensor Ellipsoids from noisy data.
+Tensor Ellipsoids from noisy data.
+
 
 To estimate the parameters from the noisy data using RESTORE, we need to
 estimate what would be a reasonable amount of noise to expect in the
@@ -201,10 +200,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tensor_ellipsoids_restore_noisy.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Tensor Ellipsoids from noisy data recovered with RESTORE.
+Tensor Ellipsoids from noisy data recovered with RESTORE.
+
 
 The tensor field looks rather restored to its noiseless state in this
 image, but to convince ourselves further that this did the right thing, we will
@@ -222,11 +221,6 @@ plt.legend()
 fig_hist.savefig('dti_fa_distributions.png')
 
 """
-
-.. figure:: dti_fa_distributions.png
-   :align: center
-
-
 This demonstrates that RESTORE can recover a distribution of FA that more
 closely resembles the baseline distribution of the noiseless signal, and
 demonstrates the utility of the method to data with intermittent

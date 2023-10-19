@@ -72,12 +72,12 @@ qtdmri.visualise_gradient_table_G_Delta_rainbow(gtabs[0])
 plt.savefig('qt-dMRI_acquisition_scheme.png')
 
 """
-.. figure:: qt-dMRI_acquisition_scheme.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 In the figure the dots represent measured DWIs in any direction, for a given
 gradient strength and pulse separation. The background isolines represent the
 corresponding b-values for different combinations of G and big_delta.
+
 
 Next, we visualize the middle slices of the test-retest data sets with their
 corresponding masks. To better illustrate the white matter architecture in the
@@ -113,14 +113,15 @@ plt.tight_layout()
 plt.savefig('qt-dMRI_datasets_fa_with_ccmasks.png')
 
 """
-.. figure:: qt-dMRI_datasets_fa_with_ccmasks.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 Next, we use qt-dMRI to estimate of time-dependent q-space indices
 (q$\tau$-indices) for the masked voxels in the corpus callosum of each dataset.
 In particular, we estimate the Return-to-Original, Return-to-Axis and
 Return-to-Plane Probability (RTOP, RTAP and RTPP), as well as the Mean Squared
 Displacement (MSD).
+
+
 
 In this example we don't extrapolate the data beyond the maximum diffusion
 time, so we estimate :math:`q\tau` indices between the minimum and maximum
@@ -245,14 +246,15 @@ ax.set_title(r'Test-Retest MSD($\tau$) Subject 2', fontsize=15)
 plt.savefig('qt_indices_msd.png')
 
 """
-.. figure:: qt_indices_msd.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 You can see that the MSD in both subjects increases over time, but also slowly
 levels off as time progresses. This makes sense as diffusing particles are
 becoming more restricted by surrounding tissue as time goes on. You can also
 see that for Subject 1 the index trends nearly perfectly overlap, but for
 subject 2 they are slightly off, which is also what we found in the paper.
+
+
 
 Next, we follow the same procedure to estimate the test-retest RTAP, RTOP and
 RTPP over diffusion time for both subject. For ease of comparison, we will
@@ -303,8 +305,7 @@ ax.set_title(r'Test-Retest RTOP($\tau$) Subject 2', fontsize=15)
 plt.savefig('qt_indices_rtop.png')
 
 """
-.. figure:: qt_indices_rtop.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 Similarly as MSD, the RTOP is related to the restriction that particles are
 experiencing and is also rotationally invariant. RTOP is defined as the
@@ -314,6 +315,8 @@ will arrive at the same position it left, which is illustrated by all RTOP
 trends in the figure. Notice that the estimated RTOP trends decrease less fast
 than free diffusion, meaning that particles experience restriction over time.
 Also notice that the RTOP trends in both subjects nearly perfectly overlap.
+
+
 
 Next, we estimate two directional :math:`q\tau`-indices, RTAP and RTPP,
 describing particle restriction perpendicular and parallel to the orientation
@@ -391,22 +394,20 @@ ax.set_title(r'Test-Retest RTPP($\tau$) Subject 2', fontsize=15)
 plt.savefig('qt_indices_rtpp.png')
 
 """
-.. figure:: qt_indices_rtap.png
-   :align: center
-.. figure:: qt_indices_rtpp.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 As those of RTOP, the trends in RTAP and RTPP also decrease over time. It can
 be seen that RTAP$^{1/2}$ is always bigger than RTPP, which makes sense as
 particles in coherent white matter experience more restriction perpendicular to
 the white matter orientation than parallel to it. Again, in both subjects the
 test-retest RTAP and RTPP is nearly perfectly consistent.
-
 Aside from the estimation of :math:`q\tau`-space indices, :math:`q\tau`-dMRI
 also allows for the estimation of time-dependent ODFs. Once the Qtdmri model
 is fitted it can be simply called by qtdmri_fit.odf(sphere,
 s=sharpening_factor). This is identical to how the mapmri module functions,
 and allows one to study the time-dependence of ODF directionality.
+
+
 
 This concludes the example on qt-dMRI. As we showed, approaches such as qt-dMRI
 can help in studying the (finite-:math:`\tau`) temporal properties of diffusion

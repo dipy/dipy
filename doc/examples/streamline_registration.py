@@ -144,14 +144,9 @@ regtools.overlay_slices(t2_resliced_data, final_warped_b0, None, 2, 'Static',
                         'Moving', 'transformed_axial.png')
 
 """
-.. figure:: transformed_sagittal.png
-   :align: center
-.. figure:: transformed_coronal.png
-   :align: center
-.. figure:: transformed_axial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Deformable registration result.
+Deformable registration result.
 
 """
 

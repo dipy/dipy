@@ -253,10 +253,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tensor_ellipsoids.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Tensor Ellipsoids.
+Tensor Ellipsoids.
 """
 
 scene.clear()
@@ -277,10 +276,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tensor_odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Tensor ODFs.
+Tensor ODFs.
+
 
 Note that while the tensor model is an accurate and reliable model of the
 diffusion signal in the white matter, it has the drawback that it only has one

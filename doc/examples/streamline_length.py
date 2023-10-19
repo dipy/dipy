@@ -66,18 +66,18 @@ plt.legend()
 plt.savefig('length_histogram.png')
 
 """
-.. figure:: length_histogram.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Histogram of lengths of the streamlines**
+Histogram of lengths of the streamlines
+
 
 ``Length`` will return the length in the units of the coordinate system that
 streamlines are currently. So, if the streamlines are in world coordinates then
 the lengths will be in millimeters (mm). If the streamlines are for example in
 native image coordinates of voxel size 2mm isotropic then you will need to
 multiply the lengths by 2 if you want them to correspond to mm. In this example
-we process simulated data without units, however this information is good to have
-in mind when you calculate lengths with real data.
+we process simulated data without units, however this information is good to
+have in mind when you calculate lengths with real data.
 
 Next, let's find the number of points that each streamline has.
 """
@@ -135,22 +135,24 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: simulated_cosine_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Initial bundle (down), downsampled at 12 equidistant points (middle),
-   downsampled with points that are not equidistant (up).
+Initial bundle (down), downsampled at 12 equidistant points (middle),
+downsampled with points that are not equidistant (up).
 
-From the figure above we can see that all 3 bundles look quite similar. However,
-when we plot the histogram of the number of points used for each streamline, it
-becomes obvious that we have managed to reduce in a great amount the size of the
-initial dataset.
+
+From the figure above we can see that all 3 bundles look quite similar.
+However, when we plot the histogram of the number of points used for each
+streamline, it becomes obvious that we have managed to reduce in a great
+amount the size of the initial dataset.
 """
 
 fig_hist, ax = plt.subplots(1)
 ax.hist(n_pts, color='r', histtype='step', label='initial')
-ax.hist(n_pts_ds, color='g', histtype='step', label='set_number_of_points (12)')
-ax.hist(n_pts_ds2, color='b', histtype='step', label='approx_polygon_track (0.25)')
+ax.hist(n_pts_ds, color='g', histtype='step',
+        label='set_number_of_points (12)')
+ax.hist(n_pts_ds2, color='b', histtype='step',
+        label='approx_polygon_track (0.25)')
 ax.set_xlabel('Number of points')
 ax.set_ylabel('Count')
 
@@ -159,10 +161,10 @@ plt.legend()
 plt.savefig('n_pts_histogram.png')
 
 """
-.. figure:: n_pts_histogram.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Histogram of the number of points of the streamlines.
+Histogram of the number of points of the streamlines.
+
 
 Finally, we can also show that the lengths of the streamlines haven't changed
 considerably after applying the two methods of downsampling.
@@ -183,10 +185,10 @@ plt.legend()
 plt.savefig('lengths_plots.png')
 
 """
-.. figure:: lengths_plots.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Lengths of each streamline for every one of the 3 bundles.
+Lengths of each streamline for every one of the 3 bundles.
+
 
 .. include:: ../links_names.inc
 

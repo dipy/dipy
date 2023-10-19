@@ -36,10 +36,9 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
                         'input_images.png')
 
 """
-.. figure:: input_images.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Input images.
+Input images.
 """
 
 """
@@ -81,10 +80,9 @@ result is reasonable (at least, visually)
 regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 
 """
-.. figure:: diffeomorphic_map.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Deformed lattice under the resulting diffeomorphic map.
+Deformed lattice under the resulting diffeomorphic map.
 """
 
 """
@@ -96,11 +94,10 @@ regtools.overlay_images(static, warped_moving, 'Static', 'Overlay',
                         'Warped moving', 'direct_warp_result.png')
 
 """
-.. figure:: direct_warp_result.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Moving image transformed under the (direct) transformation in green on top
-   of the static image (in red).
+Moving image transformed under the (direct) transformation in green on top
+of the static image (in red).
 
 """
 
@@ -114,11 +111,10 @@ regtools.overlay_images(warped_static, moving, 'Warped static', 'Overlay',
                         'Moving', 'inverse_warp_result.png')
 
 """
-.. figure:: inverse_warp_result.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Static image transformed under the (inverse) transformation in red on top
-   of the moving image (in green).
+Static image transformed under the (inverse) transformation in red on top
+of the moving image (in green).
 
 """
 
@@ -201,21 +197,19 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
                         't1_slices_input.png')
 
 """
-.. figure:: t1_slices_input.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Input images.
+Input images.
 """
 
 regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
                         't1_slices_res.png')
 
 """
-.. figure:: t1_slices_res.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Moving image transformed under the (direct) transformation in green on top
-   of the static image (in red).
+Moving image transformed under the (direct) transformation in green on top
+of the static image (in red).
 
 """
 
@@ -228,11 +222,10 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay',
                         'moving', 't1_slices_res2.png')
 
 """
-.. figure:: t1_slices_res2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Static image transformed under the (inverse) transformation in red on top
-   of the moving image (in green).
+Static image transformed under the (inverse) transformation in red on top
+of the moving image (in green).
 
 """
 
@@ -243,10 +236,10 @@ Finally, let's see the deformation
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 
 """
-.. figure:: diffeomorphic_map_b0s.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Deformed lattice under the resulting diffeomorphic map.
+Deformed lattice under the resulting diffeomorphic map.
+
 
 References
 ----------

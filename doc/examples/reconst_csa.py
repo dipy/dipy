@@ -116,12 +116,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csa_odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Constant Solid Angle ODFs.
+Constant Solid Angle ODFs.
 
-.. include:: ../links_names.inc
 
 References
 ----------
@@ -132,4 +130,5 @@ References
    Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
 
 
+.. include:: ../links_names.inc
 """

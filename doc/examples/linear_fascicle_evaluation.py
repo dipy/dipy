@@ -105,11 +105,9 @@ if interactive:
     window.show(scene)
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: life_candidates.png
-   :align: center
-
-   **Candidate connectome before life optimization**
+Candidate connectome before life optimization
 
 """
 
@@ -177,12 +175,9 @@ ax.set_ylabel('# fibers')
 fig.savefig('beta_histogram.png')
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-
-.. figure:: beta_histogram.png
-   :align: center
-
-   **LiFE streamline weights**
+LiFE streamline weights
 
 """
 
@@ -204,11 +199,9 @@ if interactive:
     window.show(scene)
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: life_optimized.png
-   :align: center
-
-   **Streamlines selected via LiFE optimization**
+Streamlines selected via LiFE optimization
 
 """
 
@@ -298,11 +291,9 @@ ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: error_histograms.png
-   :align: center
-
-   Improvement in error with fitting of the LiFE model.
+Improvement in error with fitting of the LiFE model.
 
 """
 
@@ -353,11 +344,9 @@ for lax in ax:
 fig.savefig("spatial_errors.png")
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: spatial_errors.png
-   :align: center
-
-   Spatial distribution of error and improvement.
+Spatial distribution of error and improvement.
 
 """
 

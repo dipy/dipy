@@ -175,10 +175,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: kernel.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Visualization of the contour enhancement kernel.
+Visualization of the contour enhancement kernel.
 """
 
 """
@@ -252,14 +251,13 @@ if interactive:
     window.show(scene)
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: enhancements.png
-   :align: center
+The results after enhancements. Top-left: original noiseless data.
+Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
+After enhancement of noisy data. Top-right: After enhancement and sharpening
+of noisy data.
 
-   The results after enhancements. Top-left: original noiseless data.
-   Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
-   After enhancement of noisy data. Top-right: After enhancement and sharpening
-   of noisy data.
 
 References
 ----------

@@ -50,10 +50,10 @@ a.set_title('Coronal')
 plt.savefig('t1_image.png', bbox_inches='tight', pad_inches=0)
 
 """
-.. figure:: t1_image.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   T1-weighted image of healthy adult.
+T1-weighted image of healthy adult.
+
 
 Now we will define the other two parameters for the segmentation algorithm.
 We will segment three classes, namely corticospinal fluid (CSF), white matter
@@ -76,6 +76,8 @@ loop will converge before reaching the 100th iteration.
 After setting the necessary parameters we can now call an instance of the class
 "TissueClassifierHMRF" and its method called "classify" and input the
 parameters defined above to perform the segmentation task.
+
+Now we plot the resulting segmentation.
 """
 
 t0 = time.time()
@@ -101,13 +103,11 @@ a.set_title('Coronal')
 plt.savefig('final_seg.png', bbox_inches='tight', pad_inches=0)
 
 """
-Now we plot the resulting segmentation.
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: final_seg.png
-   :align: center
+Each tissue class is color coded separately, red for the WM, yellow for
+the GM and light blue for the CSF.
 
-   Each tissue class is color coded separately, red for the WM, yellow for
-   the GM and light blue for the CSF.
 
 And we will also have a look at the probability maps for each tissue class.
 """

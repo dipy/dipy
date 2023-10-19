@@ -158,10 +158,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_sfm.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Sparse Fascicle Model tracks**
+Sparse Fascicle Model tracks
+
 
 Finally, we can save these streamlines to a 'trk' file, for use in other
 software, or for further analysis.

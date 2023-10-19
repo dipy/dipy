@@ -95,9 +95,8 @@ if interactive:
 window.record(scene, out_path='contour_from_roi_tutorial.png', size=(1200, 900))
 
 """
-.. figure:: contour_from_roi_tutorial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **A top view of corpus callosum streamlines with the blue transparent
-   seed ROI in the center**.
+A top view of corpus callosum streamlines with the blue transparent
+seed ROI in the center.
 """

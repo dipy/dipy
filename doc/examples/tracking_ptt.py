@@ -84,10 +84,9 @@ if has_fury:
     if interactive:
         window.show(scene)
 """
-.. figure:: tractogram_ptt_dg_pmf.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum using ptt direction getter from PMF**
+Corpus Callosum using ptt direction getter from PMF
 """
 
 """

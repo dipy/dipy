@@ -182,8 +182,7 @@ compare_maps(fits, maps=['rtop'], fit_labels=fit_labels, map_labels=['RTOP'],
              filename='MAPMRI_rtop.png')
 
 """
-.. figure:: MAPMRI_rtop.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 It can be seen that all maps appear quite smooth and similar, although it is
 clear that the global positivity constraints provide smoother maps than the
@@ -199,8 +198,7 @@ compare_maps(fits, maps=['norm_of_laplacian_signal'], fit_labels=fit_labels,
              filename='MAPMRI_norm_laplacian.png')
 
 """
-.. figure:: MAPMRI_norm_laplacian.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 A high Laplacian norm indicates that the gradient in the three-dimensional
 signal reconstruction changes a lot -- something that may indicate spurious
@@ -223,8 +221,7 @@ compare_maps(fits, maps=['msd', 'qiv', 'rtop', 'rtap', 'rtpp'],
              filename='MAPMRI_maps.png')
 
 """
-.. figure:: MAPMRI_maps.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 From left to right:
 
@@ -252,12 +249,13 @@ From left to right:
   related to the length of a pore [Ozarslan2013]_ but in practice should be
   similar to that of Gaussian diffusion.
 
+
 It is also possible to estimate the amount of non-Gaussian diffusion in every
 voxel [Ozarslan2013]_. This quantity is estimated through the ratio between
 Gaussian volume (MAP-MRI's first basis function) and the non-Gaussian volume
 (all other basis functions) of the fitted signal. For this value to be
-physically meaningful we must use a b-value threshold in the MAP-MRI model. This
-threshold makes the scale estimation in MAP-MRI use only samples that
+physically meaningful we must use a b-value threshold in the MAP-MRI model.
+This threshold makes the scale estimation in MAP-MRI use only samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
 
@@ -284,24 +282,23 @@ compare_maps(fits, maps=['ng', 'ng_perpendicular', 'ng_parallel'],
              filename='MAPMRI_ng.png')
 
 """
-.. figure:: MAPMRI_ng.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-On the left we see the overall NG and on the right the directional perpendicular
-NG and parallel NG. The NG ranges from 1 (completely non-Gaussian) to 0
-(completely Gaussian). The overall NG of a voxel is always higher or equal than
-each of its components. It can be seen that NG has low values in the CSF and
-higher in the white matter.
+On the left we see the overall NG and on the right the directional
+perpendicular NG and parallel NG. The NG ranges from 1
+(completely non-Gaussian) to 0 (completely Gaussian). The overall NG of a voxel
+is always higher or equal than each of its components. It can be seen that NG
+has low values in the CSF and higher in the white matter.
 
 Increases or decreases in these values do not point to a specific
 microstructural change, but can indicate clues as to what is happening, similar
 to fractional anisotropy. An initial simulation study that quantifies the added
 value of q-space indices over DTI indices is given in [Fick2016b]_.
 
-The MAP-MRI framework also allows for the estimation of orientation distribution
-functions (ODFs). We recommend to use the isotropic implementation for this
-purpose, as the anisotropic implementation has a bias towards smaller crossing
-angles.
+The MAP-MRI framework also allows for the estimation of orientation
+distribution functions (ODFs). We recommend to use the isotropic
+implementation for this purpose, as the anisotropic implementation has a bias
+towards smaller crossing angles.
 
 For the isotropic basis we recommend to use a ``radial_order`` of 8, as the
 basis needs more generic and needs more basis functions to approximate the
@@ -350,10 +347,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Orientation distribution functions (ODFs).
+Orientation distribution functions (ODFs).
+
 
 References
 ----------

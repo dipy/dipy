@@ -119,8 +119,7 @@ plt.imshow(GFA.T)
 plt.savefig('dsi_gfa.png', bbox_inches='tight')
 
 """
-.. figure:: dsi_gfa.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 See also :ref:`sphx_glr_examples_built_reconstruction_reconst_dsi_metrics.py`
 for calculating different types of DSI maps.

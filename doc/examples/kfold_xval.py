@@ -119,11 +119,9 @@ for this_ax in ax:
 fig.savefig("model_predictions.png")
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: model_predictions.png
-   :align: center
-
-   Model predictions.
+Model predictions.
 
 """
 

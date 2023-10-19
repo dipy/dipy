@@ -69,10 +69,9 @@ ax[2].set_title('difference')
 plt.savefig('denoised.png', bbox_inches='tight')
 
 """
-.. figure:: denoised.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Showing axial slice before (left) and after (right) NLMEANS denoising**
+Showing axial slice before (left) and after (right) NLMEANS denoising
 """
 
 save_nifti('denoised.nii.gz', den, affine)

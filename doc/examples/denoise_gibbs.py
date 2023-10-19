@@ -55,10 +55,10 @@ plt.colorbar()
 fig.savefig('structural.png')
 
 """
-.. figure:: structural.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Representative slice of a T1-weighted structural image.
+Representative slice of a T1-weighted structural image.
+
 
 Due to the high quality of the data, Gibbs artefacts are not visually
 evident in this dataset. Therefore, to analyse the benefits of the Gibbs
@@ -126,12 +126,12 @@ plt.show()
 fig1.savefig('Gibbs_suppression_structural.png')
 
 """
-.. figure:: Gibbs_suppression_structural.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Uncorrected and corrected structural images are shown in the left
-   and middle panels, while the difference between these images is shown
-   in the right panel.
+Uncorrected and corrected structural images are shown in the left
+and middle panels, while the difference between these images is shown
+in the right panel.
+
 
 The image artificially corrupted with Gibb's artefacts is shown in the left
 panel. In this panel, the characteristic ringing profile of Gibbs artefacts
@@ -195,12 +195,12 @@ plt.show()
 fig2.savefig('Gibbs_suppression_b0.png')
 
 """
-.. figure:: Gibbs_suppression_b0.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Uncorrected (left panel) and corrected (middle panel) b-value=0 images. For
-   reference, the difference between uncorrected and corrected images is shown
-   in the right panel.
+Uncorrected (left panel) and corrected (middle panel) b-value=0 images. For
+reference, the difference between uncorrected and corrected images is shown
+in the right panel.
+
 
 The above figure shows that the benefits of suppressing Gibbs artefacts is hard
 to observe on b-value=0 data. Therefore, diffusion derived metrics for both
@@ -267,12 +267,12 @@ plt.show()
 fig3.savefig('Gibbs_suppression_msdki.png')
 
 """
-.. figure:: Gibbs_suppression_msdki.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Uncorrected and corrected mean signal kurtosis images are shown in the left
-   and middle panels. The difference between uncorrected and corrected images
-   are show in the right panel.
+Uncorrected and corrected mean signal kurtosis images are shown in the left
+and middle panels. The difference between uncorrected and corrected images
+are show in the right panel.
+
 
 In the left panel of the figure above, Gibbs artefacts can be appreciated by
 the negative values of mean signal kurtosis (black voxels) adjacent to the

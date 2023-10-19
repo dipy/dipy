@@ -168,11 +168,11 @@ compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
              filename='Diffusion_tensor_measures_from_DTI_and_DKI.png')
 
 """
-.. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Diffusion tensor measures obtained from the diffusion tensor estimated
-   from DKI (upper panels) and DTI (lower panels).
+Diffusion tensor measures obtained from the diffusion tensor estimated
+from DKI (upper panels) and DTI (lower panels).
+
 
 DTI's diffusion estimates present lower values than DKI's estimates,
 showing that DTI's diffusion measurements are underestimated  by higher order
@@ -189,10 +189,10 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
              filename='Kurtosis_tensor_standard_measures.png')
 
 """
-.. figure:: Kurtosis_tensor_standard_measures.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   DKI standard kurtosis measures.
+DKI standard kurtosis measures.
+
 
 The non-Gaussian behaviour of the diffusion signal is expected to be higher
 when tissue water is confined by multiple compartments. MK is, therefore,
@@ -201,9 +201,10 @@ These water diffusion compartmentalization is expected to be more pronounced
 perpendicularly to white matter fibers and thus the RK map presents higher
 amplitudes than the AK map.
 
-It is important to note that kurtosis estimates might present negative estimates
-in deep white matter regions (e.g. the band of dark voxels in the RK map above).
-These negative kurtosis values are artefactual and might be induced by:
+It is important to note that kurtosis estimates might present negative
+estimates in deep white matter regions (e.g. the band of dark voxels in the
+RK map above). These negative kurtosis values are artefactual and might be
+induced by:
 1) low radial diffusivities of aligned white matter - since it is very hard
 to capture non-Gaussian information in radial direction due to it's low
 diffusion decays, radial kurtosis estimates (and consequently the mean
@@ -234,13 +235,14 @@ Constrained optimization for DKI
 
 When instantiating the DiffusionKurtosisModel, the model can be set up to use
 constraints with the option `fit_method='CLS'` (for ordinary least squares) or
-with `fit_method='CWLS'` (for weighted least squares). Constrained fitting takes
-more time than unconstrained fitting, but is generally recommended to prevent
-physically unplausible parameter estimates [DelaHa2020]_. For performance
-purposes it is recommended to use the MOSEK solver (https://www.mosek.com/) by
-setting ``cvxpy_solver='MOSEK'``. Different solvers can differ greatly in terms
-of runtime and solution accuracy, and in some cases solvers may show warnings
-about convergence or recommended option settings.
+with `fit_method='CWLS'` (for weighted least squares). Constrained fitting
+takes more time than unconstrained fitting, but is generally recommended to
+prevent physically unplausible parameter estimates [DelaHa2020]_. For
+performance purposes it is recommended to use the MOSEK solver
+(https://www.mosek.com/) by setting ``cvxpy_solver='MOSEK'``. Different
+solvers can differ greatly in terms of runtime and solution accuracy, and in
+some cases solvers may show warnings about convergence or recommended option
+settings.
 
 .. note::
    In certain atypical scenarios, the DKI+ constraints could potentially be
@@ -264,10 +266,10 @@ compare_maps([dkifit_plus], ['mk', 'ak', 'rk'], fit_labels=['DKI+'],
              filename='Kurtosis_tensor_standard_measures_plus.png')
 
 """
-.. figure:: Kurtosis_tensor_standard_measures_plus.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   DKI standard kurtosis measures obtained with constrained optimization.
+DKI standard kurtosis measures obtained with constrained optimization.
+
 
 When using constrained optimization, the expected range of the kurtosis measures
 is also naturally constrained, and so does not typically require additional
@@ -284,11 +286,11 @@ compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
              filename='Kurtosis_tensor_standard_measures_noisy.png')
 
 """
-.. figure:: Kurtosis_tensor_standard_measures_noisy.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   DKI standard kurtosis measures obtained on unsmoothed data with constrained
-   optimization.
+DKI standard kurtosis measures obtained on unsmoothed data with constrained
+optimization.
+
 
 Mean kurtosis tensor and kurtosis fractional anisotropy
 =======================================================
@@ -305,10 +307,10 @@ compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
              filename='Measures_from_kurtosis_tensor_only.png')
 
 """
-.. figure:: Measures_from_kurtosis_tensor_only.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   DKI measures obtained from the kurtosis tensor only.
+DKI measures obtained from the kurtosis tensor only.
+
 
 As reported by [Hansen2013]_, the mean of the kurtosis tensor (MKT) produces
 similar maps than the standard mean kurtosis (MK). On the other hand,
@@ -364,8 +366,8 @@ References
                 Data Analysis and their Application to the Healthy Ageing Brain
                 (Doctoral thesis). https://doi.org/10.17863/CAM.29356
 .. [DelaHa2020] Dela Haije et al. "Enforcing necessary non-negativity
-                constraints for common diffusion MRI models using sum of squares
-                programming". NeuroImage 209, 2020, 116405.
+                constraints for common diffusion MRI models using sum of
+                squares programming". NeuroImage 209, 2020, 116405.
 
 .. include:: ../links_names.inc
 """

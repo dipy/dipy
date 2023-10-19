@@ -114,10 +114,9 @@ window.record(scene, n_frames=1, out_path='cci_streamlines.png',
               size=(800, 800))
 
 """
-.. figure:: cci_streamlines.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Cluster Confidence Index of corpus callosum dataset.
+Cluster Confidence Index of corpus callosum dataset.
 
 
 If you think of each streamline as a sample of a potential pathway through a
@@ -142,13 +141,12 @@ fig.savefig('cci_histogram.png')
 
 
 """
-.. figure:: cci_histogram.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Histogram of Cluster Confidence Index values.
+Histogram of Cluster Confidence Index values.
+
 
 Now we threshold the CCI, defining outliers as streamlines that score below 1.
-
 """
 
 keep_streamlines = Streamlines()
@@ -171,11 +169,9 @@ window.record(scene, n_frames=1, out_path='filtered_cci_streamlines.png',
               size=(800, 800))
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: filtered_cci_streamlines.png
-   :align: center
-
-   Outliers, defined as streamlines scoring CCI < 1, were excluded.
+Outliers, defined as streamlines scoring CCI < 1, were excluded.
 
 
 References

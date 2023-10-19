@@ -132,13 +132,13 @@ fig1.savefig('denoised_patch2self.png')
 print("The result saved in denoised_patch2self.png")
 
 """
-.. figure:: denoised_patch2self.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 Patch2Self preserved anatomical detail. This can be visually verified by
 inspecting the residuals obtained above. Since we do not see any structure in
 the difference residuals, it is clear that it preserved the underlying signal
 structure and got rid of the stochastic noise.
+
 
 Below we show how the denoised data can be saved.
 """

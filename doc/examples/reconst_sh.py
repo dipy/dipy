@@ -66,11 +66,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: symm_signal.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Illustration of the simulated signal sampled on a sphere of 64 points
-   per hemisphere
+Illustration of the simulated signal sampled on a sphere of 64 points
+per hemisphere
+
 
 We can now express this signal as a series of SH coefficients using
 ``sf_to_sh``. This function converts a series of SF coefficients in a series of
@@ -112,11 +112,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: symm_reconst.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Reconstruction of a symmetric signal on a high resolution sphere using a
-   symmetric basis
+Reconstruction of a symmetric signal on a high resolution sphere using a
+symmetric basis
+
 
 While a symmetric SH basis works well for reconstructing symmetric SF, it fails
 to do so on asymmetric signals. We will now create such a signal by using a
@@ -141,11 +141,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: asym_signal.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Illustration of an asymmetric signal sampled on a sphere of 64
-   points per hemisphere
+Illustration of an asymmetric signal sampled on a sphere of 64
+points per hemisphere
+
 
 Let's try to reconstruct this SF using a symmetric SH basis.
 """
@@ -164,10 +164,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: asym_reconst.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Reconstruction of an asymmetric signal using a symmetric SH basis
+Reconstruction of an asymmetric signal using a symmetric SH basis
+
 
 As we can see, a symmetric basis fails to properly represent asymmetric SF.
 Fortunately, DIPY_ also implements full SH bases, which can deal with symmetric
@@ -191,10 +191,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: asym_reconst_full.png
-    :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-    Reconstruction of an asymmetric signal using a full SH basis
+Reconstruction of an asymmetric signal using a full SH basis
+
 
 As we can see, a full SH basis properly reconstruct asymmetric signal.
 

@@ -124,10 +124,9 @@ plt.savefig("anisotropic_power_map.png")
 plt.close()
 
 """
-.. figure:: anisotropic_power_map.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Anisotropic Power Map (Axial Slice)
+Anisotropic Power Map (Axial Slice)
 """
 
 print(ap.shape)
@@ -343,10 +342,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: msdodf.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   MSMT-CSD Peaks and ODFs.
+MSMT-CSD Peaks and ODFs.
+
 
 References
 ----------

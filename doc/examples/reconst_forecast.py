@@ -114,11 +114,9 @@ plt.colorbar(ind, shrink=0.6)
 plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 
 """
-.. figure:: FORECAST_indices.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **FORECAST scalar indices**.
-
+FORECAST scalar indices.
 """
 
 """
@@ -145,10 +143,10 @@ scene.add(odf_actor)
 window.record(scene, out_path='fODFs.png', size=(600, 600), magnification=4)
 
 """
-.. figure:: fODFs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Fiber Orientation Distribution Functions, in a small ROI of the brain**.
+Fiber Orientation Distribution Functions, in a small ROI of the brain.
+
 
 References
 ----------

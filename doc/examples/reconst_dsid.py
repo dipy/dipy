@@ -85,12 +85,12 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: dsid.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Ground truth ODF (left), DSI ODF (middle), DSI with Deconvolution ODF (right).
+Ground truth ODF (left), DSI ODF (middle), DSI with Deconvolution ODF (right).
 
-.. [Canales10] Canales-Rodriguez et al., Deconvolution in Diffusion Spectrum Imaging,
-   Neuroimage, vol 50, no 1, p. 136-149, 2010.
+
+.. [Canales10] Canales-Rodriguez et al., Deconvolution in Diffusion Spectrum
+               Imaging, Neuroimage, vol 50, no 1, p. 136-149, 2010.
 
 """

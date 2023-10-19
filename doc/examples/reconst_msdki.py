@@ -193,17 +193,17 @@ plt.show()
 fig1.savefig('MSDKI_simulations.png')
 
 """
-.. figure:: MSDKI_simulations.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   MSDKI and DKI measures for data of two crossing synthetic fibers.
-   Upper panels show the MSDKI measures: 1) mean signal diffusivity (left
-   panel); and 2) mean signal kurtosis (right panel).
-   For reference, lower panels show the measures obtained by standard DKI:
-   1) mean diffusivity (left panel); and 2) mean kurtosis (right panel).
-   All estimates are plotted as a function of the intersecting angle of the
-   two crossing fibers. Different curves correspond to different ground truth
-   axonal volume fraction of intra-cellular space.
+MSDKI and DKI measures for data of two crossing synthetic fibers.
+Upper panels show the MSDKI measures: 1) mean signal diffusivity (left
+panel); and 2) mean signal kurtosis (right panel).
+For reference, lower panels show the measures obtained by standard DKI:
+1) mean diffusivity (left panel); and 2) mean kurtosis (right panel).
+All estimates are plotted as a function of the intersecting angle of the
+two crossing fibers. Different curves correspond to different ground truth
+axonal volume fraction of intra-cellular space.
+
 
 The results of the above figure, demonstrate that both MSD and MSK are
 sensitive to axonal volume fraction (i.e. a microstructure property) but are
@@ -315,10 +315,10 @@ plt.show()
 fig2.savefig('MSDKI_invivo.png')
 
 """
-.. figure::MSDKI_invivo.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   MSDKI measures (upper panels) and DKI standard measures (lower panels).
+MSDKI measures (upper panels) and DKI standard measures (lower panels).
+
 
 This figure shows that the contrast of in-vivo MSD and MSK maps (upper panels)
 are similar to the contrast of MD and MSK maps (lower panels); however, in the
@@ -372,12 +372,12 @@ plt.show()
 fig3.savefig('MSDKI_SMT2_invivo.png')
 
 """
-.. figure::MSDKI_SMT2_invivo.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   SMT2 model quantities extracted from MSDKI. From left to right, the figure
-   shows the axonal volume fraction (f), the intrinsic diffusivity (di), and
-   the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
+SMT2 model quantities extracted from MSDKI. From left to right, the figure
+shows the axonal volume fraction (f), the intrinsic diffusivity (di), and
+the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
+
 
 The similar contrast of SMT2 f-parameter maps in comparison to MSK (first panel
 of Figure 3 vs second panel of Figure 2) confirms than MSK and F captures the

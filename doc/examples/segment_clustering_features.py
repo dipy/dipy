@@ -181,11 +181,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: center_of_mass_feature.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the center of mass of each streamline colored according to
-   the QuickBundles results.
+Showing the center of mass of each streamline colored according to
+the QuickBundles results.
+
 
 .. _clustering-examples-MidpointFeature:
 
@@ -236,11 +236,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: midpoint_feature.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the middle point of each streamline colored according to the
-   QuickBundles results.
+Showing the middle point of each streamline colored according to the
+QuickBundles results.
+
 
 .. _clustering-examples-ArcLengthFeature:
 
@@ -284,10 +284,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: arclength_feature.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the streamlines colored according to their length.
+Showing the streamlines colored according to their length.
+
 
 .. _clustering-examples-VectorOfEndpointsFeature:
 
@@ -337,10 +337,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: vector_of_endpoints_feature.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the streamlines colored according to their orientation.
+Showing the streamlines colored according to their orientation.
+
 
 .. include:: ../links_names.inc
 

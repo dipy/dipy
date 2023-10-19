@@ -73,11 +73,10 @@ for a in ax:
 plt.savefig('piesno.png', bbox_inches='tight')
 
 """
-.. figure:: piesno.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the mid axial slice of the b=0 image (left) and estimated
-   background voxels (right) used to estimate the noise standard deviation.
+Showing the mid axial slice of the b=0 image (left) and estimated
+background voxels (right) used to estimate the noise standard deviation.
 """
 
 save_nifti('mask_piesno.nii.gz', mask.astype(np.uint8), affine)

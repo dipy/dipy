@@ -102,10 +102,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Orientation distribution functions.
+Orientation distribution functions.
+
 
 References
 ----------

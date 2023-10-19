@@ -52,10 +52,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: af_l_before_assignment_maps.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   AF_L before assignment maps
+AF_L before assignment maps
 """
 
 
@@ -92,14 +91,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: af_l_after_assignment_maps.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   AF_L after assignment maps
+AF_L after assignment maps
 
-"""
-
-"""
 
 References
 ----------

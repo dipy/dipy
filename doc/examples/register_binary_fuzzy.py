@@ -57,10 +57,9 @@ def show_images(img_ref, img_warp, fig_name):
 show_images(img_ref, img_in, 'input')
 
 """
-.. figure:: input.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Input images before alignment.
+Input images before alignment.
 """
 
 """
@@ -87,12 +86,9 @@ show_images(img_ref, img_warp, 'output-0')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-0.png')
 
 """
-.. figure:: output-0.png
-   :align: center
-.. figure:: map-0.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration results for default parameters and equal images.
+Registration results for default parameters and equal images.
 """
 
 """
@@ -105,12 +101,9 @@ show_images(img_ref, img_warp, 'output-1')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-1.png')
 
 """
-.. figure:: output-1.png
-   :align: center
-.. figure:: map-1.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration results for a naive parameter configuration.
+Registration results for a naive parameter configuration.
 """
 
 """
@@ -131,12 +124,9 @@ show_images(img_ref, img_warp, 'output-2')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-2.png')
 
 """
-.. figure:: output-2.png
-   :align: center
-.. figure:: map-2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration results for decreased step size.
+Registration results for decreased step size.
 """
 
 """
@@ -162,10 +152,7 @@ show_images(img_ref, img_warp, 'output-3')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-3.png')
 
 """
-.. figure:: output-3.png
-   :align: center
-.. figure:: map-3.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration results for single level.
+Registration results for single level.
 """

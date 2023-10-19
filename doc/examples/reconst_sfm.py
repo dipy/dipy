@@ -168,10 +168,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: sf_both.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   SFM Peaks and ODFs.
+SFM Peaks and ODFs.
+
 
 To see how to use this information in tracking, proceed to :ref:`sfm-track`.
 

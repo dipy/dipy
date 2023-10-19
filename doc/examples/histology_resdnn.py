@@ -131,10 +131,9 @@ window.record(scene, out_path='pred_fODF.png', size=(1000, 1000),
               reset_camera=False)
 
 """
-.. figure:: pred_fODF.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Visualization of the predicted fODF.
+Visualization of the predicted fODF.
 """
 
 """

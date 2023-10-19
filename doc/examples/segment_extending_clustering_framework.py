@@ -144,10 +144,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: fornix_clusters_arclength.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the different clusters obtained by using the arc length.
+Showing the different clusters obtained by using the arc length.
 
 
 Extending `Metric`
@@ -238,10 +237,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: fornix_clusters_cosine.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the different clusters obtained by using the cosine metric.
+Showing the different clusters obtained by using the cosine metric.
+
 
 .. include:: ../links_names.inc
 

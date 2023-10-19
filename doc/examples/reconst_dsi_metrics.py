@@ -130,10 +130,10 @@ plt.colorbar(ind)
 plt.savefig('rtop.png')
 
 """
-.. figure:: rtop.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Return to origin probability.
+Return to origin probability.
+
 
 Show the MSD images and save them in msd.png.
 """
@@ -150,10 +150,10 @@ plt.colorbar(ind)
 plt.savefig('msd.png')
 
 """
-.. figure:: msd.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Mean square displacement.
+Mean square displacement.
+
 
 .. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
    propagator imaging", Medical Image Analysis, vol 15, no 4, p. 603-621,

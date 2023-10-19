@@ -120,8 +120,7 @@ plt.savefig('denoised_localpca.png', bbox_inches='tight')
 print("The result saved in denoised_localpca.png")
 
 """
-.. figure:: denoised_localpca.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 Below we show how the denoised data can be saved.
 """

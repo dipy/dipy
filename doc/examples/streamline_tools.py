@@ -143,17 +143,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: corpuscallosum_axial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum Axial**
+Corpus Callosum Axial and Corpus Callosum Sagittal
 
 .. include:: ../links_names.inc
-
-.. figure:: corpuscallosum_sagittal.png
-   :align: center
-
-   **Corpus Callosum Sagittal**
 """
 """
 Once we've targeted the corpus callosum ROI, we might want to find out which
@@ -193,10 +187,9 @@ plt.imshow(np.log1p(M), interpolation='nearest')
 plt.savefig("connectivity.png")
 
 """
-.. figure:: connectivity.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Connectivity of Corpus Callosum**
+Connectivity of Corpus Callosum
 
 .. include:: ../links_names.inc
 

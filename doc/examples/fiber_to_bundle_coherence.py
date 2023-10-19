@@ -265,19 +265,19 @@ if interactive:
 """
 .. _optic_radiation_before_cleaning:
 
-.. figure:: OR_before.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   The optic radiation obtained through probabilistic tractography colored by
-   local fiber to bundle coherence.
+The optic radiation obtained through probabilistic tractography colored by
+local fiber to bundle coherence.
+
 
 .. _optic_radiation_after_cleaning:
 
-.. figure:: OR_after.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   The tractography result is cleaned (shown in bottom) by removing fibers
-   with a relative FBC (RFBC) lower than the threshold :math:`\tau = 0.2`.
+The tractography result is cleaned (shown in bottom) by removing fibers
+with a relative FBC (RFBC) lower than the threshold :math:`\tau = 0.2`.
+
 
 Acknowledgments
 ---------------

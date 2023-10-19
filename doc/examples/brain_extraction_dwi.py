@@ -68,10 +68,10 @@ plt.imshow(histeq(b0_mask[:, :, sli].astype('float')).T,
 plt.savefig('median_otsu.png')
 
 """
-.. figure:: median_otsu.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   An application of median_otsu for brain segmentation.
+An application of median_otsu for brain segmentation.
+
 
 ``median_otsu`` can also automatically crop the outputs to remove the largest
 possible number of background voxels. This makes outputted data significantly

@@ -74,10 +74,9 @@ regtools.overlay_slices(static, moving, None, 2,
                         "Static", "Moving", "deregistered.png")
 
 """
-.. figure:: deregistered.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Same images but misaligned.
+Same images but misaligned.
 """
 
 """
@@ -125,10 +124,9 @@ regtools.overlay_slices(static, transformed, None, 2,
 
 
 """
-.. figure:: transformed.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result.
+Registration result.
 """
 
 """
@@ -172,10 +170,9 @@ reg_func("transformed_pipeline.png")
 
 
 """
-.. figure:: transformed_pipeline.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result using pipeline.
+Registration result using pipeline.
 """
 
 
@@ -220,10 +217,9 @@ regtools.overlay_slices(static, moving, None, 2,
                         "Static", "Moving", "deregistered_squares.png")
 
 """
-.. figure:: deregistered_squares.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Same images but misaligned, with white squares in the corners.
+Same images but misaligned, with white squares in the corners.
 """
 
 static_mask = np.abs(squares_st - 1)
@@ -238,10 +234,9 @@ plt.savefig("masked_static.png", bbox_inches='tight')
 
 
 """
-.. figure:: masked_static.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   The masks.
+The masks.
 """
 
 
@@ -253,10 +248,9 @@ reg_func("transformed_squares.png")
 
 
 """
-.. figure:: transformed_squares.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration fails to align the images because the squares pin the images.
+Registration fails to align the images because the squares pin the images.
 """
 
 """
@@ -270,10 +264,9 @@ in the static image will contribute to Mutual Information.
 reg_func("transformed_squares_mask.png", static_mask=static_mask)
 
 """
-.. figure:: transformed_squares_mask.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result using a static mask.
+Registration result using a static mask.
 """
 
 
@@ -285,10 +278,9 @@ We can also attempt the same thing use a moving image mask.
 reg_func("transformed_squares_mask_2.png", moving_mask=moving_mask)
 
 """
-.. figure:: transformed_squares_mask_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result using a moving mask.
+Registration result using a moving mask.
 """
 
 """
@@ -300,10 +292,9 @@ reg_func("transformed_squares_mask_3.png",
 
 
 """
-.. figure:: transformed_squares_mask_3.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result using both a static mask and a moving mask.
+Registration result using both a static mask and a moving mask.
 """
 
 """
@@ -331,12 +322,9 @@ regtools.overlay_slices(np.squeeze(xformed[..., 0]),
                         None, 2, "Static", "Moving 2", "series_mask_2.png")
 
 """
-.. figure:: series_mask_1.png
-   :align: center
-.. figure:: series_mask_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration of series using a static mask.
+Registration of series using a static mask.
 """
 
 
@@ -345,6 +333,9 @@ In all of the examples above, different masking choices achieved essentially
 the same result, but in general the results may differ depending on differences
 between the static and moving images.
 
+
+References
+----------
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
               Eubank, W. (2003). PET-CT image registration in the chest using

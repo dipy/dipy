@@ -82,10 +82,9 @@ regtools.overlay_slices(static, resampled, None, 1, 'Static', 'Moving',
                         'input_3d.png')
 
 """
-.. figure:: input_3d.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Static image in red on top of the pre-aligned moving image (in green).
+Static image in red on top of the pre-aligned moving image (in green).
 """
 
 """
@@ -128,11 +127,10 @@ regtools.overlay_slices(static, warped_moving, None, 1, 'Static',
                         'Warped moving', 'warped_moving.png')
 
 """
-.. figure:: warped_moving.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Moving image transformed under the (direct) transformation in green on top
-   of the static image (in red).
+Moving image transformed under the (direct) transformation in green on top
+of the static image (in red).
 
 """
 
@@ -146,12 +144,12 @@ regtools.overlay_slices(warped_static, moving, None, 1, 'Warped static',
                         'Moving', 'warped_static.png')
 
 """
-.. figure:: warped_static.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Static image transformed under the (inverse) transformation in red on top of
-   the moving image (in green). Note that the moving image has a lower
-   resolution.
+Static image transformed under the (inverse) transformation in red on top of
+the moving image (in green). Note that the moving image has a lower
+resolution.
+
 
 References
 ----------

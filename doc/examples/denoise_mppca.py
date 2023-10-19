@@ -126,14 +126,14 @@ fig1.savefig('denoised_mppca.png')
 print("The result saved in denoised_mppca.png")
 
 """
-.. figure:: denoised_mppca.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 The noise suppression can be visually appreciated by comparing the original
 data slice (left panel) to its denoised version (middle panel). The difference
 between original and denoised data showing only random noise indicates that
 the data's structural information is preserved by the PCA denoising algorithm
 (right panel).
+
 
 Below we show how the denoised data can be saved.
 """
@@ -199,13 +199,13 @@ fig2.savefig('denoised_dki.png')
 print("The result saved in denoised_dki.png")
 
 """
-.. figure:: denoised_dki.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 In the above figure, the DKI maps obtained from the original data are shown in
 the upper panels, while the DKI maps from the denoised data are shown in the
 lower panels. Substantial improvements in measurement robustness can be
 visually appreciated, particularly for the FA and MK estimates.
+
 
 Noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
 ===========================================================================
@@ -231,8 +231,7 @@ fig3.savefig('pca_sigma.png')
 print("The result saved in pca_sigma.png")
 
 """
-.. figure:: pca_sigma.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
 The above figure shows that the Marcenko-Pastur PCA algorithm computes a 3D
 spatial varying noise level map. To obtain the mean noise std across all

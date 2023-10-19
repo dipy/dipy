@@ -102,10 +102,9 @@ plt.legend()
 plt.savefig('simulated_signal.png')
 
 """
-.. figure:: simulated_signal.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Simulated MultiTensor signal**
+Simulated MultiTensor signal
 """
 
 """
@@ -138,10 +137,10 @@ if interactive:
 
 
 """
-.. figure:: multi_tensor_simulation.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Simulating a MultiTensor ODF.
+Simulating a MultiTensor ODF.
+
 
 .. include:: ../links_names.inc
 

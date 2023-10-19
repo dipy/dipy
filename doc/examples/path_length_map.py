@@ -101,11 +101,10 @@ window.record(scene, n_frames=1, out_path='plm_roi_sls.png',
 
 
 """
-.. figure:: plm_roi_sls.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **A top view of corpus callosum streamlines with the blue transparent ROI in
-   the center**.
+A top view of corpus callosum streamlines with the blue transparent ROI in
+the center.
 """
 
 """
@@ -171,11 +170,10 @@ fig.savefig("Path_Length_Map.png")
 
 
 """
-.. figure:: Path_Length_Map.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Path Length Map showing the shortest distance, along a streamline,
-   from the corpus callosum ROI with the background set to -1**.
+Path Length Map showing the shortest distance, along a streamline,
+from the corpus callosum ROI with the background set to -1.
 
 References
 ----------

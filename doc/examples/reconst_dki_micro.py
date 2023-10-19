@@ -154,12 +154,11 @@ fig1.colorbar(im1, ax=ax.flat[1])
 fig1.savefig('Kurtosis_Microstructural_measures.png')
 
 """
-.. figure:: Kurtosis_Microstructural_measures.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Axonal water fraction (left panel) and tortuosity (right panel) values
-   of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
-   image.
+Axonal water fraction (left panel) and tortuosity (right panel) values
+of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
+image.
 
 
 References

@@ -61,10 +61,10 @@ show_bundles(bundles, interactive=False, colors=colors,
              save_as='before_group_registration.png')
 
 """
-.. figure:: before_group_registration.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Bundles before registration.
+Bundles before registration.
+
 
 They are in native space and, therefore, not aligned.
 
@@ -82,10 +82,11 @@ show_bundles(bundles_reg, interactive=False, colors=colors,
              save_as='after_group_registration.png')
 
 """
-.. figure:: after_group_registration.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Bundles after registration.
+Bundles after registration.
+
+
 
 Extended capabilities
 =====================

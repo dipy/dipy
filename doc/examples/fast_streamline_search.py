@@ -41,11 +41,9 @@ else:
     window.record(scene, out_path='tractograms_initial.png', size=(600, 600))
 
 """
-.. figure:: tractograms_initial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Atlas bundle and source streamlines before registration.
-
+Atlas bundle and source streamlines before registration.
 """
 
 """
@@ -71,10 +69,9 @@ else:
                   size=(600, 600))
 
 """
-.. figure:: AF_L_model_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Model Arcuate Fasciculus Left bundle
+Model Arcuate Fasciculus Left bundle
 
 """
 
@@ -129,10 +126,9 @@ else:
                   size=(600, 600))
 
 """
-.. figure:: AF_L_recognized_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Recognized Arcuate Fasciculus Left bundle
+Recognized Arcuate Fasciculus Left bundle
 
 """
 
@@ -157,10 +153,9 @@ else:
                   size=(600, 600))
 
 """
-.. figure:: AF_L_recognized_bundle_dist.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Recognized Arcuate Fasciculus Left bundle colored by distance to ref
+Recognized Arcuate Fasciculus Left bundle colored by distance to ref
 
 """
 
@@ -188,10 +183,9 @@ else:
                   size=(600, 600))
 
 """
-.. figure:: AF_L_model_bundle_reached.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Arcuate Fasciculus Left model reached (green) in radius
+Arcuate Fasciculus Left model reached (green) in radius
 
 """
 

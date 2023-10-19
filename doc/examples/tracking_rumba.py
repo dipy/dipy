@@ -95,10 +95,9 @@ plt.imshow((f_wm[:, :, sli] > 0.25).T, cmap='gray', origin='lower')
 plt.savefig('f_wm_tracking_mask.png')
 
 """
-.. figure:: f_wm_tracking_mask.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   White matter volume fraction slice
+White matter volume fraction slice
 """
 
 """
@@ -142,10 +141,9 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_rumba.trk")
 
 """
-.. figure:: tractogram_probabilistic_rumba.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RUMBA-SD tractogram
+RUMBA-SD tractogram
 """
 
 """

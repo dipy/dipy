@@ -104,12 +104,6 @@ plt.axis('off')
 plt.imshow(np.rot90(mask_cc_part[region, ...]))
 fig.savefig("CC_segmentation.png", bbox_inches='tight')
 
-"""
-.. figure:: CC_segmentation.png
-   :align: center
-
-"""
-
 """Now that we are happy with our crude CC mask that selected voxels in the
 x-direction, we can use all the voxels to estimate the mean signal in this
 region.

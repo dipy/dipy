@@ -126,7 +126,7 @@ pft_streamline_gen = ParticleFilteringTracking(dg,
                                                particle_count=15,
                                                return_all=False,
                                                min_wm_pve_before_stopping=1)
-streamlines = Streamlines(pft_streamline_generator)
+streamlines = Streamlines(pft_streamline_gen)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_pft.trk")
 
@@ -139,10 +139,9 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_pft.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using particle filtering tractography**
+Corpus Callosum using particle filtering tractography
 """
 
 # Local Probabilistic Tractography
@@ -167,10 +166,9 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_probabilistic_cmc.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using probabilistic tractography**
+Corpus Callosum using probabilistic tractography
 """
 
 """

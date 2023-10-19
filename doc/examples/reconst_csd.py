@@ -136,10 +136,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csd_response.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Estimated response function.
+Estimated response function.
 
 """
 
@@ -203,10 +202,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csd_recursive_response.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Estimated response function using recursive calibration.
+Estimated response function using recursive calibration.
 
 """
 
@@ -252,10 +250,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csd_odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   CSD ODFs.
+CSD ODFs.
+
 
 In DIPY we also provide tools for finding the peak directions (maxima) of the
 ODFs. For this purpose we recommend using ``peaks_from_model``.
@@ -281,10 +279,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csd_peaks.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   CSD Peaks.
+CSD Peaks.
+
 
 We can finally visualize both the ODFs and peaks in the same space.
 """
@@ -299,10 +297,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: csd_both.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   CSD Peaks and ODFs.
+CSD Peaks and ODFs.
+
 
 References
 ----------

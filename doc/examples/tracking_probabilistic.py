@@ -96,10 +96,9 @@ if has_fury:
     if interactive:
         window.show(scene)
 """
-.. figure:: tractogram_probabilistic_dg_pmf.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum using probabilistic direction getter from PMF**
+Corpus Callosum using probabilistic direction getter from PMF
 """
 """
 One disadvantage of using a discrete PMF to represent possible tracking
@@ -133,10 +132,9 @@ if has_fury:
     if interactive:
         window.show(scene)
 """
-.. figure:: tractogram_probabilistic_dg_sh.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum using probabilistic direction getter from SH**
+Corpus Callosum using probabilistic direction getter from SH
 """
 """
 Not all model fits have the ``shm_coeff`` attribute because not all models use

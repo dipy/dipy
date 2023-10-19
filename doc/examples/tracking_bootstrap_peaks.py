@@ -91,10 +91,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_bootstrap_dg.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum Bootstrap Probabilistic Direction Getter**
+Corpus Callosum Bootstrap Probabilistic Direction Getter
+
 
 We have created a bootstrapped probabilistic set of streamlines. If you repeat
 the fiber tracking (keeping all inputs the same) you will NOT get exactly the
@@ -125,10 +125,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_closest_peak_dg.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum Closest Peak Deterministic Direction Getter**
+Corpus Callosum Closest Peak Deterministic Direction Getter
+
 
 We have created a set of streamlines using the closest peak direction getter,
 which is a type of deterministic tracking. If you repeat the fiber tracking

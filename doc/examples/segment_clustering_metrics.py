@@ -163,10 +163,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: cosine_metric.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the streamlines colored according to their orientation.
+Showing the streamlines colored according to their orientation.
+
 
 .. include:: ../links_names.inc
 

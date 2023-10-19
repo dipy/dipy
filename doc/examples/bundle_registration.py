@@ -71,10 +71,9 @@ show_both_bundles([cb_subj1, cb_subj2],
                   fname='before_registration.png')
 
 """
-.. figure:: before_registration.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Before bundle registration.
+Before bundle registration.
 """
 
 show_both_bundles([cb_subj1, cb_subj2_aligned],
@@ -83,10 +82,9 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
                   fname='after_registration.png')
 
 """
-.. figure:: after_registration.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   After bundle registration.
+After bundle registration.
 """
 
 

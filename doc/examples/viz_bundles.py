@@ -64,10 +64,10 @@ scene.add(stream_actor)
 window.record(scene, out_path='bundle1.png', size=(600, 600))
 
 """
-.. figure:: bundle1.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   One orientation color for every streamline.
+One orientation color for every streamline.
+
 
 You may wonder how we knew how to set the camera. This is very easy. You just
 need to run ``window.show`` once to see how you want to see the object and then
@@ -100,10 +100,10 @@ scene.add(bar)
 window.record(scene, out_path='bundle2.png', size=(600, 600))
 
 """
-.. figure:: bundle2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Every point with a color from FA.
+Every point with a color from FA.
+
 
 Show every point with a value from a volume with your colormap
 ==============================================================
@@ -130,10 +130,9 @@ scene.add(bar2)
 window.record(scene, out_path='bundle3.png', size=(600, 600))
 
 """
-.. figure:: bundle3.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Every point with a color from FA using a non default colormap.
+Every point with a color from FA using a non default colormap.
 
 
 Show every bundle with a specific color
@@ -152,10 +151,10 @@ scene.add(stream_actor4)
 window.record(scene, out_path='bundle4.png', size=(600, 600))
 
 """
-.. figure:: bundle4.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Entire bundle with a specific color.
+Entire bundle with a specific color.
+
 
 Show every streamline of a bundle with a different color
 ========================================================
@@ -190,10 +189,9 @@ scene.add(bar3)
 window.record(scene, out_path='bundle5.png', size=(600, 600))
 
 """
-.. figure:: bundle5.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Color every streamline by the length of the streamline
+Color every streamline by the length of the streamline
 
 
 Show every point of every streamline with a different color
@@ -216,10 +214,10 @@ scene.add(stream_actor6)
 window.record(scene, out_path='bundle6.png', size=(600, 600))
 
 """
-.. figure:: bundle6.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Random colors per point per streamline.
+Random colors per point per streamline.
+
 
 In summary, we showed that there are many useful ways for visualizing maps
 on bundles.

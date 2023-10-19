@@ -91,10 +91,10 @@ window.record(scene, out_path='slices.png', size=(600, 600),
               reset_camera=False)
 
 """
-.. figure:: slices.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Simple slice viewer.
+Simple slice viewer.
+
 
 Render slices from FA with your colormap
 ========================================
@@ -133,10 +133,9 @@ window.record(scene, out_path='slices_lut.png', size=(600, 600),
               reset_camera=False)
 
 """
-.. figure:: slices_lut.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Simple slice viewer with an HSV colormap**.
+Simple slice viewer with an HSV colormap.
 """
 
 """
@@ -276,8 +275,7 @@ window.record(scene, out_path='mosaic.png', size=(900, 600),
               reset_camera=False)
 
 """
-.. figure:: mosaic.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   A mosaic of all the slices in the T1 volume.
+A mosaic of all the slices in the T1 volume.
 """

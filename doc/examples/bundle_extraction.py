@@ -60,14 +60,11 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tractograms_initial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Atlas and target before registration.
+Atlas and target before registration.
 
-"""
 
-"""
 We will register target tractogram to model atlas' space using streamlinear
 registration (SLR) [Garyfallidis15]_
 """
@@ -101,10 +98,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: tractograms_after_registration.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Atlas and target after registration.
+Atlas and target after registration.
 
 """
 
@@ -170,11 +166,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: AF_L_model_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Model Arcuate Fasciculus Left bundle
-
+Model Arcuate Fasciculus Left bundle
 """
 
 
@@ -206,11 +200,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: AF_L_recognized_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Arcuate Fasciculus Left bundle
-
+Extracted Arcuate Fasciculus Left bundle
 """
 
 """
@@ -267,11 +259,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: AF_L_recognized_bundle2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Arcuate Fasciculus Left bundle
-
+Extracted Arcuate Fasciculus Left bundle
 """
 
 """
@@ -327,11 +317,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: AF_L_recognized_bundle3.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Arcuate Fasciculus Left bundle
-
+Extracted Arcuate Fasciculus Left bundle
 """
 
 """
@@ -392,10 +380,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: AF_L_refine_recognized_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Arcuate Fasciculus Left bundle
+Extracted Arcuate Fasciculus Left bundle
 
 """
 
@@ -442,10 +429,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: CST_L_model_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   The Corticospinal tract model bundle
+The Corticospinal tract model bundle
 
 """
 
@@ -475,10 +461,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: CST_L_recognized_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Corticospinal tract Left bundle
+Extracted Corticospinal tract Left bundle
 
 """
 
@@ -536,10 +521,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: CST_L_recognized_bundle2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Corticospinal tract Left bundle
+Extracted Corticospinal tract Left bundle
 
 """
 
@@ -597,10 +581,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: CST_L_recognized_bundle3.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted Corticospinal tract Left bundle
+Extracted Corticospinal tract Left bundle
 
 """
 
@@ -663,10 +646,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: CST_L_refine_recognized_bundle.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Extracted refined Corticospinal tract Left bundle
+Extracted refined Corticospinal tract Left bundle
 
 """
 

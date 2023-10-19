@@ -64,10 +64,9 @@ show_both_bundles([bundle1, bundle2], colors=[(1, 0, 0), (0, 1, 0)],
                   show=False, fname="two_bundles.png")
 
 """
-.. figure:: two_bundles.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Two Cingulum Bundles.
+Two Cingulum Bundles.
 """
 
 """

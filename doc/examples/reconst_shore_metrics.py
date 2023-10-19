@@ -110,10 +110,10 @@ plt.colorbar(ind)
 plt.savefig('SHORE_maps.png')
 
 """
-.. figure:: SHORE_maps.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RTOP and MSD calculated using the SHORE model.
+RTOP and MSD calculated using the SHORE model.
+
 
 References
 ----------

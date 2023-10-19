@@ -126,10 +126,10 @@ plt.savefig('simulated_dki_signal.png')
 
 
 """
-.. figure:: simulated_dki_signal.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Simulated signals obtain from the DTI and DKI models.
+Simulated signals obtain from the DTI and DKI models.
+
 
 Non-Gaussian diffusion properties in tissues are responsible to smaller signal
 attenuation for larger bvalues when compared to signal attenuation from free

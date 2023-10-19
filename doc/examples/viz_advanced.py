@@ -294,10 +294,9 @@ else:
                   reset_camera=False)
 
 """
-.. figure:: bundles_and_3_slices.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   A few bundles with interactive slicing.
+A few bundles with interactive slicing.
 """
 
 del show_m

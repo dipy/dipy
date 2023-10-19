@@ -124,10 +124,9 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
 print("The ascm result saved in denoised_ascm.png")
 
 """
-.. figure:: denoised_ascm.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the axial slice without (left) and with (middle) ASCM denoising.
+Showing the axial slice without (left) and with (middle) ASCM denoising.
 """
 
 """
@@ -165,10 +164,9 @@ plt.savefig('ascm_comparison.png', bbox_inches='tight')
 print("The comparison result saved in ascm_comparison.png")
 
 """
-.. figure:: ascm_comparison.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Comparing outputs of the NLMEANS and ASCM.
+Comparing outputs of the NLMEANS and ASCM.
 """
 
 """

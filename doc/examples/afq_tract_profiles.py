@@ -145,11 +145,10 @@ ax2.set_xlabel("Node along AF")
 fig.savefig("tract_profiles")
 
 """
-.. figure:: tract_profiles.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Bundle profiles for the fractional anisotropy in the left CST (left) and
-   left AF (right).
+Bundle profiles for the fractional anisotropy in the left CST (left) and
+left AF (right).
 """
 
 """

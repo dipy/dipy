@@ -105,10 +105,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: default_response.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Default response function.
+Default response function.
 
 """
 
@@ -152,10 +151,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: estimated_response.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Estimated response function.
+Estimated response function.
 
 """
 
@@ -202,10 +200,9 @@ if interactive:
 
 
 """
-.. figure:: recursive_response.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Recursive response function.
+Recursive response function.
 
 """
 
@@ -306,10 +303,9 @@ plt.colorbar(ax1, ax=axs[1])
 plt.savefig('wm_iso_partition.png')
 
 """
-.. figure:: wm_iso_partition.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   White matter and isotropic volume fractions
+White matter and isotropic volume fractions
 """
 
 """
@@ -330,10 +326,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RUMBA-SD fODFs
+RUMBA-SD fODFs
 """
 
 scene.rm(fodf_spheres)
@@ -370,10 +365,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_peaks.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RUMBA-SD peaks
+RUMBA-SD peaks
 """
 
 scene.rm(fodf_peaks)
@@ -422,10 +416,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_global_odfs.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RUMBA-SD + TV fODFs
+RUMBA-SD + TV fODFs
 """
 
 """
@@ -472,10 +465,9 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_global_peaks.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   RUMBA-SD + TV peaks
+RUMBA-SD + TV peaks
 """
 
 scene.rm(fodf_peaks)

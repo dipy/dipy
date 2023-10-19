@@ -81,10 +81,10 @@ plt.savefig("ivim_data_slice.png")
 plt.close()
 
 """
-.. figure:: ivim_data_slice.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Heat map of a slice of data
+Heat map of a slice of data
+
 
 The region around the intersection of the cross-hairs in the figure
 contains cerebral spinal fluid (CSF), so it should have a very high
@@ -104,10 +104,10 @@ plt.savefig("CSF_slice.png")
 plt.close()
 
 """
-.. figure:: CSF_slice.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Heat map of the CSF slice selected.
+Heat map of the CSF slice selected.
+
 
 Now that we have prepared the datasets we can go forward with
 the ivim fit. We provide two methods of fitting the parameters of the IVIM
@@ -281,51 +281,31 @@ fig.legend(loc='upper right')
 fig.savefig("ivim_voxel_plot.png")
 
 """
-.. figure:: ivim_voxel_plot.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Plot of the signal from one voxel.
+Plot of the signal from one voxel.
+
 
 Let us get the various plots with `fit_method = 'VarPro'` so that we can
 visualize them in one page
 """
 
 plt.figure()
-plot_map(ivimfit_vp.S0_predicted, "Predicted S0", (0, 10000),
-         "predicted_S0.png")
-plot_map(data_slice[..., 0], "Measured S0", (0, 10000), "measured_S0.png")
-plot_map(ivimfit_vp.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
-plot_map(ivimfit_vp.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
-plot_map(ivimfit_vp.D, "D", (0, 0.001), "diffusion_coeff.png")
+plot_map(ivimfit_vp.S0_predicted, "Heatmap of S0 predicted from the fit",
+         (0, 10000), "predicted_S0.png")
+plot_map(data_slice[..., 0], "Heatmap of measured signal at bvalue = 0",
+         (0, 10000), "measured_S0.png")
+plot_map(ivimfit_vp.perfusion_fraction, "Heatmap of perfusion fraction values "
+         "predicted from the fit", (0, 1), "perfusion_fraction.png")
+plot_map(ivimfit_vp.D_star, "D* - Heatmap of perfusion coefficients predicted "
+         "from the fit", (0, 0.01), "perfusion_coeff.png")
+plot_map(ivimfit_vp.D, "D - Heatmap of diffusion coefficients predicted from "
+         "the fit", (0, 0.001), "diffusion_coeff.png")
 
 
 """
-.. figure:: predicted_S0.png
-   :align: center
-
-   Heatmap of S0 predicted from the fit
-
-.. figure:: measured_S0.png
-   :align: center
-
-   Heatmap of measured signal at bvalue = 0.
-
-.. figure:: perfusion_fraction.png
-   :align: center
-
-   Heatmap of perfusion fraction values predicted from the fit
-
-.. figure:: perfusion_coeff.png
-   :align: center
-
-   Heatmap of perfusion coefficients predicted from the fit.
-
-.. figure:: diffusion_coeff.png
-   :align: center
-
-   Heatmap of diffusion coefficients predicted from the fit
-
-References:
+References
+----------
 
 .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                 "Spin Diffusion Measurements: Spin Echoes in the Presence

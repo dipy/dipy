@@ -71,14 +71,9 @@ regtools.overlay_slices(static, resampled, None, 2,
                         "Static", "Moving", "resampled_2.png")
 
 """
-.. figure:: resampled_0.png
-   :align: center
-.. figure:: resampled_1.png
-   :align: center
-.. figure:: resampled_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Input images before alignment.
+Input images before alignment.
 """
 
 """
@@ -104,14 +99,9 @@ regtools.overlay_slices(static, transformed, None, 2,
                         "Static", "Transformed", "transformed_com_2.png")
 
 """
-.. figure:: transformed_com_0.png
-   :align: center
-.. figure:: transformed_com_1.png
-   :align: center
-.. figure:: transformed_com_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result by aligning the centers of mass of the images.
+Registration result by aligning the centers of mass of the images.
 """
 
 """
@@ -208,15 +198,9 @@ regtools.overlay_slices(static, transformed, None, 2,
                         "Static", "Transformed", "transformed_trans_2.png")
 
 """
-.. figure:: transformed_trans_0.png
-   :align: center
-.. figure:: transformed_trans_1.png
-   :align: center
-.. figure:: transformed_trans_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result by translating the moving image, using
-   Mutual Information.
+Registration result by translating the moving image, using Mutual Information.
 """
 
 """
@@ -244,20 +228,15 @@ regtools.overlay_slices(static, transformed, None, 2,
                         "Static", "Transformed", "transformed_rigid_2.png")
 
 """
-.. figure:: transformed_rigid_0.png
-   :align: center
-.. figure:: transformed_rigid_1.png
-   :align: center
-.. figure:: transformed_rigid_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result with a rigid transform, using Mutual Information.
+Registration result with a rigid transform, using Mutual Information.
 """
 
 """
-Finally, let's refine with a full affine transform (translation, rotation, scale
-and shear), it is safer to fit more degrees of freedom now since we must be
-very close to the optimal transform
+Finally, let's refine with a full affine transform (translation, rotation,
+scale and shear), it is safer to fit more degrees of freedom now since we must
+be very close to the optimal transform
 """
 
 transform = AffineTransform3D()
@@ -280,14 +259,9 @@ regtools.overlay_slices(static, transformed, None, 2,
                         "Static", "Transformed", "transformed_affine_2.png")
 
 """
-.. figure:: transformed_affine_0.png
-   :align: center
-.. figure:: transformed_affine_1.png
-   :align: center
-.. figure:: transformed_affine_2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Registration result with an affine transform, using Mutual Information.
+Registration result with an affine transform, using Mutual Information.
 
 """
 
@@ -333,15 +307,9 @@ regtools.overlay_slices(static, xformed_img, None, 2,
 
 
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: xformed_affine_0.png
-   :align: center
-.. figure:: xformed_affine_1.png
-   :align: center
-.. figure:: xformed_affine_2.png
-   :align: center
-
-   Registration result with an affine transform, using functional interface.
+Registration result with an affine transform, using functional interface.
 
 """
 
@@ -374,19 +342,14 @@ regtools.overlay_slices(moving, xformed_dwi, None, 1,
 regtools.overlay_slices(moving, xformed_dwi, None, 2,
                         "Static", "Transformed", "xformed_dwi_2.png")
 
-
-
 """
+.. rst-class:: centered small fst-italic fw-semibold
 
-.. figure:: xformed_dwi_0.png
-   :align: center
-.. figure:: xformed_dwi_1.png
-   :align: center
-.. figure:: xformed_dwi_2.png
-   :align: center
+Same again, using the `dwi_to_template` functional interface.
 
-   Same again, using the `dwi_to_template` functional interface.
 
+References
+----------
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
               Eubank, W. (2003). PET-CT image registration in the chest using

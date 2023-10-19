@@ -101,10 +101,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: fornix_initial.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Initial Fornix dataset.
+Initial Fornix dataset.
+
 
 Show the centroids of the fornix after clustering (with random colors):
 """
@@ -120,10 +120,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: fornix_centroids.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the different QuickBundles centroids with random colors.
+Showing the different QuickBundles centroids with random colors.
+
 
 Show the labeled fornix (colors from centroids).
 """
@@ -140,10 +140,10 @@ if interactive:
     window.show(scene)
 
 """
-.. figure:: fornix_clusters.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   Showing the different clusters.
+Showing the different clusters.
+
 
 It is also possible to save the complete `ClusterMap` object with pickling.
 """

@@ -117,10 +117,9 @@ fig.tight_layout()
 fig.savefig('threshold_fa.png')
 
 """
-.. figure:: threshold_fa.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Thresholded fractional anisotropy map.**
+Thresholded fractional anisotropy map.
 """
 
 streamline_generator = LocalTracking(dg,
@@ -142,11 +141,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_deterministic_thresh_all.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using deterministic tractography with a thresholded
- fractional anisotropy mask.**
+ Corpus Callosum using deterministic tractography with a thresholded
+ fractional anisotropy mask.
 """
 """
 Binary Stopping Criterion
@@ -186,10 +184,9 @@ plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray',
 fig.savefig('white_matter_mask.png')
 
 """
-.. figure:: white_matter_mask.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **White matter binary mask.**
+White matter binary mask.
 """
 
 streamline_generator = LocalTracking(dg,
@@ -211,11 +208,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_deterministic_binary_all.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using deterministic tractography with a binary white
- matter mask.**
+Corpus Callosum using deterministic tractography with a binary white
+ matter mask.
 """
 
 """
@@ -282,10 +278,9 @@ fig.tight_layout()
 fig.savefig('act_maps.png')
 
 """
-.. figure:: act_maps.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Include (left) and exclude (right) maps for ACT.**
+Include (left) and exclude (right) maps for ACT.
 """
 
 streamline_generator = LocalTracking(dg,
@@ -307,11 +302,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_deterministic_act_all.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using deterministic tractography with ACT stopping
- criterion.**
+Corpus Callosum using deterministic tractography with ACT stopping
+ criterion.
 """
 
 streamline_generator = LocalTracking(dg,
@@ -333,11 +327,10 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_deterministic_act_valid.png
- :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
- **Corpus Callosum using deterministic tractography with ACT stopping
- criterion. Streamlines ending in gray matter region only.**
+Corpus Callosum using deterministic tractography with ACT stopping
+criterion. Streamlines ending in gray matter region only.
 """
 
 """

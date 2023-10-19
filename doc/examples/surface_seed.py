@@ -52,10 +52,9 @@ scene.set_camera(position=(-500, 0, 0),
 window.record(scene, out_path='surface_seed1.png', size=(600, 600))
 
 """
-.. figure:: surface_seed1.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Initial cortical surface**
+Initial cortical surface
 
 
 Generate a list of seeding positions
@@ -122,10 +121,9 @@ scene.set_camera(position=(-500, 0, 0),
 window.record(scene, out_path='surface_seed2.png', size=(600, 600))
 
 """
-.. figure:: surface_seed2.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Surface seeds with normal orientation**
+Surface seeds with normal orientation
 
 
 References

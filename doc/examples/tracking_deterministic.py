@@ -94,10 +94,9 @@ if has_fury:
         window.show(scene)
 
 """
-.. figure:: tractogram_deterministic_dg.png
-   :align: center
+.. rst-class:: centered small fst-italic fw-semibold
 
-   **Corpus Callosum using deterministic maximum direction getter**
+Corpus Callosum using deterministic maximum direction getter
 """
 """
 .. include:: ../links_names.inc
