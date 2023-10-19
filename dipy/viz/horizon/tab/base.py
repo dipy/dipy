@@ -291,10 +291,16 @@ def build_slider(
         element(slider): HorizonUIElement)
     """
 
+    # Check for the double slider as it only supports value and not ratio
+    if is_double_slider and text_template != '{value:.1f}':
+        warnings.warn('Double slider only support values and not ratio')
+        return
+
     slider_label = build_label(
         label,
         font_size=label_font_size,
-        bold=label_style_bold
+        bold=label_style_bold,
+        is_horizon_label=True
     )
 
 
