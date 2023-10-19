@@ -418,8 +418,7 @@ class Horizon:
                 # Information panel
                 # It will be changed once all the elements wrapped in horizon
                 # elements.
-                text_block = build_label(HELP_MESSAGE, 18,
-                                         is_horizon_label=False)
+                text_block = build_label(HELP_MESSAGE, 18)
                 text_block.message = HELP_MESSAGE
 
                 self.help_panel = ui.Panel2D(

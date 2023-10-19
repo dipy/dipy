@@ -197,7 +197,7 @@ class TabManager:
         return self._tab_ui
 
 
-def build_label(text, font_size=16, bold=False, is_horizon_label=True):
+def build_label(text, font_size=16, bold=False, is_horizon_label=False):
     """
     Simple utility function to build labels
 
@@ -440,9 +440,9 @@ def build_switcher(
 
     num_items = len(items)
 
-    switch_label = build_label(text=label)
+    switch_label = build_label(text=label, is_horizon_label=True)
     selection_label = build_label(
-        text=items[initial_selection]['label'], is_horizon_label=False)
+        text=items[initial_selection]['label'])
 
     left_button = ui.Button2D(
             icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],

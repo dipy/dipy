@@ -18,8 +18,7 @@ class PeaksTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
 
-        self.__toggler_label_view_mode = build_label(
-            text='View Mode', is_horizon_label=False)
+        self.__toggler_label_view_mode = build_label(text='View Mode')
 
         """
         self.__interaction_mode_label.actor.AddObserver(
@@ -34,12 +33,9 @@ class PeaksTab(HorizonTab):
 
         self.__view_mode_toggler.on_change = self.__toggle_view_mode
 
-        self.__slider_label_x = build_label(
-            text='X Slice', is_horizon_label=False)
-        self.__slider_label_y = build_label(
-            text='Y Slice', is_horizon_label=False)
-        self.__slider_label_z = build_label(
-            text='Z Slice', is_horizon_label=False)
+        self.__slider_label_x = build_label(text='X Slice')
+        self.__slider_label_y = build_label(text='Y Slice')
+        self.__slider_label_z = build_label(text='Z Slice')
 
         # Initializing sliders
         min_centers = self.__actor.min_centers
