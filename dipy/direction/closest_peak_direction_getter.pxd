@@ -9,19 +9,20 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 cdef class BasePmfDirectionGetter(DirectionGetter):
 
     cdef:
-        object sphere
         dict _pf_kwargs
-        PmfGen pmf_gen
         double pmf_threshold
         double cos_similarity
+        int len_pmf
+        object sphere
+        PmfGen pmf_gen
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self,
         double[::1] point)
 
-    cdef _get_pmf(
+    cdef double* _get_pmf(
         self,
-        double* point)
+        double* point) nogil
 
     cpdef int get_direction(
         self,

@@ -8,9 +8,9 @@ cdef class PmfGen:
         int nbr_vertices
         object sphere
 
-    cpdef double[:] get_pmf(self, double[::1] point)
-    cdef int find_closest(self, double[::1] xyz) nogil
-    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz)
+    cdef double* get_pmf(self, double* point) nogil
+    cdef int find_closest(self, double* xyz) nogil
+    cdef double get_pmf_value(self, double* point, double* xyz) nogil
     cdef void __clear_pmf(self) nogil
     pass
 
