@@ -168,7 +168,7 @@ def awf_from_msk(msk, mask=None):
 
     Returns
     -------
-    smt2f : ndarray ([X, Y, Z, ...])
+    awf : ndarray ([X, Y, Z, ...])
         ndarray containing the axonal volume fraction estimate.
 
     Notes
@@ -454,7 +454,7 @@ class MeanDiffusionKurtosisFit:
 
         Returns
         -------
-        smt2f : ndarray
+        ndarray
             Axonal volume fraction calculated from MSK.
 
         Notes
