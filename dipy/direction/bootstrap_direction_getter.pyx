@@ -61,7 +61,8 @@ cdef class BootDirectionGetter(DirectionGetter):
         r, theta, phi = shm.cart2sphere(x, y, z)
         b_range = r.max() - r.min()
         if b_range > tol:
-            raise ValueError("BootDirectionGetter only supports single shell data.")
+            raise ValueError("BootDirectionGetter only supports single shell \
+                              data.")
         B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
@@ -101,7 +102,6 @@ cdef class BootDirectionGetter(DirectionGetter):
             Angular threshold for excluding ODF peaks.
 
         """
-
         return cls(data, model, max_angle, sphere, max_attempts, sh_order,
                    pmf_threshold, **kwargs)
 
