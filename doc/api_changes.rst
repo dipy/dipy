@@ -12,7 +12,10 @@ DIPY 1.8.0 changes
 - Change in ``dipy.core.gradients``, function ``reorient_bvecs`` now requires the affine to have a shape of (4, 4, n) or (3, 3, n)
 
 **Direction**
-- Change in ``dipy.direction.bootstrap_direction_getter``. The parent class was changes from ``PmfGenDirectionGetter`` to ``DirectionGetter``. The ``BootPmfGen`` functions were merged in ``BootDirectionGetter``.
+- Change in ``dipy.direction.bootstrap_direction_getter``.
+    - The parent class was changes from ``PmfGenDirectionGetter`` to ``DirectionGetter``. The ``BootPmfGen`` functions were merged in ``BootDirectionGetter``.
+    - The class constructor parameter `pmfgen` was removed. Parameters `data`, `model` and `sh_order=0` were added.
+    - The class method `BootDirectionGetter.from_data()` was not changed.
 - Change in ``dipy.direction.pmf``. The class ``BootPmfGen`` was removed; its functions were merged in ``BootDirectionGetter``.
 
 DIPY 1.7.0 changes
