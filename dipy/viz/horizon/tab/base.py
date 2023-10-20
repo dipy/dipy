@@ -24,14 +24,6 @@ class HorizonUIElement:
     obj: Any
     position = (0, 0)
 
-@dataclass
-class HorizonCombineElement:
-    """
-    Dataclass to define HorizonSlider
-    """
-    label: HorizonUIElement
-    element: HorizonUIElement
-
 class HorizonTab(ABC):
     """
     Base for different tabs available in horizon.
@@ -58,22 +50,17 @@ class HorizonTab(ABC):
         """
 
 
-    def register_elements(self, elements):
+    def register_elements(self, *args):
         """
         Register elements for rendering.
 
         Parameters
         ----------
 
-        elements : HorizonUIElement (HorizonCombineElement)
+        *args : HorizonUIElement(s)
         """
-
-        # Check if the elements is a type of HorizonCombineElement
-        if hasattr(elements, 'label'):
-            self._elements.append(elements.label)
-            self._elements.append(elements.element)
-        else:
-            self._elements.append(elements)
+        for element in args:
+            self._elements.append(element)
 
     @property
     @abstractmethod
@@ -142,8 +129,10 @@ class TabManager:
             # It is to support element not directly present in FURY
             if isinstance(element.position, list):
                 for i, position in enumerate(element.position):
+                    # print(element.obj[i])
                     self._tab_ui.add_element(tab_id, element.obj[i], position)
             else:
+                # print(element)
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
     def reposition(self, win_size):
@@ -286,13 +275,11 @@ def build_slider(
     Return
     ------
 
-    HorizonCombineElement(
-        label: HorizonUIElement,
-        element(slider): HorizonUIElement)
+    (label: HorizonUIElement, element(slider): HorizonUIElement)
     """
 
     # Check for the double slider as it only supports value and not ratio
-    if is_double_slider and text_template != '{value:.1f}':
+    if is_double_slider and 'ratio' in text_template :
         warnings.warn('Double slider only support values and not ratio')
         return
 
@@ -344,7 +331,7 @@ def build_slider(
         slider.handles[1].color = (1., .5, .0)
 
     # Generate HorizonSlider
-    return HorizonCombineElement(
+    return (
         slider_label,
         HorizonUIElement(True, initial_value, slider)
     )
@@ -486,7 +473,7 @@ def build_switcher(
     left_button.on_left_mouse_button_clicked = left_clicked
     right_button.on_left_mouse_button_clicked = right_clicked
 
-    return HorizonCombineElement(
+    return (
         switch_label,
         switcher
     )
