@@ -13,10 +13,12 @@ can integrate along those directions to build a complete representation of that
 structure. Local fiber tracking is widely used in the field of diffusion MRI
 because it is simple and robust.
 
-In order to perform local fiber tracking, three things are needed: 1) A method
-for getting directions from a diffusion data set. 2) A method for identifying
-when the tracking must stop. 3) A set of seeds from which to
-begin tracking. This example shows how to combine the 3 parts described above
+In order to perform local fiber tracking, three things are needed:
+1. A method for getting directions from a diffusion dataset.
+2. A method for identifying when the tracking must stop.
+3. A set of seeds from which to begin tracking.
+
+This example shows how to combine the 3 parts described above
 to create a tractography reconstruction from a diffusion data set.
 
 Let's begin by importing the necessary modules.
@@ -65,7 +67,10 @@ gtab = gradient_table(bvals, bvecs)
 white_matter = (labels == 1) | (labels == 2)
 
 ###############################################################################
-# 1. The first thing we need to begin fiber tracking is a way of getting
+# Step 1: Getting directions from a diffusion dataset
+# ---------------------------------------------------
+#
+# The first thing we need to begin fiber tracking is a way of getting
 # directions from this diffusion data set. In order to do that, we can fit the
 # data to a Constant Solid Angle ODF Model. This model will estimate the
 # Orientation Distribution Function (ODF) at each voxel. The ODF is the
@@ -103,7 +108,9 @@ if has_fury:
 # Direction Field (peaks)
 #
 #
-# 2. Next we need some way of restricting the fiber tracking to areas with good
+# Step 2: Identifying when the tracking must stop
+# -----------------------------------------------
+# Next we need some way of restricting the fiber tracking to areas with good
 # directionality information. We've already created the white matter mask,
 # but we can go a step further and restrict fiber tracking to those areas where
 # the ODF shows significant restricted diffusion by thresholding on
@@ -133,7 +140,9 @@ plt.savefig('gfa_tracking_mask.png')
 #
 #
 #
-# 3. Before we can begin tracking, we need to specify where to "seed" (begin)
+# Step 3: Defining a set of seeds from which to begin tracking
+# ------------------------------------------------------------
+# Before we can begin tracking, we need to specify where to "seed" (begin)
 # the fiber tracking. Generally, the seeds chosen will depend on the pathways
 # one is interested in modeling. In this example, we'll use a
 # $2 \times 2 \times 2$ grid of seeds per voxel, in a sagittal slice of the

@@ -31,36 +31,39 @@ For the full details, please refer to the original paper.
 
 In this example, we will demonstrate the use of PIESNO with a 3-shell data-set.
 
-We start by importing necessary modules and functions and loading the data:
+We start by importing necessary modules and functions:
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 from dipy.denoise.noise_estimate import piesno
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
+
+###############################################################################
+# Then we load the data and the affine:
 
 dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
 data, affine = load_nifti(dwi_fname)
 
 
-"""
-Now that we have fetched a dataset, we must call PIESNO with the right number
-of coils used to acquire this dataset. It is also important to know what
-was the parallel reconstruction algorithm used. Here, the data comes from a
-GRAPPA reconstruction, was acquired with a 12-elements head coil available on
-the Tim Trio Siemens, for which the 12 coil elements are combined into 4 groups
-of 3 coil elements each. The signal is therefore received through 4 distinct
-groups of receiver channels, yielding N = 4. Had we used a GE acquisition, we
-would have used N=1 even if multiple channel coils are used because GE uses a
-SENSE reconstruction, which has a Rician noise nature and thus N is always 1.
-"""
+###############################################################################
+# Now that we have fetched a dataset, we must call PIESNO with the right number
+# of coils used to acquire this dataset. It is also important to know what
+# was the parallel reconstruction algorithm used. Here, the data comes from a
+# GRAPPA reconstruction, was acquired with a 12-elements head coil available on
+# the Tim Trio Siemens, for which the 12 coil elements are combined into 4
+# groups of 3 coil elements each. The signal is therefore received through 4
+# distinct groups of receiver channels, yielding N = 4. Had we used a GE
+# acquisition, we would have used N=1 even if multiple channel coils are used
+# because GE uses a SENSE reconstruction, which has a Rician noise nature and
+# thus N is always 1.
 
 sigma, mask = piesno(data, N=4, return_mask=True)
 
 axial = data[:, :, data.shape[2] // 2, 0].T
 axial_piesno = mask[:, :, data.shape[2] // 2].T
-
-import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(1, 2)
 ax[0].imshow(axial, cmap='gray', origin='lower')
@@ -72,12 +75,11 @@ for a in ax:
 
 plt.savefig('piesno.png', bbox_inches='tight')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
 
-Showing the mid axial slice of the b=0 image (left) and estimated
-background voxels (right) used to estimate the noise standard deviation.
-"""
+# Showing the mid axial slice of the b=0 image (left) and estimated
+# background voxels (right) used to estimate the noise standard deviation.
 
 save_nifti('mask_piesno.nii.gz', mask.astype(np.uint8), affine)
 
@@ -85,24 +87,17 @@ print('The noise standard deviation is sigma = ', sigma)
 print('The std of the background is =',
       np.std(data[mask[..., :].astype(bool)]))
 
-"""
-
-Here, we obtained a noise standard deviation of 7.26. For comparison, a simple
-standard deviation of all voxels in the estimated mask (as done in the previous
-example :ref:`sphx_glr_examples_built_preprocessing_snr_in_cc.py`) gives a
-value of 6.1.
-
-"""
-
-"""
-
-References
-----------
-
-.. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
-   Identification and Estimation of Noise (PIESNO): A self-consistent approach
-   and its applications in MRI. JMR, 199(1):94-103, 2009.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# Here, we obtained a noise standard deviation of 7.26. For comparison, a
+# simple standard deviation of all voxels in the estimated mask (as done in the
+# previous example :ref:`sphx_glr_examples_built_preprocessing_snr_in_cc.py`)
+# gives a value of 6.1.
+#
+# References
+# ----------
+#
+# .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
+#    Identification and Estimation of Noise (PIESNO): A self-consistent
+#    approach and its applications in MRI. JMR, 199(1):94-103, 2009.
+#
+# .. include:: ../links_names.inc
