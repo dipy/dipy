@@ -17,7 +17,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         dict _pf_kwargs
         double cos_similarity
         double min_separation_angle
-        double pmf_threshold
         double relative_peak_threshold
         double[:] pmf
         double[:, :] R
@@ -30,7 +29,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
 
     def __init__(self, data, model, max_angle, sphere=default_sphere,
-                 max_attempts=5, sh_order=0, pmf_threshold=0.1, **kwargs):
+                 max_attempts=5, sh_order=0, **kwargs):
         cdef:
             cnp.ndarray x, y, z, r
             double[:] theta, phi
@@ -48,7 +47,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         self.sphere = sphere
         self.sh_order = sh_order
         self.max_attempts = max_attempts
-        self.pmf_threshold = pmf_threshold
 
         if self.sh_order == 0:
             if hasattr(model, "sh_order"):
@@ -73,8 +71,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     @classmethod
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
-                  sh_order=0, max_attempts=5, pmf_threshold=0.1,
-                  **kwargs):
+                  sh_order=0, max_attempts=5, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
         Parameters
@@ -94,8 +91,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         max_attempts : int
             Max number of bootstrap samples used to find tracking direction
             before giving up.
-        pmf_threshold : float
-            Threshold for ODF functions.
         relative_peak_threshold : float in [0., 1.]
             Relative threshold for excluding ODF peaks.
         min_separation_angle : float in [0, 90]
@@ -103,7 +98,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         """
         return cls(data, model, max_angle, sphere, max_attempts, sh_order,
-                   pmf_threshold, **kwargs)
+                   **kwargs)
 
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
