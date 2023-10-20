@@ -212,8 +212,13 @@ def awf_from_msk(msk, mask=None):
             else:
                 mski = msk[v]
                 fini = mski / 2.4  # Initial guess based on linear assumption
-                awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
-                                    fprime=_diff_msk_from_awf, col_deriv=True)
+                awf[v] = opt.fsolve(
+                    _msk_from_awf_error,
+                    fini,
+                    args=(mski,),
+                    fprime=_diff_msk_from_awf,
+                    col_deriv=True
+                ).item()
 
     return awf
 
