@@ -230,3 +230,18 @@ def test_boot_pmf():
         pmf_sh8 = boot_dg_sh8.get_pmf(point)
         npt.assert_equal(len(hsph_updated.vertices), pmf_sh8.shape[0])
         npt.assert_(np.sum(pmf_sh8.shape) > 0)
+
+
+    # test b_tol parameter
+    bvals[-2] = 1100
+    gtab = gradient_table(bvals, bvecs)
+    tensor_model = TensorModel(gtab)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        npt.assert_raises(ValueError, BootDirectionGetter, data, tensor_model,
+                          60, hsph_updated, 6, 20)
+        npt.assert_raises(ValueError, BootDirectionGetter, data, tensor_model,
+                          60, hsph_updated, 6, -1)
+

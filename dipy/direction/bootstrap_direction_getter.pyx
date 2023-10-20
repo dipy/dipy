@@ -29,16 +29,17 @@ cdef class BootDirectionGetter(DirectionGetter):
 
 
     def __init__(self, data, model, max_angle, sphere=default_sphere,
-                 max_attempts=5, sh_order=0, **kwargs):
+                 max_attempts=5, sh_order=0, b_tol=20, **kwargs):
         cdef:
             cnp.ndarray x, y, z, r
             double[:] theta, phi
             double[:, :] B
-            double tol=20.0
-            double b_range
 
         if max_attempts < 1:
              raise ValueError("max_attempts must be greater than 0.")
+
+        if b_tol <= 0:
+            raise ValueError("b_tol must be greater than 0.")
 
         self._pf_kwargs = kwargs
         self.data = data
@@ -57,8 +58,7 @@ cdef class BootDirectionGetter(DirectionGetter):
         self.dwi_mask = model.gtab.b0s_mask == 0
         x, y, z = model.gtab.gradients[self.dwi_mask].T
         r, theta, phi = shm.cart2sphere(x, y, z)
-        b_range = r.max() - r.min()
-        if b_range > tol:
+        if r.max() - r.min() >= b_tol:
             raise ValueError("BootDirectionGetter only supports single shell \
                               data.")
         B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
@@ -71,7 +71,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     @classmethod
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
-                  sh_order=0, max_attempts=5, **kwargs):
+                  sh_order=0, max_attempts=5, b_tol=20, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
         Parameters
@@ -91,6 +91,8 @@ cdef class BootDirectionGetter(DirectionGetter):
         max_attempts : int
             Max number of bootstrap samples used to find tracking direction
             before giving up.
+        b_tol : float
+            Maximum difference between b-values to be considered single shell.
         relative_peak_threshold : float in [0., 1.]
             Relative threshold for excluding ODF peaks.
         min_separation_angle : float in [0, 90]
@@ -98,7 +100,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         """
         return cls(data, model, max_angle, sphere, max_attempts, sh_order,
-                   **kwargs)
+                   b_tol, **kwargs)
 
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
