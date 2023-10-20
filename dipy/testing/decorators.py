@@ -7,7 +7,7 @@ Decorators for dipy tests
 import re
 import os
 import platform
-
+import numpy as np
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
 
@@ -73,3 +73,19 @@ def xvfb_it(my_test):
     # Plant it back in and return the new function:
     test_with_xvfb.__name__ = fname
     return test_with_xvfb if not is_windows else my_test
+
+
+def set_random_number_generator(seed_v=1234):
+    """Decorator to use a fixed value for the random generator seed.
+
+    This will make the tests that use random functions reproducible.
+
+    """
+    def _set_random_number_generator(func):
+        def _set_random_number_generator_wrapper(*args, **kwargs):
+            rng = np.random.default_rng(seed_v)
+            kwargs['rng'] = rng
+            output = func(*args, **kwargs)
+            return output
+        return _set_random_number_generator_wrapper
+    return _set_random_number_generator

@@ -13,6 +13,7 @@ from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
 from dipy.reconst import shm
 from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
+from dipy.testing.decorators import set_random_number_generator
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -31,7 +32,8 @@ gm_response = np.array([[4.0E-4, 4.0E-4, 4.0E-4, 40.],
                         [4.0E-4, 4.0E-4, 4.0E-4, 40.]])
 
 
-def get_test_data():
+@set_random_number_generator(1234)
+def get_test_data(rng=None):
     gtab = get_3shell_gtab()
     evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
                   np.array([6.0E-4, 4.0E-4, 4.0E-4]),
@@ -39,7 +41,8 @@ def get_test_data():
     s0 = [0.8, 1, 4]
     signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
-    data = [add_noise(signals[tissue], 80, s0[0]) for tissue in tissues]
+    data = [add_noise(signals[tissue], 80, s0[0], rng=rng) \
+            for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]

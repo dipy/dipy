@@ -12,6 +12,7 @@ from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError, 
     AffineMap, _number_dim_affine_matrix
 from dipy.align.transforms import regtransforms
 from dipy.align.tests.test_parzenhist import setup_random_transform
+from dipy.testing.decorators import set_random_number_generator
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be), a sampling scheme
@@ -36,7 +37,6 @@ factors = {('TRANSLATION', 2): (2.0, 0.35, np.array([2.3, 4.5])),
 
 
 def test_transform_centers_of_mass_3d():
-    np.random.seed(1246592)
     shape = (64, 64, 64)
     rm = 8
     sph = vf.create_sphere(shape[0] // 2, shape[1] // 2, shape[2] // 2, rm)
@@ -300,8 +300,8 @@ def test_affreg_defaults():
             assert(reduction > 0.9)
 
 
-def test_mi_gradient():
-    np.random.seed(2022966)
+@set_random_number_generator(2022966)
+def test_mi_gradient(rng):
     # Test the gradient of mutual information
     h = 1e-5
     # Make sure dictionary entries are processed in the same order regardless
@@ -322,7 +322,8 @@ def test_mi_gradient():
         # Start from a small rotation
         start = regtransforms[('ROTATION', dim)]
         nrot = start.get_number_of_parameters()
-        starting_affine = start.param_to_matrix(0.25 * np.random.randn(nrot))
+        starting_affine = \
+            start.param_to_matrix(0.25 * rng.standard_normal(nrot))
         # Get data (pair of images related to each other by an known transform)
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 2.0)
@@ -413,8 +414,8 @@ def create_affine_transforms(
     return transforms
 
 
-def test_affine_map():
-    np.random.seed(2112927)
+@set_random_number_generator(2112927)
+def test_affine_map(rng):
     dom_shape = np.array([64, 64, 64], dtype=np.int32)
     cod_shape = np.array([80, 80, 80], dtype=np.int32)
     # Radius of the circle/sphere (testing image)
@@ -603,7 +604,7 @@ def test_affine_map():
     # Verify AffineMap can not be created with non-2D matrices : len(shape) != 2
     for dim_not_2 in range(10):
         if dim_not_2 != _number_dim_affine_matrix:
-            mat_large_dim = np.random.random([2]*dim_not_2)
+            mat_large_dim = rng.random([2]*dim_not_2)
             assert_raises(AffineInversionError, AffineMap, mat_large_dim)
 
 

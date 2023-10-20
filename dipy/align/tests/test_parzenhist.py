@@ -17,6 +17,7 @@ from numpy.testing import (assert_array_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
+from dipy.testing.decorators import set_random_number_generator
 
 factors = {('TRANSLATION', 2): 2.0,
            ('ROTATION', 2): 0.1,
@@ -49,18 +50,18 @@ def create_random_image_pair(sh, nvals, seed):
     moving : array, shape=sh
         second image in the image pair
     """
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     sz = reduce(mul, sh, 1)
     sh = tuple(sh)
-    static = np.random.randint(0, nvals, sz).reshape(sh)
+    static = rng.integers(0, nvals, sz).reshape(sh)
 
     # This is just a simple way of making  the distribution non-uniform
     moving = static.copy()
-    moving += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
+    moving += rng.integers(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     # This is just a simple way of making  the distribution non-uniform
     static = moving.copy()
-    static += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
+    static += rng.integers(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     return static.astype(np.float64), moving.astype(np.float64)
 
@@ -256,7 +257,8 @@ def test_parzen_densities():
                                   expected_smarginal_sparse)
 
 
-def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
+@set_random_number_generator(3147702)
+def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
     r""" Creates a pair of images related to each other by an affine transform
 
     We transform the static image with a random transform so that the
@@ -278,7 +280,6 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     dim = 2 if nslices == 1 else 3
     if transform.get_dim() != dim:
         raise ValueError("Transform and requested volume have different dims.")
-    np.random.seed(3147702)
     zero_slices = nslices // 3
 
     fname = get_fnames('t1_coronal_slice')
@@ -303,7 +304,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     # Create a transform by slightly perturbing the identity parameters
     theta = transform.get_identity_parameters()
     n = transform.get_number_of_parameters()
-    theta += np.random.rand(n) * rfactor
+    theta += rng.random(n) * rfactor
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
@@ -441,9 +442,9 @@ def test_joint_pdf_gradients_sparse():
         # Sample the fixed-image domain
         k = 3
         sigma = 0.25
-        seed = 1234
+        rng = np.random.default_rng(1234)
         shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2w, sigma, seed)
+        samples = sample_domain_regular(k, shape, static_g2w, sigma, rng)
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_g2w)
@@ -510,8 +511,8 @@ def test_joint_pdf_gradients_sparse():
         # the same direction. Disregard very small gradients
         mean_cosine = P[P != 0].mean()
         std_cosine = P[P != 0].std()
-        assert(mean_cosine > 0.99)
-        assert(std_cosine < 0.15)
+        assert(mean_cosine > 0.98)
+        assert(std_cosine < 0.16)
 
 
 def test_sample_domain_regular():

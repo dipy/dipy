@@ -94,6 +94,8 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
        multiple b-values with cross-validation. ISMRM 2014.
 
     """
+    rng = model_kwargs.pop('rng', np.random.default_rng())
+
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:
     gtab = model.gtab

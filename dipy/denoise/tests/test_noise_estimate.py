@@ -8,6 +8,7 @@ from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 import dipy.data as dpd
 import dipy.core.gradients as dpg
 from dipy.io.image import load_nifti_data
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_inv_nchi():
@@ -141,8 +142,8 @@ def test_estimate_sigma():
                                                np.sqrt(0.4946862482541263)]))
 
 
-def test_pca_noise_estimate():
-    np.random.seed(1984)
+@set_random_number_generator(1984)
+def test_pca_noise_estimate(rng):
     # MUBE:
     bvals1 = np.concatenate([np.zeros(17), np.ones(3) * 1000])
     bvecs1 = np.concatenate([np.zeros((17, 3)), np.eye(3)])
@@ -164,8 +165,8 @@ def test_pca_noise_estimate():
                             signal = signal * 100
 
                         sigma = 1
-                        noise1 = np.random.normal(0, sigma, size=signal.shape)
-                        noise2 = np.random.normal(0, sigma, size=signal.shape)
+                        noise1 = rng.normal(0, sigma, size=signal.shape)
+                        noise2 = rng.normal(0, sigma, size=signal.shape)
 
                         # Rician noise:
                         data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
