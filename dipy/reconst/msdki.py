@@ -225,7 +225,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 
     Parameters
     ----------
-    params : ndarray ([X, Y, Z, ...], 2)
+    msdki_params : ndarray ([X, Y, Z, ...], 2)
         Array containing the mean signal diffusivity and mean signal kurtosis
         in its last axis
     gtab : a GradientTable class instance
