@@ -5,7 +5,7 @@ import numpy.testing as npt
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen, BootPmfGen
+from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
 from dipy.reconst.shm import descoteaux07_legacy_msg
@@ -75,64 +75,3 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]),
                              default_sphere))
-
-
-def test_boot_pmf():
-    # This tests the local model used for the bootstrapping.
-    hsph_updated = HemiSphere.from_sphere(unit_octahedron)
-    vertices = hsph_updated.vertices
-    bvecs = vertices
-    bvals = np.ones(len(vertices)) * 1000
-    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
-    bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
-    voxel = single_tensor(gtab)
-    data = np.tile(voxel, (3, 3, 3, 1))
-    point = np.array([1., 1., 1.])
-    tensor_model = TensorModel(gtab)
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        boot_pmf_gen = BootPmfGen(
-            data, model=tensor_model, sphere=hsph_updated)
-    no_boot_pmf = boot_pmf_gen.get_pmf_no_boot(point)
-
-    model_pmf = tensor_model.fit(voxel).odf(hsph_updated)
-
-    npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
-    npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
-
-    # test model spherical harmonic order different than bootstrap order
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always", category=UserWarning)
-        warnings.simplefilter("always", category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                    sh_order=6)
-        # Tests that the first caught warning comes from the CSD model
-        # constructor
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("Number of parameters required " in str(w[0].message))
-        # Tests that additional warnings are raised for outdated SH basis
-        npt.assert_(len(w) > 1)
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        boot_pmf_gen_sh4 = BootPmfGen(data, sphere=hsph_updated,
-                                      model=csd_model, sh_order=4)
-        pmf_sh4 = boot_pmf_gen_sh4.get_pmf(point)
-    npt.assert_equal(len(hsph_updated.vertices), pmf_sh4.shape[0])
-    npt.assert_(np.sum(pmf_sh4.shape) > 0)
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        boot_pmf_gen_sh8 = BootPmfGen(data, model=csd_model,
-                                      sphere=hsph_updated, sh_order=8)
-    pmf_sh8 = boot_pmf_gen_sh8.get_pmf(point)
-    npt.assert_equal(len(hsph_updated.vertices), pmf_sh8.shape[0])
-    npt.assert_(np.sum(pmf_sh8.shape) > 0)

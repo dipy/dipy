@@ -13,13 +13,14 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     cdef:
         cnp.ndarray dwi_mask
+        cnp.ndarray vox_data
+        dict _pf_kwargs
         double cos_similarity
         double min_separation_angle
         double pmf_threshold
         double relative_peak_threshold
         double[:] pmf
         double[:, :] R
-        double[:] vox_data
         double[:, :, :, :] data
         int max_attempts
         int sh_order
@@ -34,7 +35,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             cnp.ndarray x, y, z, r
             double[:] theta, phi
             double[:, :] B
-            double tol=1e-2
+            double tol=20.0
             double b_range
 
         if max_attempts < 1:
@@ -58,9 +59,9 @@ cdef class BootDirectionGetter(DirectionGetter):
         self.dwi_mask = model.gtab.b0s_mask == 0
         x, y, z = model.gtab.gradients[self.dwi_mask].T
         r, theta, phi = shm.cart2sphere(x, y, z)
-        b_range = (r.max() - r.min()) / r.min()
+        b_range = r.max() - r.min()
         if b_range > tol:
-            raise ValueError("BootPmfGen only supports single shell data.")
+            raise ValueError("BootDirectionGetter only supports single shell data.")
         B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
@@ -101,7 +102,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         """
 
-        return cls(data, model, max_angle, sphere, sh_order, max_attempts,
+        return cls(data, model, max_angle, sphere, max_attempts, sh_order,
                    pmf_threshold, **kwargs)
 
 
@@ -122,14 +123,12 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         """
         cdef:
-            double* pmf = self.get_pmf_no_boot(&point[0])
-            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            double[:] pmf = self.get_pmf_no_boot(point)
 
-        return peak_directions(<double[:len_pmf]>pmf, self.sphere,
-                               **self._pf_kwargs)[0]
+        return peak_directions(pmf, self.sphere, **self._pf_kwargs)[0]
 
 
-    cdef double* get_pmf(self, double* point):
+    cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
         if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
@@ -137,15 +136,15 @@ cdef class BootDirectionGetter(DirectionGetter):
             self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
                 self.vox_data[self.dwi_mask], self.H, self.R)
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
-        return &self.pmf[0]
+        return self.pmf
 
 
-    cdef double* get_pmf_no_boot(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
+    cpdef double[:] get_pmf_no_boot(self, double[::1] point):
+        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
         else:
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
-        return &self.pmf[0]
+        return self.pmf
 
 
     cdef void __clear_pmf(self) nogil:
@@ -167,14 +166,12 @@ cdef class BootDirectionGetter(DirectionGetter):
             1 otherwise.
         """
         cdef:
-            double* pmf
-            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            double[:] pmf
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         for _ in range(self.max_attempts):
-            pmf = self.get_pmf(point)
-            peaks = peak_directions(<double[:len_pmf]>pmf, self.sphere,
-                                    **self._pf_kwargs)[0]
+            pmf = self.get_pmf(<double[:3]> point)
+            peaks = peak_directions(pmf, self.sphere, **self._pf_kwargs)[0]
             if len(peaks) > 0:
                 return closest_peak(peaks, direction, self.cos_similarity)
         return 1

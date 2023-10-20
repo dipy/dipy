@@ -3,17 +3,17 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 
+
 from dipy.core.geometry import cart2sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_icosahedron
-
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_fnames
 from dipy.direction.bootstrap_direction_getter import BootDirectionGetter
-from dipy.direction.pmf import BootPmfGen, SimplePmfGen
-from dipy.reconst import shm
-from dipy.reconst import dti
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.sims.voxel import single_tensor, multi_tensor
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst import dti, shm
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   TensorModel)
+from dipy.sims.voxel import multi_tensor, single_tensor
 
 
 DEFAULT_SH = 4
@@ -70,40 +70,47 @@ def test_bdg_initial_direction():
 def test_bdg_get_direction():
     """This tests the direction found by the bootstrap direction getter.
     """
+    SNR = 100
+    S0 = 1
 
-    sphere = HemiSphere.from_sphere(unit_icosahedron.subdivide())
-    two_neighbors = sphere.edges[0]
-    direction1 = sphere.vertices[two_neighbors[0]]
-    direction2 = sphere.vertices[two_neighbors[1]]
-    angle = np.rad2deg(direction1.dot(direction2))
-    point = np.zeros(3)
-    prev_direction = direction2.copy()
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    pmf = np.zeros([1, 1, 1, len(sphere.vertices)])
-    pmf[:, :, :, two_neighbors[0]] = 1
-    pmf_gen = SimplePmfGen(pmf, sphere)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
 
-    # test case in which no valid direction is found with default maxdir
-    boot_dg = BootDirectionGetter(pmf_gen, angle / 2., sphere=sphere)
+    angles = [(0, 0)]
+
+    voxel, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
+                             fractions=[100], snr=SNR)
+    data = np.tile(voxel, (3, 3, 3, 1))
+    sphere = get_sphere('symmetric362')
+    #odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    response = (np.array([0.0015, 0.0003, 0.0003]), S0)
+
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+    point = np.array([0., 0., 0.])
+    prev_direction = sphere.vertices[5]
+    # test case in which no valid direction is found with default max attempts
+    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10.,
+                                  sphere=sphere)
     npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
-    npt.assert_equal(direction2, prev_direction)
 
     # test case in which no valid direction is found with new max attempts
-    boot_dg = BootDirectionGetter(pmf_gen, angle / 2., sphere=sphere,
-                                  max_attempts=3)
+    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10,
+                                  sphere=sphere, max_attempts=3)
     npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
-    npt.assert_equal(direction2, prev_direction)
 
     # test case in which a valid direction is found
-    boot_dg = BootDirectionGetter(pmf_gen, angle * 2., sphere=sphere,
-                                  max_attempts=1)
+    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=60.,
+                                  sphere=sphere, max_attempts=5)
     npt.assert_equal(boot_dg.get_direction(point, prev_direction), 0)
-    npt.assert_equal(direction1, prev_direction)
 
     # test invalid max_attempts parameters
     npt.assert_raises(
         ValueError,
-        lambda: BootDirectionGetter(pmf_gen, angle * 2., sphere=sphere,
+        lambda: BootDirectionGetter(data, csd_model, 60, sphere=sphere,
                                     max_attempts=0))
 
 
@@ -138,13 +145,15 @@ def test_bdg_residual():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
-        boot_pmf_gen = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
-                                  sh_order=6)
+        boot_dg = BootDirectionGetter.from_data(data, model=csd_model,
+                                                max_angle=60,
+                                                sphere=hsph_updated,
+                                                sh_order=6)
 
         # Two boot samples should be the same
-        odf1 = boot_pmf_gen.get_pmf(np.array([1.5, 1.5, 1.5]))
-    odf2 = boot_pmf_gen.get_pmf(np.array([1.5, 1.5, 1.5]))
-    npt.assert_array_almost_equal(odf1, odf2)
+        odf1 = boot_dg.get_pmf(np.array([1.5, 1.5, 1.5]))
+        odf2 = boot_dg.get_pmf(np.array([1.5, 1.5, 1.5]))
+        npt.assert_array_almost_equal(odf1, odf2)
 
     # A boot sample with less sh coeffs should have residuals, thus the two
     # should be different
@@ -152,10 +161,12 @@ def test_bdg_residual():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        boot_pmf_gen2 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
-                                   sh_order=4)
-    odf1 = boot_pmf_gen2.get_pmf(np.array([1.5, 1.5, 1.5]))
-    odf2 = boot_pmf_gen2.get_pmf(np.array([1.5, 1.5, 1.5]))
+        boot_dg2 = BootDirectionGetter.from_data(data, model=csd_model,
+                                                 max_angle=60,
+                                                 sphere=hsph_updated,
+                                                 sh_order=4)
+    odf1 = boot_dg2.get_pmf(np.array([1.5, 1.5, 1.5]))
+    odf2 = boot_dg2.get_pmf(np.array([1.5, 1.5, 1.5]))
     npt.assert_(np.any(odf1 != odf2))
 
     # test with a gtab with two shells and assert you get an error
@@ -166,4 +177,59 @@ def test_bdg_residual():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
-    npt.assert_raises(ValueError, BootPmfGen, data, csd_model, hsph_updated, 6)
+    npt.assert_raises(ValueError, BootDirectionGetter, data, csd_model, 60,
+                      hsph_updated, 6)
+
+def test_boot_pmf():
+    # This tests the local model used for the bootstrapping.
+    hsph_updated = HemiSphere.from_sphere(unit_icosahedron)
+    vertices = hsph_updated.vertices
+    bvecs = vertices
+    bvals = np.ones(len(vertices)) * 1000
+    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
+    bvals = np.insert(bvals, 0, 0)
+    gtab = gradient_table(bvals, bvecs)
+    voxel = single_tensor(gtab)
+    data = np.tile(voxel, (3, 3, 3, 1))
+    point = np.array([1., 1., 1.])
+    tensor_model = TensorModel(gtab)
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter(data, model=tensor_model, max_angle=60,
+                                      sphere=hsph_updated)
+    no_boot_pmf = boot_dg.get_pmf_no_boot(point)
+    model_pmf = tensor_model.fit(voxel).odf(hsph_updated)
+
+    npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
+    npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
+
+    # test model spherical harmonic order different than bootstrap order
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
+        warnings.simplefilter("always", category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    sh_order=6)
+        # Tests that the first caught warning comes from the CSD model
+        # constructor
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("Number of parameters required " in str(w[0].message))
+        # Tests that additional warnings are raised for outdated SH basis
+        npt.assert_(len(w) > 1)
+
+
+        boot_dg_sh4 = BootDirectionGetter(data, model=csd_model,
+                                          max_angle=60, sphere=hsph_updated,
+                                          sh_order=4)
+        pmf_sh4 = boot_dg_sh4.get_pmf(point)
+        npt.assert_equal(len(hsph_updated.vertices), pmf_sh4.shape[0])
+        npt.assert_(np.sum(pmf_sh4.shape) > 0)
+
+        boot_dg_sh8 = BootDirectionGetter(data, model=csd_model,
+                                          max_angle=60, sphere=hsph_updated,
+                                          sh_order=8)
+        pmf_sh8 = boot_dg_sh8.get_pmf(point)
+        npt.assert_equal(len(hsph_updated.vertices), pmf_sh8.shape[0])
+        npt.assert_(np.sum(pmf_sh8.shape) > 0)
