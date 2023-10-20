@@ -16,10 +16,6 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.sims.voxel import multi_tensor, single_tensor
 
 
-DEFAULT_SH = 4
-response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
-
-
 def test_bdg_initial_direction():
     """This tests the number of initial directions."
     """
@@ -70,8 +66,6 @@ def test_bdg_initial_direction():
 def test_bdg_get_direction():
     """This tests the direction found by the bootstrap direction getter.
     """
-    SNR = 100
-    S0 = 1
 
     _, fbvals, fbvecs = get_fnames('small_64D')
 
@@ -82,16 +76,16 @@ def test_bdg_get_direction():
 
     angles = [(0, 0)]
 
-    voxel, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[100], snr=SNR)
+    voxel, _ = multi_tensor(gtab, mevals, 1, angles=angles, fractions=[100],
+                            snr=100)
     data = np.tile(voxel, (3, 3, 3, 1))
     sphere = get_sphere('symmetric362')
-    #odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
-    response = (np.array([0.0015, 0.0003, 0.0003]), S0)
+    response = (np.array([0.0015, 0.0003, 0.0003]), 1)
 
     csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
     point = np.array([0., 0., 0.])
     prev_direction = sphere.vertices[5]
+
     # test case in which no valid direction is found with default max attempts
     boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10.,
                                   sphere=sphere)
@@ -137,6 +131,7 @@ def test_bdg_residual():
     # the sphere
     sphere_func = np.dot(shm_coeff, B.T)
 
+    response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
     voxel = np.concatenate((np.zeros(1), sphere_func))
     data = np.tile(voxel, (3, 3, 3, 1))
 
@@ -180,6 +175,7 @@ def test_bdg_residual():
     npt.assert_raises(ValueError, BootDirectionGetter, data, csd_model, 60,
                       hsph_updated, 6)
 
+
 def test_boot_pmf():
     # This tests the local model used for the bootstrapping.
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron)
@@ -193,6 +189,7 @@ def test_boot_pmf():
     data = np.tile(voxel, (3, 3, 3, 1))
     point = np.array([1., 1., 1.])
     tensor_model = TensorModel(gtab)
+    response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -216,9 +213,9 @@ def test_boot_pmf():
         # constructor
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("Number of parameters required " in str(w[0].message))
+
         # Tests that additional warnings are raised for outdated SH basis
         npt.assert_(len(w) > 1)
-
 
         boot_dg_sh4 = BootDirectionGetter(data, model=csd_model,
                                           max_angle=60, sphere=hsph_updated,
