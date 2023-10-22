@@ -160,8 +160,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.last_val = 0
 
         if self.probe_count == 1:
-            self.last_val = self.pmf_gen.get_pmf_value(self.position,
-                                                       self.frame[0])
+            self.last_val = self.pmf_gen.get_pmf_value_c(self.position,
+                                                         self.frame[0])
         else:
             for count in range(self.probe_count):
                 for i in range(3):
