@@ -3,6 +3,7 @@ cimport numpy as cnp
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
+from dipy.reconst import shm
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
@@ -161,7 +162,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     @classmethod
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                     pmf_threshold=0.1, basis_type=None, legacy=True, **kwargs):
+                     pmf_threshold=0.1, basis_type=None, legacy=True,
+                     sh_to_pmf=False, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
 
@@ -194,14 +196,24 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         legacy: bool, optional
             True to use a legacy basis definition for backward compatibility
             with previous ``tournier07`` and ``descoteaux07`` implementations.
+        sh_to_pmf: bool, optional
+            If true, map sherical harmonics to spherical function (pmf) before
+            tracking (faster, requires more memory).
 
         See Also
         --------
         dipy.direction.peaks.peak_directions
 
         """
-        pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
-                                basis_type, legacy=legacy)
+        if sh_to_pmf:
+            sh_order = shm.order_from_ncoef(shcoeff.shape[3])
+            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order=sh_order,
+                               basis_type=basis_type, legacy=legacy)
+            pmf[pmf<0] = 0
+            pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
+        else:
+            pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
+                                    basis_type, legacy=legacy)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
 
