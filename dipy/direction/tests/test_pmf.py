@@ -5,19 +5,19 @@ import numpy.testing as npt
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
+from dipy.reconst import shm
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
 
 response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
-"""
 # commented when changing cpdef to cdef in pmf
 def test_pmf_val():
     sphere = get_sphere('symmetric724')
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            'ignore', message=descoteaux07_legacy_msg,
+            'ignore', message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         pmfgen = SHCoeffPmfGen(np.random.random([2, 2, 2, 28]), sphere, None)
     point = np.array([1, 1, 1], dtype='float')
@@ -35,7 +35,7 @@ def test_pmf_from_sh():
     sphere = HemiSphere.from_sphere(unit_octahedron)
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            'ignore', message=descoteaux07_legacy_msg,
+            'ignore', message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         pmfgen = SHCoeffPmfGen(np.ones([2, 2, 2, 28]), sphere, None)
 
@@ -74,4 +74,4 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]),
                              default_sphere))
-"""
+
