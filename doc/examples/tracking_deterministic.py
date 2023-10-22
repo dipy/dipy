@@ -77,7 +77,7 @@ is used.
 
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-    csd_fit.shm_coeff, max_angle=30., sphere=default_sphere)
+    csd_fit.shm_coeff, max_angle=30., sphere=default_sphere, sh_to_pmf=True)
 streamline_generator = LocalTracking(detmax_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
