@@ -1,9 +1,7 @@
 import numpy as np
 from dipy.denoise.nlmeans_block import nlmeans_block
 
-
-def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-                    rician=True):
+def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     r""" nlmeans for denoising 3D and 4D images, using
         blockwise averaging approach
 
@@ -39,7 +37,6 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                 Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
                 Denoising IET Image Processing, Institution of Engineering and
                 Technology, 2011
-
     """
     if not np.isscalar(sigma) and not sigma.shape == (1, ):
         raise ValueError("Sigma input needs to be of type float", sigma)
@@ -60,13 +57,11 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             sigma,
             int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
-        denoised_arr = np.zeros_like(arr)
+        denoised_arr = np.zeros like(arr)
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = np.array(nlmeans_block(np.double(
                 arr[..., i]), mask, patch_radius, block_radius, sigma,
                 int(rician))).astype(arr.dtype)
-
         return denoised_arr
-
     else:
         raise ValueError("Only 3D or 4D array are supported!", arr.shape)
