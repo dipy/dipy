@@ -1,8 +1,11 @@
 import numpy as np
 from dipy.denoise.nlmeans_block import nlmeans_block
 
-def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
-    r""" nlmeans for denoising 3D and 4D images, using blockwise averaging approach
+
+def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
+                    rician=True):
+    r""" Non-local means for denoising 3D and 4D images, using
+        blockwise averaging approach
 
     Parameters
     ----------
@@ -16,24 +19,27 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
     rician : boolean
-        If True, the noise is estimated as Rician, otherwise Gaussian noise is assumed.
+        If True the noise is estimated as Rician, otherwise Gaussian noise
+        is assumed.
 
     Returns
     -------
     denoised_arr : ndarray
-        The denoised ``arr`` which has the same shape as ``arr``.
+        the denoised ``arr`` which has the same shape as ``arr``.
 
     References
     ----------
 
     .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
-        Barillot, An Optimized Blockwise Non Local Means Denoising Filter for 3D
-        Magnetic Resonance Images, IEEE Transactions on Medical Imaging,
-        27(4):425-441, 2008
+                 Barillot, An Optimized Blockwise Non Local Means Denoising
+                 Filter for 3D Magnetic Resonance Images, IEEE Transactions on
+                 Medical Imaging, 27(4):425-441, 2008
 
     .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising
-        IET Image Processing, Institution of Engineering and Technology, 2011
+                Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
+                Denoising IET Image Processing, Institution of Engineering and
+                Technology, 2011
+
     """
     if not np.isscalar(sigma) and not sigma.shape == (1, ):
         raise ValueError("Sigma input needs to be of type float", sigma)
@@ -52,19 +58,15 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
             patch_radius,
             block_radius,
             sigma,
-            int(rician)
-        )).astype(arr.dtype)
+            int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
         for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = np.array(nlmeans_block(
-                np.double(arr[..., i]),
-                mask,
-                patch_radius,
-                block_radius,
-                sigma,
-                int(rician)
-            )).astype(arr.dtype)
+            denoised_arr[..., i] = np.array(nlmeans_block(np.double(
+                arr[..., i]), mask, patch_radius, block_radius, sigma,
+                int(rician))).astype(arr.dtype)
+
         return denoised_arr
+
     else:
-        raise ValueError("Only 3D or 4D arrays are supported!", arr.shape)
+        raise ValueError("Only 3D or 4D array are supported!", arr.shape)
