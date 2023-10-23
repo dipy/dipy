@@ -24,16 +24,3 @@ cdef class SHCoeffPmfGen(PmfGen):
         double[:, :] B
         double[:] coeff
     pass
-
-
-cdef class BootPmfGen(PmfGen):
-    cdef:
-        int sh_order
-        double[:, :] R
-        object model
-        object H
-        np.ndarray vox_data
-        np.ndarray dwi_mask
-
-    cpdef double[:] get_pmf_no_boot(self, double[::1] point)
-    pass
