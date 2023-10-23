@@ -51,6 +51,3 @@ class ROIsTab(HorizonTab):
     def name(self):
         return self.__name
 
-    @property
-    def tab_type(self):
-        return 'rois_tab'

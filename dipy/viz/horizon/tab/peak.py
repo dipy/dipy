@@ -226,6 +226,3 @@ class PeaksTab(HorizonTab):
     def name(self):
         return self.__name
 
-    @property
-    def tab_type(self):
-        return 'peaks_tab'

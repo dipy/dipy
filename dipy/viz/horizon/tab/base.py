@@ -70,13 +70,6 @@ class HorizonTab(ABC):
         """
 
     @property
-    @abstractmethod
-    def tab_type(self):
-        """
-        Type of the tab.
-        """
-
-    @property
     def elements(self):
         """
         list of underlying FURY ui elements in the tab.
@@ -118,7 +111,7 @@ class TabManager:
             self._tab_ui.tabs[tab_id].title = ' ' + tab.name
             self._tab_ui.tabs[tab_id].title_font_size = 18
             tab.build(tab_id, self._tab_ui)
-            if tab.tab_type == 'slices_tab':
+            if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
                 # TODO: Needed to move outside once all the tab adapt new build
                 self._render_tab_elements(tab_id, tab.elements)
@@ -170,7 +163,7 @@ class TabManager:
 
         slices_tabs = list(
             filter(
-                lambda x: x.tab_type == 'slices_tab'
+                lambda x: x.__class__.__name__ == 'SlicesTab'
                 and not x.tab_id == active_tab_id, self._tabs
             )
         )

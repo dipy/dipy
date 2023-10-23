@@ -149,7 +149,3 @@ class ClustersTab(HorizonTab):
     @property
     def name(self):
         return self.__name
-
-    @property
-    def tab_type(self):
-        return 'clusters_tab'
