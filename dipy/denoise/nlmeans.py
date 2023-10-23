@@ -2,6 +2,7 @@ import numpy as np
 from dipy.denoise.nlmeans_block import nlmeans_block
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
+    
     r""" nlmeans for denoising 3D and 4D images, using
         blockwise averaging approach
 
