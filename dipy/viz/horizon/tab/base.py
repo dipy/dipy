@@ -426,6 +426,10 @@ def build_switcher(
 
     num_items = len(items)
 
+    # Checking if value passed for initial value is in the
+    if initial_selection >= num_items:
+        initial_selection = 0
+
     switch_label = build_label(text=label, is_horizon_label=True)
     selection_label = build_label(
         text=items[initial_selection]['label'])

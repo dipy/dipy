@@ -4,12 +4,10 @@ import numpy.testing as npt
 
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import use_xvfb
-from dipy.viz.horizon.tab.base import build_label, build_slider
+from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
+                                       build_slider, build_switcher)
 
 fury, has_fury, setup_module = optional_package('fury')
-
-if has_fury:
-    from fury import ui
 
 skip_it = use_xvfb == 'skip'
 
@@ -49,41 +47,72 @@ def test_build_label():
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_slider():
-    single_slider = build_slider(5, 100)
-    npt.assert_equal(single_slider.label.obj.message, '')
-    npt.assert_equal(single_slider.label.obj.font_size, 16)
-    npt.assert_equal(single_slider.label.obj.bold, False)
-    npt.assert_equal(single_slider.element.obj.value, 5)
-    npt.assert_equal(single_slider.element.obj.max_value, 100)
-    npt.assert_equal(single_slider.element.obj.min_value, 0)
-    npt.assert_equal(single_slider.element.obj.track.width, 450)
-    npt.assert_equal(single_slider.element.obj.track.height, 3)
-    npt.assert_equal(single_slider.element.obj.track.color, (.8, .3, .0))
-    npt.assert_equal(single_slider.element.obj.default_color, (1., .5, .0))
-    npt.assert_equal(single_slider.element.obj.active_color, (.9, .4, .0))
-    npt.assert_equal(single_slider.element.obj.handle.color, (1., .5, .0))
-    npt.assert_equal(single_slider.element.obj.handle.outer_radius, 8)
-    npt.assert_equal(single_slider.element.obj.text.font_size, 16)
-    npt.assert_equal(single_slider.element.obj.text_template,
+    single_slider_label, single_slider = build_slider(5, 100)
+    npt.assert_equal(single_slider_label.obj.message, '')
+    npt.assert_equal(single_slider_label.obj.font_size, 16)
+    npt.assert_equal(single_slider_label.obj.bold, False)
+    npt.assert_equal(single_slider.obj.value, 5)
+    npt.assert_equal(single_slider.obj.max_value, 100)
+    npt.assert_equal(single_slider.obj.min_value, 0)
+    npt.assert_equal(single_slider.obj.track.width, 450)
+    npt.assert_equal(single_slider.obj.track.height, 3)
+    npt.assert_equal(single_slider.obj.track.color, (.8, .3, .0))
+    npt.assert_equal(single_slider.obj.default_color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.active_color, (.9, .4, .0))
+    npt.assert_equal(single_slider.obj.handle.color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.handle.outer_radius, 8)
+    npt.assert_equal(single_slider.obj.text.font_size, 16)
+    npt.assert_equal(single_slider.obj.text_template,
                      '{value:.1f} ({ratio:.0%})')
-    npt.assert_equal(single_slider.element.selected_value, 5)
+    npt.assert_equal(single_slider.selected_value, 5)
 
-    double_slider = build_slider((4, 5), 100, text_template= '{value:.1f}',
+    double_slider_label, double_slider = build_slider((4, 5), 100, text_template= '{value:.1f}',
                                  is_double_slider=True)
-    npt.assert_equal(double_slider.label.obj.message, '')
-    npt.assert_equal(double_slider.label.obj.font_size, 16)
-    npt.assert_equal(double_slider.label.obj.bold, False)
-    npt.assert_equal(double_slider.element.obj.max_value, 100)
-    npt.assert_equal(double_slider.element.obj.min_value, 0)
-    npt.assert_equal(double_slider.element.obj.track.width, 450)
-    npt.assert_equal(double_slider.element.obj.track.height, 3)
-    npt.assert_equal(double_slider.element.obj.track.color, (.8, .3, .0))
-    npt.assert_equal(double_slider.element.obj.default_color, (1., .5, .0))
-    npt.assert_equal(double_slider.element.obj.active_color, (.9, .4, .0))
-    npt.assert_equal(double_slider.element.obj.handles[0].color, (1., .5, .0))
-    npt.assert_equal(double_slider.element.obj.handles[1].color, (1., .5, .0))
-    npt.assert_equal(double_slider.element.obj.handles[0].outer_radius, 8)
-    npt.assert_equal(double_slider.element.obj.handles[1].outer_radius, 8)
-    npt.assert_equal(double_slider.element.obj.text[0].font_size, 16)
-    npt.assert_equal(double_slider.element.obj.text[1].font_size, 16)
-    npt.assert_equal(double_slider.element.selected_value, (4, 5))
+    npt.assert_equal(double_slider_label.obj.message, '')
+    npt.assert_equal(double_slider_label.obj.font_size, 16)
+    npt.assert_equal(double_slider_label.obj.bold, False)
+    npt.assert_equal(double_slider.obj.max_value, 100)
+    npt.assert_equal(double_slider.obj.min_value, 0)
+    npt.assert_equal(double_slider.obj.track.width, 450)
+    npt.assert_equal(double_slider.obj.track.height, 3)
+    npt.assert_equal(double_slider.obj.track.color, (.8, .3, .0))
+    npt.assert_equal(double_slider.obj.default_color, (1., .5, .0))
+    npt.assert_equal(double_slider.obj.active_color, (.9, .4, .0))
+    npt.assert_equal(double_slider.obj.handles[0].color, (1., .5, .0))
+    npt.assert_equal(double_slider.obj.handles[1].color, (1., .5, .0))
+    npt.assert_equal(double_slider.obj.handles[0].outer_radius, 8)
+    npt.assert_equal(double_slider.obj.handles[1].outer_radius, 8)
+    npt.assert_equal(double_slider.obj.text[0].font_size, 16)
+    npt.assert_equal(double_slider.obj.text[1].font_size, 16)
+    npt.assert_equal(double_slider.selected_value, (4, 5))
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_build_checkbox():
+    checkbox = build_checkbox(['Hello', 'Hi'], ['Hello'])
+
+    npt.assert_equal(len(checkbox.obj.checked_labels), 1)
+    npt.assert_equal(len(checkbox.obj.labels), 2)
+    npt.assert_equal(checkbox.selected_value, ['Hello'])
+
+    # Empty labels
+    checkbox = build_checkbox()
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_build_switcher():
+    # Should be good with a warning nothing will be returned
+    switcher = build_switcher()
+    npt.assert_equal(switcher, None)
+
+    switcher_label, switcher = build_switcher(
+        [{'label': 'Hello', 'value': 'hello'}])
+    npt.assert_equal(switcher.selected_value[0], 0)
+    npt.assert_equal(switcher.selected_value[1], 'hello')
+    npt.assert_equal(switcher_label.selected_value, '')
+
+    switcher_label, switcher = build_switcher(
+        [{'label': 'Hello', 'value': 'hello'}], 'Greeting', 1)
+    npt.assert_equal(switcher.selected_value[0], 0)
+    npt.assert_equal(switcher.selected_value[1], 'hello')
+    npt.assert_equal(switcher_label.selected_value, 'Greeting')
