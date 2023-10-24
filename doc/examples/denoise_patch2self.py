@@ -188,5 +188,3 @@ save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
 # .. [Knoll11] F. Knoll, K. Bredies, T. Pock, R. Stollberger, Second order
 #              total generalized variation (TGV) for MRI. Magnetic resonance
 #              in medicine, 65(2), pp.480-491.
-#
-# .. include:: ../links_names.inc

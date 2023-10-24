@@ -129,5 +129,3 @@ save_nifti('denoised_localpca.nii.gz', denoised_arr, affine)
 # .. [Koay2006]  Koay CG, Basser PJ (2006). "Analytically exact correction
 #                scheme for signal extraction from noisy magnitude MR signals".
 #                JMR 179: 317-322.
-#
-# .. include:: ../links_names.inc

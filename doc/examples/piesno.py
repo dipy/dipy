@@ -77,7 +77,7 @@ plt.savefig('piesno.png', bbox_inches='tight')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
-
+#
 # Showing the mid axial slice of the b=0 image (left) and estimated
 # background voxels (right) used to estimate the noise standard deviation.
 
@@ -99,5 +99,3 @@ print('The std of the background is =',
 # .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
 #    Identification and Estimation of Noise (PIESNO): A self-consistent
 #    approach and its applications in MRI. JMR, 199(1):94-103, 2009.
-#
-# .. include:: ../links_names.inc

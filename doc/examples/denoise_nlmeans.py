@@ -93,5 +93,3 @@ save_nifti('denoised.nii.gz', den, affine)
 #     "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
 #     Denoising" IET Image Processing, Institution of Engineering and
 #     Technology, 2011
-#
-# .. include:: ../links_names.inc

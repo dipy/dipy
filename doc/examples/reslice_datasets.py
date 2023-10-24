@@ -59,5 +59,5 @@ img3 = nib.Spm2AnalyzeImage(data2, affine2)
 nib.save(img3, 'iso_vox.img')
 
 ###############################################################################
-# Done. Check your datasets. As you may have already realized the same
-# code can be used for general reslicing problems not only for dMRI data.
+# Done. Check your datasets. As you may have already realized the same code
+# can be used for general reslicing problems not only for dMRI data.

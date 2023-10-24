@@ -8,7 +8,7 @@ improved extension of non-local means (NLMEANS) denoising. ASCM gives a better
 denoised images from two standard non-local means denoised versions of the
 original data with different degrees sharpness. Here, one denoised input is
 more "smooth" than the other (the easiest way to achieve this denoising is use
-ref:`non_local_means<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
+:ref:`non_local_means<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
 with two different patch radii).
 
 ASCM involves these basic steps
@@ -54,7 +54,7 @@ t = time()
 
 ###############################################################################
 # In order to generate the two pre-denoised versions of the data we will use
-# the ref:`non_local_means denoining <sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
+# the :ref:`non_local_means denoining<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
 # For ``non_local_means`` first we need to estimate the standard deviation of
 # the noise. We use N=4 since the Sherbrooke dataset was acquired on a
 # 1.5T Siemens scanner with a 4 array head coil.
@@ -168,5 +168,3 @@ plt.savefig('ascm_comparison.png', bbox_inches='tight')
 #     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
 #     Denoising. IET Image Processing, Institution of Engineering and
 #     Technology, 2011. <00645538>
-#
-# .. include:: ../links_names.inc

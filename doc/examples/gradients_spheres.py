@@ -148,5 +148,3 @@ if interactive:
 # .. [Jones1999] Jones, DK. et al. Optimal strategies for measuring diffusion
 #    in anisotropic systems by magnetic resonance imaging, Magnetic Resonance
 #    in Medicine, vol 42, no 3, 515-525, 1999.
-#
-# .. include:: ../links_names.inc

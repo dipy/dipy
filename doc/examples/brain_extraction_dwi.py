@@ -81,6 +81,3 @@ save_nifti(fname + '_binary_mask_crop.nii.gz', mask_crop.astype(np.float32),
            affine)
 save_nifti(fname + '_mask_crop.nii.gz', b0_mask_crop.astype(np.float32),
            affine)
-
-###############################################################################
-# .. include:: ../links_names.inc

@@ -255,5 +255,3 @@ print(snr)
 #                 Fieremans E, 2016. Denoising of Diffusion MRI using random
 #                 matrix theory. Neuroimage 142:394-406.
 #                 doi: 10.1016/j.neuroimage.2016.08.016
-#
-# .. include:: ../links_names.inc

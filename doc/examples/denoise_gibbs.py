@@ -285,5 +285,3 @@ fig3.savefig('Gibbs_suppression_msdki.png')
 # .. [5] Valabrègue, R. (2015). Diffusion MRI measured at multiple b-values.
 #        Retrieved from:
 #        https://digital.lib.washington.edu/researchworks/handle/1773/33311
-#
-# .. include:: ../links_names.inc
