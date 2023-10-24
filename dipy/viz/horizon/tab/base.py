@@ -186,8 +186,8 @@ def build_label(text, font_size=16, bold=False, is_horizon_label=False):
     Parameters
     ----------
     text : str
-    font_size : int
-    bold : bool
+    font_size : int, optional
+    bold : bool, optional
 
     Returns
     -------
@@ -228,41 +228,41 @@ def build_slider(
         is_double_slider=False
 ):
     """
-    Creates a horizon theme based disk-knob slider
+    Create a horizon theme based disk-knob slider
 
     Parameters
     ----------
 
     initial_value : float, (float, float)
         Initial value(s) of the slider.
-    min_value : float
-        Minimum value of the slider.
     max_value : float
         Maximum value of the slider.
-    length : int
+    min_value : float, optional
+        Minimum value of the slider.
+    length : int, optional
         Length of the slider.
-    line_width : int
+    line_width : int, optional
         Width of the line on which the disk will slide.
-    radius : int
+    radius : int, optional
         Radius of the disk handle.
-    font_size : int
+    font_size : int, optional
         Size of the text to display alongside the slider (pt).
-    text_template : str, callable
+    text_template : str, callable, optional
         If str, text template can contain one or multiple of the
         replacement fields: `{value:}`, `{ratio:}`.
         If callable, this instance of `:class:LineSlider2D` will be
         passed as argument to the text template function.
-    on_moving_slider : callable
+    on_moving_slider : callable, optional
         When the slider is interacted by the user.
-    on_value_changed : callable
+    on_value_changed : callable, optional
         When value of the slider changed programmatically.
-    on_change : callable
+    on_change : callable, optional
         When value of the slider changed.
-    label : str
+    label : str, optional
         Label to ui element for slider
-    label_font_size : int
+    label_font_size : int, optional
         Size of label text to display with slider
-    label_style_bold : bool
+    label_style_bold : bool, optional
         Is label should have bold style.
 
     Return
@@ -338,12 +338,12 @@ def build_checkbox(
         on_change=lambda _checkbox: None
 ):
     """
-    Creates horizon theme checkboxes
+    Create horizon theme checkboxes
 
     Parameters
     ----------
 
-    labels : list(str)
+    labels : list(str), optional
         List of labels of each option.
     checked_labels: list(str), optional
         List of labels that are checked on setting up.
@@ -351,7 +351,7 @@ def build_checkbox(
         The distance between two adjacent options element
     font_size : int, optional
         Size of the text font.
-    on_change : callback
+    on_change : callback, optional
         When checkbox value changed
 
     Returns
@@ -390,23 +390,23 @@ def build_switcher(
         on_value_changed=lambda _selected_idx, _selected_value: None,
 ):
     """
-    Creates horizon theme switcher
+    Create horizon theme switcher
 
     Parameters
     ----------
 
-    items : list
+    items : list, optional
         dictionaries with keys 'label' and 'value'. Label will be used to show
         it to user and value will be used for selection.
-    label : str
+    label : str, optional
         label for the switcher.
-    initial_selection : int
+    initial_selection : int, optional
         index of the selected item initially.
-    on_prev_clicked : callback
+    on_prev_clicked : callback, optional
         method providing a callback when prev value is selected in switcher.
-    on_next_clicked : callback
+    on_next_clicked : callback, optional
         method providing a callback when next value is selected in switcher.
-    on_value_changed : callback
+    on_value_changed : callback, optional
         method providing a callback when either prev or next value selected in
         switcher.
 
