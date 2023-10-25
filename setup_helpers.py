@@ -75,7 +75,7 @@ class install_scripts_bat(install_scripts):
             froot, ext = splitext(fname)
             bat_file = pjoin(pth, froot + '.bat')
             bat_contents = BAT_TEMPLATE.replace('{FNAME}', fname)
-            log.info("Making %s wrapper for %s" % (bat_file, filepath))
+            log.info(f"Making {bat_file} wrapper for {filepath}")
             if self.dry_run:
                 continue
             with open(bat_file, 'wt') as fobj:
@@ -138,8 +138,9 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                 except CompileError:
                     return False
                 try:
-                    # Link shared lib rather then executable to avoid
-                    # http://bugs.python.org/issue4431 with MSVC 10+
+                    # Link shared lib rather than executable to avoid
+                    # https://github.com/python/cpython/issues/48681
+                    # with MSVC 10+
                     cc.link_shared_lib(objects, "testlib",
                                        extra_postargs=link_flags)
                 except (LinkError, TypeError):
@@ -235,7 +236,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
     return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 
 
-class SetupDependency(object):
+class SetupDependency:
     """ SetupDependency class
 
     Parameters
@@ -304,7 +305,7 @@ class SetupDependency(object):
         setuptools_kwargs[self.req_type] = old_reqs + [new_req]
 
 
-class Bunch(object):
+class Bunch:
     def __init__(self, vars):
         for key, name in vars.items():
             if key.startswith('__'):

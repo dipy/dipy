@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # dipy documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb  4 15:23:20 2010.
 #
@@ -14,6 +12,7 @@
 import os
 import re
 import sys
+import json
 
 # Doc generation depends on being able to import dipy
 try:
@@ -33,10 +32,11 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # -- General configuration -----------------------------------------------------
 
-# We load the nibabel release info into a dict by explicit execution
+# We load the DIPY release info into a dict by explicit execution
 rel = {}
 with open(os.path.join('..', 'dipy', 'info.py')) as f:
     exec(f.read(), rel)
+
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -52,7 +52,15 @@ extensions = ['sphinx.ext.autodoc',
               'math_dollar',  # has to go before numpydoc
               'sphinx_gallery.gen_gallery',
             #   'numpydoc',
-              'github']
+              'github',
+              'jinja',
+              'sphinx_design',
+]
+
+# Providing different contexts for the jinja directive
+jinja_contexts = {
+    "documentation": json.load(open("./context/documentation.json"))
+}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -73,8 +81,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'dipy'
-copyright = u'2008-2023, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
+project = 'dipy'
+copyright = "Copyright 2008-2023, DIPY developers. Created using Grg Sphinx Theme and PyData Sphinx Theme."
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -131,17 +139,294 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'sphinxdoc'
+html_theme = "grg_sphinx_theme"
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'dipy.css'
+html_style = 'css/dipy.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+  "switcher": {"json_url": "https://docs.dipy.org/dev/_static/version_switcher.json",
+               "version_match": "1.8.0", },
+  "check_switcher": False,
+  "show_version_warning_banner": True,
+  "navbar_end": ["search-field.html", "version-switcher", "navbar-icon-links.html"],
+  "secondary_sidebar_items": ["page-toc"],
+  "show_toc_level": 1,
+  "navbar_center": ["components/navbar-links.html"],
+  "navbar_links": [
+     {
+        "name": "Docs",
+        "children": [
+          {
+            "name": "Overview",
+            "url": "index",
+          },
+          {
+            "name": "Tutorials",
+            "url": "examples_built/index",
+          },
+          {
+            "name": "Recipes",
+            "url": "recipes/index",
+          },
+          {
+            "name": "CLI / Workflows",
+            "url": "interfaces/index",
+          },
+          {
+            "name": "API",
+            "url": "reference/index",
+          },
+          {
+            "name": "CLI API",
+            "url": "reference_cmd/index",
+          }
+        ]
+     },
+     {
+        "name": "Workshops",
+        "sections": [
+          {
+            "name": "Latest",
+            "children": [
+              {
+                "name": "DIPY Workshop 2024",
+                "url": "https://dipy.org/workshops/dipy-workshop-2024",
+                "link_type": "external"
+              }
+            ]
+          },
+          {
+            "name": "Past",
+            "children": [
+              {
+                "name": "DIPY Workshop 2023",
+                "url": "https://dipy.org/workshops/dipy-workshop-2023",
+                "link_type": "external"
+              },
+              {
+                "name": "DIPY Workshop 2022",
+                "url": "https://dipy.org/workshops/dipy-workshop-2022",
+                "link_type": "external"
+              },
+              {
+                "name": "DIPY Workshop 2021",
+                "url": "https://dipy.org/workshops/dipy-workshop-2021",
+                "link_type": "external"
+              },
+              {
+                "name": "DIPY Workshop 2020",
+                "url": "https://dipy.org/workshops/dipy-workshop-2020",
+                "link_type": "external"
+              },
+              {
+                "name": "DIPY Workshop 2019",
+                "url": "https://dipy.org/workshops/dipy-workshop-2019",
+                "link_type": "external"
+              },
+            ]
+          }
+        ],
+     },
+     {
+        "name": "Community",
+        "sections": [
+            {
+              "name": "News",
+              "children": [
+                  {
+                    "name": "Calendar",
+                    "url": "https://dipy.org/calendar",
+                    "link_type": "inter"
+                  },
+                  {
+                    "name": "Newsletters",
+                    "url": "https://mail.python.org/mailman3/lists/dipy.python.org/",
+                    "link_type": "external"
+                  },
+                  {
+                    "name": "Blog",
+                    "url": "https://dipy.org/blog",
+                    "link_type": "inter"
+                  },
+                  {
+                    "name": "Youtube",
+                    "url": "https://www.youtube.com/c/diffusionimaginginpython",
+                    "link_type": "external"
+                  }
+              ]
+            },
+            {
+              "name": "Help",
+              "children": [
+                  {
+                    "name": "Live Chat (Gitter)",
+                    "url": "https://app.gitter.im/#/room/%23dipy_dipy:gitter.im",
+                    "link_type": "external"
+                  },
+                  {
+                    "name": "Github Discussions",
+                    "url": "https://github.com/dipy/dipy/discussions",
+                    "link_type": "external"
+                  }
+              ]
+            }
+          ]
+     },
+     {
+        "name": "About",
+        "children": [
+          {
+            "name": "Team",
+            "url": "https://dipy.org/team",
+            "link_type": "inter"
+          },
+          {
+            "name": "FAQ",
+            "url": "faq",
+          },
+          {
+            "name": "Mission Statement",
+            "url": "user_guide/mission",
+          },
+          {
+            "name": "Releases",
+            "url": "stateoftheart",
+          },
+          {
+            "name": "Cite",
+            "url": "cite",
+          },
+          {
+            "name": "Glossary",
+            "url": "glossary",
+          },
+        ]
+     },
+  ],
+  # To remove search icon
+  "navbar_persistent": "",
+  "icon_links": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/dipy",
+      "icon": "fa-brands fa-github"
+    },
+    {
+      "name": "Twitter/X",
+      "url": "https://twitter.com/dipymri",
+      "icon": "fa-brands fa-twitter"
+    },
+    {
+      "name": "YouTube",
+      "url": "https://www.youtube.com/c/diffusionimaginginpython",
+      "icon": "fa-brands fa-youtube"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://www.linkedin.com/company/dipy/",
+      "icon": "fa-brands fa-linkedin"
+    },
+  ],
+  "logo": {
+    "image_dark": "_static/images/logos/dipy-logo.png",
+    "alt_text": "DIPY",
+  },
+  "footer_start": ["components/footer-sign-up.html"],
+  "footer_signup_data": {
+    "heading": "Never miss an update from us!",
+    "sub_heading": "Don't worry! we are not going to spam you."
+  },
+  "footer_end": ["components/footer-sections.html"],
+  "footer_links": [
+    {
+      "title": "About",
+      "links": [
+        {
+          "name": "Developers",
+          "link": "https://dipy.org/team",
+          "link_type": "inter"
+        },
+        {
+          "name": "Support",
+          "link": "https://github.com/dipy/dipy/discussions",
+          "link_type": "external"
+        },
+        {
+          "name": "Download",
+          "link": "user_guide/installation"
+        },
+        {
+          "name": "Get Started",
+          "link": "user_guide/getting_started"
+        },
+        {
+          "name": "Tutorials",
+          "link": "examples_built/index"
+        },
+        {
+          "name": "Videos",
+          "link": "https://www.youtube.com/c/diffusionimaginginpython",
+          "link_type": "external"
+        },
+      ]
+    }, {
+      "title": "Friends",
+      "links": [
+        {
+          "name": "Nipy Projects",
+          "link": "http://nipy.org/",
+          "link_type": "external"
+        },
+        {
+          "name": "FURY",
+          "link": "http://fury.gl/",
+          "link_type": "external"
+        },
+        {
+          "name": "Nibabel",
+          "link": "http://nipy.org/nibabel",
+          "link_type": "external"
+        },
+        {
+          "name": "Tortoise",
+          "link": "https://tortoise.nibib.nih.gov/",
+          "link_type": "external"
+        },
+      ]
+    }, {
+      "title": "Support",
+      "links": [
+        {
+          "name": "The department of Intelligent Systems Engineering of Indiana University",
+          "link": "https://engineering.indiana.edu/",
+          "link_type": "external"
+        },
+        {
+          "name": "The National Institute of Biomedical Imaging and Bioengineering, NIH",
+          "link": "https://www.nibib.nih.gov/",
+          "link_type": "external"
+        },
+        {
+          "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",
+          "link": "https://escience.washington.edu",
+          "link_type": "external"
+        },
+        {
+          "name": "Google supported DIPY through the Google Summer of Code Program during Summer 2015, 2016, 2018",
+          "link": "https://summerofcode.withgoogle.com/",
+          "link_type": "external"
+        },
+      ]
+    }
+  ],
+  "footer_copyright": copyright,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -155,12 +440,12 @@ html_style = 'dipy.css'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = "_static/images/logos/dipy-logo.png"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-#html_favicon = None
+html_favicon = "_static/images/logos/dipy-favicon.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -176,7 +461,7 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {'index': 'indexsidebar.html'}
+html_sidebars = {'index': []}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -218,8 +503,8 @@ htmlhelp_basename = 'dipydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'dipy.tex', u'dipy Documentation',
-   u'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
+  ('index', 'dipy.tex', 'dipy Documentation',
+   'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -262,10 +547,10 @@ sphinx_gallery_conf = {
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': '_static/dipy_full_logo.png',
-     'pypandoc': {'extra_args': ['--mathjax',]},
+     'default_thumb_file': html_logo,
+    #  'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {'python': ('https://docs.python.org/3/', None)}
 

@@ -3,10 +3,10 @@ from random import random
 
 cimport cython
 cimport numpy as cnp
-from .direction_getter cimport DirectionGetter
-from .stopping_criterion cimport(
+from dipy.tracking.direction_getter cimport DirectionGetter
+from dipy.tracking.stopping_criterion cimport(
     StreamlineStatus, StoppingCriterion, AnatomicalStoppingCriterion,
-    TRACKPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
+    TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 
 
@@ -56,14 +56,21 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
+        double input_direction[3]
+        double input_voxel_size[3]
+        double input_seed_pos[3]
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
+    copy_point(&first_step[0], input_direction)
+    copy_point(&voxel_size[0], input_voxel_size)
+    copy_point(&seed_pos[0], input_seed_pos)
+
     stream_status = TRACKPOINT
-    i, stream_status = dg.generate_streamline(seed_pos, first_step, voxel_size,
-                                              step_size, sc,
+    i, stream_status = dg.generate_streamline(input_seed_pos, input_direction,
+                                              input_voxel_size, step_size, sc,
                                               streamline, stream_status,
                                               fixedstep)
     return i, stream_status
@@ -86,7 +93,8 @@ def pft_tracker(
         cnp.float_t[:, :, :, :] particle_dirs,
         cnp.float_t[:] particle_weights,
         cnp.int_t[:, :]  particle_steps,
-        cnp.int_t[:, :]  particle_stream_statuses):
+        cnp.int_t[:, :]  particle_stream_statuses,
+        int min_wm_pve_before_stopping):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
     This function is the main workhorse of the ``ParticleFilteringTracking``
@@ -134,6 +142,9 @@ def pft_tracker(
         Temporary array for the number of steps of particles.
     particle_stream_statuses : array, float, (2, particle_count)
         Temporary array for the stream status of particles.
+    min_wm_pve_before_stopping : int, optional
+        Minimum white matter pve (1 - sc.include_map - sc.exclude_map) to
+        reach before allowing the tractography to stop.
 
     Returns
     -------
@@ -146,25 +157,24 @@ def pft_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
-        double dir[3]
-        double vs[3]
-        double seed[3]
+        double input_direction[3]
+        double input_voxel_size[3]
+        double input_seed_pos[3]
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
-    for i in range(3):
-        dir[i] = first_step[i]
-        vs[i] = voxel_size[i]
-        seed[i] = seed_pos[i]
+    copy_point(&first_step[0], input_direction)
+    copy_point(&voxel_size[0], input_voxel_size)
+    copy_point(&seed_pos[0], input_seed_pos)
 
-    i = _pft_tracker(dg, sc, seed, dir, vs, streamline,
-                     directions, step_size, &stream_status,
+    i = _pft_tracker(dg, sc, input_seed_pos, input_direction, input_voxel_size,
+                     streamline, directions, step_size, &stream_status,
                      pft_max_nbr_back_steps, pft_max_nbr_front_steps,
                      pft_max_trials, particle_count, particle_paths,
                      particle_dirs, particle_weights, particle_steps,
-                     particle_stream_statuses)
+                     particle_stream_statuses, min_wm_pve_before_stopping)
     return i, stream_status
 
 
@@ -188,10 +198,13 @@ cdef _pft_tracker(DirectionGetter dg,
                   cnp.float_t[:, :, :, :] particle_dirs,
                   cnp.float_t[:] particle_weights,
                   cnp.int_t[:, :] particle_steps,
-                  cnp.int_t[:, :] particle_stream_statuses):
+                  cnp.int_t[:, :] particle_stream_statuses,
+                  double min_wm_pve_before_stopping):
     cdef:
-        int i, pft_trial, pft_streamline_i, back_steps, front_steps
+        cnp.npy_intp i, j
+        int pft_trial, back_steps, front_steps
         int strl_array_len
+        double max_wm_pve, current_wm_pve
         double point[3]
         void (*step)(double* , double*, double) nogil
 
@@ -201,6 +214,7 @@ cdef _pft_tracker(DirectionGetter dg,
 
     stream_status[0] = TRACKPOINT
     pft_trial = 0
+    max_wm_pve = 0
     i = 1
     strl_array_len = streamline.shape[0]
     while i < strl_array_len:
@@ -216,11 +230,21 @@ cdef _pft_tracker(DirectionGetter dg,
             copy_point(direction, &directions[i, 0])
             stream_status[0] = sc.check_point_c(point)
             i += 1
+
+        current_wm_pve = 1.0 - sc.get_include(point) - sc.get_exclude(point)
+        if current_wm_pve > max_wm_pve:
+            max_wm_pve = current_wm_pve
+
         if stream_status[0] == TRACKPOINT:
             # The tracking continues normally
             continue
+        elif (stream_status[0] == ENDPOINT
+              and max_wm_pve < min_wm_pve_before_stopping
+              and current_wm_pve > 0):
+            # The tracking stopped before reaching the wm
+            continue
         elif stream_status[0] == INVALIDPOINT:
-            if pft_trial < pft_max_trials and i > 1:
+            if pft_trial < pft_max_trials and i > 1 and i < strl_array_len:
                 back_steps = min(i - 1, pft_max_nbr_back_steps)
                 front_steps = min(strl_array_len - i - back_steps - 1,
                                   pft_max_nbr_front_steps)
@@ -234,6 +258,13 @@ cdef _pft_tracker(DirectionGetter dg,
                 # update the current point with the PFT results
                 copy_point(&streamline[i-1, 0], point)
                 copy_point(&directions[i-1, 0], direction)
+
+                # update max_wm_pve following pft
+                for j in range(i):
+                    current_wm_pve = (1.0 - sc.get_include_c(&streamline[j, 0])
+                                      - sc.get_exclude_c(&streamline[j, 0]))
+                    if current_wm_pve > max_wm_pve:
+                        max_wm_pve = current_wm_pve
 
                 if stream_status[0] != TRACKPOINT:
                     # The tracking stops. PFT returned a valid stopping point
@@ -249,7 +280,8 @@ cdef _pft_tracker(DirectionGetter dg,
             # or an invalid point (PYERROR)
             break
 
-    if stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR:
+    if ((stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR)
+        and i > 1):
         i -= 1
     return i
 
@@ -277,7 +309,7 @@ cdef _pft(cnp.float_t[:, :] streamline,
         double point[3]
         double dir[3]
         double eps = 1e-16
-        int s, p, j
+        cnp.npy_intp s, p, j
 
     if pft_nbr_steps <= 0:
         return streamline_i

@@ -28,32 +28,42 @@ square[42:213, 42:213, :] = 1
 square[71:185, 71:185, :] = 2
 square[99:157, 99:157, :] = 3
 
-square_gauss = np.zeros((256, 256, 3)) + 0.001
-square_gauss = add_noise(square_gauss, 10000, 1, noise_type='gaussian')
-square_gauss[42:213, 42:213, :] = 1
-noise_1 = np.random.normal(1.001, 0.0001,
-                           size=square_gauss[42:213, 42:213, :].shape)
-square_gauss[42:213, 42:213, :] = square_gauss[42:213, 42:213, :] + noise_1
-square_gauss[71:185, 71:185, :] = 2
-noise_2 = np.random.normal(2.001, 0.0001,
-                           size=square_gauss[71:185, 71:185, :].shape)
-square_gauss[71:185, 71:185, :] = square_gauss[71:185, 71:185, :] + noise_2
-square_gauss[99:157, 99:157, :] = 3
-noise_3 = np.random.normal(3.001, 0.0001,
-                           size=square_gauss[99:157, 99:157, :].shape)
-square_gauss[99:157, 99:157, :] = square_gauss[99:157, 99:157, :] + noise_3
 
-square_1 = np.zeros((256, 256, 3)) + 0.001
-square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
-temp_1 = np.random.randint(1, 21, size=(171, 171, 3))
-temp_1 = np.where(temp_1 < 20, 1, 3)
-square_1[42:213, 42:213, :] = temp_1
-temp_2 = np.random.randint(1, 21, size=(114, 114, 3))
-temp_2 = np.where(temp_2 < 19, 2, 1)
-square_1[71:185, 71:185, :] = temp_2
-temp_3 = np.random.randint(1, 21, size=(58, 58, 3))
-temp_3 = np.where(temp_3 < 20, 3, 1)
-square_1[99:157, 99:157, :] = temp_3
+def create_square_uniform():
+    square_1 = np.zeros((256, 256, 3)) + 0.001
+    square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
+    rng = np.random.default_rng(1234)
+    temp_1 = rng.integers(1, 21, size=(171, 171, 3))
+    temp_1 = np.where(temp_1 < 20, 1, 3)
+    square_1[42:213, 42:213, :] = temp_1
+    temp_2 = rng.integers(1, 21, size=(114, 114, 3))
+    temp_2 = np.where(temp_2 < 19, 2, 1)
+    square_1[71:185, 71:185, :] = temp_2
+    temp_3 = rng.integers(1, 21, size=(58, 58, 3))
+    temp_3 = np.where(temp_3 < 20, 3, 1)
+    square_1[99:157, 99:157, :] = temp_3
+
+    return square_1
+
+
+def create_square_gauss():
+    square_gauss = np.zeros((256, 256, 3)) + 0.001
+    square_gauss = add_noise(square_gauss, 10000, 1, noise_type='gaussian')
+    square_gauss[42:213, 42:213, :] = 1
+    rng = np.random.default_rng(1234)
+    noise_1 = rng.normal(1.001, 0.0001,
+                         size=square_gauss[42:213, 42:213, :].shape)
+    square_gauss[42:213, 42:213, :] = square_gauss[42:213, 42:213, :] + noise_1
+    square_gauss[71:185, 71:185, :] = 2
+    noise_2 = rng.normal(2.001, 0.0001,
+                         size=square_gauss[71:185, 71:185, :].shape)
+    square_gauss[71:185, 71:185, :] = square_gauss[71:185, 71:185, :] + noise_2
+    square_gauss[99:157, 99:157, :] = 3
+    noise_3 = rng.normal(3.001, 0.0001,
+                         size=square_gauss[99:157, 99:157, :].shape)
+    square_gauss[99:157, 99:157, :] = square_gauss[99:157, 99:157, :] + noise_3
+
+    return square_gauss
 
 
 def test_grayscale_image():
@@ -231,6 +241,7 @@ def test_square_iter():
     icm = IteratedConditionalModes()
 
     initial_segmentation = square
+    square_gauss = create_square_gauss()
 
     mu, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
                                 nclasses)
@@ -323,6 +334,7 @@ def test_icm_square():
     icm = IteratedConditionalModes()
 
     initial_segmentation = square
+    square_1 = create_square_uniform()
 
     mu, sigma = com.seg_stats(square_1, initial_segmentation,
                               nclasses)

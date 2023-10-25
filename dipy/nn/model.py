@@ -9,7 +9,7 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-class SingleLayerPerceptron(object):
+class SingleLayerPerceptron:
 
     def __init__(self, input_shape=(28, 28),
                  num_hidden=128, act_hidden='relu',
@@ -142,7 +142,7 @@ class SingleLayerPerceptron(object):
         return self.model.predict(x_test)
 
 
-class MultipleLayerPercepton(object):
+class MultipleLayerPercepton:
 
     def __init__(self, input_shape=(28, 28),
                  num_hidden=(128, ),

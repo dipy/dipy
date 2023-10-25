@@ -23,7 +23,7 @@ The following 12 authors contributed 235 commits.
 
 
 We closed a total of 80 issues, 35 pull requests and 45 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (35):
@@ -50,7 +50,7 @@ Pull Requests (35):
 * :ghpull:`579`: RF: Compatibility with scipy 0.11
 * :ghpull:`577`: BF: update cython signatures with except values
 * :ghpull:`553`: RF: use cholesky to solve csd
-* :ghpull:`552`: Small refactor of viz.regtools 
+* :ghpull:`552`: Small refactor of viz.regtools
 * :ghpull:`569`: DOC: How to install vtk using conda.
 * :ghpull:`571`: Bf cart2sphere
 * :ghpull:`557`: NF: geodesic anisotropy
@@ -92,7 +92,7 @@ Issues (45):
 * :ghissue:`579`: RF: Compatibility with scipy 0.11
 * :ghissue:`577`: BF: update cython signatures with except values
 * :ghissue:`553`: RF: use cholesky to solve csd
-* :ghissue:`552`: Small refactor of viz.regtools 
+* :ghissue:`552`: Small refactor of viz.regtools
 * :ghissue:`569`: DOC: How to install vtk using conda.
 * :ghissue:`571`: Bf cart2sphere
 * :ghissue:`557`: NF: geodesic anisotropy

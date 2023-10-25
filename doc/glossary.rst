@@ -6,7 +6,7 @@
 
    Affine matrix
       A matrix implementing an :term:`affine transformation` in
-      :term:`homogenous coordinates`.  For a 3 dimensional transform, the
+      :term:`homogeneous coordinates`.  For a 3 dimensional transform, the
       matrix is shape 4 by 4.
 
    Affine transformation

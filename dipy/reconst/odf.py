@@ -1,4 +1,3 @@
-
 from dipy.reconst.base import ReconstModel, ReconstFit
 import numpy as np
 

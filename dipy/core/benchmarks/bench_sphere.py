@@ -23,7 +23,7 @@ mode = None
 if len(sys.argv) > 1 and sys.argv[1] == '-s':
     mode = "subdivide"
 
-class Timer(object):
+class Timer:
     def __enter__(self):
         self.__start = time.time()
 

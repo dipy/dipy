@@ -24,7 +24,7 @@ def coeff_of_determination(data, model, axis=-1):
 
     Notes
     -----
-    See: http://en.wikipedia.org/wiki/Coefficient_of_determination
+    See: https://en.wikipedia.org/wiki/Coefficient_of_determination
 
     The coefficient of determination is calculated as:
 

@@ -1,4 +1,3 @@
-
 from dipy.workflows.workflow import Workflow
 
 

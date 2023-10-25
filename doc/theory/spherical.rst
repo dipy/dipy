@@ -28,7 +28,7 @@ radial distance
 
 z-axis
    The vertical of the sphere.  If we consider the sphere as a globe,
-   then the z-axis runs from south to north.  This is the zenith direction of the sphere. 
+   then the z-axis runs from south to north.  This is the zenith direction of the sphere.
 
 Reference plane
    The plane containing the origin and orthogonal to the z-axis
@@ -62,7 +62,7 @@ in that order.
 Here is a good illustration we made from the scripts kindly provided by `Jorge
 Stolfi`_ on Wikipedia.
 
-.. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
+.. _`Jorge Stolfi`: https://commons.wikimedia.org/wiki/User:Jorge_Stolfi
 
 .. image:: spherical_coordinates.png
 
@@ -72,9 +72,9 @@ The formulae relating Cartesian coordinates $(x, y, z)$ to $r, \theta, \phi$ are
 
     r=\sqrt{x^2+y^2+z^2}
 
-    \theta=\arccos\frac{z}{\sqrt{x^2+y^2+z^2}} 
+    \theta=\arccos\frac{z}{\sqrt{x^2+y^2+z^2}}
 
-    \phi = \operatorname{atan2}(y,x) 
+    \phi = \operatorname{atan2}(y,x)
 
 and from $(r, \theta, \phi)$ to $(x, y, z)$:
 

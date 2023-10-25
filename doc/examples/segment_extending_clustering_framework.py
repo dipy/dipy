@@ -160,7 +160,7 @@ metrics in DIPY see
 Assuming a set of streamlines, we want a metric that computes the cosine
 distance giving the vector between endpoints of each streamline (i.e. one
 minus the cosine of the angle between two vectors). For more information
-about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
+about this distance check `<https://en.wikipedia.org/wiki/Cosine_similarity>`_.
 
 Let's start by importing the necessary modules.
 """

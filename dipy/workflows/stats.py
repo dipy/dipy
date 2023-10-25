@@ -1,4 +1,3 @@
-
 import logging
 import numpy as np
 import os
@@ -97,7 +96,7 @@ class SNRinCCFlow(Workflow):
             elif np.ndim(data) == 3:
                 CC_box = np.zeros_like(data)
             else:
-                raise IOError('DWI data has invalid dimensions')
+                raise OSError('DWI data has invalid dimensions')
 
             mins, maxs = bounding_box(mask)
             mins = np.array(mins)
@@ -111,7 +110,7 @@ class SNRinCCFlow(Workflow):
                    bounds_min[2]:bounds_max[2]] = 1
 
             if len(bbox_threshold) != 6:
-                raise IOError('bbox_threshold should have 6 float values')
+                raise OSError('bbox_threshold should have 6 float values')
 
             mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box,
                                                  bbox_threshold,

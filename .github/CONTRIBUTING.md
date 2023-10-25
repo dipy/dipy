@@ -3,7 +3,7 @@
 DIPY is an open-source software project, and we have an open development
 process. This means that we welcome contributions from anyone. We do ask that
 you first read this document and follow the guidelines we have outlined here and
-that you follow the [NIPY community code of conduct](http://nipy.org/conduct.html).
+that you follow the [NIPY community code of conduct](https://nipy.org/conduct.html).
 
 ## Getting started
 
@@ -69,7 +69,7 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 ### Documentation
 
-DIPY uses [Sphinx](http://www.sphinx-doc.org/en/stable/index.html) to generate
+DIPY uses [Sphinx](https://www.sphinx-doc.org/en/master/index.html) to generate
 documentation. The
 [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst)
 contains details about documenting the contributions.

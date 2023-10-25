@@ -1,4 +1,3 @@
-
 import numpy as np
 
 
@@ -52,7 +51,7 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
         np.random.choice(nb_triangles, size=nb_seed, p=triangles_weight)
 
     # Choose random trilinear coordinates
-    # http://mathworld.wolfram.com/TrianglePointPicking.html
+    # https://mathworld.wolfram.com/TrianglePointPicking.html
     trilin_coord = np.random.rand(nb_seed, 3)
     is_upper = (trilin_coord[:, 1:].sum(axis=-1) > 1.0)
     trilin_coord[is_upper] = 1.0 - trilin_coord[is_upper]

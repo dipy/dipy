@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Installation script for dipy package """
 
 import os
@@ -165,6 +165,9 @@ SetupDependency('h5py', info.H5PY_MIN_VERSION,
                 req_type='install_requires',
                 heavy=False).check_fill(extra_setuptools_args)
 SetupDependency('tqdm', info.TQDM_MIN_VERSION,
+                req_type='install_requires',
+                heavy=False).check_fill(extra_setuptools_args)
+SetupDependency('trx-python', info.TRX_MIN_VERSION,
                 req_type='install_requires',
                 heavy=False).check_fill(extra_setuptools_args)
 

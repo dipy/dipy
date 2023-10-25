@@ -45,7 +45,7 @@ And here is the rest of the wonderful contributors:
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
 - **Qiyuan Tian**, Stanford University, Stanford, CA, USA
-- **Jon Haitz Legarreta Gorroño**, University of Sherbrooke, QC, CA
+- **Jon Haitz Legarreta Gorroño**, Brigham and Women's Hospital, Harvard Medical School, Boston, MA, USA
 - **Rafael Neto Henriques**, Champalimaud Neuroscience Programme, Champalimaud Centre for the Unknown, Lisbon, PT
 - **Stephan Meesters**, Eindhoven University of Technology, NL
 - **Himanshu Mishra**, Indian Institute of Technology, Karaghpur, IN

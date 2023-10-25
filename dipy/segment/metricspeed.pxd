@@ -2,7 +2,7 @@ from dipy.segment.cythonutils cimport Data2D, Shape
 from dipy.segment.featurespeed cimport Feature
 
 
-cdef class Metric(object):
+cdef class Metric:
     cdef Feature feature
     cdef int is_order_invariant
 

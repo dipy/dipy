@@ -1,4 +1,3 @@
-
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
 # from warnings import warn

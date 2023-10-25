@@ -850,7 +850,7 @@ class IvimModelVP(ReconstModel):
         return self.exp_phi1
 
 
-class IvimFit(object):
+class IvimFit:
 
     def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.

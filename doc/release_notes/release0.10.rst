@@ -33,7 +33,7 @@ The following 20 authors (alphabetically ordered) contributed 1022 commits:
 
 
 We closed a total of 232 issues, 94 pull requests and 138 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (94):
@@ -57,7 +57,7 @@ Pull Requests (94):
 * :ghpull:`733`: Add RTOP, RTAP and RTPP and the relative test
 * :ghpull:`743`: BF: memleaks with typed memory views in Cython
 * :ghpull:`724`: @sinkpoint's power map - refactored
-* :ghpull:`741`: ENH: it is preferable to use choice rather than randint to not have 
+* :ghpull:`741`: ENH: it is preferable to use choice rather than randint to not have
 * :ghpull:`727`: Optimize tensor fitting
 * :ghpull:`726`: NF - CSD response from a mask
 * :ghpull:`729`: BF: tensor predict
@@ -72,10 +72,10 @@ Pull Requests (94):
 * :ghpull:`712`: DOC: API changes in gh707.
 * :ghpull:`713`: RF: In case a user just wants to use a single integer.
 * :ghpull:`700`: TEST: add tests for AffineMap
-* :ghpull:`677`: DKI PR3 - NF: Adding standard kurtosis statistics on module dki.py 
+* :ghpull:`677`: DKI PR3 - NF: Adding standard kurtosis statistics on module dki.py
 * :ghpull:`721`: TST: Verify that output of estimate_sigma is a proper input to nlmeans.
 * :ghpull:`572`: NF : nlmeans now support arrays of noise std
-* :ghpull:`708`: Check for bval dimensionality on read. 
+* :ghpull:`708`: Check for bval dimensionality on read.
 * :ghpull:`707`: BF: Keep up with changes in scipy 0.16
 * :ghpull:`709`: DOC: Use the `identity` variable in the resampling transformation.
 * :ghpull:`703`: Fix syn-3d example
@@ -99,7 +99,7 @@ Pull Requests (94):
 * :ghpull:`674`: NF: Function to sample perpendicular directions relative to a given vector
 * :ghpull:`679`: BF + NF: Provide dipy version info when running dipy.get_info()
 * :ghpull:`680`: NF: Fetch and Read the MNI T1 and/or T2 template.
-* :ghpull:`664`: DKI fitting (DKI PR2) 
+* :ghpull:`664`: DKI fitting (DKI PR2)
 * :ghpull:`671`: DOC: move mailing list links to neuroimaging
 * :ghpull:`663`: changed samuel st-jean email to the usherbrooke one
 * :ghpull:`648`: Improve check of collinearity in vec2vec_rotmat
@@ -109,7 +109,7 @@ Pull Requests (94):
 * :ghpull:`651`: Added estimate_sigma bias correction + update example
 * :ghpull:`659`: BF: If n_frames is larger than one use path-numbering.
 * :ghpull:`658`: FIX: resaved npy file causing load error for py 33
-* :ghpull:`657`: Fix compilation error caused by inline functions 
+* :ghpull:`657`: Fix compilation error caused by inline functions
 * :ghpull:`628`: Affine registration PR 2/3
 * :ghpull:`629`: Quickbundles 2.1
 * :ghpull:`637`: DOC: Fix typo in docstring of Identity class.
@@ -138,7 +138,7 @@ Issues (138):
 * :ghissue:`769`: RF: Remove aniso2iso altogether.
 * :ghissue:`772`: DOC: Use xvfb when building the docs in a headless machine.
 * :ghissue:`754`: DOC: Should we add a side-car gitter chat to the website?
-* :ghissue:`771`: Should we remove the deprecated quickbundles module? 
+* :ghissue:`771`: Should we remove the deprecated quickbundles module?
 * :ghissue:`753`: TST: Test DSI with b0s.
 * :ghissue:`761`: reading dconn.nii
 * :ghissue:`723`: WIP: Assign streamlines to an existing cluster map via QuickBundles
@@ -165,7 +165,7 @@ Issues (138):
 * :ghissue:`737`: Possibly set_number_of_points doesn't delete memory
 * :ghissue:`672`: Power map
 * :ghissue:`724`: @sinkpoint's power map - refactored
-* :ghissue:`741`: ENH: it is preferable to use choice rather than randint to not have 
+* :ghissue:`741`: ENH: it is preferable to use choice rather than randint to not have
 * :ghissue:`730`: numpy 1.10 breaks master
 * :ghissue:`727`: Optimize tensor fitting
 * :ghissue:`726`: NF - CSD response from a mask
@@ -187,12 +187,12 @@ Issues (138):
 * :ghissue:`712`: DOC: API changes in gh707.
 * :ghissue:`713`: RF: In case a user just wants to use a single integer.
 * :ghissue:`700`: TEST: add tests for AffineMap
-* :ghissue:`677`: DKI PR3 - NF: Adding standard kurtosis statistics on module dki.py 
+* :ghissue:`677`: DKI PR3 - NF: Adding standard kurtosis statistics on module dki.py
 * :ghissue:`721`: TST: Verify that output of estimate_sigma is a proper input to nlmeans.
 * :ghissue:`693`: WIP: affine map tests
 * :ghissue:`694`: Memory errors / timeouts with affine registration on Windows
 * :ghissue:`572`: NF : nlmeans now support arrays of noise std
-* :ghissue:`708`: Check for bval dimensionality on read. 
+* :ghissue:`708`: Check for bval dimensionality on read.
 * :ghissue:`697`: dipy.io.gradients read_bvals_bvecs does not check bvals length
 * :ghissue:`707`: BF: Keep up with changes in scipy 0.16
 * :ghissue:`710`: Test dipy.core.tests.test_sphere.test_interp_rbf fails fails on Travis
@@ -226,8 +226,8 @@ Issues (138):
 * :ghissue:`674`: NF: Function to sample perpendicular directions relative to a given vector
 * :ghissue:`679`: BF + NF: Provide dipy version info when running dipy.get_info()
 * :ghissue:`680`: NF: Fetch and Read the MNI T1 and/or T2 template.
-* :ghissue:`664`: DKI fitting (DKI PR2) 
-* :ghissue:`539`: WIP: BF: Catching initial fodf creation of SDT 
+* :ghissue:`664`: DKI fitting (DKI PR2)
+* :ghissue:`539`: WIP: BF: Catching initial fodf creation of SDT
 * :ghissue:`671`: DOC: move mailing list links to neuroimaging
 * :ghissue:`663`: changed samuel st-jean email to the usherbrooke one
 * :ghissue:`287`: Fvtk sphere origin
@@ -240,7 +240,7 @@ Issues (138):
 * :ghissue:`652`: MAINT: work around scipy bug in sph_harm
 * :ghissue:`653`: Revisit naming when Matthew is back from Cuba
 * :ghissue:`658`: FIX: resaved npy file causing load error for py 33
-* :ghissue:`657`: Fix compilation error caused by inline functions 
+* :ghissue:`657`: Fix compilation error caused by inline functions
 * :ghissue:`655`: Development documentation instructs to remove `master`
 * :ghissue:`628`: Affine registration PR 2/3
 * :ghissue:`629`: Quickbundles 2.1

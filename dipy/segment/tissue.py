@@ -4,7 +4,7 @@ from dipy.segment.mrf import (ConstantObservationModel,
                               IteratedConditionalModes)
 
 
-class TissueClassifierHMRF(object):
+class TissueClassifierHMRF:
     r"""
     This class contains the methods for tissue classification using the Markov
     Random Fields modeling approach

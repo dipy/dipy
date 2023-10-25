@@ -1,4 +1,3 @@
-
 from functools import partial
 from multiprocessing import Pool
 

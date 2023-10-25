@@ -1,6 +1,6 @@
 """ A simple graph class """
 
-class Graph(object):
+class Graph:
     """ A simple graph class
 
     """

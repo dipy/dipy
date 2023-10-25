@@ -14,7 +14,7 @@ cdef extern from "dpy_math.h" nogil:
     double fabs(double)
 
 
-class ConstantObservationModel(object):
+class ConstantObservationModel:
     r"""
     Observation model assuming that the intensity of each class is constant.
     The model parameters are the means $\mu_{k}$ and variances $\sigma_{k}$
@@ -393,7 +393,7 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                 P_L_Y[x, y, z, l] = gaussian[x, y, z] * P_L_N[x, y, z, l]
 
 
-class IteratedConditionalModes(object):
+class IteratedConditionalModes:
     def __init__(self):
         pass
 

@@ -52,7 +52,7 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
     return np.unique(b)
 
 
-class GradientTable(object):
+class GradientTable:
     """Diffusion gradient information
 
     Parameters
@@ -142,10 +142,10 @@ class GradientTable(object):
                         b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
                                         * bval)
                 self.btens = b_tensors
-            elif (isinstance(btens, np.ndarray) and (btens.shape ==
-                    (gradients.shape[0],) or (btens.shape ==
-                    (gradients.shape[0], 1)) or (btens.shape == (1,
-                    gradients.shape[0])))):
+            elif (isinstance(btens, np.ndarray)
+                  and btens.shape in ((gradients.shape[0],),
+                                      (gradients.shape[0], 1),
+                                      (1, gradients.shape[0]))):
                 b_tensors = np.zeros((len(self.bvals), 3, 3))
                 if btens.shape == (1, gradients.shape[0]):
                     btens = btens.reshape((gradients.shape[0], 1))
@@ -647,7 +647,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     ----------
     gtab : GradientTable
         The nominal gradient table with which the data were acquired.
-    affines : list or ndarray of shape (n, 4, 4) or (n, 3, 3)
+    affines : list or ndarray of shape (4, 4, n) or (3, 3, n)
         Each entry in this list or array contain either an affine
         transformation (4,4) or a rotation matrix (3, 3).
         In both cases, the transformations encode the rotation that was applied
@@ -665,12 +665,25 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
        Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
        MRM, 61: 1336-1349
     """
+    if isinstance(affines, list):
+        affines = np.stack(affines, axis=-1)
+
+    if affines.shape[0] != affines.shape[1]:
+        msg = '''reorient_bvecs has changed to require affines as
+        (4, 4, n) or (3, 3, n). Shape of (n, 4, 4) or (n, 3, 3)
+        is deprecated and will fail in the future.'''
+        warn(msg, UserWarning)
+        affines = np.moveaxis(affines, 0, -1)
+
     new_bvecs = gtab.bvecs[~gtab.b0s_mask]
 
-    if new_bvecs.shape[0] != len(affines):
+    if new_bvecs.shape[0] != affines.shape[-1]:
         e_s = "Number of affine transformations must match number of "
         e_s += "non-zero gradients"
         raise ValueError(e_s)
+
+    # moving axis to make life easier
+    affines = np.moveaxis(affines, -1, 0)
 
     for i, aff in enumerate(affines):
         if aff.shape == (4, 4):

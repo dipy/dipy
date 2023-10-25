@@ -1,4 +1,3 @@
-
 """
 =====================
 Simple volume slicing

@@ -12,7 +12,7 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
     Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
     December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
     10.1016/j.csda.2006.05.019.
-    (http://www.sciencedirect.com/science/article/B6V8V-4K7F86W-2/2/a3a33291b8264e4c882a8f21b6e43351)
+    (https://www.sciencedirect.com/science/article/abs/pii/S0167947306001836)
     for advice on generating many sequences for use together, and on
     alternative algorithms and codes
 

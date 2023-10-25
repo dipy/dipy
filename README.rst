@@ -1,4 +1,4 @@
-.. image:: doc/_static/dipy-logo.png
+.. image:: doc/_static/images/logos/dipy-logo.png
   :height: 180px
   :target: http://dipy.org
   :alt: DIPY - Diffusion Imaging in Python

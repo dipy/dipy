@@ -31,25 +31,24 @@ def remove_dirs(sudo):
     print("""The distribution is built as root, so the files have the correct
     permissions when installed by the user.  Chown them to user for removal.""")
     if os.path.exists(BUILD_DIR):
-        cmd = 'chown -R %s %s' % (getuser(), BUILD_DIR)
+        cmd = f'chown -R {getuser()} {BUILD_DIR}'
         if sudo:
-            cmd = 'sudo ' + cmd
+            cmd = f'sudo {cmd}'
         shellcmd(cmd)
         shutil.rmtree(BUILD_DIR)
     if os.path.exists(DIST_DIR):
-        cmd = 'sudo chown -R %s %s' % (getuser(), DIST_DIR)
+        cmd = f'sudo chown -R {getuser()} {DIST_DIR}'
         if sudo:
-            cmd = 'sudo ' + cmd
+            cmd = f'sudo {cmd}'
         shellcmd(cmd)
         shutil.rmtree(DIST_DIR)
 
 
 def build_dist(readme, python_exe, sudo):
     print('Building distribution... (using sudo)')
-    cmd = '%s setup_egg.py bdist_mpkg --readme=%s' % (
-        python_exe, readme)
+    cmd = f'{python_exe} setup_egg.py bdist_mpkg --readme={readme}'
     if sudo:
-        cmd = 'sudo ' + cmd
+        cmd = f'sudo {cmd}'
     shellcmd(cmd)
 
 
@@ -71,9 +70,9 @@ def build_dmg(sudo):
         os.unlink(dstfolder)
     except OSError:
         pass
-    cmd = 'hdiutil create -srcfolder %s %s' % (srcfolder, dstfolder)
+    cmd = f'hdiutil create -srcfolder {srcfolder} {dstfolder}'
     if sudo:
-        cmd = 'sudo ' + cmd
+        cmd = f'sudo {cmd}'
     shellcmd(cmd)
 
 
@@ -88,7 +87,7 @@ def copy_readme():
 def revert_readme():
     """Revert the developer README."""
     print('Reverting README.rst...')
-    cmd = 'svn revert %s' % DEV_README
+    cmd = f'svn revert {DEV_README}'
     shellcmd(cmd)
 
 
@@ -99,10 +98,10 @@ def shellcmd(cmd, verbose=True):
     try:
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError as err:
-        msg = """
+        msg = f"""
         Error while executing a shell command.
-        %s
-        """ % str(err)
+        {err}
+        """
         raise Exception(msg)
 
 

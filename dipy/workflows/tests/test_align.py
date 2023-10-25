@@ -88,10 +88,8 @@ def test_image_registration():
         image_registration_flow = ImageRegistrationFlow()
 
         def read_distance(qual_fname):
-            temp_val = 0
             with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
-                temp_val = f.readlines()[-1]
-            return float(temp_val)
+                return float(f.readlines()[-1])
 
         def test_com():
 
