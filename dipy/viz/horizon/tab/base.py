@@ -121,8 +121,8 @@ class TabManager:
             else:
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
-    def _tab_selected(self, ui):
-        self._active_tab_id = ui.active_tab_idx
+    def _tab_selected(self, tab_ui):
+        self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
         if current_tab.__class__.__name__ == 'SlicesTab':
