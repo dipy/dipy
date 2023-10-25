@@ -11,6 +11,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 skip_it = use_xvfb == 'skip'
 
+
 def check_label(label):
     npt.assert_equal(label.font_family, 'Arial')
     npt.assert_equal(label.justification, 'left')
@@ -21,23 +22,21 @@ def check_label(label):
     npt.assert_equal(label.actor.GetTextProperty().GetBackgroundOpacity(), 0.0)
     npt.assert_equal(label.color, (0.7, 0.7, 0.7))
 
+
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_label():
-    # Regular label
     regular_label = build_label(text='Hello')
     npt.assert_equal(regular_label.message, 'Hello')
     npt.assert_equal(regular_label.font_size, 16)
     npt.assert_equal(regular_label.bold, False)
     check_label(regular_label)
 
-    # Regular label with optional parameters
     regular_label = build_label(text='Hello', font_size=10, bold=True)
     npt.assert_equal(regular_label.message, 'Hello')
     npt.assert_equal(regular_label.font_size, 10)
     npt.assert_equal(regular_label.bold, True)
     check_label(regular_label)
 
-    # HorizonUIElement
     horizon_label = build_label(text='Hello', is_horizon_label=True)
     npt.assert_equal(horizon_label.obj.message, 'Hello')
     npt.assert_equal(horizon_label.obj.font_size, 16)
@@ -66,8 +65,8 @@ def test_build_slider():
                      '{value:.1f} ({ratio:.0%})')
     npt.assert_equal(single_slider.selected_value, 5)
 
-    double_slider_label, double_slider = build_slider((4, 5), 100, text_template= '{value:.1f}',
-                                 is_double_slider=True)
+    double_slider_label, double_slider = build_slider(
+        (4, 5), 100, text_template='{value:.1f}', is_double_slider=True)
     npt.assert_equal(double_slider_label.obj.message, '')
     npt.assert_equal(double_slider_label.obj.font_size, 16)
     npt.assert_equal(double_slider_label.obj.bold, False)
@@ -95,13 +94,15 @@ def test_build_checkbox():
     npt.assert_equal(len(checkbox.obj.labels), 2)
     npt.assert_equal(checkbox.selected_value, ['Hello'])
 
-    # Empty labels
     checkbox = build_checkbox()
+    npt.assert_equal(checkbox, None)
+
+    checkbox = build_checkbox([])
+    npt.assert_equal(checkbox, None)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_switcher():
-    # Should be good with a warning nothing will be returned
     switcher = build_switcher()
     npt.assert_equal(switcher, None)
 

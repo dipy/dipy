@@ -16,48 +16,43 @@ if has_fury:
 
 @dataclass
 class HorizonUIElement:
-    """
-    Dataclass to define properties of horizon ui elements.
+    """Dataclass to define properties of horizon ui elements.
     """
     visibility: bool
     selected_value: Any
     obj: Any
     position = (0, 0)
 
-class HorizonTab(ABC):
-    """
-    Base for different tabs available in horizon.
-    """
 
+class HorizonTab(ABC):
+    """Base for different tabs available in horizon.
+    """
     def __init__(self):
         self._elements = []
 
     @abstractmethod
     def build(self, tab_id, tab_ui):
-        """
-        Build all the elements under the tab.
+        """Build all the elements under the tab.
 
         Parameters
         ----------
-
         tab_id : int
             Id of the tab.
         tab_ui : TabUI
             FURY TabUI object for tabs panel.
 
-        NOTE: tab_ui will removed once every all tabs adapt new build
-            architecture.
+        Notes
+        -----
+        tab_ui will removed once every all tabs adapt new build architecture.
         """
-
 
     def register_elements(self, *args):
-        """
-        Register elements for rendering.
+        """Register elements for rendering.
 
         Parameters
         ----------
-
         *args : HorizonUIElement(s)
+            Elements to be register for rendering.
         """
         for element in args:
             self._elements.append(element)
@@ -65,16 +60,15 @@ class HorizonTab(ABC):
     @property
     @abstractmethod
     def name(self):
-        """
-        Name of the tab
+        """Name of the tab.
         """
 
     @property
     def elements(self):
-        """
-        list of underlying FURY ui elements in the tab.
+        """list of underlying FURY ui elements in the tab.
         """
         return self._elements
+
 
 class TabManager:
     """
@@ -97,8 +91,6 @@ class TabManager:
 
         win_width, _win_height = win_size
 
-        # TODO: Add dynamic sizing
-        # tab_size = (np.rint(win_width / 1.5), np.rint(win_height / 4.5))
         self.__tab_size = (1280, 240)
         x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
 
@@ -113,19 +105,14 @@ class TabManager:
             tab.build(tab_id, self._tab_ui)
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
-                # TODO: Needed to move outside once all the tab adapt new build
                 self._render_tab_elements(tab_id, tab.elements)
 
     def _render_tab_elements(self, tab_id, elements):
         for element in elements:
-            # Checking if the element has multiple components e.g. switcher
-            # It is to support element not directly present in FURY
             if isinstance(element.position, list):
                 for i, position in enumerate(element.position):
-                    # print(element.obj[i])
                     self._tab_ui.add_element(tab_id, element.obj[i], position)
             else:
-                # print(element)
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
     def reposition(self, win_size):
@@ -134,7 +121,6 @@ class TabManager:
 
         Parameters
         ----------
-
         win_size : (float, float)
             size of the horizon window.
         """
@@ -173,15 +159,13 @@ class TabManager:
 
     @property
     def tab_ui(self):
-        """
-        FURY TabUI object.
+        """FURY TabUI object.
         """
         return self._tab_ui
 
 
 def build_label(text, font_size=16, bold=False, is_horizon_label=False):
-    """
-    Simple utility function to build labels
+    """Simple utility function to build labels.
 
     Parameters
     ----------
@@ -210,6 +194,7 @@ def build_label(text, font_size=16, bold=False, is_horizon_label=False):
         return HorizonUIElement(True, text, label)
     return label
 
+
 def build_slider(
         initial_value,
         max_value,
@@ -227,12 +212,10 @@ def build_slider(
         label_style_bold=False,
         is_double_slider=False
 ):
-    """
-    Create a horizon theme based disk-knob slider
+    """Create a horizon theme based disk-knob slider.
 
     Parameters
     ----------
-
     initial_value : float, (float, float)
         Initial value(s) of the slider.
     max_value : float
@@ -267,12 +250,11 @@ def build_slider(
 
     Return
     ------
-
     (label: HorizonUIElement, element(slider): HorizonUIElement)
     """
 
     # Check for the double slider as it only supports value and not ratio
-    if is_double_slider and 'ratio' in text_template :
+    if is_double_slider and 'ratio' in text_template:
         warnings.warn('Double slider only support values and not ratio')
         return
 
@@ -283,8 +265,6 @@ def build_slider(
         is_horizon_label=True
     )
 
-
-    # Initialize slider
     if not is_double_slider:
         slider = ui.LineSlider2D(
             initial_value=initial_value,
@@ -298,15 +278,15 @@ def build_slider(
         )
     else:
         slider = ui.LineDoubleSlider2D(
-        initial_values=initial_value,
-        max_value=max_value,
-        min_value=min_value,
-        length=length,
-        line_width=line_width,
-        outer_radius=radius,
-        font_size=font_size,
-        text_template=text_template
-    )
+            initial_values=initial_value,
+            max_value=max_value,
+            min_value=min_value,
+            length=length,
+            line_width=line_width,
+            outer_radius=radius,
+            font_size=font_size,
+            text_template=text_template
+        )
 
     # Attach callbacks
     slider.on_moving_slider = on_moving_slider
@@ -337,12 +317,10 @@ def build_checkbox(
         font_size=16,
         on_change=lambda _checkbox: None
 ):
-    """
-    Create horizon theme checkboxes
+    """Create horizon theme checkboxes.
 
     Parameters
     ----------
-
     labels : list(str), optional
         List of labels of each option.
     checked_labels: list(str), optional
@@ -356,12 +334,12 @@ def build_checkbox(
 
     Returns
     -------
-
     checkbox : HorizonUIElement
     """
 
-    if labels is None:
-        labels = []
+    if labels is None or not labels:
+        warnings.warn('At least one label needs to be to create checkboxes.')
+        return
 
     if checked_labels is None:
         checked_labels = ()
@@ -380,7 +358,6 @@ def build_checkbox(
     return HorizonUIElement(True, checked_labels, checkboxes)
 
 
-# TODO: There should be FURY ui element created
 def build_switcher(
         items=None,
         label='',
@@ -389,12 +366,10 @@ def build_switcher(
         on_next_clicked=lambda _selected_value: None,
         on_value_changed=lambda _selected_idx, _selected_value: None,
 ):
-    """
-    Create horizon theme switcher
+    """Create horizon theme switcher.
 
     Parameters
     ----------
-
     items : list, optional
         dictionaries with keys 'label' and 'value'. Label will be used to show
         it to user and value will be used for selection.
@@ -412,11 +387,12 @@ def build_switcher(
 
     Returns
     -------
-
     HorizonCombineElement(
         label: HorizonUIElement,
         element(switcher): HorizonUIElement)
 
+    Notes
+    -----
     switcher: consists 'obj' which is an array providing FURY UI elements used.
     """
     # return if there are no items passed
@@ -442,7 +418,7 @@ def build_switcher(
             size=(25, 25))
 
     switcher = HorizonUIElement(True, [initial_selection,
-                                 items[initial_selection]['value']],
+                                items[initial_selection]['value']],
                                 [left_button, selection_label, right_button])
 
     def left_clicked(_i_ren, _obj, _button):
@@ -466,7 +442,6 @@ def build_switcher(
         switcher.selected_value[1] = items[selected_id]['value']
         selection_label.message = items[selected_id]['label']
 
-
     left_button.on_left_mouse_button_clicked = left_clicked
     right_button.on_left_mouse_button_clicked = right_clicked
 
@@ -475,8 +450,7 @@ def build_switcher(
         switcher
     )
 
-# TODO: These methods are included in build_slider
-# These should removed once all the tabs adapts the build_slider method
+
 def color_single_slider(slider):
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)

@@ -5,7 +5,7 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
-                                    build_switcher, build_checkbox)
+                                  build_switcher, build_checkbox)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -14,12 +14,10 @@ if has_fury:
 
 
 class SlicesTab(HorizonTab):
-    """
-    Interaction tab for slice visualization.
+    """Interaction tab for slice visualization.
 
     Attributes
     ----------
-
     name : str
         Name of the tab.
     """
@@ -36,10 +34,8 @@ class SlicesTab(HorizonTab):
         self._force_render = force_render
         self._tab_id = 0
 
-        # Providing callback to synchronize slices
         self.on_slice_change = lambda _tab_id, _x, _y, _z: None
 
-        # Opacity slider
         self._slice_opacity_label, self._slice_opacity = build_slider(
             initial_value=1.,
             max_value=1.,
@@ -48,7 +44,6 @@ class SlicesTab(HorizonTab):
             label='Opacity'
         )
 
-        # Slice X slider
         self._slice_x_label, self._slice_x = build_slider(
             initial_value=self._visualizer.selected_slices[0],
             max_value=self._visualizer.data_shape[0] - 1,
@@ -57,12 +52,14 @@ class SlicesTab(HorizonTab):
         )
 
         self._change_slice_x = partial(self._change_slice_value,
-                                       selected_slice=self._slice_x,
-                                       actor_id=0)
+                                       selected_slice=self._slice_x)
         self._adjust_slice_x = partial(self._change_slice_value,
                                        selected_slice=self._slice_x,
-                                       sync_slice=True,
-                                       actor_id=0)
+                                       sync_slice=True)
+        self._visualize_slice_x = partial(
+            self._visualizer.slice_actors[0].display_extent,
+            y1=0, y2=self._visualizer.data_shape[1] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
         self._slice_x.obj.on_value_changed = self._adjust_slice_x
         self._slice_x.obj.on_moving_slider = self._change_slice_x
@@ -76,8 +73,6 @@ class SlicesTab(HorizonTab):
             checked_labels=[''],
             on_change=self._change_slice_visibility_x)
 
-        # Slice Y slider
-
         self._slice_y_label, self._slice_y = build_slider(
             initial_value=self._visualizer.selected_slices[1],
             max_value=self._visualizer.data_shape[1] - 1,
@@ -86,12 +81,14 @@ class SlicesTab(HorizonTab):
         )
 
         self._change_slice_y = partial(self._change_slice_value,
-                                       selected_slice=self._slice_y,
-                                       actor_id=1)
+                                       selected_slice=self._slice_y)
         self._adjust_slice_y = partial(self._change_slice_value,
                                        selected_slice=self._slice_y,
-                                       sync_slice=True,
-                                       actor_id=1)
+                                       sync_slice=True)
+        self._visualize_slice_y = partial(
+            self._visualizer.slice_actors[1].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
         self._slice_y.obj.on_value_changed = self._adjust_slice_y
         self._slice_y.obj.on_moving_slider = self._change_slice_y
@@ -105,7 +102,6 @@ class SlicesTab(HorizonTab):
             checked_labels=[''],
             on_change=self._change_slice_visibility_y)
 
-        # Slice Z slider
         self._slice_z_label, self._slice_z = build_slider(
             initial_value=self._visualizer.selected_slices[2],
             max_value=self._visualizer.data_shape[2] - 1,
@@ -114,12 +110,14 @@ class SlicesTab(HorizonTab):
         )
 
         self._change_slice_z = partial(self._change_slice_value,
-                                       selected_slice=self._slice_z,
-                                       actor_id=2)
+                                       selected_slice=self._slice_z)
         self._adjust_slice_z = partial(self._change_slice_value,
                                        selected_slice=self._slice_z,
-                                       sync_slice=True,
-                                       actor_id=2)
+                                       sync_slice=True)
+        self._visualize_slice_z = partial(
+            self._visualizer.slice_actors[2].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            y1=0, y2=self._visualizer.data_shape[1] - 1)
 
         self._slice_z.obj.on_value_changed = self._adjust_slice_z
         self._slice_z.obj.on_moving_slider = self._change_slice_z
@@ -133,7 +131,6 @@ class SlicesTab(HorizonTab):
             checked_labels=[''],
             on_change=self._change_slice_visibility_z)
 
-        # Slider for intensities
         self._intensities_label, self._intensities = build_slider(
             initial_value=self._visualizer.intensities_range,
             min_value=self._visualizer.volume_min,
@@ -144,7 +141,6 @@ class SlicesTab(HorizonTab):
             is_double_slider=True
         )
 
-        # Switcher for colormap
         self._supported_colormap = [
             {'label': 'Gray', 'value': 'gray'},
             {'label': 'Bone', 'value': 'bone'},
@@ -158,13 +154,13 @@ class SlicesTab(HorizonTab):
 
         ]
 
-        self._colormap_switcher_label, self._colormap_switcher = build_switcher(
-            items=self._supported_colormap,
-            label='Colormap',
-            on_value_changed=self._change_color_map
-        )
+        self._colormap_switcher_label, self._colormap_switcher = \
+            build_switcher(
+                items=self._supported_colormap,
+                label='Colormap',
+                on_value_changed=self._change_color_map
+            )
 
-        # Text section for voxel
         self._voxel_label = build_label(text='Voxel', is_horizon_label=True)
         self._voxel_data = build_label(text='', is_horizon_label=True)
 
@@ -190,7 +186,6 @@ class SlicesTab(HorizonTab):
             self._voxel_data
         )
 
-        # Slider for volume if data provided have volume information
         if len(self._visualizer.data_shape) == 4:
             self._volume_label, self._volume = build_slider(
                 initial_value=0,
@@ -219,7 +214,7 @@ class SlicesTab(HorizonTab):
         self._voxel_data.selected_value = message
 
     def _change_slice_value(
-            self, slider, selected_slice, sync_slice=False, actor_id=None):
+            self, slider, selected_slice, sync_slice=False):
         selected_slice.selected_value = int(np.rint(slider.value))
         if not sync_slice:
             self.on_slice_change(
@@ -228,23 +223,12 @@ class SlicesTab(HorizonTab):
                 self._slice_y.selected_value,
                 self._slice_z.selected_value
             )
-        if actor_id == 0:
-            self._visualizer.slice_actors[0].display_extent(
-                self._slice_x.selected_value, self._slice_x.selected_value,
-                0, self._visualizer.data_shape[1] - 1, 0,
-                self._visualizer.data_shape[2] - 1)
-        elif actor_id == 1:
-            self._visualizer.slice_actors[1].display_extent(0,
-                self._visualizer.data_shape[0] - 1,
-                self._slice_y.selected_value,
-                self._slice_y.selected_value, 0,
-                self._visualizer.data_shape[2] - 1)
-        elif actor_id == 2:
-            self._visualizer.slice_actors[2].display_extent(
-                0, self._visualizer.data_shape[0] - 1, 0,
-                self._visualizer.data_shape[1] - 1,
-                self._slice_z.selected_value, self._slice_z.selected_value)
-
+        self._visualize_slice_x(x1=self._slice_x.selected_value,
+                                x2=self._slice_x.selected_value)
+        self._visualize_slice_y(y1=self._slice_y.selected_value,
+                                y2=self._slice_y.selected_value)
+        self._visualize_slice_z(z1=self._slice_z.selected_value,
+                                z2=self._slice_z.selected_value)
 
     def _update_slice_visibility(
             self, checkboxes, selected_slice, actor, visibility=None):
@@ -257,7 +241,6 @@ class SlicesTab(HorizonTab):
         selected_slice.visibility = visibility
         selected_slice.obj.set_visibility(visibility)
         actor.SetVisibility(visibility)
-
 
     def _change_volume(self, slider):
         value = int(np.rint(slider.value))
@@ -339,8 +322,7 @@ class SlicesTab(HorizonTab):
                 self._slice_opacity.selected_value)
 
     def update_slices(self, x_slice, y_slice, z_slice):
-        """
-        Updates slicer positions
+        """Updates slicer positions.
 
         Parameters
         ----------
@@ -405,7 +387,6 @@ class SlicesTab(HorizonTab):
 
     @property
     def tab_id(self):
-        """
-        Id of the tab.
+        """Id of the tab.
         """
         return self._tab_id
