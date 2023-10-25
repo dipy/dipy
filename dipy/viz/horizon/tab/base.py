@@ -266,7 +266,6 @@ def build_slider(
     (label: HorizonUIElement, element(slider): HorizonUIElement)
     """
 
-    # Check for the double slider as it only supports value and not ratio
     if is_double_slider and 'ratio' in text_template:
         warnings.warn('Double slider only support values and not ratio')
         return
@@ -301,12 +300,10 @@ def build_slider(
             text_template=text_template
         )
 
-    # Attach callbacks
     slider.on_moving_slider = on_moving_slider
     slider.on_value_changed = on_value_changed
     slider.on_change = on_change
 
-    # Apply color theme
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
     slider.active_color = (.9, .4, .0)
@@ -316,7 +313,6 @@ def build_slider(
         slider.handles[0].color = (1., .5, .0)
         slider.handles[1].color = (1., .5, .0)
 
-    # Generate HorizonSlider
     return (
         slider_label,
         HorizonUIElement(True, initial_value, slider)
@@ -357,7 +353,6 @@ def build_checkbox(
     if checked_labels is None:
         checked_labels = ()
 
-    # Initialize checkboxes
     checkboxes = ui.Checkbox(
         labels=labels,
         checked_labels=checked_labels,
@@ -365,7 +360,6 @@ def build_checkbox(
         font_size=font_size
     )
 
-    # Attach callback
     checkboxes.on_change = on_change
 
     return HorizonUIElement(True, checked_labels, checkboxes)
@@ -408,14 +402,12 @@ def build_switcher(
     -----
     switcher: consists 'obj' which is an array providing FURY UI elements used.
     """
-    # return if there are no items passed
     if items is None:
         warnings.warn('No items passed in switcher')
         return
 
     num_items = len(items)
 
-    # Checking if value passed for initial value is in the
     if initial_selection >= num_items:
         initial_selection = 0
 
