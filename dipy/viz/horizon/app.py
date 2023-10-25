@@ -485,6 +485,13 @@ class Horizon:
         if len(self.__tabs) > 0:
             self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
                                         synchronize_slices)
+
+            def tab_changed(actors):
+                for act in actors:
+                    scene.rm(act)
+                    scene.add(act)
+
+            self.__tab_mgr.tab_changed = tab_changed
             scene.add(self.__tab_mgr.tab_ui)
 
         self.show_m.initialize()

@@ -91,13 +91,19 @@ class TabManager:
 
         win_width, _win_height = win_size
 
-        self.__tab_size = (1280, 240)
-        x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
+        self._tab_size = (1280, 240)
+        x_pad = np.rint((win_width - self._tab_size[0]) / 2)
+
+        self._active_tab_id = num_tabs - 1
 
         self._tab_ui = ui.TabUI(
-            position=(x_pad, 5), size=self.__tab_size, nb_tabs=num_tabs,
+            position=(x_pad, 5), size=self._tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
-            draggable=True, startup_tab_id=0)
+            draggable=True, startup_tab_id=self._active_tab_id)
+
+        self._tab_ui.on_change = self._tab_selected
+
+        self.tab_changed = lambda actors: None
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title = ' ' + tab.name
@@ -115,6 +121,13 @@ class TabManager:
             else:
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
+    def _tab_selected(self, ui):
+        self._active_tab_id = ui.active_tab_idx
+
+        current_tab = self._tabs[self._active_tab_id]
+        if current_tab.__class__.__name__ == 'SlicesTab':
+            self.tab_changed(current_tab.actors)
+
     def reposition(self, win_size):
         """
         Reposition the tabs panel.
@@ -125,7 +138,7 @@ class TabManager:
             size of the horizon window.
         """
         win_width, _win_height = win_size
-        x_pad = np.rint((win_width - self.__tab_size[0]) / 2)
+        x_pad = np.rint((win_width - self._tab_size[0]) / 2)
         self._tab_ui.position = (x_pad, 5)
 
     def synchronize_slices(self, active_tab_id, x_value, y_value, z_value):

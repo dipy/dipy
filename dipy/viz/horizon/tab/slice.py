@@ -343,6 +343,19 @@ class SlicesTab(HorizonTab):
             self._slice_z.obj.value = z_slice
 
     def build(self, tab_id, _tab_ui):
+        """Build all the elements under the tab.
+
+        Parameters
+        ----------
+        tab_id : int
+            Id of the tab.
+        tab_ui : TabUI
+            FURY TabUI object for tabs panel.
+
+        Notes
+        -----
+        tab_ui will removed once every all tabs adapt new build architecture.
+        """
         self._tab_id = tab_id
 
         x_pos = .02
@@ -383,6 +396,8 @@ class SlicesTab(HorizonTab):
 
     @property
     def name(self):
+        """Name of the tab.
+        """
         return self._name
 
     @property
@@ -390,3 +405,9 @@ class SlicesTab(HorizonTab):
         """Id of the tab.
         """
         return self._tab_id
+
+    @property
+    def actors(self):
+        """visualization actors controlled by tab.
+        """
+        return self._visualizer.slice_actors
