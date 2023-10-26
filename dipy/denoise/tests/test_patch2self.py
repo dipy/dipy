@@ -9,6 +9,7 @@ from numpy.testing import (assert_array_almost_equal,
 import pytest
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
+from dipy.testing.decorators import set_random_number_generator
 
 needs_sklearn = pytest.mark.skipif(
     not p2s.has_sklearn,
@@ -16,8 +17,9 @@ needs_sklearn = pytest.mark.skipif(
 
 
 @needs_sklearn
-def test_patch2self_random_noise():
-    S0 = 30 + 2 * np.random.standard_normal((20, 20, 20, 50))
+@set_random_number_generator(1234)
+def test_patch2self_random_noise(rng=None):
+    S0 = 30 + 2 * rng.standard_normal((20, 20, 20, 50))
 
     bvals = np.repeat(30, 50)
 
@@ -57,10 +59,11 @@ def test_patch2self_random_noise():
 
 
 @needs_sklearn
-def test_patch2self_boundary():
+@set_random_number_generator(1234)
+def test_patch2self_boundary(rng=None):
     # patch2self preserves boundaries
     S0 = 100 + np.zeros((20, 20, 20, 20))
-    noise = 2 * np.random.standard_normal((20, 20, 20, 20))
+    noise = 2 * rng.standard_normal((20, 20, 20, 20))
     S0 += noise
     S0[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
 
@@ -71,7 +74,8 @@ def test_patch2self_boundary():
     assert_less(S0[10, 10, 10, 10], 110)
 
 
-def rfiw_phantom(gtab, snr=None):
+@set_random_number_generator(4321)
+def rfiw_phantom(gtab, snr=None, rng=None):
     """rectangle fiber immersed in water"""
     # define voxel index
     slice_ind = np.zeros((10, 10, 8))
@@ -129,8 +133,8 @@ def rfiw_phantom(gtab, snr=None):
         return dwi
     else:
         sigma = S2 * 1.0 / snr
-        n1 = np.random.normal(0, sigma, size=dwi.shape)
-        n2 = np.random.normal(0, sigma, size=dwi.shape)
+        n1 = rng.normal(0, sigma, size=dwi.shape)
+        n2 = rng.normal(0, sigma, size=dwi.shape)
         return [np.sqrt((dwi / np.sqrt(2) + n1)**2 +
                         (dwi / np.sqrt(2) + n2)**2), sigma]
 

@@ -10,6 +10,7 @@ from dipy.io.utils import create_nifti_header
 from dipy.testing.decorators import use_xvfb
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import set_random_number_generator
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -132,9 +133,9 @@ def test_horizon():
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_roi_images():
-    np.random.seed(42)
-    img1 = np.random.rand(5, 5, 5)
+@set_random_number_generator(42)
+def test_roi_images(rng):
+    img1 = rng.random((5, 5, 5))
     img2 = np.zeros((5, 5, 5))
     img2[2, 2, 2] = 1
     img3 = np.zeros((5, 5, 5))

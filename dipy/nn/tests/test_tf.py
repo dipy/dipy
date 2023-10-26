@@ -18,7 +18,7 @@ def test_default_mnist_sequential():
 
     mnist = tf.keras.datasets.mnist
 
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -44,7 +44,7 @@ def test_default_mnist_sequential():
 def test_default_mnist_slp():
 
     mnist = tf.keras.datasets.mnist
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -64,7 +64,7 @@ def test_default_mnist_slp():
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_mnist_mlp():
     mnist = tf.keras.datasets.mnist
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0

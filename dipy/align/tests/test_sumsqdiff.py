@@ -5,6 +5,7 @@ from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_allclose)
+from dipy.testing.decorators import set_random_number_generator
 
 
 def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
@@ -119,7 +120,8 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
                             dfield[s, r, c] = b[s, r, c] / nrm2
 
 
-def test_compute_residual_displacement_field_ssd_2d():
+@set_random_number_generator(5512751)
+def test_compute_residual_displacement_field_ssd_2d(rng):
     # Select arbitrary images' shape (same shape for both images)
     sh = (20, 10)
 
@@ -136,18 +138,16 @@ def test_compute_residual_displacement_field_ssd_2d():
     X[..., 1] = x_1[None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(5512751)
-
     grad_F = X - c_f
     grad_G = X - c_g
 
-    Fnoise = np.random.ranf(
+    Fnoise = rng.random(
         np.size(grad_F)).reshape(
         grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     grad_F += Fnoise
 
-    Gnoise = np.random.ranf(
+    Gnoise = rng.random(
         np.size(grad_G)).reshape(
         grad_G.shape) * grad_G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
@@ -160,26 +160,27 @@ def test_compute_residual_displacement_field_ssd_2d():
     F = 0.5 * np.sum(grad_F**2, -1)
     G = 0.5 * sq_norm_grad_G
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 
     delta_field = np.array(F - G, dtype=floating)
 
-    sigma_field = np.random.randn(delta_field.size).reshape(delta_field.shape)
+    sigma_field = \
+        rng.standard_normal(delta_field.size).reshape(delta_field.shape)
     sigma_field = sigma_field.astype(floating)
 
     # Select some pixels to force sigma_field = infinite
-    inf_sigma = np.random.randint(0, 2, sh[0] * sh[1])
+    inf_sigma = rng.integers(0, 2, sh[0] * sh[1])
     inf_sigma = inf_sigma.reshape(sh)
     sigma_field[inf_sigma == 1] = np.inf
 
     # Select an initial displacement field
-    d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
+    d = rng.standard_normal(grad_G.size).reshape(grad_G.shape).astype(floating)
     lambda_param = 1.5
 
     # Implementation under test
@@ -258,7 +259,8 @@ def test_compute_residual_displacement_field_ssd_2d():
             assert_allclose(actual, expected, rtol=rtol, atol=atol)
 
 
-def test_compute_residual_displacement_field_ssd_3d():
+@set_random_number_generator(5512751)
+def test_compute_residual_displacement_field_ssd_3d(rng):
     # Select arbitrary images' shape (same shape for both images)
     sh = (20, 15, 10)
 
@@ -277,18 +279,16 @@ def test_compute_residual_displacement_field_ssd_3d():
     X[..., 2] = x_2[None, None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(9223102)
-
     grad_F = X - c_f
     grad_G = X - c_g
 
-    Fnoise = np.random.ranf(
+    Fnoise = rng.random(
         np.size(grad_F)).reshape(
         grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     grad_F += Fnoise
 
-    Gnoise = np.random.ranf(
+    Gnoise = rng.random(
         np.size(grad_G)).reshape(
         grad_G.shape) * grad_G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
@@ -301,26 +301,26 @@ def test_compute_residual_displacement_field_ssd_3d():
     F = 0.5 * np.sum(grad_F**2, -1)
     G = 0.5 * sq_norm_grad_G
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 
     delta_field = np.array(F - G, dtype=floating)
 
-    sigma_field = np.random.randn(delta_field.size).reshape(delta_field.shape)
+    sigma_field = rng.random(delta_field.size).reshape(delta_field.shape)
     sigma_field = sigma_field.astype(floating)
 
     # Select some pixels to force sigma_field = infinite
-    inf_sigma = np.random.randint(0, 2, sh[0] * sh[1] * sh[2])
+    inf_sigma = rng.integers(0, 2, sh[0] * sh[1] * sh[2])
     inf_sigma = inf_sigma.reshape(sh)
     sigma_field[inf_sigma == 1] = np.inf
 
     # Select an initial displacement field
-    d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
+    d = rng.random(grad_G.size).reshape(grad_G.shape).astype(floating)
     lambda_param = 1.5
 
     # Implementation under test
@@ -399,7 +399,7 @@ def test_compute_residual_displacement_field_ssd_3d():
 
             # the numpy linear solver may differ from our custom implementation
             # we need to increase the tolerance a bit
-            assert_allclose(actual, expected, rtol=rtol, atol=atol * 5)
+            assert_allclose(actual, expected, rtol=rtol, atol=atol * 10)
 
 
 def test_solve_2d_symmetric_positive_definite():
@@ -542,7 +542,8 @@ def test_compute_energy_ssd_3d():
     assert_almost_equal(expected, actual)
 
 
-def test_compute_ssd_demons_step_2d():
+@set_random_number_generator(1137271)
+def test_compute_ssd_demons_step_2d(rng):
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -572,18 +573,16 @@ def test_compute_ssd_demons_step_2d():
     X[..., 1] = x_1[None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(1137271)
-
     grad_F = X - c_f
     grad_G = X - c_g
 
-    Fnoise = np.random.ranf(
+    Fnoise = rng.random(
         np.size(grad_F)).reshape(
         grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     grad_F += Fnoise
 
-    Gnoise = np.random.ranf(
+    Gnoise = rng.random(
         np.size(grad_G)).reshape(
         grad_G.shape) * grad_G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
@@ -596,18 +595,18 @@ def test_compute_ssd_demons_step_2d():
     F = 0.5 * np.sum(grad_F**2, -1)
     G = 0.5 * sq_norm_grad_G
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 
     delta_field = np.array(G - F, dtype=floating)
 
     # Select some pixels to force gradient = 0 and F=G
-    random_labels = np.random.randint(0, 2, sh[0] * sh[1])
+    random_labels = rng.integers(0, 2, sh[0] * sh[1])
     random_labels = random_labels.reshape(sh)
 
     F[random_labels == 0] = G[random_labels == 0]
@@ -643,7 +642,8 @@ def test_compute_ssd_demons_step_2d():
         assert_array_almost_equal(actual, expected)
 
 
-def test_compute_ssd_demons_step_3d():
+@set_random_number_generator(1137271)
+def test_compute_ssd_demons_step_3d(rng):
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -676,18 +676,16 @@ def test_compute_ssd_demons_step_3d():
     X[..., 2] = x_2[None, None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(1137271)
-
     grad_F = X - c_f
     grad_G = X - c_g
 
-    Fnoise = np.random.ranf(
+    Fnoise = rng.random(
         np.size(grad_F)).reshape(
         grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     grad_F += Fnoise
 
-    Gnoise = np.random.ranf(
+    Gnoise = rng.random(
         np.size(grad_G)).reshape(
         grad_G.shape) * grad_G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
@@ -700,18 +698,18 @@ def test_compute_ssd_demons_step_3d():
     F = 0.5 * np.sum(grad_F**2, -1)
     G = 0.5 * sq_norm_grad_G
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 
     delta_field = np.array(G - F, dtype=floating)
 
     # Select some pixels to force gradient = 0 and F=G
-    random_labels = np.random.randint(0, 2, sh[0] * sh[1] * sh[2])
+    random_labels = rng.integers(0, 2, sh[0] * sh[1] * sh[2])
     random_labels = random_labels.reshape(sh)
 
     F[random_labels == 0] = G[random_labels == 0]

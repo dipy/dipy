@@ -13,6 +13,7 @@ from dipy.data import fetch_gold_standard_io
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import is_header_compatible
+from dipy.testing.decorators import set_random_number_generator
 
 import trx.trx_file_memmap as tmm
 
@@ -522,11 +523,11 @@ def test_bounding_bbox_valid(standard):
     assert_(sft.is_bbox_in_vox_valid())
 
 
-def test_random_point_color():
-    np.random.seed(0)
+@set_random_number_generator(0)
+def test_random_point_color(rng):
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
-    random_colors = np.random.randint(0, 255, (13, 8, 3))
+    random_colors = rng.integers(0, 255, (13, 8, 3))
     coloring_dict = {'colors': random_colors}
 
     try:
@@ -538,11 +539,11 @@ def test_random_point_color():
         assert_(False)
 
 
-def test_random_point_gray():
-    np.random.seed(0)
+@set_random_number_generator(0)
+def test_random_point_gray(rng):
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
-    random_colors = np.random.randint(0, 255, (13, 8, 1))
+    random_colors = rng.integers(0, 255, (13, 8, 1))
     coloring_dict = {
         'color_x': random_colors,
         'color_y': random_colors,
@@ -558,13 +559,13 @@ def test_random_point_gray():
         assert_(False)
 
 
-def test_random_streamline_color():
-    np.random.seed(0)
+@set_random_number_generator(0)
+def test_random_streamline_color(rng):
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
-    uniform_colors_x = np.random.randint(0, 255, (13, 1))
-    uniform_colors_y = np.random.randint(0, 255, (13, 1))
-    uniform_colors_z = np.random.randint(0, 255, (13, 1))
+    uniform_colors_x = rng.integers(0, 255, (13, 1))
+    uniform_colors_y = rng.integers(0, 255, (13, 1))
+    uniform_colors_z = rng.integers(0, 255, (13, 1))
     uniform_colors_x = np.expand_dims(
         np.repeat(uniform_colors_x, 8, axis=1), axis=-1)
     uniform_colors_y = np.expand_dims(

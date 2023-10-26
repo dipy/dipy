@@ -11,6 +11,7 @@ import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metricspeed as dipysmetric
 from dipy.segment.clustering_algorithms import quickbundles
 import dipy.tracking.streamline as streamline_utils
+from dipy.testing.decorators import set_random_number_generator
 
 
 dtype = "float32"
@@ -65,13 +66,18 @@ def test_quickbundles_shape_incompatibility():
 
 def test_quickbundles_2D():
     # Test quickbundles clustering using 2D points and the Eulidean metric.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(7)
     data = []
-    data += [rng.randn(1, 2) + np.array([0, 0]) for _ in range(1)]
-    data += [rng.randn(1, 2) + np.array([10, 10]) for _ in range(2)]
-    data += [rng.randn(1, 2) + np.array([-10, 10]) for _ in range(3)]
-    data += [rng.randn(1, 2) + np.array([10, -10]) for _ in range(4)]
-    data += [rng.randn(1, 2) + np.array([-10, -10]) for _ in range(5)]
+    data += \
+        [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]
+    data += \
+        [rng.standard_normal((1, 2)) + np.array([10, 10]) for _ in range(2)]
+    data += \
+        [rng.standard_normal((1, 2)) + np.array([-10, 10]) for _ in range(3)]
+    data += \
+        [rng.standard_normal((1, 2)) + np.array([10, -10]) for _ in range(4)]
+    data += \
+        [rng.standard_normal((1, 2)) + np.array([-10, -10]) for _ in range(5)]
     data = np.array(data, dtype=dtype)
 
     clusters_truth = [[0], [1, 2], [3, 4, 5],

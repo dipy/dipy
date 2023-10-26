@@ -326,10 +326,11 @@ def test_set_number_of_points_memory_leaks():
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
-        rng = np.random.RandomState(1234)
+        rng = np.random.default_rng(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
-                       for _ in range(NB_STREAMLINES)]
+        streamlines = \
+            [rng.standard_normal((rng.integers(10, 100), 3)).astype(dtype)
+             for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 

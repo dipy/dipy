@@ -5,9 +5,11 @@ from numpy.testing import (assert_equal,
                            assert_raises)
 from dipy.align import floating
 from dipy.align import expectmax as em
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_compute_em_demons_step_2d():
+@set_random_number_generator(1346491)
+def test_compute_em_demons_step_2d(rng):
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -58,8 +60,7 @@ def test_compute_em_demons_step_2d():
     sigma_i_sq = (F - G)**2
 
     # Select some pixels to have special values
-    np.random.seed(1346491)
-    random_labels = np.random.randint(0, 5, sh[0] * sh[1])
+    random_labels = rng.integers(0, 5, sh[0] * sh[1])
     random_labels = random_labels.reshape(sh)
 
     # this label is used to set sigma_i_sq == 0 below
@@ -141,7 +142,8 @@ def test_compute_em_demons_step_2d():
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0")
 
 
-def test_compute_em_demons_step_3d():
+@set_random_number_generator(1346491)
+def test_compute_em_demons_step_3d(rng):
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -195,8 +197,7 @@ def test_compute_em_demons_step_3d():
     sigma_i_sq = (F - G)**2
 
     # Select some pixels to have special values
-    np.random.seed(1346491)
-    random_labels = np.random.randint(0, 5, sh[0] * sh[1] * sh[2])
+    random_labels = rng.integers(0, 5, sh[0] * sh[1] * sh[2])
     random_labels = random_labels.reshape(sh)
 
     # this label is used to set sigma_i_sq == 0 below
@@ -279,9 +280,8 @@ def test_compute_em_demons_step_3d():
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0")
 
 
-def test_quantize_positive_2d():
-    np.random.seed(1246592)
-
+@set_random_number_generator(1246592)
+def test_quantize_positive_2d(rng):
     # an arbitrary number of quantization levels
     num_levels = 11
     # arbitrary test image shape (must contain at least 3 elements)
@@ -297,7 +297,7 @@ def test_quantize_positive_2d():
                                   max_positive - delta * 0.5, num_levels - 1)
     # generate a target quantization image
     true_quantization = np.empty(img_shape, dtype=np.int32)
-    random_labels = np.random.randint(0, num_levels,
+    random_labels = rng.integers(0, num_levels,
                                       np.size(true_quantization))
 
     # make sure there is at least one element equal to 0, 1 and num_levels-1
@@ -342,9 +342,8 @@ def test_quantize_positive_2d():
     assert_equal(out, np.ones(img_shape, dtype=np.int32))
 
 
-def test_quantize_positive_3d():
-    np.random.seed(1246592)
-
+@set_random_number_generator(1246592)
+def test_quantize_positive_3d(rng):
     # an arbitrary number of quantization levels
     num_levels = 11
     # arbitrary test image shape (must contain at least 3 elements)
@@ -361,7 +360,7 @@ def test_quantize_positive_3d():
                                   num_levels - 1)
     # generate a target quantization image
     true_quantization = np.empty(img_shape, dtype=np.int32)
-    random_labels = np.random.randint(0, num_levels,
+    random_labels = rng.integers(0, num_levels,
                                       np.size(true_quantization))
 
     # make sure there is at least one element equal to 0, 1 and num_levels-1
@@ -406,19 +405,18 @@ def test_quantize_positive_3d():
     assert_equal(out, np.ones(img_shape, dtype=np.int32))
 
 
-def test_compute_masked_class_stats_2d():
-    np.random.seed(1246592)
-
+@set_random_number_generator(1246592)
+def test_compute_masked_class_stats_2d(rng):
     shape = (32, 32)
 
     # Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
-    labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)
+    labels[...] = rng.integers(2, 10, np.size(labels)).reshape(shape)
     # now label 0 is not present and label 1 occurs once
     labels[0, 0] = 1
 
     # Create random values
-    values = np.random.randn(shape[0], shape[1]).astype(floating)
+    values = rng.standard_normal((shape[0], shape[1])).astype(floating)
     values *= labels
     values += labels
 
@@ -433,20 +431,20 @@ def test_compute_masked_class_stats_2d():
     assert_array_almost_equal(std_dev, expected_vars, decimal=4)
 
 
-def test_compute_masked_class_stats_3d():
-    np.random.seed(1246592)
-
+@set_random_number_generator(1246592)
+def test_compute_masked_class_stats_3d(rng):
     shape = (32, 32, 32)
 
     # Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
-    labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)
+    labels[...] = rng.integers(2, 10, np.size(labels)).reshape(shape)
 
     # now label 0 is not present and label 1 occurs once
     labels[0, 0, 0] = 1
 
     # Create random values
-    values = np.random.randn(shape[0], shape[1], shape[2]).astype(floating)
+    values = rng.standard_normal((shape[0], shape[1],
+                                  shape[2])).astype(floating)
     values *= labels
     values += labels
 

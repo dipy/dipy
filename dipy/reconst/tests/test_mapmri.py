@@ -22,6 +22,7 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.reconst.shm import sh_to_sf, descoteaux07_legacy_msg
 from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
                              single_tensor, cylinders_and_ball_soderman)
+from dipy.testing.decorators import set_random_number_generator
 
 
 def int_func(n):
@@ -287,14 +288,15 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 2)
 
 
-def test_mapmri_isotropic_static_scale_factor(radial_order=6):
+@set_random_number_generator(1234)
+def test_mapmri_isotropic_static_scale_factor(radial_order=6, rng=None):
     gtab = get_gtab_taiwan_dsi()
     D = 0.7e-3
     tau = 1 / (4 * np.pi ** 2)
     mu = np.sqrt(D * 2 * tau)
 
     l1, l2, l3 = [D, D, D]
-    S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
+    S = single_tensor(gtab, evals=np.r_[l1, l2, l3], rng=rng)
     S_array = np.tile(S, (5, 1))
 
     stat_weight = 0.1
@@ -729,11 +731,12 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
 
 
 @pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
-def test_positivity_constraint(radial_order=6):
+@set_random_number_generator(1234)
+def test_positivity_constraint(radial_order=6, rng=None):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
-    S_noise = add_noise(S, snr=20, S0=100.)
+    S_noise = add_noise(S, snr=20, S0=100., rng=rng)
 
     gridsize = 20
     max_radius = 15e-3  # 20 microns maximum radius
@@ -798,11 +801,12 @@ def test_positivity_constraint(radial_order=6):
 
 
 @pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
-def test_plus_constraint(radial_order=6):
+@set_random_number_generator(1234)
+def test_plus_constraint(radial_order=6, rng=None):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
-    S_noise = add_noise(S, snr=20, S0=100.)
+    S_noise = add_noise(S, snr=20, S0=100., rng=rng)
 
     gridsize = 50
     max_radius = 25e-3  # 25 microns maximum radius
@@ -820,11 +824,12 @@ def test_plus_constraint(radial_order=6):
     assert_equal(pdf_negative_constraint == 0.0, True)
 
 
-def test_laplacian_regularization(radial_order=6):
+@set_random_number_generator(1234)
+def test_laplacian_regularization(radial_order=6, rng=None):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
-    S_noise = add_noise(S, snr=20, S0=100.)
+    S_noise = add_noise(S, snr=20, S0=100., rng=rng)
 
     weight_array = np.linspace(0, .3, 301)
     mapmod_unreg = MapmriModel(gtab, radial_order=radial_order,

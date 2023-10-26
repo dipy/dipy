@@ -5,6 +5,7 @@ from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
                               IteratedConditionalModes)
 from dipy.segment.tissue import (TissueClassifierHMRF)
+from dipy.testing.decorators import set_random_number_generator
 
 
 # Load a coronal slice from a T1-weighted MRI
@@ -29,9 +30,11 @@ square[71:185, 71:185, :] = 2
 square[99:157, 99:157, :] = 3
 
 
-def create_square_uniform():
+@set_random_number_generator(1234)
+def create_square_uniform(rng=None):
     square_1 = np.zeros((256, 256, 3)) + 0.001
-    square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
+    square_1 = add_noise(square_1, 10000, 1,
+                         noise_type='gaussian', rng=rng)
     rng = np.random.default_rng(1234)
     temp_1 = rng.integers(1, 21, size=(171, 171, 3))
     temp_1 = np.where(temp_1 < 20, 1, 3)
@@ -46,9 +49,11 @@ def create_square_uniform():
     return square_1
 
 
-def create_square_gauss():
+@set_random_number_generator(1234)
+def create_square_gauss(rng=None):
     square_gauss = np.zeros((256, 256, 3)) + 0.001
-    square_gauss = add_noise(square_gauss, 10000, 1, noise_type='gaussian')
+    square_gauss = add_noise(square_gauss, 10000, 1,
+                             noise_type='gaussian', rng=rng)
     square_gauss[42:213, 42:213, :] = 1
     rng = np.random.default_rng(1234)
     noise_1 = rng.normal(1.001, 0.0001,
