@@ -12,7 +12,7 @@ from dipy.reconst.dti import TensorModel
 
 response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
-# commented when changing cpdef to cdef in pmf
+
 def test_pmf_val():
     sphere = get_sphere('symmetric724')
     with warnings.catch_warnings():
@@ -74,4 +74,3 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]),
                              default_sphere))
-
