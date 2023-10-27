@@ -389,7 +389,7 @@ class SlicesTab(HorizonTab):
 
         if len(self._visualizer.data_shape) == 4:
             x_pos = .52
-            self._volume_label.position(x_pos, .15)
+            self._volume_label.position = (x_pos, .15)
 
             x_pos = .60
             self._volume.position = (x_pos, .15)
