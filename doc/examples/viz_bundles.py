@@ -10,7 +10,7 @@ which provides metrics and bundles.
 import numpy as np
 from dipy.viz import window, actor
 from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.streamline import transform_streamlines, length
 
 fetch_bundles_2_subjects()
 dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
@@ -65,9 +65,9 @@ window.record(scene, out_path='bundle1.png', size=(600, 600))
 #
 #
 # You may wonder how we knew how to set the camera. This is very easy. You just
-# need to run ``window.show`` once to see how you want to see the object and then
-# close the window and call the ``camera_info`` method which prints the position,
-# focal point and view up vectors of the camera.
+# need to run ``window.show`` once to see how you want to see the object and
+# then close the window and call the ``camera_info`` method which prints the
+# position, focal point and view up vectors of the camera.
 
 scene.camera_info()
 
@@ -153,8 +153,6 @@ window.record(scene, out_path='bundle4.png', size=(600, 600))
 # its length.
 
 scene.clear()
-
-from dipy.tracking.streamline import length
 
 lengths = length(bundle_native)
 

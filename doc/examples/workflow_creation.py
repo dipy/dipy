@@ -73,8 +73,9 @@ class AppendTextFlow(Workflow):
 
 ###############################################################################
 # Use self.get_io_iterator() in every workflow you create. This creates
-# an ``IOIterator`` object that create output file names and directory structure
-# based on the inputs and some other advanced output strategy parameters.
+# an ``IOIterator`` object that create output file names and directory
+# structure based on the inputs and some other advanced output strategy
+# parameters.
 #
 # By iterating on the ``IOIterator`` object you created previously you
 # conveniently get all input and output paths for every input file
