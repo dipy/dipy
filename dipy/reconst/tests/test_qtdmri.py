@@ -395,7 +395,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     # only first tau_point is normalized with least squares.
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     assert_almost_equal(float(E_q0_first_tau), 1.)
 
     # now with cvxpy regularization cartesian
@@ -407,12 +407,12 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     fitted_signal = qtdmri_fit_lap.fitted_signal()
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
-    ]
-    assert_almost_equal(E_q0_first_tau[0], 1.)
-    assert_almost_equal(E_q0_last_tau[0], 1.)
+    ].item()
+    assert_almost_equal(E_q0_first_tau, 1.)
+    assert_almost_equal(E_q0_last_tau, 1.)
 
     # check if odf in spherical harmonics for cartesian raises an error
     try:
@@ -435,10 +435,10 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
         fitted_signal = qtdmri_fit_lap.fitted_signal()
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     assert_almost_equal(float(E_q0_first_tau), 1.)
     assert_almost_equal(float(E_q0_last_tau), 1.)
 

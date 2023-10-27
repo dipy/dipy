@@ -153,7 +153,7 @@ def test_metric_cosine():
 
             v1_normed = v1.astype(np.float64) / norm(v1.astype(np.float64))
             v2_normed = v2.astype(np.float64) / norm(v2.astype(np.float64))
-            cos_theta = np.dot(v1_normed, v2_normed.T)
+            cos_theta = np.dot(v1_normed, v2_normed.T).item()
             # Make sure it's in [-1, 1], i.e. within domain of arccosine
             cos_theta = np.minimum(cos_theta, 1.)
             cos_theta = np.maximum(cos_theta, -1.)

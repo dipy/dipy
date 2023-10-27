@@ -1271,7 +1271,7 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
                 max_value = k_val
                 max_direction = k_dir
 
-    return max_value, max_direction
+    return max_value.item(), max_direction
 
 
 def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,

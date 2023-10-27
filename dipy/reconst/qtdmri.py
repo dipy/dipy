@@ -1873,8 +1873,8 @@ def qtdmri_isotropic_scaling(data, q, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    us = np.sqrt(np.dot(logE_q, inv_B_q))
-    ut = np.dot(logE_tau, inv_B_tau)
+    us = np.sqrt(np.dot(logE_q, inv_B_q)).item()
+    ut = np.dot(logE_tau, inv_B_tau).item()
     return us, ut
 
 
@@ -1897,7 +1897,7 @@ def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    ut = np.dot(logE_tau, inv_B_tau)
+    ut = np.dot(logE_tau, inv_B_tau).item()
 
     return us, ut, R
 
