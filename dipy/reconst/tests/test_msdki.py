@@ -207,7 +207,7 @@ def test_msdki_statistics():
     assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
 
 
-def test_kurtosis_to_smt2_convertion():
+def test_kurtosis_to_smt2_conversion():
     # 1. Check conversion of smt2 awf to kurtosis
     # When awf = 0 kurtosis was to be 0
     awf0 = 0
