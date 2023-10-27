@@ -66,7 +66,8 @@ csd_fit = csd_model.fit(data, mask=pve_wm_data)
 
 dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                max_angle=20.,
-                                               sphere=default_sphere)
+                                               sphere=default_sphere,
+                                               sh_to_pmf=True)
 
 seed_mask = (labels == 2)
 seed_mask[pve_wm_data < 0.5] = 0

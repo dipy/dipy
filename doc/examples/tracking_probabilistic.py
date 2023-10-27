@@ -118,7 +118,8 @@ from dipy.data import default_sphere
 
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     max_angle=30.,
-                                                    sphere=default_sphere)
+                                                    sphere=default_sphere,
+                                                    sh_to_pmf=True)
 streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
@@ -152,7 +153,8 @@ peaks = peaks_from_model(csd_model, data, default_sphere, .5, 25,
 fod_coeff = peaks.shm_coeff
 
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
-                                                    sphere=default_sphere)
+                                                    sphere=default_sphere,
+                                                    sh_to_pmf=True)
 streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)

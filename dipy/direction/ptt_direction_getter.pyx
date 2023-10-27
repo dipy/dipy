@@ -160,8 +160,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.last_val = 0
 
         if self.probe_count == 1:
-            self.last_val = self.pmf_gen.get_pmf_value(self.position,
-                                                       self.frame[0])
+            self.last_val = self.pmf_gen.get_pmf_value_c(self.position,
+                                                         self.frame[0])
         else:
             for count in range(self.probe_count):
                 for i in range(3):
@@ -174,7 +174,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                    * sin(count * self.angular_separation)
                                    * self.inv_voxel_size[i])
 
-                self.last_val += self.pmf_gen.get_pmf_value(position,
+                self.last_val += self.pmf_gen.get_pmf_value_c(position,
                                                             self.frame[0])
 
 
@@ -269,7 +269,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 copy_point(&binormal[0], &frame[2][0])
 
             if self.probe_count == 1:
-                fod_amp = self.pmf_gen.get_pmf_value(position, tangent)
+                fod_amp = self.pmf_gen.get_pmf_value_c(position, tangent)
                 fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                 self.last_val_cand = fod_amp
                 likelihood += self.last_val_cand
@@ -291,7 +291,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                            + binormal[i] * self.probe_radius
                                            * sin(c * self.angular_separation)
                                            * self.inv_voxel_size[i])
-                    fod_amp = self.pmf_gen.get_pmf_value(new_position, tangent)
+                    fod_amp = self.pmf_gen.get_pmf_value_c(new_position, tangent)
                     fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                     self.last_val_cand += fod_amp
 

@@ -43,6 +43,17 @@ def test_ProbabilisticDirectionGetter():
         state = dg.get_direction(point, direction)
         npt.assert_equal(state, 1)
 
+        # make a dg from a fit (using sh_to_pmf=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            dg = ProbabilisticDirectionGetter.from_shcoeff(
+                fit.shm_coeff, 90, unit_octahedron, sh_to_pmf=True)
+
+        state = dg.get_direction(point, direction)
+        npt.assert_equal(state, 1)
+
         # Make a dg from a pmf
         N = unit_octahedron.theta.shape[0]
         pmf = np.zeros((3, 3, 3, N))
