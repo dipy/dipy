@@ -19,7 +19,8 @@ __all__ = ['Dpy']
 
 
 class Dpy:
-    def __init__(self, fname: str, mode: str = 'r', compression: int = 0) -> None:
+    def __init__(self, fname: str, mode: str = 'r',
+                 compression: int = 0) -> None:
         """ Advanced storage system for tractography based on HDF5
 
         Parameters
@@ -90,20 +91,19 @@ class Dpy:
 
         return self.f.attrs['version']
 
-    def write_track(self, track: np) -> None :
+    def write_track(self, track: np) -> None:
         """ write on track each time
 
-        Args: 
-        
+        Args
             track: a numpy array with shape (N, 3)
                 track data to be written
-        
+
         Returns:
-        
+
             None
 
         Notes:
-        
+
             The track data will be appended to the end of the file.
         """
         self.tracks.resize(self.tracks.shape[0] + track.shape[0], axis=0)
@@ -113,7 +113,7 @@ class Dpy:
         self.offsets.resize(self.offsets.shape[0] + 1, axis=0)
         self.offsets[-1] = self.curr_pos
 
-    def write_tracks(self, tracks: Streamlines) -> None :
+    def write_tracks(self, tracks: Streamlines) -> None:
         """ write many tracks together
         Args:
                 tracks: a Streamlines object
@@ -165,7 +165,7 @@ class Dpy:
 
         Returns:
             a Streamlines object
-        
+
         """
         I = self.offsets[:]
         TR = self.tracks[:]

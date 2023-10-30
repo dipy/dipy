@@ -4,22 +4,25 @@ import io
 import tempfile
 import warnings
 import numpy as np
+from typing import List, Union, Tuple, Optional
 
 
-def read_bvals_bvecs(fbvals, fbvecs):
+def read_bvals_bvecs(fbvals: Optional[str],
+                     fbvecs: Optional[str]) -> Tuple[Union[np.ndarray, None],
+                                                     Union[np.ndarray, None]]:
     """Read b-values and b-vectors from disk.
 
     Parameters
     ----------
-    fbvals : str
+    fbvals : Optional[str]
        Full path to file with b-values. None to not read bvals.
-    fbvecs : str
+    fbvecs : Optional[str]
        Full path of file with b-vectors. None to not read bvecs.
 
     Returns
     -------
-    bvals : array, (N,) or None
-    bvecs : array, (N, 3) or None
+    bvals : array or (N,) or None
+    bvecs : array or (N, 3) or None
 
     Notes
     -----
