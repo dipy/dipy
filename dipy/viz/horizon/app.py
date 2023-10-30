@@ -1,3 +1,4 @@
+from packaging.version import Version
 import warnings
 
 import numpy as np
@@ -15,6 +16,7 @@ from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
+    from fury import __version__ as fury_version
     from fury import actor, ui, window
     from fury.colormap import distinguishable_colormap
 
@@ -117,6 +119,9 @@ class Horizon:
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
+        if Version(fury_version) < Version('0.9.0'):
+            ValueError('Horizon requires FURY version 0.9.0 or higher.'
+                       ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster
         self.cluster_thr = cluster_thr
