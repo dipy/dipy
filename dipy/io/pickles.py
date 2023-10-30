@@ -2,7 +2,7 @@
 import pickle
 
 
-def save_pickle(fname, dix):
+def save_pickle(fname: str, dix: any ) -> None:
     """Save `dix` to `fname` as pickle.
 
     Parameters
@@ -36,7 +36,7 @@ def save_pickle(fname, dix):
     out.close()
 
 
-def load_pickle(fname):
+def load_pickle(fname: str) -> object:
     """Load object from pickle file `fname`.
 
     Parameters

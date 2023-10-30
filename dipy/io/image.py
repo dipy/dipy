@@ -2,9 +2,11 @@ from packaging.version import Version
 
 import nibabel as nib
 import numpy as np
+from typing import Union, Optional
 
 
-def load_nifti_data(fname, as_ndarray=True):
+def load_nifti_data(fname: str, as_ndarray: Optional[bool] = True
+                    ) -> Union[np.ndarray, nib.ArrayProxy]:
     """Load only the data array from a nifti file.
 
     Parameters
@@ -29,8 +31,10 @@ def load_nifti_data(fname, as_ndarray=True):
     return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
 
 
-def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=False, as_ndarray=True):
+def load_nifti(fname: str, return_img: Optional[bool] = False,
+               return_voxsize: Optional[bool] = False,
+               return_coords: Optional[bool] = False,
+               as_ndarray: Optional[bool] = True):
     """Load data and other information from a nifti file.
 
     Parameters
@@ -78,7 +82,10 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     return tuple(ret_val)
 
 
-def save_nifti(fname, data, affine, hdr=None, dtype=None):
+def save_nifti(fname: str, data: np.ndarray,
+               affine: Union[np.ndarray, np.array],
+               hdr: Optional[nib.NiftiHeader] = None,
+               dtype: Optional[np.dtype] = None) -> None:
     """Save a data array into a nifti file.
 
     Parameters
@@ -125,7 +132,8 @@ def save_nifti(fname, data, affine, hdr=None, dtype=None):
     result_img.to_filename(fname)
 
 
-def save_qa_metric(fname, xopt, fopt):
+def save_qa_metric(fname: str,
+                   xopt: Union[np.array, np.ndarray], fopt: int) -> None:
     """Save Quality Assurance metrics.
 
     Parameters

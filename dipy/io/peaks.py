@@ -6,9 +6,11 @@ from dipy.direction.peaks import (PeaksAndMetrics,
 from dipy.core.sphere import Sphere
 from dipy.io.image import save_nifti
 import h5py
+from typing import Optional, Union, List
 
 
-def _safe_save(group, array, name):
+def _safe_save(group: h5py.Group,
+               array: Union[np.ndarray, np.array], name: str) -> None:
     """ Safe saving of arrays with specific names
 
     Parameters
@@ -24,7 +26,7 @@ def _safe_save(group, array, name):
         ds[:] = array
 
 
-def load_peaks(fname, verbose=False):
+def load_peaks(fname: str, verbose: bool = False) -> PeaksAndMetrics:
     """ Load a PeaksAndMetrics HDF5 file (PAM5)
 
     Parameters
@@ -116,7 +118,9 @@ def load_peaks(fname, verbose=False):
     return pam
 
 
-def save_peaks(fname, pam, affine=None, verbose=False):
+def save_peaks(fname: str, pam: PeaksAndMetrics,
+               affine: Union[np.array, np.ndarray] = None,
+               verbose: bool = False) -> PeaksAndMetrics:
     """ Save all important attributes of object PeaksAndMetrics in a PAM5 file
     (HDF5).
 
@@ -132,6 +136,10 @@ def save_peaks(fname, pam, affine=None, verbose=False):
         provided here. Default None.
     verbose : bool
         Print summary information about the saved file.
+
+    Returns
+    -------
+    pam : PeaksAndMetrics object
     """
 
     if os.path.splitext(fname)[1] != '.pam5':
@@ -197,13 +205,13 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     return pam
 
 
-def peaks_to_niftis(pam,
-                    fname_shm,
-                    fname_dirs,
-                    fname_values,
-                    fname_indices,
-                    fname_gfa,
-                    reshape_dirs=False):
+def peaks_to_niftis(pam: PeaksAndMetrics,
+                    fname_shm: str,
+                    fname_dirs: str,
+                    fname_values: str,
+                    fname_indices: str,
+                    fname_gfa: str,
+                    reshape_dirs: bool = False) -> None:
         """ Save SH, directions, indices and values of peaks to Nifti.
         """
 

@@ -7,9 +7,9 @@ import numpy as np
 from typing import List, Union, Tuple, Optional
 
 
-def read_bvals_bvecs(fbvals: Optional[str],
-                     fbvecs: Optional[str]) -> Tuple[Union[np.ndarray, None],
-                                                     Union[np.ndarray, None]]:
+def read_bvals_bvecs(fbvals: Optional[str], fbvecs: Optional[str]
+                     ) -> Tuple[Union[np.ndarray, np.array, None],
+                                Union[np.ndarray, np.array, None]]:
     """Read b-values and b-vectors from disk.
 
     Parameters
