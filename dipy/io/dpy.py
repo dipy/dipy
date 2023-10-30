@@ -167,11 +167,11 @@ class Dpy:
             a Streamlines object
 
         """
-        I = self.offsets[:]
+        Is = self.offsets[:]
         TR = self.tracks[:]
         tracks = Streamlines()
-        for i in range(len(I) - 1):
-            off0, off1 = I[i:i + 2]
+        for i in range(len(Is) - 1):
+            off0, off1 = Is[i:i + 2]
             tracks.append(TR[off0:off1])
         return tracks
 
