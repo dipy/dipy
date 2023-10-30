@@ -14,9 +14,11 @@ from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.io.dpy import Dpy
 from dipy.io.utils import (create_tractogram_header,
                            is_header_compatible)
+from typing import Union, List, Callable
 
 
-def save_tractogram(sft, filename, bbox_valid_check=True):
+def save_tractogram(sft: StatefulTractogram, filename: str,
+                    bbox_valid_check: bool = True) -> bool:
     """ Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
@@ -36,7 +38,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck',
+                         '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -88,9 +91,16 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     return True
 
 
-def load_tractogram(filename, reference, to_space=Space.RASMM,
-                    to_origin=Origin.NIFTI, bbox_valid_check=True,
-                    trk_header_check=True):
+def load_tractogram(filename: str,
+                    reference: Union[nib.nifti1, nib.Nifti1Image,
+                                     nib.Nifti1Header, nib.streamlines.TckFile,
+                                     nib.streamlines.TckFile.header,
+                                     dict, Tractogram],
+                    to_space: Space = Space.RASMM,
+                    to_origin: Origin = Origin.NIFTI,
+                    bbox_valid_check: bool = True,
+                    trk_header_check: bool = True
+                    ) -> Union[StatefulTractogram, bool]:
     """ Load the stateful tractogram from any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
@@ -121,7 +131,8 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx',
+                         '.vtk', '.vtp', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
@@ -186,7 +197,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     return sft
 
 
-def load_generator(ttype):
+def load_generator(ttype: str) -> callable:
     """ Generate a loading function that performs a file extension
     check to restrict the user to a single file format.
 
@@ -199,9 +210,14 @@ def load_generator(ttype):
     output : function
         Function (load_tractogram) that handle only one file format
     """
-    def f_gen(filename, reference, to_space=Space.RASMM,
-              to_origin=Origin.NIFTI, bbox_valid_check=True,
-              trk_header_check=True):
+    def f_gen(filename: str,
+              reference: Union[nib.nifti1, nib.Nifti1Image,
+                               nib.Nifti1Header, nib.streamlines.TckFile,
+                               nib.streamlines.TckFile.header,
+                               dict, Tractogram],
+              to_space: Space = Space.RASMM,
+              to_origin: Origin = Origin.NIFTI, bbox_valid_check: bool = True,
+              trk_header_check: bool = True) -> StatefulTractogram:
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
             msg = f"This function can only load {ttype} files, "
@@ -220,7 +236,7 @@ def load_generator(ttype):
     return f_gen
 
 
-def save_generator(ttype):
+def save_generator(ttype: str) -> callable:
     """ Generate a saving function that performs a file extension
     check to restrict the user to a single file format.
 
@@ -233,7 +249,8 @@ def save_generator(ttype):
     output : function
         Function (save_tractogram) that handle only one file format
     """
-    def f_gen(sft, filename, bbox_valid_check=True):
+    def f_gen(sft: StatefulTractogram, filename: str,
+              bbox_valid_check: bool = True) -> None:
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
             msg = f"This function can only save {ttype} file, "
