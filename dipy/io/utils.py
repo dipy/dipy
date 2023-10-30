@@ -6,9 +6,12 @@ from dipy.utils.optpkg import optional_package
 import dipy
 import nibabel as nib
 from nibabel.streamlines import detect_format
-from nibabel import Nifti1Image
+from nibabel import Nifti1Image, Nifti1Header, Nifti1Pair, nifti1, streamlines
+from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
 from trx import trx_file_memmap
+from typing import Union, Tuple, Optional
+import dipy.io.stateful_tractogram
 
 pd, have_pd, _ = optional_package("pandas")
 
@@ -16,7 +19,7 @@ if have_pd:
     import pandas as pd
 
 
-def nifti1_symmat(image_data, *args, **kwargs):
+def nifti1_symmat(image_data: np.ndarray, *args, **kwargs) -> Nifti1Image:
     """Returns a Nifti1Image with a symmetric matrix intent
 
     Parameters
@@ -45,7 +48,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
     return image
 
 
-def make5d(data):
+def make5d(data: np.ndarray) -> np.ndarray:
     """reshapes the input to have 5 dimensions, adds extra dimensions just
     before the last dimension
     """
@@ -57,7 +60,7 @@ def make5d(data):
     return data.reshape(shape)
 
 
-def decfa(img_orig, scale=False):
+def decfa(img_orig: Nifti1Image, scale: bool = False) -> Nifti1Image:
     """
     Create a nifti-compliant directional-encoded color FA image.
 
@@ -104,7 +107,7 @@ def decfa(img_orig, scale=False):
     return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
 
 
-def decfa_to_float(img_orig):
+def decfa_to_float(img_orig: Nifti1Image) -> Nifti1Image:
     """
     Convert a nifti-compliant directional-encoded color FA image into a
     nifti image with RGB encoded in floating point resolution.
@@ -143,7 +146,10 @@ def decfa_to_float(img_orig):
     return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
 
 
-def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
+def is_reference_info_valid(affine: np.ndarray,
+                            dimensions: Union[np.ndarray, int],
+                            voxel_sizes: Union[np.ndarray, float],
+                            voxel_order: str) -> bool:
     """Validate basic data type and value of spatial attribute.
 
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
@@ -225,7 +231,7 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     return all_valid
 
 
-def split_name_with_gz(filename):
+def split_name_with_gz(filename: str) -> Tuple[str, str]:
     """
     Returns the clean basename and extension of a file.
     Means that this correctly manages the ".nii.gz" extensions.
@@ -253,7 +259,12 @@ def split_name_with_gz(filename):
     return base, ext
 
 
-def get_reference_info(reference):
+def get_reference_info(reference: Union[nifti1, Nifti1Image,
+                                        Nifti1Header, nib.streamlines.TckFile,
+                                        streamlines.TckFile.header,
+                                        dict, Tractogram]
+                       ) -> Tuple[np.ndarray, np.ndarray,
+                                  np.ndarray, str]:
     """ Will compare the spatial attribute of 2 references.
 
     Parameters
@@ -341,7 +352,15 @@ def get_reference_info(reference):
     return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
 
 
-def is_header_compatible(reference_1, reference_2):
+def is_header_compatible(
+        reference_1: Union[nifti1, Nifti1Image, Nifti1Header,
+                           nib.streamlines.TckFile,
+                           streamlines.TckFile.header,
+                           dict, Tractogram],
+        reference_2: Union[nifti1, Nifti1Image, Nifti1Header,
+                           nib.streamlines.TckFile,
+                           streamlines.TckFile.header,
+                           dict, Tractogram]) -> bool:
     """ Will compare the spatial attribute of 2 references
 
     Parameters
@@ -384,8 +403,11 @@ def is_header_compatible(reference_1, reference_2):
     return identical_header
 
 
-def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
-                             voxel_order):
+def create_tractogram_header(tractogram_type: Tractogram,
+                             affine: np.ndarray,
+                             dimensions: Union[np.ndarray, int],
+                             voxel_sizes: Union[np.ndarray, float],
+                             voxel_order: str) -> Tractogram:
     """ Write a standard trk/tck header from spatial attribute """
     if isinstance(tractogram_type, str):
         tractogram_type = detect_format(tractogram_type)
@@ -399,7 +421,9 @@ def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
     return new_header
 
 
-def create_nifti_header(affine, dimensions, voxel_sizes):
+def create_nifti_header(affine: np.ndarray,
+                        dimensions: Union[np.ndarray, int],
+                        voxel_sizes: Union[np.ndarray, float]) -> Nifti1Header:
     """ Write a standard nifti header from spatial attribute """
     new_header = nib.Nifti1Header()
     new_header.set_sform(affine)
@@ -411,7 +435,7 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     return new_header
 
 
-def save_buan_profiles_hdf5(fname, dt):
+def save_buan_profiles_hdf5(fname: str, dt: pd.DataFrame) -> None:
     """ Saves the given input dataframe to .h5 file
 
     Parameters
@@ -431,7 +455,9 @@ def save_buan_profiles_hdf5(fname, dt):
     store.close()
 
 
-def read_img_arr_or_path(data, affine=None):
+def read_img_arr_or_path(data: Union[np.ndarray, Nifti1Image, str],
+                         affine: Optional[np.ndarray] = None
+                         ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Helper function that handles inputs that can be paths, nifti img or arrays
 
