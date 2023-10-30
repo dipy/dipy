@@ -91,7 +91,7 @@ class Dpy:
 
         return self.f.attrs['version']
 
-    def write_track(self, track: np) -> None:
+    def write_track(self, track: np.array) -> None:
         """ write on track each time
 
         Args
@@ -134,7 +134,7 @@ class Dpy:
             self.offsets[-tracks._offsets.shape[0] - 1] + \
             tracks._offsets + tracks._lengths
 
-    def read_track(self) -> np:
+    def read_track(self) -> np.array:
         """ read one track each time
         Args:
                 None
