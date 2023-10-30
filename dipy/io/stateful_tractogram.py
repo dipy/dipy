@@ -9,18 +9,21 @@ from nibabel.affines import apply_affine
 from nibabel.streamlines.tractogram import (Tractogram,
                                             PerArraySequenceDict,
                                             PerArrayDict)
+import nibabel.streamlines as Stream
 import numpy as np
+import nibabel as nib
 
 from dipy.io.dpy import Streamlines
 from dipy.io.utils import (get_reference_info,
                            is_reference_info_valid,
                            is_header_compatible)
+from typing import Union, Optional, List, Type, Tuple, Any
 
 logger = logging.getLogger('StatefulTractogram')
 logger.setLevel(level=logging.INFO)
 
 
-def set_sft_logger_level(log_level):
+def set_sft_logger_level(log_level: str) -> None:
     """ Change the logger of the StatefulTractogram
     to one on the following: DEBUG, INFO, WARNING, CRITICAL, ERROR
 
@@ -52,9 +55,14 @@ class StatefulTractogram:
     data manipulation for each streamline / point.
     """
 
-    def __init__(self, streamlines, reference, space,
-                 origin=Origin.NIFTI,
-                 data_per_point=None, data_per_streamline=None):
+    def __init__(self, streamlines: Union[Stream.ArraySequence, List],
+                 reference: Union[nib.nifti1,
+                                  nib.Nifti1Image, nib.Nifti1Header,
+                                  Stream.TckFile, Stream.TckFile.header,
+                                  dict, Tractogram], space: Space,
+                 origin: Origin = Origin.NIFTI,
+                 data_per_point: Optional[dict] = None,
+                 data_per_streamline: Optional[dict] = None) -> None:
         """ Create a strict, state-aware, robust tractogram
 
         Parameters
@@ -144,8 +152,10 @@ class StatefulTractogram:
         logger.debug(self)
 
     @staticmethod
-    def are_compatible(sft_1, sft_2):
-        """ Compatibility verification of two StatefulTractogram to ensure space,
+    def are_compatible(sft_1: Type['StatefulTractogram'],
+                       sft_2: Type['StatefulTractogram']) -> bool:
+        """ Compatibility verification of
+        two StatefulTractogram to ensure space,
         origin, data_per_point and data_per_streamline consistency """
 
         are_sft_compatible = True
@@ -173,9 +183,11 @@ class StatefulTractogram:
         return are_sft_compatible
 
     @staticmethod
-    def from_sft(streamlines, sft,
-                 data_per_point=None,
-                 data_per_streamline=None):
+    def from_sft(streamlines: Union[Stream.ArraySequence, List],
+                 sft: Type['StatefulTractogram'],
+                 data_per_point: Optional[dict] = None,
+                 data_per_streamline: Optional[dict] = None
+                 ) -> Type['StatefulTractogram']:
         """ Create an instance of `StatefulTractogram` from another instance
         of `StatefulTractogram`.
 
@@ -204,7 +216,7 @@ class StatefulTractogram:
         new_sft.dtype_dict = sft.dtype_dict
         return new_sft
 
-    def __str__(self):
+    def __str__(self) -> str:
         """ Generate the string for printing """
         text = 'Affine: \n{}'.format(
             np.array2string(self._affine,
@@ -225,11 +237,12 @@ class StatefulTractogram:
 
         return text
 
-    def __len__(self):
+    def __len__(self) -> int:
         """ Define the length of the object """
         return self._get_streamline_count()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[int, slice]
+                    ) -> Type['StatefulTractogram']:
         """ Slice all data in a consistent way """
         if isinstance(key, int):
             key = [key]
@@ -238,7 +251,7 @@ class StatefulTractogram:
                              data_per_point=self.data_per_point[key],
                              data_per_streamline=self.data_per_streamline[key])
 
-    def __eq__(self, other):
+    def __eq__(self, other: Type['StatefulTractogram']) -> bool:
         """ Robust StatefulTractogram equality test """
         if not self.are_compatible(self, other):
             return False
@@ -269,11 +282,12 @@ class StatefulTractogram:
 
         return True
 
-    def __ne__(self, other):
+    def __ne__(self, other: Type['StatefulTractogram']) -> bool:
         """ Robust StatefulTractogram equality test (NOT) """
         return not self == other
 
-    def __add__(self, other_sft):
+    def __add__(self, other_sft: Type['StatefulTractogram']
+                ) -> Type['StatefulTractogram']:
         """ Addition of two sft with attributes consistency checks """
         if not self.are_compatible(self, other_sft):
             logger.debug(self)
@@ -296,12 +310,13 @@ class StatefulTractogram:
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: Type['StatefulTractogram']
+                 ) -> Type['StatefulTractogram']:
         self.value = self + other
         return self.value
 
     @property
-    def dtype_dict(self):
+    def dtype_dict(self) -> OrderedDict:
         """ Getter for dtype_dict """
 
         dtype_dict = {'positions': self.streamlines._data.dtype,
@@ -310,57 +325,59 @@ class StatefulTractogram:
             dtype_dict['dpp'] = {}
             for key in self.data_per_point.keys():
                 if key in self.data_per_point:
-                    dtype_dict['dpp'][key] = self.data_per_point[key]._data.dtype
+                    dtype = self.data_per_point[key]._data.dtype
+                    dtype_dict['dpp'][key] = dtype
         if self.data_per_streamline is not None:
             dtype_dict['dps'] = {}
             for key in self.data_per_streamline.keys():
                 if key in self.data_per_streamline:
-                    dtype_dict['dps'][key] = self.data_per_streamline[key].dtype
+                    dtype = self.data_per_streamline[key].dtype
+                    dtype_dict['dps'][key] = dtype
         return OrderedDict(dtype_dict)
 
     @property
-    def space_attributes(self):
+    def space_attributes(self) -> Tuple:
         """ Getter for spatial attribute """
         return self._affine, self._dimensions, self._voxel_sizes, \
             self._voxel_order
 
     @property
-    def space(self):
+    def space(self) -> Space:
         """ Getter for the current space """
         return self._space
 
     @property
-    def affine(self):
+    def affine(self) -> np.ndarray:
         """ Getter for the reference affine """
         return self._affine
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> np.ndarray:
         """ Getter for the reference dimensions """
         return self._dimensions
 
     @property
-    def voxel_sizes(self):
+    def voxel_sizes(self) -> np.ndarray:
         """ Getter for the reference voxel sizes """
         return self._voxel_sizes
 
     @property
-    def voxel_order(self):
+    def voxel_order(self) -> str:
         """ Getter for the reference voxel order """
         return self._voxel_order
 
     @property
-    def origin(self):
+    def origin(self) -> Origin:
         """ Getter for origin standard """
         return self._origin
 
     @property
-    def streamlines(self):
+    def streamlines(self) -> Streamlines:
         """ Partially safe getter for streamlines """
         return self._tractogram.streamlines
 
     @dtype_dict.setter
-    def dtype_dict(self, dtype_dict):
+    def dtype_dict(self, dtype_dict: OrderedDict) -> None:
         """ Modify dtype_dict.
 
         Parameters
@@ -393,12 +410,13 @@ class StatefulTractogram:
                 self.data_per_streamline[key] = \
                     self.data_per_streamline[key].astype(dtype_to_use)
 
-    def get_streamlines_copy(self):
+    def get_streamlines_copy(self) -> Streamlines:
         """ Safe getter for streamlines (for slicing) """
         return self._tractogram.streamlines.copy()
 
     @streamlines.setter
-    def streamlines(self, streamlines):
+    def streamlines(self,
+                    streamlines: Union[Stream.ArraySequence, List]) -> None:
         """ Modify streamlines. Creating a new object would be less risky.
 
         Parameters
@@ -414,12 +432,12 @@ class StatefulTractogram:
         logger.warning('Streamlines has been modified.')
 
     @property
-    def data_per_point(self):
+    def data_per_point(self) -> PerArraySequenceDict:
         """ Getter for data_per_point """
         return self._tractogram.data_per_point
 
     @data_per_point.setter
-    def data_per_point(self, data):
+    def data_per_point(self, data: PerArraySequenceDict) -> None:
         """ Modify point data . Creating a new object would be less risky.
 
         Parameters
@@ -433,12 +451,12 @@ class StatefulTractogram:
         logger.warning('Data_per_point has been modified.')
 
     @property
-    def data_per_streamline(self):
+    def data_per_streamline(self) -> PerArrayDict:
         """ Getter for data_per_streamline """
         return self._tractogram.data_per_streamline
 
     @data_per_streamline.setter
-    def data_per_streamline(self, data):
+    def data_per_streamline(self, data: PerArrayDict) -> None:
         """ Modify point data . Creating a new object would be less risky.
 
         Parameters
@@ -450,36 +468,36 @@ class StatefulTractogram:
         self._tractogram.data_per_streamline = data
         logger.warning('Data_per_streamline has been modified.')
 
-    def get_data_per_point_keys(self):
+    def get_data_per_point_keys(self) -> List:
         """ Return a list of the data_per_point attribute names """
         return list(set(self.data_per_point.keys()))
 
-    def get_data_per_streamline_keys(self):
+    def get_data_per_streamline_keys(self) -> List:
         """ Return a list of the data_per_streamline attribute names """
         return list(set(self.data_per_streamline.keys()))
 
-    def to_vox(self):
+    def to_vox(self) -> None:
         """ Safe function to transform streamlines and update state """
         if self._space == Space.VOXMM:
             self._voxmm_to_vox()
         elif self._space == Space.RASMM:
             self._rasmm_to_vox()
 
-    def to_voxmm(self):
+    def to_voxmm(self) -> None:
         """ Safe function to transform streamlines and update state """
         if self._space == Space.VOX:
             self._vox_to_voxmm()
         elif self._space == Space.RASMM:
             self._rasmm_to_voxmm()
 
-    def to_rasmm(self):
+    def to_rasmm(self) -> None:
         """ Safe function to transform streamlines and update state """
         if self._space == Space.VOX:
             self._vox_to_rasmm()
         elif self._space == Space.VOXMM:
             self._voxmm_to_rasmm()
 
-    def to_space(self, target_space):
+    def to_space(self, target_space: Space) -> None:
         """ Safe function to transform streamlines to a particular space using
         an enum and update state """
         if target_space == Space.VOX:
@@ -492,7 +510,7 @@ class StatefulTractogram:
             logger.error('Unsupported target space, please use Enum in '
                          'dipy.io.stateful_tractogram.')
 
-    def to_origin(self, target_origin):
+    def to_origin(self, target_origin: Origin) -> None:
         """ Safe function to change streamlines to a particular origin standard
         False means NIFTI (center) and True means TrackVis (corner) """
         if target_origin == Origin.NIFTI:
@@ -503,19 +521,19 @@ class StatefulTractogram:
             logger.error('Unsupported origin standard, please use Enum in '
                          'dipy.io.stateful_tractogram.')
 
-    def to_center(self):
+    def to_center(self) -> None:
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
         if self._origin == Origin.TRACKVIS:
             self._shift_voxel_origin()
 
-    def to_corner(self):
+    def to_corner(self) -> None:
         """ Safe function to shift streamlines so the corner of voxel is
         the origin """
         if self._origin == Origin.NIFTI:
             self._shift_voxel_origin()
 
-    def compute_bounding_box(self):
+    def compute_bounding_box(self) -> np.ndarray:
         """ Compute the bounding box of the streamlines in their current state
 
         Returns
@@ -530,7 +548,7 @@ class StatefulTractogram:
 
         return np.zeros((8, 3))
 
-    def is_bbox_in_vox_valid(self):
+    def is_bbox_in_vox_valid(self) -> bool:
         """ Verify that the bounding box is valid in voxel space.
         Negative coordinates or coordinates above the volume dimensions
         are considered invalid in voxel space.
@@ -569,7 +587,8 @@ class StatefulTractogram:
 
         return is_valid
 
-    def remove_invalid_streamlines(self, epsilon=1e-3):
+    def remove_invalid_streamlines(
+            self, epsilon: Optional[float] = 1e-3) -> Tuple[List, List]:
         """ Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
@@ -630,15 +649,15 @@ class StatefulTractogram:
 
         return indices_to_remove, indices_to_keep
 
-    def _get_streamline_count(self):
+    def _get_streamline_count(self) -> int:
         """ Safe getter for the number of streamlines """
         return len(self._tractogram)
 
-    def _get_point_count(self):
+    def _get_point_count(self) -> int:
         """ Safe getter for the number of streamlines """
         return self._tractogram.streamlines.total_nb_rows
 
-    def _vox_to_voxmm(self):
+    def _vox_to_voxmm(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
             if self._tractogram.streamlines._data.size > 0:
@@ -649,7 +668,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _voxmm_to_vox(self):
+    def _voxmm_to_vox(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines._data.size > 0:
@@ -660,7 +679,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _vox_to_rasmm(self):
+    def _vox_to_rasmm(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
             if self._tractogram.streamlines._data.size > 0:
@@ -670,7 +689,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _rasmm_to_vox(self):
+    def _rasmm_to_vox(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
@@ -680,7 +699,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _voxmm_to_rasmm(self):
+    def _voxmm_to_rasmm(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines._data.size > 0:
@@ -692,7 +711,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _rasmm_to_voxmm(self):
+    def _rasmm_to_voxmm(self) -> None:
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
@@ -704,7 +723,7 @@ class StatefulTractogram:
         else:
             logger.warning('Wrong initial space for this function.')
 
-    def _shift_voxel_origin(self):
+    def _shift_voxel_origin(self) -> None:
         """ Unsafe function to switch the origin from center to corner
         and vice versa """
         if self.streamlines:
@@ -728,7 +747,8 @@ class StatefulTractogram:
             self._origin = Origin.NIFTI
 
 
-def _is_data_per_point_valid(streamlines, data):
+def _is_data_per_point_valid(
+        streamlines: Union[Stream.ArraySequence, List], data: dict) -> bool:
     """ Verify that the number of item in data is X and that each of these
         items has Y_i items.
 
@@ -776,7 +796,8 @@ def _is_data_per_point_valid(streamlines, data):
     return True
 
 
-def _is_data_per_streamline_valid(streamlines, data):
+def _is_data_per_streamline_valid(
+        streamlines: Union[Stream.ArraySequence, List], data: dict) -> bool:
     """ Verify that the number of item in data is X
 
         X being the number of streamlines
