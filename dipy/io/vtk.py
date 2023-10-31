@@ -1,4 +1,6 @@
 import numpy as np
+from nibabel.streamlines import ArraySequence
+from typing import Union
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
@@ -8,7 +10,7 @@ if have_fury:
     import fury.io
 
 
-def load_polydata(file_name):
+def load_polydata(file_name: str) -> callable:
     """Load a vtk polydata to a supported format file.
 
     Supported file formats are OBJ, VTK, VTP, FIB, PLY, STL and XML
@@ -25,7 +27,9 @@ def load_polydata(file_name):
     return fury.io.load_polydata(file_name)
 
 
-def save_polydata(polydata, file_name, binary=False, color_array_name=None):
+def save_polydata(polydata: fury.io.load_polydata,
+                  file_name: str, binary: bool = False,
+                  color_array_name=None) -> None:
     """Save a vtk polydata to a supported format file.
 
     Save formats can be VTK, VTP, FIB, PLY, STL and XML.
@@ -40,8 +44,9 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
                           binary=binary, color_array_name=color_array_name)
 
 
-def save_vtk_streamlines(streamlines, filename,
-                         to_lps=True, binary=False):
+def save_vtk_streamlines(streamlines: Union[ArraySequence, list],
+                         filename: str,
+                         to_lps: bool = True, binary: bool = False) -> None:
     """Save streamlines as vtk polydata to a supported format file.
 
     File formats can be OBJ, VTK, VTP, FIB, PLY, STL and XML
@@ -70,7 +75,7 @@ def save_vtk_streamlines(streamlines, filename,
     save_polydata(polydata, file_name=filename, binary=binary)
 
 
-def load_vtk_streamlines(filename, to_lps=True):
+def load_vtk_streamlines(filename: str, to_lps: bool = True) -> list:
     """Load streamlines from vtk polydata.
 
     Load formats can be VTK, FIB
