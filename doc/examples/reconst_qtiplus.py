@@ -140,46 +140,39 @@ First we import all the necessary modules to perform the QTI fit:
 from dipy.data import read_DiB_217_lte_pte_ste, read_DiB_70_lte_pte_ste
 import dipy.reconst.qti as qti
 
-"""
-To showcase why enforcing positivity constraints in QTI is relevant, we use
-a human brain dataset comprising 70 volumes acquired with tensor-encoding.
-This dataset was obtained by subsampling a richer dataset containing 217
-diffusion measurements, which we will use as ground truth when comparing
-the parameters estimation with and without applied constraints. This emulates
-performing shorter data acquisition which can correspond to scanning patients
-in clinical settings.
-
-The full dataset used in this tutorial was originally published at
-https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
-and is described in [3]_.
-
-"""
-
-"""
-First, let's load the complete dataset and create the gradient table.
-We mark these two with the '_217' suffix.
-
-"""
+###############################################################################
+# To showcase why enforcing positivity constraints in QTI is relevant, we use
+# a human brain dataset comprising 70 volumes acquired with tensor-encoding.
+# This dataset was obtained by subsampling a richer dataset containing 217
+# diffusion measurements, which we will use as ground truth when comparing
+# the parameters estimation with and without applied constraints. This emulates
+# performing shorter data acquisition which can correspond to scanning patients
+# in clinical settings.
+#
+# The full dataset used in this tutorial was originally published at
+# https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
+# and is described in [3]_.
+#
+#
+#First, let's load the complete dataset and create the gradient table.
+#We mark these two with the '_217' suffix.
 
 data_img, mask_img, gtab_217 = read_DiB_217_lte_pte_ste()
 data_217 = data_img.get_fdata()
 mask = mask_img.get_fdata()
 
-"""
-Second, let's load the downsampled dataset and create the gradient table.
-We mark these two with the '_70' suffix.
-
-"""
+###############################################################################
+# Second, let's load the downsampled dataset and create the gradient table.
+# We mark these two with the '_70' suffix.
 
 data_img, _, gtab_70 = read_DiB_70_lte_pte_ste()
 data_70 = data_img.get_fdata()
 
-"""
-Now we can fit the QTI model to the datasets containing 217 measurements, and
-use it as reference to compare the constrained and unconstrained fit on the
-smaller dataset. For time considerations, we restrict the fit to a
-single slice.
-"""
+###############################################################################
+# Now we can fit the QTI model to the datasets containing 217 measurements, and
+# use it as reference to compare the constrained and unconstrained fit on the
+# smaller dataset. For time considerations, we restrict the fit to a
+# single slice.
 
 mask[:, :, :13] = 0
 mask[:, :, 14:] = 0
@@ -187,48 +180,44 @@ mask[:, :, 14:] = 0
 qtimodel_217 = qti.QtiModel(gtab_217)
 qtifit_217 = qtimodel_217.fit(data_217, mask)
 
-
-"""
-Now we can fit the QTI model using the default unconstrained fitting method
-to the subsampled dataset:
-"""
+###############################################################################
+# Now we can fit the QTI model using the default unconstrained fitting method
+# to the subsampled dataset:
 
 qtimodel_unconstrained = qti.QtiModel(gtab_70)
 qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 
-"""
-Now we repeat the fit but with the constraints applied.
-To perform the constrained fit, we select the 'SDPdc' fit method when creating
-the QtiModel object.
-
-.. note::
-    this fit method is slower compared to the defaults unconstrained.
-
-If mosek is installed, it can be specified as the solver to be used
-as follows:
-
-.. code-block:: python
-
-    qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
-    qtifit = qtimodel.fit(data, mask)
-
-If Mosek is not installed, the constrained fit can still be performed, and
-SCS will be used as solver. SCS is typically much slower than Mosek, but
-provides similar results in terms of accuracy. To give an example, the fit
-performed in the next line will take approximately 15 minutes when using SCS,
-and 2 minute when using Mosek!
-"""
+###############################################################################
+# Now we repeat the fit but with the constraints applied.
+# To perform the constrained fit, we select the 'SDPdc' fit method when creating
+# the QtiModel object.
+#
+# .. note::
+#     this fit method is slower compared to the defaults unconstrained.
+#
+# If mosek is installed, it can be specified as the solver to be used
+# as follows:
+#
+# .. code-block:: python
+#
+#     qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
+#     qtifit = qtimodel.fit(data, mask)
+#
+# If Mosek is not installed, the constrained fit can still be performed, and
+# SCS will be used as solver. SCS is typically much slower than Mosek, but
+# provides similar results in terms of accuracy. To give an example, the fit
+# performed in the next line will take approximately 15 minutes when using SCS,
+# and 2 minute when using Mosek!
 
 qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc')
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
-"""
-Now we can visualize the results obtained with the constrained and
-unconstrained fit on the small dataset, and compare them with the
-"ground truth" provided by fitting the QTI model to the full dataset.
-For example, we can look at the FA and µFA maps, and their value
-distribution in White Matter in comparison to the ground truth.
-"""
+###############################################################################
+# Now we can visualize the results obtained with the constrained and
+# unconstrained fit on the small dataset, and compare them with the
+# "ground truth" provided by fitting the QTI model to the full dataset.
+# For example, we can look at the FA and µFA maps, and their value
+# distribution in White Matter in comparison to the ground truth.
 
 from dipy.viz.plotting import compare_qti_maps
 
@@ -236,33 +225,30 @@ z = 13
 wm_mask = qtifit_217.ufa[:, :, z] > 0.6
 compare_qti_maps(qtifit_217, qtifit_unconstrained, qtifit_constrained, wm_mask)
 
-"""
-The results clearly show how many of the FA and µFA values
-obtained with the unconstrained fit fall outside the correct
-theoretical range [0 1], while the constrained fit provides
-more sound results. Note also that even when fitting the rich
-dataset, some values of the parameters produced with the unconstrained
-fit fall outside the correct range, suggesting that the constrained fit,
-despite the additional time cost, should be performed even on densely
-sampled diffusion data.
-
-For more information about QTI and QTI+, please read the articles by
-Westin et al. [1]_ and Herberthson et al. [2]_.
-
-
-References
-----------
-.. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
-   multidimensional diffusion MRI of the human brain." Neuroimage 135
-   (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
-.. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
-   Ozarslan E., "Q-space trajectory imaging with positivity constraints
-   (QTI+)" in Neuroimage, Volume 238, 2021.
-   https://doi.org/10.1016/j.neuroimage.2021.118198
-.. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
-   tensor-valued diffusion MRI data by free waveform encoding in healthy
-   brain, water, oil and liquid crystals. Data in Brief (2019),
-   DOI: https://doi.org/10.1016/j.dib.2019.104208
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# The results clearly show how many of the FA and µFA values
+# obtained with the unconstrained fit fall outside the correct
+# theoretical range [0 1], while the constrained fit provides
+# more sound results. Note also that even when fitting the rich
+# dataset, some values of the parameters produced with the unconstrained
+# fit fall outside the correct range, suggesting that the constrained fit,
+# despite the additional time cost, should be performed even on densely
+# sampled diffusion data.
+#
+# For more information about QTI and QTI+, please read the articles by
+# Westin et al. [1]_ and Herberthson et al. [2]_.
+#
+#
+# References
+# ----------
+# .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
+#    multidimensional diffusion MRI of the human brain." Neuroimage 135
+#    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
+# .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
+#    Ozarslan E., "Q-space trajectory imaging with positivity constraints
+#    (QTI+)" in Neuroimage, Volume 238, 2021.
+#    https://doi.org/10.1016/j.neuroimage.2021.118198
+# .. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
+#    tensor-valued diffusion MRI data by free waveform encoding in healthy
+#    brain, water, oil and liquid crystals. Data in Brief (2019),
+#    DOI: https://doi.org/10.1016/j.dib.2019.104208

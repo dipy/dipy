@@ -4,12 +4,9 @@ Parallel Transport Tractography
 ===============================
 Parallel Transport Tractography (PTT) [Aydogan2021]_
 
-
-
+Let's start by importing the necessary modules.
 """
 
-from dipy.direction import peaks_from_model
-from dipy.data import default_sphere
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.data import get_sphere
@@ -47,18 +44,16 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-"""
-We use the GFA of the CSA model to build a stopping criterion.
-"""
+###############################################################################
+# We use the GFA of the CSA model to build a stopping criterion.
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
-"""
-Prepare the PTT direction getter using the fiber ODF (FOD) obtain with CSD.
-Start the local tractography using PTT direction getter.
-"""
+###############################################################################
+# Prepare the PTT direction getter using the fiber ODF (FOD) obtain with CSD.
+# Start the local tractography using PTT direction getter.
 
 sphere = get_sphere(name='repulsion724')
 fod = csd_fit.odf(sphere)
@@ -83,18 +78,16 @@ if has_fury:
                   size=(800, 800))
     if interactive:
         window.show(scene)
-"""
-.. rst-class:: centered small fst-italic fw-semibold
 
-Corpus Callosum using ptt direction getter from PMF
-"""
-
-"""
-References
-----------
-.. [Aydogan2021] Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
-    Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
-    Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Corpus Callosum using ptt direction getter from PMF
+#
+#
+#
+# References
+# ----------
+# .. [Aydogan2021] Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE
+#     Trans Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
+#     Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.

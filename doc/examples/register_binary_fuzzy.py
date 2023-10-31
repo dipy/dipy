@@ -15,11 +15,10 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric
 from dipy.viz import regtools
 
-"""
-Let's generate a sample template image as the combination of three ellipses.
-We will generate the fuzzy (sensed) version of the image by smoothing
-the reference image.
-"""
+###############################################################################
+# Let's generate a sample template image as the combination of three ellipses.
+# We will generate the fuzzy (sensed) version of the image by smoothing
+# the reference image.
 
 
 def draw_ellipse(img, center, axis):
@@ -36,9 +35,8 @@ img_ref = draw_ellipse(img_ref, (50, 40), (7, 15))
 
 img_in = filters.gaussian(img_ref, sigma=3)
 
-"""
-Let's define a small visualization function.
-"""
+###############################################################################
+# Let's define a small visualization function.
 
 
 def show_images(img_ref, img_warp, fig_name):
@@ -56,18 +54,17 @@ def show_images(img_ref, img_warp, fig_name):
 
 show_images(img_ref, img_in, 'input')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Input images before alignment.
-"""
-
-"""
-Let's use the general Registration function with some naive parameters,
-such as set `step_length` as 1 assuming maximal step 1 pixel and a reasonably
-small number of iterations since the deformation with already aligned images
-should be minimal.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Input images before alignment.
+#
+#
+#
+# Let's use the general Registration function with some naive parameters,
+# such as set `step_length` as 1 assuming maximal step 1 pixel and a
+# reasonably small number of iterations since the deformation with already
+# aligned images should be minimal.
 
 sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
                                          step_length=1.0,
@@ -76,64 +73,59 @@ sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
                                          ss_sigma_factor=0.1,
                                          opt_tol=1.e-3)
 
-"""
-Perform the registration with equal images.
-"""
+###############################################################################
+# Perform the registration with equal images.
 
 mapping = sdr.optimize(img_ref.astype(float), img_ref.astype(float))
 img_warp = mapping.transform(img_ref, 'linear')
 show_images(img_ref, img_warp, 'output-0')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-0.png')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration results for default parameters and equal images.
-"""
-
-"""
-Perform the registration with binary and fuzzy images.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration results for default parameters and equal images.
+#
+#
+#
+# Perform the registration with binary and fuzzy images.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
 img_warp = mapping.transform(img_in, 'linear')
 show_images(img_ref, img_warp, 'output-1')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-1.png')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration results for a naive parameter configuration.
-"""
-
-"""
-Note, we are still using a multi-scale approach which makes `step_length`
-in the upper level multiplicatively larger.
-What happens if we set `step_length` to a rather small value?
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration results for a naive parameter configuration.
+#
+#
+#
+# Note, we are still using a multi-scale approach which makes `step_length`
+# in the upper level multiplicatively larger.
+# What happens if we set `step_length` to a rather small value?
 
 sdr.step_length = 0.1
 
-"""
-Perform the registration and examine the output.
-"""
+###############################################################################
+# Perform the registration and examine the output.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
 img_warp = mapping.transform(img_in, 'linear')
 show_images(img_ref, img_warp, 'output-2')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-2.png')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration results for decreased step size.
-"""
-
-"""
-An alternative scenario is to use just a single-scale level.
-Even though the warped image may look fine, the estimated deformations show
-that it is off the mark.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration results for decreased step size.
+#
+#
+#
+# An alternative scenario is to use just a single-scale level.
+# Even though the warped image may look fine, the estimated deformations show
+# that it is off the mark.
 
 sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
                                          step_length=1.0,
@@ -142,17 +134,15 @@ sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
                                          ss_sigma_factor=0.1,
                                          opt_tol=1.e-3)
 
-"""
-Perform the registration.
-"""
+###############################################################################
+# Perform the registration.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
 img_warp = mapping.transform(img_in, 'linear')
 show_images(img_ref, img_warp, 'output-3')
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-3.png')
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration results for single level.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration results for single level.

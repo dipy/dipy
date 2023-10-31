@@ -34,10 +34,8 @@ from dipy.align import (affine_registration, translation,
                         rigid, register_series)
 
 
-"""
-Let's fetch a single b0 volume from the Stanford HARDI dataset.
-
-"""
+###############################################################################
+# Let's fetch a single b0 volume from the Stanford HARDI dataset.
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
@@ -52,10 +50,8 @@ static = np.pad(static, [(pad_by, pad_by), (pad_by, pad_by), (0, 0)],
 
 static_grid2world = static_affine
 
-"""
-Let's create a moving image by transforming the static image.
-
-"""
+###############################################################################
+# Let's create a moving image by transforming the static image.
 
 affmat = np.eye(4)
 affmat[0, -1] = 4
@@ -73,15 +69,13 @@ moving_grid2world = static_grid2world.copy()
 regtools.overlay_slices(static, moving, None, 2,
                         "Static", "Moving", "deregistered.png")
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Same images but misaligned.
-"""
-
-"""
-Let's make some registration settings.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Same images but misaligned.
+#
+#
+# Let's make some registration settings.
 
 nbins = 32
 sampling_prop = None
@@ -97,14 +91,12 @@ affreg = AffineRegistration(metric=metric,
                             sigmas=sigmas,
                             factors=factors)
 
-"""
-Now let's register these volumes together without any masking. For the purposes
-of this example, we will not provide an initial transformation based on centre
-of mass, but this would work fine with masks.
-
-Note that use of masks is not currently implemented for sparse sampling.
-
-"""
+###############################################################################
+# Now let's register these volumes together without any masking. For the
+# purposes of this example, we will not provide an initial transformation
+# based on centre of mass, but this would work fine with masks.
+#
+# Note that use of masks is not currently implemented for sparse sampling.
 
 transform = TranslationTransform3D()
 transl = affreg.optimize(static, moving, transform, None,
@@ -123,17 +115,15 @@ regtools.overlay_slices(static, transformed, None, 2,
                         "Static", "Transformed", "transformed.png")
 
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration result.
-"""
-
-"""
-We can also use a pipeline to achieve the same thing. For convenience in this
-tutorial, we will define a function that runs the pipeline and makes a figure.
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration result.
+#
+#
+#
+# We can also use a pipeline to achieve the same thing. For convenience in this
+# tutorial, we will define a function that runs the pipeline and makes a figure.
 
 
 def reg_func(figname, static_mask=None, moving_mask=None):
@@ -161,30 +151,24 @@ def reg_func(figname, static_mask=None, moving_mask=None):
                             "Static", "Transformed", figname)
 
 
-"""
-Now we can run this function and hopefully get the same result.
-"""
-
+###############################################################################
+# Now we can run this function and hopefully get the same result.
 
 reg_func("transformed_pipeline.png")
 
-
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration result using pipeline.
-"""
-
-
-"""
-Now let's modify the images in order to test masking. We will place three
-squares in the corners of both images, but in slightly different locations.
-
-We will make masks that cover these regions but with an extra border of pixels.
-This is because the masks need transforming and resampling during optimization,
-and we want to make sure that we are definitely covering the troublesome
-features.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration result using pipeline.
+#
+#
+# Now let's modify the images in order to test masking. We will place three
+# squares in the corners of both images, but in slightly different locations.
+#
+# We will make masks that cover these regions but with an extra border of
+# pixels. This is because the masks need transforming and resampling during
+# optimization, and we want to make sure that we are definitely covering the
+# troublesome features.
 
 sz = 15
 pd = 10
@@ -216,11 +200,10 @@ squares_mv[-sz-1-pd:-pd, pd:sz+1+pd, :] = 1
 regtools.overlay_slices(static, moving, None, 2,
                         "Static", "Moving", "deregistered_squares.png")
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Same images but misaligned, with white squares in the corners.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Same images but misaligned, with white squares in the corners.
 
 static_mask = np.abs(squares_st - 1)
 moving_mask = np.abs(squares_mv - 1)
@@ -233,78 +216,65 @@ ax[1].set_title("moving image mask")
 plt.savefig("masked_static.png", bbox_inches='tight')
 
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-The masks.
-"""
-
-
-"""
-Let's try to register these new images without a mask.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# The masks.
+#
+#
+#
+# Let's try to register these new images without a mask.
 
 reg_func("transformed_squares.png")
 
-
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration fails to align the images because the squares pin the images.
-"""
-
-"""
-Now we will attempt to register the images using the masks that we defined.
-
-First, use a mask on the static image. Only pixels where the mask is non-zero
-in the static image will contribute to Mutual Information.
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration fails to align the images because the squares pin the images.
+#
+#
+#
+# Now we will attempt to register the images using the masks that we defined.
+#
+# First, use a mask on the static image. Only pixels where the mask is non-zero
+# in the static image will contribute to Mutual Information.
 
 reg_func("transformed_squares_mask.png", static_mask=static_mask)
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration result using a static mask.
-"""
-
-
-"""
-We can also attempt the same thing use a moving image mask.
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration result using a static mask.
+#
+#
+# We can also attempt the same thing use a moving image mask.
 
 reg_func("transformed_squares_mask_2.png", moving_mask=moving_mask)
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration result using a moving mask.
-"""
-
-"""
-And finally, we can use both masks at the same time.
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration result using a moving mask.
+#
+#
+# And finally, we can use both masks at the same time.
 
 reg_func("transformed_squares_mask_3.png",
          static_mask=static_mask, moving_mask=moving_mask)
 
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration result using both a static mask and a moving mask.
-"""
-
-"""
-In most use cases, it is likely that only a static mask will be required,
-e.g., to register a series of images to a single static image.
-
-Let's make a series of volumes to demonstrate this idea, and register the
-series to the first image in the series using a static mask:
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration result using both a static mask and a moving mask.
+#
+#
+#
+# In most use cases, it is likely that only a static mask will be required,
+# e.g., to register a series of images to a single static image.
+#
+# Let's make a series of volumes to demonstrate this idea, and register the
+# series to the first image in the series using a static mask:
 
 series = np.stack([static, moving, moving], axis=-1)
 
@@ -321,29 +291,24 @@ regtools.overlay_slices(np.squeeze(xformed[..., 0]),
                         np.squeeze(xformed[..., -1]),
                         None, 2, "Static", "Moving 2", "series_mask_2.png")
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Registration of series using a static mask.
-"""
-
-
-"""
-In all of the examples above, different masking choices achieved essentially
-the same result, but in general the results may differ depending on differences
-between the static and moving images.
-
-
-References
-----------
-
-.. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-              Eubank, W. (2003). PET-CT image registration in the chest using
-              free-form deformations. IEEE Transactions on Medical Imaging,
-              22(1), 120-8.
-.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-              Normalization Tools (ANTS), 1-35.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Registration of series using a static mask.
+#
+#
+#
+# In all of the examples above, different masking choices achieved essentially
+# the same result, but in general the results may differ depending on
+# differences between the static and moving images.
+#
+#
+# References
+# ----------
+#
+# .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+#               Eubank, W. (2003). PET-CT image registration in the chest using
+#               free-form deformations. IEEE Transactions on Medical Imaging,
+#               22(1), 120-8.
+# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
+#               Normalization Tools (ANTS), 1-35.

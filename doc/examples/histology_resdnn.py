@@ -1,6 +1,4 @@
 """
-.. histology_resdnn:
-
 ==================================================
 Local reconstruction using the Histological ResDNN
 ==================================================
@@ -31,10 +29,9 @@ from dipy.viz import window, actor
 # Disable oneDNN warning
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-"""
-This ResDNN model requires single-shell data with one or more b0s, the data is
-fetched and a gradient table is constructed from bvals/bvecs.
-"""
+###############################################################################
+# This ResDNN model requires single-shell data with one or more b0s, the data
+# is fetched and a gradient table is constructed from bvals/bvecs.
 
 # Fetch DWI and GTAB
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -43,10 +40,9 @@ data = np.squeeze(data)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-"""
-To accelerate computation, a brain mask must be computed. The resulting mask is
-saved for visual inspection.
-"""
+###############################################################################
+# To accelerate computation, a brain mask must be computed. The resulting mask
+# is saved for visual inspection.
 
 mean_b0 = data[..., gtab.b0s_mask]
 mean_b0 = np.mean(mean_b0, axis=-1)
@@ -59,10 +55,9 @@ mask[mask_labeled != val] = 0
 
 save_nifti('mask.nii.gz', mask.astype(np.uint8), affine)
 
-"""
-Using a ResDNN for sh_order 8 (default) and load the appropriate weights.
-Fit the data and save the resulting fODF.
-"""
+###############################################################################
+# Using a ResDNN for sh_order 8 (default) and load the appropriate weights.
+# Fit the data and save the resulting fODF.
 
 resdnn_model = HistoResDNN(verbose=True)
 resdnn_model.fetch_default_weights()
@@ -70,10 +65,9 @@ predicted_sh = resdnn_model.predict(data, gtab, mask=mask)
 
 save_nifti('predicted_sh.nii.gz', predicted_sh, affine)
 
-"""
-Preparing the scene using FURY. The ODF slicer and the background image are
-added as actors and a mid-coronal slice is selected.
-"""
+###############################################################################
+# Preparing the scene using FURY. The ODF slicer and the background image are
+# added as actors and a mid-coronal slice is selected.
 
 interactive = False
 sphere = get_sphere('repulsion724')
@@ -100,11 +94,11 @@ scene = window.Scene()
 scene.add(fod_spheres)
 scene.add(background_img)
 
-"""
-Adjusting the camera for a nice zoom-in of the corpus callosum (coronal) to
-screenshot the resulting prediction. FODF should be aligned with the curvature
-of the corpus callosum and a single-fiber population should be visible.
-"""
+###############################################################################
+# Adjusting the camera for a nice zoom-in of the corpus callosum (coronal) to
+# screenshot the resulting prediction. FODF should be aligned with the
+# curvature of the corpus callosum and a single-fiber population should be
+# visible.
 
 camera = {
     'zoom_factor': 0.85,
@@ -130,26 +124,22 @@ if interactive:
 window.record(scene, out_path='pred_fODF.png', size=(1000, 1000),
               reset_camera=False)
 
-"""
-.. rst-class:: centered small fst-italic fw-semibold
-
-Visualization of the predicted fODF.
-"""
-
-"""
-References
-----------
-..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-    C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-    Deep learning reveals untapped information for local white-matter
-    fiber reconstruction in diffusion-weighted MRI.
-    Magnetic resonance imaging, 62, 220-227.
-..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-    P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-    Deep learning captures more accurate diffusion fiber orientations
-    distributions than constrained spherical deconvolution.
-    arXiv preprint arXiv:1911.07927.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Visualization of the predicted fODF.
+#
+#
+#
+# References
+# ----------
+# ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
+#     C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
+#     Deep learning reveals untapped information for local white-matter
+#     fiber reconstruction in diffusion-weighted MRI.
+#     Magnetic resonance imaging, 62, 220-227.
+# ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
+#     P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
+#     Deep learning captures more accurate diffusion fiber orientations
+#     distributions than constrained spherical deconvolution.
+#     arXiv preprint arXiv:1911.07927.
