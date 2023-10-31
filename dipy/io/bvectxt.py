@@ -3,12 +3,13 @@ import numpy as np
 
 from dipy.core import gradients
 from dipy.utils.deprecator import deprecate_with_version
+from typing import Union, Optional, Tuple
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
-def read_bvec_file(filename, atol=.001):
+def read_bvec_file(filename: str, atol: Optional[float] = .001):
     """
     Read gradient table information from a pair of files with extensions
     .bvec and .bval. The bval file should have one row of values
