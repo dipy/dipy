@@ -1,5 +1,5 @@
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -50,3 +50,4 @@ class ROIsTab(HorizonTab):
     @property
     def name(self):
         return self.__name
+
