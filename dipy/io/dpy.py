@@ -8,17 +8,45 @@
     .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
 """
 
+from typing import List
 import numpy as np
 import h5py
-
 from nibabel.streamlines import ArraySequence as Streamlines
-from typing import List
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
 
 
 class Dpy:
+    """ Advanced storage system for tractography based on HDF5
+
+    Attributes
+    -----------
+    fname : str, full filename
+    mode : str
+            'r' read
+            'w' write
+            'r+' read and write only if file already exists
+    compression : int
+            0 no compression to 9 maximum compression
+
+    Methods
+    -------
+    version()
+        return the version of the file
+    write_track(track)
+        write on track each time
+    write_tracks(tracks)
+        write many tracks together
+    read_track()
+    read_tracksi(indices)
+        read tracks with specific indices
+    read_tracks()
+        read the entire tractography
+    close()
+        close the file
+
+    """
     def __init__(self, fname: str, mode: str = 'r',
                  compression: int = 0) -> None:
         """ Advanced storage system for tractography based on HDF5
@@ -88,7 +116,19 @@ class Dpy:
             self.offs_pos = 0
 
     def version(self) -> str:
+        """
+        return the version of the file
 
+        Parameters:
+        -----------
+        None
+
+        Returns:
+        --------
+        version: str
+            the version of the file
+
+        """
         return self.f.attrs['version']
 
     def write_track(self, track: np.array) -> None:
