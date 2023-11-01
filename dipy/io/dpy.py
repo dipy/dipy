@@ -94,17 +94,19 @@ class Dpy:
     def write_track(self, track: np.array) -> None:
         """ write on track each time
 
-        Args
-            track: a numpy array with shape (N, 3)
-                track data to be written
+        Parameters
+        ---------
+        track: a numpy array with shape (N, 3)
+        rack data to be written
 
-        Returns:
-
-            None
+        Returns
+        -------
+        None
 
         Notes:
+        ------
+        The track data will be appended to the end of the file.
 
-            The track data will be appended to the end of the file.
         """
         self.tracks.resize(self.tracks.shape[0] + track.shape[0], axis=0)
         self.tracks[-track.shape[0]:] = track.astype(np.float32)
@@ -114,14 +116,22 @@ class Dpy:
         self.offsets[-1] = self.curr_pos
 
     def write_tracks(self, tracks: Streamlines) -> None:
-        """ write many tracks together
-        Args:
-                tracks: a Streamlines object
+        """
+        write many tracks together
+
+        Parameters:
+        -----------
+        tracks: a Streamlines object
                     tracks data to be written
+
         Returns:
-                None
+        --------
+        None
+
         Notes:
-                The tracks data will be appended to the end of the file.
+        -----
+        The tracks data will be appended to the end of the file.
+
         """
 
         self.tracks.resize(self.tracks.shape[0] + tracks._data.shape[0],
@@ -135,22 +145,43 @@ class Dpy:
             tracks._offsets + tracks._lengths
 
     def read_track(self) -> np.array:
-        """ read one track each time
-        Args:
-                None
+        """
+        read one track each time
+
+        Parameters:
+        -----------
+        None
+
         Returns:
-                a numpy array with shape (N, 3)
+        --------
+        a numpy array with shape (N, 3)
+
+        Notes:
+        ------
+        The track data will be read from the beginning of the file.
+
         """
         off0, off1 = self.offsets[self.offs_pos:self.offs_pos + 2]
         self.offs_pos += 1
         return self.tracks[off0:off1]
 
     def read_tracksi(self, indices: List[int]) -> Streamlines:
-        """ read tracks with specific indices
-        Args:
-                indices: a list of indices
+        """
+        read tracks with specific indices
+
+        Parameters:
+        -----------
+        indices: list of integers
+              a list of indices
+
         Returns:
-                a Streamlines object
+        --------
+        a Streamlines object
+
+        Notes:
+        ------
+        The track data will be read.
+
         """
         tracks = Streamlines()
         for i in indices:
@@ -159,12 +190,20 @@ class Dpy:
         return tracks
 
     def read_tracks(self) -> Streamlines:
-        """ read the entire tractography
-        Args:
-            none
+        """
+        read the entire tractography
+
+        Parameters:
+        ----------
+        None
 
         Returns:
-            a Streamlines object
+        --------
+        a Streamlines object
+
+        Notes:
+        ------
+        The track data will be read.
 
         """
         Is = self.offsets[:]
@@ -176,11 +215,17 @@ class Dpy:
         return tracks
 
     def close(self) -> None:
-        """ close the file
-        Args:
-            none
+        """
+        close the file
+
+        Parameters:
+        -----------
+        None
+
         Returns:
-            none
+        --------
+        None
+
         """
         self.f.close()
 
