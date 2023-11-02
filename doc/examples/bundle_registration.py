@@ -109,7 +109,7 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
 #
 # .. math::
 #
-#     \operatorname{BMD}\left(S_{a}, S_{b}\right)=\frac{1}{4}\left(\frac{1}{A} \\
+#     \operatorname{BMD}\left(S_{a}, S_{b}\right)=\frac{1}{4}\left(\frac{1}{A}
 #         \sum_{i=1}^{A} \min _{j} D(i, j)+\frac{1}{B} \sum_{j=1}^{B} \\
 #         \min _{i} D(i, j)\right)^{2}
 #

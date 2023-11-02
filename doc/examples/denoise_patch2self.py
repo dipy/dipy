@@ -25,7 +25,7 @@ distribution).
 The Patch2Self Framework:
 
 .. _patch2self:
-.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
+.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true  # noqa E501
    :scale: 60 %
    :align: center
 
@@ -42,11 +42,11 @@ This is done by using the self-supervised loss:
 
 .. math::
 
-   \mathcal{L}\left(\Phi_{J}\right)=\mathbb{E}\left\|\Phi_{J}\left(Y_{*, *,-j}
-   \right)-Y_{*, 0, j}\right\|^{2}
+    \\mathcal{L}\\left(\\Phi_{J}\\right)=\\mathbb{E}\\left\\|\\Phi_{J}\\
+     \\left(Y_{*, *,-j}\\right)-Y_{*, 0, j}\\right\\|^{2}
 
 (B) Prediction: The same 'n-1' volumes which were used in the training are now
-fed into the regressor :math:`\Phi` built in phase (A). The prediction is a
+fed into the regressor :math:`\\Phi` built in phase (A). The prediction is a
 denoised version of held-out volume.
 
 Note: The volume to be denoised is merely used as the target in the training

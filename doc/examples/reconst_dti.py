@@ -17,7 +17,7 @@ The diffusion tensor models the diffusion signal as:
 
 .. math::
 
-    \frac{S(\mathbf{g}, b)}{S_0} = e^{-b\mathbf{g}^T \mathbf{D} \mathbf{g}}
+    \\frac{S(\\mathbf{g}, b)}{S_0} = e^{-b\\mathbf{g}^T \\mathbf{D} \\mathbf{g}}
 
 Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
@@ -29,9 +29,9 @@ parameters are:
 
 .. math::
 
-   \mathbf{D} = \begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
+    \\mathbf{D} = \\begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
                        D_{yx} & D_{yy} & D_{yz} \\
-                       D_{zx} & D_{zy} & D_{zz} \\ \end{pmatrix}
+                       D_{zx} & D_{zy} & D_{zz} \\ \\end{pmatrix}
 
 This matrix is a variance/covariance matrix of the diffusivity along the three
 spatial dimensions. Note that we can assume that diffusivity has antipodal

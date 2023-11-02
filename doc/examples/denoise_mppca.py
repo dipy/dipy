@@ -13,7 +13,7 @@ The basic idea behind the PCA-based denoising algorithms is to remove the
 components of the data that are classified as noise. The Principal Components
 classification can be performed based on prior noise variance estimates
 [Manjon2013]_
-(see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)
+(see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)  # noqa E501
 or automatically based on the Marcenko-Pastur distribution [Veraa2016a]_.
 In addition to noise suppression, the PCA algorithm can be used to get the
 standard deviation of the noise [Veraa2016b]_.

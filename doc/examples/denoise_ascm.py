@@ -54,7 +54,7 @@ t = time()
 
 ###############################################################################
 # In order to generate the two pre-denoised versions of the data we will use
-# the :ref:`non_local_means denoining<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
+# the :ref:`non_local_means denoining<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`   # noqa E501
 # For ``non_local_means`` first we need to estimate the standard deviation of
 # the noise. We use N=4 since the Sherbrooke dataset was acquired on a
 # 1.5T Siemens scanner with a 4 array head coil.

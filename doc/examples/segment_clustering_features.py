@@ -25,7 +25,7 @@ from dipy.segment.featurespeed import (
     IdentityFeature, ResampleFeature, CenterOfMassFeature, MidpointFeature,
     ArcLengthFeature, VectorOfEndpointsFeature)
 from dipy.tracking.streamline import set_number_of_points
-from dipy.viz import window, actor, colormap
+from dipy.viz import window, actor, colormap as cmap
 
 ###############################################################################
 # .. note::
@@ -148,7 +148,7 @@ clusters = qb.cluster(streamlines)
 centers = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each center of mass according to the cluster they belong to.
-colormap = colormap.create_colormap(np.arange(len(clusters)))
+colormap = cmap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -196,7 +196,7 @@ clusters = qb.cluster(streamlines)
 midpoints = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each midpoint according to the cluster they belong to.
-colormap = colormap.create_colormap(np.arange(len(clusters)))
+colormap = cmap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -239,7 +239,7 @@ qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = colormap.create_colormap(np.ravel(clusters.centroids))
+colormap = cmap.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -284,7 +284,7 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = colormap.create_colormap(np.arange(len(clusters)))
+colormap = cmap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color

@@ -177,7 +177,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l))
+scene.add(actor.line(recognized_af_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -226,7 +226,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l))
+scene.add(actor.line(recognized_af_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -274,7 +274,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l))
+scene.add(actor.line(recognized_af_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -329,7 +329,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(r_recognized_af_l))
+scene.add(actor.line(r_recognized_af_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -399,7 +399,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l))
+scene.add(actor.line(recognized_cst_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -448,7 +448,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l))
+scene.add(actor.line(recognized_cst_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -496,7 +496,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l))
+scene.add(actor.line(recognized_cst_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
@@ -552,7 +552,7 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(r_recognized_cst_l))
+scene.add(actor.line(r_recognized_cst_l.copy()))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))

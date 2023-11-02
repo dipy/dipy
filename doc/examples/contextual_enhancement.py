@@ -9,46 +9,54 @@ of [Portegies2015a]_ for processing HARDI data. The aim is to enhance the
 alignment of elongated structures in the data such that crossing/junctions are
 maintained while reducing noise and small incoherent structures. This is
 achieved via a hypo-elliptic 2nd order PDE in the domain of coupled positions
-and orientations :math:`\mathbb{R}^3 \rtimes S^2`. This domain carries a
+and orientations :math:`\\mathbb{R}^3 \\rtimes S^2`. This domain carries a
 non-flat geometrical differential structure that allows including a notion of
 alignment between neighboring points.
 
-Let :math:`({\bf y},{\bf n}) \in \mathbb{R}^3\rtimes S^2` where
-:math:`{\bf y} \in \mathbb{R}^{3}` denotes the spatial part, and
-:math:`{\bf n} \in S^2` the angular part.
-Let :math:`W:\mathbb{R}^3\rtimes S^2\times \mathbb{R}^{+} \to \mathbb{R}` be
-the function representing the evolution of FOD/ODF field. Then, the contextual
-PDE with evolution time :math:`t\geq 0` is given by:
+Let :math:`({\\bf y},{\\bf n}) \\in \\mathbb{R}^3\rtimes S^2` where
+:math:`{\\bf y} \\in \\mathbb{R}^{3}` denotes the spatial part, and
+:math:`{\\bf n} \\in S^2` the angular part.
+Let :math:`W:\\mathbb{R}^3\\rtimes S^2\\times \\mathbb{R}^{+} \\to \\mathbb{R}`
+be the function representing the evolution of FOD/ODF field. Then, the
+contextual PDE with evolution time :math:`t\\geq 0` is given by:
 
 .. math::
 
-  \begin{cases}
-  \frac{\partial}{\partial t} W({\bf y},{\bf n},t) &= ((D^{33}({\bf n} \cdot
-          \nabla)^2 + D^{44} \Delta_{S^2})W)({\bf y},{\bf n},t)
-  \\ W({\bf y},{\bf n},0) &= U({\bf y},{\bf n})
-  \end{cases},
+  \\begin{cases}
+  \\frac{\\partial}{\\partial t} W({\\bf y},{\\bf n},t) &= ((D^{33}({\\bf n}
+  \\cdot \\nabla)^2 + D^{44} \\Delta_{S^2})W)({\\bf y},{\\bf n},t)
+  \\ W({\\bf y},{\\bf n},0) &= U({\\bf y},{\\bf n})
+  \\end{cases},
 
 where:
 
-* :math:`D^{33}>0` is  the coefficient for the spatial smoothing (which goes only in the direction of :math:`n`);
+* :math:`D^{33}>0` is  the coefficient for the spatial smoothing
+  (which goes only in the direction of :math:`n`);
 
-* :math:`D^{44}>0` is the coefficient for the angular smoothing (here :math:`\Delta_{S^2}` denotes the Laplace-Beltrami operator on the sphere :math:`S^2`);
+* :math:`D^{44}>0` is the coefficient for the angular smoothing
+  (here :math:`\\Delta_{S^2}` denotes the Laplace-Beltrami operator on the
+  sphere :math:`S^2`);
 
-* :math:`U:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}` is the initial condition given by the noisy FOD/ODF’s field.
+* :math:`U:\\mathbb{R}^3\\rtimes S^2 \\to \\mathbb{R}` is the initial condition
+  given by the noisy FOD/ODF’s field.
 
-This equation is solved via a shift-twist convolution (denoted by :math:`\ast_{\mathbb{R}^3\rtimes S^2}`) with its corresponding kernel :math:`P_t:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}^+`:
+This equation is solved via a shift-twist convolution (denoted by
+:math:`\\ast_{\\mathbb{R}^3\\rtimes S^2}`) with its corresponding kernel
+:math:`P_t:\\mathbb{R}^3\\rtimes S^2 \\to \\mathbb{R}^+`:
 
 .. math::
 
-  W({\bf y},{\bf n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)({\bf y},{\bf n})
-  = \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{{\bf n}^\prime}({\bf y}-{\bf y}^\prime),
-   R^T_{{\bf n}^\prime} {\bf n} ) U({\bf y}^\prime, {\bf n}^\prime)
+  W({\\bf y},{\\bf n},t) = (P_t \\ast_{\mathbb{R}^3 \\rtimes S^2} U)
+  ({\\bf y},{\\bf n}) = \\int_{\\mathbb{R}^3} \\int_{S^2} P_t
+  (R^T_{{\\bf n}^\\prime}({\\bf y}-{\\bf y}^\\prime),
+   R^T_{{\\bf n}^\\prime} {\bf n} ) U({\\bf y}^\\prime, {\bf n}^\\prime)
 
 Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)`
 onto :math:`{\bf n}`.
 
 Note that the shift-twist convolution differs from a Euclidean convolution and
-takes into account the non-flat structure of the space :math:`\mathbb{R}^3\rtimes S^2`.
+takes into account the non-flat structure of the space
+:math:`\\mathbb{R}^3\\rtimes S^2`.
 
 The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken2011]_.
 It can be seen as the limiting distribution obtained by accumulating random

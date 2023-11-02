@@ -51,7 +51,7 @@ extensions = ['sphinx.ext.autodoc',
               'prepare_gallery',
               'math_dollar',  # has to go before numpydoc
               'sphinx_gallery.gen_gallery',
-            #   'numpydoc',
+              # 'numpydoc',
               'github',
               'jinja',
               'sphinx_design',

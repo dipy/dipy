@@ -15,16 +15,16 @@ Theory
 ======
 
 In QTI, the tissue microstructure is represented by a diffusion tensor
-distribution (DTD). Here, DTD is denoted by $\mathbf{D}$ and the voxel-level
-diffusion tensor from DTI by $\langle\mathbf{D}\rangle$, where
-$\langle \ \rangle$ denotes averaging over the DTD. The covariance of
-$\mathbf{D}$ is given by a fourth-order covariance tensor $\mathbb{C}$ defined
-as
+distribution (DTD). Here, DTD is denoted by $\\mathbf{D}$ and the voxel-level
+diffusion tensor from DTI by $\\langle\\mathbf{D}\\rangle$, where
+$\\langle \\ \\rangle$ denotes averaging over the DTD. The covariance of
+$\\mathbf{D}$ is given by a fourth-order covariance tensor $\\mathbb{C}$
+defined as
 
 .. math::
 
-   \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle - \langle
-   \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle ,
+   \\mathbb{C} = \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle - \\langle
+   \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D} \\rangle ,
 
 where $\otimes$ denotes a tensor outer product. $\mathbb{C}$ has 21 unique
 elements and enables the calculation of several microstructural parameters.
@@ -34,68 +34,69 @@ as
 
 .. math::
 
-   S \approx S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle +
-   \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right) ,
+   S \\approx S_0 \\exp \\left(- \\mathbf{b} : \\langle \\mathbf{D} \\rangle +
+   \\frac{1}{2}(\\mathbf{b} \\otimes \\mathbf{b}) : \\mathbb{C} \\right) ,
 
-where $S_0$ is the signal without diffusion-weighting, $\mathbf{b}$ is the
+where $S_0$ is the signal without diffusion-weighting, $\\mathbf{b}$ is the
 b-tensor used in the acquisition, and $:$ denotes a tensor inner product.
 
-The model parameters $S_0$, $\langle \mathbf{D}\rangle$, and $\mathbb{C}$
+The model parameters $S_0$, $\\langle \\mathbf{D}\\rangle$, and $\\mathbb{C}$
 can be estimated by solving the following weighted problem, where the
 heteroskedasticity introduced by the taking the logarithm of the signal is
 accounted for:
 
 .. math::
 
-   {\mathrm{argmin}}_{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}
-   \sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
-   \mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
-   \mathbb{C} \right|^2 ,
+   {\\mathrm{argmin}}_{S_0,\\langle \\mathbf{D} \\rangle, \\mathbb{C}}
+   \\sum_{k=1}^n S_k^2 \\left| \\ln(S_k)-\\ln(S_0)+\\mathbf{b}^{(k)} \\langle
+   \\mathbf{D} \\rangle -\\frac{1}{2} (\\mathbf{b} \\otimes \\mathbf{b})^{(k)}
+   \\mathbb{C} \\right|^2 ,
 
 the above can be written as a weighted least squares problem
 
 .. math::
 
-   \mathbf{Ax} = \mathbf{y},
+   \\mathbf{Ax} = \\mathbf{y},
 
 where
 
 .. math::
 
-   y = \begin{pmatrix} \ S_1 \ ln S_1 \\ \vdots \\
-   \ S_n \ ln S_n \end{pmatrix} ,
+   y = \\begin{pmatrix} \\ S_1 \\ ln S_1 \\ \\vdots \\
+   \\ S_n \\ ln S_n \\end{pmatrix} ,
 
 .. math::
 
-   x = \begin{pmatrix} \ln S_0 & \langle \mathbf{D} \rangle & \mathbb{C}
-   \end{pmatrix}^\text{T} ,
+   x = \\begin{pmatrix} \\ln S_0 & \\langle \\mathbf{D} \\rangle & \\mathbb{C}
+   \\end{pmatrix}^\\text{T} ,
 
 .. math::
 
    A =
-   \begin{pmatrix}
-   S_1 & 0 & \ldots & 0 \\ 0 & \ddots & \ddots & \vdots \\ \vdots & \ddots
-   & \ddots & 0 \\ 0 & \ldots & 0 & S_n
-   \end{pmatrix}
-   \begin{pmatrix}
-   1 & -\mathbf{b}_1^\text{T} & \frac{1}{2} (\mathbf{b}_1 \otimes \mathbf{b}_1)
-   \text{T} \\
-   \vdots & \vdots & \vdots \\
-   \vdots & \vdots & \vdots \\
-   1 & -\mathbf{b}_n^\text{T} & \frac{1}{2} (\mathbf{b}_n \otimes \mathbf{b}_n)
-   ^\text{T}
-   \end{pmatrix} ,
+   \\begin{pmatrix}
+   S_1 & 0 & \\ldots & 0 \\ 0 & \\ddots & \\ddots & \\vdots \\ \\vdots &
+   \\ddots & \\ddots & 0 \\ 0 & \\ldots & 0 & S_n
+   \\end{pmatrix}
+   \\begin{pmatrix}
+   1 & -\\mathbf{b}_1^\\text{T} & \\frac{1}{2} (\\mathbf{b}_1 \\otimes
+   \\mathbf{b}_1) \\text{T} \\
+   \\vdots & \\vdots & \\vdots \\
+   \\vdots & \\vdots & \\vdots \\
+   1 & -\\mathbf{b}_n^\\text{T} & \\frac{1}{2} (\\mathbf{b}_n \\otimes
+   \\mathbf{b}_n) ^\\text{T}
+   \\end{pmatrix} ,
 
-where $n$ is the number of acquisitions and $\langle\mathbf{D}\rangle$,
-$\mathbb{C}$, $\mathbf{b}_i$, and $(\mathbf{b}_i \otimes \mathbf{b}_i)$ are
-represented by column vectors using Voigt notation.
+where $n$ is the number of acquisitions and $\\langle\\mathbf{D}\\rangle$,
+$\\mathbb{C}$, $\\mathbf{b}_i$, and $(\\mathbf{b}_i \\otimes \\mathbf{b}_i)$
+are represented by column vectors using Voigt notation.
 
-The estimated $\langle\mathbf{D}\rangle$ and $\mathbb{C}$ tensors
+The estimated $\\langle\\mathbf{D}\\rangle$ and $\\mathbb{C}$ tensors
 should observe mathematical and physical conditions dictated by the model
-itself: since $\langle\mathbf{D}\rangle$ represents a diffusivity, it should be
-positive semi-definite: $\langle\mathbf{D}\rangle \succeq 0$. Similarly, since
-$\mathbf{C}$ represents a covariance, it's $6 \times 6$ representation,
-$\mathbf{C}$, should be positive semi-definite:  $\mathbf{C} \succeq 0$
+itself: since $\\langle\\mathbf{D}\\rangle$ represents a diffusivity, it
+should be positive semi-definite: $\\langle\\mathbf{D}\\rangle \\succeq 0$.
+Similarly, since $\\mathbf{C}$ represents a covariance, it's $6 \\times 6$
+representation, $\\mathbf{C}$, should be positive semi-definite:
+$\\mathbf{C} \\succeq 0$
 
 When not imposed, violations of these conditions can occur in presence of noise
 and/or in sparsely sampled data. This could results in metrics derived from the
@@ -105,12 +106,10 @@ shown by Herberthson et al. [2]_. This corresponds to solving the problem
 
 .. math::
 
-    \mathbf{Ax} = \mathbf{y} \\
-
-    \text{subject to:} \\
-
-    \langle\mathbf{D}\rangle \succeq 0 , \\
-    \mathbf{C} \succeq 0
+    \\mathbf{Ax} = \\mathbf{y}
+    \\text{subject to:}
+    \\langle\\mathbf{D}\\rangle \\succeq 0 ,
+    \\mathbf{C} \\succeq 0
 
 Installation
 =============
@@ -139,6 +138,7 @@ First we import all the necessary modules to perform the QTI fit:
 
 from dipy.data import read_DiB_217_lte_pte_ste, read_DiB_70_lte_pte_ste
 import dipy.reconst.qti as qti
+from dipy.viz.plotting import compare_qti_maps
 
 ###############################################################################
 # To showcase why enforcing positivity constraints in QTI is relevant, we use
@@ -154,8 +154,8 @@ import dipy.reconst.qti as qti
 # and is described in [3]_.
 #
 #
-#First, let's load the complete dataset and create the gradient table.
-#We mark these two with the '_217' suffix.
+# First, let's load the complete dataset and create the gradient table.
+# We mark these two with the '_217' suffix.
 
 data_img, mask_img, gtab_217 = read_DiB_217_lte_pte_ste()
 data_217 = data_img.get_fdata()
@@ -189,8 +189,8 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 
 ###############################################################################
 # Now we repeat the fit but with the constraints applied.
-# To perform the constrained fit, we select the 'SDPdc' fit method when creating
-# the QtiModel object.
+# To perform the constrained fit, we select the 'SDPdc' fit method when
+# creating the QtiModel object.
 #
 # .. note::
 #     this fit method is slower compared to the defaults unconstrained.
@@ -218,8 +218,6 @@ qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 # "ground truth" provided by fitting the QTI model to the full dataset.
 # For example, we can look at the FA and µFA maps, and their value
 # distribution in White Matter in comparison to the ground truth.
-
-from dipy.viz.plotting import compare_qti_maps
 
 z = 13
 wm_mask = qtifit_217.ufa[:, :, z] > 0.6

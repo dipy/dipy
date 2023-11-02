@@ -12,16 +12,16 @@ Theory
 ======
 
 In QTI, the tissue microstructure is represented by a diffusion tensor
-distribution (DTD). Here, DTD is denoted by $\mathbf{D}$ and the voxel-level
-diffusion tensor from DTI by $\langle\mathbf{D}\rangle$, where
-$\langle \ \rangle$ denotes averaging over the DTD. The covariance of
-$\mathbf{D}$ is given by a fourth-order covariance tensor $\mathbb{C}$ defined
-as
+distribution (DTD). Here, DTD is denoted by $\\mathbf{D}$ and the voxel-level
+diffusion tensor from DTI by $\\langle\\mathbf{D}\\rangle$, where
+$\\langle \\ \\rangle$ denotes averaging over the DTD. The covariance of
+$\\mathbf{D}$ is given by a fourth-order covariance tensor $\\mathbb{C}$
+defined as
 
 .. math::
 
-   \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle - \langle
-   \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle ,
+   \\mathbb{C} = \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle - \\langle
+   \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D} \\rangle ,
 
 where $\otimes$ denotes a tensor outer product. $\mathbb{C}$ has 21 unique
 elements and enables the calculation of several microstructural parameters.
@@ -30,45 +30,46 @@ Using the cumulant expansion, the diffusion-weighted signal can be approximated
 as
 
 .. math::
-   S \approx S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle +
-   \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right) ,
+   S \\approx S_0 \\exp \\left(- \\mathbf{b} : \\langle \\mathbf{D} \\rangle +
+   \\frac{1}{2}(\\mathbf{b} \\otimes \\mathbf{b}) : \\mathbb{C} \\right) ,
 
 where $S_0$ is the signal without diffusion-weighting, $\mathbf{b}$ is the
 b-tensor used in the acquisition, and $:$ denotes a tensor inner product.
 
-The model parameters $S_0$, $\langle\mathbf{D}\rangle$, and $\mathbb{C}$ can be
-estimated by solving the following equation:
+The model parameters $S_0$, $\\langle\\mathbf{D}\\rangle$, and $\\mathbb{C}$
+can be estimated by solving the following equation:
 
 .. math::
 
-   S = \beta X,
+   S = \\beta X,
 
 where
 
 .. math::
 
-   S = \begin{pmatrix} \ln S_1 \\ \vdots \\ \ln S_n \end{pmatrix} ,
+   S = \\begin{pmatrix} \\ln S_1 \\ \\vdots \\ \\ln S_n \\end{pmatrix} ,
 
 .. math::
 
-   \beta = \begin{pmatrix} \ln S_0 & \langle \mathbf{D} \rangle & \mathbb{C}
-   \end{pmatrix}^\text{T} ,
+   \\beta = \\begin{pmatrix} \\ln S_0 & \\langle \\mathbf{D}
+   \\rangle & \\mathbb{C} \\end{pmatrix}^\\text{T} ,
 
 .. math::
 
    X =
-   \begin{pmatrix}
-   1 & -\mathbf{b}_1^\text{T} & \frac{1}{2} (\mathbf{b}_1 \otimes \mathbf{b}_1)
-   \text{T} \\
-   \vdots & \vdots & \vdots \\
-   1 & -\mathbf{b}_n^\text{T} & \frac{1}{2} (\mathbf{b}_n \otimes \mathbf{b}_n)
-   ^\text{T}
-   \end{pmatrix} ,
+   \\begin{pmatrix}
+   1 & -\\mathbf{b}_1^\\text{T} & \\frac{1}{2} (\\mathbf{b}_1 \\otimes
+   \\mathbf{b}_1) \\text{T} \\
+   \\vdots & \\vdots & \\vdots \\
+   1 & -\\mathbf{b}_n^\\text{T} & \\frac{1}{2} (\\mathbf{b}_n \\otimes
+   \\mathbf{b}_n) ^\\text{T}
+   \\end{pmatrix} ,
 
-where $n$ is the number of acquisitions and $\langle\mathbf{D}\rangle$,
-$\mathbb{C}$, $\mathbf{b}_i$, and $(\mathbf{b}_i \otimes \mathbf{b}_i)$ are
-represented by column vectors using Voigt notation. Estimation of the model
-parameters requires that $\text{rank}(\mathbf{X}^\text{T}\mathbf{X}) = 28$.
+where $n$ is the number of acquisitions and $\\langle\\mathbf{D}\\rangle$,
+$\\mathbb{C}$, $\\mathbf{b}_i$, and $(\\mathbf{b}_i \\otimes \\mathbf{b}_i)$
+are represented by column vectors using Voigt notation. Estimation of the
+model parameters requires that
+$\\text{rank}(\\mathbf{X}^\\text{T}\\mathbf{X}) = 28$.
 This can be achieved by combining acquisitions with b-tensors with different
 shapes, sizes, and orientations.
 

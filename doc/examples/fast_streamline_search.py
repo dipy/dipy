@@ -76,25 +76,24 @@ else:
 #
 # Search for all similar streamlines  [StOnge2022]_
 #
-# Fast Streamline Search can do a radius search
-# to find all streamlines that are similar to from one tractogram to another.
-# It return the distance matrix mapping between both tractograms.
-# The same list of streamlines can be given to recover the self distance
-# matrix.
+# Fast Streamline Search can do a radius search to find all streamlines that
+# are similar to from one tractogram to another. It returns the distance
+# matrix mapping between both tractograms. The same list of streamlines can
+# be given to recover the self distance matrix.
 #
-#     FastStreamlinesSearch Class
-#     - ref_streamlines : reference streamlines, that will be searched in
-#       (tree)
-#     - max_radius : is the maximum distance that can be used with radius
-#       search
+# here are the ``FastStreamlinesSearch`` class need the following
+# initialization arguments:
 #
-#     radius_search() function
-#     - radius : for each streamline search find all similar ones in the
-#         "ref_streamlines" that are within the given radius
+# - ref_streamlines : reference streamlines, that will be searched in (tree)
+# - max_radius : is the maximum distance that can be used with radius search
 #
-#     Be cautious, a large radius might result in a dense distance computation,
-#     requiring a large amount of time and memory.
-#     Recommended range of the radius is from 1 to 10 mm.
+# Then, the ``radius_search()`` method needs the following arguments:
+# - radius : for each streamline search find all similar ones in the
+#   "ref_streamlines" that are within the given radius
+#
+# Be cautious, a large radius might result in a dense distance computation,
+# requiring a large amount of time and memory. Recommended range of the
+# radius is from 1 to 10 mm.
 
 radius = 7.0
 fs_tree_af = FastStreamlineSearch(ref_streamlines=model_af_l,
@@ -107,7 +106,7 @@ coo_mdist_mtx = fs_tree_af.radius_search(streamlines, radius=radius)
 ids_s = np.unique(coo_mdist_mtx.row)
 ids_ref = np.unique(coo_mdist_mtx.col)
 
-recognized_af_l = streamlines[ids_s]
+recognized_af_l = streamlines[ids_s].copy()
 
 ###############################################################################
 # let's visualize streamlines similar to the Arcuate Fasciculus Left bundle
