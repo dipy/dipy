@@ -119,12 +119,12 @@ class Dpy:
         """
         return the version of the file
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         None
 
-        Returns:
-        --------
+        Returns
+        -------
         version: str
             the version of the file
 
@@ -143,7 +143,7 @@ class Dpy:
         -------
         None
 
-        Notes:
+        Notes
         ------
         The track data will be appended to the end of the file.
 
@@ -188,17 +188,17 @@ class Dpy:
         """
         read one track each time
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         None
 
-        Returns:
-        --------
+        Returns
+        -------
         a numpy array with shape (N, 3)
 
-        Notes:
-        ------
-        The track data will be read from the beginning of the file.
+        Notes
+        -----
+        The track data will be read.
 
         """
         off0, off1 = self.offsets[self.offs_pos:self.offs_pos + 2]
@@ -209,17 +209,17 @@ class Dpy:
         """
         read tracks with specific indices
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         indices: list of integers
               a list of indices
 
-        Returns:
-        --------
+        Returns
+        -------
         a Streamlines object
 
-        Notes:
-        ------
+        Notes
+        -----
         The track data will be read.
 
         """
@@ -233,16 +233,16 @@ class Dpy:
         """
         read the entire tractography
 
-        Parameters:
+        Parameters
         ----------
         None
 
-        Returns:
-        --------
+        Returns
+        -------
         a Streamlines object
 
-        Notes:
-        ------
+        Notes
+        -----
         The track data will be read.
 
         """
@@ -258,12 +258,12 @@ class Dpy:
         """
         close the file
 
-        Parameters:
+        Parameters
         -----------
         None
 
-        Returns:
-        --------
+        Returns
+        -------
         None
 
         """
