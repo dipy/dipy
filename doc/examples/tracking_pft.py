@@ -73,18 +73,17 @@ seed_mask = (labels == 2)
 seed_mask[pve_wm_data < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
-"""
-CMC/ACT Stopping Criterion
-==========================
-Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
-tractography (ACT) [Smith2012]_ both uses PVEs information from
-anatomical images to determine when the tractography stops.
-Both stopping criterion use a trilinear interpolation
-at the tracking position. CMC stopping criterion uses a probability derived
-from the PVE maps to determine if the streamline reaches a 'valid' or 'invalid'
-region. ACT uses a fixed threshold on the PVE maps. Both stopping criterion can
-be used in conjunction with PFT. In this example, we used CMC.
-"""
+###############################################################################
+# CMC/ACT Stopping Criterion
+# ==========================
+# Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
+# tractography (ACT) [Smith2012]_ both uses PVEs information from
+# anatomical images to determine when the tractography stops.
+# Both stopping criterion use a trilinear interpolation
+# at the tracking position. CMC stopping criterion uses a probability derived
+# from the PVE maps to determine if the streamline reaches a 'valid' or
+# 'invalid' region. ACT uses a fixed threshold on the PVE maps. Both stopping
+# criterion can be used in conjunction with PFT. In this example, we used CMC.
 
 voxel_size = np.average(voxel_size[1:4])
 step_size = 0.2
@@ -95,25 +94,24 @@ cmc_criterion = CmcStoppingCriterion.from_pve(pve_wm_data,
                                               step_size=step_size,
                                               average_voxel_size=voxel_size)
 
-"""
-Particle Filtering Tractography
-===============================
-`pft_back_tracking_dist` is the distance in mm to backtrack when the
-tractography incorrectly stops in the WM or CSF. `pft_front_tracking_dist` is
-the distance in mm to track after the stopping event using PFT.
-
-The `particle_count` parameter is the number of samples used in the particle
-filtering algorithm.
-
-`min_wm_pve_before_stopping` controls when the tracking can stop in the GM.
-The tractography must reaches a position where WM_pve >=
-`min_wm_pve_before_stopping` before stopping in the GM. As long as the
-condition is not reached and WM_pve > 0, the tractography will continue.
-It is particularlyusefull to set this parameter > 0.5 when seeding tractography
-at the WM-GM interface or in the sub-cortical GM. It allows streamlines to
-exit the seeding voxels until they reach the deep white matter where WM_pve >
-`min_wm_pve_before_stopping`.
-"""
+###############################################################################
+# Particle Filtering Tractography
+# ===============================
+# `pft_back_tracking_dist` is the distance in mm to backtrack when the
+# tractography incorrectly stops in the WM or CSF. `pft_front_tracking_dist`
+# is the distance in mm to track after the stopping event using PFT.
+#
+# The `particle_count` parameter is the number of samples used in the particle
+# filtering algorithm.
+#
+# `min_wm_pve_before_stopping` controls when the tracking can stop in the GM.
+# The tractography must reaches a position where WM_pve >=
+# `min_wm_pve_before_stopping` before stopping in the GM. As long as the
+# condition is not reached and WM_pve > 0, the tractography will continue.
+# It is particularlyusefull to set this parameter > 0.5 when seeding
+# tractography at the WM-GM interface or in the sub-cortical GM. It allows
+# streamlines to exit the seeding voxels until they reach the deep white
+# matter where WM_pve > `min_wm_pve_before_stopping`.
 
 pft_streamline_gen = ParticleFilteringTracking(dg,
                                                cmc_criterion,
@@ -127,7 +125,7 @@ pft_streamline_gen = ParticleFilteringTracking(dg,
                                                particle_count=15,
                                                return_all=False,
                                                min_wm_pve_before_stopping=1)
-streamlines = Streamlines(pft_streamline_generator)
+streamlines = Streamlines(pft_streamline_gen)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_pft.trk")
 
@@ -139,12 +137,10 @@ if has_fury:
     if interactive:
         window.show(scene)
 
-"""
-.. figure:: tractogram_pft.png
- :align: center
-
- **Corpus Callosum using particle filtering tractography**
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Corpus Callosum using particle filtering tractography
 
 # Local Probabilistic Tractography
 prob_streamline_generator = LocalTracking(dg,
@@ -167,24 +163,20 @@ if has_fury:
     if interactive:
         window.show(scene)
 
-"""
-.. figure:: tractogram_probabilistic_cmc.png
- :align: center
-
- **Corpus Callosum using probabilistic tractography**
-"""
-
-"""
-References
-----------
-.. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-    Towards quantitative connectivity analysis: reducing tractography biases.
-    NeuroImage, 98, 266-278, 2014.
-
-.. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-    Anatomically-constrained tractography: Improved diffusion MRI
-    streamlines tractography through effective use of anatomical
-    information. NeuroImage, 63(3), 1924-1938, 2012.
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Corpus Callosum using probabilistic tractography
+#
+#
+#
+# References
+# ----------
+# .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
+#     Towards quantitative connectivity analysis: reducing tractography biases.
+#     NeuroImage, 98, 266-278, 2014.
+#
+# .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
+#     Anatomically-constrained tractography: Improved diffusion MRI
+#     streamlines tractography through effective use of anatomical
+#     information. NeuroImage, 63(3), 1924-1938, 2012.
