@@ -151,7 +151,7 @@ save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
 # Lastly, one can also use Patch2Self in batches if the number of gradient
 # directions is very high (>=200 volumes). For instance, if the data has 300
 # volumes, one can split the data into 2 batches, (150 directions each) and
-# still get the same denoising performance. One can simply run Patch2Self
+# still get the same denoising performance. One can run Patch2Self
 # using::
 #
 #    denoised_batch1 = patch2self(data[..., :150], bvals[:150])

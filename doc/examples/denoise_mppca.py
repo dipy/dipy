@@ -14,7 +14,7 @@ components of the data that are classified as noise. The Principal Components
 classification can be performed based on prior noise variance estimates
 [Manjon2013]_
 (see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)  # noqa E501
-or automatically based on the Marcenko-Pastur distribution [Veraa2016a]_.
+or automatically based on the Marchenko-Pastur distribution [Veraa2016a]_.
 In addition to noise suppression, the PCA algorithm can be used to get the
 standard deviation of the noise [Veraa2016b]_.
 
@@ -75,7 +75,7 @@ print(data.shape)
 # volumes of images corresponding to all the diffusion gradient directions
 # of the selected b-values.
 #
-# The PCA denoising using the Marcenko-Pastur distribution can be performed by
+# The PCA denoising using the Marchenko-Pastur distribution can be performed by
 # calling the function ``mppca``:
 
 t = time()
@@ -92,7 +92,7 @@ print("Time taken for local MP-PCA ", -t + time())
 # volumes, the patch_radius is set to 2 which corresponds to a 5x5x5 sliding
 # window comprising a total of 125 voxels.
 
-# To assess the performance of the Marcenko-Pastur PCA denoising algorithm,
+# To assess the performance of the Marchenko-Pastur PCA denoising algorithm,
 # an axial slice of the original data, denoised data, and residuals are
 # plotted below:
 
@@ -193,7 +193,7 @@ fig2.savefig('denoised_dki.png')
 # visually appreciated, particularly for the FA and MK estimates.
 #
 #
-# Noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
+# Noise standard deviation estimation using the Marchenko-Pastur PCA algorithm
 # ===========================================================================
 #
 # As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
@@ -215,7 +215,7 @@ fig3.savefig('pca_sigma.png')
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# The above figure shows that the Marcenko-Pastur PCA algorithm computes a 3D
+# The above figure shows that the Marchenko-Pastur PCA algorithm computes a 3D
 # spatial varying noise level map. To obtain the mean noise std across all
 # voxels, you can use the following lines of code:
 

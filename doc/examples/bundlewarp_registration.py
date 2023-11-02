@@ -26,7 +26,7 @@ from dipy.viz.streamline import (viz_two_bundles, viz_vector_field,
 from time import time
 
 ###############################################################################
-# Let's download and loaf two uncinate fasciculus bundles in the left
+# Let's download and load two uncinate fasciculus bundles in the left
 # hemisphere of the brain (UF_L) available here:
 # https://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733
 
