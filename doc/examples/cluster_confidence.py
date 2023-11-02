@@ -99,7 +99,7 @@ scene.add(stream_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, n_frames=1, out_path='cci_streamlines.png',
+window.record(scene, out_path='cci_streamlines.png',
               size=(800, 800))
 
 ###############################################################################
@@ -148,11 +148,10 @@ keep_streamlines_actor = actor.line(keep_streamlines, linewidth=0.1)
 
 scene.add(keep_streamlines_actor)
 
-
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, n_frames=1, out_path='filtered_cci_streamlines.png',
+window.record(scene, out_path='filtered_cci_streamlines.png',
               size=(800, 800))
 
 ###############################################################################

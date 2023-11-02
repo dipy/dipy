@@ -46,13 +46,13 @@ This equation is solved via a shift-twist convolution (denoted by
 
 .. math::
 
-  W({\\bf y},{\\bf n},t) = (P_t \\ast_{\mathbb{R}^3 \\rtimes S^2} U)
+  W({\\bf y},{\\bf n},t) = (P_t \\ast_{\\mathbb{R}^3 \\rtimes S^2} U)
   ({\\bf y},{\\bf n}) = \\int_{\\mathbb{R}^3} \\int_{S^2} P_t
   (R^T_{{\\bf n}^\\prime}({\\bf y}-{\\bf y}^\\prime),
-   R^T_{{\\bf n}^\\prime} {\bf n} ) U({\\bf y}^\\prime, {\bf n}^\\prime)
+   R^T_{{\\bf n}^\\prime} {\\bf n} ) U({\\bf y}^\\prime, {\\bf n}^\\prime)
 
-Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)`
-onto :math:`{\bf n}`.
+Here, :math:`R_{\\bf n}` is any 3D rotation that maps the vector
+:math:`(0,0,1)` onto :math:`{\\bf n}`.
 
 Note that the shift-twist convolution differs from a Euclidean convolution and
 takes into account the non-flat structure of the space
