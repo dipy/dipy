@@ -8,6 +8,7 @@ from dipy.align.imwarp import get_direction_and_spacings
 from dipy.align.scalespace import (ScaleSpace,
                           IsotropicScaleSpace)
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_scale_space():
@@ -67,13 +68,13 @@ def test_scale_space():
                 assert_array_almost_equal(actual_sp, expected_sp)
 
 
-def test_scale_space_exceptions():
-    np.random.seed(2022966)
+@set_random_number_generator(2022966)
+def test_scale_space_exceptions(rng):
     target_shape = (32, 32)
     # create a random image
     image = np.ndarray(target_shape, dtype=floating)
     ns = np.size(image)
-    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
+    image[...] = rng.integers(0, 10, ns).reshape(tuple(target_shape))
     zeros = (image == 0).astype(np.int32)
 
     ss = ScaleSpace(image, 3)

@@ -14,6 +14,7 @@ from dipy.align import vector_fields as vfu
 from dipy.align import VerbosityLevels
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.tracking.streamline import deform_streamlines
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_mult_aff():
@@ -36,7 +37,8 @@ def test_mult_aff():
     assert_equal(C, None)
 
 
-def test_diffeomorphic_map_2d():
+@set_random_number_generator(2022966)
+def test_diffeomorphic_map_2d(rng):
     r""" Test 2D DiffeomorphicMap
 
     Creates a random displacement field that exactly maps pixels from an
@@ -48,7 +50,6 @@ def test_diffeomorphic_map_2d():
     The resulting displacement, although operating in physical space,
     maps the points exactly (up to numerical precision).
     """
-    np.random.seed(2022966)
     domain_shape = (10, 10)
     codomain_shape = (10, 10)
     # create a simple affine transformation
@@ -77,7 +78,7 @@ def test_diffeomorphic_map_2d():
     # create a random image (with decimal digits) to warp
     moving_image = np.ndarray(codomain_shape, dtype=floating)
     ns = np.size(moving_image)
-    moving_image[...] = np.random.randint(0, 10, ns).reshape(codomain_shape)
+    moving_image[...] = rng.integers(0, 10, ns).reshape(codomain_shape)
     # set boundary values to zero so we don't test wrong interpolation due
     # to floating point precision
     moving_image[0, :] = 0
@@ -965,7 +966,8 @@ def test_em_2d_demons():
     assert(reduced > 0.9)
 
 
-def test_coordinate_mapping():
+@set_random_number_generator(1741332)
+def test_coordinate_mapping(rng):
     r"""Test coordinate mapping with DiffeomorphicMap
 
     1. Create a random displacement field and a small affine transform to map
@@ -981,7 +983,6 @@ def test_coordinate_mapping():
        interpolate the **input image** at the warped points. The result is the
        `actual` array, which should be almost equal to the `expected` array.
     """
-    np.random.seed(1741332)
     for dim in range(2, 4):
         npoints = 100
         points = np.empty((npoints, dim), dtype=np.float64)
@@ -1001,11 +1002,11 @@ def test_coordinate_mapping():
                               [0, 0, 1]])
             gt_affine = trans_inv.dot(scale.dot(trans))
             n = codomain_shape[0] * codomain_shape[1]
-            moving_image = np.random.randint(0, 10, n).reshape(codomain_shape)
+            moving_image = rng.integers(0, 10, n).reshape(codomain_shape)
             moving_image = moving_image.astype(np.float64)
             # Select a few grid coordinates not at the boundary of the domain
-            points[:, 0] = np.random.randint(1, nr-1, npoints)
-            points[:, 1] = np.random.randint(1, nc-1, npoints)
+            points[:, 0] = rng.integers(1, nr-1, npoints)
+            points[:, 1] = rng.integers(1, nc-1, npoints)
             random_df = vfu.create_random_displacement_2d
             interpolate_f = interpolate_scalar_2d
         else:
@@ -1027,12 +1028,12 @@ def test_coordinate_mapping():
                               [0, 0, 0, 1]])
             gt_affine = trans_inv.dot(scale.dot(trans))
             n = codomain_shape[0] * codomain_shape[1] * codomain_shape[2]
-            moving_image = np.random.randint(0, 10, n).reshape(codomain_shape)
+            moving_image = rng.integers(0, 10, n).reshape(codomain_shape)
             moving_image = moving_image.astype(np.float64)
             # Select a few grid coordinates not at the boundary of the domain
-            points[:, 0] = np.random.randint(1, nr-1, npoints)
-            points[:, 1] = np.random.randint(1, nc-1, npoints)
-            points[:, 2] = np.random.randint(1, ns-1, npoints)
+            points[:, 0] = rng.integers(1, nr-1, npoints)
+            points[:, 1] = rng.integers(1, nc-1, npoints)
+            points[:, 2] = rng.integers(1, ns-1, npoints)
             random_df = vfu.create_random_displacement_3d
             interpolate_f = interpolate_scalar_3d
 

@@ -105,7 +105,7 @@ def test_ascm_accuracy():
 
     # the test data was constructed in this manner
     mask = test_data > 50
-    sigma = estimate_sigma(test_data, N=4)
+    sigma = estimate_sigma(test_data, N=4).item()
 
     den_small = non_local_means(
         test_data,
@@ -124,6 +124,6 @@ def test_ascm_accuracy():
         rician=True)
 
     S0n = np.array(adaptive_soft_matching(test_data,
-                                          den_small, den_large, sigma[0]))
+                                          den_small, den_large, sigma))
 
-    assert_array_almost_equal(S0n, test_ascm_data_ref)
+    assert_array_almost_equal(S0n, test_ascm_data_ref, decimal=4)

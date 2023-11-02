@@ -21,7 +21,7 @@
         information metric the way `Optimizer` needs them. That is, given
         a set of transform parameters, it will use `ParzenJointHistogram`
         to compute the value and gradient of the joint intensity histogram
-        evaluated at the given parameters, and evaluate the the value and
+        evaluated at the given parameters, and evaluate the value and
         gradient of the histogram's mutual information.
 
     AffineRegistration: it runs the multi-resolution registration, putting
@@ -77,7 +77,7 @@ class AffineInvalidValuesError(Exception):
     pass
 
 
-class AffineMap(object):
+class AffineMap:
 
     def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
                  codomain_grid_shape=None, codomain_grid2world=None):
@@ -467,7 +467,7 @@ class AffineMap(object):
         return np.array(transformed)
 
 
-class MutualInformationMetric(object):
+class MutualInformationMetric:
 
     def __init__(self, nbins=32, sampling_proportion=None):
         r"""Initialize an instance of the Mutual Information metric.
@@ -834,7 +834,7 @@ class MutualInformationMetric(object):
         return -1 * self.metric_val, -1 * self.metric_grad
 
 
-class AffineRegistration(object):
+class AffineRegistration:
 
     def __init__(self,
                  metric=None,

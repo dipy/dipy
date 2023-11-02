@@ -1,0 +1,99 @@
+{
+  "topics": [
+    {
+      "name": "What is DIPY?",
+      "link": "introduction.html",
+      "sub-topics": [
+        {
+          "name": "Introduction",
+          "link": "./introduction.html#what-is-dipy"
+        },
+        {
+          "name": "Mission Statement",
+          "link": "./introduction.html#what-is-dipy"
+        }
+      ]
+    },
+    {
+      "name": "Quickstart",
+      "link": "installation.html",
+      "sub-topics": [
+        {
+          "name": "Installing a release",
+          "link": "./installation.html#installing-a-release"
+        },
+        {
+          "name": "Support",
+          "link": "./installation.html#support"
+        },
+        {
+          "name": "Installing from source",
+          "link": "./installation.html#installing-from-source"
+        }
+      ]
+    },
+    {
+      "name": "Data",
+      "link": "data.html",
+      "sub-topics": [
+        {
+          "name": "Datasets",
+          "link": "./data.html#datasets"
+        },
+        {
+          "name": "Usage",
+          "link": "./data.html#usage"
+        }
+      ]
+    },
+    {
+      "name": "DIPY Workflow Interfaces",
+      "link": "/interfaces/index.html",
+      "sub-topics": [
+        {
+          "name": "Introduction to command line interfaces",
+          "link": "./interfaces/basic_flow.html"
+        },
+        {
+          "name": "Downloading DIPY datasets",
+          "link": "./interfaces/data_fetch.html"
+        },
+        {
+          "name": "Denoising",
+          "link": "./interfaces/denoise_flow.html"
+        },
+        {
+          "name": "Between-Volumes Motion Correction",
+          "link": "./interfaces/motion_flow.html"
+        },
+        {
+          "name": "Gibbs Unringing",
+          "link": "./interfaces/gibbs_unringing_flow.html"
+        },
+        {
+          "name": "Registration",
+          "link": "./interfaces/registration_flow.html"
+        },
+        {
+          "name": "Reconstruction",
+          "link": "./interfaces/reconstruction_flow.html"
+        },
+        {
+          "name": "Tracking",
+          "link": "./interfaces/tracking_flow.html"
+        },
+        {
+          "name": "BUndle ANalytics (BUAN) framework",
+          "link": "./interfaces/buan_flow.html"
+        },
+        {
+          "name": "White Matter Bundle Segmentation with RecoBundles",
+          "link": "./interfaces/bundle_segmentation_flow.html"
+        }
+      ]
+    },
+    {
+      "name": "API changes"
+    }
+  ]
+}

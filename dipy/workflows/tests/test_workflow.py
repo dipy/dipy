@@ -49,7 +49,7 @@ def test_run():
 
 def test_missing_file():
     # The function is invoking a dummy workflow with a non-existent file.
-    # So, an IOError will be raised.
+    # So, an OSError will be raised.
 
     class TestMissingFile(Workflow):
 
@@ -68,5 +68,5 @@ def test_missing_file():
 
     dummyflow = TestMissingFile()
     with TemporaryDirectory() as tempdir:
-        npt.assert_raises(IOError, dummyflow.run,
+        npt.assert_raises(OSError, dummyflow.run,
                           pjoin(tempdir, 'dummy_file.txt'))

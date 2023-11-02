@@ -8,7 +8,7 @@ from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
 
 
-def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
+def add_noise(vol, snr=1.0, S0=None, noise_type='rician', rng=None):
     """ Add noise of specified distribution to a 4D array.
 
     Parameters
@@ -24,6 +24,9 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise, 'rician' for Rice-distributed noise (default) or
         'rayleigh' for a Rayleigh distribution.
+    rng : numpy.random.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -57,7 +60,7 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
 
     for vox_idx, signal in enumerate(vol_flat):
         vol_flat[vox_idx] = vox.add_noise(signal, snr=snr, S0=S0,
-                                          noise_type=noise_type)
+                                          noise_type=noise_type, rng=rng)
 
     return np.reshape(vol_flat, orig_shape)
 
@@ -89,7 +92,8 @@ def orbital_phantom(gtab=None,
                     angles=np.linspace(0, 2 * np.pi, 32),
                     radii=np.linspace(0.2, 2, 6),
                     S0=100.,
-                    snr=None):
+                    snr=None,
+                    rng=None):
     """Create a phantom based on a 3-D orbit ``f(t) -> (x,y,z)``.
 
     Parameters
@@ -121,6 +125,9 @@ def orbital_phantom(gtab=None,
     snr : float, optional
         The signal to noise ratio set to apply Rician noise to the data.
         Default is to not add noise at all.
+    rng : numpy.random.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -190,7 +197,7 @@ def orbital_phantom(gtab=None,
     vol *= S0
 
     if snr is not None:
-        vol = add_noise(vol, snr, S0=S0, noise_type='rician')
+        vol = add_noise(vol, snr, S0=S0, noise_type='rician', rng=rng)
 
     return vol
 

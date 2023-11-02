@@ -16,6 +16,7 @@ from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
+from dipy.utils.volume import adjacency_calc
 
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -343,7 +344,7 @@ def determinant(q_form):
     """
 
     # Following the conventions used here:
-    # http://en.wikipedia.org/wiki/Determinant
+    # https://en.wikipedia.org/wiki/Determinant
     aei = q_form[..., 0, 0] * q_form[..., 1, 1] * q_form[..., 2, 2]
     bfg = q_form[..., 0, 1] * q_form[..., 1, 2] * q_form[..., 2, 0]
     cdh = q_form[..., 0, 2] * q_form[..., 1, 0] * q_form[..., 2, 1]
@@ -756,8 +757,9 @@ class TensorModel(ReconstModel):
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
+        self.extra = {}
 
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, adjacency=False):
         """ Fit method of the DTI model class
 
         Parameters
@@ -769,15 +771,24 @@ class TensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
 
+        adjacency : float, optional
+            Calculate voxel adjacency accounting for mask, using this
+            value as cutoff distance (measured in voxel coordinates)
         """
+
         S0_params = None
 
+        img_shape = data.shape[:-1]
         if mask is not None:
             # Check for valid shape of the mask
-            if mask.shape != data.shape[:-1]:
+            if mask.shape != img_shape:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+
+        if adjacency > 0:
+            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask,
+                                                      adjacency)
 
         if "sigma" in self.kwargs:
             sigma = self.kwargs["sigma"]
@@ -810,7 +821,7 @@ class TensorModel(ReconstModel):
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
-        params_in_mask = self.fit_method(
+        params_in_mask, extra = self.fit_method(
                 self.design_matrix,
                 data_in_mask,
                 return_S0_hat=self.return_S0_hat,
@@ -824,12 +835,19 @@ class TensorModel(ReconstModel):
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
+            if extra is not None:
+                for key in extra:
+                    self.extra[key] = extra[key].reshape(data.shape)
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0.squeeze()
+            if extra is not None:
+                for key in extra:
+                    self.extra[key] = np.zeros(data.shape)
+                    self.extra[key][mask, :] = extra[key]
 
         return TensorFit(self, dti_params, model_S0=S0_params)
 
@@ -850,7 +868,7 @@ class TensorModel(ReconstModel):
         return tensor_prediction(dti_params, self.gtab, S0)
 
 
-class TensorFit(object):
+class TensorFit:
 
     def __init__(self, model, model_params, model_S0=None):
         """ Initialize a TensorFit class instance.
@@ -1313,25 +1331,40 @@ def iter_fit_tensor(step=1e4):
                                   return_S0_hat=return_S0_hat,
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            dtiparams = np.empty((size, 12), dtype=np.float64)
+            sz = 7 if kwargs.get('return_lower_triangular', False) else 12
+            dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
+            extra = {}
             for i in range(0, size, step):
                 if return_S0_hat:
-                    dtiparams[i:i + step], S0params[i:i + step] \
+                    (dtiparams[i:i + step], S0params[i:i + step]), extra_i\
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      return_S0_hat=return_S0_hat,
                                      *args, **kwargs)
                 else:
-                    dtiparams[i:i + step] = fit_tensor(design_matrix,
-                                                       data[i:i + step],
-                                                       *args, **kwargs)
+                    dtiparams[i:i + step], extra_i\
+                        = fit_tensor(design_matrix,
+                                     data[i:i + step],
+                                     *args, **kwargs)
+
+                if extra_i is not None:
+                    for key in extra_i:
+                        if i == 0: extra[key] = np.empty(data.shape)
+                        extra[key][i:i + step] = extra_i[key]
+                else:
+                    if i == 0: extra = None
+
+            if extra is not None:
+                for key in extra:
+                    extra[key] = extra[key].reshape(shape + (-1,))
+
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (12, )),
-                        S0params.reshape(shape + (1, )))
+                return (dtiparams.reshape(shape + (sz, )),
+                        S0params.reshape(shape + (1, ))), extra
             else:
-                return dtiparams.reshape(shape + (12, ))
+                return dtiparams.reshape(shape + (sz, )), extra
 
         return wrapped_fit_tensor
 
@@ -1405,8 +1438,8 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     log_s = np.log(data)
 
     # calculate weights
-    fit_result = ols_fit_tensor(design_matrix, data,
-                                return_lower_triangular=True)
+    fit_result, _ = ols_fit_tensor(design_matrix, data,
+                                   return_lower_triangular=True)
     w = np.exp(fit_result @ design_matrix.T)
 
     # the weighted problem design_matrix * w is much larger (differs per voxel)
@@ -1422,10 +1455,10 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1]))
+                np.exp(-fit_result[:, -1])), None
     else:
         return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+                               min_diffusivity=tol / -design_matrix.min()), None
 
 
 @iter_fit_tensor()
@@ -1483,15 +1516,15 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
                            np.log(data))
 
     if return_lower_triangular:
-        return fit_result
+        return fit_result, None
 
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1]))
+                np.exp(-fit_result[:, -1])), None
     else:
         return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+                               min_diffusivity=tol / -design_matrix.min()), None
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1514,111 +1547,122 @@ def _ols_fit_matrix(design_matrix):
     return np.dot(U, U.T)
 
 
-def _nlls_err_func(tensor, design_matrix, data, weighting=None,
-                   sigma=None):
-    r"""
-    Error function for the non-linear least-squares fit of the tensor.
-
-    Parameters
-    ----------
-    tensor : array (3,3)
-        The 3-by-3 tensor matrix
-
-    design_matrix : array
-        The design matrix
-
-    data : array
-        The voxel signal in all gradient directions
-
-    weighting : str (optional).
-         Whether to use the Geman-McClure weighting criterion (see [1]_
-         for details)
-
-    sigma : float or float array (optional)
-        If 'sigma' weighting is used, we will weight the error function
-        according to the background noise estimated either in aggregate over
-        all directions (when a float is provided), or to an estimate of the
-        noise in each diffusion-weighting direction (if an array is
-        provided). If 'gmm', the Geman-Mclure M-estimator is used for
-        weighting (see below).
-
-    Notes
-    -----
-    The Geman-McClure M-estimator is described as follows [1]_ (page 1089):
-    "The scale factor C affects the shape of the GMM
-    [Geman-McClure M-estimator] weighting function and represents the expected
-    spread of the residuals (i.e., the SD of the residuals) due to Gaussian
-    distributed noise. The scale factor C can be estimated by many robust scale
-    estimators. We used the median absolute deviation (MAD) estimator because
-    it is very robust to outliers having a 50% breakdown point (6,7).
-    The explicit formula for C using the MAD estimator is:
-
-    .. math ::
-
-            C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
-
-    where $\hat{r} = median{r_1, r_2, ..., r_3}$ and n is the number of data
-    points. The multiplicative constant 1.4826 makes this an approximately
-    unbiased estimate of scale when the error model is Gaussian."
-
-
-    References
-    ----------
-    .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-    estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+class _NllsHelper():
+    r"""Class with member functions to return nlls error and derivative.
     """
-    # This is the predicted signal given the params:
-    y = np.exp(np.dot(design_matrix, tensor))
 
-    # Compute the residuals
-    residuals = data - y
+    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+        r"""
+        Error function for the non-linear least-squares fit of the tensor.
 
-    # If we don't want to weight the residuals, we are basically done:
-    if weighting is None:
-        # And we return the SSE:
-        return residuals
-    se = residuals ** 2
-    # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
-    # suggested by Chang et al.) we will use it:
-    if weighting == 'sigma':
-        if sigma is None:
-            e_s = "Must provide sigma value as input to use this weighting"
-            e_s += " method"
-            raise ValueError(e_s)
-        w = 1 / (sigma**2)
+        Parameters
+        ----------
+        tensor : array (3,3)
+            The 3-by-3 tensor matrix
 
-    elif weighting == 'gmm':
-        # We use the Geman-McClure M-estimator to compute the weights on the
-        # residuals:
-        C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+        design_matrix : array
+            The design matrix
+
+        data : array
+            The voxel signal in all gradient directions
+
+        weighting : str (optional).
+             Whether to use the Geman-McClure weighting criterion (see [1]_
+             for details)
+
+        sigma : float, array (optional)
+            If 'sigma' weighting is used, we will weight the error function
+            according to 1/sigma^2. If 'gmm', the Geman-Mclure
+            M-estimator is used for weighting, in which case this value
+            should be C (see below).
+
+        Notes
+        -----
+        The Geman-McClure M-estimator is described as follows [1]_ (page 1089):
+        "The scale factor C affects the shape of the GMM
+        [Geman-McClure M-estimator] weighting function and represents the expected
+        spread of the residuals (i.e., the SD of the residuals) due to Gaussian
+        distributed noise. The scale factor C can be estimated by many robust scale
+        estimators. We used the median absolute deviation (MAD) estimator because
+        it is very robust to outliers having a 50% breakdown point (6,7).
+        The explicit formula for C using the MAD estimator is:
+
+        .. math ::
+
+                C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
+
+        where $\hat{r} = median{r_1, r_2, ..., r_3}$ and n is the number of data
+        points. The multiplicative constant 1.4826 makes this an approximately
+        unbiased estimate of scale when the error model is Gaussian."
+
+
+        References
+        ----------
+        .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
+        estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        """
+        # This is the predicted signal given the params:
+        y = np.exp(np.dot(design_matrix, tensor))
+        self.y = y  # cache the results
+
+        # Compute the residuals
+        residuals = data - y
+
+        # If we don't want to weight the residuals, we are basically done:
+        if weighting is None:
+            self.sqrt_w = 1  # cache weights for the *non-squared* residuals
+            # And we return the SSE:
+            return residuals
+
+        if weighting == 'sigma':
+            if sigma is None:
+                e_s = "Must provide sigma float / array as input to use this weighting"
+                e_s += " method"
+                raise ValueError(e_s)
+            w = 1 / (sigma**2)
+
+        elif weighting == 'gmm':
+            # We use the Geman-McClure M-estimator to compute the weights
+            if sigma is None:
+                e_s = "Must provide Geman-McClure M-estimator weights for"
+                e_s += " squared residuals as sigma values to use this"
+                e_s += " weighting method"
+                raise ValueError(e_s)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                w = sigma
+
+        # Return the weighted residuals:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            w = 1 / (se + C**2)
-            # The weights are normalized to the mean weight (see p. 1089):
-            w = w / np.mean(w)
+            self.sqrt_w = np.sqrt(w)
+            ans = self.sqrt_w * residuals
+            if np.iterable(w):
+                # cache the weights for the *non-squared* residuals
+                self.sqrt_w = np.sqrt(w)[:, None]
+            return ans
 
-    # Return the weighted residuals:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return np.sqrt(w * se)
+    def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+        """The Jacobian is the first derivative of the error function [1]_.
 
+        Notes
+        -----
+        This is an implementation of equation 14 in [1]_.
 
-def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
-    """The Jacobian is the first derivative of the error function [1]_.
+        References
+        ----------
+        .. [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
+            A unifying theoretical and algorithmic framework for least squares
+            methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
 
-    Notes
-    -----
-    This is an implementation of equation 14 in [1]_.
+        """
+        # minus sign, because derivative of residuals = data - y
+        # sqrt(w) because w corresponds to the squared residuals
 
-    References
-    ----------
-    .. [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
-        A unifying theoretical and algorithmic framework for least squares
-        methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
-
-    """
-    pred = np.exp(np.dot(design_matrix, tensor))
-    return -pred[:, None] * design_matrix
+        if weighting is None:
+            return -self.y[:, None] * design_matrix
+        else:
+            return -self.y[:, None] * design_matrix * self.sqrt_w
 
 
 def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
@@ -1690,11 +1734,10 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
            squared-error. Default behavior is to use uniform weighting. Other
            options: 'sigma' 'gmm'
 
-    sigma: float
-        If the 'sigma' weighting scheme is used, a value of sigma needs to be
-        provided here. According to [Chang2005]_, a good value to use is
-        1.5267 * std(background_noise), where background_noise is estimated
-        from some part of the image known to contain no signal (only noise).
+    sigma : array (optional)
+        If 'sigma' weighting is used, we will weight the error function
+        according to 1/sigma^2. If 'gmm', the Geman-Mclure
+        M-estimator is used for weighting (see below).
 
     jac : bool
         Use the Jacobian? Default: True
@@ -1721,7 +1764,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     flat_data = data.reshape((-1, data.shape[-1]))
 
     # Use the OLS method parameters as the starting point for the optimization:
-    D = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -1731,6 +1774,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
     # For warnings
     resort_to_OLS = False
+
+    # Instance of _NllsHelper, need for nlls error func and jacobian
+    nlls = _NllsHelper()
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
@@ -1744,14 +1790,14 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
             # Do the optimization in this voxel:
             if jac:
-                this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                this_param, status = opt.leastsq(nlls.err_func, start_params,
                                                  args=(design_matrix,
                                                        flat_data[vox],
                                                        weighting,
                                                        sigma),
-                                                 Dfun=_nlls_jacobian_func)
+                                                 Dfun=nlls.jacobian_func)
             else:
-                this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                this_param, status = opt.leastsq(nlls.err_func, start_params,
                                                  args=(design_matrix,
                                                        flat_data[vox],
                                                        weighting,
@@ -1792,13 +1838,14 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return params, model_S0
+        return [params, model_S0], None
     else:
-        return params
+        return params, None
 
 
 def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
-                       return_S0_hat=False, fail_is_nan=False):
+                       return_S0_hat=False,
+                       fail_is_nan=False):
     """
     Use the RESTORE algorithm [1]_ to calculate a robust tensor fit
 
@@ -1856,7 +1903,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             sigma = np.reshape(sigma, (-1, 1))
 
     # calculate OLS solution
-    D = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -1864,8 +1911,14 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     # Initialize parameter matrix
     params = np.empty((flat_data.shape[0], npa))
 
+    # For storing whether image is used in final fit for each voxel
+    robust = np.ones(flat_data.shape, dtype=int)
+
     # For warnings
     resort_to_OLS = False
+
+    # Instance of _NllsHelper, need for nlls error func and jacobian
+    nlls = _NllsHelper()
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
@@ -1885,14 +1938,14 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
             # Do nlls using sigma weighting in this voxel:
             if jac:
-                this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                this_param, status = opt.leastsq(nlls.err_func, start_params,
                                                  args=(design_matrix,
                                                        flat_data[vox],
                                                        'sigma',
                                                        sigma_vox),
-                                                 Dfun=_nlls_jacobian_func)
+                                                 Dfun=nlls.jacobian_func)
             else:
-                this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                this_param, status = opt.leastsq(nlls.err_func, start_params,
                                                  args=(design_matrix,
                                                        flat_data[vox],
                                                        'sigma',
@@ -1905,33 +1958,47 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             # If any of the residuals are outliers (using 3 sigma as a
             # criterion following Chang et al., e.g page 1089):
             if np.any(np.abs(residuals) > 3 * sigma_vox):
-                # Do nlls with GMM-weighting:
-                if jac:
-                    this_param, status = opt.leastsq(_nlls_err_func,
-                                                     start_params,
-                                                     args=(design_matrix,
-                                                           flat_data[vox],
-                                                           'gmm'),
-                                                     Dfun=_nlls_jacobian_func)
-                else:
-                    this_param, status = opt.leastsq(_nlls_err_func,
-                                                     start_params,
-                                                     args=(design_matrix,
-                                                           flat_data[vox],
-                                                           'gmm'))
 
-                # Recalculate residuals given gmm fit
-                pred_sig = np.exp(np.dot(design_matrix, this_param))
-                residuals = flat_data[vox] - pred_sig
-                if np.any(np.abs(residuals) > 3 * sigma_vox):
+                rdx = 1
+                while rdx <= 10:  # NOTE: capped at 10 iterations
+                    C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+                    denominator = (C**2 + residuals**2)**2
+                    gmm = np.divide(C**2, denominator,
+                                    out=np.zeros_like(denominator),
+                                    where=denominator != 0)
+
+                    # Do nlls with GMM-weighting:
+                    if jac:
+                        this_param, status = opt.leastsq(
+                            nlls.err_func, start_params,
+                            args=(design_matrix, flat_data[vox], 'gmm', gmm),
+                            Dfun=nlls.jacobian_func)
+                    else:
+                        this_param, status = opt.leastsq(nlls.err_func,
+                                                         start_params,
+                                                         args=(design_matrix,
+                                                               flat_data[vox],
+                                                               'gmm',
+                                                               gmm))
+
+                    # Recalculate residuals given gmm fit
+                    pred_sig = np.exp(np.dot(design_matrix, this_param))
+                    residuals = flat_data[vox] - pred_sig
+                    perc = 100 * np.linalg.norm(this_param - start_params) / np.linalg.norm(this_param)
+                    start_params = this_param
+                    if perc < 0.1: break
+                    rdx = rdx + 1
+
+                cond = np.abs(residuals) > 3 * sigma_vox
+                if np.any(cond):
                     # If you still have outliers, refit without those outliers:
-                    non_outlier_idx = np.where(np.abs(residuals) <=
-                                               3 * sigma_vox)
+                    non_outlier_idx = np.where(cond == False)
                     clean_design = design_matrix[non_outlier_idx]
                     clean_data = flat_data[vox][non_outlier_idx]
+                    robust[vox] = (cond == False)
 
                     # recalculate OLS solution with clean data
-                    new_start = ols_fit_tensor(clean_design, clean_data,
+                    new_start, _ = ols_fit_tensor(clean_design, clean_data,
                                                return_lower_triangular=True)
 
                     if np.iterable(sigma_vox):
@@ -1940,15 +2007,15 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                         this_sigma = sigma_vox
 
                     if jac:
-                        this_param, status = opt.leastsq(_nlls_err_func,
+                        this_param, status = opt.leastsq(nlls.err_func,
                                                          new_start,
                                                          args=(clean_design,
                                                                clean_data,
                                                                'sigma',
                                                                this_sigma),
-                                                         Dfun=_nlls_jacobian_func)
+                                                         Dfun=nlls.jacobian_func)
                     else:
-                        this_param, status = opt.leastsq(_nlls_err_func,
+                        this_param, status = opt.leastsq(nlls.err_func,
                                                          new_start,
                                                          args=(clean_design,
                                                                clean_data,
@@ -1988,11 +2055,12 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
+    extra = {"robust": robust}
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return params, model_S0
+        return [params, model_S0], extra
     else:
-        return params
+        return params, extra
 
 
 _lt_indices = np.array([[0, 1, 3],

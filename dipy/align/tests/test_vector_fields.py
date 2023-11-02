@@ -12,10 +12,11 @@ from dipy.align import imwarp
 from dipy.align import vector_fields as vfu
 from dipy.align.transforms import regtransforms
 from dipy.align.parzenhist import sample_domain_regular
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_random_displacement_field_2d():
-    np.random.seed(3921116)
+@set_random_number_generator(3921116)
+def test_random_displacement_field_2d(rng):
     from_shape = (25, 32)
     to_shape = (33, 29)
 
@@ -55,7 +56,7 @@ def test_random_displacement_field_2d():
 
             field, assignment = vfu.create_random_displacement_2d(
                 np.array(from_shape, dtype=np.int32), from_grid2world,
-                np.array(to_shape, dtype=np.int32), to_grid2world)
+                np.array(to_shape, dtype=np.int32), to_grid2world, rng=rng)
             field = np.array(field, dtype=floating)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
@@ -80,13 +81,13 @@ def test_random_displacement_field_2d():
     invalid = np.zeros((2, 2), dtype=np.float64)
     shape = np.array(from_shape, dtype=np.int32)
     assert_raises(ValueError, vfu.create_random_displacement_2d,
-                  shape, invalid, shape, valid)
+                  shape, invalid, shape, valid, rng=rng)
     assert_raises(ValueError, vfu.create_random_displacement_2d,
-                  shape, valid, shape, invalid)
+                  shape, valid, shape, invalid, rng=rng)
 
 
-def test_random_displacement_field_3d():
-    np.random.seed(7127562)
+@set_random_number_generator(7127562)
+def test_random_displacement_field_3d(rng):
     from_shape = (25, 32, 31)
     to_shape = (33, 29, 35)
 
@@ -130,7 +131,7 @@ def test_random_displacement_field_3d():
 
             field, assignment = vfu.create_random_displacement_3d(
                 np.array(from_shape, dtype=np.int32), from_grid2world,
-                np.array(to_shape, dtype=np.int32), to_grid2world)
+                np.array(to_shape, dtype=np.int32), to_grid2world, rng=rng)
             field = np.array(field, dtype=floating)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
@@ -157,9 +158,9 @@ def test_random_displacement_field_3d():
     invalid = np.zeros((3, 3), dtype=np.float64)
     shape = np.array(from_shape, dtype=np.int32)
     assert_raises(ValueError, vfu.create_random_displacement_2d,
-                  shape, invalid, shape, valid)
+                  shape, invalid, shape, valid, rng=rng)
     assert_raises(ValueError, vfu.create_random_displacement_2d,
-                  shape, valid, shape, invalid)
+                  shape, valid, shape, invalid, rng=rng)
 
 
 def test_harmonic_fields_2d():
@@ -672,14 +673,14 @@ def test_affine_transforms_3d():
         invalid_nan)
 
 
-def test_compose_vector_fields_2d():
+@set_random_number_generator(8315759)
+def test_compose_vector_fields_2d(rng):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
     composition, although operating in physical space, map the points exactly
     (up to numerical precision).
     """
-    np.random.seed(8315759)
     input_shape = (10, 10)
     tgt_sh = (10, 10)
     # create a simple affine transformation
@@ -704,7 +705,7 @@ def test_compose_vector_fields_2d():
         np.array(input_shape, dtype=np.int32),
         input_grid2world,
         np.array(tgt_sh, dtype=np.int32),
-        target_grid2world)
+        target_grid2world, rng=rng)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
@@ -712,14 +713,14 @@ def test_compose_vector_fields_2d():
         np.array(input_shape, dtype=np.int32),
         input_grid2world,
         np.array(tgt_sh, dtype=np.int32),
-        target_grid2world)
+        target_grid2world, rng=rng)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
     moving_image = np.empty(tgt_sh, dtype=floating)
     moving_image[...] =\
-        np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
+        rng.integers(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
     # set boundary values to zero so we don't test wrong interpolation due to
     # floating point precision
     moving_image[0, :] = 0
@@ -775,7 +776,7 @@ def test_compose_vector_fields_2d():
     O = np.ones(input_shape)
     X[..., 0] = x_0[:, None] * O
     X[..., 1] = x_1[None, :] * O
-    random_labels = np.random.randint(
+    random_labels = rng.integers(
         0, 2, input_shape[0] * input_shape[1] * 2)
     random_labels = random_labels.reshape(input_shape + (2,))
     values = np.array([-1, tgt_sh[0]])
@@ -802,14 +803,14 @@ def test_compose_vector_fields_2d():
                   valid, invalid, 1.0, None)
 
 
-def test_compose_vector_fields_3d():
+@set_random_number_generator(8315759)
+def test_compose_vector_fields_3d(rng):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
     composition, although operating in physical space, map the points exactly
     (up to numerical precision).
     """
-    np.random.seed(8315759)
     input_shape = (10, 10, 10)
     tgt_sh = (10, 10, 10)
     # create a simple affine transformation
@@ -836,21 +837,21 @@ def test_compose_vector_fields_3d():
     disp1, assign1 = vfu.create_random_displacement_3d(
         np.array(input_shape, dtype=np.int32),
         input_grid2world, np.array(tgt_sh, dtype=np.int32),
-        target_grid2world)
+        target_grid2world, rng=rng)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_3d(
         np.array(
             input_shape, dtype=np.int32), input_grid2world, np.array(
-            tgt_sh, dtype=np.int32), target_grid2world)
+            tgt_sh, dtype=np.int32), target_grid2world, rng=rng)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
     moving_image = np.empty(tgt_sh, dtype=floating)
     moving_image[...] =\
-        np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
+        rng.integers(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
     # set boundary values to zero so we don't test wrong interpolation due to
     # floating point precision
     moving_image[0, :, :] = 0
@@ -912,7 +913,7 @@ def test_compose_vector_fields_3d():
     X[..., 1] = x_1[None, :, None] * O
     X[..., 2] = x_2[None, None, :] * O
     sz = input_shape[0] * input_shape[1] * input_shape[2] * 3
-    random_labels = np.random.randint(0, 2, sz)
+    random_labels = rng.integers(0, 2, sz)
     random_labels = random_labels.reshape(input_shape + (3,))
     values = np.array([-1, tgt_sh[0]])
     disp1 = (values[random_labels] - X).astype(floating)
@@ -1096,8 +1097,8 @@ def test_resample_vector_field_3d():
     assert_array_almost_equal(d, subsampled)
 
 
-def test_downsample_scalar_field_2d():
-    np.random.seed(8315759)
+@set_random_number_generator(8315759)
+def test_downsample_scalar_field_2d(rng):
     size = 32
     sh = (size, size)
     for reduce_r in [True, False]:
@@ -1105,7 +1106,7 @@ def test_downsample_scalar_field_2d():
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
             image = np.empty((size, size), dtype=floating)
-            image[...] = np.random.randint(0, 10, np.size(image)).reshape(sh)
+            image[...] = rng.integers(0, 10, np.size(image)).reshape(sh)
 
             if reduce_r:
                 image[-1, :] = 0
@@ -1128,8 +1129,8 @@ def test_downsample_scalar_field_2d():
             assert_array_almost_equal(expected, actual)
 
 
-def test_downsample_displacement_field_2d():
-    np.random.seed(2115556)
+@set_random_number_generator(2115556)
+def test_downsample_displacement_field_2d(rng):
     size = 32
     sh = (size, size, 2)
     for reduce_r in [True, False]:
@@ -1137,7 +1138,7 @@ def test_downsample_displacement_field_2d():
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
             field = np.empty((size, size, 2), dtype=floating)
-            field[...] = np.random.randint(0, 10, np.size(field)).reshape(sh)
+            field[...] = rng.integers(0, 10, np.size(field)).reshape(sh)
 
             if reduce_r:
                 field[-1, :, :] = 0
@@ -1160,8 +1161,8 @@ def test_downsample_displacement_field_2d():
             assert_array_almost_equal(expected, actual)
 
 
-def test_downsample_scalar_field_3d():
-    np.random.seed(8315759)
+@set_random_number_generator(8315759)
+def test_downsample_scalar_field_3d(rng):
     size = 32
     sh = (size, size, size)
     for reduce_s in [True, False]:
@@ -1172,7 +1173,7 @@ def test_downsample_scalar_field_3d():
                 nc = size - 1 if reduce_c else size
                 image = np.empty((size, size, size), dtype=floating)
                 image[...] =\
-                    np.random.randint(0, 10, np.size(image)).reshape(sh)
+                    rng.integers(0, 10, np.size(image)).reshape(sh)
 
                 if reduce_s:
                     image[-1, :, :] = 0
@@ -1203,8 +1204,8 @@ def test_downsample_scalar_field_3d():
                 assert_array_almost_equal(expected, actual)
 
 
-def test_downsample_displacement_field_3d():
-    np.random.seed(8315759)
+@set_random_number_generator(8315759)
+def test_downsample_displacement_field_3d(rng):
     size = 32
     sh = (size, size, size, 3)
     for reduce_s in [True, False]:
@@ -1215,7 +1216,7 @@ def test_downsample_displacement_field_3d():
                 nc = size - 1 if reduce_c else size
                 field = np.empty((size, size, size, 3), dtype=floating)
                 field[...] =\
-                    np.random.randint(0, 10, np.size(field)).reshape(sh)
+                    rng.integers(0, 10, np.size(field)).reshape(sh)
 
                 if reduce_s:
                     field[-1, :, :] = 0
@@ -1310,15 +1311,15 @@ def test_reorient_vector_field_3d():
     assert_raises(ValueError, vfu.reorient_vector_field_3d, d, invalid)
 
 
-def test_reorient_random_vector_fields():
-    np.random.seed(1134781)
+@set_random_number_generator(1134781)
+def test_reorient_random_vector_fields(rng):
     # Test reorienting vector field
     for n_dims, func in ((2, vfu.reorient_vector_field_2d),
                          (3, vfu.reorient_vector_field_3d)):
         size = [20, 30, 40][:n_dims] + [n_dims]
-        arr = np.random.normal(size=size)
+        arr = rng.normal(size=size)
         arr_32 = arr.astype(floating)
-        affine = from_matvec(np.random.normal(size=(n_dims, n_dims)),
+        affine = from_matvec(rng.normal(size=(n_dims, n_dims)),
                              np.zeros(n_dims))
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr), 6)
@@ -1334,8 +1335,8 @@ def test_reorient_random_vector_fields():
         assert_raises(ValueError, func, arr_32, invalid)
 
 
-def test_gradient_2d():
-    np.random.seed(3921116)
+@set_random_number_generator(3921116)
+def test_gradient_2d(rng):
     sh = (25, 32)
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -1364,7 +1365,8 @@ def test_gradient_2d():
     # img is an image sampled at X with grid-to-space transform T
 
     # Test sparse gradient: choose some sample points (in space)
-    sample = sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
+    sample = sample_domain_regular(20, np.array(sh, dtype=np.int32),
+                                   T, rng=rng)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
     expected = np.empty((sample.shape[0], 2), dtype=floating)
@@ -1407,8 +1409,8 @@ def test_gradient_2d():
                   sh, T)
 
 
-def test_gradient_3d():
-    np.random.seed(3921116)
+@set_random_number_generator(3921116)
+def test_gradient_3d(rng):
     shape = (25, 32, 15)
     # Create grid coordinates
     x_0 = np.asarray(range(shape[0]))
@@ -1440,7 +1442,8 @@ def test_gradient_3d():
     img = img.astype(floating)
     # Test sparse gradient: choose some sample points (in space)
     sample =\
-        sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
+        sample_domain_regular(100, np.array(shape, dtype=np.int32),
+                              T, rng=rng)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
     expected = np.empty((sample.shape[0], 3), dtype=floating)

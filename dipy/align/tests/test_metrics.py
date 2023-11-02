@@ -6,6 +6,7 @@ from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_exceptions():
@@ -41,14 +42,14 @@ def test_exceptions():
     metric.initialize_iteration()
 
 
-def test_EMMetric_image_dynamics():
-    np.random.seed(7181309)
+@set_random_number_generator(7181309)
+def test_EMMetric_image_dynamics(rng):
     metric = EMMetric(2)
 
     target_shape = (10, 10)
     # create a random image
     image = np.ndarray(target_shape, dtype=floating)
-    image[...] = np.random.randint(
+    image[...] = rng.integers(
         0, 10, np.size(image)).reshape(tuple(target_shape))
     # compute the expected binary mask
     expected = (image > 0).astype(np.int32)

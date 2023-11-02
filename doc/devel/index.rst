@@ -1,9 +1,7 @@
  .. _development:
 
-DIPY development
-================
-
-Contents:
+DIPY Developer Guide
+====================
 
 .. toctree::
    :maxdepth: 2
@@ -13,13 +11,4 @@ Contents:
    make_release
    commit_codes
    coding_style_guideline
-   python3
-
-..
-   Indices and tables
-   ==================
-
-   * :ref:`genindex`
-   * :ref:`modindex`
-   * :ref:`search`
 

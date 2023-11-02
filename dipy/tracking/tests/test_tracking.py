@@ -1,3 +1,4 @@
+from logging import warn
 import warnings
 
 import nibabel as nib
@@ -22,8 +23,16 @@ from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
                                               BinaryStoppingCriterion,
                                               ThresholdStoppingCriterion,
                                               StreamlineStatus)
-from dipy.tracking.utils import seeds_from_mask
+from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
+from dipy.testing.decorators import set_random_number_generator
+
+
+def allclose(x, y, atol=None):
+    if atol is not None:
+        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
+    else:
+        return x.shape == y.shape and np.allclose(x, y)
 
 
 def test_stop_conditions():
@@ -220,6 +229,50 @@ def test_save_seeds():
     npt.assert_equal(seed, seeds[1])
 
 
+@set_random_number_generator(0)
+def test_tracking_max_angle(rng):
+    """This tests that the angle between streamline points is always smaller
+    then the input `max_angle` parameter.
+    """
+    def get_min_cos_similarity(streamlines):
+        min_cos_sim = 1
+        for sl in streamlines:
+            if len(sl) > 1:
+                v = sl[:-1] - sl[1:]  # vectors have norm of 1
+                for i in range(len(v)-1):
+                    cos_sim = np.dot(v[i], v[i+1])
+                    if cos_sim < min_cos_sim:
+                        min_cos_sim = cos_sim
+        return min_cos_sim
+
+    for sphere in [get_sphere('repulsion100'),
+                   HemiSphere.from_sphere(get_sphere('repulsion100'))]:
+        shape_img = [5, 5, 5]
+        shape_img.extend([sphere.vertices.shape[0]])
+        mask = np.ones(shape_img[:3])
+        affine = np.eye(4)
+        random_pmf = rng.random(shape_img)
+        seeds = seeds_from_mask(mask, affine, density=1)
+        sc = ActStoppingCriterion.from_pve(mask,
+                                           np.zeros(shape_img[:3]),
+                                           np.zeros(shape_img[:3]))
+        max_angle = 20
+        step_size = 1
+        dg = ProbabilisticDirectionGetter.from_pmf(random_pmf, max_angle,
+                                                   sphere, pmf_threshold=0.1)
+        # local tracking
+        streamlines = Streamlines(LocalTracking(
+            dg, sc, seeds, affine, step_size))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+
+        # PFT tracking
+        streamlines = Streamlines(ParticleFilteringTracking(dg, sc, seeds,
+                                                            affine, 1.))
+        min_cos_sim = get_min_cos_similarity(streamlines)
+        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+
+
 def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabilistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -262,9 +315,6 @@ def test_probabilistic_odf_weighted_tracker():
                           [2., 1., 0.],
                           [3., 1., 0.],
                           [4., 1., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
 
     path = [False, False]
     for sl in streamlines:
@@ -324,7 +374,8 @@ def test_probabilistic_odf_weighted_tracker():
     npt.assert_equal(tracking_1, tracking_2)
 
 
-def test_particle_filtering_tractography():
+@set_random_number_generator(0)
+def test_particle_filtering_tractography(rng):
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
@@ -360,8 +411,7 @@ def test_particle_filtering_tractography():
     # Random pmf in every voxel
     shape_img = list(simple_wm.shape)
     shape_img.extend([sphere.vertices.shape[0]])
-    np.random.seed(0)  # Random number generator initialization
-    pmf = np.random.random(shape_img)
+    pmf = rng.random(shape_img)
 
     # Test that PFT recover equal or more streamlines than localTracking
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
@@ -388,7 +438,7 @@ def test_particle_filtering_tractography():
     npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
 
     # Test that all points are equally spaced
-    for l in [1, 2, 5, 10, 100]:
+    for l in [2, 3, 5, 10, 100]:
         pft_streamlines = ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
                                                     step_size, max_cross=1,
                                                     return_all=True, maxlen=l)
@@ -396,6 +446,7 @@ def test_particle_filtering_tractography():
             for i in range(len(s) - 1):
                 npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
                                         step_size)
+
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)
     pft_streamlines_generator = ParticleFilteringTracking(
@@ -409,6 +460,16 @@ def test_particle_filtering_tractography():
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
     npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+
+    # Test min and max length
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size, maxlen=20, minlen=3,
+        return_all=False)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+
+    for s in pft_streamlines:
+        npt.assert_(len(s) >= 3)
+        npt.assert_(len(s) <= 20)
 
     # Test non WM seed position
     seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
@@ -475,6 +536,65 @@ def test_particle_filtering_tractography():
                                                       random_seed=0))._data
     npt.assert_equal(tracking1, tracking2)
 
+    # Test min_wm_pve_before_stopping parameter
+    expected = [np.array([[1., 0., 1.],
+                          [1., 1., 1.],
+                          [1., 2., 1.]]),
+                np.array([[1., 0., 1.],
+                          [1., 1., 1.],
+                          [1., 2., 1.],
+                          [1., 3., 1.],
+                          [1., 4., 1.]])]
+
+    simple_wm = np.array([[0, 0, 0, 0, 0, 0],
+                          [0, 0.4, 0.4, 1, 0.4, 0],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_wm = np.dstack([np.zeros(simple_wm.shape),
+                           simple_wm,
+                           simple_wm,
+                           simple_wm,
+                           np.zeros(simple_wm.shape)])
+    simple_gm = np.array([[0, 0, 0, 0, 0, 0],
+                          [1, 0.6, 0.6, 0, 0.6, 1],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_gm = np.dstack([np.zeros(simple_gm.shape),
+                           simple_gm,
+                           simple_gm,
+                           simple_gm,
+                           np.zeros(simple_gm.shape)])
+    simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
+    sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
+    seeds = np.array([[1, 1, 1]])
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf = np.zeros(list(simple_gm.shape) + [3])
+    pmf[:, :, :, 1] = 1  # horizontal bundle
+
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 30, sphere)
+
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size=1,
+        max_cross=1, return_all=True,
+        min_wm_pve_before_stopping=0)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+    npt.assert_(np.allclose(pft_streamlines[0], expected[0]))
+
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), step_size=1,
+        max_cross=1, return_all=True,
+        min_wm_pve_before_stopping=1)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+    npt.assert_(np.allclose(pft_streamlines[0], expected[1]))
+
+    # Test invalid min_wm_pve_before_stopping parameters
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
+                                          min_wm_pve_before_stopping=-1))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
+                                          min_wm_pve_before_stopping=2))
+
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
@@ -503,7 +623,8 @@ def test_maximum_deterministic_tracker():
     mask = (simple_image > 0).astype(float)
     sc = ThresholdStoppingCriterion(mask, .5)
 
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, max_angle=100,
+                                                      sphere=sphere,
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -521,9 +642,6 @@ def test_maximum_deterministic_tracker():
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
 
     for sl in streamlines:
         if not allclose(sl, expected[0]):
@@ -619,12 +737,9 @@ def test_bootstap_peak_tracker():
                           [2., 0., 0.],
                           ])]
 
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
-
-    if not allclose(streamlines[0], expected[0]):
+    if not allclose(streamlines[0], expected[0], atol=0.5):
         raise AssertionError()
-    if not allclose(streamlines[1], expected[1]):
+    if not allclose(streamlines[1], expected[1], atol=0.5):
         raise AssertionError()
 
 
@@ -669,9 +784,6 @@ def test_closest_peak_tracker():
                           [2., 2., 0.],
                           [2., 3., 0.],
                           [2., 4., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
 
     if not allclose(streamlines[0], expected[0]):
         raise AssertionError()
@@ -845,3 +957,190 @@ def test_affine_transformations():
         npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
         npt.assert_equal(len(streamlines_inv[1]), len(expected[1]))
         npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
+
+
+def test_random_seed_initialization():
+    """Test that the random generator can be initialized correctly with the
+    tracking seeds.
+    """
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf = np.zeros((4, 4, 4, 3))
+    x = np.array([0., 0, 0, 57.421434502602544])
+    y = np.array([0., 1, 2, 21.566539227085478])
+    z = np.array([1., 1, 1, 51.67881720942744])
+
+    seeds = np.row_stack([np.column_stack([x, y, z]),
+                          np.random.random((10, 3))])
+    sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+
+    randoms_seeds = [None, 0, 1, -1, np.iinfo(np.uint32).max + 1] \
+        + list(np.random.random(10)) \
+        + list(np.random.randint(0, np.iinfo(np.int32).max, 10))
+
+    for rdm_seed in randoms_seeds:
+        _ = Streamlines(LocalTracking(direction_getter=dg,
+                                      stopping_criterion=sc,
+                                      seeds=seeds,
+                                      affine=np.eye(4),
+                                      step_size=1.,
+                                      random_seed=rdm_seed))
+
+
+def test_tracking_with_initial_directions():
+    """This tests that tractography play well with using seeding directions."""
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    pmf_lookup = np.array([[0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 1., 0.],
+                           [.6, .4, 0.]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 2],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0]])
+    simple_image = simple_image[..., None]
+    simple_wm = np.array([[0, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0],
+                          [1, 1, 1, 1, 1, 1],
+                          [0, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0]])
+    simple_wm = simple_wm[..., None]
+    simple_csf = np.ones(simple_wm.shape) - simple_wm
+    simple_gm = np.zeros(simple_wm.shape)
+    pmf = pmf_lookup[simple_image]
+    mask = (simple_image > 0).astype(float)
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]]),
+                np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]])]
+
+    # Test LocalTracking with initial directions
+    sc = ThresholdStoppingCriterion(mask, .5)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
+                                               pmf_threshold=0.1)
+    crossing_pos = np.array([2, 1, 0])
+    seeds = np.array([crossing_pos, crossing_pos, crossing_pos])
+    initial_directions = np.array([[sphere.vertices[0], [0, 0, 0]],
+                                   [sphere.vertices[1], sphere.vertices[0]],
+                                   [[0, 0, 0], [0, 0, 0]]])
+    # with max_cross=1
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=1, return_all=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], np.array([crossing_pos])))
+    # with max_cross=2
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1]))
+    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+
+    # Test initial_directions with norm != 1 and not sphere vertices
+    initial_directions = np.array([[[0, 0, 0], [2, 0, 0]],
+                                   [[0.1, 0.8, 0], [-0.4, 0, 0]],
+                                   [[0, 0, 0], [0.7, 0.6, -0.1]]])
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[1]))
+
+    # Test dimension mismatch between seeds and initial_directions
+    npt.assert_raises(
+        ValueError,
+        lambda: LocalTracking(dg, sc, seeds, np.eye(4), 0.2, max_cross=1,
+                              return_all=True,
+                              initial_directions=initial_directions[:1, :, :]))
+
+    # Test warning is raised for possible directional biases
+    npt.assert_warns(Warning,
+                     lambda: LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                           max_cross=2, return_all=False,
+                                           unidirectional=True,
+                                           randomize_forward_direction=False,
+                                           initial_directions=None))
+
+    # Test ParticleFilteringTracking with initial directions
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 45, sphere,
+                                               pmf_threshold=0.1)
+    sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
+    crossing_pos = np.array([2, 1, 0])
+    seeds = np.array([crossing_pos, crossing_pos, crossing_pos])
+    initial_directions = np.array([[sphere.vertices[0], [0, 0, 0]],
+                                   [sphere.vertices[1], sphere.vertices[0]],
+                                   [[0, 0, 0], [0, 0, 0]]])
+
+    streamline_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), 1, return_all=True,
+        initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1]))
+    npt.assert_(allclose(streamlines[1], expected[2]))
+    npt.assert_(allclose(streamlines[2], expected[1]))
+    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+
+    # Test unidirectional tracking with initial directions
+    initial_directions = np.array([[[1, 0, 0], [0, 0, 0]],
+                                   [[-1, 0, 0], [0, 0, 0]],
+                                   [[0, -1, 0], [0, 1, 0]]])
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+
+    streamline_generator = ParticleFilteringTracking(
+        dg, sc, seeds, np.eye(4), 1, return_all=True, unidirectional=True,
+        initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+
+    # Test randomized initial forward direction
+    seeds = np.array([crossing_pos] * 30)
+    initial_directions = np.array([np.array([1, 0, 0])] * 30)[:, np.newaxis, :]
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         randomize_forward_direction=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[1][2:])
+                    or np.allclose(sl, expected[1][:3][::-1]))

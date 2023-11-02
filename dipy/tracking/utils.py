@@ -707,9 +707,9 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         return False
     if len(roi_coords) == 0:
         return False
-    if mode == "any" or mode == "all":
+    if mode in ("any", "all"):
         s = streamline
-    elif mode == "either_end" or mode == "both_end":
+    elif mode in ("either_end", "both_end"):
         # 'end' modes, use a streamline with 2 nodes:
         s = np.vstack([streamline[0], streamline[-1]])
     else:
@@ -720,7 +720,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
 
     dist = cdist(s, roi_coords, 'euclidean')
 
-    if mode == "any" or mode == "either_end":
+    if mode in ("any", "either_end"):
         return np.min(dist) <= tol
     else:
         return np.all(np.min(dist, -1) <= tol)
@@ -853,7 +853,7 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
 
     Parameters
     ----------
-    streamlines : Streamlines generator
+    tracking_output : Streamlines generator
         Either streamlines (list, ArraySequence) or a tuple with streamlines
         and seeds together
     affine : array (4, 4)
@@ -868,22 +868,16 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
         If save_seeds is True, also return a generator for the
         transformed seeds.
     """
-    if save_seeds:
-        streamlines, seeds = zip(*tracking_output)
-    else:
-        streamlines = tracking_output
-        seeds = None
-
     lin_T = affine[:3, :3].T.copy()
     offset = affine[:3, 3].copy()
     yield
     # End of initialization
 
-    if seeds is not None:
-        for sl, seed in zip(streamlines, seeds):
+    if save_seeds:
+        for sl, seed in tracking_output:
             yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
     else:
-        for sl in streamlines:
+        for sl in tracking_output:
             yield np.dot(sl, lin_T) + offset
 
 

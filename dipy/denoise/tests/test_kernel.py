@@ -10,7 +10,7 @@ import numpy.testing as npt
 
 def test_enhancement_kernel():
     """ Test if the kernel values are correct by comparison against the values
-    originally calculated by implementation in Mathematica, and at the same time 
+    originally calculated by implementation in Mathematica, and at the same time
     checks the symmetry of the kernel."""
 
     D33 = 1.0
@@ -50,11 +50,11 @@ def test_enhancement_kernel():
         x = np.array(positionlist[p])
         npt.assert_almost_equal(k.evaluate_kernel(x, y, r, v), kernelvalues[p])
 
-    
+
 def test_spike():
     """ Test if a convolution with a delta spike is equal to the kernel
     saved in the lookup table."""
-    
+
     # create kernel
     D33 = 1.0
     D44 = 0.04
@@ -74,7 +74,7 @@ def test_spike():
     totalsum = 0.0
     for i in range(0, numorientations):
         totalsum += np.sum(np.array(k.get_lookup_table())[i, 0, :, :, :] - \
-                    np.array(csd_enh)[:, :, :, i])    
+                    np.array(csd_enh)[:, :, :, i])
     npt.assert_equal(totalsum, 0.0)
 
 def test_normalization():

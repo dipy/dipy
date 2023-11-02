@@ -68,7 +68,7 @@ def test_io_fetch_fetcher_datanames():
                      'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste',
                      'synb0_weights', 'synb0_test', 'bundle_warp_dataset',
                      'evac_weights', 'evac_test', 'ptt_minimal_dataset',
-                     'stanford_tracks']
+                     'stanford_tracks', 'cti_rat1']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)

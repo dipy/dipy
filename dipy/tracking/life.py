@@ -200,7 +200,7 @@ def streamline_signal(streamline, gtab, evals=(0.001, 0, 0)):
     return sig - np.mean(sig)
 
 
-class LifeSignalMaker(object):
+class LifeSignalMaker:
     """
     A class for generating signals from streamlines in an efficient and speedy
     manner.

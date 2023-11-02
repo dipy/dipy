@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import contextlib
 import logging
@@ -214,7 +213,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         if unzip:
             for f in local_fnames:
                 split_ext = op.splitext(f)
-                if split_ext[-1] == '.gz' or split_ext[-1] == '.bz2':
+                if split_ext[-1] in ('.gz', '.bz2'):
                     if op.splitext(split_ext[0])[-1] == '.tar':
                         ar = tarfile.open(pjoin(folder, f))
                         ar.extractall(path=folder)
@@ -378,7 +377,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
     msg="See DSI203_license.txt for LICENSE. For the complete datasets" +
-        " please visit http://dsi-studio.labsolver.org",
+        " please visit https://dsi-studio.labsolver.org",
     data_size="91MB")
 
 fetch_syn_data = _make_fetcher(
@@ -550,15 +549,16 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
 fetch_gold_standard_io = _make_fetcher(
     "fetch_gold_standard_io",
     pjoin(dipy_home, 'gold_standard_io'),
-    'https://zenodo.org/record/2651349/files/',
-    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+    'https://zenodo.org/record/7767654/files/',
+    ['gs.trk', 'gs.tck', 'gs.trx', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
      'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
      'points_data.txt', 'streamlines_data.txt'],
-    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+    ['gs.trk', 'gs.tck', 'gs.trx', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
      'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
      'points_data.json', 'streamlines_data.json'],
     ['3acf565779f4d5107f96b2ef90578d64',
      '151a30cf356c002060d720bf9d577245',
+     'a6587f1a3adc4df076910c4d72eb4161',
      'e9818e07bef5bd605dea0877df14a2b0',
      '248606297e400d1a9b1786845aad8de3',
      'a2d4d8f62d1de0ab9927782c7d51cb27',
@@ -582,6 +582,24 @@ fetch_qte_lte_pte = _make_fetcher(
      '31abe55dfda7ef5fdf5015d0713be9b0', '1b7b83b8a60295f52d80c3855a12b275'],
     doc='Download QTE data with linear and planar tensor encoding.',
     data_size='41.5 MB')
+
+
+fetch_cti_rat1 = _make_fetcher(
+    'fetch_cti_rat1',
+    pjoin(dipy_home, 'cti_rat1'),
+    'https://zenodo.org/record/8276773/files/',
+    ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
+     'bvals2.bval', 'bvec2.bvec', 'Rat1_mask.nii'],
+    ['Rat1_invivo_cti_data.nii', 'bvals1.bval', 'bvec1.bvec',
+     'bvals2.bval', 'bvec2.bvec', 'Rat1_mask.nii'],
+    ['2f855e7826f359d80cfd6f094d3a7008', '1deed2a91e20104ca42d7482cc096a9a',
+     '40a4f5131b8a64608d16b0c6c5ad0837', '1979c7dc074e00f01103cbdf83ed78db',
+     '653d9344060803d5576f43c65ce45ccb', '34bc3d5acea9442d05ef185717780440'],
+    doc='Download Rat Brain DDE data for CTI reconstruction'
+    + ' (Rat #1 data from Henriques et al. MRM 2021).',
+    data_size='152.92 MB',
+    msg=("More details about the data are available in the paper: " +
+         "https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.28938"))
 
 
 fetch_fury_surface = _make_fetcher(
@@ -855,6 +873,15 @@ def get_fnames(name='small_64D'):
         fbvec = pjoin(folder, 'lte-pte.bvec')
         fmask = pjoin(folder, 'mask.nii.gz')
         return fdata, fbval, fbvec, fmask
+    if name == 'cti_rat1':
+        _, folder = fetch_cti_rat1()
+        fdata = pjoin(folder, 'Rat1_invivo_cti_data.nii')
+        fbval1 = pjoin(folder, 'bvals1.bval')
+        fbvec1 = pjoin(folder, 'bvec1.bvec')
+        fbval2 = pjoin(folder, 'bvals2.bval')
+        fbvec2 = pjoin(folder, 'bvec2.bvec')
+        fmask = pjoin(folder, 'Rat1_mask.nii')
+        return fdata, fbval1, fbvec1, fbval2, fbvec2, fmask
     if name == 'fury_surface':
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
@@ -1201,7 +1228,7 @@ mni_notes = \
     Notes
     -----
     The templates were downloaded from the MNI (McGill University)
-    `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    `website <https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
     in July 2015.
 
     The following publications should be referenced when using these templates:
@@ -1849,7 +1876,7 @@ def fetch_hcp(subjects,
     data_files = {}
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
@@ -1891,7 +1918,7 @@ def fetch_hcp(subjects,
     to_bids_description(base_dir,
                         **{"Name": study,
                            "Acknowledgements": hcp_acknowledgements,
-                           "PipelineDescription": {'Name': 'hcp_pipeline'}})
+                           "GeneratedBy": [{'Name': 'hcp_pipeline'}]})
 
     return data_files, pjoin(my_path, study)
 
@@ -1945,7 +1972,6 @@ def fetch_hbn(subjects, path=None):
         my_path = path
 
     base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
-
     if not os.path.exists(base_dir):
         os.makedirs(base_dir, exist_ok=True)
 
@@ -1953,7 +1979,7 @@ def fetch_hbn(subjects, path=None):
 
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
-    if isinstance(subjects, int) or isinstance(subjects, str):
+    if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
     for subject in subjects:
@@ -1968,7 +1994,7 @@ def fetch_hbn(subjects, path=None):
 
         query = client.list_objects(
             Bucket="fcp-indi",
-            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/")  # noqa
         query_content = query.get('Contents', None)
         if query_content is None:
             raise ValueError(
@@ -1977,18 +2003,21 @@ def fetch_hbn(subjects, path=None):
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
         if not os.path.exists(sub_dir):
+            os.makedirs(os.path.join(sub_dir, 'anat'), exist_ok=True)
+            os.makedirs(os.path.join(sub_dir, 'figures'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
         for remote in file_list:
             full = remote.split(
                 "Projects")[-1][1:].replace("/BIDS_curated", "")
-            local = op.join(dipy_home, full)
+            local = op.join(my_path, full)
             data_files[local] = remote
 
     download_files = {}
     for k in data_files.keys():
         if not op.exists(k):
             download_files[k] = data_files[k]
+
     if len(download_files.keys()):
         with tqdm(total=len(download_files.keys())) as pbar:
             for k in download_files.keys():

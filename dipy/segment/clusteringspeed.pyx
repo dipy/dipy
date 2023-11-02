@@ -120,7 +120,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
 
 
 
-cdef class QuickBundlesX(object):
+cdef class QuickBundlesX:
 
     def __init__(self, features_shape, levels_thresholds, Metric metric):
         self.metric = metric
@@ -305,7 +305,7 @@ cdef class QuickBundlesX(object):
 cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
 
-    This class allows to create clusters and assign elements to them.
+    This class allows one to create clusters and assign elements to them.
     Assignments of a cluster are represented as a list of element indices.
     """
     def __init__(Clusters self):
@@ -366,7 +366,7 @@ cdef class ClustersCentroid(Clusters):
     """ Provides Cython functionalities to interact with clustering outputs
     having the notion of cluster's centroid.
 
-    This class allows to create clusters, assign elements to them and
+    This class allows one to create clusters, assign elements to them and
     update their centroid.
 
     Parameters
@@ -396,7 +396,7 @@ cdef class ClustersCentroid(Clusters):
         Notes
         -----
         The `__dealloc__` method of the superclass is automatically called:
-        http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        https://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
@@ -490,7 +490,7 @@ cdef class ClustersCentroid(Clusters):
         return Clusters.c_create_cluster(self)
 
 
-cdef class QuickBundles(object):
+cdef class QuickBundles:
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
                  int max_nb_clusters=BIGGEST_INT):
         self.metric = metric

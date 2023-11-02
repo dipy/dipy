@@ -733,7 +733,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
     """ Min/Max/Mean Average Minimum Distance between tracks xyz1 and xyz2
 
     Based on the metrics in Zhang, Correia, Laidlaw 2008
-    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
+    https://ieeexplore.ieee.org/document/4479455
     which in turn are based on those of Corouge et al. 2004
 
     Parameters

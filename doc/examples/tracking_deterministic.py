@@ -66,18 +66,16 @@ csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
-"""
-The Fiber Orientation Distribution (FOD) of the CSD model estimates the
-distribution of small fiber bundles within each voxel. This distribution
-can be used for deterministic fiber tracking. As for probabilistic tracking,
-there are many ways to provide those distributions to the deterministic maximum
-direction getter. Here, the spherical harmonic representation of the FOD
-is used.
-"""
-
+###############################################################################
+# The Fiber Orientation Distribution (FOD) of the CSD model estimates the
+# distribution of small fiber bundles within each voxel. This distribution
+# can be used for deterministic fiber tracking. As for probabilistic tracking,
+# there are many ways to provide those distributions to the deterministic
+# maximum direction getter. Here, the spherical harmonic representation of
+# the FOD is used.
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-    csd_fit.shm_coeff, max_angle=30., sphere=default_sphere)
+    csd_fit.shm_coeff, max_angle=30., sphere=default_sphere, sh_to_pmf=True)
 streamline_generator = LocalTracking(detmax_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
@@ -93,13 +91,7 @@ if has_fury:
     if interactive:
         window.show(scene)
 
-"""
-.. figure:: tractogram_deterministic_dg.png
-   :align: center
-
-   **Corpus Callosum using deterministic maximum direction getter**
-"""
-"""
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Corpus Callosum using deterministic maximum direction getter

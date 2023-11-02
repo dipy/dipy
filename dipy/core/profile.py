@@ -44,9 +44,9 @@ class Profiler:
 
     References
     ----------
-    http://docs.cython.org/src/tutorial/profiling_tutorial.html
-    http://docs.python.org/library/profile.html
-    http://packages.python.org/line_profiler/
+    https://docs.cython.org/src/tutorial/profiling_tutorial.html
+    https://docs.python.org/library/profile.html
+    https://github.com/rkern/line_profiler
 
     """
 
@@ -60,7 +60,7 @@ class Profiler:
 
             ext = os.path.splitext(call)[1].lower()
             print('ext', ext)
-            if ext == '.py' or ext == '.pyx':  # python/cython file
+            if ext in ('.py', '.pyx'):  # python/cython file
                 print('profiling python/cython file ...')
                 subprocess.call(['python', '-m', 'cProfile',
                                  '-o', 'profile.prof', call])

@@ -168,7 +168,7 @@ def awf_from_msk(msk, mask=None):
 
     Returns
     -------
-    smt2f : ndarray ([X, Y, Z, ...])
+    awf : ndarray ([X, Y, Z, ...])
         ndarray containing the axonal volume fraction estimate.
 
     Notes
@@ -212,8 +212,13 @@ def awf_from_msk(msk, mask=None):
             else:
                 mski = msk[v]
                 fini = mski / 2.4  # Initial guess based on linear assumption
-                awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
-                                    fprime=_diff_msk_from_awf, col_deriv=True)
+                awf[v] = opt.fsolve(
+                    _msk_from_awf_error,
+                    fini,
+                    args=(mski,),
+                    fprime=_diff_msk_from_awf,
+                    col_deriv=True
+                ).item()
 
     return awf
 
@@ -225,7 +230,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 
     Parameters
     ----------
-    params : ndarray ([X, Y, Z, ...], 2)
+    msdki_params : ndarray ([X, Y, Z, ...], 2)
         Array containing the mean signal diffusivity and mean signal kurtosis
         in its last axis
     gtab : a GradientTable class instance
@@ -252,7 +257,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
     params = msdki_params.copy()
     params[..., 1] = params[..., 1] * params[..., 0] ** 2
 
-    if isinstance(S0, float) or isinstance(S0, int):
+    if isinstance(S0, (float, int)):
         pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
     elif S0.size == 1:
         pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
@@ -379,7 +384,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         return msdki_prediction(msdki_params, self.gtab, S0)
 
 
-class MeanDiffusionKurtosisFit(object):
+class MeanDiffusionKurtosisFit:
 
     def __init__(self, model, model_params, model_S0=None):
         """ Initialize a MeanDiffusionKurtosisFit class instance.
@@ -454,7 +459,7 @@ class MeanDiffusionKurtosisFit(object):
 
         Returns
         -------
-        smt2f : ndarray
+        ndarray
             Axonal volume fraction calculated from MSK.
 
         Notes

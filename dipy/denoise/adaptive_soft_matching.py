@@ -42,7 +42,7 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
     """
 
     s = fimau.shape
-    p = [int(2**math.ceil(math.log(s[i], 2))) for i in range(3)]
+    p = [int(2**math.ceil(math.log2(s[i]))) for i in range(3)]
     pad1 = np.zeros((p[0], p[1], p[2]))
     pad2 = np.zeros((p[0], p[1], p[2]))
     pad3 = np.zeros((p[0], p[1], p[2]))

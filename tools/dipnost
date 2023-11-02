@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim: ft=python
 """ Run nosetests for dipy while patching nose
 
@@ -27,7 +27,7 @@ def id(self):
         if pk is None:
             return name
         if not name.startswith(pk):
-            name = "%s.%s" % (pk, name)
+            name = f"{pk}.{name}"
     return name
 
 def prepare_imports():

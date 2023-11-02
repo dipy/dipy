@@ -3,6 +3,7 @@ cimport numpy as cnp
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
+from dipy.reconst import shm
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
@@ -67,6 +68,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             raise ValueError("pmf threshold must be >= 0.")
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
+        self.len_pmf = sphere.vertices.shape[0]
 
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
@@ -76,7 +78,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
-                                                           double[::1] point):
+                                                             double[::1] point):
         """Returns best directions at seed location to start tracking.
 
         Parameters
@@ -91,19 +93,24 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             directions should be unique.
 
         """
-        cdef double[:] pmf = self._get_pmf(&point[0])
-        return self._get_peak_directions(pmf)
+        cdef double* pmf = self._get_pmf(&point[0])
+        return self._get_peak_directions(<double[:self.len_pmf]> pmf)
 
-    cdef _get_pmf(self, double* point):
+    cdef double* _get_pmf(self, double* point) nogil:
         cdef:
-            cnp.npy_intp _len, i
-            double[:] pmf
+            cnp.npy_intp i
+            cnp.npy_intp _len = self.len_pmf
+            double* pmf
+            double pmf_threshold=self.pmf_threshold
             double absolute_pmf_threshold
+            double max_pmf=0
 
-        pmf = self.pmf_gen.get_pmf(<double[:3]>point)
-        _len = pmf.shape[0]
+        pmf = self.pmf_gen.get_pmf_c(point)
+        for i in range(_len):
+            if pmf[i] > max_pmf:
+                max_pmf = pmf[i]
+        absolute_pmf_threshold = pmf_threshold * max_pmf
 
-        absolute_pmf_threshold = self.pmf_threshold*np.max(pmf)
         for i in range(_len):
             if pmf[i] < absolute_pmf_threshold:
                 pmf[i] = 0.0
@@ -155,7 +162,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     @classmethod
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                     pmf_threshold=0.1, basis_type=None, legacy=True, **kwargs):
+                     pmf_threshold=0.1, basis_type=None, legacy=True,
+                     sh_to_pmf=False, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
 
@@ -188,14 +196,24 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         legacy: bool, optional
             True to use a legacy basis definition for backward compatibility
             with previous ``tournier07`` and ``descoteaux07`` implementations.
+        sh_to_pmf: bool, optional
+            If true, map sherical harmonics to spherical function (pmf) before
+            tracking (faster, requires more memory).
 
         See Also
         --------
         dipy.direction.peaks.peak_directions
 
         """
-        pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
-                                basis_type, legacy=legacy)
+        if sh_to_pmf:
+            sh_order = shm.order_from_ncoef(shcoeff.shape[3])
+            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order=sh_order,
+                               basis_type=basis_type, legacy=legacy)
+            pmf[pmf<0] = 0
+            pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
+        else:
+            pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
+                                    basis_type, legacy=legacy)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
 
@@ -212,12 +230,13 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         1 : if no new direction is founded
         """
         cdef:
-            double[:] pmf
+            cnp.npy_intp _len = self.len_pmf
+            double* pmf
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 
-        peaks = self._get_peak_directions(pmf)
+        peaks = self._get_peak_directions(<double[:_len]> pmf)
         if len(peaks) == 0:
             return 1
         return closest_peak(peaks, direction, self.cos_similarity)

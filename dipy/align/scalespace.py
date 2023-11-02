@@ -6,7 +6,7 @@ from scipy.ndimage import gaussian_filter
 
 logger = logging.getLogger(__name__)
 
-class ScaleSpace(object):
+class ScaleSpace:
     def __init__(self, image, num_levels,
                  image_grid2world=None,
                  input_spacing=None,

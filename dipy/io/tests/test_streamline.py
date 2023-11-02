@@ -153,19 +153,21 @@ streamlines = Streamlines([streamline[[0, 10]], streamline,
 
 
 def io_tractogram(extension):
-    with TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmp_dir:
         fname = 'test.{}'.format(extension)
-        fpath = os.path.join(tmpdir, fname)
+        fpath = os.path.join(tmp_dir, fname)
 
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
         in_voxel_sizes = np.array([2, 1.5, 1.5])
+        in_affine = np.dot(in_affine, np.diag(np.r_[in_voxel_sizes, 1]))
         nii_header = create_nifti_header(in_affine, in_dimensions,
                                          in_voxel_sizes)
+
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
         save_tractogram(sft, fpath, bbox_valid_check=False)
 
-        if extension == 'trk':
+        if extension in ['trk', 'trx']:
             reference = 'same'
         else:
             reference = nii_header
@@ -189,6 +191,10 @@ def test_io_tck():
     io_tractogram('tck')
 
 
+def test_io_trx():
+    io_tractogram('trx')
+
+
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_io_vtk():
     io_tractogram('vtk')
@@ -205,8 +211,8 @@ def test_io_dpy():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
-    with TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'test.fib')
+    with TemporaryDirectory() as tmp_dir:
+        fname = os.path.join(tmp_dir, 'test.fib')
 
         # Test save
         save_vtk_streamlines(streamlines, fname, binary=True)
@@ -217,8 +223,8 @@ def test_low_io_vtk():
 
 def trk_loader(filename):
     try:
-        with TemporaryDirectory() as tmpdir:
-            load_trk(os.path.join(tmpdir, filename), filepath_dix['gs.nii'])
+        with TemporaryDirectory() as tmp_dir:
+            load_trk(os.path.join(tmp_dir, filename), filepath_dix['gs.nii'])
         return True
     except ValueError:
         return False
@@ -228,8 +234,8 @@ def trk_saver(filename):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
 
     try:
-        with TemporaryDirectory() as tmpdir:
-            save_trk(sft, os.path.join(tmpdir, filename))
+        with TemporaryDirectory() as tmp_dir:
+            save_trk(sft, os.path.join(tmp_dir, filename))
         return True
     except ValueError:
         return False

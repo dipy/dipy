@@ -62,7 +62,7 @@ class SphinxDocString(NumpyDocString):
         """
         out = []
         if self[name]:
-            out += ['.. rubric:: %s' % name, '']
+            out += [f'.. rubric:: {name}', '']
             prefix = getattr(self, '_name', '')
 
             if prefix:
@@ -73,7 +73,7 @@ class SphinxDocString(NumpyDocString):
             for param, param_type, desc in self[name]:
                 param = param.strip()
                 if not self._obj or hasattr(self._obj, param):
-                    autosum += ["   %s%s" % (prefix, param)]
+                    autosum += [f"   {prefix}{param}"]
                 else:
                     others.append((param, param_type, desc))
 
@@ -85,7 +85,7 @@ class SphinxDocString(NumpyDocString):
                 maxlen_0 = max([len(x[0]) for x in others])
                 maxlen_1 = max([len(x[1]) for x in others])
                 hdr = "="*maxlen_0 + "  " + "="*maxlen_1 + "  " + "="*10
-                fmt = '%%%ds  %%%ds  ' % (maxlen_0, maxlen_1)
+                fmt = f'%%{maxlen_0}s  %%{maxlen_1}s  '
                 n_indent = maxlen_0 + maxlen_1 + 4
                 out += [hdr]
                 for param, param_type, desc in others:
@@ -126,14 +126,17 @@ class SphinxDocString(NumpyDocString):
         if len(idx) == 0:
             return out
 
-        out += ['.. index:: %s' % idx.get('default','')]
+        default_section = idx.get('default', '')
+        out += [f'.. index:: {default_section}']
         for section, references in idx.iteritems():
             if section == 'default':
                 continue
             elif section == 'refguide':
-                out += ['   single: %s' % (', '.join(references))]
+                references = ', '.join(references)
+                out += [f'   single: {references}']
             else:
-                out += ['   %s: %s' % (section, ','.join(references))]
+                references = ','.join(references)
+                out += [f'   {section}: {references}']
         return out
 
     def _str_references(self):
@@ -155,7 +158,7 @@ class SphinxDocString(NumpyDocString):
                 m = re.match(r'.. \[([a-z0-9._-]+)\]', line, re.I)
                 if m:
                     items.append(m.group(1))
-            out += ['   ' + ", ".join(["[%s]_" % item for item in items]), '']
+            out += [' ' + ", ".join(["[%s]_" % item for item in items]), '']
         return out
 
     def _str_examples(self):

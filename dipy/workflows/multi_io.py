@@ -203,7 +203,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
                        out_keys=out_keys)
 
 
-class IOIterator(object):
+class IOIterator:
     """Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
 
@@ -280,4 +280,4 @@ class IOIterator(object):
                 input_args += [f for f in fname]
         for path in input_args:
             if len(glob(path)) == 0:
-                raise IOError('File not found: ' + path)
+                raise OSError('File not found: ' + path)

@@ -1,13 +1,13 @@
 # Sample script to install Python and pip under Windows
 # Authors: Olivier Grisel, Jonathan Helmus and Kyle Kastner
-# License: CC0 1.0 Universal: http://creativecommons.org/publicdomain/zero/1.0/
+# License: CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
 
 # Adapted from VisPy
 
 $MESA_GL_URL = "https://github.com/vispy/demo-data/raw/main/mesa/"
 
 # Mesa DLLs found linked from:
-#     http://qt-project.org/wiki/Cross-compiling-Mesa-for-Windows
+#     https://wiki.qt.io/Cross_compiling_Mesa_for_Windows
 # to:
 #     http://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/mingw-w64-x86_64-mesa-10.2.4-1-any.pkg.tar.xz/download
 

@@ -60,7 +60,7 @@ def local_module_dir(module_name):
     return None
 
 
-class ScriptRunner(object):
+class ScriptRunner:
     """ Class to run scripts and return output
 
     Finds local scripts and local modules if running in the development

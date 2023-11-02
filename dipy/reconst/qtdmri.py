@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from packaging.version import Version
 
 import numpy as np
@@ -99,7 +98,7 @@ class QtdmriModel(Cache):
             stability problem.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See See http://www.cvxpy.org/ for
+            with a particular cvxpy solver. See See https://www.cvxpy.org/ for
             details. Default: ECOS.
 
         References
@@ -1071,52 +1070,8 @@ class QtdmriFit:
         return eap
 
 
-def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
-    """Generates the matrix that maps the qtdmri coefficients to MAP-MRI
-    coefficients. The conversion is done by only evaluating the time basis for
-    a diffusion time tau and summing up coefficients with the same spatial
-    basis orders [1].
-
-    Parameters
-    ----------
-    radial_order : unsigned int,
-        an even integer representing the spatial/radial order of the basis.
-    time_order : unsigned int,
-        an integer larger or equal than zero representing the time order
-        of the basis.
-    ut : float
-        temporal scaling factor
-    tau : float
-        diffusion time (big_delta - small_delta / 3.) in seconds
-
-    References
-    ----------
-    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-        Representation of dMRI in Space and Time", Medical Image Analysis,
-        2017.
-    """
-    mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
-    n_elem_mapmri = int(mapmri_ind_mat.shape[0])
-    qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
-    n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
-
-    temporal_storage = np.zeros(time_order + 1)
-    for o in range(time_order + 1):
-        temporal_storage[o] = temporal_basis(o, ut, tau)
-
-    counter = 0
-    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
-    for nxt, nyt, nzt, o in qtdmri_ind_mat:
-        index_overlap = np.all([nxt == mapmri_ind_mat[:, 0],
-                                nyt == mapmri_ind_mat[:, 1],
-                                nzt == mapmri_ind_mat[:, 2]], 0)
-        mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
-        counter += 1
-    return mapmri_mat
-
-
-def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
-    """Generates the matrix that maps the spherical qtdmri coefficients to
+def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
+    """Generate the matrix that maps the spherical qtdmri coefficients to
     MAP-MRI coefficients. The conversion is done by only evaluating the time
     basis for a diffusion time tau and summing up coefficients with the same
     spatial basis orders [1].
@@ -1132,6 +1087,9 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         temporal scaling factor
     tau : float
         diffusion time (big_delta - small_delta / 3.) in seconds
+    isotropic : bool
+        `True` if the case is isotropic.
+
 
     References
     ----------
@@ -1139,9 +1097,14 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
+    if isotropic:
+        mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
+        qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
+    else:
+        mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
+        qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
+
     n_elem_mapmri = int(mapmri_ind_mat.shape[0])
-    qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
     n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
 
     temporal_storage = np.zeros(time_order + 1)
@@ -1149,14 +1112,70 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
-    mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
+    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
     for j, ll, m, o in qtdmri_ind_mat:
         index_overlap = np.all([j == mapmri_ind_mat[:, 0],
                                 ll == mapmri_ind_mat[:, 1],
                                 m == mapmri_ind_mat[:, 2]], 0)
-        mapmri_isotropic_mat[:, counter] = temporal_storage[o] * index_overlap
+        mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
-    return mapmri_isotropic_mat
+    return mapmri_mat
+
+
+def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generate the matrix that maps the qtdmri coefficients to MAP-MRI
+    coefficients for the anisotropic case. The conversion is done by only
+    evaluating the time basis for a diffusion time tau and summing up
+    coefficients with the same spatial basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
+
+    return _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, False)
+
+
+def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generate the matrix that maps the spherical qtdmri coefficients to
+    MAP-MRI coefficients for the isotropic case. The conversion is done by only
+    evaluating the time basis for a diffusion time tau and summing up
+    coefficients with the same spatial basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
+
+    return _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, True)
 
 
 def qtdmri_temporal_normalization(ut):
@@ -1817,8 +1836,7 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     input_stuff = (data, M, MMt, K, LR)
 
     bounds = ((1e-5, 1),)
-    res = fmin_l_bfgs_b(lambda x,
-                        input_stuff: GCV_cost_function(x, input_stuff),
+    res = fmin_l_bfgs_b(GCV_cost_function,
                         startpoint, args=(input_stuff,), approx_grad=True,
                         bounds=bounds, disp=False, pgtol=1e-10, factr=10.)
     return res[0][0]
@@ -1855,8 +1873,8 @@ def qtdmri_isotropic_scaling(data, q, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    us = np.sqrt(np.dot(logE_q, inv_B_q))
-    ut = np.dot(logE_tau, inv_B_tau)
+    us = np.sqrt(np.dot(logE_q, inv_B_q)).item()
+    ut = np.dot(logE_tau, inv_B_tau).item()
     return us, ut
 
 
@@ -1879,7 +1897,7 @@ def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    ut = np.dot(logE_tau, inv_B_tau)
+    ut = np.dot(logE_tau, inv_B_tau).item()
 
     return us, ut, R
 

@@ -2,21 +2,21 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-cimport numpy as np
+cimport numpy as cnp
 
-from libc.stdlib cimport rand, RAND_MAX
+from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.math cimport sqrt
 
 
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(
-        np.float_t* arr,
-        np.float_t number,
+        cnp.float_t* arr,
+        cnp.float_t number,
         int size) nogil
 
 cdef void cumsum(
-        np.float_t* arr_in,
-        np.float_t* arr_out,
+        cnp.float_t* arr_in,
+        cnp.float_t* arr_out,
         int N) nogil
 
 cdef void copy_point(
@@ -27,30 +27,32 @@ cdef void scalar_muliplication_point(
         double * a,
         double scalar) nogil
 
-cpdef double random() nogil
+cdef double norm(
+        double * v) nogil
 
-cpdef double norm(
-        double[:] v) nogil
+cdef double dot(
+        double * v1,
+        double * v2) nogil
 
-cpdef double dot(
-        double[:] v1,
-        double[:] v2) nogil
+cdef void normalize(
+        double * v) nogil
 
-cpdef void normalize(
-        double[:] v) nogil
+cdef void cross(
+        double * out,
+        double * v1,
+        double * v2) nogil
 
-cpdef void cross(
-        double[:] out,
-        double[:] v1,
-        double[:] v2) nogil
+cdef void random_vector(
+        double * out) nogil
 
-cpdef void random_vector(
-        double[:] out)
-
-cpdef void random_perpendicular_vector(
-        double[:] out,
-        double[:] v)
+cdef void random_perpendicular_vector(
+        double * out,
+        double * v) nogil
 
 cpdef (double, double) random_point_within_circle(
-        double r)
+        double r) nogil
+
+cpdef double random() nogil
+
+cpdef void seed(cnp.npy_uint32 s) nogil
 

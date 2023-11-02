@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 from dipy.align import floating
 from dipy.align import crosscorr as cc
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_cc_factors_2d():
@@ -36,7 +37,8 @@ def test_cc_factors_3d():
         assert_array_almost_equal(factors, expected, decimal=5)
 
 
-def test_compute_cc_steps_2d():
+@set_random_number_generator(1147572)
+def test_compute_cc_steps_2d(rng):
     # Select arbitrary images' shape (same shape for both images)
     sh = (32, 32)
     radius = 2
@@ -54,18 +56,16 @@ def test_compute_cc_steps_2d():
     X[..., 1] = x_1[None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(1147572)
-
     gradF = np.array(X - c_f, dtype=floating)
     gradG = np.array(X - c_g, dtype=floating)
 
     sz = np.size(gradF)
-    Fnoise = np.random.ranf(sz).reshape(gradF.shape) * gradF.max() * 0.1
+    Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     gradF += Fnoise
 
     sz = np.size(gradG)
-    Gnoise = np.random.ranf(sz).reshape(gradG.shape) * gradG.max() * 0.1
+    Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     gradG += Gnoise
 
@@ -74,11 +74,11 @@ def test_compute_cc_steps_2d():
     F = np.array(0.5*np.sum(gradF**2, -1), dtype=floating)
     G = np.array(0.5*sq_norm_grad_G, dtype=floating)
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 
@@ -123,7 +123,8 @@ def test_compute_cc_steps_2d():
         assert_array_almost_equal(actual, expected)
 
 
-def test_compute_cc_steps_3d():
+@set_random_number_generator(12465825)
+def test_compute_cc_steps_3d(rng):
     sh = (32, 32, 32)
     radius = 2
 
@@ -142,17 +143,16 @@ def test_compute_cc_steps_3d():
     X[..., 2] = x_2[None, None, :] * O
 
     # Compute the gradient fields of F and G
-    np.random.seed(12465825)
     gradF = np.array(X - c_f, dtype=floating)
     gradG = np.array(X - c_g, dtype=floating)
 
     sz = np.size(gradF)
-    Fnoise = np.random.ranf(sz).reshape(gradF.shape) * gradF.max() * 0.1
+    Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     gradF += Fnoise
 
     sz = np.size(gradG)
-    Gnoise = np.random.ranf(sz).reshape(gradG.shape) * gradG.max() * 0.1
+    Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     gradG += Gnoise
 
@@ -161,11 +161,11 @@ def test_compute_cc_steps_3d():
     F = np.array(0.5*np.sum(gradF**2, -1), dtype=floating)
     G = np.array(0.5*sq_norm_grad_G, dtype=floating)
 
-    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
     F += Fnoise
 
-    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
 

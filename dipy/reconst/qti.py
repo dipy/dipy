@@ -265,7 +265,7 @@ def cvxpy_1x21_to_6x6(V):
                 [f * V[0, 6], f * V[0, 9],
                  f * V[0, 12], V[0, 15], f * V[0, 18], f * V[0, 20]],
                 [f * V[0, 7], f * V[0, 10], f * V[0, 13], f * V[0, 18],
-                 V[0, 16], f * V[0, 19]], 
+                 V[0, 16], f * V[0, 19]],
                 [f * V[0, 8], f * V[0, 11],
                  f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
     return T
@@ -376,7 +376,7 @@ def qti_signal(gtab, D, C, S0=1):
             )
     if D.shape[0:-2] != C.shape[0:-2]:
         raise ValueError('The shapes of C and D are not compatible')
-    if not (isinstance(S0, int) or isinstance(S0, float)):
+    if not isinstance(S0, (int, float)):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
                 'S0 must be a single number or an array of the same shape '
@@ -451,7 +451,7 @@ def _ols_fit(data, mask, X, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size = len(data_masked)
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
@@ -492,7 +492,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size = len(data_masked)
     if step >= size:  # Fit over all data simultaneously
@@ -517,7 +517,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
 def _sdpdc_fit(data, mask, X, cvxpy_solver):
     """Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
-        
+
     Parameters
     ----------
     data : numpy.ndarray
@@ -553,7 +553,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         raise ValueError(
                     'The selected solver is not available')
 
-    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
     size, nvols = data_masked.shape
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
@@ -600,7 +600,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
 
         params_masked[i:i+1, :] = m.T
 
-    params_masked[:, 0] += np.log(scale[:, 0]) 
+    params_masked[:, 0] += np.log(scale[:, 0])
     params[np.where(mask.ravel())] = params_masked
     params = params.reshape((mask.shape + (28,)))
     return params
@@ -621,7 +621,7 @@ class QtiModel(ReconstModel):
                     :func:`qti._ols_fit`
                 'WLS' for weighted least squares
                     :func:`qti._wls_fit`
-                'SDPDc' for semidefinite programming with positivity 
+                'SDPDc' for semidefinite programming with positivity
                         constraints applied [2]_
                     :func:`qti._sdpdc_fit`
         cvxpy_solver: str, optionals
@@ -657,8 +657,8 @@ class QtiModel(ReconstModel):
                 'Invalid value (%s) for \'fit_method\'.' % fit_method
                 + ' Options: \'OLS\', \'WLS\', \'SDPdc\'.'
             )
-            
-        
+
+
         self.cvxpy_solver = cvxpy_solver
         self.fit_method_name = fit_method
 
@@ -684,7 +684,7 @@ class QtiModel(ReconstModel):
                 raise ValueError('Mask is not the same shape as data.')
             mask = np.array(mask, dtype=bool, copy=False)
         if self.fit_method_name == 'SDPdc':
-            params = self.fit_method(data, mask, self.X, self.cvxpy_solver)  
+            params = self.fit_method(data, mask, self.X, self.cvxpy_solver)
         else:
             params = self.fit_method(data, mask, self.X)
         return QtiFit(params)
@@ -713,7 +713,7 @@ class QtiModel(ReconstModel):
         return S
 
 
-class QtiFit(object):
+class QtiFit:
 
     def __init__(self, params):
         """Fitted QTI model.

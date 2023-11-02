@@ -44,7 +44,7 @@ def prepare_img(image):
     r"""
     Function to prepare image for model input
     Specific to EVAC+
-    
+
     Parameters
     ----------
     image : np.ndarray
@@ -82,7 +82,7 @@ def prepare_img(image):
                   "input_3":input3,
                   "input_4":input4,
                   "input_5":input5}
-    
+
     return input_data
 
 class Block(Layer):
@@ -114,7 +114,7 @@ class Block(Layer):
         x = input
         for layer in self.layer_list:
             x = layer(x)
-        
+
         x = self.channel_sum(x)
         fwd = self.add([x, passed])
         x = fwd
@@ -134,7 +134,7 @@ class ChannelSum(Layer):
 def init_model(model_scale=16):
     r"""
     Function to create model for EVAC+
-    
+
     Parameters
     ----------
     model_scale : int, optional
@@ -155,19 +155,19 @@ def init_model(model_scale=16):
     fwd1, x = Block(model_scale, kernel_size=5,
                    strides=1, padding='same',
                    drop_r=0.2, n_layers=1)(inputs, inputs)
-    
+
     x = Concatenate()([x, raw_input_2])
 
     fwd2, x = Block(model_scale*2, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=2)(x, x)
-    
+
     x = Concatenate()([x, raw_input_3])
 
     fwd3, x = Block(model_scale*4, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=3)(x, x)
-    
+
     x = Concatenate()([x, raw_input_4])
 
     fwd4, x = Block(model_scale*8, kernel_size=5,
@@ -180,35 +180,35 @@ def init_model(model_scale=16):
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, x)
-    
+
     x = Concatenate()([fwd4, up])
 
     _, up = Block(model_scale*8, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, up)
-    
+
     x = Concatenate()([fwd3, up])
 
     _, up = Block(model_scale*4, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, up)
-    
+
     x = Concatenate()([fwd2, up])
 
     _, up = Block(model_scale*2, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=2,
                   layer_type='up')(x, up)
-    
+
     x = Concatenate()([fwd1, up])
 
     _, pred = Block(model_scale, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=1,
                     layer_type='none')(x, up)
-    
+
     pred = Conv3D(2, 1, padding='same')(pred)
     output = Softmax(axis=-1)(pred)
 
@@ -258,7 +258,6 @@ class EVACPlus:
 
         self.model = init_model()
         self.fetch_default_weights()
-
 
     def fetch_default_weights(self):
         r"""
@@ -318,7 +317,7 @@ class EVACPlus:
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
-        
+
         voxsize : np.ndarray or list or tuple, optional
             (3,) or (batch, 3)
             voxel size of the T1 image.
@@ -347,16 +346,15 @@ class EVACPlus:
         -------
         pred_output : np.ndarray (...) or (batch, ...)
             Predicted brain mask
-        
+
         affine : np.ndarray (...) or (batch, ...)
             affine matrix of mask
             only if return_affine is True
-
         """
-        
+
         voxsize = np.array(voxsize)
         affine = np.array(affine)
-        
+
         if isinstance(T1, (list, tuple)):
             dim = 4
             T1 = np.array(T1)
@@ -374,7 +372,6 @@ class EVACPlus:
         else:
             raise ValueError("T1 data should be a np.ndarray of dimension 3 or"
                              "a list/tuple of it")
-            
 
         input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))

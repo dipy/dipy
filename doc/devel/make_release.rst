@@ -85,7 +85,7 @@ Release checklist
   clone the wheel-building repo, edit the ``.travis.yml`` and ``appveyor.yml``
   text files (if present) with the branch or commit for the release, commit
   and then push back up to github.  This will trigger a wheel build and test
-  on OSX, Linux and Windows. Check the build has passed on on the Travis-CI
+  on OSX, Linux and Windows. Check the build has passed on the Travis-CI
   interface at https://travis-ci.org/MacPython/dipy-wheels.  You'll need
   commit privileges to the ``dipy-wheels`` repo; ask Matthew Brett or on the
   mailing list if you do not have them.
@@ -111,7 +111,7 @@ then do you push to upstream on github.
 
 * For the wheel build / upload, follow the `wheel builder README`_
   instructions again.  Edit the ``.travis.yml`` and ``appveyor.yml`` files (if
-  present) to give the release tag to build.  Check the build has passed on on
+  present) to give the release tag to build.  Check the build has passed on
   the Travis-CI interface at https://travis-ci.org/MacPython/dipy-wheels.  Now
   follow the instructions in the page above to download the built wheels to a
   local machine and upload to PyPI.
@@ -152,7 +152,7 @@ then do you push to upstream on github.
 
 * Set up maintenance / development branches
 
-  If this is this is a full release you need to set up two branches, one for
+  If this is a full release you need to set up two branches, one for
   further substantial development (often called 'trunk') and another for
   maintenance releases.
 

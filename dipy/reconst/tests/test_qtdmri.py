@@ -14,6 +14,7 @@ from dipy.data import get_gtab_taiwan_dsi, get_sphere
 from dipy.reconst import qtdmri, mapmri
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor, add_noise
+from dipy.testing.decorators import set_random_number_generator
 
 needs_cvxpy = pytest.mark.skipif(not qtdmri.have_cvxpy,
                                  reason="REQUIRES CVXPY")
@@ -394,7 +395,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     # only first tau_point is normalized with least squares.
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     assert_almost_equal(float(E_q0_first_tau), 1.)
 
     # now with cvxpy regularization cartesian
@@ -406,12 +407,12 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     fitted_signal = qtdmri_fit_lap.fitted_signal()
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
-    ]
-    assert_almost_equal(E_q0_first_tau[0], 1.)
-    assert_almost_equal(E_q0_last_tau[0], 1.)
+    ].item()
+    assert_almost_equal(E_q0_first_tau, 1.)
+    assert_almost_equal(E_q0_last_tau, 1.)
 
     # check if odf in spherical harmonics for cartesian raises an error
     try:
@@ -434,10 +435,10 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
         fitted_signal = qtdmri_fit_lap.fitted_signal()
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
-    ]
+    ].item()
     assert_almost_equal(float(E_q0_first_tau), 1.)
     assert_almost_equal(float(E_q0_last_tau), 1.)
 
@@ -504,11 +505,13 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
 
 
 @needs_cvxpy
-def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
+@set_random_number_generator(1234)
+def test_laplacian_GCV_higher_weight_with_noise(radial_order=4,
+                                                time_order=2, rng=None):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=10)
+    S_noise = add_noise(S, S0=1., snr=10, rng=rng)
 
     qtdmri_mod_laplacian_GCV = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
@@ -588,11 +591,12 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
 
 
 @needs_cvxpy
-def test_l1_CV(radial_order=4, time_order=2):
+@set_random_number_generator(1234)
+def test_l1_CV(radial_order=4, time_order=2, rng=None):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=10)
+    S_noise = add_noise(S, S0=1., snr=10, rng=rng)
     qtdmri_mod_l1_cv = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting="CV"
@@ -602,11 +606,12 @@ def test_l1_CV(radial_order=4, time_order=2):
 
 
 @needs_cvxpy
-def test_elastic_GCV_CV(radial_order=4, time_order=2):
+@set_random_number_generator(1234)
+def test_elastic_GCV_CV(radial_order=4, time_order=2, rng=None):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=10)
+    S_noise = add_noise(S, S0=1., snr=10, rng=rng)
     qtdmri_mod_elastic = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting="CV",

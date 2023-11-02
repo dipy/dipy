@@ -28,7 +28,7 @@ the process, to achieve the goal.
 The DIPY image registration workflow applies the specified type of
 transformation to the input images, and hence, users are expected to choose the
 type of transformation that best matches the requirements of their problem.
-Alternatively, the workflow allows to perform registration in a progressive
+Alternatively, the workflow allows one to perform registration in a progressive
 manner. For example, using affine registration with ``progressive`` set to
 ``True`` will involve center of mass, translation, rigid body and full affine
 registration; meanwhile, if ``progressive`` is set to ``False`` for an affine
@@ -79,7 +79,7 @@ that brings the moving image closer to the static image.
 
 Create a directory in which to save the transformed image (e.g.:
 ``syn_reg_output``)::
-    
+
     mkdir syn_reg_output
 
 To run the symmetric normalization registration method, we need to specify the
@@ -120,7 +120,7 @@ For a ``diffeomorphic`` transformation, we would run the command as::
 
     dipy_apply_transform <path_to_static_file> <path_to_moving_file> <path_to_transform_map_file> --transform_type "diffeomorphic" --out_dir "transform_reg_output"
 
-This command will transform the moving image and save the transformed files 
+This command will transform the moving image and save the transformed files
 to the specified output directory.
 
 -----------------------------
@@ -131,7 +131,7 @@ Streamline-based registration (SLR) [Garyfallidis15]_ is performed to align
 bundles of streamlines directly in the space of streamlines. The aim is to
 align the moving streamlines with the static streamlines.
 
-The workflow for streamline-based registration requires the paths to the 
+The workflow for streamline-based registration requires the paths to the
 static streamlines file, and to the moving streamlines file, followed by
 optional arguments. In this case, we will be specifying the number of points
 for discretizing each streamline (``nb_pts``) and the output directory
@@ -146,7 +146,7 @@ Then, run the command as::
 
     dipy_slr <path_to_static_file> <path_to_moving_file> --nb_pts 25 --out_dir "sl_reg_output"
 
-This command will perform streamline-based registration and save the 
+This command will perform streamline-based registration and save the
 transformed files to the specified output directory.
 
 References

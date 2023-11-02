@@ -58,7 +58,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     return B, m, n
 
 
-class MultiShellResponse(object):
+class MultiShellResponse:
 
     def __init__(self, response, sh_order, shells, S0=None):
         """ Estimate Multi Shell response function for multiple tissues and
@@ -146,7 +146,7 @@ def _basic_delta(iso, m, n, theta, phi):
 class MultiShellDeconvModel(shm.SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=default_sphere,
-                 sh_order=8, iso=2):
+                 sh_order=8, iso=2, tol=20):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -186,6 +186,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
             Default: 2
+        tol : int, optional
+            Tolerance gap for b-values clustering.
 
         References
         ----------
@@ -206,7 +208,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         super(MultiShellDeconvModel, self).__init__(gtab)
 
         if not isinstance(response, MultiShellResponse):
-            bvals = unique_bvals_tolerance(gtab.bvals, tol=20)
+            bvals = unique_bvals_tolerance(gtab.bvals, tol=tol)
             if iso > 2:
                 msg = """Too many compartments for this kind of response
                 input. It must be two tissue compartments."""
@@ -390,7 +392,7 @@ def solve_qp(P, Q, G, H):
     elif Version(cvxpy.__version__) < Version('1.2'):
         msg = """Dipy does not support versions of cvxpy below 1.2."""
         raise ValueError(msg)
-    
+
     # setting up the problem
     prob = cvxpy.Problem(objective, constraints)
     try:
@@ -403,7 +405,7 @@ def solve_qp(P, Q, G, H):
     return opt
 
 
-class QpFitter(object):
+class QpFitter:
 
     def __init__(self, X, reg):
         r"""
@@ -453,6 +455,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         Response function of the CSF tissue, for each bvals.
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
+    tol : int, optional
+        Tolerance gap for b-values clustering.
 
     Returns
     -------
@@ -739,6 +743,8 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     gtab : GradientTable
     data : ndarray
         diffusion data
+    tol : int, optional
+        Tolerance gap for b-values clustering.
     roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.

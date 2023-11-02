@@ -71,7 +71,7 @@ Pull Requests (52):
 * :ghpull:`1956`: stateful_tractogram_post_1.0_fixes
 * :ghpull:`1971`: fix broken link of devel
 * :ghpull:`1970`: DOC: Fix typos
-* :ghpull:`1929`: ENH: Relocate the `sim_response` method to allow re-use
+* :ghpull:`1929`: ENH: Relocate the `sim_response` method to allow reuse
 * :ghpull:`1966`: ENH: Speed up Cython, remove warnings
 * :ghpull:`1967`: ENH: Use language level 3
 * :ghpull:`1962`: DOC: Display `master` branch AppVeyor status
@@ -147,7 +147,7 @@ Issues (81):
 * :ghissue:`1956`: stateful_tractogram_post_1.0_fixes
 * :ghissue:`1971`: fix broken link of devel
 * :ghissue:`1970`: DOC: Fix typos
-* :ghissue:`1929`: ENH: Relocate the `sim_response` method to allow re-use
+* :ghissue:`1929`: ENH: Relocate the `sim_response` method to allow reuse
 * :ghissue:`1966`: ENH: Speed up Cython, remove warnings
 * :ghissue:`1967`: ENH: Use language level 3
 * :ghissue:`1954`: WIP: Second series of updates and fixes for Horizon

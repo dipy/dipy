@@ -7,7 +7,7 @@ from dipy.denoise import nlmeans_block
  Code adapted from
 
  WAVELET SOFTWARE AT POLYTECHNIC UNIVERSITY, BROOKLYN, NY
- http://taco.poly.edu/WaveletSoftware/
+ https://eeweb.engineering.nyu.edu/iselesni/WaveletSoftware/
 """
 
 
@@ -26,7 +26,7 @@ def cshift3D(x, m, d):
     Returns
     -------
     y : 3D ndarray
-       array x will be shifed by m samples down
+       array x will be shifted by m samples down
        along dimension d
     """
 

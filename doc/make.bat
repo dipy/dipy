@@ -59,20 +59,6 @@ if "%1" == "examples-clean" (
 	exit /B
 	)
 
-if "%1" == "examples-clean-tgz" (
-    call :examples-clean
-    call :examples-tgz %*
-	%PYTHON% ../tools/pack_examples.py ../dist
-	exit /B
-	)
-
-if "%1" == "examples-tgz" (
-    :examples-tgz
-    call :rstexamples %*
-	%PYTHON% ../tools/pack_examples.py ../dist
-	exit /B
-	)
-
 if "%1" == "gitwash-update" (
 	%PYTHON% ../tools/gitwash_dumper.py devel dipy --repo-name=dipy ^
 	                                               --github-user=dipy ^
@@ -80,26 +66,20 @@ if "%1" == "gitwash-update" (
 	                                               --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
     )
 
-if "%1" == "rstexamples" (
-    :rstexamples
-	cd examples_built && %PYTHON% ..\\..\\tools\\make_examples.py
-	type nul > %*
-	cd ..
-	exit /B
-	)
-
 if "%1" == "html" (
     :html
     echo "build full docs including examples"
     call :api
-    call :rstexamples %*
-    call :html-after-examples
+	%SPHINXBUILD% -b html %ALLSPHINXOPTS% _build/html
+	echo.
+	echo.Build finished. The HTML pages are in _build/html.
     exit /B
 	)
 
-if "%1" == "html-after-examples" (
-    :html-after-examples
-	%SPHINXBUILD% -b html %ALLSPHINXOPTS% _build/html
+if "%1" == "html-no-examples" (
+    :html-no-examples
+	call :api
+	%SPHINXBUILD% -D plot_gallery=0 -b html %ALLSPHINXOPTS% _build/html
 	echo.
 	echo.Build finished. The HTML pages are in _build/html.
 	exit /B
@@ -147,7 +127,6 @@ if "%1" == "qthelp" (
 
 if "%1" == "latex" (
     :latex
-    call :rstexamples %*
     call :latex-after-examples
     exit /B
 )

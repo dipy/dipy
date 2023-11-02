@@ -13,6 +13,7 @@ import dipy.reconst.csdeconv as csd
 import dipy.reconst.base as base
 from dipy.io.image import load_nifti_data
 from dipy.reconst.shm import descoteaux07_legacy_msg
+from dipy.testing.decorators import set_random_number_generator
 
 
 # We'll set these globally:
@@ -59,7 +60,8 @@ def test_dti_xval():
     npt.assert_array_almost_equal(np.round(cod2d[0, 0]), cod)
 
 
-def test_csd_xval():
+@set_random_number_generator(12345)
+def test_csd_xval(rng):
     # First, let's see that it works with some data:
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)
@@ -82,13 +84,12 @@ def test_csd_xval():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
-    np.random.seed(12345)
     response = ([0.0015, 0.0003, 0.0001], S0)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
+        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2, rng=rng)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
@@ -105,7 +106,7 @@ def test_csd_xval():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2,
-                                  mask=mask)
+                                  mask=mask, rng=rng)
 
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(np.round(cod[0]), csd_cod)

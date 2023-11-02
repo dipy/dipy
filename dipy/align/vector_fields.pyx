@@ -2162,7 +2162,8 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
 def create_random_displacement_2d(int[:] from_shape,
                                   double[:, :] from_grid2world,
                                   int[:] to_shape,
-                                  double[:, :] to_grid2world):
+                                  double[:, :] to_grid2world,
+                                  object rng=None):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
     Creates a random 2D displacement field mapping points of an input discrete
@@ -2184,6 +2185,9 @@ def create_random_displacement_2d(int[:] from_shape,
         the grid shape where the deformation field will map the input grid to.
     to_grid2world : array, shape (3,3)
         the grid-to-space transformation of the mapped grid
+    rng : numpy.rnadom.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -2206,13 +2210,16 @@ def create_random_displacement_2d(int[:] from_shape,
     if not is_valid_affine(to_grid2world, 2):
         raise ValueError("Invalid 'to' affine transform matrix")
 
+    if rng is None:
+        rng = np.random.default_rng()
+
     # compute the actual displacement field in the physical space
     for i in range(from_shape[0]):
         for j in range(from_shape[1]):
             # randomly choose where each input grid point will be mapped to in
             # the target grid
-            ri = np.random.randint(1, to_shape[0]-1)
-            rj = np.random.randint(1, to_shape[1]-1)
+            ri = rng.integers(1, to_shape[0]-1)
+            rj = rng.integers(1, to_shape[1]-1)
             int_field[i, j, 0] = ri
             int_field[i, j, 1] = rj
 
@@ -2244,7 +2251,8 @@ def create_random_displacement_2d(int[:] from_shape,
 def create_random_displacement_3d(int[:] from_shape,
                                   double[:, :] from_grid2world,
                                   int[:] to_shape,
-                                  double[:, :] to_grid2world):
+                                  double[:, :] to_grid2world,
+                                  object rng=None):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
@@ -2266,6 +2274,9 @@ def create_random_displacement_3d(int[:] from_shape,
         the grid shape where the deformation field will map the input grid to.
     to_grid2world : array, shape (4,4)
         the grid-to-space transformation of the mapped grid
+    rng : numpy.rnadom.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -2288,14 +2299,17 @@ def create_random_displacement_3d(int[:] from_shape,
     if not is_valid_affine(to_grid2world, 3):
         raise ValueError("Invalid 'to' affine transform matrix")
 
+    if rng is None:
+        rng = np.random.default_rng()
+
     # compute the actual displacement field in the physical space
     for k in range(from_shape[0]):
         for i in range(from_shape[1]):
             for j in range(from_shape[2]):
                 # randomly choose the location of each point on the target grid
-                rk = np.random.randint(1, to_shape[0]-1)
-                ri = np.random.randint(1, to_shape[1]-1)
-                rj = np.random.randint(1, to_shape[2]-1)
+                rk = rng.integers(1, to_shape[0]-1)
+                ri = rng.integers(1, to_shape[1]-1)
+                rj = rng.integers(1, to_shape[2]-1)
                 int_field[k, i, j, 0] = rk
                 int_field[k, i, j, 1] = ri
                 int_field[k, i, j, 2] = rj

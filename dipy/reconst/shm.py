@@ -657,7 +657,7 @@ def smooth_pinv(B, L):
     ----------
     B : array_like (n, m)
         Matrix to be inverted
-    L : array_like (n,)
+    L : array_like (m,)
 
     Returns
     -------
@@ -1067,7 +1067,7 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     return boot_data
 
 
-class ResidualBootstrapWrapper(object):
+class ResidualBootstrapWrapper:
     """Returns a residual bootstrap sample of the signal_object when indexed
 
     Wraps a signal_object, this signal object can be an interpolator. When
@@ -1358,10 +1358,10 @@ def calculate_max_order(n_coeffs, full_basis=False):
             return int(L1)
 
     # Otherwise, the input didn't make sense:
-    raise ValueError("The input to ``calculate_max_order`` was ",
-                     "%s, but that is not a valid number" % n_coeffs,
-                     "of coefficients for a spherical harmonics ",
-                     "basis set.")
+    raise ValueError(f"The input to ``calculate_max_order`` was"
+                     f" {n_coeffs}, but that is not a valid number"
+                     f" of coefficients for a spherical harmonics"
+                     f" basis set.")
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,

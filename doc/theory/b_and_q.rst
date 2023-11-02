@@ -36,7 +36,7 @@ entries
 
 .. math::
 
-   b_{ij} = \gamma^2 G^2 g_i g_j R, 
+   b_{ij} = \gamma^2 G^2 g_i g_j R,
 
 where $\gamma$ is the gyromagnetic radius (units
 $\mathrm{radians}.\mathrm{seconds}^{-1}.T^{-1}$) and $i$ and $j$ are
@@ -45,7 +45,7 @@ $\mathrm{radians}^2 . \mathrm{seconds} .  \mathrm{mm}^{-2}.$
 
 .. math::
 
-   \mathbf{B} = \gamma^2 G^2 R \mathbf{g} \mathbf{g}^T. 
+   \mathbf{B} = \gamma^2 G^2 R \mathbf{g} \mathbf{g}^T.
 
 The b-value for the acquisition is the trace of $\mathbf{B}$ and is
 given by
@@ -53,7 +53,7 @@ given by
 .. math::
 
    b = \gamma^2 G^2 R \|\mathbf{g}\|^2 = \gamma^2 G^2 R.
-   
+
 ================================
  The B matrix and Siemens DICOM
 ================================
@@ -72,12 +72,12 @@ the diffusion tensor via the equations across the set of acquisitions:
 .. math::
 
    \log(A(\mathbf{q})/A(0)) = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
-      b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz}) 
+      b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz})
 
 The gradient field typically stays in the one gradient direction, in
 this case the relationship between $b$, $\mathbf{g}$ and the $b_{ij}$ is as
 follows. If we fill out the symmetric B-matrix as:
- 
+
 .. math::
 
    \mathbf{B} = \begin{pmatrix}
@@ -94,7 +94,7 @@ eigenvector decomposition of $\mathbf{B}$ we obtain
 
    \mathbf{B} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T +
                 \lambda_2\mathbf{v}_2\mathbf{v}_2^T +
-                \lambda_3\mathbf{v}_3\mathbf{v}_3^T, 
+                \lambda_3\mathbf{v}_3\mathbf{v}_3^T,
 
 where only one of the $\lambda_i$, say $\lambda_1$, is (effectively)
 non-zero. (Because the gradient is always a multiple of a constant
@@ -122,7 +122,7 @@ narrow pulse PGSE paradigm measured the Fourier transform of the
 diffusion displacement propagator. Propagation space is measured in
 displacement per unit time $(\mathrm{mm}.\mathrm{seconds}^{-1})$. They
 named the reciprocal space ``q-space`` with units of
-$\mathrm{seconds}.\mathrm{mm}^{-1}$. 
+$\mathrm{seconds}.\mathrm{mm}^{-1}$.
 
 .. math::
    :label: fourier

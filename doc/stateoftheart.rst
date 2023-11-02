@@ -55,7 +55,7 @@ Systems supported
 
 DIPY_ is multiplatform and will run under any standard operating systems such
 as *Windows*, *Linux* and  *Mac OS X*. Every single new code addition is being tested on
-a number of different buildbots and can be monitored online `here <http://nipy.bic.berkeley.edu/builders>`_.
+a number of different buildbots and can be monitored online `here <https://github.com/dipy/dipy/actions>`_.
 
 
 .. include:: links_names.inc

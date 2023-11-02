@@ -7,7 +7,7 @@ from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, shape_from_memvi
 from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
 
 
-cdef class Feature(object):
+cdef class Feature:
     """ Extracts features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with

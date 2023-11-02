@@ -69,7 +69,7 @@ Then, to perform the EuDX tracking we will run the ``dipy_track`` command as::
 Deterministic Tracking
 **********************
 
-Deterministic maximum direction getter is the deterministic version of the 
+Deterministic maximum direction getter is the deterministic version of the
 probabilistic direction getter. It can be used with the same local models and
 has the same parameters. Deterministic maximum fiber tracking follows the
 trajectory of the most probable pathway within the tracking constraint (e.g.
@@ -155,7 +155,7 @@ method. As with any other workflow in DIPY, you can also use your own data!
 
 We will first create a directory in which to save the output tractogram file
 (e.g.: ``pft_output``)::
-    
+
     mkdir pft_output
 
 To run the Particle Filtering Tracking method, we need to specify the paths
