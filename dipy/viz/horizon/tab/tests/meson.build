@@ -1,15 +1,10 @@
 python_sources = [
   '__init__.py',
-  'app.py',
-  'util.py',
+  'test_base.py',
   ]
 
 py3.install_sources(
   python_sources,
   pure: false,
-  subdir: 'dipy/viz/horizon'
+  subdir: 'dipy/viz/horizon/tab/tests'
 )
-
-
-subdir('tab')
-subdir('visualizer')

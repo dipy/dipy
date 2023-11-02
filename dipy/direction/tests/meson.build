@@ -4,6 +4,7 @@ python_sources = [
   'test_peaks.py',
   'test_pmf.py',
   'test_prob_direction_getter.py',
+  'test_ptt_direction_getter.py',
   ]
 
 

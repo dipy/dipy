@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'test_arrfuncs.py',
   'test_deprecator.py',
+  'test_fast_numpy.py',
   'test_multiproc.py',
   'test_omp.py',
   'test_parallel.py',

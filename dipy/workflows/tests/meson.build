@@ -6,6 +6,7 @@ python_sources = [
   'test_iap.py',
   'test_io.py',
   'test_masking.py',
+  'test_nn.py',
   'test_reconst_csa_csd.py',
   'test_reconst_dki.py',
   'test_reconst_dti.py',

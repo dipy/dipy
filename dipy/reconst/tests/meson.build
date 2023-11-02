@@ -3,6 +3,7 @@ python_sources = [
   'test_cache.py',
   'test_cross_validation.py',
   'test_csdeconv.py',
+  'test_cti.py',
   'test_dki.py',
   'test_dki_micro.py',
   'test_dsi.py',
