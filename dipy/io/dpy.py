@@ -159,16 +159,16 @@ class Dpy:
         """
         write many tracks together
 
-        Parameters:
+        Parameters
         -----------
         tracks: a Streamlines object
                     tracks data to be written
 
-        Returns:
+        Returns
         --------
         None
 
-        Notes:
+        Notes
         -----
         The tracks data will be appended to the end of the file.
 
