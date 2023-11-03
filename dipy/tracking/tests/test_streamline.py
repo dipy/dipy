@@ -164,7 +164,7 @@ heterogeneous_streamlines = [streamline_64bit,
 
 
 def length_python(xyz, along=False):
-    xyz = np.asarray(xyz, dtype=np.float64)
+    xyz = np.asarray(xyz, dtype=object)
     if xyz.shape[0] < 2:
         if along:
             return np.array([0])
