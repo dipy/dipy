@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+
 from dipy.data import default_sphere, get_isbi2013_2shell_gtab, get_3shell_gtab
 from dipy.reconst.shore import ShoreModel, shore_matrix
 from dipy.reconst.shm import sh_to_sf, descoteaux07_legacy_msg
@@ -11,6 +12,7 @@ from dipy.sims.voxel import sticks_and_ball
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_shore_odf():
@@ -78,10 +80,11 @@ def test_shore_odf():
             npt.assert_equal(gfa(odf) < 0.1, True)
 
 
-def test_multivox_shore():
+@set_random_number_generator()
+def test_multivox_shore(rng):
     gtab = get_3shell_gtab()
 
-    data = np.random.random([20, 30, 1, gtab.gradients.shape[0]])
+    data = rng.random([20, 30, 1, gtab.gradients.shape[0]])
     radial_order = 4
     zeta = 700
     asm = ShoreModel(gtab, radial_order=radial_order,

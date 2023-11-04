@@ -19,6 +19,7 @@ from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
                                   SlrWithQbxFlow, MotionCorrectionFlow,
                                   BundleWarpFlow)
+from dipy.testing.decorators import set_random_number_generator
 
 _, have_pd, _ = optional_package("pandas")
 
@@ -70,12 +71,13 @@ def test_slr_flow():
         npt.assert_equal(os.path.isfile(out_path), True)
 
 
-def test_image_registration():
+@set_random_number_generator(1234)
+def test_image_registration(rng):
     with TemporaryDirectory() as temp_out_dir:
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M\
             = setup_random_transform(transform=regtransforms[('AFFINE', 3)],
-                                     rfactor=0.1)
+                                     rfactor=0.1, rng=rng)
 
         save_nifti(pjoin(temp_out_dir, 'b0.nii.gz'), data=static,
                    affine=static_g2w)
@@ -122,7 +124,7 @@ def test_image_registration():
                                         out_quality='trans_q.txt')
 
             dist = read_distance('trans_q.txt')
-            npt.assert_almost_equal(float(dist), -0.3953547764454917, 1)
+            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
             check_existence(out_moved, out_affine)
 
         def test_rigid():

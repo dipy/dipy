@@ -2,6 +2,11 @@ import os
 import tempfile
 import pytest
 
+import nibabel as nib
+import numpy as np
+from numpy.testing import assert_allclose, assert_array_equal, assert_
+import trx.trx_file_memmap as tmm
+
 from dipy.data import fetch_gold_standard_io
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import (create_nifti_header,
@@ -9,11 +14,7 @@ from dipy.io.utils import (create_nifti_header,
                            get_reference_info,
                            is_reference_info_valid,
                            read_img_arr_or_path)
-
-import nibabel as nib
-import numpy as np
-from numpy.testing import assert_allclose, assert_array_equal, assert_
-import trx.trx_file_memmap as tmm
+from dipy.testing.decorators import set_random_number_generator
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()
@@ -200,10 +201,11 @@ def test_all_zeros_affine():
             msg='An all zeros affine should not be valid')
 
 
-def test_read_img_arr_or_path():
-    data = np.random.rand(4, 4, 4, 3)
+@set_random_number_generator()
+def test_read_img_arr_or_path(rng):
+    data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
-    aff[:3, :] = np.random.randn(3, 4)
+    aff[:3, :] = rng.standard_normal((3, 4))
     img = nib.Nifti1Image(data, aff)
     path = tempfile.NamedTemporaryFile().name + '.nii.gz'
     nib.save(img, path)

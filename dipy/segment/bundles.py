@@ -127,7 +127,8 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
         White matter tract
     clust_thr : float
         clustering threshold used in quickbundlesX
-    rng : RandomState
+    rng : np.random.Generator
+        numpy's random generator for generating random values.
     nb_pts: integer (default 20)
         Discretizing streamlines to have nb_points number of points
     select_randomly: integer (default 500000)
@@ -165,7 +166,7 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=(5, 3, 1.5),
         White matter tract from one subject (eg: AF_L)
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
-    rng : RandomState
+    rng : np.random.Generator
     clust_thr : array-like, optional
         list of clustering thresholds used in quickbundlesX
     threshold : float, optional
@@ -236,8 +237,8 @@ class RecoBundles:
             Default: 15.
         nb_pts : int, optional.
             Number of points per streamline (default 20)
-        rng : RandomState
-            If None define RandomState in initialization function.
+        rng : np.random.Generator
+            If None define generator in initialization function.
             Default: None
         verbose: bool, optional.
             If True, log information.
@@ -272,7 +273,7 @@ class RecoBundles:
 
         self.start_thr = [40, 25, 20]
         if rng is None:
-            self.rng = np.random.RandomState()
+            self.rng = np.random.default_rng()
         else:
             self.rng = rng
 

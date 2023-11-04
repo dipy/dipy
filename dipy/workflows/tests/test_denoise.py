@@ -11,6 +11,7 @@ from dipy.io.image import save_nifti, load_nifti, load_nifti_data
 
 from dipy.testing import (assert_true, assert_false, assert_greater,
                           assert_less)
+from dipy.testing.decorators import set_random_number_generator
 from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow, Patch2SelfFlow)
 
@@ -60,9 +61,10 @@ def test_lpca_flow():
             lpca_flow.last_generated_outputs['out_denoised']))
 
 
-def test_mppca_flow():
+@set_random_number_generator()
+def test_mppca_flow(rng):
     with TemporaryDirectory() as out_dir:
-        S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
+        S0 = 100 + 2 * rng.standard_normal((22, 23, 30, 20))
         data_path = os.path.join(out_dir, "random_noise.nii.gz")
         save_nifti(data_path, S0, np.eye(4))
 

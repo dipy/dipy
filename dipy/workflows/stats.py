@@ -553,7 +553,7 @@ class BundleShapeAnalysis(Workflow):
         populations. Sci Rep 10, 17149 (2020)
 
         """
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
         all_subjects = []
         if os.path.isdir(subject_folder):
             groups = os.listdir(subject_folder)

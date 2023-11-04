@@ -20,8 +20,9 @@ from dipy.testing.decorators import set_random_number_generator
 fdata, fbval, fbvec = dpd.get_fnames('small_64D')
 
 
-def test_coeff_of_determination():
-    model = np.random.randn(10, 10, 10, 150)
+@set_random_number_generator()
+def test_coeff_of_determination(rng):
+    model = rng.standard_normal((10, 10, 10, 150))
     data = np.copy(model)
     # If the model predicts the data perfectly, the COD is all 100s:
     cod = xval.coeff_of_determination(data, model)

@@ -14,6 +14,7 @@ from dipy.reconst import dti, shm
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    TensorModel)
 from dipy.sims.voxel import multi_tensor, single_tensor
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_bdg_initial_direction():
@@ -129,7 +130,8 @@ def test_bdg_get_direction():
                                         max_attempts=0))
 
 
-def test_bdg_residual():
+@set_random_number_generator()
+def test_bdg_residual(rng):
     """This tests the bootstrapping residual.
     """
 
@@ -146,7 +148,7 @@ def test_bdg_residual():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         B, m, n = shm.real_sh_descoteaux(6, theta, phi)
-    shm_coeff = np.random.random(B.shape[1])
+    shm_coeff = rng.random(B.shape[1])
 
     # sphere_func is sampled of the spherical function for each point of
     # the sphere

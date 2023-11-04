@@ -6,6 +6,7 @@ from numpy.linalg import norm
 import numpy.testing as npt
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
+from dipy.testing.decorators import set_random_number_generator
 
 from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -322,14 +323,15 @@ def test_set_number_of_points():
                   np.ones((10, 3)), np.ones((10, 3))], nb_points=1)
 
 
-def test_set_number_of_points_memory_leaks():
+@set_random_number_generator(1234)
+def test_set_number_of_points_memory_leaks(rng):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
-        rng = np.random.default_rng(1234)
+        s_rng = np.random.default_rng(1234)
         NB_STREAMLINES = 10000
         streamlines = \
-            [rng.standard_normal((rng.integers(10, 100), 3)).astype(dtype)
+            [s_rng.standard_normal((s_rng.integers(10, 100), 3)).astype(dtype)
              for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
@@ -344,12 +346,12 @@ def test_set_number_of_points_memory_leaks():
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
-    rng = np.random.RandomState(1234)
     NB_STREAMLINES = 10000
     streamlines = []
     for i in range(NB_STREAMLINES):
         dtype = dtypes[i % len(dtypes)]
-        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+        streamlines.append(
+            rng.standard_normal((rng.integers(10, 100), 3)).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
     rstreamlines = set_number_of_points(streamlines, nb_points=2)
@@ -467,14 +469,16 @@ def test_length():
                               [length_python(s) for s in streamlines_readonly])
 
 
-def test_length_memory_leaks():
+@set_random_number_generator(1234)
+def test_length_memory_leaks(rng):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
-        rng = np.random.RandomState(1234)
+        s_rng = np.random.default_rng(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
-                       for _ in range(NB_STREAMLINES)]
+        streamlines = \
+            [s_rng.standard_normal((s_rng.integers(10, 100), 3)).astype(dtype)
+             for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
@@ -486,12 +490,12 @@ def test_length_memory_leaks():
         assert_equal(list_refcount_after, list_refcount_before)
 
     # Test mixed dtypes
-    rng = np.random.RandomState(1234)
     NB_STREAMLINES = 10000
     streamlines = []
     for i in range(NB_STREAMLINES):
         dtype = dtypes[i % len(dtypes)]
-        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+        streamlines.append(
+            rng.standard_normal((rng.integers(10, 100), 3)).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
 
@@ -503,10 +507,11 @@ def test_length_memory_leaks():
     assert_equal(list_refcount_after, list_refcount_before)
 
 
-def test_unlist_relist_streamlines():
-    streamlines = [np.random.rand(10, 3),
-                   np.random.rand(20, 3),
-                   np.random.rand(5, 3)]
+@set_random_number_generator()
+def test_unlist_relist_streamlines(rng):
+    streamlines = [rng.random((10, 3)),
+                   rng.random((20, 3)),
+                   rng.random((5, 3))]
     points, offsets = unlist_streamlines(streamlines)
     assert_equal(offsets.dtype, np.dtype('i8'))
     assert_equal(points.shape, (35, 3))
@@ -550,9 +555,10 @@ def test_transform_empty_streamlines():
     assert_equal(len(streamlines), 0)
 
 
-def test_deform_streamlines():
+@set_random_number_generator()
+def test_deform_streamlines(rng):
     # Create Random deformation field
-    deformation_field = np.random.randn(200, 200, 200, 3)
+    deformation_field = rng.standard_normal((200, 200, 200, 3))
     stream2grid = np.array([
         [-0.13152201, -0.52553149, -0.06759869, -0.80014208],
         [1.01579851, 0.19840874, 0.18875411, 0.81826065],
@@ -610,10 +616,11 @@ def test_center_and_transform():
     assert_array_equal(streamlines3[0], B)
 
 
-def test_select_random_streamlines():
-    streamlines = [np.random.rand(10, 3),
-                   np.random.rand(20, 3),
-                   np.random.rand(5, 3)]
+@set_random_number_generator()
+def test_select_random_streamlines(rng):
+    streamlines = [rng.random((10, 3)),
+                   rng.random((20, 3)),
+                   rng.random((5, 3))]
     new_streamlines = select_random_set_of_streamlines(streamlines, 2)
     assert_equal(len(new_streamlines), 2)
 
@@ -783,14 +790,16 @@ def test_compress_streamlines_identical_points():
                                                [1, 1, 1]]))
 
 
-def test_compress_streamlines_memory_leaks():
+@set_random_number_generator(1234)
+def test_compress_streamlines_memory_leaks(rng):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
-        rng = np.random.RandomState(1234)
+        s_rng = np.random.default_rng(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
-                       for _ in range(NB_STREAMLINES)]
+        streamlines = \
+            [s_rng.standard_normal((s_rng.integers(10, 100), 3)).astype(dtype)
+             for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
@@ -804,12 +813,12 @@ def test_compress_streamlines_memory_leaks():
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
-    rng = np.random.RandomState(1234)
     NB_STREAMLINES = 10000
     streamlines = []
     for i in range(NB_STREAMLINES):
         dtype = dtypes[i % len(dtypes)]
-        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+        streamlines.append(
+            rng.standard_normal((rng.integers(10, 100), 3)).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
     cstreamlines = compress_streamlines(streamlines)

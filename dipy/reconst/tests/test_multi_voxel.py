@@ -5,6 +5,7 @@ import numpy.testing as npt
 
 from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, CallableArray
 from dipy.core.sphere import unit_icosahedron
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_squash():
@@ -99,7 +100,8 @@ def test_CallableArray():
     npt.assert_array_equal(callarray(4), expected)
 
 
-def test_multi_voxel_fit():
+@set_random_number_generator()
+def test_multi_voxel_fit(rng):
 
     class SillyModel:
 
@@ -123,7 +125,7 @@ def test_multi_voxel_fit():
 
         @property
         def directions(self):
-            n = np.random.randint(0, 10)
+            n = rng.integers(0, 10)
             return np.zeros((n, 3))
 
         def predict(self, S0):
