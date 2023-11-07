@@ -162,7 +162,8 @@ Environments = [
 ]
 
 "Documentation" = [
-    ".spin/cmds.py:docs"
+    "spin.cmds.meson.docs",
+    # ".spin/cmds.py:docs"
 ]
 Metrics = [
     ".spin/cmds.py:bench",

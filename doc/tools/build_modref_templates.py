@@ -39,27 +39,29 @@ if __name__ == '__main__':
     except ImportError as e:
         abort("Can not import " + package)
 
-    module = sys.modules[package]
+    # NOTE: with the new versioning scheme, this check is not needed anymore
+    # Also, this might be needed if we do not use spin to generate the docs
 
-    # Check that the source version is equal to the installed
-    # version. If the versions mismatch the API documentation sources
-    # are not (re)generated. This avoids automatic generation of documentation
-    # for older or newer versions if such versions are installed on the system.
+    # module = sys.modules[package]
 
-    installed_version = Version(module.__version__)
+    # # Check that the source version is equal to the installed
+    # # version. If the versions mismatch the API documentation sources
+    # # are not (re)generated. This avoids automatic generation of documentation
+    # # for older or newer versions if such versions are installed on the system.
 
-    info_file = pjoin('..', package, 'info.py')
-    info_lines = open(info_file).readlines()
-    source_version = '.'.join([v.split('=')[1].strip(" '\n.")
-                               for v in info_lines if re.match(
-                                       '^_version_(major|minor|micro|extra)', v
-                                       )]).strip('.')
-    source_version = Version(source_version)
-    print('***', source_version)
+    # installed_version = Version(module.__version__)
+    # info_file = pjoin('..', package, 'info.py')
+    # info_lines = open(info_file).readlines()
+    # source_version = '.'.join([v.split('=')[1].strip(" '\n.")
+    #                            for v in info_lines if re.match(
+    #                                    '^_version_(major|minor|micro|extra)', v
+    #                                    )]).strip('.')
+    # source_version = Version(source_version)
+    # print('***', source_version)
 
-    if source_version != installed_version:
-        print('***', installed_version)
-        abort("Installed version does not match source version")
+    # if source_version != installed_version:
+    #     print('***', installed_version)
+    #     abort("Installed version does not match source version")
 
     docwriter = ApiDocWriter(package, rst_extension='.rst',
                              other_defines=other_defines)
