@@ -246,7 +246,7 @@ class SlicesTab(HorizonTab):
         value = int(np.rint(slider.value))
         if value != self._volume.selected_value:
             visible_slices = (
-                self._slice_x.obj.value, self._slice_y.selected_value,
+                self._slice_x.selected_value, self._slice_y.selected_value,
                 self._slice_z.selected_value)
             valid_vol = self._visualizer.change_volume(
                 self._volume.selected_value, value,
@@ -280,10 +280,10 @@ class SlicesTab(HorizonTab):
 
                 # Updating visibilities
                 slices = [self._slice_x, self._slice_y, self._slice_z]
-                for s, i in enumerate(slices):
+                for i, s in enumerate(slices):
                     self._update_slice_visibility(
                         None,
-                        s.obj,
+                        s,
                         self._visualizer.slice_actors[i],
                         s.visibility
                     )
