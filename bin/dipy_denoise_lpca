@@ -1,8 +1,7 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.denoise import LPCAFlow
+from dipy.workflows.cli import dipy_denoise_lpca
 
 
 if __name__ == "__main__":
-    run_flow(LPCAFlow())
+    dipy_denoise_lpca()

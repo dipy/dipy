@@ -2,6 +2,7 @@ python_sources = [
     '__init__.py',
     'align.py',
     'base.py',
+    'cli.py',
     'combined_workflow.py',
     'denoise.py',
     'docstring_parser.py',

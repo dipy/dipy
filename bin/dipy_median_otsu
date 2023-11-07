@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.cli import dipy_median_otsu
 
 if __name__ == "__main__":
-    run_flow(MedianOtsuFlow())
+    dipy_median_otsu()

@@ -1,8 +1,7 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.align import ResliceFlow
+from dipy.workflows.cli import dipy_reslice
 
 
 if __name__ == "__main__":
-    run_flow(ResliceFlow())
+    dipy_reslice()

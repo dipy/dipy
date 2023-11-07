@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.stats import BundleAnalysisTractometryFlow
+from dipy.workflows.cli import dipy_buan_profiles
 
 if __name__ == "__main__":
-    run_flow(BundleAnalysisTractometryFlow())
+    dipy_buan_profiles()

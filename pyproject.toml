@@ -47,6 +47,40 @@ dependencies = [
     "trx-python>=0.2.9",
 ]
 
+[project.scripts]
+dipy_align_syn = "dipy.workflows.cli:dipy_align_syn"
+dipy_align_affine = "dipy.workflows.cli:dipy_align_affine"
+dipy_apply_transform = "dipy.workflows.cli:dipy_apply_transform"
+dipy_buan_shapes = "dipy.workflows.cli:dipy_buan_shapes"
+dipy_buan_profiles = "dipy.workflows.cli:dipy_buan_profiles"
+dipy_buan_lmm = "dipy.workflows.cli:dipy_buan_lmm"
+dipy_bundlewarp = "dipy.workflows.cli:dipy_bundlewarp"
+dipy_correct_motion = "dipy.workflows.cli:dipy_correct_motion"
+dipy_denoise_nlmeans = "dipy.workflows.cli:dipy_denoise_nlmeans"
+dipy_denoise_lpca = "dipy.workflows.cli:dipy_denoise_lpca"
+dipy_denoise_mppca = "dipy.workflows.cli:dipy_denoise_mppca"
+dipy_denoise_patch2self = "dipy.workflows.cli:dipy_denoise_patch2self"
+dipy_evac_plus = "dipy.workflows.cli:dipy_evac_plus"
+dipy_fetch = "dipy.workflows.cli:dipy_fetch"
+dipy_fit_csa = "dipy.workflows.cli:dipy_fit_csa"
+dipy_fit_csd = "dipy.workflows.cli:dipy_fit_csd"
+dipy_fit_dki = "dipy.workflows.cli:dipy_fit_dki"
+dipy_fit_dti = "dipy.workflows.cli:dipy_fit_dti"
+dipy_fit_ivim = "dipy.workflows.cli:dipy_fit_ivim"
+dipy_fit_mapmri = "dipy.workflows.cli:dipy_fit_mapmri"
+dipy_mask = "dipy.workflows.cli:dipy_mask"
+dipy_gibbs_ringing = "dipy.workflows.cli:dipy_gibbs_ringing"
+dipy_horizon = "dipy.workflows.cli:dipy_horizon"
+dipy_info = "dipy.workflows.cli:dipy_info"
+dipy_labelsbundles = "dipy.workflows.cli:dipy_labelsbundles"
+dipy_median_otsu = "dipy.workflows.cli:dipy_median_otsu"
+dipy_recobundles = "dipy.workflows.cli:dipy_recobundles"
+dipy_reslice = "dipy.workflows.cli:dipy_reslice"
+dipy_snr_in_cc = "dipy.workflows.cli:dipy_snr_in_cc"
+dipy_split = "dipy.workflows.cli:dipy_split"
+dipy_track = "dipy.workflows.cli:dipy_track"
+dipy_track_pft = "dipy.workflows.cli:dipy_track_pft"
+dipy_slr = "dipy.workflows.cli:dipy_slr"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
@@ -114,11 +148,27 @@ requires = [
 package = 'dipy'
 
 [tool.spin.commands]
-Build = ["spin.build", "spin.test"]
-Environments = ["spin.shell", "spin.ipython", "spin.python"]
+Build = [
+    "spin.cmds.meson.build",
+    "spin.cmds.meson.test",
+    "spin.cmds.build.sdist"
+]
+
+Environments = [
+    "spin.cmds.meson.run",
+    "spin.shell",
+    "spin.ipython",
+    "spin.python"
+]
+
+"Documentation" = [
+    ".spin/cmds.py:docs"
+]
+Metrics = [
+    ".spin/cmds.py:bench",
+    # ".spin/cmds.py:coverage
+]
 # TODO: Add custom commands
-#"Documentation" = [".spin/cmds.py:docs"]
-Metrics = [".spin/cmds.py:bench",]   # ".spin/cmds.py:coverage"]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
