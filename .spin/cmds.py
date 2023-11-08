@@ -1,5 +1,6 @@
 """Additional Command-line interface for spin."""
 import os
+import shutil
 
 import click
 from spin import util
@@ -183,3 +184,16 @@ def bench(ctx, tests, compare, verbose, quick, commits):
             'asv', 'continuous', '--factor', '1.05',
         ] + bench_args + [commit_a, commit_b]
         _run_asv(cmd_compare)
+
+
+@click.command()
+def clean():
+    """🧹 Remove build and install folder."""
+    build_dir = "build"
+    install_dir = "build-install"
+    print(f"Removing `{build_dir}`")
+    if os.path.isdir(build_dir):
+            shutil.rmtree(build_dir)
+    print(f"Removing `{install_dir}`")
+    if os.path.isdir(install_dir):
+        shutil.rmtree(install_dir)

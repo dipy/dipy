@@ -98,7 +98,7 @@ dev = [
     'Cython>=0.29.32',
     'numpy>=1.22',
     # Developer UI
-    'spin==0.5',
+    'spin>=0.5',
     'build',
 ]
 
@@ -151,7 +151,8 @@ package = 'dipy'
 Build = [
     "spin.cmds.meson.build",
     "spin.cmds.meson.test",
-    "spin.cmds.build.sdist"
+    "spin.cmds.build.sdist",
+    ".spin/cmds.py:clean"
 ]
 
 Environments = [
