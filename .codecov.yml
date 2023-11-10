@@ -1,5 +1,5 @@
 github_checks:
-    annotations: false
+  annotations: false
 
 comment:
   layout: "reach, diff, files"
