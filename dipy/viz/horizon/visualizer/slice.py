@@ -13,9 +13,8 @@ if has_fury:
 
 
 class SlicesVisualizer:
-    def __init__(
-        self, interactor, scene, data, affine=None, world_coords=False,
-        percentiles=[2, 98]):
+    def __init__(self, interactor, scene, data, affine=None,
+                 world_coords=False, percentiles=[2, 98], rgb=False):
 
         self.__interactor = interactor
         self.__scene = scene
@@ -34,19 +33,14 @@ class SlicesVisualizer:
 
         vol_data = self.__data
         if self.__data_ndim == 4:
-            for i in range(self.__data.shape[-1]):
-                vol_data = self.__data[..., i]
+            if rgb and not self.__data_shape[-1] == 3:
+                warnings.warn('The rgb flag is enabled but the color channel'
+                              + ' information is not provided')
+                print('rgb is ==========================', self.__data_shape)
+                self._volume_calculations(percentiles)
+            else:
                 self.__int_range = np.percentile(vol_data, percentiles)
-                if np.sum(np.diff(self.__int_range)) != 0:
-                    break
-                else:
-                    if i < data.shape[-1] - 1:
-                        warnings.warn(
-                            f'Volume N°{i} does not have any contrast. '
-                            'Please, check the value ranges of your data. '
-                            'Moving to the next volume.')
-                    else:
-                        _evaluate_intensities_range(self.__int_range)
+                _evaluate_intensities_range(self.__int_range)
         else:
             self.__int_range = np.percentile(vol_data, percentiles)
             _evaluate_intensities_range(self.__int_range)
@@ -65,6 +59,21 @@ class SlicesVisualizer:
 
         self.__picker_callback = None
         self.__picked_voxel_actor = None
+
+    def _volume_calculations(self, percentiles):
+        for i in range(self.__data.shape[-1]):
+            vol_data = self.__data[..., i]
+            self.__int_range = np.percentile(vol_data, percentiles)
+            if np.sum(np.diff(self.__int_range)) != 0:
+                break
+            else:
+                if i < self.__data_shape[-1] - 1:
+                    warnings.warn(
+                        f'Volume N°{i} does not have any contrast. '
+                        'Please, check the value ranges of your data. '
+                        'Moving to the next volume.')
+                else:
+                    _evaluate_intensities_range(self.__int_range)
 
     def __add_slice_actors_to_scene(self, visible_slices):
         self.__slice_actors[0].display_extent(
@@ -119,7 +128,7 @@ class SlicesVisualizer:
         message = f'({i}, {j}, {k}) = {message}'
         self.__picker_callback(message)
         # TODO: Fix this
-        #self.__replace_picked_voxel_actor(i, j, k)
+        # self.__replace_picked_voxel_actor(i, j, k)
 
     def __replace_picked_voxel_actor(self, x, y, z):
         if self.__picked_voxel_actor:

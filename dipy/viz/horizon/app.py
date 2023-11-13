@@ -39,7 +39,7 @@ HELP_MESSAGE = """
 class Horizon:
 
     def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 cluster_thr=15.0, random_colors=None, length_gt=0,
+                 rgb=False, cluster_thr=15.0, random_colors=None, length_gt=0,
                  length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
@@ -125,6 +125,7 @@ class Horizon:
                        ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster
+        self.rgb = rgb
         self.cluster_thr = cluster_thr
         self.random_colors = random_colors
         self.length_lt = length_lt
@@ -455,18 +456,20 @@ class Horizon:
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
+                        # print(self.rgb)
                         slices_viz = SlicesVisualizer(
                             self.show_m.iren, scene, data, affine=affine,
                             world_coords=self.world_coords,
-                            percentiles=[0, 100])
+                            percentiles=[0, 100], rgb=self.rgb)
                         self.__tabs.append(SlicesTab(
                             slices_viz, slice_id=img_count + 1,
                             force_render=self._show_force_render))
                         img_count += 1
                 else:
+                    # print(self.rgb)
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
-                        world_coords=self.world_coords)
+                        world_coords=self.world_coords, rgb=self.rgb)
                     self.__tabs.append(SlicesTab(
                         slices_viz, slice_id=img_count + 1,
                         force_render=self._show_force_render))
@@ -619,7 +622,7 @@ class Horizon:
 
 
 def horizon(tractograms=None, images=None, pams=None,
-            cluster=False, cluster_thr=15.0,
+            cluster=False, rgb=False, cluster_thr=15.0,
             random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
@@ -639,6 +642,8 @@ def horizon(tractograms=None, images=None, pams=None,
         Contains peak directions and spherical harmonic coefficients
     cluster : bool
         Enable QuickBundlesX clustering
+    rgb: bool, optional
+        Enable the color image.
     cluster_thr : float
         Distance threshold used for clustering. Default value 15.0 for
         small animal data you may need to use something smaller such
@@ -698,7 +703,7 @@ def horizon(tractograms=None, images=None, pams=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
+    hz = Horizon(tractograms, images, pams, cluster, rgb, cluster_thr,
                  random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
                  world_coords, interactive, out_png, recorded_events,
                  return_showm, bg_color=bg_color,
