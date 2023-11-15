@@ -11,6 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  minimal-py38:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.8", ]'
+      depends: cython==0.29.24 numpy==1.23.0 scipy==1.8 nibabel==4.0.0 h5py==3.0.0 tqdm
   minimal-py39:
     uses: ./.github/workflows/test_template.yml
     with:
