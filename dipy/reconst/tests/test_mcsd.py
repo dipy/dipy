@@ -225,6 +225,19 @@ def test_multi_shell_fiber_response():
 
     npt.assert_equal(response.response.shape, (4, 7))
 
+    btens = ["LTE", "PTE", "STE", "CTE"]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response,
+                                              btens=btens)
+
+    npt.assert_equal(response.response.shape, (4, 7))
+
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=PendingDeprecationWarning)
         response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
