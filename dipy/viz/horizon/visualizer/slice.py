@@ -32,18 +32,15 @@ class SlicesVisualizer:
         print(f'Original shape: {self.__data_shape}')
 
         vol_data = self.__data
-        if self.__data_ndim == 4:
-            if rgb and not self.__data_shape[-1] == 3:
-                warnings.warn('The rgb flag is enabled but the color channel'
-                              + ' information is not provided')
-                print('rgb is ==========================', self.__data_shape)
-                self._volume_calculations(percentiles)
-            else:
-                self.__int_range = np.percentile(vol_data, percentiles)
-                _evaluate_intensities_range(self.__int_range)
-        else:
+        if ((self.__data_ndim == 4 and rgb and self.__data_shape[-1] == 3)
+                or self.__data_ndim == 3):
             self.__int_range = np.percentile(vol_data, percentiles)
             _evaluate_intensities_range(self.__int_range)
+        else:
+            if self.__data_ndim == 4 and rgb and self.__data_shape[-1] != 3:
+                warnings.warn('The rgb flag is enabled but the color '
+                              + ' channel information is not provided')
+            self._volume_calculations(percentiles)
 
         self.__vol_max = np.max(vol_data)
         self.__vol_min = np.min(vol_data)
