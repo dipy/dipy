@@ -111,8 +111,7 @@ def connectivity_matrix(streamlines, affine, label_volume,
                         inclusive: bool = True, symmetric: bool = True,
                         return_mapping: bool = False,
                         mapping_as_streamlines: bool = False):
-    '''
-    Count the streamlines that start and end at each label pair.
+    """Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -148,8 +147,6 @@ def connectivity_matrix(streamlines, affine, label_volume,
         for each start end pair such that if ``i < j`` mapping will have key
         ``(i, j)`` but not key ``(j, i)``.
     """
-
-    '''
 
     # Error checking on label_volume
     kind = label_volume.dtype.kind
