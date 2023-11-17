@@ -107,11 +107,12 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
-def connectivity_matrix(streamlines, affine, label_volume,
-                        inclusive: bool = True, symmetric: bool = True,
-                        return_mapping: bool = False,
-                        mapping_as_streamlines: bool = False):
-    """Count the streamlines that start and end at each label pair.
+def connectivity_matrix_mod2(streamlines, affine, label_volume,
+                             inclusive: bool = False, symmetric: bool = True,
+                             return_mapping: bool = False,
+                             mapping_as_streamlines: bool = False):
+    '''
+    Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -123,16 +124,16 @@ def connectivity_matrix(streamlines, affine, label_volume,
     label_volume : ndarray
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
-    inclusive: bool, optional
+    inclusive: bool
         Whether to analyze the entire streamline, as opposed to just the
         endpoints. False by default.
-    symmetric : bool, optional, True by default
+    symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
-    return_mapping : bool, optional, False by default
+    return_mapping : bool, False by default
         If True, a mapping is returned which maps matrix indices to
         streamlines.
-    mapping_as_streamlines : bool, optional, False by default
+    mapping_as_streamlines : bool, False by default
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
 
@@ -148,6 +149,8 @@ def connectivity_matrix(streamlines, affine, label_volume,
         ``(i, j)`` but not key ``(j, i)``.
     """
 
+    '''
+
     # Error checking on label_volume
     kind = label_volume.dtype.kind
     labels_positive = ((kind == 'u') or
@@ -157,7 +160,8 @@ def connectivity_matrix(streamlines, affine, label_volume,
         raise ValueError("label_volume must be a 3d integer array with"
                          "non-negative label values")
 
-    matrix = np.zeros((np.max(label_volume)+1, np.max(label_volume)+1))
+    matrix = np.zeros((np.max(label_volume)+1, np.max(label_volume)+1),
+                      dtype=np.int64)
 
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
@@ -167,36 +171,46 @@ def connectivity_matrix(streamlines, affine, label_volume,
         for i, sl in enumerate(streamlines):
 
             sl = _to_voxel_coordinates(sl, lin_T, offset)
-            x, y, z = np.floor(sl.T).astype(int)
-            crossed_labels = np.unique(label_volume[x, y, z])
+            x, y, z = sl.T
+            if symmetric:
+                crossed_labels = np.unique(label_volume[x, y, z])
+            if not symmetric:
+                crossed_labels = np.unique(label_volume[x, y, z],
+                                           return_index=True)
+                crossed_labels = crossed_labels[0][np.argsort(
+                    crossed_labels[1])]
 
             for comb in combinations(crossed_labels, 2):
                 matrix[comb] += 1
 
                 if return_mapping:
-                    mapping[comb].append(i)
-                if mapping_as_streamlines:
-                    mapping[comb].append(sl)
+                    if mapping_as_streamlines:
+                        mapping[comb].append(streamlines[i])
+                    else:
+                        mapping[comb].append(i)
 
     else:
-        streamlines = np.array([sl[0::len(sl)-1] for sl in streamlines])
-        streamlines = _to_voxel_coordinates(streamlines, lin_T, offset)
-        x, y, z = np.floor(streamlines.T).astype(int)
-        end_labels = np.sort(label_volume[x, y, z], axis=0)
+        streamlines_end = np.array([sl[0::len(sl)-1] for sl in streamlines])
+        streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
+        x, y, z = streamlines_end.T
+        if symmetric:
+            end_labels = np.sort(label_volume[x, y, z], axis=0)
+        else:
+            end_labels = label_volume[x, y, z]
         np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
 
         if return_mapping:
-            for i, (a, b) in enumerate(end_labels.T):
-                mapping[a, b].append(i)
-
-        if mapping_as_streamlines:
-            for i, (a, b) in enumerate(end_labels.T):
-                mapping[a, b].append(streamlines[i])
+            if mapping_as_streamlines:
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(streamlines[i])
+            else:
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(i)
 
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
 
-    if return_mapping or mapping_as_streamlines:
+    if return_mapping:
         return (matrix, mapping)
     else:
         return matrix
