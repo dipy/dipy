@@ -56,6 +56,7 @@ Windows
    When the installation has finished we can check if it is successful in the following way. From a Python console script try::
 
     >>> import dipy
+    >>> print(dipy.__version__)
 
    This should work with no error.
 
@@ -151,7 +152,7 @@ and then remove the DIPY directory that contains that file.
 
 Alternatives to Anaconda
 -------------------------
-If you have problems installing Anaconda_ we recommend using Canopy_ or pythonxy_.
+If you have problems installing Anaconda_ we recommend using Canopy_.
 
 Memory issues
 -------------
@@ -182,8 +183,8 @@ latest changes.  In that case, you can use::
 For more information about this see :ref:`following-latest`.
 
 After you've cloned the repository, you will have a new directory, containing
-the DIPY ``setup.py`` file, among others.  We'll call this directory - that
-contains the ``setup.py`` file - the *DIPY source root directory*.  Sometimes
+the DIPY ``pyproject.toml`` file, among others.  We'll call this directory - that
+contains the ``pyproject.toml`` file - the *DIPY source root directory*.  Sometimes
 we'll also call it the ``<dipy root>`` directory.
 
 Building and installing
@@ -202,11 +203,11 @@ This command will delete all files not present in your github repository.
 
 Then, complete your installation by using this command::
 
-    pip install --user -e .
+    pip install --no-build-isolation --user -e .
 
 This command will do the following :
     - remove the old dipy installation if present
-    - build dipy (equivalent to `python setup.py build_ext --inplace`)
+    - build dipy
     - install dipy locally on your user environment
 
 .. _install-source-nix:
@@ -218,11 +219,11 @@ Change directory into the *DIPY source root directory*.
 
 To install for the system::
 
-    python setup.py install
+    pip install dipy
 
 To build DIPY in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
 
-    python setup.py build_ext --inplace
+    pip install --no-build-isolation --user -e .
 
 add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
@@ -364,17 +365,12 @@ If you are already using the Homebrew Python, or the standard python.org Python,
 you will need to use the CLANG compiler with OMP. Run::
 
     brew install clang-omp
-
-And then edit the ``setup.py`` file to include the following line (e.g., on line 14,
-at the top of the file, but after the initial imports)::
-
-    os.environ['CC'] = '/usr/local/bin/clang-omp'
-
+    export CC=/usr/local/bin/clang-omp
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
 Whether you are using Anaconda_ or Hombrew/python.org Python, you will need to then
-run ``python setup.py install``. When you do that, it should now
+run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
 
@@ -385,10 +381,9 @@ If you want to run the tests::
 
     sudo pip install pytest
 
-Then (in python or ipython_)::
+Then, in the terminal from ``<dipy root>``::
 
-    >>> import dipy
-    >>> dipy.test()
+    pytest -svv dipy
 
 You can also run the examples in ``<dipy root>/doc``.
 
@@ -403,7 +398,7 @@ Then change directory to ``<dipy root>`` and::
 
     cd doc
     make clean
-    make html
+    make -C . html
 
 Tip
 ---
@@ -412,7 +407,7 @@ Building the entire ``DIPY`` documentation takes a few hours. You may want to
 skip building the documentation for the examples, which will reduce the
 documentation build time to a few minutes. You can do so by executing::
 
-    make -C . html-after-examples
+    make -C . html-no-examples
 
 Troubleshooting
 ---------------

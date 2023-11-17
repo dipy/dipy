@@ -93,9 +93,28 @@ jobs:
         channels: defaults, conda-forge
         use-only-tar-bz2: true
     - name: Install Dependencies
-      run: tools/ci/install_dependencies.sh
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/install_dependencies.sh || echo "::warning::Experimental Job so Install Dependencies failure ignored!"
+        else
+          tools/ci/install_dependencies.sh
+        fi
+    # No need to update mingw-w64, we use msvc
+    # mingw-w64 does not manage well openmp threads so we avoid it for now
+    # Note that compilation works with mingw-w64 but 2-3 tests fail due to openmp
+    # - name: Install rtools (mingw-w64)
+    #   if runner.os == 'Windows'
+    #   run: |
+    #     choco install rtools -y --no-progress --force --version=4.0.0.20220206
+    #     echo "/c/rtools40/ucrt64/bin;" >> $GITHUB_PATH
+    #     echo "PKG_CONFIG_PATH=/c/opt/64/lib/pkgconfig;" >> $GITHUB_ENV
     - name: Install DIPY
-      run: tools/ci/install.sh
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/install.sh || echo "::warning::Experimental Job so Install DIPY failure ignored!"
+        else
+          tools/ci/install.sh
+        fi
     - name: Setup Headless
       if: ${{ inputs.enable-viz-tests }}
       run: tools/ci/setup_headless.sh
@@ -117,7 +136,3 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         verbose: true
-    # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    # - name: Setup tmate session
-    #   if: ${{ failure() }}
-    #   uses: mxschmitt/action-tmate@v3

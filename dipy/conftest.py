@@ -18,4 +18,4 @@ if Version(np.__version__) >= Version('1.14'):
 warnings.simplefilter(action="default", category=FutureWarning)
 warnings.simplefilter("always", category=UserWarning)
 # List of files that pytest should ignore
-collect_ignore = ["testing/decorators.py", ]
+collect_ignore = ["testing/decorators.py", "bench*.py", "**/benchmarks/*"]

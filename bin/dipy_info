@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.io import IoInfoFlow
+from dipy.workflows.cli import dipy_info
 
 if __name__ == "__main__":
-    run_flow(IoInfoFlow())
+    dipy_info()

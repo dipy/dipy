@@ -1,8 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.denoise import MPPCAFlow
-
+from dipy.workflows.cli import dipy_denoise_mppca
 
 if __name__ == "__main__":
-    run_flow(MPPCAFlow())
+    dipy_denoise_mppca()

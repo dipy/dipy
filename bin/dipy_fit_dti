@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.reconst import ReconstDtiFlow
+from dipy.workflows.cli import dipy_fit_dti
 
 if __name__ == "__main__":
-    run_flow(ReconstDtiFlow())
+    dipy_fit_dti()
