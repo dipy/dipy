@@ -78,9 +78,11 @@ mevals = np.array([[0.00099, 0, 0],
 # three different b-values).
 
 # Sample the spherical coordinates of 60 random diffusion-weighted directions.
+rng = np.random.default_rng()
+
 n_pts = 60
-theta = np.pi * np.random.rand(n_pts)
-phi = 2 * np.pi * np.random.rand(n_pts)
+theta = np.pi * rng.random(n_pts)
+phi = 2 * np.pi * rng.random(n_pts)
 
 # Convert direction to cartesian coordinates.
 hsph_initial = HemiSphere(theta=theta, phi=phi)

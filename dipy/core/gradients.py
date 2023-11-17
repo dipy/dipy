@@ -704,7 +704,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
                           b0_threshold=gtab.b0_threshold, atol=atol)
 
 
-def generate_bvecs(N, iters=5000):
+def generate_bvecs(N, iters=5000, rng=None):
     """Generates N bvectors.
 
     Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
@@ -717,6 +717,9 @@ def generate_bvecs(N, iters=5000):
         of bvals used.
     iters : int
         Number of iterations to run.
+    rng : numpy.random.Generator, optional
+        Numpy's random number generator. If None, the generator is created.
+        Default is None.
 
     Returns
     -------
@@ -724,8 +727,10 @@ def generate_bvecs(N, iters=5000):
         The generated directions, represented as a unit vector, of each
         gradient.
     """
-    theta = np.pi * np.random.rand(N)
-    phi = 2 * np.pi * np.random.rand(N)
+    if rng is None:
+        rng = np.random.default_rng()
+    theta = np.pi * rng.random(N)
+    phi = 2 * np.pi * rng.random(N)
     hsph_initial = HemiSphere(theta=theta, phi=phi)
     hsph_updated, potential = disperse_charges(hsph_initial, iters)
     bvecs = hsph_updated.vertices

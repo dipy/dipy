@@ -1,9 +1,11 @@
-from dipy.align.transforms import regtransforms, Transform
 import numpy as np
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            assert_raises)
+
+from dipy.align.transforms import regtransforms, Transform
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_number_of_parameters():
@@ -28,8 +30,8 @@ def test_number_of_parameters():
             expected_params[ttype])
 
 
-def test_param_to_matrix_2d():
-    rng = np.random.RandomState()
+@set_random_number_generator()
+def test_param_to_matrix_2d(rng):
     # Test translation matrix 2D
     transform = regtransforms[('TRANSLATION', 2)]
     dx, dy = rng.uniform(size=(2,))
@@ -107,8 +109,8 @@ def test_param_to_matrix_2d():
         assert_raises(ValueError, transform.param_to_matrix, theta)
 
 
-def test_param_to_matrix_3d():
-    rng = np.random.RandomState()
+@set_random_number_generator()
+def test_param_to_matrix_3d(rng):
     # Test translation matrix 3D
     transform = regtransforms[('TRANSLATION', 3)]
     dx, dy, dz = rng.uniform(size=(3,))
@@ -222,8 +224,8 @@ def test_identity_parameters():
         assert_array_almost_equal(actual, expected)
 
 
-def test_jacobian_functions():
-    rng = np.random.RandomState()
+@set_random_number_generator()
+def test_jacobian_functions(rng):
     # Compare the analytical Jacobians with their numerical approximations
     h = 1e-8
     nsamples = 50

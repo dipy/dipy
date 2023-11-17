@@ -18,7 +18,7 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
         Specifies which triangles should be chosen (or not)
     triangles_weight : [n] numpy array
         Specifies the weight/probability of choosing each triangle
-    random_seed : int
+    rand_gen : int
         The seed for the random seed generator (numpy.random.seed).
 
     Returns
@@ -44,15 +44,15 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
         triangles_weight /= triangles_weight.sum()
 
     # Set the random seed generator
-    np.random.seed(rand_gen)
+    rng = np.random.default_rng(rand_gen)
 
     # Choose random triangles
     triangles_idx = \
-        np.random.choice(nb_triangles, size=nb_seed, p=triangles_weight)
+        rng.choice(nb_triangles, size=nb_seed, p=triangles_weight)
 
     # Choose random trilinear coordinates
     # https://mathworld.wolfram.com/TrianglePointPicking.html
-    trilin_coord = np.random.rand(nb_seed, 3)
+    trilin_coord = rng.random((nb_seed, 3))
     is_upper = (trilin_coord[:, 1:].sum(axis=-1) > 1.0)
     trilin_coord[is_upper] = 1.0 - trilin_coord[is_upper]
     trilin_coord[:, 0] = 1.0 - (trilin_coord[:, 1] + trilin_coord[:, 2])

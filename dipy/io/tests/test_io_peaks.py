@@ -8,15 +8,17 @@ import numpy.testing as npt
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.data import default_sphere
 from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_io_peaks():
+@set_random_number_generator()
+def test_io_peaks(rng):
     with TemporaryDirectory() as tmpdir:
         fname = 'test.pam5'
 
         pam = PeaksAndMetrics()
         pam.affine = np.eye(4)
-        pam.peak_dirs = np.random.rand(10, 10, 10, 5, 3)
+        pam.peak_dirs = rng.random((10, 10, 10, 5, 3))
         pam.peak_values = np.zeros((10, 10, 10, 5))
         pam.peak_indices = np.zeros((10, 10, 10, 5))
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
@@ -99,7 +101,8 @@ def test_io_peaks():
         os.path.isfile(fname_gfa)
 
 
-def test_io_save_peaks_error():
+@set_random_number_generator()
+def test_io_save_peaks_error(rng):
     with TemporaryDirectory() as tmpdir:
         fname = 'test.pam5'
 
@@ -110,7 +113,7 @@ def test_io_save_peaks_error():
                           pjoin(tmpdir, fname), pam)
 
         pam.affine = np.eye(4)
-        pam.peak_dirs = np.random.rand(10, 10, 10, 5, 3)
+        pam.peak_dirs = rng.random((10, 10, 10, 5, 3))
         pam.peak_values = np.zeros((10, 10, 10, 5))
         pam.peak_indices = np.zeros((10, 10, 10, 5))
         pam.shm_coeff = np.zeros((10, 10, 10, 45))

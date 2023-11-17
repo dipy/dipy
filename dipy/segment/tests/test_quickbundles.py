@@ -64,9 +64,9 @@ def test_quickbundles_shape_incompatibility():
                         list(itertools.chain(*clusters2)))
 
 
-def test_quickbundles_2D():
+@set_random_number_generator(7)
+def test_quickbundles_2D(rng):
     # Test quickbundles clustering using 2D points and the Eulidean metric.
-    rng = np.random.default_rng(7)
     data = []
     data += \
         [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]

@@ -1,4 +1,5 @@
 import itertools
+
 import numpy as np
 from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
@@ -9,18 +10,21 @@ from dipy.segment.metricspeed import (
 )
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.streamline import Streamlines
+from dipy.testing.decorators import set_random_number_generator
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
-                    radius=1, rng=np.random.RandomState(42)):
+                    radius=1, rng=None):
+    if rng is None:
+        rng = np.random.default_rng(42)
     bundle = []
 
     bundle_length = step_size * nb_pts
 
     Z = -np.linspace(0, bundle_length, nb_pts)
     for k in range(nb_streamlines):
-        theta = rng.rand() * (2*np.pi)
-        r = radius * rng.rand()
+        theta = rng.random() * (2*np.pi)
+        r = radius * rng.random()
 
         Xk = np.ones(nb_pts) * (r * np.cos(theta))
         Yk = np.ones(nb_pts) * (r * np.sin(theta))
@@ -214,18 +218,18 @@ def test_raise_mdf():
     assert_raises(ValueError, QuickBundles, thresholds[1], metric=metric)
 
 
-def test_qbx_and_merge():
+@set_random_number_generator(42)
+def test_qbx_and_merge(rng):
 
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
-    bundles.append(straight_bundle(1))
+    bundles.append(straight_bundle(1, rng=rng))
 
 
     streamlines = Streamlines(list(itertools.chain(*bundles)))
 
     thresholds = [10, 2, 1]
 
-    rng = np.random.RandomState(seed=42)
     qbxm = qbx_and_merge(streamlines, thresholds, rng=rng)
 
     qbxm_centroids = qbxm.centroids

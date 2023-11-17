@@ -1,15 +1,17 @@
 import sys
-import numpy as np
 import pytest
 import warnings
 
+import numpy as np
 from numpy.testing import assert_equal, assert_almost_equal
+
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
+from dipy.testing.decorators import set_random_number_generator
 
 is_big_endian = 'big' in sys.byteorder.lower()
 
@@ -105,11 +107,11 @@ def test_rb_disable_slr():
 
 @pytest.mark.skipif(is_big_endian,
                     reason="Little Endian architecture required")
-def test_rb_slr_threads():
+@set_random_number_generator(42)
+def test_rb_slr_threads(rng):
 
-    rng_multi = np.random.RandomState(42)
     rb_multi = RecoBundles(f, greater_than=0, clust_thr=10,
-                           rng=np.random.RandomState(42))
+                           rng=rng)
     rec_trans_multi_threads, _ = rb_multi.recognize(model_bundle=f2,
                                                     model_clust_thr=5.,
                                                     reduction_thr=10,
@@ -117,7 +119,7 @@ def test_rb_slr_threads():
                                                     num_threads=None)
 
     rb_single = RecoBundles(f, greater_than=0, clust_thr=10,
-                            rng=np.random.RandomState(42))
+                            rng=np.random.default_rng(42))
     rec_trans_single_thread, _ = rb_single.recognize(model_bundle=f2,
                                                      model_clust_thr=5.,
                                                      reduction_thr=10,

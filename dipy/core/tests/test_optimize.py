@@ -4,6 +4,7 @@ import scipy.sparse as sps
 import numpy.testing as npt
 from dipy.core.optimize import Optimizer, sparse_nnls, spdot
 import dipy.core.optimize as opt
+from dipy.testing.decorators import set_random_number_generator
 
 
 def func(x):
@@ -56,7 +57,8 @@ def test_optimize_new_scipy():
     npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
 
-def test_sklearn_linear_solver():
+@set_random_number_generator()
+def test_sklearn_linear_solver(rng):
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
@@ -64,17 +66,18 @@ def test_sklearn_linear_solver():
     MySillySolver = SillySolver()
     n_samples = 100
     n_features = 20
-    y = np.random.rand(n_samples)
+    y = rng.random(n_samples)
     X = np.ones((n_samples, n_features))
     MySillySolver.fit(X, y)
     npt.assert_equal(MySillySolver.coef_, np.ones(n_features))
     npt.assert_equal(MySillySolver.predict(X), np.ones(n_samples) * 20)
 
 
-def test_nonnegativeleastsquares():
+@set_random_number_generator()
+def test_nonnegativeleastsquares(rng):
     n = 100
     X = np.eye(n)
-    beta = np.random.rand(n)
+    beta = rng.random(n)
     y = np.dot(X, beta)
     my_nnls = opt.NonNegativeLeastSquares()
     my_nnls.fit(X, y)
@@ -82,12 +85,13 @@ def test_nonnegativeleastsquares():
     npt.assert_equal(my_nnls.predict(X), y)
 
 
-def test_spdot():
+@set_random_number_generator()
+def test_spdot(rng):
     n = 100
     m = 20
     k = 10
-    A = np.random.randn(n, m)
-    B = np.random.randn(m, k)
+    A = rng.standard_normal((n, m))
+    B = rng.standard_normal((m, k))
     A_sparse = sps.csr_matrix(A)
     B_sparse = sps.csr_matrix(B)
     dense_dot = np.dot(A, B)
@@ -98,10 +102,11 @@ def test_spdot():
     npt.assert_array_almost_equal(dense_dot, spdot(A_sparse, B))
 
 
-def test_sparse_nnls():
+@set_random_number_generator()
+def test_sparse_nnls(rng):
     # Set up the regression:
-    beta = np.random.rand(10)
-    X = np.random.randn(1000, 10)
+    beta = rng.random(10)
+    X = rng.standard_normal((1000, 10))
     y = np.dot(X, beta)
     beta_hat = sparse_nnls(y, X)
     beta_hat_sparse = sparse_nnls(y, sps.csr_matrix(X))

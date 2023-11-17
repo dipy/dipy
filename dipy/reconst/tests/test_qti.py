@@ -8,6 +8,7 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.reconst.dti import fractional_anisotropy
+from dipy.testing.decorators import set_random_number_generator
 
 from dipy.utils.optpkg import optional_package
 cp, have_cvxpy, _ = optional_package("cvxpy")
@@ -255,14 +256,13 @@ def test_design_matrix():
          [0., 0., 0.]]).T)
 
 
-def _qti_gtab():
+def _qti_gtab(rng):
     """Return a gradient table with b0, 2 shells, 30 directions, and linear and
     planar tensor encoding for fitting QTI."""
-    np.random.seed(123)
     n_dir = 30
     hsph_initial = HemiSphere(
-        theta=np.pi * np.random.rand(n_dir),
-        phi=2 * np.pi * np.random.rand(n_dir))
+        theta=np.pi * rng.random(n_dir),
+        phi=2 * np.pi * rng.random(n_dir))
     hsph_updated, _ = disperse_charges(hsph_initial, 100)
     directions = hsph_updated.vertices
     bvecs = np.vstack([np.zeros(3)] + [directions for _ in range(4)])
@@ -276,10 +276,11 @@ def _qti_gtab():
     return gtab
 
 
-def test_ls_sdp_fits():
+@set_random_number_generator(123)
+def test_ls_sdp_fits(rng):
     """Test ordinary and weighted least squares and semidefinite programming
     QTI fits by comparing the estimated parameters to the ground-truth values."""
-    gtab = _qti_gtab()
+    gtab = _qti_gtab(rng)
     X = qti.design_matrix(gtab.btens)
     DTDs = [
         _anisotropic_DTD(),
@@ -307,7 +308,8 @@ def test_ls_sdp_fits():
                                     cvxpy_solver='SCS'), params, decimal=2)
 
 
-def test_qti_model():
+@set_random_number_generator(123)
+def test_qti_model(rng):
     """Test the QTI model class."""
 
     # Input validation
@@ -315,15 +317,16 @@ def test_qti_model():
     npt.assert_raises(ValueError, qti.QtiModel, gtab)
     gtab = gradient_table(np.ones(1), np.array([[1, 0, 0]]), btens='LTE')
     npt.assert_warns(UserWarning, qti.QtiModel, gtab)
-    npt.assert_raises(ValueError, qti.QtiModel, _qti_gtab(), 'non-linear')
+    npt.assert_raises(ValueError, qti.QtiModel, _qti_gtab(rng), 'non-linear')
 
     # Design matrix calculation
-    gtab = _qti_gtab()
+    gtab = _qti_gtab(rng)
     qtimodel = qti.QtiModel(gtab)
     npt.assert_almost_equal(qtimodel.X, qti.design_matrix(gtab.btens))
 
 
-def test_qti_fit():
+@set_random_number_generator(4321)
+def test_qti_fit(rng):
     """Test the QTI fit class."""
 
     # Generate a diffusion tensor distribution
@@ -374,7 +377,7 @@ def test_qti_fit():
             qti.from_6x6_to_21x1(qti.E_bulk)))[0, 0]
 
     # Fit QTI
-    gtab = _qti_gtab()
+    gtab = _qti_gtab(rng)
 
     if have_cvxpy:
         for fit_method in ['OLS', 'WLS', 'SDPdc']:

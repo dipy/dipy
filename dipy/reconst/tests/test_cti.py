@@ -69,9 +69,10 @@ def _perpendicular_directions_temp(v, num=20, half=False):
 # compared to QTE, while Kmicro would be zero.
 
 
+rng = np.random.default_rng(1234)
 n_pts = 20
-theta = np.pi * np.random.rand(n_pts)
-phi = 2 * np.pi * np.random.rand(n_pts)
+theta = np.pi * rng.random(n_pts)
+phi = 2 * np.pi * rng.random(n_pts)
 hsph_initial = HemiSphere(theta=theta, phi=phi)
 hsph_updated, potential = disperse_charges(hsph_initial, 5000)
 

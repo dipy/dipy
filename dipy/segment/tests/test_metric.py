@@ -1,13 +1,15 @@
+import itertools
+
 import numpy as np
+from numpy.testing import (assert_array_equal, assert_raises,
+                           assert_almost_equal, assert_equal)
+
 import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metric as dipymetric
 import dipy.segment.metricspeed as dipysmetric
-import itertools
-
 from dipy.testing import (assert_true, assert_false,
                           assert_greater_equal, assert_less_equal)
-from numpy.testing import (assert_array_equal, assert_raises,
-                           assert_almost_equal, assert_equal)
+from dipy.testing.decorators import set_random_number_generator
 
 
 def norm(x, order=None, axis=None):
@@ -22,9 +24,9 @@ dtype = "float32"
 
 # Create wiggling streamline
 nb_points = 18
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 x = np.linspace(0, 10, nb_points)
-y = rng.rand(nb_points)
+y = rng.random(nb_points)
 z = np.sin(np.linspace(0, np.pi, nb_points))  # Bending
 s = np.array([x, y, z], dtype=dtype).T
 
@@ -225,13 +227,14 @@ def test_subclassing_metric():
     assert_raises(NotImplementedError, metric.dist, None, None)
 
 
-def test_distance_matrix():
+@set_random_number_generator()
+def test_distance_matrix(rng):
     metric = dipysmetric.SumPointwiseEuclideanMetric()
 
     for dtype in [np.int32, np.int64, np.float32, np.float64]:
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with itself.
-        data = (np.random.rand(4, 10, 3)*10).astype(dtype)
+        data = (rng.random((4, 10, 3))*10).astype(dtype)
         D = dipysmetric.distance_matrix(metric, data)
         assert_equal(D.shape, (len(data), len(data)))
         assert_array_equal(np.diag(D), np.zeros(len(data)))
@@ -247,7 +250,7 @@ def test_distance_matrix():
 
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with `data2`.
-        data2 = (np.random.rand(3, 10, 3)*10).astype(dtype)
+        data2 = (rng.random((3, 10, 3))*10).astype(dtype)
         D = dipysmetric.distance_matrix(metric, data, data2)
         assert_equal(D.shape, (len(data), len(data2)))
 
@@ -257,12 +260,13 @@ def test_distance_matrix():
                                                        data2[j]))
 
 
-def test_mean_distances():
+@set_random_number_generator()
+def test_mean_distances(rng):
     nb_slines = 10
     nb_pts = 22
     dim = 3
-    a = np.random.rand(nb_slines, nb_pts, dim)
-    b = np.random.rand(nb_slines, nb_pts, dim)
+    a = rng.random((nb_slines, nb_pts, dim))
+    b = rng.random((nb_slines, nb_pts, dim))
     diff = a - b
 
     # Test Euclidean distance (L2)

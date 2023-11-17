@@ -21,9 +21,11 @@ from dipy.viz import window, actor
 # b-vectors. To create one, we can first create some random points on a
 # ``HemiSphere`` using spherical polar coordinates.
 
+rng = np.random.default_rng()
+
 n_pts = 64
-theta = np.pi * np.random.rand(n_pts)
-phi = 2 * np.pi * np.random.rand(n_pts)
+theta = np.pi * rng.random(size=n_pts)
+phi = 2 * np.pi * rng.random(size=n_pts)
 hsph_initial = HemiSphere(theta=theta, phi=phi)
 
 ###############################################################################

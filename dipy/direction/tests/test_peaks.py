@@ -22,6 +22,7 @@ from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.shm import descoteaux07_legacy_msg, tournier07_legacy_msg
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_peak_directions_nl():
@@ -403,7 +404,8 @@ def test_difference_with_minmax():
     assert_almost_equal(values_1, values_4)
 
 
-def test_degenerate_cases():
+@set_random_number_generator()
+def test_degenerate_cases(rng):
 
     sphere = default_sphere
 
@@ -440,13 +442,13 @@ def test_degenerate_cases():
     assert_equal(values[0], 0.02)
 
     odf = np.ones(sphere.vertices.shape[0])
-    odf += 0.1 * np.random.rand(odf.shape[0])
+    odf += 0.1 * rng.random(odf.shape[0])
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     assert_(all(values > values[0] * .5))
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
-    odf[1:] = np.finfo(float).eps * np.random.rand(odf.shape[0] - 1)
+    odf[1:] = np.finfo(float).eps * rng.random(odf.shape[0] - 1)
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
 
     assert_equal(values[0], 1)
@@ -670,11 +672,12 @@ def test_peaks_shm_coeff():
     assert_array_almost_equal(pam.odf, odf2)
 
 
-def test_reshape_peaks_for_visualization():
+@set_random_number_generator()
+def test_reshape_peaks_for_visualization(rng):
 
-    data1 = np.random.randn(10, 5, 3).astype('float32')
-    data2 = np.random.randn(10, 2, 5, 3).astype('float32')
-    data3 = np.random.randn(10, 2, 12, 5, 3).astype('float32')
+    data1 = rng.standard_normal((10, 5, 3)).astype('float32')
+    data2 = rng.standard_normal((10, 2, 5, 3)).astype('float32')
+    data3 = rng.standard_normal((10, 2, 12, 5, 3)).astype('float32')
 
     data1_reshape = reshape_peaks_for_visualization(data1)
     data2_reshape = reshape_peaks_for_visualization(data2)

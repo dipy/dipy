@@ -691,8 +691,8 @@ def qbx_and_merge(streamlines, thresholds,
     select_randomly : int
         Randomly select a specific number of streamlines. If None all the
         streamlines are used.
-    rng : RandomState
-        If None then RandomState is initialized internally.
+    rng : numpy.random.Generator
+        If None then generator is initialized internally.
     verbose : bool, optional.
         If True, log information. Default False.
 
@@ -719,7 +719,7 @@ def qbx_and_merge(streamlines, thresholds,
         select_randomly = len_s
 
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
     indices = rng.choice(len_s, min(select_randomly, len_s),
                          replace=False)
     sample_streamlines = set_number_of_points(streamlines, nb_pts)

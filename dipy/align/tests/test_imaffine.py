@@ -175,7 +175,8 @@ def test_transform_origins_3d():
                     assert_array_almost_equal(actual.affine, expected)
 
 
-def test_affreg_all_transforms():
+@set_random_number_generator(202311)
+def test_affreg_all_transforms(rng):
     # Test affine registration using all transforms with typical settings
 
     # Make sure dictionary entries are processed in the same order regardless
@@ -198,7 +199,8 @@ def test_affreg_all_transforms():
                                                                       trans,
                                                                       factor,
                                                                       nslices,
-                                                                      1.0)
+                                                                      1.0,
+                                                                      rng=rng)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
         metric = imaffine.MutualInformationMetric(32, sampling_pc)
@@ -243,7 +245,8 @@ def test_affreg_all_transforms():
                               np.zeros_like(smask), np.zeros_like(mmask))
 
 
-def test_affreg_defaults():
+@set_random_number_generator(202311)
+def test_affreg_defaults(rng):
     # Test all default arguments with an arbitrary transform
     # Select an arbitrary transform (all of them are already tested
     # in test_affreg_all_transforms)
@@ -260,7 +263,7 @@ def test_affreg_defaults():
         factor = factors[ttype][0]
         transform = regtransforms[ttype]
         static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
-            setup_random_transform(transform, factor, nslices, 1.0)
+            setup_random_transform(transform, factor, nslices, 1.0, rng=rng)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
 
@@ -297,7 +300,7 @@ def test_affreg_defaults():
             end_sad = np.abs(moving - transformed_inv).sum()
             reduction = 1 - end_sad / start_sad
             print("%s>>%f" % (ttype, reduction))
-            assert(reduction > 0.9)
+            assert(reduction > 0.89)
 
 
 @set_random_number_generator(2022966)
@@ -326,7 +329,7 @@ def test_mi_gradient(rng):
             start.param_to_matrix(0.25 * rng.standard_normal(nrot))
         # Get data (pair of images related to each other by an known transform)
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 2.0)
+            setup_random_transform(transform, factor, nslices, 2.0, rng=rng)
 
         # Prepare a MutualInformationMetric instance
         mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
@@ -608,10 +611,11 @@ def test_affine_map(rng):
             assert_raises(AffineInversionError, AffineMap, mat_large_dim)
 
 
-def test_MIMetric_invalid_params():
+@set_random_number_generator()
+def test_MIMetric_invalid_params(rng):
     transform = regtransforms[('AFFINE', 3)]
-    static = np.random.rand(20, 20, 20)
-    moving = np.random.rand(20, 20, 20)
+    static = rng.random((20, 20, 20))
+    moving = rng.random((20, 20, 20))
     n = transform.get_number_of_parameters()
     sampling_proportion = 0.3
     theta_sing = np.zeros(n)

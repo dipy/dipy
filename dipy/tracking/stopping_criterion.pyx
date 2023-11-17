@@ -277,18 +277,19 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             raise RuntimeError("Unexpected interpolation error " +
                                "(exclude_map - code:%i)" % exclude_err)
 
+        rng = np.random.default_rng()
         # test if the tracking continues
         if include_result + exclude_result <= 0:
             return TRACKPOINT
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
-        if np.random.random() < p:
+        if rng.random() < p:
             return TRACKPOINT
 
         # test if the tracking stopped in the include tissue map
         p = (include_result / (include_result + exclude_result))
-        if np.random.random() < p:
+        if rng.random() < p:
             return ENDPOINT
 
         # the tracking stopped in the exclude tissue map

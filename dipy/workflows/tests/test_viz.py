@@ -12,6 +12,7 @@ from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import set_random_number_generator
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -25,7 +26,8 @@ skip_it = use_xvfb == 'skip'
 
 @pytest.mark.skipif(skip_it or not has_fury,
                     reason='Requires FURY')
-def test_horizon_flow():
+@set_random_number_generator()
+def test_horizon_flow(rng):
 
     s1 = 10 * np.array([[0, 0, 0],
                         [1, 0, 0],
@@ -50,7 +52,7 @@ def test_horizon_flow():
                        [0., 0., 1., -72.],
                        [0., 0., 0., 1.]])
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
 
     streamlines = Streamlines()
@@ -75,7 +77,7 @@ def test_horizon_flow():
             world_coords=True, interactive=False)
 
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
 
     images = [(data, affine)]
 
@@ -96,7 +98,7 @@ def test_horizon_flow():
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
         save_tractogram(sft, ftrk, bbox_valid_check=False)
 
-        pvalues = np.random.uniform(low=0, high=1, size=(10,))
+        pvalues = rng.uniform(low=0, high=1, size=(10,))
         np.save(fnpy, pvalues)
 
         input_files = [ftrk, fimg]
