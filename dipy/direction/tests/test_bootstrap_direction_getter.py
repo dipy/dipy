@@ -14,6 +14,7 @@ from dipy.reconst import dti, shm
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    TensorModel)
 from dipy.sims.voxel import multi_tensor, single_tensor
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_bdg_initial_direction():
@@ -82,33 +83,55 @@ def test_bdg_get_direction():
     sphere = get_sphere('symmetric362')
     response = (np.array([0.0015, 0.0003, 0.0003]), 1)
 
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+
     point = np.array([0., 0., 0.])
     prev_direction = sphere.vertices[5]
 
     # test case in which no valid direction is found with default max attempts
-    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10.,
-                                  sphere=sphere)
-    npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10.,
+                                      sphere=sphere)
+        npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
 
     # test case in which no valid direction is found with new max attempts
-    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10,
-                                  sphere=sphere, max_attempts=3)
-    npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=10,
+                                      sphere=sphere, max_attempts=3)
+        npt.assert_equal(boot_dg.get_direction(point, prev_direction), 1)
 
     # test case in which a valid direction is found
-    boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=60.,
-                                  sphere=sphere, max_attempts=5)
-    npt.assert_equal(boot_dg.get_direction(point, prev_direction), 0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter(data, model=csd_model, max_angle=60.,
+                                      sphere=sphere, max_attempts=5)
+        npt.assert_equal(boot_dg.get_direction(point, prev_direction), 0)
 
     # test invalid max_attempts parameters
-    npt.assert_raises(
-        ValueError,
-        lambda: BootDirectionGetter(data, csd_model, 60, sphere=sphere,
-                                    max_attempts=0))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        npt.assert_raises(
+            ValueError,
+            lambda: BootDirectionGetter(data, csd_model, 60, sphere=sphere,
+                                        max_attempts=0))
 
 
-def test_bdg_residual():
+@set_random_number_generator()
+def test_bdg_residual(rng):
     """This tests the bootstrapping residual.
     """
 
@@ -125,7 +148,7 @@ def test_bdg_residual():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         B, m, n = shm.real_sh_descoteaux(6, theta, phi)
-    shm_coeff = np.random.random(B.shape[1])
+    shm_coeff = rng.random(B.shape[1])
 
     # sphere_func is sampled of the spherical function for each point of
     # the sphere

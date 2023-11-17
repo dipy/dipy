@@ -1042,8 +1042,8 @@ def slr_with_qbx(static, moving,
     progressive : boolean, optional
             (default True)
 
-    rng : RandomState
-        If None creates RandomState in function.
+    rng : np.random.Generator
+        If None creates random generator in function.
 
     num_threads : int, optional
         Number of threads to be used for OpenMP parallelization. If None
@@ -1072,7 +1072,7 @@ def slr_with_qbx(static, moving,
 
     """
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
 
     if verbose:
         logger.info('Static streamlines size {}'.format(len(static)))
@@ -1207,8 +1207,8 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
     verbose : bool, optional
         If True, logs information. Default: False.
 
-    rng : RandomState
-        If None, creates RandomState in function. Default: None.
+    rng : np.random.Generator
+        If None, creates random generator in function. Default: None.
 
     References
     ----------
@@ -1233,7 +1233,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
         return d
 
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
 
     metric = JointBundleMinDistanceMetric()
 

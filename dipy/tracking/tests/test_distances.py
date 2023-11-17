@@ -1,16 +1,20 @@
 import warnings
+
 import numpy as np
-from dipy.testing import assert_true
 from numpy.testing import (assert_array_almost_equal,
                            assert_equal, assert_almost_equal,
                            assert_array_equal)
+
+from dipy.testing import assert_true
+from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import distances as pf
 from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 
 
-def test_LSCv2(verbose=False):
+@set_random_number_generator()
+def test_LSCv2(verbose=False, rng=None):
     xyz1 = np.array([[1, 0, 0], [2, 0, 0], [3, 0, 0]], dtype='float32')
     xyz2 = np.array([[1, 0, 0], [1, 2, 0], [1, 3, 0]], dtype='float32')
     xyz3 = np.array([[1.1, 0, 0], [1, 2, 0], [1, 3, 0]], dtype='float32')
@@ -25,7 +29,7 @@ def test_LSCv2(verbose=False):
     pf.local_skeleton_clustering_3pts(T, 0.2)
 
     for i in range(40):
-        xyz = np.random.rand(3, 3).astype('f4')
+        xyz = rng.random((3, 3), dtype='f4')
         T.append(xyz)
 
     from time import time
@@ -48,7 +52,7 @@ def test_LSCv2(verbose=False):
 
     T2 = []
     for i in range(10**4):
-        xyz = np.random.rand(10, 3).astype('f4')
+        xyz = rng.random((10, 3), dtype='f4')
         T2.append(xyz)
     t1 = time()
     C5 = pf.local_skeleton_clustering(T2, .5)

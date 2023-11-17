@@ -33,7 +33,7 @@ cb_subj1, _ = two_cingulum_bundles()
 # Let's create two streamline sets (bundles) from same bundle cb_subj1 by
 # randomly selecting 60 streamlines two times.
 
-rng = np.random.RandomState()
+rng = np.random.default_rng()
 bundle1 = select_random_set_of_streamlines(cb_subj1, 60, rng=None)
 bundle2 = select_random_set_of_streamlines(cb_subj1, 60, rng=None)
 

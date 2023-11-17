@@ -32,8 +32,7 @@ gm_response = np.array([[4.0E-4, 4.0E-4, 4.0E-4, 40.],
                         [4.0E-4, 4.0E-4, 4.0E-4, 40.]])
 
 
-@set_random_number_generator(1234)
-def get_test_data(rng=None):
+def get_test_data(rng):
     gtab = get_3shell_gtab()
     evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
                   np.array([6.0E-4, 4.0E-4, 4.0E-4]),
@@ -225,6 +224,19 @@ def test_multi_shell_fiber_response():
 
     npt.assert_equal(response.response.shape, (4, 7))
 
+    btens = ["LTE", "PTE", "STE", "CTE"]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response,
+                                              btens=btens)
+
+    npt.assert_equal(response.response.shape, (4, 7))
+
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=PendingDeprecationWarning)
         response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
@@ -242,8 +254,9 @@ def test_multi_shell_fiber_response():
         npt.assert_equal(response.response.shape, (3, 7))
 
 
-def test_mask_for_response_msmt():
-    gtab, data, masks_gt, _ = get_test_data()
+@set_random_number_generator()
+def test_mask_for_response_msmt(rng):
+    gtab, data, masks_gt, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:
         wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
@@ -269,8 +282,9 @@ def test_mask_for_response_msmt():
     npt.assert_array_almost_equal(masks_gt[2], csf_mask)
 
 
-def test_mask_for_response_msmt_nvoxels():
-    gtab, data, _, _ = get_test_data()
+@set_random_number_generator()
+def test_mask_for_response_msmt_nvoxels(rng):
+    gtab, data, _, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:
         wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
@@ -326,8 +340,9 @@ def test_mask_for_response_msmt_nvoxels():
     npt.assert_equal(csf_nvoxels, 0)
 
 
-def test_response_from_mask_msmt():
-    gtab, data, masks_gt, responses_gt = get_test_data()
+@set_random_number_generator()
+def test_response_from_mask_msmt(rng):
+    gtab, data, masks_gt, responses_gt = get_test_data(rng)
 
     response_wm, response_gm, response_csf \
         = response_from_mask_msmt(gtab, data, masks_gt[0],
@@ -351,8 +366,9 @@ def test_response_from_mask_msmt():
     npt.assert_array_almost_equal(response_csf[0], responses_gt[2], 1)
 
 
-def test_auto_response_msmt():
-    gtab, data, _, _ = get_test_data()
+@set_random_number_generator()
+def test_auto_response_msmt(rng):
+    gtab, data, _, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:
         response_auto_wm, response_auto_gm, response_auto_csf = \

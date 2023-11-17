@@ -18,7 +18,7 @@ needs_sklearn = pytest.mark.skipif(
 
 @needs_sklearn
 @set_random_number_generator(1234)
-def test_patch2self_random_noise(rng=None):
+def test_patch2self_random_noise(rng):
     S0 = 30 + 2 * rng.standard_normal((20, 20, 20, 50))
 
     bvals = np.repeat(30, 50)
@@ -60,7 +60,7 @@ def test_patch2self_random_noise(rng=None):
 
 @needs_sklearn
 @set_random_number_generator(1234)
-def test_patch2self_boundary(rng=None):
+def test_patch2self_boundary(rng):
     # patch2self preserves boundaries
     S0 = 100 + np.zeros((20, 20, 20, 20))
     noise = 2 * rng.standard_normal((20, 20, 20, 20))
@@ -74,7 +74,6 @@ def test_patch2self_boundary(rng=None):
     assert_less(S0[10, 10, 10, 10], 110)
 
 
-@set_random_number_generator(4321)
 def rfiw_phantom(gtab, snr=None, rng=None):
     """rectangle fiber immersed in water"""
     # define voxel index
@@ -140,7 +139,8 @@ def rfiw_phantom(gtab, snr=None, rng=None):
 
 
 @needs_sklearn
-def test_phantom():
+@set_random_number_generator(4321)
+def test_phantom(rng):
 
     # generate a gradient table for phantom data
     directions8 = generate_bvecs(8)
@@ -157,7 +157,7 @@ def test_phantom():
                        directions8, directions30, directions60))
     gtab = gradient_table(bvals, bvecs)
 
-    dwi, sigma = rfiw_phantom(gtab, snr=10)
+    dwi, sigma = rfiw_phantom(gtab, snr=10, rng=rng)
     dwi_den1 = p2s.patch2self(dwi, model='ridge',
                               bvals=bvals, alpha=1.0)
 

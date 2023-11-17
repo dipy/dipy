@@ -190,9 +190,11 @@ window.record(scene, out_path='bundle5.png', size=(600, 600))
 
 scene.clear()
 
-colors = [np.random.rand(*streamline.shape) for streamline in bundle_native]
-stream_actor6 = actor.line(bundle_native, np.array(colors, dtype=object),
-                           linewidth=0.2)
+rng = np.random.default_rng()
+
+colors = [rng.random(streamline.shape) for streamline in bundle_native]
+
+stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2)
 
 scene.add(stream_actor6)
 

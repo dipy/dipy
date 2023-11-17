@@ -57,11 +57,13 @@ if interactive:
 #
 # Creating 100 bundle assignment maps on AF_L using BUAN [Chandio2020]_
 
+rng = np.random.default_rng()
+
 n = 100
 indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
 
-colors = [np.random.rand(3) for si in range(n)]
+colors = [rng.random(3) for si in range(n)]
 
 disks_color = []
 for i in range(len(indx)):

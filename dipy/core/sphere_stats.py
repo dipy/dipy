@@ -43,9 +43,10 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     >>> X.shape == (4, 3)
     True
     """
-    z = np.random.uniform(-1, 1, n)
+    rng = np.random.default_rng()
+    z = rng.uniform(-1, 1, n)
     theta = np.arccos(z)
-    phi = np.random.uniform(0, 2*np.pi, n)
+    phi = rng.uniform(0, 2*np.pi, n)
     if coords == 'xyz':
         r = np.ones(n)
         return np.vstack(geometry.sphere2cart(r, theta, phi)).T

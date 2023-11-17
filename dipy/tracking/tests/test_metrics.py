@@ -6,6 +6,7 @@ from numpy.testing import assert_equal, assert_array_almost_equal
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
 from dipy.utils.deprecator import ExpiredDeprecationError
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_downsample_deprecated():
@@ -13,16 +14,17 @@ def test_downsample_deprecated():
     npt.assert_raises(ExpiredDeprecationError, tm.downsample, streamline, 12)
 
 
-def test_splines():
+@set_random_number_generator()
+def test_splines(rng):
     # create a helix
     t = np.linspace(0, 1.75*2*np.pi, 100)
     x = np.sin(t)
     y = np.cos(t)
     z = t
     # add noise
-    x += np.random.normal(scale=0.1, size=x.shape)
-    y += np.random.normal(scale=0.1, size=y.shape)
-    z += np.random.normal(scale=0.1, size=z.shape)
+    x += rng.normal(scale=0.1, size=x.shape)
+    y += rng.normal(scale=0.1, size=y.shape)
+    z += rng.normal(scale=0.1, size=z.shape)
     xyz = np.vstack((x, y, z)).T
     # get the B-splines smoothed result
     tm.spline(xyz, 3, 2, -1)

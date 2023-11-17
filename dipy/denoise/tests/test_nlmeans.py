@@ -1,3 +1,5 @@
+from time import time
+
 import numpy as np
 from numpy.testing import (assert_,
                            assert_equal,
@@ -9,11 +11,12 @@ from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.denspeed import (add_padding_reflection, remove_padding)
 from dipy.utils.omp import cpu_count, have_openmp
 from dipy.testing import assert_greater
-from time import time
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_nlmeans_padding():
-    S0 = 100 + 2 * np.random.standard_normal((50, 50, 50))
+@set_random_number_generator()
+def test_nlmeans_padding(rng):
+    S0 = 100 + 2 * rng.standard_normal((50, 50, 50))
     S0 = S0.astype('f8')
     S0n = add_padding_reflection(S0, 5)
     S0n2 = remove_padding(S0n, 5)
@@ -36,8 +39,9 @@ def test_nlmeans_wrong():
     assert_raises(ValueError, nlmeans, data, sigma, num_threads=0)
 
 
-def test_nlmeans_random_noise():
-    S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
+@set_random_number_generator()
+def test_nlmeans_random_noise(rng):
+    S0 = 100 + 2 * rng.standard_normal((22, 23, 30))
 
     S0n = nlmeans(S0, sigma=np.ones((22, 23, 30)) * np.std(S0), rician=False)
 
@@ -49,12 +53,13 @@ def test_nlmeans_random_noise():
     assert_equal(np.round(S0n.mean()), 100)
 
 
-def test_nlmeans_boundary():
+@set_random_number_generator()
+def test_nlmeans_boundary(rng):
     # nlmeans preserves boundaries
 
     S0 = 100 + np.zeros((20, 20, 20))
 
-    noise = 2 * np.random.standard_normal((20, 20, 20))
+    noise = 2 * rng.standard_normal((20, 20, 20))
 
     S0 += noise
 

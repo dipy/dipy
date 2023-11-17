@@ -72,9 +72,11 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     N = len(x)
     bs_pdf = np.empty((B,))
 
+    rng = np.random.default_rng()
+
     for ii in range(0, B):
         # resample with replacement
-        rand_index = np.int16(np.round(np.random.random(N) * (N - 1)))
+        rand_index = np.int16(np.round(rng.random(N) * (N - 1)))
         bs_pdf[ii] = statistic(x[rand_index])
 
     return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha=alpha)
@@ -272,11 +274,13 @@ def jackknife(pdf, statistic=np.std, M=None):
     M = np.minimum(M, N - 1)
     jk_pdf = np.empty((M,))
 
+    rng = np.random.default_rng()
+
     for ii in range(0, M):
-        rand_index = np.round(np.random.random() * (N - 1))
+        rand_index = np.round(rng.random() * (N - 1))
         # choose a unique random sample to remove
         while pdf_mask[rand_index] == 0:
-            rand_index = np.round(np.random.random() * (N - 1))
+            rand_index = np.round(rng.random() * (N - 1))
         # set mask to zero for chosen random index so not to choose again
         pdf_mask[rand_index] = 0
         mask_index[rand_index] = 0

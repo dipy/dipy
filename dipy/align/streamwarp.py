@@ -265,7 +265,9 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
     indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
 
-    colors = np.random.rand(n, 3)
+    rng = np.random.default_rng()
+
+    colors = rng.random((n, 3))
 
     disks_color = []
     for _, ind in enumerate(indx):

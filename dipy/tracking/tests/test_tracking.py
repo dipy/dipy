@@ -959,7 +959,8 @@ def test_affine_transformations():
         npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
 
 
-def test_random_seed_initialization():
+@set_random_number_generator()
+def test_random_seed_initialization(rng):
     """Test that the random generator can be initialized correctly with the
     tracking seeds.
     """
@@ -970,13 +971,13 @@ def test_random_seed_initialization():
     z = np.array([1., 1, 1, 51.67881720942744])
 
     seeds = np.row_stack([np.column_stack([x, y, z]),
-                          np.random.random((10, 3))])
+                          rng.random((10, 3))])
     sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
     randoms_seeds = [None, 0, 1, -1, np.iinfo(np.uint32).max + 1] \
-        + list(np.random.random(10)) \
-        + list(np.random.randint(0, np.iinfo(np.int32).max, 10))
+        + list(rng.random(10)) \
+        + list(rng.integers(0, np.iinfo(np.int32).max, 10))
 
     for rdm_seed in randoms_seeds:
         _ = Streamlines(LocalTracking(direction_getter=dg,

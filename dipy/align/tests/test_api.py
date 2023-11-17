@@ -23,6 +23,7 @@ from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import StatefulTractogram, Space
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.testing.decorators import set_random_number_generator
 
 
 def setup_module():
@@ -246,11 +247,12 @@ def test_register_dwi_series_and_motion_correction():
         npt.assert_array_equal(reg_affines, reg_affines_2)
 
 
-def test_streamline_registration():
+@set_random_number_generator()
+def test_streamline_registration(rng):
     sl1 = [np.array([[0, 0, 0], [0, 0, 0.5], [0, 0, 1], [0, 0, 1.5]]),
            np.array([[0, 0, 0], [0, 0.5, 0.5], [0, 1, 1]])]
     affine_mat = np.eye(4)
-    affine_mat[:3, 3] = np.random.randn(3)
+    affine_mat[:3, 3] = rng.standard_normal(3)
     sl2 = list(transform_tracking_output(sl1, affine_mat))
     aligned, matrix = streamline_registration(sl2, sl1)
     npt.assert_almost_equal(matrix, np.linalg.inv(affine_mat))
@@ -259,7 +261,7 @@ def test_streamline_registration():
 
     # We assume the two tracks come from the same space, but it might have
     # some affine associated with it:
-    base_aff = np.eye(4) * np.random.rand()
+    base_aff = np.eye(4) * rng.random()
     base_aff[:3, 3] = np.array([1, 2, 3])
     base_aff[3, 3] = 1
 

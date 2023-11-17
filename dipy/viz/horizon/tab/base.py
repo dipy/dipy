@@ -122,11 +122,16 @@ class TabManager:
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
     def _tab_selected(self, tab_ui):
+        if self._active_tab_id == tab_ui.active_tab_idx:
+            self._active_tab_id = -1
+            return
+
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
         if current_tab.__class__.__name__ == 'SlicesTab':
             self.tab_changed(current_tab.actors)
+            current_tab.on_tab_selected()
 
     def reposition(self, win_size):
         """
