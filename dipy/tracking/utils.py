@@ -107,10 +107,10 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
-def connectivity_matrix_mod2(streamlines, affine, label_volume,
-                             inclusive: bool = False, symmetric: bool = True,
-                             return_mapping: bool = False,
-                             mapping_as_streamlines: bool = False):
+def connectivity_matrix(streamlines, affine, label_volume,
+                        inclusive: bool = False, symmetric: bool = True,
+                        return_mapping: bool = False,
+                        mapping_as_streamlines: bool = False):
     """ Count the streamlines that start and end at each label pair.
 
     Parameters
