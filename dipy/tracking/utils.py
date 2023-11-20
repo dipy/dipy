@@ -108,9 +108,9 @@ def density_map(streamlines, affine, vol_dims):
 
 
 def connectivity_matrix(streamlines, affine, label_volume,
-                        inclusive: bool = False, symmetric: bool = True,
-                        return_mapping: bool = False,
-                        mapping_as_streamlines: bool = False):
+                        inclusive=False, symmetric=True,
+                        return_mapping=False,
+                        mapping_as_streamlines=False):
     """ Count the streamlines that start and end at each label pair.
 
     Parameters
@@ -171,7 +171,7 @@ def connectivity_matrix(streamlines, affine, label_volume,
             x, y, z = sl.T
             if symmetric:
                 crossed_labels = np.unique(label_volume[x, y, z])
-            if not symmetric:
+            else:
                 crossed_labels = np.unique(label_volume[x, y, z],
                                            return_index=True)
                 crossed_labels = crossed_labels[0][np.argsort(
