@@ -6,50 +6,119 @@ from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
 
+from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
+                                               StoppingCriterion,
+                                               TRACKPOINT,
+                                               ENDPOINT,
+                                               OUTSIDEIMAGE,
+                                               INVALIDPOINT)
+
+from libc.stdlib cimport malloc, free
+
 
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
-                               StoppingCriterion sc,
                                TrackingParameters params):
     cdef:
         cnp.npy_intp _len=seed_positons.shape[0]
-        double[:,:,:] streamlines
+        double[:,:,:] streamlines_arr
+        double[:] status_arr
 
-    streamlines =  np.array(np.zeros((_len, 500, 3)), order='F')
+    # temporary array to store generated streamlines
+    streamlines_arr =  np.array(np.zeros((_len, params.max_len, 3)), order='C')
+    status_arr =  np.array(np.zeros((_len)) - 2, order='C')
 
     generate_tractogram_c(seed_positons,
                           seed_directions,
-                          _len, sc, params, streamlines)
+                          _len, params, streamlines_arr, status_arr)
 
-    return []
+    streamlines = []
+    for i in range(_len):
+        # array to list
+        pass
+
+    return streamlines
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
-                               StoppingCriterion sc,
                                TrackingParameters params,
-                               double[:,:,:] streamlines) nogil:
-
+                               double[:,:,:] streamlines,
+                               double[:] status) nogil:
     cdef:
-        cnp.npy_intp i
+        cnp.npy_intp i, j, k
+        double *stream
+
+    # <<cython.parallel.prange>>
+    for i in range(nbr_seeds):
+        stream_x = <double*> malloc(params.max_len *  sizeof(double))
+        stream_y = <double*> malloc(params.max_len *  sizeof(double))
+        stream_z = <double*> malloc(params.max_len *  sizeof(double))
+
+        status[i] = generate_local_streamline(seed_positons[i],
+                                              seed_directions[i],
+                                              stream_x,
+                                              stream_y,
+                                              stream_z,
+                                              params)
+        for j in range(params.max_len):
+                streamlines[i,j,0] = stream_x[j]
+                streamlines[i,j,1] = stream_y[j]
+                streamlines[i,j,2] = stream_z[j]
+        free(stream_x)
+        free(stream_y)
+        free(stream_z)
+
+    return 0
 
 
-    #for i in range(nbr_seeds):
+cdef int generate_local_streamline(double[::1] seed,
+                                   double[::1] direction,
+                                   double[::1] stream_x,
+                                   double[::1] stream_y,
+                                   double[::1] stream_z,
+                                   TrackingParameters params) nogil:
+    cdef:
+        cnp.npy_intp i, j
+        double point[3]
+        double voxdir[3]
+        StreamlineStatus stream_status
 
-    # for loop over all seed position and directions <<cython.parallel.prange>>
+    # set the initial position
+    copy_point(&seed[0], point)
+    #copy_point(&seed[0], &streamline[0,0])
+    stream_x[i] = seed[0]
+    stream_y[i] = seed[1]
+    stream_z[i] = seed[2]
 
-        #initialize an empty streamline array
-        #do while stream_status is valid forward and backward
+    stream_status = TRACKPOINT
+    for i in range(1, params.max_len):
+        if probabilistic_tracker(point, direction, params):
+            break
 
-            #call the tracker to get the next direction
-            #probabilistic_tracker(point, dir, params)
+        # update position
+        for j in range(3):
+            point[j] += direction[j] / params.voxel_size[j] * params.step_size
 
-            #stream_status = sc.check_point_c(new_pos)
+        #copy_point(point, &streamline[i, 0])
+        stream_x[i] = point[0]
+        stream_y[i] = point[1]
+        stream_z[i] = point[2]
 
-        # copy the streamline to the results array
+        stream_status = params.sc.check_point_c(point)
+        if stream_status == TRACKPOINT:
+            continue
+        elif (stream_status == ENDPOINT or
+              stream_status == INVALIDPOINT or
+              stream_status == OUTSIDEIMAGE):
+            break
+    else:
+        # maximum length of streamline has been reached, return everything
+        i = params.max_len
 
-    return 1
+        # i should be return to know the length of the streamline
+    return stream_status
 
 
 cdef double* get_pmf(double* point,
@@ -78,7 +147,7 @@ cdef int probabilistic_tracker(double* point,
                                double* direction,
                                ProbabilisticTrackingParameters params) nogil:
     cdef:
-        cnp.npy_intp i, idx,
+        cnp.npy_intp i, idx
         double[:] newdir
         double* pmf
         double last_cdf, cos_sim
