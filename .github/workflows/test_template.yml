@@ -69,7 +69,7 @@ jobs:
       COVERAGE: ${{ inputs.coverage }}
       CODECOV_TOKEN: ${{ secrets.codecov-token }}
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
-      PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+      PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"  # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
