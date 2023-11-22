@@ -14,21 +14,21 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                int nbr_seeds,
                                TrackingParameters params,
                                double[:,:,:] streamlines,
-                               double[:] status) nogil
+                               double[:] status)
 
 
 cdef int generate_local_streamline(double[::1] seed,
                                    double[::1] position,
-                                   double[::1] stream_x,
-                                   double[::1] stream_y,
-                                   double[::1] stream_z,
-                                   TrackingParameters params) nogil
+                                   double* stream_x,
+                                   double* stream_y,
+                                   double* stream_z,
+                                   TrackingParameters params)
 
 
 cdef double* get_pmf(double* point,
                      PmfGen pmf_gen,
                      double pmf_threshold,
-                     int pmf_len) nogil
+                     int pmf_len)
 
 cdef class TrackingParameters():
     cdef:
@@ -50,7 +50,7 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
 
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               ProbabilisticTrackingParameters params) nogil
+                               ProbabilisticTrackingParameters params)
 
 cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
     pass
@@ -58,7 +58,7 @@ cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
 
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
-                                       DeterministicTrackingParameters params) nogil
+                                       DeterministicTrackingParameters params)
 
 cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
     cdef:
@@ -88,4 +88,4 @@ cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
 
 cdef int paralle_transport_tracker(double* point,
                                    double* direction,
-                                   ParalleTransportTrackingParameters params) nogil
+                                   ParalleTransportTrackingParameters params)

@@ -45,10 +45,9 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                int nbr_seeds,
                                TrackingParameters params,
                                double[:,:,:] streamlines,
-                               double[:] status) nogil:
+                               double[:] status):
     cdef:
-        cnp.npy_intp i, j, k
-        double *stream
+        cnp.npy_intp i, j
 
     # <<cython.parallel.prange>>
     for i in range(nbr_seeds):
@@ -75,10 +74,10 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
 
 cdef int generate_local_streamline(double[::1] seed,
                                    double[::1] direction,
-                                   double[::1] stream_x,
-                                   double[::1] stream_y,
-                                   double[::1] stream_z,
-                                   TrackingParameters params) nogil:
+                                   double* stream_x,
+                                   double* stream_y,
+                                   double* stream_z,
+                                   TrackingParameters params):
     cdef:
         cnp.npy_intp i, j
         double point[3]
@@ -94,7 +93,7 @@ cdef int generate_local_streamline(double[::1] seed,
 
     stream_status = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(point, direction, params):
+        if probabilistic_tracker(&point[0], &direction[0], params):
             break
 
         # update position
@@ -124,7 +123,7 @@ cdef int generate_local_streamline(double[::1] seed,
 cdef double* get_pmf(double* point,
                      PmfGen pmf_gen,
                      double pmf_threshold,
-                     int pmf_len) nogil:
+                     int pmf_len):
     cdef:
         cnp.npy_intp i
         double* pmf
@@ -145,7 +144,7 @@ cdef double* get_pmf(double* point,
 
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               ProbabilisticTrackingParameters params) nogil:
+                               ProbabilisticTrackingParameters params):
     cdef:
         cnp.npy_intp i, idx
         double[:] newdir
@@ -190,7 +189,7 @@ cdef int probabilistic_tracker(double* point,
 #get_direction_c of the DG
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
-                                       DeterministicTrackingParameters params) nogil:
+                                       DeterministicTrackingParameters params):
     # update point and dir with new position and direction
 
     # return 1 if the propagation failed.
@@ -200,7 +199,7 @@ cdef int deterministic_maximum_tracker(double* point,
 #get_direction_c of the DG
 cdef int paralle_transport_tracker(double* point,
                                    double* direction,
-                                   ParalleTransportTrackingParameters params) nogil:
+                                   ParalleTransportTrackingParameters params):
     # update point and dir with new position and direction
 
     # return 1 if the propagation failed.
