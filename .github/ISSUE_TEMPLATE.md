@@ -10,7 +10,7 @@
 - [ ] Code example
 - [ ] Relevant images (if any)
 - [ ] Operating system and version (run `python -c "import platform; print(platform.platform())"`)
-- [ ] Python version (run `python -c "import sys; print("Python", sys.version)"`)
+- [ ] Python version (run `python -c "import sys; print('Python', sys.version)"`)
 - [ ] dipy version (run `python -c "import dipy; print(dipy.__version__)"`)
 - [ ] dependency version (numpy, scipy, nibabel, h5py, cvxpy, fury)
     * import numpy; print("NumPy", numpy.__version__)
