@@ -765,7 +765,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     # if sharpening a q-ball odf (it is NOT properly normalized), we need to
     # force normalization otherwise, for DSI, CSA, SHORE, Tensor odfs, they are
     # normalized by construction
-    if ~r2_term:
+    if not r2_term:
         Z = np.linalg.norm(fodf)
         fodf_sh /= Z
 
