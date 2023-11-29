@@ -37,9 +37,13 @@ def test_squash():
     # Check dtypes for arrays and scalars
     arr_arr = np.zeros((2,), dtype=object)
     scalar_arr = np.zeros((2,), dtype=object)
-    numeric_types = sum(
-        [np.sctypes[t] for t in ('int', 'uint', 'float', 'complex')],
-        [bool])
+    numeric_types = [getattr(np, dtype) for dtype in (
+        'int8', 'byte', 'int16', 'short', 'int32', 'intc', 'int_', 'int64',
+        'longlong', 'uint8', 'ubyte', 'uint16', 'ushort', 'uint32', 'uintc',
+        'uint', 'uint64', 'ulonglong', 'float16', 'half', 'float32', 'single',
+        'float64', 'double', 'float96', 'float128', 'longdouble', 'complex64',
+        'csingle', 'complex128', 'cdouble', 'complex192', 'complex256',
+        'clongdouble') if hasattr(np, dtype)] + [bool]
     for dt0 in numeric_types:
         arr_arr[0] = np.zeros((3,), dtype=dt0)
         scalar_arr[0] = dt0(0)
