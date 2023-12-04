@@ -4,7 +4,6 @@ from dipy.reconst.mcsd import (mask_for_response_msmt,
                                response_from_mask_msmt,
                                auto_response_msmt)
 from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
-from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -18,7 +17,7 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 
 wm_response = np.array([[1.7E-3, 0.4E-3, 0.4E-3, 25.],
@@ -56,7 +55,7 @@ def _expand(m, iso, coeff):
     return params
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+@needs_cvxpy
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
@@ -108,7 +107,7 @@ def test_mcsd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+@needs_cvxpy
 def test_MultiShellDeconvModel_response():
     gtab = get_3shell_gtab()
 
@@ -142,7 +141,7 @@ def test_MultiShellDeconvModel_response():
                       gtab, np.ones((3, 3, 4)), iso=3)
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+@needs_cvxpy
 def test_MultiShellDeconvModel():
     gtab = get_3shell_gtab()
 
@@ -180,7 +179,7 @@ def test_MultiShellDeconvModel():
     npt.assert_array_almost_equal(S_pred_fit, signal, 0)
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+@needs_cvxpy
 def test_MSDeconvFit():
     gtab = get_3shell_gtab()
 
