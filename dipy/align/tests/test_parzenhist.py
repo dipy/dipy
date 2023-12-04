@@ -594,7 +594,7 @@ def test_exceptions():
         valid_grad = np.empty(shape + (dim,), dtype=np.float64)
 
         invalid_img = np.empty((2, 2, 2, 2), dtype=np.float64)
-        invalid_grad_type = valid_grad.astype(np.int32)
+        invalid_grad_type = np.empty_like(valid_grad, dtype=np.int32)
         invalid_grad_dim = np.empty(shape + (dim + 1,), dtype=np.float64)
 
         for s, m, g in [(valid_img, valid_img, invalid_grad_type),
