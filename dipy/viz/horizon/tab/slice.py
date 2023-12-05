@@ -2,7 +2,6 @@ import warnings
 
 from functools import partial
 import numpy as np
-from vtkmodules.vtkImagingCore import vtkImageReslice
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
@@ -333,10 +332,6 @@ class SlicesTab(HorizonTab):
         lut.Build()
 
         for slice_actor in self._visualizer.slice_actors:
-            if isinstance(slice_actor.output, vtkImageReslice):
-                warnings.warn('You have an rgb image data and not enabled '
-                              + '--rgb flag.')
-                continue
             slice_actor.output.SetLookupTable(lut)
             slice_actor.output.Update()
 
