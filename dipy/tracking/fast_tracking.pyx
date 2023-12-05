@@ -72,6 +72,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
         status[i] = generate_local_streamline(&seed_positons[i][0],
                                               &seed_directions[i][0],
                                               stream,
+                                              &probabilistic_tracker,
                                               params)
         # copy the v
         k = 0
@@ -92,6 +93,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
 cdef int generate_local_streamline(double* seed,
                                    double* direction,
                                    double* stream,
+                                   func_ptr tracker,
                                    TrackingParameters params):
     cdef:
         cnp.npy_intp i, j
@@ -106,7 +108,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(&point[0], &voxdir[0], params):
+        if tracker(&point[0], &voxdir[0], params):  # , pmf_gen_func):
             break
         # update position
         for j in range(3):
