@@ -40,7 +40,7 @@ class SlicesVisualizer:
 
         if ((self._data_ndim == 4 and rgb and self._data_shape[-1] == 3)
                 or self._data_ndim == 3):
-            self._rgb = True and rgb
+            self._rgb = True and not self._data_ndim == 3
             self._int_range = np.percentile(vol_data, percentiles)
             _evaluate_intensities_range(self._int_range)
         else:
