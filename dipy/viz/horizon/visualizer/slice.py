@@ -57,6 +57,7 @@ class SlicesVisualizer:
         self._resliced_vol = None
 
         self._create_and_resize_actors(vol_data, self._int_range)
+        print(f'Resized to RAS shape: {self._data_shape}')
 
         self._sel_slices = np.rint(
             np.asarray(self._data_shape[:3]) / 2).astype(int)
@@ -116,7 +117,6 @@ class SlicesVisualizer:
                 self._resliced_vol.shape + (self._data.shape[-1],))
         else:
             self._data_shape = self._resliced_vol.shape
-        print(f'Resized to RAS shape: {self._data_shape}')
 
     def _left_click_picker_callback(self, obj, event):
         # TODO: Find out why this is not triggered when opacity < 1
