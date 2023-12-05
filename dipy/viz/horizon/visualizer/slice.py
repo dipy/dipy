@@ -111,7 +111,7 @@ class SlicesVisualizer:
             slice_actor.AddObserver(
                 'LeftButtonPressEvent', self._left_click_picker_callback, 1.)
 
-        if self._data_ndim == 4:
+        if self._data_ndim == 4 and not self._rgb:
             self._data_shape = (
                 self._resliced_vol.shape + (self._data.shape[-1],))
         else:
