@@ -30,8 +30,6 @@ class SlicesVisualizer:
         self._data_shape = data.shape
         self._rgb = False
 
-        print(f'Original shape: {self._data_shape}')
-
         vol_data = self._data
         if not rgb and self._data_ndim == 4:
             print('If you are looking for rgb support trying adding --rgb'
@@ -56,6 +54,7 @@ class SlicesVisualizer:
 
         self._resliced_vol = None
 
+        print(f'Original shape: {self._data_shape}')
         self._create_and_resize_actors(vol_data, self._int_range)
         print(f'Resized to RAS shape: {self._data_shape}')
 
