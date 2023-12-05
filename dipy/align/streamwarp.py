@@ -236,23 +236,22 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp
-    displacements and BUAN
+    displacements and BUAN.
 
     Parameters
     ----------
     moving_aligned : Streamlines
         Linearly (affinely) moved bundle
     deformed_bundle : Streamlines
-        Nonlinearly (warped) bundle
-    no_disks : int
+        Nonlinearly (warped) moved bundle
+    no_disks : int, optional
         Number of segments to be created along the length of the bundle
-        (Default 10)
     plotting : Boolean, optional
-        Plot bundle shape profile (default False)
+        Plot bundle shape profile
 
     Returns
     -------
-    shape_profilen : np.ndarray
+    shape_profile : np.ndarray
         Float array containing bundlewarp displacement magnitudes along the
         length of the bundle
     stdv : np.ndarray
