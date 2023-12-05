@@ -83,7 +83,7 @@ jobs:
         python -m pip install --upgrade pip virtualenv
         virtualenv $VENV_ARGS venv
     - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       if: ${{ matrix.install-type == 'conda' }}
       with:
         auto-update-conda: true
