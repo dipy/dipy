@@ -136,36 +136,6 @@ class SlicesTab(HorizonTab):
             checked_labels=[''],
             on_change=self._change_slice_visibility_z)
 
-        self._intensities_label, self._intensities = build_slider(
-            initial_value=self._visualizer.intensities_range,
-            min_value=self._visualizer.volume_min,
-            max_value=self._visualizer.volume_max,
-            text_template='{value:.0f}',
-            on_change=self._change_intensity,
-            label='Intensities',
-            is_double_slider=True
-        )
-
-        self._supported_colormap = [
-            {'label': 'Gray', 'value': 'gray'},
-            {'label': 'Bone', 'value': 'bone'},
-            {'label': 'Cividis', 'value': 'cividis'},
-            {'label': 'Inferno', 'value': 'inferno'},
-            {'label': 'Magma', 'value': 'magma'},
-            {'label': 'Viridis', 'value': 'viridis'},
-            {'label': 'Jet', 'value': 'jet'},
-            {'label': 'Pastel 1', 'value': 'Pastel1'},
-            {'label': 'Distinct', 'value': 'dist'},
-
-        ]
-
-        self._colormap_switcher_label, self._colormap_switcher = \
-            build_switcher(
-                items=self._supported_colormap,
-                label='Colormap',
-                on_value_changed=self._change_color_map
-            )
-
         self._voxel_label = build_label(text='Voxel', is_horizon_label=True)
         self._voxel_data = build_label(text='', is_horizon_label=True)
 
@@ -184,23 +154,57 @@ class SlicesTab(HorizonTab):
             self._slice_z_toggle,
             self._slice_z_label,
             self._slice_z,
-            self._intensities_label,
-            self._intensities,
-            self._colormap_switcher_label,
-            self._colormap_switcher,
             self._voxel_label,
             self._voxel_data
         )
 
-        if len(self._visualizer.data_shape) == 4:
-            self._volume_label, self._volume = build_slider(
-                initial_value=0,
-                max_value=self._visualizer.data_shape[-1] - 1,
-                on_moving_slider=self._change_volume,
+        if not self._visualizer.rgb:
+            self._intensities_label, self._intensities = build_slider(
+                initial_value=self._visualizer.intensities_range,
+                min_value=self._visualizer.volume_min,
+                max_value=self._visualizer.volume_max,
                 text_template='{value:.0f}',
-                label='Volume'
+                on_change=self._change_intensity,
+                label='Intensities',
+                is_double_slider=True
             )
-            self.register_elements(self._volume_label, self._volume)
+
+            self._supported_colormap = [
+                {'label': 'Gray', 'value': 'gray'},
+                {'label': 'Bone', 'value': 'bone'},
+                {'label': 'Cividis', 'value': 'cividis'},
+                {'label': 'Inferno', 'value': 'inferno'},
+                {'label': 'Magma', 'value': 'magma'},
+                {'label': 'Viridis', 'value': 'viridis'},
+                {'label': 'Jet', 'value': 'jet'},
+                {'label': 'Pastel 1', 'value': 'Pastel1'},
+                {'label': 'Distinct', 'value': 'dist'},
+
+            ]
+
+            self._colormap_switcher_label, self._colormap_switcher = \
+                build_switcher(
+                    items=self._supported_colormap,
+                    label='Colormap',
+                    on_value_changed=self._change_color_map
+                )
+
+            self.register_elements(
+                self._intensities_label,
+                self._intensities,
+                self._colormap_switcher_label,
+                self._colormap_switcher,
+            )
+
+            if len(self._visualizer.data_shape) == 4:
+                self._volume_label, self._volume = build_slider(
+                    initial_value=0,
+                    max_value=self._visualizer.data_shape[-1] - 1,
+                    on_moving_slider=self._change_volume,
+                    text_template='{value:.0f}',
+                    label='Volume'
+                )
+                self.register_elements(self._volume_label, self._volume)
 
     def _change_color_map(self, _idx, _value):
         self._update_colormap()
@@ -397,23 +401,29 @@ class SlicesTab(HorizonTab):
         self._slice_z.position = (x_pos, .15)
 
         x_pos = .52
-        self._intensities_label.position = (x_pos, .85)
-        self._colormap_switcher_label.position = (x_pos, .56)
         self._voxel_label.position = (x_pos, .38)
 
         x_pos = .60
-        self._intensities.position = (x_pos, .85)
-        self._colormap_switcher.position = [
-            (x_pos, .54), (0.63, .54), (0.69, .54)
-        ]
         self._voxel_data.position = (x_pos, .38)
 
-        if len(self._visualizer.data_shape) == 4:
+        if not self._visualizer.rgb:
+
             x_pos = .52
-            self._volume_label.position = (x_pos, .15)
+            self._intensities_label.position = (x_pos, .85)
+            self._colormap_switcher_label.position = (x_pos, .56)
 
             x_pos = .60
-            self._volume.position = (x_pos, .15)
+            self._intensities.position = (x_pos, .85)
+            self._colormap_switcher.position = [
+                (x_pos, .54), (0.63, .54), (0.69, .54)
+            ]
+
+            if len(self._visualizer.data_shape) == 4:
+                x_pos = .52
+                self._volume_label.position = (x_pos, .15)
+
+                x_pos = .60
+                self._volume.position = (x_pos, .15)
 
     @property
     def name(self):
