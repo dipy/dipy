@@ -33,6 +33,13 @@ class SlicesVisualizer:
         print(f'Original shape: {self._data_shape}')
 
         vol_data = self._data
+        if not rgb and self._data_ndim == 4:
+            print('If you are looking for rgb support trying adding --rgb'
+                  + ' option.')
+        elif rgb and self._data_ndim == 4:
+            print('If the volumes are not shown you might want to remove --rgb'
+                  + ' option to process the volume data properly.')
+
         if ((self._data_ndim == 4 and rgb and self._data_shape[-1] == 3)
                 or self._data_ndim == 3):
             self._rgb = True and rgb
