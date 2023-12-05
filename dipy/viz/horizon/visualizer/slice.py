@@ -46,8 +46,8 @@ class SlicesVisualizer:
         else:
             if self._data_ndim == 4 and rgb and self._data_shape[-1] != 3:
                 warnings.warn('The rgb flag is enabled but the color '
-                              + ' channel information is not provided')
-            self._volume_calculations(percentiles)
+                              + 'channel information is not provided')
+            vol_data = self._volume_calculations(percentiles)
 
         self._vol_max = np.max(vol_data)
         self._vol_min = np.min(vol_data)
@@ -80,6 +80,7 @@ class SlicesVisualizer:
                         'Moving to the next volume.')
                 else:
                     _evaluate_intensities_range(self._int_range)
+        return vol_data
 
     def _add_slice_actors_to_scene(self, visible_slices):
         self._slice_actors[0].display_extent(
