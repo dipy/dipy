@@ -10,7 +10,6 @@ from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 from dipy.utils.deprecator import deprecate_with_version
-from dipy.utils.deprecator import deprecated_params
 
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
