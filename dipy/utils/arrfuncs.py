@@ -23,7 +23,7 @@ def as_native_array(arr):
     """
     if endian_codes[arr.dtype.byteorder] == native_code:
         return arr
-    return arr.byteswap().newbyteorder()
+    return arr.view(arr.dtype.newbyteorder()).byteswap()
 
 
 def pinv(a, rcond=1e-15):
