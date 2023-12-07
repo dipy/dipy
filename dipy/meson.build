@@ -130,10 +130,10 @@ inc_np = include_directories(incdir_numpy)
 np_dep = declare_dependency(include_directories: inc_np)
 
 
-npymath_path = _incdir_numpy_abs / '..' / 'lib'
-npyrandom_path = _incdir_numpy_abs / '..' / '..' / 'random' / 'lib'
-npymath_lib = cc.find_library('npymath', dirs: npymath_path)
-npyrandom_lib = cc.find_library('npyrandom', dirs: npyrandom_path)
+# npymath_path = _incdir_numpy_abs / '..' / 'lib'
+# npyrandom_path = _incdir_numpy_abs / '..' / '..' / 'random' / 'lib'
+# npymath_lib = cc.find_library('npymath', dirs: npymath_path)
+# npyrandom_lib = cc.find_library('npyrandom', dirs: npyrandom_path)
 
 # ------------------------------------------------------------------------
 # Define Optimisation for cython extensions
