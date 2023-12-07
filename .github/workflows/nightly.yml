@@ -1,0 +1,154 @@
+name: Build and upload nightly wheels
+on:
+  workflow_dispatch:
+  schedule:
+    #        ┌───────────── minute (0 - 59)
+    #        │ ┌───────────── hour (0 - 23)
+    #        │ │ ┌───────────── day of the month (1 - 31)
+    #        │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #        │ │ │ │ │
+    - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
+
+env:
+  CIBW_BUILD_VERBOSITY: 2
+  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest"
+  CIBW_TEST_COMMAND: pytest --pyargs dipy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_linux_wheels:
+    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_manylinux: [manylinux2014]
+        cibw_arch: ["x86_64", "aarch64"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: "3.12"
+      - name: Set up QEMU
+        if: ${{ matrix.cibw_arch == 'aarch64' }}
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel
+      - name: Build the wheel
+        run: python -m cibuildwheel --output-dir dist
+        env:
+            CIBW_BUILD: ${{ matrix.cibw_python }}
+            CIBW_ARCHS_LINUX: ${{ matrix.cibw_arch }}
+            CIBW_SKIP: "*-musllinux_*"
+            CIBW_TEST_SKIP: "*_aarch64"
+            CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
+            CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+      - uses: actions/upload-artifact@v3
+        with:
+            name: wheels
+            path: ./dist/*.whl
+
+  build_osx_wheels:
+    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest]
+        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_manylinux: [manylinux1]
+        cibw_arch: ["x86_64", "arm64"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: "3.12"
+      - name: Set up QEMU
+        if: ${{ matrix.cibw_arch == 'aarch64' }}
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel
+      - name: Build the wheel
+        run: python -m cibuildwheel --output-dir dist
+        env:
+            CIBW_BUILD: ${{ matrix.cibw_python }}
+            CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
+            CIBW_TEST_SKIP: "*_aarch64 *-macosx_arm64"
+            CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
+            CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+      - uses: actions/upload-artifact@v3
+        with:
+            name: wheels
+            path: ./dist/*.whl
+
+  build_windows_wheels:
+    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_arch: ["AMD64"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: "3.12"
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel
+      - name: Build the wheel
+        run: python -m cibuildwheel --output-dir dist
+        env:
+            CIBW_BUILD: ${{ matrix.cibw_python }}
+            CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
+      - uses: actions/upload-artifact@v3
+        with:
+            name: wheels
+            path: ./dist/*.whl
+
+  upload_anaconda:
+      permissions:
+        contents: write # for softprops/action-gh-release to create GitHub release
+      name: Upload to Anaconda
+      needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
+      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: wheels
+          path: ./dist
+      - name: Upload wheel
+        uses: skoudoro/upload-nightly-action@d6241ac63286d85a552e69c6dff8505ca9fe3589   # scientific-python/upload-nightly-action@main
+        with:
+          artifacts_path: dist
+          anaconda_nightly_upload_token: ${{secrets.ANACONDA_NIGHTLY_TOKEN}}
+          anaconda_nightly_upload_organization: dipy
+          anaconda_nightly_upload_labels: dev
