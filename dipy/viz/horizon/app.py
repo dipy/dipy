@@ -59,6 +59,8 @@ class Horizon:
             Contains peak directions and spherical harmonic coefficients
         cluster : bool
             Enable QuickBundlesX clustering
+        rgb : bool, optional
+            Enable the color image (rgb only, alpha channel will be ignored).
         cluster_thr : float
             Distance threshold used for clustering. Default value 15.0 for
             small animal data you may need to use something smaller such
@@ -456,7 +458,6 @@ class Horizon:
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:
-                        # print(self.rgb)
                         slices_viz = SlicesVisualizer(
                             self.show_m.iren, scene, data, affine=affine,
                             world_coords=self.world_coords,
@@ -466,7 +467,6 @@ class Horizon:
                             force_render=self._show_force_render))
                         img_count += 1
                 else:
-                    # print(self.rgb)
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
                         world_coords=self.world_coords, rgb=self.rgb)

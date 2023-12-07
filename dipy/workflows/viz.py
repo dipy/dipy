@@ -43,7 +43,7 @@ class HorizonFlow(Workflow):
         cluster : bool, optional
             Enable QuickBundlesX clustering.
         rgb : bool, optional
-            Enable the color image.
+            Enable the color image (rgb only, alpha channel will be ignored).
         cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal brains you may need to use something smaller such
@@ -170,9 +170,6 @@ class HorizonFlow(Workflow):
             if ends('.nii.gz') or ends('.nii'):
 
                 data, affine = load_nifti(fname)
-                # data = np.stack(np.array([data, data, data]), axis=-1)
-                # data[data >= 0.2] = 0.9
-                # print(data)
                 images.append((data, affine))
                 if verbose:
                     print('Affine to RAS')
