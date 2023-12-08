@@ -16,6 +16,7 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
 from libc.stdlib cimport malloc, free
 
 
+#need cpdef to access cdef functions?
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                TrackingParameters params):
@@ -23,19 +24,29 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
         cnp.npy_intp _len=seed_positons.shape[0]
         double[:,:,:] streamlines_arr
         double[:] status_arr
+        cnp.npy_intp i, j
+
+    #print(_len, flush=True)
 
     # temporary array to store generated streamlines
-    streamlines_arr =  np.array(np.zeros((_len, params.max_len, 3)), order='C')
-    status_arr =  np.array(np.zeros((_len)) - 2, order='C')
+    streamlines_arr =  np.array(np.zeros((_len, params.max_len * 2 + 1, 3)), order='C')
+    status_arr =  np.array(np.zeros((_len)), order='C')
 
+    #stream = np.empty((self.max_length + 1, 3), dtype=float)
     generate_tractogram_c(seed_positons,
                           seed_directions,
                           _len, params, streamlines_arr, status_arr)
-
     streamlines = []
     for i in range(_len):
         # array to list
-        pass
+        s = []
+        for j in range(params.max_len):
+            if norm(&streamlines_arr[i,j,0]) > 0:
+                s.append(list(np.copy(streamlines_arr[i,j])))
+            else:
+                break
+        if len(s) > 1:
+            streamlines.append(np.array(s))
 
     return streamlines
 
@@ -47,77 +58,99 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,:,:] streamlines,
                                double[:] status):
     cdef:
-        cnp.npy_intp i, j
+        cnp.npy_intp i, j, k
+
 
     # <<cython.parallel.prange>>
     for i in range(nbr_seeds):
-        stream_x = <double*> malloc(params.max_len *  sizeof(double))
-        stream_y = <double*> malloc(params.max_len *  sizeof(double))
-        stream_z = <double*> malloc(params.max_len *  sizeof(double))
+        #stream_x = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
+        #stream_y = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
+        #stream_z = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
+        stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
 
-        status[i] = generate_local_streamline(seed_positons[i],
-                                              seed_directions[i],
-                                              stream_x,
-                                              stream_y,
-                                              stream_z,
+        #for j in range(params.max_len * 2 + 1):
+        #    stream_x[j] = 0
+        #    stream_y[j] = 0
+        #    stream_z[j] = 0
+
+        for j in range(params.max_len * 3 * 2 + 1):
+            stream[j] = 0
+
+        status[i] = generate_local_streamline(&seed_positons[i][0],
+                                              &seed_directions[i][0],
+                                              stream,
                                               params)
-        for j in range(params.max_len):
-                streamlines[i,j,0] = stream_x[j]
-                streamlines[i,j,1] = stream_y[j]
-                streamlines[i,j,2] = stream_z[j]
-        free(stream_x)
-        free(stream_y)
-        free(stream_z)
+        k = 0
+        for j in range(params.max_len * 2 + 1):
+            if (stream[j * 3] != 0
+                and stream[j * 3 + 1] !=0
+                and stream[j * 3 + 2] != 0):
+                streamlines[i,k,0] = stream[j * 3]
+                streamlines[i,k,1] = stream[j * 3 + 1]
+                streamlines[i,k,2] = stream[j * 3 + 2]
+                k = k + 1
+        #free(stream_x)
+        #free(stream_y)
+        #free(stream_z)
+        free(stream)
 
     return 0
 
 
-cdef int generate_local_streamline(double[::1] seed,
-                                   double[::1] direction,
-                                   double* stream_x,
-                                   double* stream_y,
-                                   double* stream_z,
+cdef int generate_local_streamline(double* seed,
+                                   double* direction,
+                                   double* stream,
                                    TrackingParameters params):
     cdef:
         cnp.npy_intp i, j
         double point[3]
         double voxdir[3]
-        StreamlineStatus stream_status
-
+        StreamlineStatus stream_status_forward, stream_status_backward
     # set the initial position
-    copy_point(&seed[0], point)
-    #copy_point(&seed[0], &streamline[0,0])
-    stream_x[i] = seed[0]
-    stream_y[i] = seed[1]
-    stream_z[i] = seed[2]
+    copy_point(seed, point)
+    copy_point(direction, voxdir)
+    copy_point(seed, &stream[params.max_len * 3])
 
-    stream_status = TRACKPOINT
+    # forward tracking
+    stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(&point[0], &direction[0], params):
+        if probabilistic_tracker(&point[0], &voxdir[0], params):
             break
-
         # update position
         for j in range(3):
-            point[j] += direction[j] / params.voxel_size[j] * params.step_size
+            point[j] += voxdir[j] / params.voxel_size[j] * params.step_size
 
-        #copy_point(point, &streamline[i, 0])
-        stream_x[i] = point[0]
-        stream_y[i] = point[1]
-        stream_z[i] = point[2]
+        copy_point(point, &stream[(params.max_len + i )* 3])
 
-        stream_status = params.sc.check_point_c(point)
-        if stream_status == TRACKPOINT:
-            continue
-        elif (stream_status == ENDPOINT or
-              stream_status == INVALIDPOINT or
-              stream_status == OUTSIDEIMAGE):
+        stream_status_forward = params.sc.check_point_c(point)
+        if (stream_status_forward == ENDPOINT or
+            stream_status_forward == INVALIDPOINT or
+            stream_status_forward == OUTSIDEIMAGE):
             break
-    else:
-        # maximum length of streamline has been reached, return everything
-        i = params.max_len
 
-        # i should be return to know the length of the streamline
-    return stream_status
+    # backward tracking
+    copy_point(seed, point)
+    copy_point(direction, voxdir)
+    for j in range(3):
+        voxdir[j] = voxdir[j] * -1
+    stream_status_backward = TRACKPOINT
+    for i in range(1, params.max_len):
+        if probabilistic_tracker(&point[0], &voxdir[0], params):
+            break
+        # update position
+        for j in range(3):
+            point[j] += voxdir[j] / params.voxel_size[j] * params.step_size
+
+        copy_point(point, &stream[(params.max_len + i )* 3])
+
+
+        stream_status_backward = params.sc.check_point_c(point)
+        if (stream_status_backward == ENDPOINT or
+            stream_status_backward == INVALIDPOINT or
+            stream_status_backward == OUTSIDEIMAGE):
+            break
+    # need to handle stream status
+    return 0 #stream_status
 
 
 cdef double* get_pmf(double* point,
@@ -174,7 +207,7 @@ cdef int probabilistic_tracker(double* point,
     idx = where_to_insert(pmf, random() * last_cdf, params.pmf_len)
 
     newdir = params.vertices[idx]
-    # Update direction and return 0 for error
+    # Update direction
     if (direction[0] * newdir[0]
         + direction[1] * newdir[1]
         + direction[2] * newdir[2] > 0):
@@ -206,3 +239,18 @@ cdef int paralle_transport_tracker(double* point,
 
     return 1
 
+
+
+cdef class ProbabilisticTrackingParameters(TrackingParameters):
+
+    def __cinit__(self, sc, max_len, step_size, voxel_size, cos_similarity,
+                  pmf_threshold, pmf_gen, pmf_len, vertices):
+        self.sc = sc
+        self.max_len = max_len
+        self.step_size = step_size
+        self.voxel_size = voxel_size
+        self.cos_similarity = cos_similarity
+        self.pmf_threshold = pmf_threshold
+        self.pmf_gen = pmf_gen
+        self.pmf_len = pmf_len
+        self.vertices = vertices
