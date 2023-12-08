@@ -20,10 +20,11 @@ from dipy.align import floating
 from dipy.testing.decorators import set_random_number_generator
 
 
-def test_trilinear_interpolate():
+@set_random_number_generator()
+def test_trilinear_interpolate(rng):
     """This tests that the trilinear interpolation returns the correct values.
     """
-    a, b, c = np.random.random(3)
+    a, b, c = rng.random(3)
 
     def linear_function(x, y, z):
         return a * x + b * y + c * z

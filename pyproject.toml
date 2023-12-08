@@ -1,2 +1,177 @@
+[project]
+name = "dipy"
+description = "Diffusion MRI Imaging in Python"
+license = {file = "LICENSE"}
+readme = "README.rst"
+requires-python = ">=3.8"
+authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
+maintainers = [
+    {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
+    {name = "Ariel Rokem", email="neuroimaging@python.org"},
+    {name = "Serge Koudoro", email="neuroimaging@python.org"},
+]
+keywords = ["dipy", "diffusionimaging", "dti", "tracking", "tractography",
+            "diffusionmri", "mri", "tractometry", "connectomics", "brain",
+            "dipymri", "microstructure", "deeplearning", "registration",
+            "segmentations", "simulation", "medical", "imaging", "brain",
+            "machinelearning", "signalprocessing"]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3 :: Only',
+    "Topic :: Software Development :: Libraries",
+    'Topic :: Scientific/Engineering',
+    "Operating System :: OS Independent",
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+dynamic = ['version']
+dependencies = [
+    "cython>=0.29.24, !=0.29.29",
+    "numpy>=1.22.4",
+    "scipy>=1.8",
+    "nibabel>=3.0.0",
+    "h5py>=3.1.0",
+    "packaging>=21",
+    "tqdm>=4.30.0",
+    "trx-python>=0.2.9",
+]
+
+[project.scripts]
+dipy_align_syn = "dipy.workflows.cli:dipy_align_syn"
+dipy_align_affine = "dipy.workflows.cli:dipy_align_affine"
+dipy_apply_transform = "dipy.workflows.cli:dipy_apply_transform"
+dipy_buan_shapes = "dipy.workflows.cli:dipy_buan_shapes"
+dipy_buan_profiles = "dipy.workflows.cli:dipy_buan_profiles"
+dipy_buan_lmm = "dipy.workflows.cli:dipy_buan_lmm"
+dipy_bundlewarp = "dipy.workflows.cli:dipy_bundlewarp"
+dipy_correct_motion = "dipy.workflows.cli:dipy_correct_motion"
+dipy_denoise_nlmeans = "dipy.workflows.cli:dipy_denoise_nlmeans"
+dipy_denoise_lpca = "dipy.workflows.cli:dipy_denoise_lpca"
+dipy_denoise_mppca = "dipy.workflows.cli:dipy_denoise_mppca"
+dipy_denoise_patch2self = "dipy.workflows.cli:dipy_denoise_patch2self"
+dipy_evac_plus = "dipy.workflows.cli:dipy_evac_plus"
+dipy_fetch = "dipy.workflows.cli:dipy_fetch"
+dipy_fit_csa = "dipy.workflows.cli:dipy_fit_csa"
+dipy_fit_csd = "dipy.workflows.cli:dipy_fit_csd"
+dipy_fit_dki = "dipy.workflows.cli:dipy_fit_dki"
+dipy_fit_dti = "dipy.workflows.cli:dipy_fit_dti"
+dipy_fit_ivim = "dipy.workflows.cli:dipy_fit_ivim"
+dipy_fit_mapmri = "dipy.workflows.cli:dipy_fit_mapmri"
+dipy_mask = "dipy.workflows.cli:dipy_mask"
+dipy_gibbs_ringing = "dipy.workflows.cli:dipy_gibbs_ringing"
+dipy_horizon = "dipy.workflows.cli:dipy_horizon"
+dipy_info = "dipy.workflows.cli:dipy_info"
+dipy_labelsbundles = "dipy.workflows.cli:dipy_labelsbundles"
+dipy_median_otsu = "dipy.workflows.cli:dipy_median_otsu"
+dipy_recobundles = "dipy.workflows.cli:dipy_recobundles"
+dipy_reslice = "dipy.workflows.cli:dipy_reslice"
+dipy_snr_in_cc = "dipy.workflows.cli:dipy_snr_in_cc"
+dipy_split = "dipy.workflows.cli:dipy_split"
+dipy_track = "dipy.workflows.cli:dipy_track"
+dipy_track_pft = "dipy.workflows.cli:dipy_track_pft"
+dipy_slr = "dipy.workflows.cli:dipy_slr"
+
+[project.optional-dependencies]
+all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
+style = ["flake8", "isort"]
+viz = ["fury>=0.9.0", "matplotlib"]
+test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
+ml = ["scikit_learn", "pandas", "statsmodels", "tables", "tensorflow",  "tensorflow-addons"]
+dev = [
+    # Also update [build-system] -> requires
+    'meson-python>=0.13',
+    'wheel',
+    'setuptools>=67',
+    'packaging>=21',
+    'ninja',
+    'Cython>=0.29.32',
+    'numpy>=1.22',
+    # Developer UI
+    'spin>=0.5',
+    'build',
+]
+
+extra = ["dipy[viz, ml]",
+         "cvxpy",
+         "scikit-image",
+         "boto3"
+        ]
+
+doc = [
+    "numpydoc",
+    "sphinx ~= 5.3",
+    "texext",
+    "tomli; python_version < \"3.11\"",
+    "sphinxcontrib-bibtex",
+    "sphinx_design",
+    "sphinx-gallery>=0.10.0",
+    "tomli>=2.0.1",
+    "grg-sphinx-theme>=0.2.0",
+    "Jinja2"
+]
+
+
+[project.urls]
+homepage = "https://dipy.org"
+documentation = "https://dipy.org/documentation/latest/documentation/"
+source = "https://github.com/dipy/dipy"
+download = "https://pypi.org/project/dipy/#files"
+tracker = "https://github.com/dipy/dipy/issues"
+
 [build-system]
-requires = ["setuptools>=42", "wheel", "packaging", "cython", "nibabel", "numpy", "scipy"]
+build-backend = "mesonpy"
+requires = [
+    "meson-python>=0.13.1",
+    "Cython>=0.29.35",
+    "packaging>21.0",
+    "wheel",
+    "numpy==1.19.5; python_version=='3.8' and platform_python_implementation != 'PyPy'",
+    "numpy==1.22.4; python_version=='3.9' and platform_python_implementation != 'PyPy'",
+    "numpy==1.22.4; python_version=='3.10' and platform_system=='Windows' and platform_python_implementation != 'PyPy'",
+    "numpy==1.22.4; python_version=='3.10' and platform_system != 'Windows' and platform_python_implementation != 'PyPy'",
+    "numpy==1.23.3; python_version=='3.11' and platform_python_implementation != 'PyPy'",
+    "numpy>=1.26.0b1; python_version>='3.12'",
+    "numpy; python_version>='3.8' and platform_python_implementation=='PyPy'",
+]
+
+[tool.spin]
+package = 'dipy'
+
+[tool.spin.commands]
+Build = [
+    "spin.cmds.meson.build",
+    "spin.cmds.meson.test",
+    "spin.cmds.build.sdist",
+    ".spin/cmds.py:clean"
+]
+
+Environments = [
+    "spin.cmds.meson.run",
+    "spin.shell",
+    "spin.ipython",
+    "spin.python"
+]
+
+"Documentation" = [
+    "spin.cmds.meson.docs",
+    # ".spin/cmds.py:docs"
+]
+Metrics = [
+    ".spin/cmds.py:bench",
+    # ".spin/cmds.py:coverage
+]
+# TODO: Add custom commands
+
+[tool.pytest.ini_options]
+addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"

@@ -24,6 +24,8 @@ import dipy.core.sphere as dps
 
 from dipy.sims.voxel import single_tensor
 
+from dipy.testing.decorators import set_random_number_generator
+
 
 def test_roll_evals():
     # Just making sure this never passes through
@@ -31,9 +33,10 @@ def test_roll_evals():
     npt.assert_raises(ValueError, dti._roll_evals, weird_evals)
 
 
-def test_tensor_algebra():
+@set_random_number_generator()
+def test_tensor_algebra(rng):
     # Test that the computation of tensor determinant and norm is correct
-    test_arr = np.random.rand(10, 3, 3)
+    test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
     t_norm = dti.norm(test_arr)
     for i, x in enumerate(test_arr):
@@ -511,7 +514,8 @@ def test_mask():
                                     dtifit.S0_hat[0, 0, 0])
 
 
-def test_nnls_jacobian_func():
+@set_random_number_generator()
+def test_nnls_jacobian_func(rng):
     b0 = 1000.
     bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
@@ -526,7 +530,7 @@ def test_nnls_jacobian_func():
     # Signals
     Y = np.exp(np.dot(X, D_orig))
     scale = 10
-    error = np.random.normal(scale=scale, size=Y.shape)
+    error = rng.normal(scale=scale, size=Y.shape)
     Y = Y + error
 
     # although sigma and gmm gradients seem correct from inspection,

@@ -107,10 +107,11 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
-def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
-                        symmetric=True, return_mapping=False,
+def connectivity_matrix(streamlines, affine, label_volume,
+                        inclusive=False, symmetric=True,
+                        return_mapping=False,
                         mapping_as_streamlines=False):
-    """Count the streamlines that start and end at each label pair.
+    """ Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -124,8 +125,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         volume map to anatomical structures.
     inclusive: bool
         Whether to analyze the entire streamline, as opposed to just the
-        endpoints. Allowing this will increase calculation time and mapping
-        size, especially if mapping_as_streamlines is True. False by default.
+        endpoints. False by default.
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -146,8 +146,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         to region `j`. If `symmetric` is True mapping will only have one key
         for each start end pair such that if ``i < j`` mapping will have key
         ``(i, j)`` but not key ``(j, i)``.
-
     """
+
     # Error checking on label_volume
     kind = label_volume.dtype.kind
     labels_positive = ((kind == 'u') or
@@ -157,89 +157,59 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         raise ValueError("label_volume must be a 3d integer array with"
                          "non-negative label values")
 
-    # If streamlines is an iterator
-    if return_mapping and mapping_as_streamlines:
-        streamlines = list(streamlines)
+    matrix = np.zeros((np.max(label_volume)+1, np.max(label_volume)+1),
+                      dtype=np.int64)
+
+    mapping = defaultdict(list)
+    lin_T, offset = _mapping_to_voxel(affine)
 
     if inclusive:
-        # Create ndarray to store streamline connections
-        edges = np.ndarray(shape=(3, 0), dtype=int)
-        lin_T, offset = _mapping_to_voxel(affine)
-        for sl, _ in enumerate(streamlines):
-            # Convert streamline to voxel coordinates
-            entire = _to_voxel_coordinates(streamlines[sl], lin_T, offset)
-            i, j, k = entire.T
 
+        for i, sl in enumerate(streamlines):
+
+            sl = _to_voxel_coordinates(sl, lin_T, offset)
+            x, y, z = sl.T
             if symmetric:
-                # Create list of all labels streamline passes through
-                entirelabels = list(OrderedDict.fromkeys(label_volume[i, j, k]))
-                # Append all connection combinations with streamline number
-                for comb in combinations(entirelabels, 2):
-                    edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
-                                      axis=1)
+                crossed_labels = np.unique(label_volume[x, y, z])
             else:
-                # Create list of all labels streamline passes through, keeping
-                # order and whether a label was entered multiple times
-                entirelabels = list(groupby(label_volume[i, j, k]))
-                # Append connection combinations along with streamline number,
-                # removing duplicates and connections from a label to itself
-                combs = set(combinations([z[0] for z in entirelabels], 2))
-                for comb in combs:
-                    if comb[0] == comb[1]:
-                        pass
+                crossed_labels = np.unique(label_volume[x, y, z],
+                                           return_index=True)
+                crossed_labels = crossed_labels[0][np.argsort(
+                    crossed_labels[1])]
+
+            for comb in combinations(crossed_labels, 2):
+                matrix[comb] += 1
+
+                if return_mapping:
+                    if mapping_as_streamlines:
+                        mapping[comb].append(streamlines[i])
                     else:
-                        edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
-                                          axis=1)
-        if symmetric:
-            edges[0:2].sort(0)
-        mx = label_volume.max() + 1
-        matrix = ndbincount(edges[0:2], shape=(mx, mx))
+                        mapping[comb].append(i)
 
-        if symmetric:
-            matrix = np.maximum(matrix, matrix.T)
-        if return_mapping:
-            mapping = defaultdict(list)
-            for i, (a, b, c) in enumerate(edges.T):
-                mapping[a, b].append(c)
-            # Replace each list of indices with the streamlines they index
-            if mapping_as_streamlines:
-                for key in mapping:
-                    mapping[key] = [streamlines[i] for i in mapping[key]]
-
-            return matrix, mapping
-
-        return matrix
     else:
-        # take the first and last point of each streamline
-        endpoints = [sl[0::len(sl)-1] for sl in streamlines]
-
-        # Map the streamlines coordinates to voxel coordinates
-        lin_T, offset = _mapping_to_voxel(affine)
-        endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
-
-        # get labels for label_volume
-        i, j, k = endpoints.T
-        endlabels = label_volume[i, j, k]
+        streamlines_end = np.array([sl[0::len(sl)-1] for sl in streamlines])
+        streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
+        x, y, z = streamlines_end.T
         if symmetric:
-            endlabels.sort(0)
-        mx = label_volume.max() + 1
-        matrix = ndbincount(endlabels, shape=(mx, mx))
-        if symmetric:
-            matrix = np.maximum(matrix, matrix.T)
+            end_labels = np.sort(label_volume[x, y, z], axis=0)
+        else:
+            end_labels = label_volume[x, y, z]
+        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
 
         if return_mapping:
-            mapping = defaultdict(list)
-            for i, (a, b) in enumerate(endlabels.T):
-                mapping[a, b].append(i)
-
-            # Replace each list of indices with the streamlines they index
             if mapping_as_streamlines:
-                for key in mapping:
-                    mapping[key] = [streamlines[i] for i in mapping[key]]
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(streamlines[i])
+            else:
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(i)
 
-            # Return the mapping matrix and the mapping
-            return matrix, mapping
+    if symmetric:
+        matrix = np.maximum(matrix, matrix.T)
 
+    if return_mapping:
+        return (matrix, mapping)
+    else:
         return matrix
 
 
@@ -469,7 +439,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
         If True, seeds_count is per voxel, else seeds_count is the total number
         of seeds.
     random_seed : int
-        The seed for the random seed generator (numpy.random.seed).
+        The seed for the random seed generator (numpy.random.Generator).
 
     See Also
     --------
@@ -486,22 +456,22 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
     >>> mask[0,0,0] = 1
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.0640051 , -0.47407377,  0.04966248]])
+    array([[-0.23838787, -0.20150886,  0.31422574]])
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.0640051 , -0.47407377,  0.04966248],
-           [ 0.0507979 ,  0.20814782, -0.20909526],
-           [ 0.46702984,  0.04723225,  0.47268436],
-           [-0.27800683,  0.37073231, -0.29328084],
-           [ 0.39286015, -0.16802019,  0.32122912],
-           [-0.42369171,  0.27991879, -0.06159077]])
+    array([[-0.23838787, -0.20150886,  0.31422574],
+           [-0.41435083, -0.26318949,  0.30127447],
+           [ 0.44305611,  0.01132755,  0.47624371],
+           [ 0.30500292,  0.30794079,  0.01532556],
+           [ 0.03816435, -0.15672913, -0.13093276],
+           [ 0.12509547,  0.3972138 ,  0.27568569]])
     >>> mask[0,1,2] = 1
     >>> random_seeds_from_mask(mask, np.eye(4),
     ... seeds_count=2, seed_count_per_voxel=True, random_seed=1)
-    array([[-0.0640051 , -0.47407377,  0.04966248],
-           [-0.27800683,  1.37073231,  1.70671916],
-           [ 0.0507979 ,  0.20814782, -0.20909526],
-           [-0.48962585,  1.00187459,  1.99577329]])
+    array([[ 0.30500292,  1.30794079,  2.01532556],
+           [-0.23838787, -0.20150886,  0.31422574],
+           [ 0.3702492 ,  0.78681721,  2.10314815],
+           [-0.41435083, -0.26318949,  0.30127447]])
 
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
@@ -509,11 +479,11 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
         raise ValueError('mask cannot be more than 3d')
 
     # Randomize the voxels
-    np.random.seed(random_seed)
+    rng = np.random.default_rng(random_seed)
     shape = mask.shape
     mask = mask.flatten()
     indices = np.arange(len(mask))
-    np.random.shuffle(indices)
+    rng.shuffle(indices)
 
     where = [np.unravel_index(i, shape) for i in indices if mask[i] == 1]
     num_voxels = len(where)
@@ -532,9 +502,9 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
             if random_seed is not None:
                 s_random_seed = hash((np.sum(s) + 1) * i + random_seed) \
                     % (2**32 - 1)
-                np.random.seed(s_random_seed)
+                rng = np.random.default_rng(s_random_seed)
             # Generate random triplet
-            grid = np.random.random(3)
+            grid = rng.random(3)
             seed = s + grid - .5
             seeds.append(seed)
     seeds = np.asarray(seeds)

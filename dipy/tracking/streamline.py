@@ -324,7 +324,7 @@ def select_by_rois(streamlines, affine, rois, include, mode=None,
                                          mode=mode)
         exclude = ut.streamline_near_roi(sl, x_exclude_roi_coords, tol=tol,
                                          mode=mode)
-        if include & ~exclude:
+        if include and not exclude:
             yield sl
 
 

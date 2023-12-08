@@ -119,7 +119,13 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     model_bundle : streamlines
         atlas bundle used as reference
     no_disks : integer, optional
-        Number of disks used for dividing bundle into disks. (Default 100)
+        Number of disks used for dividing bundle into disks.
+
+    Returns
+    -------
+    indx : ndarray
+        Assignment map of the target bundle streamline point indices to the
+        model bundle centroid points.
 
     References
     ----------

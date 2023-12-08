@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.tracking import LocalFiberTrackingPAMFlow
+from dipy.workflows.cli import dipy_track
 
 if __name__ == "__main__":
-    run_flow(LocalFiberTrackingPAMFlow())
+    dipy_track()

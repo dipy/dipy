@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.stats import BundleShapeAnalysis
+from dipy.workflows.cli import dipy_buan_shapes
 
 if __name__ == "__main__":
-    run_flow(BundleShapeAnalysis())
+    dipy_buan_shapes()

@@ -123,7 +123,7 @@ def streamline_mapping(streamlines, affine=None,
 
     """
     cdef:
-        cnp.int_t[:, :] voxel_indices
+        cnp.npy_intp[:, :] voxel_indices
 
     lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
@@ -398,8 +398,8 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     vox_sizes = np.asarray(vox_sizes).astype(np.double)
     n_voxels = np.prod(vol_dims)
     # output track counts array, flattened
-    cdef cnp.ndarray[cnp.int_t, ndim=1] tcs = \
-        np.zeros((n_voxels,), dtype=int)
+    cdef cnp.ndarray[cnp.npy_intp, ndim=1] tcs = \
+        np.zeros((n_voxels,), dtype=np.intp)
     # pointer to output track indices
     cdef cnp.npy_intp i
     if return_elements:

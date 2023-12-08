@@ -7,9 +7,10 @@ Decorators for dipy tests
 import re
 import os
 import platform
+import inspect
 import numpy as np
 
-SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
+SKIP_RE = re.compile(r"(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
 
 
 def doctest_skip_parser(func):
@@ -82,10 +83,14 @@ def set_random_number_generator(seed_v=1234):
 
     """
     def _set_random_number_generator(func):
-        def _set_random_number_generator_wrapper(*args, **kwargs):
+        def _set_random_number_generator_wrapper(pytestconfig, *args, **kwargs):
             rng = np.random.default_rng(seed_v)
             kwargs['rng'] = rng
-            output = func(*args, **kwargs)
+            signature = inspect.signature(func)
+            if pytestconfig and 'pytestconfig' in signature.parameters.keys():
+                output = func(pytestconfig, *args, **kwargs)
+            else:
+                output = func(*args, **kwargs)
             return output
         return _set_random_number_generator_wrapper
     return _set_random_number_generator

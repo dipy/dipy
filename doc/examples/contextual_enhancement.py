@@ -108,8 +108,9 @@ gtab = gradient_table(bvals, bvecs)
 # Add Rician noise
 b0_slice = data[:, :, :, 1]
 b0_mask, mask = median_otsu(b0_slice)
-np.random.seed(1)
-data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
+rng = np.random.default_rng(1)
+data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]),
+                       noise_type='rician', rng=rng)
 
 # Select a small part of it.
 padding = 3  # Include a larger region to avoid boundary effects

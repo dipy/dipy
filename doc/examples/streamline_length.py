@@ -27,21 +27,23 @@ from dipy.viz import window, actor
 
 
 def simulated_bundles(no_streamlines=50, n_pts=100):
-    t = np.linspace(-10, 10, n_pts)
+   rng = np.random.default_rng()
 
-    bundle = []
-    for i in np.linspace(3, 5, no_streamlines):
-        pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t)).T
-        bundle.append(pts)
+   t = np.linspace(-10, 10, n_pts)
 
-    start = np.random.randint(10, 30, no_streamlines)
-    end = np.random.randint(60, 100, no_streamlines)
+   bundle = []
+   for i in np.linspace(3, 5, no_streamlines):
+      pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t )).T
+      bundle.append(pts)
 
-    bundle = [10 * streamline[start[i]:end[i]]
-              for (i, streamline) in enumerate(bundle)]
-    bundle = [np.ascontiguousarray(streamline) for streamline in bundle]
+   start = rng.integers(10, 30, no_streamlines)
+   end = rng.integers(60, 100, no_streamlines)
 
-    return bundle
+   bundle = [10 * streamline[start[i]:end[i]]
+             for (i, streamline) in enumerate(bundle)]
+   bundle = [np.ascontiguousarray(streamline) for streamline in bundle]
+
+   return bundle
 
 
 bundle = simulated_bundles()
@@ -128,7 +130,7 @@ scene.add(bundle_actor3)
 scene.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
 window.record(scene, out_path='simulated_cosine_bundle.png', size=(900, 900))
 if interactive:
-    window.show(scene)
+   window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -17,6 +17,7 @@ from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.vox2track import streamline_mapping
 import numpy.testing as npt
 from dipy.testing import assert_true
+from dipy.testing.decorators import set_random_number_generator
 
 
 def make_streamlines(return_seeds=False):
@@ -464,7 +465,8 @@ def test_streamline_mapping():
     npt.assert_equal(mapping, expected)
 
 
-def test_length():
+@set_random_number_generator()
+def test_length(rng):
     # Generate a simulated bundle of fibers:
     n_streamlines = 50
     n_pts = 100
@@ -475,8 +477,8 @@ def test_length():
         pts = np.vstack((np.cos(2 * t / np.pi), np.zeros(t.shape) + i, t)).T
         bundle.append(pts)
 
-    start = np.random.randint(10, 30, n_streamlines)
-    end = np.random.randint(60, 100, n_streamlines)
+    start = rng.integers(10, 30, n_streamlines)
+    end = rng.integers(60, 100, n_streamlines)
 
     bundle = [10 * streamline[start[i]:end[i]] for (i, streamline) in
               enumerate(bundle)]
@@ -486,8 +488,9 @@ def test_length():
         npt.assert_equal(this_length, metrics.length(bundle[idx]))
 
 
-def test_seeds_from_mask():
-    mask = np.random.randint(0, 1, size=(10, 10, 10))
+@set_random_number_generator()
+def test_seeds_from_mask(rng):
+    mask = rng.integers(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, np.eye(4), density=1)
     npt.assert_equal(mask.sum(), len(seeds))
     npt.assert_array_equal(np.argwhere(mask), seeds)
@@ -508,8 +511,9 @@ def test_seeds_from_mask():
     npt.assert_equal(in_444.sum(), 3 * 4 * 5)
 
 
-def test_random_seeds_from_mask():
-    mask = np.random.randint(0, 1, size=(4, 6, 3))
+@set_random_number_generator()
+def test_random_seeds_from_mask(rng):
+    mask = rng.integers(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=24,
                                    seed_count_per_voxel=True)
@@ -624,7 +628,8 @@ def test_reduce_rois():
     npt.assert_warns(UserWarning, reduce_rois, [roi2], [True])
 
 
-def test_path_length():
+@set_random_number_generator()
+def test_path_length(rng):
     aoi = np.zeros((20, 20, 20), dtype=bool)
     aoi[0, 0, 0] = 1
 
@@ -660,7 +665,7 @@ def test_path_length():
     aoi[0, 0, 0] = 1
     streamlines = []
     for i in range(1000):
-        rando = np.random.random(size=(100, 3)) * 19 + .5
+        rando = rng.random(size=(100, 3)) * 19 + .5
         assert (rando > .5).all()
         assert (rando < 19.5).all()
         streamlines.append(rando)

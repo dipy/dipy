@@ -437,7 +437,7 @@ class QpFitter:
 
 
 def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
-                               sphere=None, tol=20):
+                               sphere=None, tol=20, btens=None):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
@@ -457,6 +457,17 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         Sphere where the signal will be evaluated.
     tol : int, optional
         Tolerance gap for b-values clustering.
+    btens : can be any of two options, optional
+
+        1. an array of strings of shape (N,) specifying
+           encoding tensor shape associated with all unique b-values
+           separately. N corresponds to the number of unique b-values,
+           including the b0. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding.
+        2. an array of shape (N,3,3) specifying the b-tensor of each unique
+           b-values exactly. N corresponds to the number of unique b-values,
+           including the b0.
 
     Returns
     -------
@@ -467,6 +478,11 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     rcond_value = None if NUMPY_1_14_PLUS else -1
 
     bvals = np.array(bvals, copy=True)
+    if btens is None:
+        btens = np.repeat(["LTE"], len(bvals))
+    elif len(btens) != len(bvals):
+        msg = """bvals and btens parameters must have the same dimension."""
+        raise ValueError(msg)
     evecs = np.zeros((3, 3))
     z = np.array([0, 0, 1.])
     evecs[:, 0] = z
@@ -487,7 +503,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     response = np.empty([len(bvals), len(n) + 2])
 
     if bvals[0] < tol:
-        gtab = GradientTable(big_sphere.vertices * 0)
+        gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
         wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs,
                                     snr=None)
         response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=rcond_value)[0]
@@ -496,7 +512,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         response[0, 0] = csf_rf[0, 3] / A
 
         for i, bvalue in enumerate(bvals[1:]):
-            gtab = GradientTable(big_sphere.vertices * bvalue)
+            gtab = GradientTable(big_sphere.vertices * bvalue,
+                                 btens=btens[i + 1])
             wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
                                         snr=None)
             response[i+1, 2:] = np.linalg.lstsq(B, wm_response,
@@ -510,7 +527,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     else:
         warnings.warn("""No b0 given. Proceeding either way.""", UserWarning)
         for i, bvalue in enumerate(bvals):
-            gtab = GradientTable(big_sphere.vertices * bvalue)
+            gtab = GradientTable(big_sphere.vertices * bvalue,
+                                 btens=btens[i])
             wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
                                         snr=None)
             response[i, 2:] = np.linalg.lstsq(B, wm_response,

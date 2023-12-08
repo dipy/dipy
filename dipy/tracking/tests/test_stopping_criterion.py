@@ -8,14 +8,16 @@ from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
                                               CmcStoppingCriterion,
                                               ThresholdStoppingCriterion,
                                               StreamlineStatus)
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_binary_stopping_criterion():
+@set_random_number_generator()
+def test_binary_stopping_criterion(rng):
     """This tests that the binary stopping criterion returns expected
     streamline statuses.
     """
 
-    mask = np.random.random((4, 4, 4))
+    mask = rng.random((4, 4, 4))
     mask[mask < 0.4] = 0.0
 
     btc_boolean = BinaryStoppingCriterion(mask > 0)
@@ -36,7 +38,7 @@ def test_binary_stopping_criterion():
     # Test random points in voxel
     for ind in ndindex(mask.shape):
         for _ in range(50):
-            pts = np.array(ind, dtype='float64') + np.random.random(3) - 0.5
+            pts = np.array(ind, dtype='float64') + rng.random(3) - 0.5
             state_boolean = btc_boolean.check_point(pts)
             state_float64 = btc_float64.check_point(pts)
             if mask[ind] > 0:
@@ -59,12 +61,13 @@ def test_binary_stopping_criterion():
         npt.assert_equal(state_float64, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
-def test_threshold_stopping_criterion():
+@set_random_number_generator()
+def test_threshold_stopping_criterion(rng):
     """This tests that the threshold stopping criterion returns expected
     streamline statuses.
     """
 
-    tissue_map = np.random.random((4, 4, 4))
+    tissue_map = rng.random((4, 4, 4))
 
     ttc = ThresholdStoppingCriterion(tissue_map.astype('float32'), 0.5)
 
@@ -100,14 +103,15 @@ def test_threshold_stopping_criterion():
         npt.assert_equal(state, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
-def test_act_stopping_criterion():
+@set_random_number_generator()
+def test_act_stopping_criterion(rng):
     """This tests that the act stopping criterion returns expected
     streamline statuses.
     """
 
-    gm = np.random.random((4, 4, 4))
-    wm = np.random.random((4, 4, 4))
-    csf = np.random.random((4, 4, 4))
+    gm = rng.random((4, 4, 4))
+    wm = rng.random((4, 4, 4))
+    csf = rng.random((4, 4, 4))
     tissue_sum = gm + wm + csf
     gm /= tissue_sum
     wm /= tissue_sum
