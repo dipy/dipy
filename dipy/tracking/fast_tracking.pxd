@@ -17,11 +17,9 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:] status)
 
 
-cdef int generate_local_streamline(double[::1] seed,
-                                   double[::1] position,
-                                   double* stream_x,
-                                   double* stream_y,
-                                   double* stream_z,
+cdef int generate_local_streamline(double* seed,
+                                   double* position,
+                                   double* stream,
                                    TrackingParameters params)
 
 
@@ -44,8 +42,9 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
         double       pmf_threshold
         PmfGen       pmf_gen
         int          pmf_len
-
         double[:, :] vertices
+
+
     pass
 
 cdef int probabilistic_tracker(double* point,
