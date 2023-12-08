@@ -26,6 +26,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, assert_almost_equal,)
 
 from dipy.testing.spherepoints import sphere_points
+from dipy.testing.decorators import set_random_number_generator
 from dipy.core.sphere_stats import random_uniform_on_sphere
 from itertools import permutations
 
@@ -149,7 +150,8 @@ def test_sphere_distance():
     assert_raises(ValueError, sphere_distance, [1, 0], [0, 1], 2.0)
 
 
-def test_vector_cosine():
+@set_random_number_generator()
+def test_vector_cosine(rng):
     a = [0, 1]
     b = [1, 0]
     assert_array_almost_equal(vector_cosine(a, b), 0)
@@ -164,8 +166,8 @@ def test_vector_cosine():
     assert_array_almost_equal(vector_cosine(pts1, pts2), [-1, 1])
     # test relationship with correlation
     # not the same if non-zero vector mean
-    a = np.random.uniform(size=(100,))
-    b = np.random.uniform(size=(100,))
+    a = rng.uniform(size=(100,))
+    b = rng.uniform(size=(100,))
     cc = np.corrcoef(a, b)[0, 1]
     vcos = vector_cosine(a, b)
     assert not np.allclose(cc, vcos)
@@ -267,12 +269,12 @@ def test_compose_transformations():
     assert_raises(ValueError, compose_transformations, A)
 
 
-def test_compose_decompose_matrix():
-
-    for translate in permutations(40 * np.random.rand(3), 3):
-        for angles in permutations(np.deg2rad(90 * np.random.rand(3)), 3):
-            for shears in permutations(3 * np.random.rand(3), 3):
-                for scale in permutations(3 * np.random.rand(3), 3):
+@set_random_number_generator()
+def test_compose_decompose_matrix(rng):
+    for translate in permutations(40 * rng.random(3), 3):
+        for angles in permutations(np.deg2rad(90 * rng.random(3)), 3):
+            for shears in permutations(3 * rng.random(3), 3):
+                for scale in permutations(3 * rng.random(3), 3):
 
                     mat = compose_matrix(translate=translate, angles=angles,
                                          shear=shears, scale=scale)
@@ -333,7 +335,8 @@ def _rotation_from_angles(r):
     return R
 
 
-def test_dist_to_corner():
+@set_random_number_generator()
+def test_dist_to_corner(rng):
     affine = np.eye(4)
     # Calculate the distance with the pythagorean theorem:
     pythagoras = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
@@ -341,7 +344,7 @@ def test_dist_to_corner():
     assert_array_almost_equal(dist_to_corner(affine), pythagoras)
     # Apply a rotation to the matrix, just to demonstrate the calculation is
     # robust to that:
-    R = _rotation_from_angles(np.random.randn(3) * np.pi)
+    R = _rotation_from_angles(rng.random(3) * np.pi)
     new_aff = np.vstack([np.dot(R, affine[:3, :]), [0, 0, 0, 1]])
     assert_array_almost_equal(dist_to_corner(new_aff), pythagoras)
 

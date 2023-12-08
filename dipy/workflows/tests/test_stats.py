@@ -4,15 +4,16 @@ import os
 from os.path import join
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import numpy.testing as npt
 import pytest
-import numpy as np
 
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.testing import assert_true
+from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.stats import SNRinCCFlow
@@ -76,7 +77,8 @@ def test_stats():
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
                     reason='Requires Pandas, StatsModels and PyTables')
-def test_buan_bundle_profiles():
+@set_random_number_generator()
+def test_buan_bundle_profiles(rng):
 
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
@@ -110,7 +112,7 @@ def test_buan_bundle_profiles():
         dt = os.path.join(dirpath, "anatomical_measures")
         os.mkdir(dt)
 
-        fa = np.random.rand(255, 255, 255)
+        fa = rng.random((255, 255, 255))
 
         save_nifti(os.path.join(dt, "fa.nii.gz"),
                    fa, affine=np.eye(4))
@@ -128,7 +130,8 @@ def test_buan_bundle_profiles():
                     or not have_matplotlib,
                     reason='Requires Pandas, StatsModels, PyTables, and '
                            'matplotlib')
-def test_bundle_analysis_tractometry_flow():
+@set_random_number_generator()
+def test_bundle_analysis_tractometry_flow(rng):
 
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
@@ -171,7 +174,7 @@ def test_bundle_analysis_tractometry_flow():
                             bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "anatomical_measures"))
 
-            fa = np.random.rand(255, 255, 255)
+            fa = rng.random((255, 255, 255))
 
             save_nifti(os.path.join(pre, "anatomical_measures", "fa.nii.gz"),
                        fa, affine=np.eye(4))
@@ -264,7 +267,8 @@ def test_linear_mixed_models_flow():
                     or not have_matplotlib,
                     reason='Requires Pandas, StatsModels, PyTables, and '
                            'matplotlib')
-def test_bundle_shape_analysis_flow():
+@set_random_number_generator()
+def test_bundle_shape_analysis_flow(rng):
 
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
@@ -307,7 +311,7 @@ def test_bundle_shape_analysis_flow():
                             bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "anatomical_measures"))
 
-            fa = np.random.rand(255, 255, 255)
+            fa = rng.random((255, 255, 255))
 
             save_nifti(os.path.join(pre, "anatomical_measures", "fa.nii.gz"),
                        fa, affine=np.eye(4))

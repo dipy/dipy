@@ -23,14 +23,15 @@ skip_it = use_xvfb == 'skip'
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_horizon_events():
+@set_random_number_generator()
+def test_horizon_events(rng):
     # using here MNI template affine 2009a
     affine = np.array([[1., 0., 0., -98.],
                        [0., 1., 0., -134.],
                        [0., 0., 1., -72.],
                        [0., 0., 0., 1.]])
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
 
     images = [(data, affine)]
@@ -60,8 +61,8 @@ def test_horizon_events():
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_horizon():
-
+@set_random_number_generator()
+def test_horizon(rng):
     s1 = 10 * np.array([[0, 0, 0],
                         [1, 0, 0],
                         [2, 0, 0],
@@ -90,7 +91,7 @@ def test_horizon():
                        [0., 0., 1., -72.],
                        [0., 0., 0., 1.]])
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
 
     streamlines._data += np.array([-98., -134., -72.])

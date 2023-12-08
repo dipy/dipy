@@ -1012,7 +1012,7 @@ def lcr_matrix(H):
     """Returns a matrix for computing leveraged, centered residuals from data
 
     if r = (d-Hd), the leveraged centered residuals are lcr = (r/l)-mean(r/l)
-    ruturns the matrix R, such lcr = Rd
+    returns the matrix R, such that lcr = Rd
 
     """
     if H.ndim != 2 or H.shape[0] != H.shape[1]:

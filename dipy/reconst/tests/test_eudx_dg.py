@@ -5,10 +5,11 @@ import numpy.testing as npt
 
 from dipy.direction.peaks import default_sphere, peaks_from_model
 from dipy.reconst.shm import descoteaux07_legacy_msg
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_EuDXDirectionGetter():
-
+@set_random_number_generator()
+def test_EuDXDirectionGetter(rng):
     class SillyModel:
         def fit(self, data, mask=None):
             return SillyFit(self)
@@ -20,7 +21,7 @@ def test_EuDXDirectionGetter():
 
         def odf(self, sphere):
             odf = np.zeros(sphere.theta.shape)
-            r = np.random.randint(0, len(odf))
+            r = rng.integers(0, len(odf))
             odf[r] = 1
             return odf
 
@@ -29,7 +30,7 @@ def test_EuDXDirectionGetter():
         state = dg.get_direction(point, newdir)
         return state, np.array(newdir)
 
-    data = np.random.random((3, 4, 5, 2))
+    data = rng.random((3, 4, 5, 2))
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
@@ -64,7 +65,7 @@ def test_EuDXDirectionGetter():
                 npt.assert_array_almost_equal(nd, -expected_dir)
 
                 # Check that we can get directions at non-integer points
-                point += np.random.random(3)
+                point += rng.random(3)
                 state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 0)
 

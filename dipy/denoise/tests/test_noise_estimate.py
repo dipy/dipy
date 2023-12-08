@@ -26,7 +26,8 @@ def test_inv_nchi():
     assert_almost_equal(lambdaPlus, 9.722849086419043)
 
 
-def test_piesno():
+@set_random_number_generator()
+def test_piesno(rng):
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
     test_piesno_data = load_nifti_data(dpd.get_fnames("test_piesno"))
@@ -34,8 +35,8 @@ def test_piesno():
                    return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
 
-    noise1 = (np.random.randn(100, 100, 100) * 50) + 10
-    noise2 = (np.random.randn(100, 100, 100) * 50) + 10
+    noise1 = (rng.standard_normal((100, 100, 100)) * 50) + 10
+    noise2 = (rng.standard_normal((100, 100, 100)) * 50) + 10
     rician_noise = np.sqrt(noise1**2 + noise2**2)
     sigma, mask = piesno(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
                          return_mask=True)

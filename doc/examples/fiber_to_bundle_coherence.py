@@ -60,7 +60,7 @@ from dipy.viz import window, actor
 # Enables/disables interactive visualization
 interactive = False
 # Fix seed
-np.random.seed(1)
+rng = np.random.default_rng(1)
 
 # Read data
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')

@@ -11,4 +11,5 @@ DIPY Developer Guide
    make_release
    commit_codes
    coding_style_guideline
+   benchmarking
 

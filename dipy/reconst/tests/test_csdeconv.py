@@ -36,6 +36,7 @@ from dipy.reconst.shm import (
 from dipy.reconst.shm import lazy_index
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.testing.decorators import set_random_number_generator
 
 
 def get_test_data():
@@ -524,7 +525,8 @@ def test_r2_term_odf_sharp():
     assert_equal(directions.shape[0], 2)
 
 
-def test_csd_predict():
+@set_random_number_generator()
+def test_csd_predict(rng):
     """
     Test prediction API
     """
@@ -572,7 +574,7 @@ def test_csd_predict():
 
     # For "well behaved" coefficients, the model should be able to find the
     # coefficients from the predicted signal.
-    coeff = np.random.random(csd_fit.shm_coeff.shape) - .5
+    coeff = rng.random(csd_fit.shm_coeff.shape) - .5
     coeff[..., 0] = 10.
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -595,7 +597,8 @@ def test_csd_predict():
     npt.assert_array_almost_equal(predict1, predict2)
 
 
-def test_csd_predict_multi():
+@set_random_number_generator()
+def test_csd_predict_multi(rng):
     """
     Check that we can predict reasonably from multi-voxel fits:
 
@@ -610,7 +613,7 @@ def test_csd_predict_multi():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         csd = ConstrainedSphericalDeconvModel(gtab, response)
-    coeff = np.random.random(45) - .5
+    coeff = rng.random(45) - .5
     coeff[..., 0] = 10.
     with warnings.catch_warnings():
         warnings.filterwarnings(

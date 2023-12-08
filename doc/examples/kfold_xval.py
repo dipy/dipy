@@ -80,10 +80,12 @@ csd_model = csd.ConstrainedSphericalDeconvModel(gtab, response)
 # the model will be fit to half of the data, and used to predict the other
 # half.
 
-dti_cc = xval.kfold_xval(dti_model, cc_vox, 2)
-csd_cc = xval.kfold_xval(csd_model, cc_vox, 2, response)
-dti_cso = xval.kfold_xval(dti_model, cso_vox, 2)
-csd_cso = xval.kfold_xval(csd_model, cso_vox, 2, response)
+rng = np.random.default_rng(2014)
+
+dti_cc = xval.kfold_xval(dti_model, cc_vox, 2, rng=rng)
+csd_cc = xval.kfold_xval(csd_model, cc_vox, 2, response, rng=rng)
+dti_cso = xval.kfold_xval(dti_model, cso_vox, 2, rng=rng)
+csd_cso = xval.kfold_xval(csd_model, cso_vox, 2, response, rng=rng)
 
 ###############################################################################
 # We plot a scatter plot of the data with the model predictions in each of

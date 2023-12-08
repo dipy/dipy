@@ -1,20 +1,23 @@
 import sys
+
 import numpy as np
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises, assert_equal,)
+
 import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metric as dipymetric
 import dipy.segment.metricspeed as dipysmetric
 from dipy.segment.featurespeed import extract
-
 from dipy.testing import assert_true, assert_false
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_equal,)
+from dipy.testing.decorators import set_random_number_generator
 
 
 dtype = "float32"
+rng = np.random.default_rng()
 s1 = np.array([np.arange(10, dtype=dtype)]*3).T  # 10x3
 s2 = np.arange(3*10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
-s3 = np.random.rand(5, 4).astype(dtype)  # 5x4
-s4 = np.random.rand(5, 3).astype(dtype)  # 5x3
+s3 = rng.random((5, 4), dtype=dtype)  # 5x4
+s4 = rng.random((5, 3), dtype=dtype)  # 5x3
 
 
 def test_identity_feature():
@@ -222,7 +225,8 @@ def test_feature_vector_of_endpoints():
             assert_array_almost_equal(features, -features_flip)
 
 
-def test_feature_extract():
+@set_random_number_generator(1234)
+def test_feature_extract(rng):
     # Test that features are automatically cast into float32 when
     # coming from Python space
     class CenterOfMass64bit(dipysfeature.Feature):
@@ -232,12 +236,11 @@ def test_feature_extract():
         def extract(self, streamline):
             return np.mean(streamline.astype(np.float64), axis=0)
 
-    rng = np.random.RandomState(1234)
     nb_streamlines = 100
     feature_shape = (1, 3)  # One N-dimensional point
     feature = CenterOfMass64bit()
 
-    nb_points = rng.randint(20, 30, size=(nb_streamlines,)) * 3
+    nb_points = rng.integers(20, 30, size=(nb_streamlines,)) * 3
     streamlines = [np.arange(nb).reshape((-1, 3)).astype(np.float32)
                    for nb in nb_points]
     features = extract(feature, streamlines)

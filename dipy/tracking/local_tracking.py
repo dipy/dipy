@@ -345,9 +345,9 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_weights = np.empty(self.particle_count, dtype=float)
         self.particle_dirs = np.empty((2, self.particle_count,
                                        pft_max_steps + 1, 3), dtype=float)
-        self.particle_steps = np.empty((2, self.particle_count), dtype=int)
+        self.particle_steps = np.empty((2, self.particle_count), dtype=np.intp)
         self.particle_stream_statuses = np.empty((2, self.particle_count),
-                                                 dtype=int)
+                                                 dtype=np.intp)
         super(ParticleFilteringTracking, self).__init__(
             direction_getter=direction_getter,
             stopping_criterion=stopping_criterion,

@@ -1,7 +1,5 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.reconst import ReconstCSAFlow
-
+from dipy.workflows.cli import dipy_fit_csa
 if __name__ == "__main__":
-    run_flow(ReconstCSAFlow())
+    dipy_fit_csa()

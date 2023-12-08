@@ -1,7 +1,6 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.reconst import ReconstMAPMRIFlow
+from dipy.workflows.cli import dipy_fit_mapmri
 
 if __name__ == "__main__":
-    run_flow(ReconstMAPMRIFlow())
+    dipy_fit_mapmri()

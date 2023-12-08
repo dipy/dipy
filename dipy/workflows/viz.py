@@ -106,6 +106,7 @@ class HorizonFlow(Workflow):
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
+        super(HorizonFlow, self).__init__(force=True)
         verbose = True
         tractograms = []
         images = []

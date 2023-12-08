@@ -323,18 +323,18 @@ fetch_evac_weights = _make_fetcher(
     "fetch_evac_weights",
     pjoin(dipy_home, 'evac'),
     'https://ndownloader.figshare.com/files/',
-    ['40150867'],
+    ['43037191'],
     ['evac_default_weights.h5'],
-    ['998d5122e0aef1ccf7c0d58e41e978af'],
+    ['491cfa4f9a2860fad6c19f2b71b918e1'],
     doc="Download EVAC+ model weights for Park et. al 2022")
 
 fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
     pjoin(dipy_home, 'evac'),
     'https://ndownloader.figshare.com/files/',
-    ['40150894'],
+    ['43040074'],
     ['evac_test_data.npz'],
-    ['a2173e8f800ab7ab3b159b86bf3a8536'],
+    ['a5ad7116c9914a53ba891f9e73f3a132'],
     doc="Download EVAC+ test data for Park et. al 2022")
 
 fetch_stanford_t1 = _make_fetcher(

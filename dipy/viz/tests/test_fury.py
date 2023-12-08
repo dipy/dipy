@@ -3,7 +3,7 @@ import warnings
 import pytest
 import numpy as np
 import numpy.testing as npt
-from dipy.testing.decorators import use_xvfb
+from dipy.testing.decorators import use_xvfb, set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.data import get_sphere
 from dipy.align.reslice import reslice
@@ -30,9 +30,10 @@ skip_it = use_xvfb == 'skip'
 
 @pytest.mark.skipif(skip_it or not has_fury,
                     reason="Needs xvfb")
-def test_slicer():
+@set_random_number_generator()
+def test_slicer(rng):
     scene = window.Scene()
-    data = (255 * np.random.rand(50, 50, 50))
+    data = (255 * rng.random((50, 50, 50)))
     affine = np.diag([1, 3, 2, 1])
     data2, affine2 = reslice(data, affine, zooms=(1, 3, 2),
                              new_zooms=(1, 1, 1))
@@ -113,7 +114,8 @@ def test_contour_from_roi():
 
 @pytest.mark.skipif(skip_it or not has_fury,
                     reason="Needs xvfb")
-def test_bundle_maps():
+@set_random_number_generator()
+def test_bundle_maps(rng):
     scene = window.Scene()
     bundle = fornix_streamlines()
     bundle, _ = center_streamlines(bundle)
@@ -149,7 +151,7 @@ def test_bundle_maps():
     scene.clear()
 
     nb_points = np.sum([len(b) for b in bundle])
-    values = 100 * np.random.rand(nb_points)
+    values = 100 * rng.random((nb_points))
     # values[:nb_points/2] = 0
 
     line = actor.streamtube(bundle, values, linewidth=0.1, lookup_colormap=lut)
@@ -161,7 +163,7 @@ def test_bundle_maps():
 
     scene.clear()
 
-    colors = np.random.rand(nb_points, 3)
+    colors = rng.random((nb_points, 3))
     # values[:nb_points/2] = 0
 
     line = actor.line(bundle, colors, linewidth=2)
@@ -181,7 +183,7 @@ def test_bundle_maps():
     actor.line(bundle, (1., 0.5, 0))
     actor.line(bundle, np.arange(len(bundle)))
     actor.line(bundle)
-    colors = [np.random.rand(*b.shape) for b in bundle]
+    colors = [rng.random(b.shape) for b in bundle]
     actor.line(bundle, colors=colors)
 
 

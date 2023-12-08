@@ -1,8 +1,7 @@
 #!python
 
-from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.denoise import Patch2SelfFlow
+from dipy.workflows.cli import dipy_denoise_patch2self
 
 
 if __name__ == "__main__":
-    run_flow(Patch2SelfFlow())
+    dipy_denoise_patch2self()

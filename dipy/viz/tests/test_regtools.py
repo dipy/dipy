@@ -4,6 +4,7 @@ import numpy.testing as npt
 import pytest
 from dipy.align.metrics import SSDMetric
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.testing.decorators import set_random_number_generator
 
 # Conditional import machinery for matplotlib
 from dipy.utils.optpkg import optional_package
@@ -12,12 +13,13 @@ _, have_matplotlib, _ = optional_package('matplotlib')
 
 
 @pytest.mark.skipif(not have_matplotlib, reason='Requires Matplotlib')
-def test_plot_2d_diffeomorphic_map():
+@set_random_number_generator()
+def test_plot_2d_diffeomorphic_map(rng):
     # Test the regtools plotting interface (lightly).
     mv_shape = (11, 12)
-    moving = np.random.rand(*mv_shape)
+    moving = rng.random(mv_shape)
     st_shape = (13, 14)
-    static = np.random.rand(*st_shape)
+    static = rng.random(st_shape)
     dim = static.ndim
     metric = SSDMetric(dim)
     level_iters = [200, 100, 50, 25]

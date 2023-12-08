@@ -32,12 +32,6 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # -- General configuration -----------------------------------------------------
 
-# We load the DIPY release info into a dict by explicit execution
-rel = {}
-with open(os.path.join('..', 'dipy', 'info.py')) as f:
-    exec(f.read(), rel)
-
-
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
@@ -89,7 +83,7 @@ copyright = "Copyright 2008-2023, DIPY developers. Created using Grg Sphinx Them
 # built documents.
 #
 # The short X.Y version.
-version = rel['__version__']
+version = dipy.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

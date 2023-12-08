@@ -20,6 +20,7 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.testing import clear_and_catch_warnings
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_unique_bvals_deprecated():
@@ -354,7 +355,8 @@ def test_qvalues():
     npt.assert_almost_equal(bt.qvals, qvals)
 
 
-def test_reorient_bvecs():
+@set_random_number_generator()
+def test_reorient_bvecs(rng):
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
     bvecs = np.array([[0, 0, 0],
@@ -379,7 +381,7 @@ def test_reorient_bvecs():
     rotation_affines = []
     rotated_bvecs = bvecs[:]
     for i in np.where(~gt.b0s_mask)[0]:
-        rot_ang = np.random.rand()
+        rot_ang = rng.random()
         cos_rot = np.cos(rot_ang)
         sin_rot = np.sin(rot_ang)
         rotation_affines.append(np.array([[1, 0, 0, 0],
@@ -449,16 +451,17 @@ def test_nan_bvecs():
         npt.assert_(len(selected_w) == 0)
 
 
-def test_generate_bvecs():
+@set_random_number_generator()
+def test_generate_bvecs(rng):
     """Tests whether we have properly generated bvecs.
     """
     # Test if the generated b-vectors are unit vectors
-    bvecs = generate_bvecs(100)
+    bvecs = generate_bvecs(100, rng=rng)
     norm = [np.linalg.norm(v) for v in bvecs]
     npt.assert_almost_equal(norm, np.ones(100))
 
     # Test if two generated vectors are almost orthogonal
-    bvecs_2 = generate_bvecs(2)
+    bvecs_2 = generate_bvecs(2, rng=rng)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
@@ -625,7 +628,8 @@ def test_check_multi_b():
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
-def test_btens_to_params():
+@set_random_number_generator()
+def test_btens_to_params(rng):
     """
     Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
@@ -687,14 +691,14 @@ def test_btens_to_params():
     # Test function after rotating+scaling baseline tensors
     # -----------------------------------------------------
 
-    scales = np.concatenate((np.array([1]), np.random.random(n_scales)))
+    scales = np.concatenate((np.array([1]), rng.random(n_scales)))
 
     for scale in scales:
 
         ebs = expected_bvals*scale
 
         # Generate `n_rotations` random 3-element vectors of norm 1
-        v = np.random.random((n_rotations, 3)) - 0.5
+        v = rng.random((n_rotations, 3)) - 0.5
         u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
 
         for rot_idx in range(n_rotations):

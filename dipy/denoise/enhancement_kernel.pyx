@@ -73,6 +73,8 @@ cdef class EnhancementKernel:
         self.t = t
 
         # define a sphere
+        rng = np.random.default_rng()
+
         if isinstance(orientations, Sphere):
             # use the sphere defined by the user
             sphere = orientations
@@ -82,8 +84,8 @@ cdef class EnhancementKernel:
             if n_pts == 0:
                 sphere = None
             else:
-                theta = np.pi * np.random.rand(n_pts)
-                phi = 2 * np.pi * np.random.rand(n_pts)
+                theta = np.pi * rng.random(n_pts)
+                phi = 2 * np.pi * rng.random(n_pts)
                 hsph_initial = HemiSphere(theta=theta, phi=phi)
                 sphere, potential = disperse_charges(hsph_initial, 5000)
         else:

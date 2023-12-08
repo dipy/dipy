@@ -92,8 +92,8 @@ def pft_tracker(
         cnp.float_t[:, :, :, :] particle_paths,
         cnp.float_t[:, :, :, :] particle_dirs,
         cnp.float_t[:] particle_weights,
-        cnp.int_t[:, :]  particle_steps,
-        cnp.int_t[:, :]  particle_stream_statuses,
+        cnp.npy_intp[:, :]  particle_steps,
+        cnp.npy_intp[:, :]  particle_stream_statuses,
         int min_wm_pve_before_stopping):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
@@ -197,8 +197,8 @@ cdef _pft_tracker(DirectionGetter dg,
                   cnp.float_t[:, :, :, :] particle_paths,
                   cnp.float_t[:, :, :, :] particle_dirs,
                   cnp.float_t[:] particle_weights,
-                  cnp.int_t[:, :] particle_steps,
-                  cnp.int_t[:, :] particle_stream_statuses,
+                  cnp.npy_intp[:, :] particle_steps,
+                  cnp.npy_intp[:, :] particle_stream_statuses,
                   double min_wm_pve_before_stopping):
     cdef:
         cnp.npy_intp i, j
@@ -302,8 +302,8 @@ cdef _pft(cnp.float_t[:, :] streamline,
           cnp.float_t[:, :, :, :] particle_paths,
           cnp.float_t[:, :, :, :] particle_dirs,
           cnp.float_t[:] particle_weights,
-          cnp.int_t[:, :] particle_steps,
-          cnp.int_t[:, :] particle_stream_statuses):
+          cnp.npy_intp[:, :] particle_steps,
+          cnp.npy_intp[:, :] particle_stream_statuses):
     cdef:
         double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3]
