@@ -14,7 +14,7 @@ env:
   CIBW_BUILD_VERBOSITY: 2
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
-  CIBW_CONFIG_SETTINGS: "-Ccompile-args=-v"
+  CIBW_CONFIG_SETTINGS: "compile-args=-v"
 
 permissions:
   contents: read
@@ -128,7 +128,7 @@ jobs:
         env:
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
-            CIBW_CONFIG_SETTINGS: "-Csetup-args=--vsenv -Ccompile-args=-v"
+            CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
       - uses: actions/upload-artifact@v3
         with:
             name: wheels
