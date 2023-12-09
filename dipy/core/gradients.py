@@ -268,8 +268,10 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     bvecs : array_like (N, 3)
         The direction, represented as a unit vector, of each gradient.
     b0_threshold : float
-        Gradients with b-value less than or equal to `bo_threshold` are
-        considered to not have diffusion weighting.
+        Gradients with b-value less than or equal to `b0_threshold` are
+        considered to not have diffusion weighting. If its value is equal to or
+        larger than all values in b-vals, then it is assumed that no
+        thresholding is requested.
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
