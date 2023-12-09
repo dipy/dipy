@@ -25,7 +25,7 @@ from dipy.workflows.stats import buan_bundle_profiles
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
-matplt, have_matplotlib, _ = optional_package("matplotlib")
+_, have_matplotlib, _ = optional_package("matplotlib")
 
 
 def test_stats():
