@@ -13,7 +13,7 @@ from dipy.align import affine_registration, motion_correction
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.tracking.streamline import set_number_of_points
 from dipy.align.streamwarp import bundlewarp
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.tracking.streamline import transform_streamlines
@@ -764,11 +764,13 @@ class MotionCorrectionFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-
-            if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the lowest "
-                     "b0 value ({1}).".format(b0_threshold, bvals.min()))
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn("b0_threshold (value: {0}) is too low, increase your "
+                         "b0_threshold. It should be higher than the lowest "
+                         "b0 value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
 
