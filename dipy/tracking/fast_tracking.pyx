@@ -32,7 +32,6 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
     streamlines_arr =  np.array(np.zeros((_len, params.max_len * 2 + 1, 3)), order='C')
     status_arr =  np.array(np.zeros((_len)), order='C')
 
-    #stream = np.empty((self.max_length + 1, 3), dtype=float)
     generate_tractogram_c(seed_positons,
                           seed_directions,
                           _len, params, streamlines_arr, status_arr)
@@ -63,16 +62,10 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
 
     # <<cython.parallel.prange>>
     for i in range(nbr_seeds):
-        #stream_x = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
-        #stream_y = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
-        #stream_z = <double*> malloc((params.max_len * 2 + 1) * sizeof(double))
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
 
-        #for j in range(params.max_len * 2 + 1):
-        #    stream_x[j] = 0
-        #    stream_y[j] = 0
-        #    stream_z[j] = 0
-
+        # initialize to 0. It will be replaced when better handling various
+        # streamline lengtyh
         for j in range(params.max_len * 3 * 2 + 1):
             stream[j] = 0
 
@@ -80,6 +73,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                               &seed_directions[i][0],
                                               stream,
                                               params)
+        # copy the v
         k = 0
         for j in range(params.max_len * 2 + 1):
             if (stream[j * 3] != 0
@@ -89,9 +83,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                 streamlines[i,k,1] = stream[j * 3 + 1]
                 streamlines[i,k,2] = stream[j * 3 + 2]
                 k = k + 1
-        #free(stream_x)
-        #free(stream_y)
-        #free(stream_z)
+
         free(stream)
 
     return 0
