@@ -87,7 +87,7 @@ all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
 style = ["flake8", "isort"]
 viz = ["fury>=0.9.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels", "tables", "tensorflow",  "tensorflow-addons"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow",  "tensorflow-addons"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
@@ -175,3 +175,6 @@ Metrics = [
 
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
+filterwarnings = [
+    'ignore:.*You do not have FURY installed.*:UserWarning',
+]
