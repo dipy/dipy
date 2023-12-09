@@ -79,6 +79,23 @@ def b0_threshold_empty_gradient_message(bvals, idx, b0_threshold):
         "value.")
 
 
+def b0_threshold_update_slicing_message(slice_start):
+    """Message for b0 threshold value update for slicing.
+
+    Parameters
+    ----------
+    slice_start : int
+        Starting index for slicing.
+
+    Returns
+    -------
+    str
+        Message.
+    """
+
+    return f"Updating b0_threshold to {slice_start} for slicing."
+
+
 def mask_non_weighted_bvals(bvals, b0_threshold):
     """Create a diffusion gradient-weighting mask for the b-values according to
     the provided b0 threshold value.
@@ -272,7 +289,7 @@ class GradientTable:
             if slice_start != self.b0_threshold:
                 # Update b0_threshold and warn the user
                 self.b0_threshold = slice_start
-                warn(f"Updating b0_threshold to {slice_start} for slicing.",
+                warn(b0_threshold_update_slicing_message(slice_start),
                      UserWarning, stacklevel=2)
                 idx = range(*idx.indices(len(self.bvals)))
 
