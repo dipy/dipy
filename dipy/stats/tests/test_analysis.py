@@ -3,11 +3,6 @@ import numpy.testing as npt
 
 from dipy.stats.analysis import (gaussian_weights, afq_profile)
 from dipy.tracking.streamline import Streamlines
-from dipy.utils.optpkg import optional_package
-
-_, have_pd, _ = optional_package("pandas")
-_, have_smf, _ = optional_package("statsmodels")
-_, have_tables, _ = optional_package("tables")
 
 
 def test_gaussian_weights():
