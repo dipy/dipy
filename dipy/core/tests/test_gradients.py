@@ -6,6 +6,7 @@ import pytest
 
 from dipy.data import get_fnames
 from dipy.core.gradients import (b0_threshold_empty_gradient_message,
+                                 b0_threshold_update_slicing_message,
                                  gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
@@ -515,11 +516,18 @@ def test_getitem_idx():
     assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
 
     # Test with a range of indices
-    gtab_slice2 = gtab[2:5]
-    assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
-    assert np.array_equal(gtab_slice2.bvecs,
-                          np.array([[0., 1., 0.], [0., 0., 1.],
-                                    [1., 0., 0.]]))
+    gtab = GradientTable(gradients)
+    idx_start = 2
+    idx_end = 5
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=b0_threshold_update_slicing_message(idx_start),
+            category=UserWarning)
+        gtab_slice2 = gtab[idx_start:idx_end]
+        assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
+        assert np.array_equal(gtab_slice2.bvecs,
+                              np.array([[0., 1., 0.], [0., 0., 1.],
+                                        [1., 0., 0.]]))
 
 
 def test_round_bvals():
