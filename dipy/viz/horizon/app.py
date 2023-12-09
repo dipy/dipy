@@ -122,6 +122,9 @@ class Horizon:
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
+        if not has_fury:
+            raise ImportError('Horizon requires FURY. Please install it '
+                              'with pip install fury')
         if Version(fury_version) < Version('0.9.0'):
             ValueError('Horizon requires FURY version 0.9.0 or higher.'
                        ' Please upgrade FURY with pip install -U fury.')
