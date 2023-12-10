@@ -10,10 +10,10 @@ import pytest
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
 
-needs_sklearn = pytest.mark.skipif(
-    not p2s.has_sklearn,
-    reason=p2s.sklearn._msg if not p2s.has_sklearn else "")
+sklearn, has_sklearn, _ = optional_package('sklearn')
+needs_sklearn = pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
 
 
 @needs_sklearn

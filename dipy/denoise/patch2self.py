@@ -7,9 +7,6 @@ import dipy.core.optimize as opt
 sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
 
-if not has_sklearn:
-    warn(sklearn._msg)
-
 
 def _vol_split(train, vol_idx):
     """ Split the 3D volumes into the train and test set.

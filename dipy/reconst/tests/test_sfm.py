@@ -10,12 +10,12 @@ import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
+from dipy.utils.optpkg import optional_package
 
 warnings.filterwarnings('ignore')
 
-needs_sklearn = pytest.mark.skipif(
-    not sfm.has_sklearn,
-    reason=sfm.sklearn._msg if not sfm.has_sklearn else "")
+sklearn, has_sklearn, _ = optional_package('sklearn')
+needs_sklearn = pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
 
 
 def test_design_matrix():
@@ -166,6 +166,7 @@ def test_sfm_stick():
     npt.assert_(xval.coeff_of_determination(pred, S) > 96)
 
 
+@needs_sklearn
 def test_sfm_sklearnlinearsolver():
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
