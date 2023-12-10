@@ -1,9 +1,6 @@
 """ Routines to support optional packages """
 
-try:
-    import importlib
-except ImportError:
-    import dipy.utils._importlib as importlib
+import importlib
 
 try:
     import pytest
