@@ -1,5 +1,7 @@
 """Testing DTI."""
 
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
@@ -7,7 +9,7 @@ import scipy.optimize as opt
 
 import dipy.reconst.dti as dti
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.reconst.dti import (axial_diffusivity, color_fa,
+from dipy.reconst.dti import (ols_resort_msg, axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
                               geodesic_anisotropy, lower_triangular,
                               mean_diffusivity, radial_diffusivity,
@@ -650,7 +652,11 @@ def test_nlls_fit_tensor():
     sigma = np.ones(Y_less.shape[-1])
     tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS',
                                    weighting='sigma', sigma=sigma)
-    tmf = tensor_model.fit(Y_less)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=ols_resort_msg,
+            category=UserWarning)
+        tmf = tensor_model.fit(Y_less)
 
     # Test sigma with an array of wrong size
     sigma = np.ones(Y_less.shape[-1] + 10)
