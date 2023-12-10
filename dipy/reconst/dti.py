@@ -21,6 +21,8 @@ from dipy.utils.volume import adjacency_calc
 
 MIN_POSITIVE_SIGNAL = 0.0001
 
+ols_resort_msg = "Resorted to OLS solution in some voxels"
+
 
 def _roll_evals(evals, axis=-1):
     """Check evals shape.
@@ -1833,7 +1835,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
@@ -2052,7 +2054,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
     extra = {"robust": robust}
