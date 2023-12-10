@@ -1,169 +1,54 @@
 #!python
+import os
+import sys
 
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.flow_runner import run_flow
 
-
-def dipy_align_affine():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.ImageRegistrationFlow())
-
-
-def dipy_align_syn():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.SynRegistrationFlow())
-
-
-def dipy_apply_transform():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.ApplyTransformFlow())
-
-
-def dipy_buan_lmm():
-    stats, _, _ = optional_package('dipy.workflows.stats')
-    run_flow(stats.LinearMixedModelsFlow())
-
-
-def dipy_buan_shapes():
-    stats, _, _ = optional_package('dipy.workflows.stats')
-    run_flow(stats.BundleShapeAnalysis())
-
-
-def dipy_buan_profiles():
-    stats, _, _ = optional_package('dipy.workflows.stats')
-    run_flow(stats.BundleAnalysisTractometryFlow())
-
-
-def dipy_bundlewarp():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.BundleWarpFlow())
-
-
-def dipy_correct_motion():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.MotionCorrectionFlow())
-
-
-def dipy_denoise_nlmeans():
-    denoise, _, _ = optional_package('dipy.workflows.denoise')
-    run_flow(denoise.NLMeansFlow())
-
-
-def dipy_denoise_lpca():
-    denoise, _, _ = optional_package('dipy.workflows.denoise')
-    run_flow(denoise.LPCAFlow())
-
-
-def dipy_denoise_mppca():
-    denoise, _, _ = optional_package('dipy.workflows.denoise')
-    run_flow(denoise.MPPCAFlow())
-
-
-def dipy_denoise_patch2self():
-    denoise, _, _ = optional_package('dipy.workflows.denoise')
-    run_flow(denoise.Patch2SelfFlow())
-
-
-def dipy_evac_plus():
-    nn, _, _ = optional_package('dipy.workflows.nn')
-    run_flow(nn.EVACPlusFlow())
-
-
-def dipy_fetch():
-    io, _, _ = optional_package('dipy.workflows.io')
-    run_flow(io.FetchFlow())
-
-
-def dipy_fit_csa():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstCSAFlow())
-
-
-def dipy_fit_csd():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstCSDFlow())
-
-
-def dipy_fit_dki():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstDkiFlow())
-
-
-def dipy_fit_dti():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstDtiFlow())
-
-
-def dipy_fit_ivim():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstIvimFlow())
-
-
-def dipy_fit_mapmri():
-    reconst, _, _ = optional_package('dipy.workflows.reconst')
-    run_flow(reconst.ReconstMAPMRIFlow())
-
-
-def dipy_mask():
-    mask, _, _ = optional_package('dipy.workflows.mask')
-    run_flow(mask.MaskFlow())
-
-
-def dipy_gibbs_ringing():
-    denoise, _, _ = optional_package('dipy.workflows.denoise')
-    run_flow(denoise.GibbsRingingFlow())
-
-
-def dipy_horizon():
-    viz, _, _ = optional_package('dipy.workflows.viz')
-    run_flow(viz.HorizonFlow())
-
-
-def dipy_info():
-    io, _, _ = optional_package('dipy.workflows.io')
-    run_flow(io.IoInfoFlow())
-
-
-def dipy_labelsbundles():
-    segment, _, _ = optional_package('dipy.workflows.segment')
-    run_flow(segment.LabelsBundlesFlow())
-
-
-def dipy_median_otsu():
-    segment, _, _ = optional_package('dipy.workflows.segment')
-    run_flow(segment.MedianOtsuFlow())
-
-
-def dipy_recobundles():
-    segment, _, _ = optional_package('dipy.workflows.segment')
-    run_flow(segment.RecoBundlesFlow())
-
-
-def dipy_reslice():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.ResliceFlow())
-
-
-def dipy_snr_in_cc():
-    stats, _, _ = optional_package('dipy.workflows.stats')
-    run_flow(stats.SNRinCCFlow())
-
-
-def dipy_split():
-    io, _, _ = optional_package('dipy.workflows.io')
-    run_flow(io.SplitFlow())
-
-
-def dipy_track():
-    tracking, _, _ = optional_package('dipy.workflows.tracking')
-    run_flow(tracking.LocalFiberTrackingPAMFlow())
-
-
-def dipy_track_pft():
-    tracking, _, _ = optional_package('dipy.workflows.tracking')
-    run_flow(tracking.PFTrackingPAMFlow())
-
-
-def dipy_slr():
-    align, _, _ = optional_package('dipy.workflows.align')
-    run_flow(align.StreamlineLinearRegistrationFlow())
+cli_flows = {
+    'dipy_align_affine': ('dipy.workflows.align', 'ImageRegistrationFlow'),
+    'dipy_align_syn': ('dipy.workflows.align', 'SynRegistrationFlow'),
+    'dipy_apply_transform': ('dipy.workflows.align', 'ApplyTransformFlow'),
+    'dipy_buan_lmm': ('dipy.workflows.stats', 'LinearMixedModelsFlow'),
+    'dipy_buan_shapes': ('dipy.workflows.stats', 'BundleShapeAnalysis'),
+    'dipy_buan_profiles': ('dipy.workflows.stats', 'BundleAnalysisTractometryFlow'),
+    'dipy_bundlewarp': ('dipy.workflows.align', 'BundleWarpFlow'),
+    'dipy_correct_motion': ('dipy.workflows.align', 'MotionCorrectionFlow'),
+    'dipy_denoise_nlmeans': ('dipy.workflows.denoise', 'NLMeansFlow'),
+    'dipy_denoise_lpca': ('dipy.workflows.denoise', 'LPCAFlow'),
+    'dipy_denoise_mppca': ('dipy.workflows.denoise', 'MPPCAFlow'),
+    'dipy_denoise_patch2self': ('dipy.workflows.denoise', 'Patch2SelfFlow'),
+    'dipy_evac_plus': ('dipy.workflows.nn', 'EVACPlusFlow'),
+    'dipy_fetch': ('dipy.workflows.io', 'FetchFlow'),
+    'dipy_fit_csa': ('dipy.workflows.reconst', 'ReconstCSAFlow'),
+    'dipy_fit_csd': ('dipy.workflows.reconst', 'ReconstCSDFlow'),
+    'dipy_fit_dki': ('dipy.workflows.reconst', 'ReconstDkiFlow'),
+    'dipy_fit_dti': ('dipy.workflows.reconst', 'ReconstDtiFlow'),
+    'dipy_fit_ivim': ('dipy.workflows.reconst', 'ReconstIvimFlow'),
+    'dipy_fit_mapmri': ('dipy.workflows.reconst', 'ReconstMAPMRIFlow'),
+    'dipy_mask': ('dipy.workflows.mask', 'MaskFlow'),
+    'dipy_gibbs_ringing': ('dipy.workflows.denoise', 'GibbsRingingFlow'),
+    'dipy_horizon': ('dipy.workflows.viz', 'HorizonFlow'),
+    'dipy_info': ('dipy.workflows.io', 'IoInfoFlow'),
+    'dipy_labelsbundles': ('dipy.workflows.segment', 'LabelsBundlesFlow'),
+    'dipy_median_otsu': ('dipy.workflows.segment', 'MedianOtsuFlow'),
+    'dipy_recobundles': ('dipy.workflows.segment', 'RecoBundlesFlow'),
+    'dipy_reslice': ('dipy.workflows.align', 'ResliceFlow'),
+    'dipy_snr_in_cc': ('dipy.workflows.stats', 'SNRinCCFlow'),
+    'dipy_split': ('dipy.workflows.io', 'SplitFlow'),
+    'dipy_track': ('dipy.workflows.tracking', 'LocalFiberTrackingPAMFlow'),
+    'dipy_track_pft': ('dipy.workflows.tracking', 'PFTrackingPAMFlow'),
+    'dipy_slr': ('dipy.workflows.align', 'StreamlineLinearRegistrationFlow'),
+    }
+
+
+def run():
+    """Run scripts located in pyproject.toml."""
+    script_name = os.path.basename(sys.argv[0])
+    mod_name, flow_name = cli_flows.get(script_name, (None, None))
+    if mod_name is None:
+        print(f'Flow: {script_name} not Found in DIPY')
+        print('Available flows: %s' % ', '.join(cli_flows.keys()))
+        sys.exit(1)
+    mod, _, _ = optional_package(mod_name)
+    run_flow(getattr(mod, flow_name)())
