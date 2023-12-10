@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import scipy.special as sps
 from numpy.testing import (assert_,
@@ -5,7 +7,10 @@ from numpy.testing import (assert_,
                            assert_raises,
                            assert_array_almost_equal,
                            assert_warns)
-from dipy.denoise.localpca import (localpca, mppca, genpca, _pca_classifier)
+from dipy.denoise.localpca import (
+    dimensionality_problem_message, create_patch_radius_arr, compute_patch_size,
+    compute_num_samples, compute_suggested_patch_radius, localpca, mppca,
+    genpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.testing.decorators import set_random_number_generator
@@ -334,6 +339,53 @@ def test_mppca_in_phantom(rng):
 
 
 @set_random_number_generator()
+def test_create_patch_radius_arr(rng):
+
+    shape = (10, 10, 8, 104)
+    arr = rng.standard_normal(shape)
+    pr = 2
+    expected_val = np.asarray([2, 2, 2])
+    obtained_val = create_patch_radius_arr(arr, pr)
+    assert np.array_equal(obtained_val, expected_val)
+
+
+def test_compute_patch_size():
+
+    patch_radius = 1
+    expected_val = 3
+    obtained_val = compute_patch_size(patch_radius)
+    assert obtained_val == expected_val
+
+    patch_radius = 2
+    expected_val = 5
+    obtained_val = compute_patch_size(patch_radius)
+    assert obtained_val == expected_val
+
+
+def test_compute_num_samples():
+
+    patch_size = np.asarray([5, 5, 5])
+    expected_val = 125
+    obtained_val = compute_num_samples(patch_size)
+    assert obtained_val == expected_val
+
+
+@set_random_number_generator()
+def test_compute_suggested_patch_radius(rng):
+
+    shape = (10, 10, 8, 104)
+    arr = rng.standard_normal(shape)
+    patch_size = [3, 3, 3]
+    expected_val = 2
+    obtained_val = compute_suggested_patch_radius(arr, patch_size)
+    assert obtained_val == expected_val
+
+    patch_size = [5, 5, 5]
+    obtained_val = compute_suggested_patch_radius(arr, patch_size)
+    assert obtained_val == expected_val
+
+
+@set_random_number_generator()
 def test_mppca_returned_sigma(rng):
     DWIgt = rfiw_phantom(gtab, snr=None, rng=rng)
     std_gt = 0.02
@@ -344,7 +396,23 @@ def test_mppca_returned_sigma(rng):
     for PR in [2, 1]:
 
         # Case that sigma is estimated using mpPCA
-        DWIden0, sigma = mppca(DWInoise, patch_radius=PR, return_sigma=True)
+        if PR == 1:
+            patch_radius_arr = create_patch_radius_arr(DWInoise, PR)
+            patch_size = compute_patch_size(patch_radius_arr)
+            num_samples = compute_num_samples(patch_size)
+            spr = compute_suggested_patch_radius(DWInoise, patch_size)
+
+        if PR == 1:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=dimensionality_problem_message(
+                        DWInoise, num_samples, spr),
+                    category=UserWarning)
+                DWIden0, sigma = mppca(
+                    DWInoise, patch_radius=PR, return_sigma=True)
+        else:
+            DWIden0, sigma = mppca(DWInoise, patch_radius=PR, return_sigma=True)
         msigma = np.mean(sigma)
         std_error = abs(msigma - std_gt)/std_gt * 100
 
@@ -357,8 +425,19 @@ def test_mppca_returned_sigma(rng):
 
         # Case that sigma is inputted (sigma outputted should be the same as the
         # one inputted)
-        DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
-                                 patch_radius=PR, return_sigma=True)
+        if PR == 1:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=dimensionality_problem_message(DWInoise,
+                                                           num_samples, spr),
+                    category=UserWarning)
+                DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
+                                         patch_radius=PR, return_sigma=True)
+        else:
+            DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
+                                     patch_radius=PR, return_sigma=True)
+
         assert_array_almost_equal(rsigma, sigma)
 
         # DWIden1 should be very similar to DWIden0
