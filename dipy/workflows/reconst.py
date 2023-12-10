@@ -6,7 +6,7 @@ from warnings import warn
 
 import nibabel as nib
 
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
 from dipy.data import default_sphere, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
@@ -119,10 +119,13 @@ class ReconstMAPMRIFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 "
-                     "value({1}).".format(b0_threshold, bvals.min()))
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn("b0_threshold (value: {0}) is too low, increase your "
+                         "b0_threshold. It should be higher than the first b0 "
+                         "value({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
                                   big_delta=big_delta,
@@ -514,10 +517,13 @@ class ReconstCSDFlow(Workflow):
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
-            if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn("b0_threshold (value: {0}) is too low, increase your "
+                         "b0_threshold. It should be higher than the first b0 "
+                         "value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
             mask_vol = load_nifti_data(maskfile).astype(bool)
@@ -678,10 +684,13 @@ class ReconstCSAFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn("b0_threshold (value: {0}) is too low, increase your "
+                         "b0_threshold. It should be higher than the first b0 "
+                         "value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = load_nifti_data(maskfile).astype(bool)
@@ -905,10 +914,13 @@ class ReconstDkiFlow(Workflow):
                           fit_method="WLS", optional_args=None):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        if b0_threshold < bvals.min():
-            warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should be higher than the first b0 value "
-                 "({1}).".format(b0_threshold, bvals.min()))
+        # If all b-values are smaller or equal to the b0 threshold, it is
+        # assumed that no thresholding is requested
+        if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+            if b0_threshold < bvals.min():
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should be higher than the first b0 "
+                     "value ({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method,
@@ -1022,10 +1034,13 @@ class ReconstIvimFlow(Workflow):
     def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
         logging.info('Intra-Voxel Incoherent Motion Estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        if b0_threshold < bvals.min():
-            warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should be higher than the first b0 value "
-                 "({1}).".format(b0_threshold, bvals.min()))
+        # If all b-values are smaller or equal to the b0 threshold, it is
+        # assumed that no thresholding is requested
+        if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+            if b0_threshold < bvals.min():
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should be higher than the first b0 "
+                     "value ({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
@@ -1179,10 +1194,13 @@ class ReconstRUMBAFlow(Workflow):
 
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
-            if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn("b0_threshold (value: {0}) is too low, increase your "
+                         "b0_threshold. It should be higher than the first b0 "
+                         "value ({1}).".format(b0_threshold, bvals.min()))
 
             gtab = gradient_table(
                 bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)

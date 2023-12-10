@@ -2,13 +2,17 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
-from dipy.core.gradients import (gradient_table, GradientTable,
+from dipy.core.gradients import (b0_threshold_empty_gradient_message,
+                                 b0_threshold_update_slicing_message,
+                                 gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
                                  gradient_table_from_gradient_strength_bvecs,
                                  WATER_GYROMAGNETIC_RATIO,
+                                 mask_non_weighted_bvals,
                                  orientation_to_string,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
@@ -26,6 +30,24 @@ from dipy.testing.decorators import set_random_number_generator
 def test_unique_bvals_deprecated():
     npt.assert_raises(ExpiredDeprecationError, unique_bvals,
                       np.array([0, 800, 1400, 1401, 1405]))
+
+
+def test_mask_non_weighted_bvals():
+
+    bvals = np.array([0., 100., 200., 300., 400.])
+    b0_threshold = 0.
+    expected_val = np.asarray([True, False, False, False, False])
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
+
+    b0_threshold = 50
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
+
+    b0_threshold = 200.
+    expected_val = np.asarray([True, True, True, False, False])
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
 
 
 def test_btable_prepare():
@@ -468,13 +490,24 @@ def test_generate_bvecs(rng):
 
 def test_getitem_idx():
     # Create a GradientTable object with some test b-values and b-vectors
-    bvals = np.array([0, 100, 200, 300, 400])
+    bvals = np.array([0., 100., 200., 300., 400.])
     # value should be in increasing order as b-value affects the diffusion
     # weighting of the image, and the amount of diffusion weighting increases
     # with increasing b-value.
     bvecs = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]])
     # the b-vectors should be unit-length vectors
     gradients = bvals[:, None] * bvecs
+
+    # Test a too large b0 threshold value
+    b0_threshold = 100
+    gtab = GradientTable(gradients, b0_threshold=b0_threshold)
+
+    idx = 1
+    with pytest.raises(ValueError) as excinfo:
+        _ = gtab[idx]
+        assert str(excinfo.value) == b0_threshold_empty_gradient_message(
+            bvals, [idx], b0_threshold)
+
     gtab = GradientTable(gradients)
 
     # Test with a single index
@@ -483,11 +516,18 @@ def test_getitem_idx():
     assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
 
     # Test with a range of indices
-    gtab_slice2 = gtab[2:5]
-    assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
-    assert np.array_equal(gtab_slice2.bvecs,
-                          np.array([[0., 1., 0.], [0., 0., 1.],
-                                    [1., 0., 0.]]))
+    gtab = GradientTable(gradients)
+    idx_start = 2
+    idx_end = 5
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=b0_threshold_update_slicing_message(idx_start),
+            category=UserWarning)
+        gtab_slice2 = gtab[idx_start:idx_end]
+        assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
+        assert np.array_equal(gtab_slice2.bvecs,
+                              np.array([[0., 1., 0.], [0., 0., 1.],
+                                        [1., 0., 0.]]))
 
 
 def test_round_bvals():
