@@ -40,12 +40,6 @@ joblib, has_joblib, _ = optional_package('joblib')
 sklearn, has_sklearn, _ = optional_package('sklearn')
 lm, _, _ = optional_package('sklearn.linear_model')
 
-# If sklearn is unavailable, we can fall back on nnls (but we also warn the
-# user that we are about to do that):
-if not has_sklearn:
-    w = sklearn._msg + "\nAlternatively, you can use 'nnls' method to fit"
-    w += " the SparseFascicleModel"
-    warnings.warn(w)
 
 # Isotropic signal models: these are models of the part of the signal that
 # changes with b-value, but does not change with direction. This collection is
@@ -418,6 +412,12 @@ class SparseFascicleModel(ReconstModel, Cache):
             self.solver = solver
 
         else:
+            # If sklearn is unavailable, we can fall back on nnls (but we also
+            # warn the user that we are about to do that):
+            if not has_sklearn:
+                w = sklearn._msg + "\nAlternatively, you can use 'nnls' method "
+                w += "to fit the SparseFascicleModel"
+                warnings.warn(w)
             e_s = "The `solver` key-word argument needs to be: "
             e_s += "'ElasticNet', 'NNLS', or a "
             e_s += "`dipy.optimize.SKLearnLinearSolver` object"
