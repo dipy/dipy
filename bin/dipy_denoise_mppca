@@ -1,6 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_denoise_mppca
-
-if __name__ == "__main__":
-    dipy_denoise_mppca()
