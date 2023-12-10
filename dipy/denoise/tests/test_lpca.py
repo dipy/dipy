@@ -329,8 +329,20 @@ def test_mppca_in_phantom(rng):
 
     # patch radius (2: #samples > #features, 1: #samples < #features)
     for PR in [2, 1]:
-
-        DWIden = mppca(DWInoise, patch_radius=PR)
+        if PR == 1:
+            patch_radius_arr = create_patch_radius_arr(DWInoise, PR)
+            patch_size = compute_patch_size(patch_radius_arr)
+            num_samples = compute_num_samples(patch_size)
+            spr = compute_suggested_patch_radius(DWInoise, patch_size)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=dimensionality_problem_message(
+                        DWInoise, num_samples, spr),
+                    category=UserWarning)
+                DWIden = mppca(DWInoise, patch_radius=PR)
+        else:
+            DWIden = mppca(DWInoise, patch_radius=PR)
 
         # Test if denoised data is closer to ground truth than noisy data
         rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
