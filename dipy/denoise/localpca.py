@@ -1,3 +1,5 @@
+import copy
+
 from packaging.version import Version
 from warnings import warn
 
@@ -14,6 +16,32 @@ except ImportError:
     svd_args = [False]
 from scipy.linalg import eigh
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
+
+
+def dimensionality_problem_message(arr, num_samples, spr):
+    """Message about the number of samples being smaller than one less the
+    dimensionality of the data to be denoised.
+
+    Parameters
+    ----------
+    arr : ndarray
+        Data to be denoised.
+    num_samples : int
+        Number of samples.
+    spr : int
+        Suggested patch radius.
+.
+    Returns
+    -------
+    str
+        Message.
+    """
+
+    return (
+        f"Number of samples {arr.shape[-1]} - 1 < Dimensionality "
+        f"{num_samples}. This might have a performance impact. Increase p"
+        f"atch_radius to {spr} to avoid this."
+    )
 
 
 def _pca_classifier(L, nvoxels):
@@ -64,6 +92,99 @@ def _pca_classifier(L, nvoxels):
     ncomps = c + 1
 
     return var, ncomps
+
+
+def create_patch_radius_arr(arr, pr):
+    """Create the patch radius array from the data to be denoised and the patch
+    radius.
+
+    Parameters
+    ----------
+    arr : ndarray
+        Data to be denoised.
+    pr : int or ndarray
+        Patch radius.
+
+    Returns
+    -------
+    patch_radius : ndarray
+        Number of samples.
+    """
+
+    patch_radius = copy.deepcopy(pr)
+
+    if isinstance(patch_radius, int):
+        patch_radius = np.ones(3, dtype=int) * patch_radius
+    if len(patch_radius) != 3:
+        raise ValueError("patch_radius should have length 3")
+    else:
+        patch_radius = np.asarray(patch_radius).astype(int)
+    patch_radius[arr.shape[0:3] == np.ones(3)] = 0  # account for dim of size 1
+
+    return patch_radius
+
+
+def compute_patch_size(patch_radius):
+    """Compute the patch size from the patch radius: it is twice the radius plus
+    one.
+
+    Parameters
+    ----------
+    patch_radius : ndarray
+        Patch radius.
+
+    Returns
+    -------
+    int
+        Number of samples.
+    """
+
+    return 2 * patch_radius + 1
+
+
+def compute_num_samples(patch_size):
+    """Compute the number of samples as the dot product of the elements.
+
+    Parameters
+    ----------
+    patch_size : ndarray
+        Patch size.
+
+    Returns
+    -------
+    int
+        Number of samples.
+    """
+
+    return np.prod(patch_size)
+
+
+def compute_suggested_patch_radius(arr, patch_size):
+    """Compute the suggested patch radius.
+
+    Parameters
+    ----------
+    arr : ndarray
+        Data to be denoised.
+    patch_size : ndarray
+        Patch size.
+
+    Returns
+    -------
+    int
+        Suggested patch radius.
+    """
+
+    tmp = np.sum(patch_size == 1)  # count spatial dimensions with size 1
+    if tmp == 0:
+        root = np.ceil(arr.shape[-1] ** (1. / 3))  # 3D
+    if tmp == 1:
+        root = np.ceil(arr.shape[-1] ** (1. / 2))  # 2D
+    if tmp == 2:
+        root = arr.shape[-1]  # 1D
+    root = root + 1 if (root % 2) == 0 else root  # make odd
+
+    return int((root - 1) / 2)
 
 
 def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
@@ -157,41 +278,21 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     else:
         raise ValueError("pca_method should be either 'eig' or 'svd'")
 
-    if isinstance(patch_radius, int):
-        patch_radius = np.ones(3, dtype=int) * patch_radius
-    if len(patch_radius) != 3:
-        raise ValueError("patch_radius should have length 3")
-    else:
-        patch_radius = np.asarray(patch_radius).astype(int)
-    patch_radius[arr.shape[0:3] == np.ones(3)] = 0  # account for dim of size 1
-    patch_size = 2 * patch_radius + 1
+    patch_radius_arr = create_patch_radius_arr(arr, patch_radius)
+    patch_size = compute_patch_size(patch_radius_arr)
 
     ash = arr.shape[0:3]
     if np.any((ash != np.ones(3)) * (ash < patch_size)):
         raise ValueError("Array 'arr' is incorrect shape")
 
-    num_samples = np.prod(patch_size)
+    num_samples = compute_num_samples(patch_size)
     if num_samples == 1:
         raise ValueError("Cannot have only 1 sample,\
                           please increase patch_radius.")
     # account for mean subtraction by testing #samples - 1
     if (num_samples - 1) < arr.shape[-1] and not suppress_warning:
-        tmp = np.sum(patch_size == 1)  # count spatial dimensions with size 1
-        if tmp == 0:
-            root = np.ceil(arr.shape[-1] ** (1./3))  # 3D
-        if tmp == 1:
-            root = np.ceil(arr.shape[-1] ** (1./2))  # 2D
-        if tmp == 2:
-            root = arr.shape[-1]  # 1D
-        root = root + 1 if (root % 2) == 0 else root  # make odd
-        spr = int((root - 1) / 2)  # suggested patch_radius
-        e_s = "Number of samples {1} - 1 < Dimensionality {0}. "\
-              .format(arr.shape[-1], num_samples)
-        e_s += "This might have a performance impact. "
-        e_s += "Increase patch_radius to {0} to avoid this warning, "\
-               .format(spr)
-        e_s += "or supply suppress_warning=True to your function call."
-        warn(e_s, UserWarning)
+        spr = compute_suggested_patch_radius(arr, patch_size)
+        warn(dimensionality_problem_message(arr, num_samples, spr), UserWarning)
 
     if isinstance(sigma, np.ndarray):
         var = sigma ** 2
@@ -218,18 +319,19 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     SCIPY_LESS_1_5_0 = Version(scipy.__version__) < Version('1.5.0')
     kw_eigh = {'turbo': True} if SCIPY_LESS_1_5_0 else {}  # {'driver': 'gvd'}
     # loop around and find the 3D patch for each direction at each pixel
-    for k in range(patch_radius[2], arr.shape[2] - patch_radius[2]):
-        for j in range(patch_radius[1], arr.shape[1] - patch_radius[1]):
-            for i in range(patch_radius[0], arr.shape[0] - patch_radius[0]):
+    for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
+        for j in range(patch_radius_arr[1], arr.shape[1] - patch_radius_arr[1]):
+            for i in range(
+                    patch_radius_arr[0], arr.shape[0] - patch_radius_arr[0]):
                 # Shorthand for indexing variables:
                 if not mask[i, j, k]:
                     continue
-                ix1 = i - patch_radius[0]
-                ix2 = i + patch_radius[0] + 1
-                jx1 = j - patch_radius[1]
-                jx2 = j + patch_radius[1] + 1
-                kx1 = k - patch_radius[2]
-                kx2 = k + patch_radius[2] + 1
+                ix1 = i - patch_radius_arr[0]
+                ix2 = i + patch_radius_arr[0] + 1
+                jx1 = j - patch_radius_arr[1]
+                jx2 = j + patch_radius_arr[1] + 1
+                kx1 = k - patch_radius_arr[2]
+                kx2 = k + patch_radius_arr[2] + 1
 
                 X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
                                 num_samples, dim)
