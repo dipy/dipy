@@ -1,6 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_labelsbundles
-
-if __name__ == "__main__":
-    dipy_labelsbundles()

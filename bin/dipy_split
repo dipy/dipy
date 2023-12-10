@@ -1,7 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_split
-
-
-if __name__ == "__main__":
-    dipy_split()
