@@ -8,8 +8,9 @@ from dipy.utils.optpkg import optional_package
 
 cProfile, _, _ = optional_package('cProfile')
 pstats, _, _ = optional_package('pstats',
-                                'pstats is not installed.  It is part of the'
-                                'python-profiler package in Debian/Ubuntu')
+                                trip_msg='pstats is not installed.  It is '
+                                'part of the python-profiler package in '
+                                'Debian/Ubuntu')
 
 
 class Profiler:
