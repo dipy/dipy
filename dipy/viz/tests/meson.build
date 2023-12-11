@@ -4,7 +4,6 @@ python_sources = [
   'test_fury.py',
   'test_regtools.py',
   'test_streamline.py',
-  'test_viz_import.py',
   ]
 
 
