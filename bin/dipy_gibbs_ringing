@@ -1,7 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_gibbs_ringing
-
-
-if __name__ == "__main__":
-    dipy_gibbs_ringing()

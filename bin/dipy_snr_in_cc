@@ -1,6 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_snr_in_cc
-
-if __name__ == "__main__":
-    dipy_snr_in_cc()

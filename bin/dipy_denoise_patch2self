@@ -1,7 +1,0 @@
-#!python
-
-from dipy.workflows.cli import dipy_denoise_patch2self
-
-
-if __name__ == "__main__":
-    dipy_denoise_patch2self()

@@ -13,9 +13,6 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       orient_by_streamline,
                                       Streamlines)
 
-pd, have_pd, _ = optional_package("pandas")
-_, have_tables, _ = optional_package("tables")
-
 
 def peak_values(
         bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):

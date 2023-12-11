@@ -153,7 +153,10 @@ def test_roi_images(rng):
     npt.assert_equal(analysis.actors, 2)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_small_horizon_import():
     from dipy.viz import horizon as Horizon
-    assert Horizon == horizon
+    if has_fury:
+        assert Horizon == horizon
+    else:
+        npt.assert_raises(ImportError, Horizon)
