@@ -72,6 +72,7 @@ if __name__ == '__main__':
                                         r'\.boots\.resampling.*$',
                                         r'\.info.*$',
                                         r'\.pkg_info.*$',
+                                        r'\.__config__.*$',
                                         ]
     docwriter.object_skip_patterns += [
         r'.*FetcherError.*$',

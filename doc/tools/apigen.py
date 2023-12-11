@@ -227,7 +227,7 @@ class ApiDocWriter:
         pat = re.compile(patterns)
 
         if mod.__file__.endswith('.py'):
-            with open(mod.__file__) as fi:
+            with open(mod.__file__, encoding="utf8") as fi:
                 node = ast.parse(fi.read())
 
             functions = []

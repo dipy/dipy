@@ -52,6 +52,7 @@
 .. _launchpad: https://launchpad.net/
 .. _`nipy trunk`: https://code.launchpad.net/~nipy-developers/nipy/trunk
 .. _`nipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
+.. _`dipy mailing list`: https://mail.python.org/mailman3/lists/dipy.python.org/
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: https://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
@@ -100,6 +101,10 @@
 .. _python-vtk: https://www.vtk.org
 .. _pypi: https://pypi.python.org/pypi
 .. _FURY: https://fury.gl
+.. _scikit-learn: https://scikit-learn.org
+.. _statsmodels: https://www.statsmodels.org
+.. _pandas: https://pandas.pydata.org
+.. _pytables: https://www.pytables.org
 
 .. Python imaging projects
 .. _PyMVPA: https://www.pymvpa.org

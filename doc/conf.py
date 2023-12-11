@@ -541,7 +541,7 @@ sphinx_gallery_conf = {
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': html_logo,
+     'default_thumb_file': "_static/images/logos/dipy_full_logo.png",
     #  'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
