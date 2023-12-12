@@ -38,7 +38,7 @@ Quick links
         :link: recipes/index
         :link-type: any
 
-        How to do ....?  This dedicated section will provide you quick and direct answer.
+        How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
 
     .. grid-item-card:: :octicon:`zap` Workflows
         :link: interfaces/index
