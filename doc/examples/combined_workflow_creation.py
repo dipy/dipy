@@ -100,33 +100,23 @@ class DenoiseAndSegment(CombinedWorkflow):
 #
 #
 # This is it for the combined workflow class! Now to be able to call it easily
-# via command line, you need this last bit of code. It is usually in an
-# executable file located in ``bin``.
-
-from dipy.workflows.flow_runner import run_flow
-
-###############################################################################
-# This is the method that will wrap everything that is needed to make a
-# workflow ready then run it.
-
-# if __name__ == "__main__":
-#     run_flow(DenoiseAndSegment())
-
-###############################################################################
-# This is the only thing needed to make your workflow available through command
-# line.
+# via command line, you need to add this workflow in 2 different files:
+# - ``<dipy_root>/pyproject.toml``: open this file and add the following line
+#   to the ``[project.scripts]`` section:
+#   ``dipy_denoise_segment = "dipy.workflows.cli:run"``
+# - ``<dipy_root>/dipy/workflows/cli.py``: open this file and add the workflow
+#   information to the ``cli_flows`` dictionary. The key is the name of the
+#   command line command and the value is a tuple with the module name and the
+#   workflow class name. In this case it would be:
+#   ``"dipy_denoise_segment": ("dipy.workflows.my_combined_workflow",
+#                              "DenoiseAndSegment")``
 #
-# Now just call the script you just made with ``-h`` to see the argparser help
+# That`s it! Now you can call your workflow from anywhere with the command line.
+# Let's just call the script you just made with ``-h`` to see the argparser help
 # text::
 #
-#    python combined_workflow_creation.py --help
+#    dipy_denoise_segment --help
 #
 # You should see all your parameters available along with some extra common
 # ones like logging file and force overwrite. Also all the documentation you
-# wrote about each parameter is there. Also note that every sub workflow
-# optional parameter is available.
-#
-# Now call it for real with a nifti file to see the results. Experiment
-# with the parameters and see the results::
-#
-#    python combined_workflow_creation.py volume.nii.gz
+# wrote about each parameter is there.

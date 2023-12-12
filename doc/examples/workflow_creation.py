@@ -85,41 +85,22 @@ class AppendTextFlow(Workflow):
 # anything. For example, it just appends text to an input file.
 #
 # This is it for the workflow! Now to be able to call it easily via command
-# line, you need to add this bit of code. Usually this is in a separate
-# executable file located in ``bin``.
+# line, you need to add this workflow in 2 different files:
+# - ``<dipy_root>/pyproject.toml``: open this file and add the following line
+#   to the ``[project.scripts]`` section:
+#   ``dipy_append_text = "dipy.workflows.cli:run"``
+# - ``<dipy_root>/dipy/workflows/cli.py``: open this file and add the workflow
+#   information to the ``cli_flows`` dictionary. The key is the name of the
+#   command line command and the value is a tuple with the module name and the
+#   workflow class name. In this case it would be:
+#   ``"dipy_append_text": ("dipy.workflows.my_workflow", "AppendTextFlow")``
 #
-# The first line imports the run_flow method from the flow_runner class.
-
-from dipy.workflows.flow_runner import run_flow
-
-###############################################################################
-# The second line imports the ``AppendTextFlow`` class from the newly created
-# ``my_workflow.py`` file. In this specific case, we comment on this import
-# since the ``AppendTextFlow`` class is not in an external file but in the
-# current file.
-
-# from dipy.workflows.my_workflow import AppendTextFlow
-
-###############################################################################
-# This is the method that will wrap everything that is needed to make a flow
-# command line ready then run it.
-
-# if __name__ == "__main__":
-#     run_flow(AppendTextFlow())
-
-###############################################################################
-# This is the only thing needed to make your workflow available through the
-# command line.
-#
-# Now just call the script you just made with ``-h`` to see the argparser help
+# That`s it! Now you can call your workflow from anywhere with the command line.
+# Let's just call the script you just made with ``-h`` to see the argparser help
 # text::
 #
-#    python workflow_creation.py --help
+#    dipy_append_text --help
 #
 # You should see all your parameters available along with some extra common
 # ones like logging file and force overwrite. Also all the documentation you
 # wrote about each parameter is there.
-#
-# Now call it for real with a text file::
-#
-#    python workflow_creation.py ./text_file.txt
