@@ -14,7 +14,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.utils.optpkg import optional_package
-fury, have_fury, setup_module = optional_package('fury')
+fury, have_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()

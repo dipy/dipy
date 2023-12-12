@@ -23,7 +23,7 @@ from dipy.workflows.stats import BundleShapeAnalysis
 from dipy.workflows.stats import buan_bundle_profiles
 
 pd, have_pandas, _ = optional_package("pandas")
-_, have_statsmodels, _ = optional_package("statsmodels")
+_, have_statsmodels, _ = optional_package("statsmodels", min_version="0.14.0")
 _, have_tables, _ = optional_package("tables")
 _, have_matplotlib, _ = optional_package("matplotlib")
 

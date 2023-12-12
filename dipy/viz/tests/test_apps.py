@@ -12,7 +12,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import set_random_number_generator
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import window

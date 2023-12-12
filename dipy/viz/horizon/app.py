@@ -14,7 +14,7 @@ from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 from dipy.viz.horizon.util import check_img_shapes
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import __version__ as fury_version

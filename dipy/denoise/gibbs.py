@@ -2,19 +2,13 @@ from functools import partial
 from multiprocessing import Pool
 
 import numpy as np
-from numpy.lib import NumpyVersion as Version
 import scipy
 
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.deprecator import deprecated_params
 
-if Version(scipy.__version__) >= Version('1.4.0'):
-    import scipy.fft
-    _fft = scipy.fft
-else:
-    import scipy.fftpack
-    _fft = scipy.fftpack
-
+import scipy.fft
+_fft = scipy.fft
 
 def _image_tv(x, axis=0, n_points=3):
     """ Computes total variation (TV) of matrix x across a given axis and

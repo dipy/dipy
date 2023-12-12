@@ -2,29 +2,22 @@
 """
 Class and helper functions for fitting the EVAC+ model.
 """
-
-
-from packaging.version import Version
 import logging
 import numpy as np
-from scipy.ndimage import affine_transform
 
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.io.image import load_nifti
 from dipy.align.reslice import reslice
 from dipy.nn.utils import normalize, set_logger_level, transform_img
 from dipy.nn.utils import recover_img, correct_minor_errors
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Softmax, Conv3DTranspose
     from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
     from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 else:
     class Model:
         pass

@@ -1,5 +1,4 @@
 from warnings import warn
-from packaging.version import Version
 
 import numpy as np
 
@@ -13,7 +12,8 @@ from dipy.data import default_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.optimize import leastsq
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class ForecastModel(OdfModel, Cache):
@@ -181,12 +181,11 @@ class ForecastModel(OdfModel, Cache):
         self.pos = False
 
         if dec_alg.upper() == 'POS':
-            if have_cvxpy:
-                self.wls = False
-                self.pos = True
-            else:
-                msg = 'cvxpy is needed to enforce positivity constraints.'
-                raise ValueError(msg)
+            if not have_cvxpy:
+                cvxpy.import_error()
+
+            self.wls = False
+            self.pos = True
 
         if dec_alg.upper() == 'CSD':
             self.csd = True
@@ -259,18 +258,12 @@ class ForecastModel(OdfModel, Cache):
 
             if self.pos:
                 c = cvxpy.Variable(M.shape[1])
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    design_matrix = cvxpy.Constant(M) * c
-                else:
-                    design_matrix = cvxpy.Constant(M) @ c
+                design_matrix = cvxpy.Constant(M) @ c
                 objective = cvxpy.Minimize(
                     cvxpy.sum_squares(design_matrix - data_single_b0) +
                     self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
 
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [c[0] == c0, self.fod * c >= 0]
-                else:
-                    constraints = [c[0] == c0, self.fod @ c >= 0]
+                constraints = [c[0] == c0, self.fod @ c >= 0]
                 prob = cvxpy.Problem(objective, constraints)
                 try:
                     prob.solve(solver=cvxpy.OSQP, eps_abs=1e-05, eps_rel=1e-05)

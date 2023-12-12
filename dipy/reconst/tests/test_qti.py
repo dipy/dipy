@@ -9,9 +9,9 @@ from dipy.sims.voxel import vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.reconst.dti import fractional_anisotropy
 from dipy.testing.decorators import set_random_number_generator
-
 from dipy.utils.optpkg import optional_package
-cp, have_cvxpy, _ = optional_package("cvxpy")
+
+cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 def test_from_3x3_to_6x1():

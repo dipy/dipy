@@ -2,9 +2,6 @@
 """
 Class and helper functions for fitting the Synb0 model.
 """
-
-
-from packaging.version import Version
 import logging
 import numpy as np
 
@@ -13,7 +10,7 @@ from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.nn.utils import normalize, unnormalize, set_logger_level
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
 if have_tf and have_tfa:
     from tensorflow.keras.models import Model
@@ -21,8 +18,6 @@ if have_tf and have_tfa:
     from tensorflow.keras.layers import Conv3D, LeakyReLU
     from tensorflow.keras.layers import Concatenate, Layer
     from tensorflow_addons.layers import InstanceNormalization
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 else:
     class Model:
         pass

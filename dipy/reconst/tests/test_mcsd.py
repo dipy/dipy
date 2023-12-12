@@ -15,8 +15,8 @@ from dipy.core.gradients import GradientTable
 from dipy.testing.decorators import set_random_number_generator
 
 from dipy.utils.optpkg import optional_package
-cvx, have_cvxpy, _ = optional_package("cvxpy")
 
+cvx, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 

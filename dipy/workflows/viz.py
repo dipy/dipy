@@ -10,7 +10,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 
 if has_fury:

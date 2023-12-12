@@ -6,16 +6,15 @@ import numpy as np
 import numpy.testing as npt
 
 from scipy.special import genlaguerre, gamma
+import pytest
 
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import multi_tensor
-
-import pytest
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 

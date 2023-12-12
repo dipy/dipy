@@ -1,18 +1,15 @@
 import pytest
-from packaging.version import Version
 
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
 import numpy as np
 from numpy.testing import assert_almost_equal
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
 
 if have_tf and have_tfa:
     from dipy.nn.synb0 import Synb0
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 
 
 @pytest.mark.skipif(not all([have_tf, have_tfa]), reason='Requires TensorFlow \

@@ -1,7 +1,7 @@
 import pytest
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import set_random_number_generator
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 sklearn, have_sklearn, _ = optional_package('sklearn.model_selection')
 if have_tf and have_sklearn:
     from dipy.nn.cnn_1d_denoising import Cnn1DDenoiser

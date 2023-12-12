@@ -1,6 +1,4 @@
 """ Classes and functions for fitting ivim model """
-
-from packaging.version import Version
 import warnings
 
 import numpy as np
@@ -9,8 +7,8 @@ from scipy.optimize import least_squares, differential_evolution
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 # global variable for bounding least_squares in both models
 BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
@@ -738,10 +736,7 @@ class IvimModelVP(ReconstModel):
                        f[1] <= 0.89]
 
         # Form objective.
-        if Version(cvxpy.__version__) < Version('1.1'):
-            obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
-        else:
-            obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi @ f - signal)))
+        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi @ f - signal)))
 
         # Form and solve problem.
         prob = cvxpy.Problem(obj, constraints)

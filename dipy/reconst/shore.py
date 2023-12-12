@@ -1,6 +1,5 @@
 from warnings import warn
 from math import factorial
-from packaging.version import Version
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from dipy.core.geometry import cart2sphere
 
 from dipy.utils.optpkg import optional_package
 
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class ShoreModel(Cache):
@@ -198,7 +197,7 @@ class ShoreModel(Cache):
             if not have_cvxpy:
                 msg = "cvxpy must be installed for positive_constraint or "
                 msg += "constraint_e0."
-                raise ValueError(msg)
+                raise ImportError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
@@ -249,10 +248,7 @@ class ShoreModel(Cache):
             M0 = M[self.gtab.b0s_mask, :]
 
             c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
-            else:
-                design_matrix = cvxpy.Constant(M) @ c
+            design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix - data_norm) +
                 self.lambdaN * cvxpy.quad_form(c, Nshore) +
@@ -260,10 +256,7 @@ class ShoreModel(Cache):
             )
 
             if not self.positive_constraint:
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [M0[0] * c == 1]
-                else:
-                    constraints = [M0[0] @ c == 1]
+                constraints = [M0[0] @ c == 1]
             else:
                 lg = int(np.floor(self.pos_grid ** 3 / 2))
                 v, t = create_rspace(self.pos_grid, self.pos_radius)
@@ -275,10 +268,7 @@ class ShoreModel(Cache):
                     self.cache_set(
                         'shore_matrix_positive_constraint',
                         (self.pos_grid, self.pos_radius), psi)
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
-                else:
-                    constraints = [(M0[0] @ c) == 1., (psi @ c) >= 1e-3]
+                constraints = [(M0[0] @ c) == 1., (psi @ c) >= 1e-3]
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver)
