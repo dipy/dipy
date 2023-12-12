@@ -35,7 +35,7 @@ Quick links
         Browse our tutorials gallery.
 
     .. grid-item-card:: :octicon:`image` Recipes
-        :link: recipes/index
+        :link: recipes
         :link-type: any
 
         How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.

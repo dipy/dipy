@@ -13,9 +13,10 @@
 .. _dipy: https://dipy.org
 .. _`dipy github`: https://github.com/dipy/dipy
 .. _`dipy pypi`: https://pypi.python.org/pypi/dipy
-.. _nipy issues: https://github.com/nipy/nipy/issues
-.. _dipy issues: https://github.com/dipy/dipy/issues
-.. _dipy paper: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
+.. _`nipy issues`: https://github.com/nipy/nipy/issues
+.. _`dipy issues`: https://github.com/dipy/dipy/issues
+.. _`dipy discussions`: https://github.com/dipy/dipy/discussions
+.. _`dipy paper`: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _journal paper: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: https://nipy.org/nibabel
 .. _nibabel pypi: https://pypi.python.org/pypi/nibabel
