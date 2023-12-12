@@ -47,14 +47,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
               # 'numpydoc',
               'github',
-              'jinja',
               'sphinx_design',
 ]
-
-# Providing different contexts for the jinja directive
-jinja_contexts = {
-    "documentation": json.load(open("./context/documentation.json"))
-}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
