@@ -5,7 +5,7 @@ def check_img_shapes(images):
 
     # No need to check if there is less than 2 images
     if len(images) < 2:
-        return False
+        return True
     base_shape = images[0][0].shape[:3]
     for img in images:
         data, _ = img

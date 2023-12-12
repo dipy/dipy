@@ -1,4 +1,5 @@
 import pytest
+import warnings
 
 import numpy.testing as npt
 
@@ -86,6 +87,14 @@ def test_build_slider():
     npt.assert_equal(double_slider.selected_value, (4, 5))
 
 
+def check_for_warnings(warn_printed, w_msg):
+    selected_w = [w for w in warn_printed if issubclass(w.category,
+                                                        UserWarning)]
+    assert len(selected_w) >= 1
+    msg = [str(m.message) for m in selected_w]
+    npt.assert_equal(w_msg in msg, True)
+
+
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_checkbox():
     checkbox = build_checkbox(['Hello', 'Hi'], ['Hello'])
@@ -94,17 +103,25 @@ def test_build_checkbox():
     npt.assert_equal(len(checkbox.obj.labels), 2)
     npt.assert_equal(checkbox.selected_value, ['Hello'])
 
-    checkbox = build_checkbox()
-    npt.assert_equal(checkbox, None)
+    with warnings.catch_warnings(record=True) as l_warns:
+        checkbox = build_checkbox()
+        npt.assert_equal(checkbox, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' checkboxes')
 
-    checkbox = build_checkbox([])
-    npt.assert_equal(checkbox, None)
+    with warnings.catch_warnings(record=True) as l_warns:
+        checkbox = build_checkbox([])
+        npt.assert_equal(checkbox, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' checkboxes')
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_switcher():
-    switcher = build_switcher()
-    npt.assert_equal(switcher, None)
+    with warnings.catch_warnings(record=True) as l_warns:
+        none_switcher = build_switcher()
+        npt.assert_equal(none_switcher, None)
+        check_for_warnings(l_warns, 'No items passed in switcher')
 
     switcher_label, switcher = build_switcher(
         [{'label': 'Hello', 'value': 'hello'}])
