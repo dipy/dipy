@@ -85,7 +85,7 @@ Release checklist
   clone the wheel-building repo, edit the ``.travis.yml`` and ``appveyor.yml``
   text files (if present) with the branch or commit for the release, commit
   and then push back up to github.  This will trigger a wheel build and test
-  on OSX, Linux and Windows. Check the build has passed on the Travis-CI
+  on macOS, Linux and Windows. Check the build has passed on the Travis-CI
   interface at https://travis-ci.org/MacPython/dipy-wheels.  You'll need
   commit privileges to the ``dipy-wheels`` repo; ask Matthew Brett or on the
   mailing list if you do not have them.
@@ -222,28 +222,29 @@ tag to github, so the buildbots can find the released code and build it.
     c:\Python26\python.exe setup.py bdist_egg upload
     c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
 
-* Trigger binary builds for OSX from the buildbots ``dipy-bdist-mpkg-2.6``,
+* Trigger binary builds for macOS from the buildbots ``dipy-bdist-mpkg-2.6``,
   ``dipy-bdist-mpkg-2.7``. ``egg`` and ``mpkg`` builds will appear in
   http://nipy.bic.berkeley.edu/dipy-dist .  Download the eggs and upload to
   pypi.
 
   Upload the dmg files with the *files* interface for the new DIPY release.
 
-* Building OSX dmgs from the mpkg builds.
+* Building macOS dmgs from the mpkg builds.
 
   The buildbot binary builders build ``mpkg`` directories, which are installers
-  for OSX.
+  for macOS.
 
   These need their permissions to be fixed because the installers should install
   the files as the root user, group ``admin``.  The all need to be converted to
-  OSX disk images.  Use the ``./tools/build_dmgs.py``, with something like this
-  command line::
+  macOS disk images.  Use the ``./tools/build_dmgs.py``, with something like
+  this command line::
 
     ./tools/build_dmgs "dipy-dist/dipy-0.6.0-py*.mpkg"
 
   For this to work you'll need several things:
 
-    * An account on a OSX box with sudo (Admin user) on which to run the script.
+    * An account on a macOS box with sudo (Admin user) on which to run the
+      script.
     * ssh access to the buildbot server http://nipy.bic.berkeley.edu (ask
       Matthew or Eleftherios).
     * a development version of ``bdist_mpkg`` installed from

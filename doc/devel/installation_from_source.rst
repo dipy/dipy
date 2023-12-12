@@ -46,8 +46,8 @@ This command will do the following :
 
 .. _install-source-nix:
 
-Install from source for Unix (e.g Linux, OSX)
----------------------------------------------
+Install from source for Unix (e.g Linux, macOS)
+-----------------------------------------------
 
 Change directory into the *DIPY source root directory*.
 
@@ -66,12 +66,12 @@ Or, to build DIPY in the source tree (locally) so you can run the code in the so
 add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
 When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
-the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
+the end of ``~/.bashrc`` or (macOS) ``~/.bash_profile`` so we don't need to
 retype it every time. This should look something like::
 
   export PYTHONPATH="/home/user_dir/Devel/dipy:\$PYTHONPATH"
 
-After changing the ``~/.bashrc`` or (OSX) ``~/.bash_profile`` try::
+After changing the ``~/.bashrc`` or (macOS) ``~/.bash_profile`` try::
 
   source ~/.bashrc
 
@@ -162,21 +162,21 @@ If you get an error saying  "unable to find vcvarsall.bat" then you need to
 check your environment variable ``PATH`` or reinstall VisualStudioBuildTools_.
 Setuptools should automatically detect the compiler and use it.
 
-OSX
----
+macOS
+-----
 
 Make sure you have Xcode_ and Anaconda_ installed.
 
 From here follow the :ref:`install-source-nix` instructions.
 
-OpenMP with OSX
----------------
+OpenMP with macOS
+-----------------
 OpenMP_ is a standard library for efficient multithreaded applications. This
 is used in DIPY for speeding up many different parts of the library (e.g., denoising
 and bundle registration). If you do not have an OpenMP-enabled compiler, you can
 still compile DIPY from source using the above instructions, but it might not take
 advantage of the multithreaded parts of the code. To be able to compile
-DIPY from source with OpenMP on Mac OSX, you will have to do a few more things. First
+DIPY from source with OpenMP on macOS, you will have to do a few more things. First
 of all, you will need to install the Homebrew_ package manager. Next, you will need
 to install and configure the compiler. You have two options: using the GCC compiler
 or the CLANG compiler. This depends on your python installation:

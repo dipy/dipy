@@ -27,7 +27,7 @@ Using pip:
 
 This method should work under Linux, Mac OS X, and Windows.
 
-For Windows and Mac OSX you can use Anaconda_ to get numpy, scipy, cython and lots
+For Windows and macOS you can use Anaconda_ to get numpy, scipy, cython and lots
 of other useful python modules. Anaconda_ is a big package but will install many
 tools and libraries that are useful for scientific processing.
 

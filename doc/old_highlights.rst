@@ -172,7 +172,7 @@ Older Highlights
 **DIPY 0.13.0** is now available. New features include:
 
 - Faster local PCA implementation.
-- Fixed different issues with OpenMP and Windows / OSX.
+- Fixed different issues with OpenMP and Windows / macOS.
 - Replacement of cvxopt by cvxpy.
 - Replacement of Pytables by h5py.
 - Updated API to support latest numpy version (1.14).
