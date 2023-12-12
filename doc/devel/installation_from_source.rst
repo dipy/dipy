@@ -219,8 +219,8 @@ Then, in the terminal from ``<dipy root>``::
 
 You can also run the examples in ``<dipy root>/doc``.
 
-Documentation (Unix only)
-=========================
+Documentation
+=============
 
 To build the documentation in HTML in your computer you will need to do::
 
@@ -265,3 +265,6 @@ the virtual environment where ``DIPY`` lives. This can be solved by specifying
 the path to the ``Sphinx`` package in the virtual environment::
 
     make html SPHINXBUILD='python <path_to_sphinx>/sphinx-build'
+
+
+.. include:: ../links_names.inc
