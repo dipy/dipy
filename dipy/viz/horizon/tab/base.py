@@ -84,10 +84,6 @@ class TabManager:
         num_tabs = len(tabs)
         self._tabs = tabs
         self._synchronize_slices = synchronize_slices
-        if not self._synchronize_slices:
-            msg = 'Images are of different dimensions, ' \
-                + 'synchronization of slices will not work'
-            warnings.warn(msg)
 
         win_width, _win_height = win_size
 
@@ -104,6 +100,15 @@ class TabManager:
         self._tab_ui.on_change = self._tab_selected
 
         self.tab_changed = lambda actors: None
+        slices_tabs = list(
+            filter(
+                lambda x: x.__class__.__name__ == 'SlicesTab', self._tabs
+            )
+        )
+        if not self._synchronize_slices and slices_tabs:
+            msg = 'Images are of different dimensions, ' \
+                + 'synchronization of slices will not work'
+            warnings.warn(msg)
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title = ' ' + tab.name
@@ -352,7 +357,7 @@ def build_checkbox(
     """
 
     if labels is None or not labels:
-        warnings.warn('At least one label needs to be to create checkboxes.')
+        warnings.warn('At least one label needs to be to create checkboxes')
         return
 
     if checked_labels is None:
