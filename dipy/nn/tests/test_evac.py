@@ -1,5 +1,4 @@
 import pytest
-from packaging.version import Version
 
 import numpy as np
 import numpy.testing as npt
@@ -7,12 +6,10 @@ import numpy.testing as npt
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 
 if have_tf:
     from dipy.nn.evac import EVACPlus
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')

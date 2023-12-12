@@ -7,7 +7,7 @@ from dipy.testing.decorators import use_xvfb
 from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
                                        build_slider, build_switcher)
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 skip_it = use_xvfb == 'skip'
 

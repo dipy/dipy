@@ -6,10 +6,9 @@ import numpy as np
 import scipy.sparse as sps
 import scipy.optimize as opt
 from scipy.optimize import minimize
-from packaging.version import Version
 from dipy.utils.optpkg import optional_package
 
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
@@ -393,10 +392,6 @@ class PositiveDefiniteLeastSquares:
                for common diffusion MRI models using sum of squares
                programming". NeuroImage 209, 2020, 116405.
         """
-        # Check for cvxpy solver
-        if not have_cvxpy:
-            raise ValueError('CVXPY package needed to enforce constraints.')
-
         # Input
         self.A = A
         self.L = L
@@ -417,14 +412,9 @@ class PositiveDefiniteLeastSquares:
         self._zeros = np.zeros(m)
 
         # Objective
-        if Version(cvxpy.__version__) < Version('1.1'):
-            c = self._X*self._h - self._y
-            if L is not None:
-                c += L*self._h
-        else:
-            c = self._X@self._h - self._y
-            if L is not None:
-                c += L@self._h
+        c = self._X@self._h - self._y
+        if L is not None:
+            c += L@self._h
 
         f_objective = cvxpy.Minimize(0)
         p_objective = cvxpy.Minimize(cvxpy.norm(c))

@@ -21,8 +21,9 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.geometry import sphere2cart
 from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWireError
 
-_, have_cvxpy, _ = optional_package("cvxpy")
+_, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -133,9 +134,9 @@ def test_dki_fits():
 
         assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
     else:
-        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+        assert_raises(TripWireError, dki.DiffusionKurtosisModel,
                       gtab_2s, fit_method="CLS")
-        assert_raises(ValueError, dki.DiffusionKurtosisModel,
+        assert_raises(TripWireError, dki.DiffusionKurtosisModel,
                       gtab_2s, fit_method="CWLS")
 
     # NLS fitting

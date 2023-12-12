@@ -1,6 +1,6 @@
 from dipy.utils.optpkg import optional_package
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
-fury, has_fury, _ = optional_package('fury')
+fury, has_fury, _ = optional_package('fury', min_version="0.9.0")
 if has_fury:
     from dipy.viz import window, actor
 

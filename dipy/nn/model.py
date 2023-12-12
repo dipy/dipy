@@ -1,12 +1,6 @@
-from packaging.version import Version
-
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow')
-
-if have_tf:
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 
 
 class SingleLayerPerceptron:

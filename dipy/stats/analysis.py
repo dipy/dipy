@@ -4,7 +4,6 @@ from scipy.spatial import cKDTree
 from scipy.ndimage import map_coordinates
 from scipy.spatial.distance import mahalanobis
 
-from dipy.utils.optpkg import optional_package
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric

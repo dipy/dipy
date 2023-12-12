@@ -1,5 +1,4 @@
 from os.path import join as pjoin
-from packaging.version import Version
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -13,12 +12,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.workflows.nn import EVACPlusFlow
 
 
-tf, have_tf, _ = optional_package('tensorflow')
-
-if have_tf:
-    from dipy.nn.evac import EVACPlus
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')

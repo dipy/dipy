@@ -138,10 +138,11 @@ def test_mapmri_initialize_pos_radius():
     """
     gtab = get_gtab_taiwan_dsi()
     # When string is provided it has to be "adaptive"
-    assert_raises(ValueError, MapmriModel, gtab, positivity_constraint=True,
+    ErrorType = ImportError if not mapmri.have_cvxpy else ValueError
+    assert_raises(ErrorType, MapmriModel, gtab, positivity_constraint=True,
                   pos_radius="notadaptive")
     # When a number is provided it has to be positive
-    assert_raises(ValueError, MapmriModel, gtab, positivity_constraint=True,
+    assert_raises(ErrorType, MapmriModel, gtab, positivity_constraint=True,
                   pos_radius=-1)
 
 

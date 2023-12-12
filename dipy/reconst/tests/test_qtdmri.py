@@ -104,15 +104,17 @@ def test_input_parameters():
     assert_raises(ValueError, qtdmri.QtdmriModel,
                   gtab_4d, eigenvalue_threshold=-1)
 
+    error = ValueError if qtdmri.have_cvxpy else ImportError
+
     # unavailable cvxpy solver is caught
-    assert_raises(ValueError, qtdmri.QtdmriModel, gtab_4d,
-                  laplacian_regularization=True,
-                  cvxpy_solver='test')
+    assert_raises(error, qtdmri.QtdmriModel, gtab_4d,
+                laplacian_regularization=True,
+                cvxpy_solver='test')
 
     # non-normalized non-cartesian l1-regularization is caught
-    assert_raises(ValueError, qtdmri.QtdmriModel, gtab_4d,
-                  l1_regularization=True, cartesian=False,
-                  normalization=False)
+    assert_raises(error, qtdmri.QtdmriModel, gtab_4d,
+                l1_regularization=True, cartesian=False,
+                normalization=False)
 
 
 def test_orthogonality_temporal_basis_functions():

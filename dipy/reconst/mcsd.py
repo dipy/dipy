@@ -17,7 +17,7 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
@@ -382,16 +382,8 @@ def solve_qp(P, Q, G, H):
     """
     x = cvxpy.Variable(Q.shape[0])
     P = cvxpy.Constant(P)
-    if Version(cvxpy.__version__) >= Version('1.3'):
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P, True) + Q @ x)
-        constraints = [G @ x <= H]
-    elif Version(cvxpy.__version__) >= Version('1.2'):
-        P_psd = cvxpy.atoms.affine.wraps.psd_wrap(P)
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P_psd) + Q @ x)
-        constraints = [G @ x <= H]
-    elif Version(cvxpy.__version__) < Version('1.2'):
-        msg = """Dipy does not support versions of cvxpy below 1.2."""
-        raise ValueError(msg)
+    objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P, True) + Q @ x)
+    constraints = [G @ x <= H]
 
     # setting up the problem
     prob = cvxpy.Problem(objective, constraints)

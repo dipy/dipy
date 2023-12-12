@@ -4,7 +4,7 @@ from dipy.utils.optpkg import optional_package
 import itertools
 from dipy.viz.gmem import GlobalHorizon
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, have_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if have_fury:
     from dipy.viz import actor, ui, colormap
