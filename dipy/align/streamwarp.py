@@ -238,6 +238,15 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
     Bundle shape difference analysis using magnitude from BundleWarp
     displacements and BUAN.
 
+    Depending on the number of points of a streamline, and the number of
+    segments requested, multiple points may be considered for the computation
+    of a given segment; a segment may contain information from a single point;
+    or some segments may not contain information from any points. In the latter
+    case, the segment will contain an ``np.nan`` value. The point-to-segment
+    mapping is defined by the :func:`assignment_map`: for each segment index,
+    the point information of the matching index positions, as returned by
+    :func:`assignment_map`, are considered for the computation.
+
     Parameters
     ----------
     moving_aligned : Streamlines
@@ -279,8 +288,13 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
 
     for i in range(n):
 
-        shape_profile[i] = np.mean(offsets[indx == i])
-        stdv[i] = np.std(offsets[indx == i])
+        mask = indx == i
+        if sum(mask):
+            shape_profile[i] = np.mean(offsets[mask])
+            stdv[i] = np.std(offsets[mask])
+        else:
+            shape_profile[i] = np.nan
+            stdv[i] = np.nan
 
     if plotting:
         bundle_shape_profile(x, shape_profile, stdv)
