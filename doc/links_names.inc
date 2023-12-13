@@ -16,6 +16,7 @@
 .. _`nipy issues`: https://github.com/nipy/nipy/issues
 .. _`dipy issues`: https://github.com/dipy/dipy/issues
 .. _`dipy discussions`: https://github.com/dipy/dipy/discussions
+.. _`dipy github actions`: https://github.com/dipy/dipy/actions
 .. _`dipy paper`: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _journal paper: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: https://nipy.org/nibabel

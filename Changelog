@@ -24,8 +24,18 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.8.0 (Friday, October 13, 2023)
+* 1.8.0 (Wednesday, December 13, 2023)
 
+- Python 3.12.0 support.
+- Cython 3.0.0 compatibility.
+- Migrated to Meson build system. Setuptools is no more.
+- EVAC+ novel DL-based brain extraction method added.
+- Parallel Transport Tractography (PTT) 10X faster.
+- Many Horizon updates. Fast overlays of many images.
+- New Correlation Tensor Imaging (CTI) method added.
+- Improved warnings for optional dependencies.
+- Large documentation update. New theme/design integration.
+- Closed 197 issues and merged 130 pull requests.
 
 * 1.7.0 (Sunday, April 23, 2023)
 

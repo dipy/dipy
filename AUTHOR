@@ -4,15 +4,16 @@ Serge Koudoro
 Matthew Brett
 Rafael Neto Henriques
 Bago Amirbekian
-Omar Ocegueda
 Gabriel Girard
+Omar Ocegueda
+Bramsh Qamar
+Jon Haitz Legarreta Gorroño
+Francois Rheault
 Samuel St-Jean
 Shreyas Fadnavis
-Bramsh Qamar
-Jon Haitz Legarreta Gorroño <jon.haitz
 Marc-Alexandre Côté
 Philippe Karan
-Francois Rheault
+Javier Guaje
 Rutger Fick
 Shahnawaz Ahmed
 Ian Nimmo-Smith
@@ -23,45 +24,55 @@ Stefan van der Walt
 Ranveer Aggarwal
 Maxime Descoteaux
 Kenji Marshall
+Jong Sung Park
 Riddhish Bhalodia
+Shilpi Prasad
+Tom Dela Haije
 Parichit Sharma
-Karan <karan
+Karan
 Bishakh Ghosh
 Christopher Nguyen
 Ricci Woo
+Maharshi Gor
 Stephan Meesters
 Leevi Kerkela
 Eric Peterson
 David Romero-Bascones
+Etienne St-Onge
 Julio Villalon
 Jean-Christophe Houde
-Tom Dela Haije
 Manu Tej Sharma
 Sourav Singh
 Nasim Anousheh
-Etienne St-Onge
+Charles Poirier
+Dimitri Papadopoulos
+Paul Camacho
 Kumar Ashutosh
 David Reagan
 Guillaume Theaud
 Shubham Shaswat
 Aman Arya
-Charles Poirier
-Deneb Boito <deneb
+Deneb Boito
 Dimitris Rozakis
 Fabio Nery
+Rahul Ubale
 kunal mehta
 Gregory R. Lee
 Areesha Tariq
 Saber Sheybani
+Sam Coveney
 Chantal Tax
 Gregory Lee
 Nil Goyette
-Javier Guaje
-Rohan Prinja
 Eric Larson
+Rohan Prinja
+Yaroslav Halchenko
 Antonio Ossa
 Jaewon Chung
+Vara Lakshmi Bayanagari
 Demian Wassermann
+John Kruper
+Shilpi
 Michael Paquette
 Shrishti Hore
 Tingyi Wanyan
@@ -69,7 +80,6 @@ Jiri Borovec
 Siddharth Kapoor
 Leon Weninger
 Malinda Dilhara
-Yaroslav Halchenko
 Conor Corbin
 Dan Bullock
 Derek Pisner
@@ -81,6 +91,7 @@ Erik Ziegler
 Jacob Roberts
 Takis Panagopoulos
 Antoine Theberge
+Baran Aydogan
 Ross Lawrence
 Scott Trinkle
 David Qixiang Chen
@@ -91,14 +102,19 @@ Alexandre Gauvin
 Basile Pinsard
 David Hunt
 Emanuele Olivetti
+Emmanuelle Renauld
+Nicolas Delinte
 Sarath Chandra
-Clint Greene <clint
-Giulia Bertò <giulia.berto
+Clint Greene
+Giulia Bertò
 Lucas Da Costa
-Matthias Ekman <matthias
-Yash Sherry <yash14123
+Matthias Ekman
+Mitesh Gulecha
+Yash Sherry
+dependabot[bot]
 endolith
 Andrew Lawrence
+Bennet Fauber
 Emmanuel Caruyer
 Felix Liu
 Matt Cieslak
@@ -106,32 +122,34 @@ Oscar Esteban
 Tashrif Billah
 Tom Wright
 svabhishek29
+ujjwal-shekhar
 Adam Rybinski
 Aryansh Omray
-Bennet Fauber
 Chandan Gangwar
 Clément Zotti
-Emmanuelle Renauld
 Gonzalo Sanguinetti
-John Kruper
 Joshua Newton
 Naveen Kumarmarri
-Sam Coveney
 Sylvain Merlet
 Vatsala Swaroop
 Vibhatha Abeykoon
-Bennet Fauber
+Étienne Mollier
+Atharva Shah
 Chris Filo Gorgolewski
 Daniel Enrico Cahall
+Dogu Baran Aydogan
 Francis Jerome
 Himanshu Mishra
 Jakob Wasserthal
-Javier Guaje
 Jirka Borovec
 Jon Mendoza
 Katrin Leinweber
 Maria Luisa Mandelli
+Martino Pilia
+Michael R. Crusoe
 Qiyuan Tian
-Sagun Pai <sagung
+Sagun Pai
 Sven Dorkenwald
+Theodore Ni
 Yijun Liu
+97

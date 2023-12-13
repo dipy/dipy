@@ -79,7 +79,7 @@ distclean: clean
 
 source-release: clean
 	$(PYTHON) -m compileall .
-	$(PYTHON) setup.py sdist --formats=gztar,zip
+	$(PYTHON) -m build --sdist --wheel .
 
 binary-release: clean
 	$(PYTHON) setup_egg.py bdist_egg
