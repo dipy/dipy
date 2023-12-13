@@ -153,7 +153,7 @@ class Sphere:
                  faces=None, edges=None):
 
         all_specified = _all_specified(x, y, z) + _all_specified(xyz) + \
-                        _all_specified(theta, phi)
+            _all_specified(theta, phi)
         one_complete = (_some_specified(x, y, z) + _some_specified(xyz) +
                         _some_specified(theta, phi))
 
@@ -317,6 +317,7 @@ class HemiSphere(Sphere):
     Sphere
 
     """
+
     def __init__(self, x=None, y=None, z=None,
                  theta=None, phi=None,
                  xyz=None,
@@ -496,6 +497,50 @@ def disperse_charges(hemi, iters, const=.2):
     return HemiSphere(xyz=charges), potential
 
 
+def fibonacci_sphere(n_points=724, randomize=True):
+    """
+    Generate points on the surface of a sphere using Fibonacci Spiral Sampling.
+
+    Parameters
+    ----------
+
+    - n_points (int): The number of points to generate on the sphere surface. Default is 724.
+    - randomize (bool): If True, randomize the starting point on the sphere. Default is True.
+
+    Returns
+    -------
+
+    numpy.ndarray: An array of 3D points representing coordinates on the sphere surface.
+
+    Example:
+    >>> points = fibonacci_sphere(n_points=1000, randomize=True)
+    >>> print(points)
+    array([[ 0.123, -0.456,  0.789],
+           [-0.321,  0.654, -0.987],
+           ...
+           [ 0.987, -0.654,  0.321]])
+
+    """
+    random_shift = 0
+    if randomize:
+        random_generator = np.random.default_rng()
+        random_shift = random_generator.integers(0, n_points)
+
+    points = []
+    offset = 2.0 / n_points
+    increment = np.pi * (3. - np.sqrt(5.))
+
+    for i in range(n_points):
+        y = ((i * offset) - 1) + (offset / 2)
+        r = np.sqrt(1 - pow(y, 2))
+        phi = ((i + random_shift) % n_points) * increment
+        x = np.cos(phi) * r
+        z = np.sin(phi) * r
+        points.append([x, y, z])
+
+    return np.array(points)
+
+
 def _equality_constraints(vects):
     """Spherical equality constraint. Returns 0 if vects lies on the unit
     sphere. Note that a flattened array is returned because `scipy.optimize`
@@ -515,6 +560,7 @@ def _equality_constraints(vects):
     N = vects.shape[0] // 3
     vects = vects.reshape((N, 3))
     return (vects ** 2).sum(1) - 1.0
+
 
 def _grad_equality_constraints(vects):
     r"""Return normals to the surface constraint (which corresponds to
