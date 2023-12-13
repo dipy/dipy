@@ -160,7 +160,7 @@ html_theme_options = {
           },
           {
             "name": "Recipes",
-            "url": "recipes/index",
+            "url": "recipes",
           },
           {
             "name": "CLI / Workflows",
