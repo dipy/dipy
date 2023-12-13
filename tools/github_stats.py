@@ -212,5 +212,5 @@ if __name__ == "__main__":
             print(f'Pull Requests ({n_pulls}):\n')
             report(pulls, show_urls)
             print()
-            print(g'Issues ({n_issues}):\n')
+            print(f'Issues ({n_issues}):\n')
             report(issues, show_urls)

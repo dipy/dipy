@@ -26,8 +26,8 @@
 
 DIPY [DIPYREF]_ is a python library for the analysis of MR diffusion imaging.
 
-DIPY is for research only; please do not use results from DIPY for
-clinical decisions.
+DIPY is for research only; please contact admins@dipy.org if you plan to deploy
+in clinical settings.
 
 Website
 =======

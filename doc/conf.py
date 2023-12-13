@@ -12,7 +12,7 @@
 import os
 import re
 import sys
-import json
+from datetime import datetime
 
 # Doc generation depends on being able to import dipy
 try:
@@ -70,7 +70,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'dipy'
-copyright = "Copyright 2008-2023, DIPY developers. Created using Grg Sphinx Theme and PyData Sphinx Theme."
+copyright = f"Copyright 2008-{datetime.now().year}, DIPY developers. Created using Grg Sphinx Theme and PyData Sphinx Theme."
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
