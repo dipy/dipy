@@ -13,4 +13,5 @@ DIPY Developer Guide
    commit_codes
    coding_style_guideline
    benchmarking
+   toolchain
 

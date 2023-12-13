@@ -1,8 +1,8 @@
 .. _coding_style_guideline:
 
-===========================
-DIPY Coding Style Guideline
-===========================
+==============================
+💻 DIPY Coding Style Guideline
+==============================
 
 The main principles behind DIPY_ development are:
 
