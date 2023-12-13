@@ -13,9 +13,10 @@
 .. _dipy: https://dipy.org
 .. _`dipy github`: https://github.com/dipy/dipy
 .. _`dipy pypi`: https://pypi.python.org/pypi/dipy
-.. _nipy issues: https://github.com/nipy/nipy/issues
-.. _dipy issues: https://github.com/dipy/dipy/issues
-.. _dipy paper: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
+.. _`nipy issues`: https://github.com/nipy/nipy/issues
+.. _`dipy issues`: https://github.com/dipy/dipy/issues
+.. _`dipy discussions`: https://github.com/dipy/dipy/discussions
+.. _`dipy paper`: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _journal paper: https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: https://nipy.org/nibabel
 .. _nibabel pypi: https://pypi.python.org/pypi/nibabel
@@ -52,6 +53,7 @@
 .. _launchpad: https://launchpad.net/
 .. _`nipy trunk`: https://code.launchpad.net/~nipy-developers/nipy/trunk
 .. _`nipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
+.. _`dipy mailing list`: https://mail.python.org/mailman3/lists/dipy.python.org/
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: https://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
@@ -100,6 +102,10 @@
 .. _python-vtk: https://www.vtk.org
 .. _pypi: https://pypi.python.org/pypi
 .. _FURY: https://fury.gl
+.. _scikit-learn: https://scikit-learn.org
+.. _statsmodels: https://www.statsmodels.org
+.. _pandas: https://pandas.pydata.org
+.. _pytables: https://www.pytables.org
 
 .. Python imaging projects
 .. _PyMVPA: https://www.pymvpa.org

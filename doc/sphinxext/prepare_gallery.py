@@ -2,6 +2,7 @@ import fnmatch
 import sys
 import os
 import shutil
+from os.path import join as pjoin
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -162,8 +163,10 @@ def folder_explicit_order():
 
 
 def prepare_gallery(app=None):
-    examples_dir = os.path.join(app.srcdir, 'examples')
-    examples_revamp_dir = os.path.join(app.srcdir, 'examples_revamped')
+    srcdir = app.srcdir if app else os.path.abspath(pjoin(
+        os.path.dirname(__file__), '..'))
+    examples_dir = os.path.join(srcdir, 'examples')
+    examples_revamp_dir = os.path.join(srcdir, 'examples_revamped')
     os.makedirs(examples_revamp_dir, exist_ok=True)
 
     f_example_desc = Path(examples_dir, '_valid_examples.toml')
@@ -228,7 +231,7 @@ def prepare_gallery(app=None):
             shutil.copy(Path(examples_dir, filename), Path(folder,
                                                            'README.rst'))
         else:
-            with open(Path(folder, 'README.rst'), 'w') as fi:
+            with open(Path(folder, 'README.rst'), 'w', encoding="utf8") as fi:
                 fi.write(example.readme)
 
         # Copy files to folder
@@ -255,10 +258,12 @@ def prepare_gallery(app=None):
                 shutil.copy(Path(examples_dir, filename),
                             Path(folder, new_name or filename))
             else:
-                with open(Path(folder, new_name or filename), 'w') as fi:
+                with open(Path(folder, new_name or filename), 'w',
+                          encoding="utf8") as fi:
                     fi.write(convert_to_sphinx_gallery_format(xfile))
             # Add additional link_names
-            with open(Path(folder, new_name or filename), 'r+') as fi:
+            with open(Path(folder, new_name or filename), 'r+',
+                      encoding="utf8") as fi:
                 content = fi.read()
                 fi.seek(0, 0)
                 link_name = f'\n{sphx_glr_sep}\n'

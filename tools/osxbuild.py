@@ -1,4 +1,4 @@
-"""Python script to build the OSX universal binaries.
+"""Python script to build the macOS universal binaries.
 
 Stolen with thankfulness from the numpy distribution
 

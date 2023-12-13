@@ -39,7 +39,7 @@ cli_flows = {
     "dipy_split": ("dipy.workflows.io", "SplitFlow"),
     "dipy_track": ("dipy.workflows.tracking", "LocalFiberTrackingPAMFlow"),
     "dipy_track_pft": ("dipy.workflows.tracking", "PFTrackingPAMFlow"),
-    "dipy_slr": ("dipy.workflows.align", "StreamlineLinearRegistrationFlow"),
+    "dipy_slr": ("dipy.workflows.align", "SlrWithQbxFlow"),
 }
 
 

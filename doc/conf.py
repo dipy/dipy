@@ -47,14 +47,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
               # 'numpydoc',
               'github',
-              'jinja',
               'sphinx_design',
 ]
-
-# Providing different contexts for the jinja directive
-jinja_contexts = {
-    "documentation": json.load(open("./context/documentation.json"))
-}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -166,7 +160,7 @@ html_theme_options = {
           },
           {
             "name": "Recipes",
-            "url": "recipes/index",
+            "url": "recipes",
           },
           {
             "name": "CLI / Workflows",
@@ -541,7 +535,7 @@ sphinx_gallery_conf = {
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': html_logo,
+     'default_thumb_file': "_static/images/logos/dipy_full_logo.png",
     #  'pypandoc': {'extra_args': ['--mathjax',]},
 }
 
