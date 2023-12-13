@@ -113,7 +113,7 @@ Pull Requests (129):
 * :ghpull:`2921`: [FIX] tiny fix to HBN fetcher to also grab T1 for each subject
 * :ghpull:`2906`: [FIX] Pin scipy for the conda failing CI's
 * :ghpull:`2920`: Mark Python3 files as such
-* :ghpull:`2919`: fix various grammer errors
+* :ghpull:`2919`: fix various grammar errors
 * :ghpull:`2915`: DOC: http:// → https://
 * :ghpull:`2916`: Build(deps): Bump codespell-project/actions-codespell from 1 to 2
 * :ghpull:`2914`: GitHub Actions
@@ -171,7 +171,7 @@ Pull Requests (129):
 * :ghpull:`2798`: Move evac+ to new module `nn`
 * :ghpull:`2797`: remove Nibabel InTemporaryDirectory
 * :ghpull:`2800`: Remove the Deprecating nisext
-* :ghpull:`2795`: bump dependencies mininal version
+* :ghpull:`2795`: bump dependencies minimal version
 * :ghpull:`2792`: Add `patch_radius` parameter to Patch2Self denoise workflow
 * :ghpull:`2761`: [UPCOMING]  Release 1.7.0 - workshop release
 
@@ -279,7 +279,7 @@ Issues (197):
 * :ghissue:`2921`: [FIX] tiny fix to HBN fetcher to also grab T1 for each subject
 * :ghissue:`2906`: [FIX] Pin scipy for the conda failing CI's
 * :ghissue:`2920`: Mark Python3 files as such
-* :ghissue:`2919`: fix various grammer errors
+* :ghissue:`2919`: fix various grammar errors
 * :ghissue:`2915`: DOC: http:// → https://
 * :ghissue:`2896`: Interactive examples for dipy
 * :ghissue:`2901`: patch2self question
@@ -368,7 +368,7 @@ Issues (197):
 * :ghissue:`2800`: Remove the Deprecating nisext
 * :ghissue:`2689`: Installing DIPY fails with current conda version
 * :ghissue:`2718`: StatefulTractogram
-* :ghissue:`2795`: bump dependencies mininal version
+* :ghissue:`2795`: bump dependencies minimal version
 * :ghissue:`2747`: Cannot set `dipy` as a dependency
 * :ghissue:`2791`: Update Patch2Self CLI
 * :ghissue:`2792`: Add `patch_radius` parameter to Patch2Self denoise workflow

@@ -110,7 +110,17 @@ version number, so you might want to make the release commit on your local
 machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
 then do you push to upstream on github.
 
-* Make the release commit.  Edit :file:`dipy/meson.build` to set ``version``; commit.  Push.
+* Make the release commit.  Edit :file:`dipy/meson.build` and
+  :file:`dipy/tools/version_utils.py`` to get the correct version number
+  (set version: in the former, and ISRELEASED = True in the latter) and commit
+  it with a message like REL: set version to <version-number>.
+  Don’t push this commit to the DIPY_ repo yet.;
+
+* Finally tag the release locally with git tag <v1.x.y>. Continue with building
+  release artifacts (next section). Only push the release commit to the DIPY_
+  repo once you have built the sdists and docs successfully.
+  Then continue with building wheels. Only push the release tag to the repo once
+   all wheels have been built successfully on `DIPY Github Actions`_.
 
 * For the wheel build / upload, follow the `wheel builder README`_
   instructions again.  Edit the ``.github/workflows/wheel.yml`` files (if
@@ -189,11 +199,7 @@ tag to github, so the buildbots can find the released code and build it.
   ``1.8.0`` then you would enter ``1.8.0`` in the revision field of the form.
   This builds the exact commit labeled by the tag, which is what we want.
 
-* Trigger binary builds for Windows from the buildbots. See builders
-  ``dipy-bdist32-26``, ``dipy-bdist32-27``.  The ``exe`` builds will appear in
-  http://nipy.bic.berkeley.edu/dipy-dist .  Check that the binary build version
-  numbers are release numbers (``dipy-1.8.0.win32.exe`` rather than
-  ``dipy-1.8.0.dev.win32.exe``).
+* Trigger binary builds for Windows from the ``https://github.com/MacPython/dipy-wheels``
 
   Download the builds and upload to pypi.
 
@@ -206,13 +212,9 @@ tag to github, so the buildbots can find the released code and build it.
 
     make distclean
     git clean -fxd
-    c:\Python26\python.exe setup.py bdist_egg upload
-    c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
 
-* Trigger binary builds for macOS from the buildbots ``dipy-bdist-mpkg-2.6``,
-  ``dipy-bdist-mpkg-2.7``. ``egg`` and ``mpkg`` builds will appear in
-  http://nipy.bic.berkeley.edu/dipy-dist .  Download the eggs and upload to
-  pypi.
+* Trigger binary builds for macOS from the buildbots ``https://github.com/MacPython/dipy-wheels``.
+  Download the eggs and upload to pypi.
 
   Upload the dmg files with the *files* interface for the new DIPY release.
 
