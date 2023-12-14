@@ -20,8 +20,8 @@ import argparse
 
 MAJOR = 1
 MINOR = 8
-MICRO = 0
-ISRELEASED = True  # False
+MICRO = 1
+ISRELEASED = False
 IS_RELEASE_BRANCH = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
