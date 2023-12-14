@@ -1,7 +1,7 @@
 project(
   'dipy',
   'c', 'cpp', 'cython',
-  version: '1.8.0dev0',
+  version: '1.8.0',
   license: 'BSD-3',
   meson_version: '>= 1.1.0',
   default_options: [
