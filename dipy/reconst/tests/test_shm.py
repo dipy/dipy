@@ -15,7 +15,7 @@ from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
 from dipy.sims.voxel import single_tensor
 from dipy.direction.peaks import peak_directions
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, wigner_rotation
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
@@ -990,3 +990,16 @@ def test_convert_sh_to_legacy():
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
     assert_raises(ValueError, convert_sh_to_legacy, sh_coeffs, '', True)
+
+
+def test_wigner_rotation():
+    b = 3  # Range of quantum numbers
+    alpha, beta, gamma = np.pi / 4, np.pi / 3, np.pi / 6  # Euler angles for rotation
+
+    # using an identity matrix for one quantum number, padded to the correct size
+    x = np.zeros((2 * b, 2 * b, 2 * b), dtype=np.complex128)
+    x[:3, :3, :3] = np.eye(3)
+
+    z = wigner_rotation(x, alpha, beta, gamma)
+    
+    assert z.shape == x.shape, "Output array shape does not match input array shape"
