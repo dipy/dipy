@@ -3,15 +3,11 @@ import numpy as np
 import collections
 from scipy.linalg import block_diag
 from functools import lru_cache
+from dipy.data import get_fnames
 
-
-base = 'J_dense_0-150.npy'
-# J matrices come from this paper
-# Rotation matrices for real spherical harmonics: general rotations of atomic orbitals in space-fixed axes
-# Didier Pinchon1 and Philip E Hoggan2
-
-path = os.path.join(os.path.dirname(__file__), base)
-Jd = np.load(path, allow_pickle=True)
+fetch_Jmat_path = get_fnames('wigner_jmat')
+print('fetched ' + fetch_Jmat_path)
+Jd = np.load(fetch_Jmat_path, allow_pickle=True)
 
 
 def z_rot_mat(angle, l):
@@ -125,7 +121,7 @@ def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
     """
     from_field, from_normalization, from_ordering, from_cs = frm
     to_field, to_normalization, to_ordering, to_cs = to
-
+    collections.Iterable = collections.abc.Iterable
     if isinstance(l, collections.Iterable):
         blocks = [change_of_basis_matrix(li, frm, to)
                   for li in l]
