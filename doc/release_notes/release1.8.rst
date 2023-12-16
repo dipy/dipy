@@ -289,7 +289,7 @@ Issues (197):
 * :ghissue:`2912`: MAINT: the symbol for second is s, not sec.
 * :ghissue:`2913`: DOC: fix links
 * :ghissue:`2902`: Short import for horizon
-* :ghissue:`2908`: Voxel correspondance between Non-Linearly aligned Volumes
+* :ghissue:`2908`: Voxel correspondence between Non-Linearly aligned Volumes
 * :ghissue:`2890`: Attempt to fix error in conda jobs
 * :ghissue:`2907`: Temp - Gab PR
 * :ghissue:`2904`: Apply refurb suggestions
