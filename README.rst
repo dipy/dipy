@@ -80,7 +80,7 @@ DIPY follows the `Scientific Python`_ `SPEC 0 — Minimum Supported Versions`_
 recommendation as closely as possible, including the supported Python and
 dependencies versions.
 
-Further information can be found in :ref:`toolchain-roadmap`.
+Further information can be found in `Toolchain Roadmap <https://docs.dipy.org/stable/devel/toolchain.html>`_.
 
 License
 =======
