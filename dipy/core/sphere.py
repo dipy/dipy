@@ -513,6 +513,11 @@ def fibonacci_sphere(n_points, randomize=True):
         An array of 3D points representing coordinates on the sphere surface.
 
     """
+    if not isinstance(n_points, int) or n_points <= 4:
+        raise ValueError(
+            "Number of points must be a positive integer greater than 4."
+        )
+
     random_shift = 0
     if randomize:
         random_generator = np.random.default_rng()
