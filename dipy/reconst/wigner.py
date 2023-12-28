@@ -460,15 +460,15 @@ def so3_rfft(x, for_grad=False, b_out=None):
     b_in = x.shape[-1] // 2
 
     if x.shape[-1] != 2 * b_in:
-        raise ValueError(f"Expected the last dimension of input to be twice the 
+        raise ValueError(f"Expected the last dimension of input to be twice the \
                          value of b_in (2 * {b_in}), but got {x.shape[-1]}.")
 
     if x.shape[-2] != 2 * b_in:
-        raise ValueError(f"Expected the second-to-last dimension of input to be 
+        raise ValueError(f"Expected the second-to-last dimension of input to be \
                          twice the value of b_in (2 * {b_in}), but got {x.shape[-2]}.")
 
     if x.shape[-3] != 2 * b_in:
-        raise ValueError(f"Expected the third-to-last dimension of input to be 
+        raise ValueError(f"Expected the third-to-last dimension of input to be \
                          twice the value of b_in (2 * {b_in}), but got {x.shape[-3]}.")
 
     if b_out is None:
