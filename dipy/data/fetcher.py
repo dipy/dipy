@@ -206,7 +206,6 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
             files[n] = (baseurl + f, md5_list[i] if
                         md5_list is not None else None)
-        print("file info", files)
         fetch_data(files, folder, data_size)
 
         if msg is not None:
@@ -698,6 +697,7 @@ fetch_wigner_Jmat = _make_fetcher(
     'https://ndownloader.figshare.com/files/',
     ['43638069'],
     ['J_dense_0-150.npy'],
+    ['b1ada4a341385dadf1c1873ce7a56124'],
     doc="Download J Matrix for wigner rotations")
 
 
