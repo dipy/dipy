@@ -5,9 +5,11 @@ from scipy.linalg import block_diag
 from functools import lru_cache
 from dipy.data import get_fnames
 
-fetch_Jmat_path = get_fnames('wigner_jmat')
-print('fetched ' + fetch_Jmat_path)
-Jd = np.load(fetch_Jmat_path, allow_pickle=True)
+
+def load_J_matrix():
+    fetch_Jmat_path = get_fnames('wigner_jmat')
+    Jd = np.load(fetch_Jmat_path, allow_pickle=True)
+    return Jd
 
 
 def z_rot_mat(angle, l):
@@ -245,6 +247,7 @@ def wigner_d_matrix(l, beta,
     ndarray
         The Wigner-d matrix d^l_mn(beta) of dimensions (2l + 1) x (2l + 1) in the chosen basis.
     """
+    Jd = load_J_matrix()
     # This returns the d matrix in the (real, quantum-normalized, centered, cs) convention
     d = rot_mat(alpha=0., beta=beta, gamma=0., l=l, J=Jd[l])
 
@@ -300,7 +303,7 @@ def wigner_D_matrix(l, alpha, beta, gamma,
         The Wigner-D matrix D^l_mn(alpha, beta, gamma) of dimensions (2l + 1) x (2l + 1)
         in the chosen basis.
     """
-
+    Jd = load_J_matrix()
     D = rot_mat(alpha=alpha, beta=beta, gamma=gamma, l=l, J=Jd[l])
 
     if (field, normalization, order, condon_shortley) != ('real', 'quantum', 'centered', 'cs'):
@@ -430,7 +433,7 @@ def _setup_so3_fft(b, nl, weighted):
 
 
 def so3_rfft(x, for_grad=False, b_out=None):
-    '''
+    """
     Perform a real Fourier transform on the SO(3) group. This function transforms 
     a signal defined on the 3D rotation group to its spectral representation using 
     the Wigner-D functions.
@@ -453,21 +456,28 @@ def so3_rfft(x, for_grad=False, b_out=None):
         The spectral representation of the input signal with dimensions 
         [l * m * n, ..., complex], where 'l * m * n' represents the spectral coefficients 
         and '...' are the batch dimensions. The output is complex-valued.
-    '''
+    """
     b_in = x.shape[-1] // 2
-    assert x.shape[-1] == 2 * b_in
-    assert x.shape[-2] == 2 * b_in
-    assert x.shape[-3] == 2 * b_in
+
+    if x.shape[-1] != 2 * b_in:
+        raise ValueError(f"Expected the last dimension of input to be twice the 
+                         value of b_in (2 * {b_in}), but got {x.shape[-1]}.")
+
+    if x.shape[-2] != 2 * b_in:
+        raise ValueError(f"Expected the second-to-last dimension of input to be 
+                         twice the value of b_in (2 * {b_in}), but got {x.shape[-2]}.")
+
+    if x.shape[-3] != 2 * b_in:
+        raise ValueError(f"Expected the third-to-last dimension of input to be 
+                         twice the value of b_in (2 * {b_in}), but got {x.shape[-3]}.")
+
     if b_out is None:
         b_out = b_in
     batch_size = x.shape[:-3]
 
-    # [batch, beta, alpha, gamma]
+    # [batch, beta, alpha, gamma] (nbatch, 2 b_in, 2 b_in, 2 b_in)
     x = np.reshape(x, (-1, 2 * b_in, 2 * b_in, 2 * b_in))
-    '''
-    :param x: [batch, beta, alpha, gamma] (nbatch, 2 b_in, 2 b_in, 2 b_in)
-    :return: [l * m * n, batch, complex] (b_out (4 b_out**2 - 1) // 3, nbatch, 2)
-    '''
+
     nspec = b_out * (4 * b_out ** 2 - 1) // 3
     nbatch = x.shape[0]
 
@@ -497,14 +507,14 @@ def so3_rfft(x, for_grad=False, b_out=None):
         out = np.einsum("bmn,zbmnc->mnzc",
                         wigner[:, s].reshape(-1, 2 * l + 1, 2 * l + 1), xx)
         output[s] = out.reshape((2 * l + 1) ** 2, -1, 2)
-
+     # [l * m * n, batch, complex] (b_out (4 b_out**2 - 1) // 3, nbatch, 2)
     # [l * m * n, ..., complex]
     output = np.reshape(output, (-1, *batch_size, 2))
     return output
 
 
 def so3_rifft(x, for_grad=False, b_out=None):
-    '''
+    """
     Perform an inverse real Fourier transform on the SO(3) group. This function 
     transforms a spectral representation back into its signal representation on the 
     3D rotation group using the inverse Wigner-D functions.
@@ -529,7 +539,7 @@ def so3_rifft(x, for_grad=False, b_out=None):
         angles defining the rotation and '...' are the 
         batch dimensions.
 
-    '''
+    """
     assert x.shape[-1] == 2
     nspec = x.shape[0]
     b_in = round((3 / 4 * nspec) ** (1 / 3))
@@ -573,7 +583,7 @@ def so3_rifft(x, for_grad=False, b_out=None):
 
 
 def complex_mm(x, y, conj_x=False, conj_y=False):
-    '''Perform matrix multiplication (mm) of complex matrices. Given two complex matrices
+    """Perform matrix multiplication (mm) of complex matrices. Given two complex matrices
     'x' and 'y', this function computes their product. The function also supports 
     optional conjugation of either or both input matrices before multiplication.
 
@@ -595,7 +605,7 @@ def complex_mm(x, y, conj_x=False, conj_y=False):
     ndarray
         The resulting complex matrix product of shape [i, j, complex] (M, N, 2), 
         where the last dimension represents the complex number.
-    '''
+    """
     xr = x[:, :, 0]
     xi = x[:, :, 1]
 
