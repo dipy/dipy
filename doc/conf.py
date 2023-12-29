@@ -324,6 +324,7 @@ html_theme_options = {
   "logo": {
     "image_dark": "_static/images/logos/dipy-logo.png",
     "alt_text": "DIPY",
+    "link": "https://dipy.org",
   },
   "footer_start": ["components/footer-sign-up.html"],
   "footer_signup_data": {
