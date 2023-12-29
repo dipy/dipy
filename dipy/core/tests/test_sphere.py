@@ -5,8 +5,8 @@ import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, disperse_charges,
-                              disperse_charges_alt, _get_forces,
-                              _get_forces_alt, unit_octahedron,
+                              fibonacci_sphere, disperse_charges_alt,
+                              _get_forces, _get_forces_alt, unit_octahedron,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 from dipy.core.sphere_stats import random_uniform_on_sphere
@@ -381,3 +381,19 @@ def test_disperse_charges_alt():
     # Verify that the potential of the optimal configuration is smaller than
     # that of the original configuration
     nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
+
+
+def test_fibonacci_sphere():
+    # Test that the number of points is correct
+    points = fibonacci_sphere(n_points=724)
+    nt.assert_equal(len(points), 724)
+
+    # Test randomization
+    points1 = fibonacci_sphere(n_points=100, randomize=True)
+    points2 = fibonacci_sphere(n_points=100, randomize=True)
+    with nt.assert_raises(AssertionError):
+        nt.assert_array_equal(points1, points2)
+
+    # Check for near closeness to 0
+    nt.assert_almost_equal(
+        np.mean(np.mean(points, axis=0)), 0, decimal=2)
