@@ -3,8 +3,7 @@ import os
 from os.path import join as pjoin
 from copy import deepcopy
 from tempfile import TemporaryDirectory
-from requests import HTTPError
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 
 import numpy as np
 import numpy.testing as npt
