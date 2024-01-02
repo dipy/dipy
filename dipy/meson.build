@@ -324,8 +324,8 @@ install_subdir('../doc/examples',
 # Custom Meson Command line tools
 # ------------------------------------------------------------------------
 
-cython_args = ['-3', '--fast-fail', '@EXTRA_ARGS@', '--output-file', '@OUTPUT@',
-               '--include-dir', incdir_local,
+cython_args = ['-3', '--fast-fail', '--warning-errors', '@EXTRA_ARGS@',
+               '--output-file', '@OUTPUT@', '--include-dir', incdir_local,
                '@INPUT@']
 cython_cplus_args = ['--cplus'] + cython_args
 
