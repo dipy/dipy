@@ -24,10 +24,10 @@ cdef class PmfGen:
             cnp.npy_intp len_pmf = self.pmf.shape[0]
         return <double[:len_pmf]>self.get_pmf_c(&point[0])
 
-    cdef double* get_pmf_c(self, double* point) nogil:
+    cdef double* get_pmf_c(self, double* point) noexcept nogil:
         pass
 
-    cdef int find_closest(self, double* xyz) nogil:
+    cdef int find_closest(self, double* xyz) noexcept nogil:
         cdef:
             cnp.npy_intp idx = 0
             cnp.npy_intp i
@@ -49,7 +49,7 @@ cdef class PmfGen:
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
         return self.get_pmf_value_c(&point[0], &xyz[0])
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz) nogil:
+    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
@@ -57,7 +57,7 @@ cdef class PmfGen:
         cdef int idx = self.find_closest(xyz)
         return self.get_pmf_c(point)[idx]
 
-    cdef void __clear_pmf(self) nogil:
+    cdef void __clear_pmf(self) noexcept nogil:
         cdef:
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp i
@@ -79,12 +79,12 @@ cdef class SimplePmfGen(PmfGen):
             raise ValueError("pmf should have the same number of values as the"
                              + " number of vertices of sphere.")
 
-    cdef double* get_pmf_c(self, double* point) nogil:
+    cdef double* get_pmf_c(self, double* point) noexcept nogil:
         if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
             PmfGen.__clear_pmf(self)
         return &self.pmf[0]
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz) nogil:
+    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
@@ -122,7 +122,7 @@ cdef class SHCoeffPmfGen(PmfGen):
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 
-    cdef double* get_pmf_c(self, double* point) nogil:
+    cdef double* get_pmf_c(self, double* point) noexcept nogil:
         cdef:
             cnp.npy_intp i, j
             cnp.npy_intp len_pmf = self.pmf.shape[0]

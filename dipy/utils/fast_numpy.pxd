@@ -12,45 +12,45 @@ from libc.math cimport sqrt
 cdef int where_to_insert(
         cnp.float_t* arr,
         cnp.float_t number,
-        int size) nogil
+        int size) noexcept nogil
 
 cdef void cumsum(
         cnp.float_t* arr_in,
         cnp.float_t* arr_out,
-        int N) nogil
+        int N) noexcept nogil
 
 cdef void copy_point(
         double * a,
-        double * b) nogil
+        double * b) noexcept nogil
 
 cdef void scalar_muliplication_point(
         double * a,
-        double scalar) nogil
+        double scalar) noexcept nogil
 
 cdef double norm(
-        double * v) nogil
+        double * v) noexcept nogil
 
 cdef double dot(
         double * v1,
-        double * v2) nogil
+        double * v2) noexcept nogil
 
 cdef void normalize(
-        double * v) nogil
+        double * v) noexcept nogil
 
 cdef void cross(
         double * out,
         double * v1,
-        double * v2) nogil
+        double * v2) noexcept nogil
 
 cdef void random_vector(
-        double * out) nogil
+        double * out) noexcept nogil
 
 cdef void random_perpendicular_vector(
         double * out,
-        double * v) nogil
+        double * v) noexcept nogil
 
 cpdef (double, double) random_point_within_circle(
-        double r) nogil
+        double r) noexcept nogil
 
 cpdef double random() nogil
 

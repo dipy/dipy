@@ -13,7 +13,7 @@ cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
 
 
-cdef double c_length(Streamline streamline) nogil:
+cdef double c_length(Streamline streamline) noexcept nogil:
     cdef:
         cnp.npy_intp i
         double out = 0.0
@@ -33,7 +33,7 @@ cdef double c_length(Streamline streamline) nogil:
 cdef void c_arclengths_from_arraysequence(Streamline points,
                                           cnp.npy_intp[:] offsets,
                                           cnp.npy_intp[:] lengths,
-                                          double[:] arclengths) nogil:
+                                          double[:] arclengths) noexcept nogil:
     cdef:
         cnp.npy_intp i, j, k
         cnp.npy_intp offset
@@ -179,7 +179,7 @@ def length(streamlines):
         return streamlines_length
 
 
-cdef void c_arclengths(Streamline streamline, double* out) nogil:
+cdef void c_arclengths(Streamline streamline, double* out) noexcept nogil:
     cdef cnp.npy_intp i = 0
     cdef double dn
 
@@ -193,7 +193,7 @@ cdef void c_arclengths(Streamline streamline, double* out) nogil:
         out[i] = out[i-1] + sqrt(out[i])
 
 
-cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
+cdef void c_set_number_of_points(Streamline streamline, Streamline out) noexcept nogil:
     cdef:
         cnp.npy_intp N = streamline.shape[0]
         cnp.npy_intp D = streamline.shape[1]
@@ -246,7 +246,7 @@ cdef void c_set_number_of_points_from_arraysequence(Streamline points,
                                                     cnp.npy_intp[:] offsets,
                                                     cnp.npy_intp[:] lengths,
                                                     long nb_points,
-                                                    Streamline out) nogil:
+                                                    Streamline out) noexcept nogil:
     cdef:
         cnp.npy_intp i, j, k
         cnp.npy_intp offset, length
@@ -433,7 +433,7 @@ def set_number_of_points(streamlines, nb_points=3):
 
 
 cdef double c_norm_of_cross_product(double bx, double by, double bz,
-                                    double cx, double cy, double cz) nogil:
+                                    double cx, double cy, double cz) noexcept nogil:
     """ Computes the norm of the cross-product in 3D. """
     cdef double ax, ay, az
     ax = by*cz - bz*cy
@@ -443,7 +443,7 @@ cdef double c_norm_of_cross_product(double bx, double by, double bz,
 
 
 cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp p1,
-                           cnp.npy_intp p2, cnp.npy_intp p0) nogil:
+                           cnp.npy_intp p2, cnp.npy_intp p0) noexcept nogil:
     """ Computes the shortest Euclidean distance between a point `curr` and
         the line passing through `prev` and `next`. """
 
@@ -470,7 +470,7 @@ cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp p1,
 
 
 cdef double c_segment_length(Streamline streamline,
-                             cnp.npy_intp start, cnp.npy_intp end) nogil:
+                             cnp.npy_intp start, cnp.npy_intp end) noexcept nogil:
     """ Computes the length of the segment going from `start` to `end`. """
     cdef:
         cnp.npy_intp D = streamline.shape[1]
@@ -486,7 +486,7 @@ cdef double c_segment_length(Streamline streamline,
 
 
 cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
-                                       double tol_error, double max_segment_length) nogil:
+                                       double tol_error, double max_segment_length) noexcept nogil:
     """ Compresses a streamline (see function `compress_streamlines`)."""
     cdef:
         cnp.npy_intp N = streamline.shape[0]

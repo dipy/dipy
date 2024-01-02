@@ -1,3 +1,5 @@
+# cython: wraparound=False, cdivision=True, boundscheck=False
+
 cimport numpy as cnp
 import numpy as np
 
@@ -142,7 +144,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         else:
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
         return self.pmf
-
 
     cdef void __clear_pmf(self) nogil:
         cdef:

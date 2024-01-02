@@ -20,7 +20,7 @@ cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
 
 cdef double min_direct_flip_dist(double *a,double *b,
-                                 cnp.npy_intp rows) nogil:
+                                 cnp.npy_intp rows) noexcept nogil:
     r""" Minimum of direct and flip average (MDF) distance [Garyfallidis12]
     between two streamlines.
 

@@ -8,11 +8,11 @@ cdef class PmfGen:
         object sphere
 
     cpdef double[:] get_pmf(self, double[::1] point)
-    cdef double* get_pmf_c(self, double* point) nogil
-    cdef int find_closest(self, double* xyz) nogil
+    cdef double* get_pmf_c(self, double* point) noexcept nogil
+    cdef int find_closest(self, double* xyz) noexcept nogil
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz)
-    cdef double get_pmf_value_c(self, double* point, double* xyz) nogil
-    cdef void __clear_pmf(self) nogil
+    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil
+    cdef void __clear_pmf(self) noexcept nogil
     pass
 
 

@@ -6,14 +6,14 @@ cimport cython
 cimport numpy as cnp
 
 
-cdef inline int _int_max(int a, int b) nogil:
+cdef inline int _int_max(int a, int b) noexcept nogil:
     r"""
     Returns the maximum of a and b
     """
     return a if a >= b else b
 
 
-cdef inline int _int_min(int a, int b) nogil:
+cdef inline int _int_min(int a, int b) noexcept nogil:
     r"""
     Returns the minimum of a and b
     """
@@ -32,7 +32,7 @@ cdef enum:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline int _wrap(int x, int m)nogil:
+cdef inline int _wrap(int x, int m) noexcept nogil:
     r""" Auxiliary function to `wrap` an array around its low-end side.
     Negative indices are mapped to last coordinates so that no extra memory
     is required to account for local rectangular windows that exceed the
@@ -57,7 +57,7 @@ cdef inline void _update_factors(double[:, :, :, :] factors,
                                  floating[:, :, :] moving,
                                  floating[:, :, :] static,
                                  cnp.npy_intp ss, cnp.npy_intp rr, cnp.npy_intp cc,
-                                 cnp.npy_intp s, cnp.npy_intp r, cnp.npy_intp c, int operation)nogil:
+                                 cnp.npy_intp s, cnp.npy_intp r, cnp.npy_intp c, int operation)noexcept nogil:
     r"""Updates the precomputed CC factors of a rectangular window
 
     Updates the precomputed CC factors of the rectangular window centered

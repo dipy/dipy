@@ -4,8 +4,8 @@ cimport numpy as cnp
 cdef class Feature:
     cdef int is_order_invariant
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *
+    cdef Shape c_infer_shape(Feature self, Data2D datum) noexcept nogil
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) noexcept nogil
 
     cpdef infer_shape(Feature self, datum)
     cpdef extract(Feature self, datum)

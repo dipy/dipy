@@ -8,8 +8,8 @@ ctypedef fused Streamline:
     double2d
 
 
-cdef double c_length(Streamline streamline) nogil
+cdef double c_length(Streamline streamline) noexcept nogil
 
-cdef void c_arclengths(Streamline streamline, double * out) nogil
+cdef void c_arclengths(Streamline streamline, double * out) noexcept nogil
 
-cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil
+cdef void c_set_number_of_points(Streamline streamline, Streamline out) noexcept nogil
