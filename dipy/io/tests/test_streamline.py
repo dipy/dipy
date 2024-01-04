@@ -2,9 +2,11 @@ import json
 import os
 from tempfile import TemporaryDirectory
 
+import trx.trx_file_memmap as tmm
+
 from dipy.data import fetch_gold_standard_io
 from dipy.io.streamline import (load_tractogram, save_tractogram,
-                                load_trk, save_trk)
+                                load_trk, save_trk, concatenate_tractogram)
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
@@ -265,3 +267,13 @@ def test_io_trk_save():
                 msg='trk_saver should not be able to save a fib')
     npt.assert_(not trk_saver(filepath_dix['gs.dpy']),
                 msg='trk_saver should not be able to save a dpy')
+
+
+def test_concatenate():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    trx = tmm.load(filepath_dix['gs.trx'])
+    concat = concatenate_tractogram([sft, trx])
+
+    assert len(concat) == 2 * len(trx)
+    trx.close()
+    concat.close()
