@@ -932,6 +932,19 @@ def get_fnames(name='small_64D'):
         seed_coords_name = pjoin(folder, 'ptt_seed_coords.txt')
         seed_image_name = pjoin(folder, 'ptt_seed_image.nii')
         return fod_name, seed_coords_name, seed_image_name
+    if name == "gold_standard_tracks":
+        filepath_dix = {}
+        files, folder = fetch_gold_standard_io()
+        for filename in files:
+            filepath_dix[filename] = os.path.join(folder, filename)
+
+        with open(filepath_dix['points_data.json']) as json_file:
+            points_data = dict(json.load(json_file))
+
+        with open(filepath_dix['streamlines_data.json']) as json_file:
+            streamlines_data = dict(json.load(json_file))
+
+        return filepath_dix, points_data, streamlines_data
 
 
 def read_qtdMRI_test_retest_2subjects():

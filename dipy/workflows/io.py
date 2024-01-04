@@ -1,11 +1,15 @@
+import importlib
 import os
 import sys
-
-import numpy as np
 import logging
-import importlib
 from inspect import getmembers, isfunction
+
+import trx.trx_file_memmap as tmm
+import numpy as np
+
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.streamline import (concatenate_tractogram, load_tractogram,
+                                save_tractogram)
 from dipy.workflows.workflow import Workflow
 
 
@@ -219,9 +223,9 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
-            # We load the module again so that if we run another one of these in
-            # the same process, we don't have the env variable pointing to the
-            # wrong place
+            # We load the module again so that if we run another one of these
+            # in the same process, we don't have the env variable pointing
+            # to the wrong place
             self.load_module('dipy.data.fetcher')
 
 
@@ -257,3 +261,81 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, image.header)
 
             logging.info('Split volume saved as {0}'.format(osplit))
+
+
+class ConcatenateTractogramFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'concatracks'
+
+    def run(self, tractogram_files, reference=None, delete_dpv=False,
+            delete_dps=False, delete_groups=False, check_space_attributes=True,
+            preallocation=False, out_dir='',
+            out_extension='trx',
+            out_tractogram='concatenated_tractogram'):
+        """Concatenate multiple tractograms into one.
+
+        Parameters
+        ----------
+        tractogram_list : variable string
+            The stateful tractogram filenames to concatenate
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+        delete_dpv : bool, optional
+            Delete dpv keys that do not exist in all the provided TrxFiles
+        delete_dps : bool, optional
+            Delete dps keys that do not exist in all the provided TrxFile
+        delete_groups : bool, optional
+            Delete all the groups that currently exist in the TrxFiles
+        check_space_attributes : bool, optional
+            Verify that dimensions and size of data are similar between all the
+            TrxFiles
+        preallocation : bool, optional
+            Preallocated TrxFile has already been generated and is the first
+            element in trx_list (Note: delete_groups must be set to True as
+            well)
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_extension : string, optional
+            Extension of the resulting tractogram
+        out_tractogram : string, optional
+            Name of the resulting tractogram
+
+        """
+        io_it = self.get_io_iterator()
+
+        trx_list = []
+        has_group = False
+        for fpath, oext, otracks in io_it:
+
+            if fpath.lower().endswith('.trx') or \
+               fpath.lower().endswith('.trk'):
+                reference = 'same'
+
+            if not reference:
+                raise ValueError("No reference provided. It is needed for tck,"
+                                 "fib, dpy or vtk files")
+
+            tractogram_obj = load_tractogram(fpath, reference,
+                                             bbox_valid_check=False)
+
+            if not isinstance(tractogram_obj, tmm.TrxFile):
+                tractogram_obj = tmm.TrxFile.from_sft(tractogram_obj)
+            elif len(tractogram_obj.groups):
+                has_group = True
+            trx_list.append(tractogram_obj)
+
+        trx = concatenate_tractogram(
+            trx_list, delete_dpv=delete_dpv, delete_dps=delete_dps,
+            delete_groups=delete_groups or not has_group,
+            check_space_attributes=check_space_attributes,
+            preallocation=preallocation)
+
+        valid_extensions = ['trk', 'trx', "tck,", "fib", "dpy", "vtk"]
+        if out_extension.lower() not in valid_extensions:
+            raise ValueError("Invalid extension. Valid extensions are: "
+                             "{0}".format(valid_extensions))
+
+        out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
+        save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)

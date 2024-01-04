@@ -36,7 +36,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                         '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -121,7 +122,8 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                         '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
@@ -389,9 +391,9 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
                     all_groups_len[group_key] += len(trx_1.groups[group_key])
                 else:
                     all_groups_len[group_key] = len(trx_1.groups[group_key])
-                if (group_key in all_groups_dtype and  \
-                    trx_1.groups[group_key].dtype != all_groups_dtype[group_key]
-                ):
+                if group_key in all_groups_dtype and \
+                    trx_1.groups[group_key].dtype !=  \
+                        all_groups_dtype[group_key]:
                     raise ValueError("Shared group key, has different dtype.")
                 else:
                     all_groups_dtype[group_key] = trx_1.groups[group_key].dtype
@@ -454,4 +456,3 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
             curr_trx, strs_start=strs_end, pts_start=pts_end
         )
     return new_trx
-
