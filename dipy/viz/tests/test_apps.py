@@ -142,6 +142,7 @@ def check_for_warnings(warn_printed, w_msg):
     npt.assert_equal(w_msg in msg, True)
 
 
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_horizon_wrong_dtype_images():
     affine = np.array([[1., 0., 0., -98.],
                        [0., 1., 0., -134.],
