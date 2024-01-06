@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -131,6 +132,28 @@ def test_horizon(rng):
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
+
+
+def check_for_warnings(warn_printed, w_msg):
+    selected_w = [w for w in warn_printed if issubclass(w.category,
+                                                        UserWarning)]
+    assert len(selected_w) >= 1
+    msg = [str(m.message) for m in selected_w]
+    npt.assert_equal(w_msg in msg, True)
+
+
+def test_horizon_wrong_dtype_images():
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = np.random.rand(197, 233, 189).astype(np.bool_)
+    images = [(data, affine)]
+    with warnings.catch_warnings(record=True) as l_warns:
+        horizon(images=images, interactive=False)
+        check_for_warnings(l_warns, 'skipping image 1, passed image is not in '
+                           + 'numerical format')
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
