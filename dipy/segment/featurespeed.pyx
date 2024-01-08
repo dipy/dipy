@@ -36,7 +36,7 @@ cdef class Feature:
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(Feature self, Data2D datum) noexcept nogil:
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
@@ -49,7 +49,7 @@ cdef class Feature:
             else:
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) noexcept nogil:
         """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
@@ -174,10 +174,10 @@ cdef class IdentityFeature(CythonFeature):
     def __init__(IdentityFeature self):
         super(IdentityFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) noexcept nogil:
         return shape_from_memview(datum)
 
-    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int n, d
@@ -204,12 +204,12 @@ cdef class ResampleFeature(CythonFeature):
         if nb_points <= 0:
             raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
 
-    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.dims[0] = self.nb_points
         return shape
 
-    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) noexcept nogil:
         c_set_number_of_points(datum, out)
 
 
@@ -225,7 +225,7 @@ cdef class CenterOfMassFeature(CythonFeature):
     def __init__(CenterOfMassFeature self):
         super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
@@ -233,7 +233,7 @@ cdef class CenterOfMassFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef int N = datum.shape[0], D = datum.shape[1]
         cdef int i, d
 
@@ -260,7 +260,7 @@ cdef class MidpointFeature(CythonFeature):
     def __init__(MidpointFeature self):
         super(MidpointFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
@@ -268,7 +268,7 @@ cdef class MidpointFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int mid = N/2
@@ -290,7 +290,7 @@ cdef class ArcLengthFeature(CythonFeature):
     def __init__(ArcLengthFeature self):
         super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
@@ -298,7 +298,7 @@ cdef class ArcLengthFeature(CythonFeature):
         shape.size = 1
         return shape
 
-    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) noexcept nogil:
         out[0, 0] = c_length(datum)
 
 
@@ -315,7 +315,7 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
     def __init__(VectorOfEndpointsFeature self):
         super(VectorOfEndpointsFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
@@ -323,7 +323,7 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int d

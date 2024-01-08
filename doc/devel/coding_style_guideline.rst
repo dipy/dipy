@@ -137,7 +137,7 @@ unless it is needed for functions returning ``void``::
 
   # Good
   cdef void bar() except *
-  cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
+  cdef void c_extract(Feature self, Data2D datum, Data2D out) noexcept nogil:
   cdef int front(x) except +:
       ...
 

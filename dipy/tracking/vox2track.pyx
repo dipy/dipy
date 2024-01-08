@@ -160,7 +160,7 @@ def streamline_mapping(streamlines, affine=None,
 @cython.wraparound(False)
 cdef inline cnp.double_t norm(cnp.double_t x,
                               cnp.double_t y,
-                              cnp.double_t z) nogil:
+                              cnp.double_t z) noexcept nogil:
     cdef cnp.double_t val = sqrt(x*x + y*y + z*z)
     return val
 
@@ -171,7 +171,7 @@ cdef inline cnp.double_t norm(cnp.double_t x,
 cdef inline void c_get_closest_edge(cnp.double_t* p,
                                     cnp.double_t* direction,
                                     cnp.double_t* edge,
-                                    double eps=1.) nogil:
+                                    double eps=1.) noexcept nogil:
      edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
      edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
      edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
@@ -228,7 +228,7 @@ def _streamlines_in_mask(list streamlines,
 @cython.cdivision(True)
 cdef cnp.npy_intp _streamline_in_mask(
         cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) nogil:
+        cnp.uint8_t[:,:,:] mask) noexcept nogil:
     """
     Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.

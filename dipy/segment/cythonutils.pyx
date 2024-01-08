@@ -11,7 +11,7 @@ cdef extern from "stdlib.h" nogil:
 
 cdef Py_ssize_t sizeof_memviewslice = 2 * sizeof(cnp.npy_intp) + 3 * sizeof(cnp.npy_intp) * 8
 
-cdef Shape shape_from_memview(Data data) nogil:
+cdef Shape shape_from_memview(Data data) noexcept nogil:
     """ Retrieves shape from a memoryview object.
 
     Parameters
@@ -82,7 +82,7 @@ cdef shape2tuple(Shape shape):
     return tuple(dims)
 
 
-cdef int same_shape(Shape shape1, Shape shape2) nogil:
+cdef int same_shape(Shape shape1, Shape shape2) noexcept nogil:
     """ Checks if two shapes are the same.
 
     Two shapes are equals if they have the same number of dimensions
@@ -112,7 +112,7 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
     return same_shape
 
 
-cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
+cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) noexcept nogil:
     """ Create a light version of cython memory view.
 
     Parameters
@@ -140,7 +140,7 @@ cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]
 
     return memview
 
-cdef void free_memview_2d(Data2D* memview) nogil:
+cdef void free_memview_2d(Data2D* memview) noexcept nogil:
     """ free a light version of cython memory view
 
     Parameters

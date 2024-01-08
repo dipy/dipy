@@ -237,7 +237,7 @@ class ConstantObservationModel:
 
 
 cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
-                                    double[:] var) nogil:
+                                    double[:] var) noexcept nogil:
     r""" Initializes the means and standard deviations uniformly
 
     The means are initialized uniformly along the dynamic range of `image`.
@@ -283,7 +283,7 @@ cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
 
 cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                             double[:] sigmasq, int classid,
-                            double[:, :, :, :] neglogl) nogil:
+                            double[:, :, :, :] neglogl) noexcept nogil:
     r""" Computes the gaussian negative log-likelihood of each class at
     each voxel of `image` assuming a gaussian distribution with means and
     variances given by `mu` and `sigmasq`, respectively (constant models
@@ -338,7 +338,7 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
 cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                       double[:] mu, double[:] sigmasq, int classid,
                       double[:, :, :, :] P_L_N,
-                      double[:, :, :, :] P_L_Y) nogil:
+                      double[:, :, :, :] P_L_Y) noexcept nogil:
     r""" Conditional probability of the label given the image
 
     Parameters
@@ -505,7 +505,7 @@ class IteratedConditionalModes:
 
 
 cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
-                                         cnp.npy_short[:,:,:] seg) nogil:
+                                         cnp.npy_short[:,:,:] seg) noexcept nogil:
     r""" Initializes the segmentation of an image with given
     neg-log-likelihood.
 
@@ -550,7 +550,7 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
 
 cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
                      cnp.npy_short[:,:,:] seg, double[:,:,:] energy,
-                     cnp.npy_short[:,:,:] new_seg) nogil:
+                     cnp.npy_short[:,:,:] new_seg) noexcept nogil:
     r""" Executes one iteration of the ICM algorithm for MRF MAP estimation
     The prior distribution of the MRF is a Gibbs distribution with the
     Potts/Ising model with parameter `beta`:
@@ -631,7 +631,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
 
 
 cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
-                                   int classid, double[:, :, :] P_L_N) nogil:
+                                   int classid, double[:, :, :] P_L_N) noexcept nogil:
     r""" Conditional probability of the label given the neighborhood
     Equation 2.18 of the Stan Z. Li book.
 

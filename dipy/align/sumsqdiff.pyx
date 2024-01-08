@@ -14,7 +14,7 @@ cdef extern from "dpy_math.h" nogil:
 @cython.cdivision(True)
 cdef void _solve_2d_symmetric_positive_definite(double* A, double* y,
                                                 double det,
-                                                double* out) nogil:
+                                                double* out) noexcept nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
 
     The C implementation of the public-facing Python function

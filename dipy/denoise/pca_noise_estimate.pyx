@@ -92,7 +92,8 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
     data0 = data0.astype(np.float64)
     cdef:
-        cnp.npy_intp dsm = np.min(data0.shape[0:-1])
+        # We need to be explicit because of boundscheck = False
+        cnp.npy_intp dsm = np.min(data0.shape[0:3])
         cnp.npy_intp n0 = data0.shape[0]
         cnp.npy_intp n1 = data0.shape[1]
         cnp.npy_intp n2 = data0.shape[2]

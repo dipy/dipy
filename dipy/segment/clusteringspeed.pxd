@@ -59,9 +59,9 @@ cdef class Clusters:
     cdef int** clusters_indices
     cdef int* clusters_size
 
-    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) nogil except *
-    cdef int c_create_cluster(Clusters self) nogil except -1
-    cdef int c_size(Clusters self) nogil
+    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) noexcept nogil
+    cdef int c_create_cluster(Clusters self) except -1 nogil
+    cdef int c_size(Clusters self) noexcept nogil
 
 
 cdef class ClustersCentroid(Clusters):
@@ -69,9 +69,9 @@ cdef class ClustersCentroid(Clusters):
     cdef Centroid* _updated_centroids
     cdef Shape _centroid_shape
     cdef float eps
-    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) nogil except *
-    cdef int c_create_cluster(ClustersCentroid self) nogil except -1
-    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1
+    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) noexcept nogil
+    cdef int c_create_cluster(ClustersCentroid self) except -1 nogil
+    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) except -1 nogil
 
 
 cdef class QuickBundles:
@@ -86,9 +86,9 @@ cdef class QuickBundles:
     cdef int bvh
     cdef QuickBundlesStats stats
 
-    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *
-    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1
-    cdef void update_step(QuickBundles self, int cluster_id) nogil except *
+    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) noexcept nogil
+    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) except -1 nogil
+    cdef void update_step(QuickBundles self, int cluster_id) noexcept nogil
     cdef object _build_clustermap(self)
 
 
@@ -105,9 +105,9 @@ cdef class QuickBundlesX:
     cdef QuickBundlesXStats stats
     cdef StreamlineInfos* current_streamline
 
-    cdef int _add_child(self, CentroidNode* node) nogil
-    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil
-    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil
+    cdef int _add_child(self, CentroidNode* node) noexcept nogil
+    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) noexcept nogil
+    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) noexcept nogil
     cpdef object insert(self, Data2D datum, int datum_idx)
     cdef void traverse_postorder(self, CentroidNode* node, void (*visit)(QuickBundlesX, CentroidNode*))
     cdef void _dealloc_node(self, CentroidNode* node)
