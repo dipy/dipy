@@ -332,7 +332,7 @@ class ConcatenateTractogramFlow(Workflow):
             check_space_attributes=check_space_attributes,
             preallocation=preallocation)
 
-        valid_extensions = ['trk', 'trx', "tck,", "fib", "dpy", "vtk"]
+        valid_extensions = ['trk', 'trx', "tck", "fib", "dpy", "vtk"]
         if out_extension.lower() not in valid_extensions:
             raise ValueError("Invalid extension. Valid extensions are: "
                              "{0}".format(valid_extensions))
