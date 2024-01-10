@@ -4,6 +4,7 @@ from functools import partial
 from os.path import dirname, abspath, join as pjoin
 from numpy.testing import assert_array_equal
 import numpy as np
+import numpy.testing as npt
 import scipy
 from packaging.version import Version
 import warnings
@@ -135,3 +136,11 @@ def setup_test():
         warnings.simplefilter(action="default", category=FutureWarning)
 
     warnings.simplefilter("always", category=UserWarning)
+
+
+def check_for_warnings(warn_printed, w_msg):
+    selected_w = [w for w in warn_printed if issubclass(w.category,
+                                                        UserWarning)]
+    assert len(selected_w) >= 1
+    msg = [str(m.message) for m in selected_w]
+    npt.assert_equal(w_msg in msg, True)

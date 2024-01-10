@@ -8,6 +8,7 @@ import pytest
 from dipy.data import DATA_DIR
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
+from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
@@ -132,14 +133,6 @@ def test_horizon(rng):
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
-
-
-def check_for_warnings(warn_printed, w_msg):
-    selected_w = [w for w in warn_printed if issubclass(w.category,
-                                                        UserWarning)]
-    assert len(selected_w) >= 1
-    msg = [str(m.message) for m in selected_w]
-    npt.assert_equal(w_msg in msg, True)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

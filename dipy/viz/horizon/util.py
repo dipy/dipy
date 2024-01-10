@@ -26,9 +26,10 @@ def check_img_shapes(images):
 
 
 def check_img_dtype(images):
-    """Check for supported dtype. If not supported numerical type, fallback to
-    supported numerical types (either int32 or float 32). If non-numerical
-    type, skip the data.
+    """Check supplied image dtype.
+
+    If not supported numerical type, fallback to supported numerical types
+    (either int32 or float 32). If non-numerical type, skip the data.
 
     Parameters
     ----------

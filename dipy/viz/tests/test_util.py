@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import numpy.testing as npt
+from dipy.testing import check_for_warnings
 from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
 
 
@@ -24,14 +25,6 @@ def test_check_img_shapes():
         (data1, affine)
     ]
     npt.assert_equal(check_img_shapes(images), False)
-
-
-def check_for_warnings(warn_printed, w_msg):
-    selected_w = [w for w in warn_printed if issubclass(w.category,
-                                                        UserWarning)]
-    assert len(selected_w) >= 1
-    msg = [str(m.message) for m in selected_w]
-    npt.assert_equal(w_msg in msg, True)
 
 
 def test_check_img_dtype():
