@@ -32,8 +32,8 @@ answer it yourself and contribute to the documentation!
 
    .. code-block:: Python
 
-        from dipy.reconst.shm import convert_sh
-        convert_sh('dti.nii.gz', 'dti.bval', 'dti.bvec', 'fsl', 'dti.nii.gz')
+        from dipy.reconst.shm import convert_sh_descoteaux_tournier
+        convert_sh_descoteaux_tournier(sh_coeffs)
 
 .. dropdown:: How do I convert my tensors from DIPY to FSL?
    :animate: fade-in-slide-down

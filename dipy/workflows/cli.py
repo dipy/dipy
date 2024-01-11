@@ -35,6 +35,7 @@ cli_flows = {
     "dipy_median_otsu": ("dipy.workflows.segment", "MedianOtsuFlow"),
     "dipy_recobundles": ("dipy.workflows.segment", "RecoBundlesFlow"),
     "dipy_reslice": ("dipy.workflows.align", "ResliceFlow"),
+    "dipy_sh_convert_mrtrix": ("dipy.workflows.io", "ConvertSHFlow"),
     "dipy_snr_in_cc": ("dipy.workflows.stats", "SNRinCCFlow"),
     "dipy_split": ("dipy.workflows.io", "SplitFlow"),
     "dipy_track": ("dipy.workflows.tracking", "LocalFiberTrackingPAMFlow"),
