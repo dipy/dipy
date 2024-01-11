@@ -1,6 +1,7 @@
 cython_sources = [
   'direction_getter',
   'distances',
+  'fast_tracking',
   'fbcmeasures',
   'localtrack',
   'propspeed',
@@ -11,6 +12,7 @@ cython_sources = [
 
 cython_headers = [
   'direction_getter.pxd',
+  'fast_tracking.pxd',
   'fbcmeasures.pxd',
   'propspeed.pxd',
   'stopping_criterion.pxd',
