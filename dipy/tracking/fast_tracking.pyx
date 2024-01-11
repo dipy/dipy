@@ -19,6 +19,7 @@ from libc.stdlib cimport malloc, free
 #need cpdef to access cdef functions?
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
+                               StoppingCriterion sc,
                                TrackingParameters params):
     cdef:
         cnp.npy_intp _len=seed_positons.shape[0]
@@ -26,15 +27,12 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
         double[:] status_arr
         cnp.npy_intp i, j
 
-    #print(_len, flush=True)
-
     # temporary array to store generated streamlines
     streamlines_arr =  np.array(np.zeros((_len, params.max_len * 2 + 1, 3)), order='C')
     status_arr =  np.array(np.zeros((_len)), order='C')
 
-    generate_tractogram_c(seed_positons,
-                          seed_directions,
-                          _len, params, streamlines_arr, status_arr)
+    generate_tractogram_c(seed_positons, seed_directions, _len, sc, params,
+                          streamlines_arr, status_arr)
     streamlines = []
     for i in range(_len):
         # array to list
@@ -53,6 +51,7 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
 cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
+                               StoppingCriterion sc,
                                TrackingParameters params,
                                double[:,:,:] streamlines,
                                double[:] status):
@@ -73,6 +72,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                               &seed_directions[i][0],
                                               stream,
                                               &probabilistic_tracker,
+                                              sc,
                                               params)
         # copy the v
         k = 0
@@ -94,6 +94,7 @@ cdef int generate_local_streamline(double* seed,
                                    double* direction,
                                    double* stream,
                                    func_ptr tracker,
+                                   StoppingCriterion sc,
                                    TrackingParameters params):
     cdef:
         cnp.npy_intp i, j
@@ -116,7 +117,7 @@ cdef int generate_local_streamline(double* seed,
 
         copy_point(point, &stream[(params.max_len + i )* 3])
 
-        stream_status_forward = params.sc.check_point_c(point)
+        stream_status_forward = sc.check_point_c(point)
         if (stream_status_forward == ENDPOINT or
             stream_status_forward == INVALIDPOINT or
             stream_status_forward == OUTSIDEIMAGE):
@@ -138,7 +139,7 @@ cdef int generate_local_streamline(double* seed,
         copy_point(point, &stream[(params.max_len + i )* 3])
 
 
-        stream_status_backward = params.sc.check_point_c(point)
+        stream_status_backward = sc.check_point_c(point)
         if (stream_status_backward == ENDPOINT or
             stream_status_backward == INVALIDPOINT or
             stream_status_backward == OUTSIDEIMAGE):
@@ -237,9 +238,8 @@ cdef int paralle_transport_tracker(double* point,
 
 cdef class ProbabilisticTrackingParameters(TrackingParameters):
 
-    def __cinit__(self, sc, max_len, step_size, voxel_size, cos_similarity,
+    def __cinit__(self, max_len, step_size, voxel_size, cos_similarity,
                   pmf_threshold, pmf_gen, pmf_len, vertices):
-        self.sc = sc
         self.max_len = max_len
         self.step_size = step_size
         self.voxel_size = voxel_size
