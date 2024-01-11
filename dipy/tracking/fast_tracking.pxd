@@ -6,23 +6,26 @@ from dipy.direction.pmf cimport PmfGen
 
 cdef class TrackingParameters():
     cdef:
-        StoppingCriterion sc
         int max_len
         double step_size
         double[3] voxel_size
     pass
 
 
-ctypedef int (*func_ptr)(double* point, double* direction, ProbabilisticTrackingParameters)
+ctypedef int (*func_ptr)(double* point,
+                         double* direction,
+                         ProbabilisticTrackingParameters)
 
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
+                               StoppingCriterion sc,
                                TrackingParameters params)
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
+                               StoppingCriterion sc,
                                TrackingParameters params,
                                double[:,:,:] streamlines,
                                double[:] status)
@@ -34,6 +37,7 @@ cdef int generate_local_streamline(double* seed,
                                    func_ptr tracker,
                                 #    sc_ptr stopping_criterion,
                                 #    pmf_ptr pmf_gen,
+                                   StoppingCriterion sc,
                                    TrackingParameters params)
 
 
