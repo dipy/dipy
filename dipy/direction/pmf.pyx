@@ -20,7 +20,6 @@ cdef class PmfGen:
                  double[:, :, :, :] data,
                  object sphere):
         self.data = np.asarray(data, dtype=float, order='C')
-        self.sphere = sphere
         self.vertices = np.asarray(sphere.vertices, dtype=float)
         self.pmf = np.zeros(self.vertices.shape[0])
 
