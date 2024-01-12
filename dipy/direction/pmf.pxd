@@ -5,7 +5,6 @@ cdef class PmfGen:
         double[:] pmf
         double[:, :, :, :] data
         double[:, :] vertices
-        object sphere
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil
     cdef int find_closest(self, double* xyz) noexcept nogil
