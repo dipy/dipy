@@ -9,7 +9,7 @@ cdef class TrackingParameters():
         int max_len
         double step_size
         double[3] voxel_size
-    pass
+        double[3] inv_voxel_size
 
 
 ctypedef int (*func_ptr)(double* point,
@@ -27,6 +27,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                int nbr_seeds,
                                StoppingCriterion sc,
                                TrackingParameters params,
+                               func_ptr traker,
                                double[:,:,:] streamlines,
                                double[:] status)
 
@@ -55,8 +56,6 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
         int          pmf_len
         double[:, :] vertices
 
-
-    pass
 
 cdef int probabilistic_tracker(double* point,
                                double* direction,
@@ -92,8 +91,6 @@ cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
         double[9]   propagator
         int         rejection_sampling_max_try
         int         rejection_sampling_nbr_sample
-        double[3]   inv_voxel_size
-    pass
 
 
 cdef int paralle_transport_tracker(double* point,
