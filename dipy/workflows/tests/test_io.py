@@ -6,11 +6,14 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
-from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
+from dipy.io.image import load_nifti, save_nifti
+from dipy.io.streamline import load_tractogram
+from dipy.testing import assert_true
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
-from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow, ConvertSHFlow
+from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
+                               ConcatenateTractogramFlow, ConvertSHFlow)
+
 
 fname_log = mkstemp()[1]
 
@@ -93,6 +96,27 @@ def test_split_flow():
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_affine, affine)
+
+
+def test_concatenate_flow():
+    with TemporaryDirectory() as out_dir:
+        concatenate_flow = ConcatenateTractogramFlow()
+        data_path, _, _ = get_fnames('gold_standard_tracks')
+        input_files = [v for k, v in data_path.items()
+                       if k in ['gs.trk', 'gs.tck', 'gs.trx', 'gs.fib']
+                       ]
+        concatenate_flow.run(*input_files, out_dir=out_dir)
+        assert_true(
+            concatenate_flow.last_generated_outputs['out_extension'].endswith(
+                'trx'))
+        assert_true(os.path.isfile(
+            concatenate_flow.last_generated_outputs['out_tractogram'] +
+            ".trx"))
+
+        trk = load_tractogram(
+            concatenate_flow.last_generated_outputs['out_tractogram'] + ".trx",
+            'same')
+        npt.assert_equal(len(trk), 13)
 
 
 def test_convert_sh_flow():

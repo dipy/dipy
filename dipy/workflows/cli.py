@@ -31,6 +31,8 @@ cli_flows = {
     "dipy_gibbs_ringing": ("dipy.workflows.denoise", "GibbsRingingFlow"),
     "dipy_horizon": ("dipy.workflows.viz", "HorizonFlow"),
     "dipy_info": ("dipy.workflows.io", "IoInfoFlow"),
+    "dipy_concatenate_tractograms": ("dipy.workflows.io",
+                                     "ConcatenateTractogramFlow"),
     "dipy_labelsbundles": ("dipy.workflows.segment", "LabelsBundlesFlow"),
     "dipy_median_otsu": ("dipy.workflows.segment", "MedianOtsuFlow"),
     "dipy_recobundles": ("dipy.workflows.segment", "RecoBundlesFlow"),

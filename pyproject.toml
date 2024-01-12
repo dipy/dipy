@@ -82,6 +82,7 @@ dipy_split = "dipy.workflows.cli:run"
 dipy_track = "dipy.workflows.cli:run"
 dipy_track_pft = "dipy.workflows.cli:run"
 dipy_slr = "dipy.workflows.cli:run"
+dipy_concatenate_tractograms = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
