@@ -8,18 +8,20 @@ cdef class TrackingParameters():
     cdef:
         int max_len
         double step_size
-        double[3] voxel_size
-    pass
+        double[:] voxel_size
+        double[3] inv_voxel_size
 
 
 ctypedef int (*func_ptr)(double* point,
                          double* direction,
-                         ProbabilisticTrackingParameters)
+                         ProbabilisticTrackingParameters,
+                         PmfGen)
 
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
-                               TrackingParameters params)
+                               TrackingParameters params,
+                               PmfGen pmf_gen)
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positons,
@@ -27,6 +29,8 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                int nbr_seeds,
                                StoppingCriterion sc,
                                TrackingParameters params,
+                               PmfGen pmf_gen,
+                               func_ptr traker,
                                double[:,:,:] streamlines,
                                double[:] status)
 
@@ -38,7 +42,8 @@ cdef int generate_local_streamline(double* seed,
                                 #    sc_ptr stopping_criterion,
                                 #    pmf_ptr pmf_gen,
                                    StoppingCriterion sc,
-                                   TrackingParameters params)
+                                   TrackingParameters params,
+                                   PmfGen pmf_gen)
 
 
 cdef double* get_pmf(double* point,
@@ -51,16 +56,15 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
     cdef:
         double       cos_similarity
         double       pmf_threshold
-        PmfGen       pmf_gen
+        #PmfGen       pmf_gen
         int          pmf_len
         double[:, :] vertices
 
 
-    pass
-
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               ProbabilisticTrackingParameters params)
+                               ProbabilisticTrackingParameters params,
+                               PmfGen pmf_gen)
 
 cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
     pass
@@ -68,7 +72,8 @@ cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
 
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
-                                       DeterministicTrackingParameters params)
+                                       DeterministicTrackingParameters params,
+                                       PmfGen pmf_gen,)
 
 cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
     cdef:
@@ -92,10 +97,9 @@ cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
         double[9]   propagator
         int         rejection_sampling_max_try
         int         rejection_sampling_nbr_sample
-        double[3]   inv_voxel_size
-    pass
 
 
 cdef int paralle_transport_tracker(double* point,
                                    double* direction,
-                                   ParalleTransportTrackingParameters params)
+                                   ParalleTransportTrackingParameters params,
+                                   PmfGen pmf_gen)
