@@ -72,7 +72,7 @@ def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
-                         double[:, :, :] average, double weight) nogil:
+                         double[:, :, :] average, double weight) noexcept nogil:
     """
     Computes the weighted average of the patches in a blockwise manner
 
@@ -118,7 +118,7 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
-                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
+                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) noexcept nogil:
 
     """
     Computes the final estimate of the denoised image

@@ -206,7 +206,7 @@ cdef _pft_tracker(DirectionGetter dg,
         int strl_array_len
         double max_wm_pve, current_wm_pve
         double point[3]
-        void (*step)(double* , double*, double) nogil
+        void (*step)(double* , double*, double) noexcept nogil
 
     copy_point(seed, point)
     copy_point(seed, &streamline[0,0])

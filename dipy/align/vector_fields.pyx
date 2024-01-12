@@ -37,7 +37,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double[:, :] premult_disp,
                                     double time_scaling,
                                     floating[:, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats) noexcept nogil:
     r"""Computes the composition of two 2D displacement fields
 
     Computes the composition of the two 2-D displacements d1 and d2. The
@@ -237,7 +237,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     double[:, :] premult_disp,
                                     double t,
                                     floating[:, :, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats) noexcept nogil:
     r"""Computes the composition of two 3D displacement fields
 
     Computes the composition of the two 3-D displacements d1 and d2. The

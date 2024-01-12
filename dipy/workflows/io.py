@@ -8,8 +8,9 @@ import trx.trx_file_memmap as tmm
 import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.streamline import (concatenate_tractogram, load_tractogram,
-                                save_tractogram)
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
 
 
@@ -339,3 +340,41 @@ class ConcatenateTractogramFlow(Workflow):
 
         out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
         save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
+
+
+class ConvertSHFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'convert_dipy_mrtrix'
+
+    def run(
+        self,
+        input_files,
+        out_dir='',
+        out_file='sh_convert_dipy_mrtrix_out.nii.gz',
+    ):
+        """ Converts SH basis representation between DIPY and MRtrix3 formats.
+        Because this conversion is equal to its own inverse, it can be used to
+        convert in either direction: DIPY to MRtrix3 or vice versa.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input files. This path may contain wildcards to
+            process multiple inputs at once.
+
+        out_dir : string, optional
+            Where the resulting file will be saved. (default '')
+
+        out_file : string, optional
+            Name of the result file to be saved.
+            (default 'sh_convert_dipy_mrtrix_out.nii.gz')
+        """
+
+        io_it = self.get_io_iterator()
+
+        for in_file, out_file in io_it:
+
+            data, affine, image = load_nifti(in_file, return_img=True)
+            data = convert_sh_descoteaux_tournier(data)
+            save_nifti(out_file, data, affine, image.header)

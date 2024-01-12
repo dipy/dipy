@@ -7,6 +7,7 @@ python_sources = [
   'test_omp.py',
   'test_optpkg.py',
   'test_parallel.py',
+  'test_tractogram.py',
   'test_tripwire.py',
   'test_volume.py',
   ]

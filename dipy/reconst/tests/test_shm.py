@@ -32,8 +32,9 @@ from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
                               spherical_harmonics, anisotropic_power,
                               calculate_max_order, sh_to_sf_matrix, gen_dirac,
                               convert_sh_to_full_basis, convert_sh_from_legacy,
-                              convert_sh_to_legacy, descoteaux07_legacy_msg,
-                              tournier07_legacy_msg)
+                              convert_sh_to_legacy,
+                              convert_sh_descoteaux_tournier,
+                              descoteaux07_legacy_msg, tournier07_legacy_msg)
 
 
 def test_order_from_ncoeff():
@@ -990,3 +991,44 @@ def test_convert_sh_to_legacy():
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
     assert_raises(ValueError, convert_sh_to_legacy, sh_coeffs, '', True)
+
+
+def test_convert_sh_descoteaux_tournier():
+
+    # case: max degree zero
+    sh_coeffs = np.array([1.54])  # there is only an l=0,m=0 coefficient
+    converted_coeffs = convert_sh_descoteaux_tournier(sh_coeffs)
+    assert_array_equal(converted_coeffs, sh_coeffs)
+
+    # case: max degree 4
+    sh_coeffs = np.array([
+        1,
+        2, 3, 4, 5, 6,
+        7, 8, 9, 10, 11, 12, 13, 14, 15,
+    ], dtype=float)
+    # expected result is that there is a swap m <--> -m
+    expected_coeffs = np.array([
+        1,
+        6, 5, 4, 3, 2,
+        15, 14, 13, 12, 11, 10, 9, 8, 7,
+    ], dtype=float)
+    converted_coeffs = convert_sh_descoteaux_tournier(sh_coeffs)
+    assert_array_equal(converted_coeffs, expected_coeffs)
+
+    # case: max degree 4 but with more axes
+    dim0 = 2
+    dim1 = 3
+    sh_coeffs_grid = np.array(
+        [np.linspace(10*i, 10*i+1, 6) for i in range(6)]
+    ).reshape(dim0, dim1, 6)
+    converted_coeffs_grid = convert_sh_descoteaux_tournier(sh_coeffs_grid)
+    assert_equal(sh_coeffs_grid.shape, converted_coeffs_grid.shape)
+    for i0 in range(dim0):
+        for i1 in range(dim1):
+            shc = sh_coeffs_grid[i0, i1]  # shc is short for "sh_coeffs"
+            converted_coeffs = converted_coeffs_grid[i0, i1]
+            expected_coeffs = np.array([
+                shc[0],
+                shc[5], shc[4], shc[3], shc[2], shc[1],
+            ])
+            assert_array_equal(converted_coeffs, expected_coeffs)

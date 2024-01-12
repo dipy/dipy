@@ -1575,3 +1575,55 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
         raise ValueError("Invalid basis name.")
 
     return out_sh_coeffs
+
+
+def convert_sh_descoteaux_tournier(sh_coeffs):
+    """Convert SH coefficients between legacy-descoteaux07 and tournier07.
+
+    Convert SH coefficients between the legacy ``descoteaux07`` SH basis and
+    the non-legacy ``tournier07`` SH basis. Because this conversion is equal to
+    its own inverse, it can be used to convert in either direction:
+    legacy-descoteaux to non-legacy-tournier or non-legacy-tournier to
+    legacy-descoteaux.
+
+    This can be used to convert SH representations between DIPY and MRtrix3.
+
+    See [descoteaux07]_ and [tournier19]_ for the origin of these SH bases.
+    See [mrtrixbasis]_ for a description of the basis used in MRtrix3.
+    See [mrtrixdipybases]_ for more details on the conversion.
+
+    Parameters
+    ----------
+    sh_coeffs: ndarray
+        A ndarray where the last dimension is the
+        SH coefficients estimates for that voxel.
+
+    Returns
+    -------
+    out_sh_coeffs: ndarray
+        The array of coefficients expressed in the "other" SH basis. If the
+        input was in the legacy-descoteaux basis then the output will be in the
+        non-legacy-tournier basis, and vice versa.
+
+    References
+    ----------
+    .. [descoteaux07] Descoteaux, M., Angelino, E., Fitzgibbons, S. and
+           Deriche, R. Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [tournier19] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
+           Pietsch M, et al. MRtrix3: A fast, flexible and open software
+           framework for medical image processing and visualisation.
+           NeuroImage. 2019 Nov 15;202:116-137.
+    .. [mrtrixbasis] https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html
+    .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
+    """  # noqa: E501
+
+    sh_order = calculate_max_order(sh_coeffs.shape[-1])
+    m, n = sph_harm_ind_list(sh_order)
+    basis_indices = list(zip(n, m))  # dipy basis ordering
+    basis_indices_permuted = list(zip(n, -m))  # mrtrix basis ordering
+    permutation = [
+        basis_indices.index(basis_indices_permuted[i])
+        for i in range(len(basis_indices))
+    ]
+    return sh_coeffs[..., permutation]

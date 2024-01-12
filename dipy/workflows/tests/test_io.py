@@ -2,15 +2,18 @@ import logging
 import os
 from tempfile import mkstemp, TemporaryDirectory
 
+import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti
+from dipy.data.fetcher import dipy_home
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.testing import assert_true
-from dipy.data.fetcher import dipy_home
+from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
-                               ConcatenateTractogramFlow)
+                               ConcatenateTractogramFlow, ConvertSHFlow)
+
 
 fname_log = mkstemp()[1]
 
@@ -114,3 +117,33 @@ def test_concatenate_flow():
             concatenate_flow.last_generated_outputs['out_tractogram'] + ".trx",
             'same')
         npt.assert_equal(len(trk), 13)
+
+
+def test_convert_sh_flow():
+    with TemporaryDirectory() as out_dir:
+        filepath_in = os.path.join(out_dir, 'sh_coeff_img.nii.gz')
+        filename_out = 'sh_coeff_img_converted.nii.gz'
+        filepath_out = os.path.join(out_dir, filename_out)
+
+        # Create an input image
+        dim0, dim1, dim2 = 2, 3, 3  # spatial dimensions of array
+        num_sh_coeffs = 15  # 15 sh coeffs means l_max is 4
+        img_in = np.arange(
+            dim0*dim1*dim2*num_sh_coeffs, dtype=float
+        ).reshape(dim0, dim1, dim2, num_sh_coeffs)
+        save_nifti(filepath_in, img_in, np.eye(4))
+
+        # Compute expected result to compare against later
+        expected_img_out = convert_sh_descoteaux_tournier(img_in)
+
+        # Run the workflow and load the output
+        workflow = ConvertSHFlow()
+        workflow.run(
+            filepath_in,
+            out_dir=out_dir,
+            out_file=filename_out,
+        )
+        img_out, _ = load_nifti(filepath_out)
+
+        # Compare
+        npt.assert_array_almost_equal(img_out, expected_img_out)
