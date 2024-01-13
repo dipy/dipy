@@ -10,6 +10,7 @@ import numpy as np
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.tracking.streamlinespeed import length
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
 
@@ -20,8 +21,8 @@ class IoInfoFlow(Workflow):
     def get_short_name(cls):
         return 'io_info'
 
-    def run(self, input_files,
-            b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
+    def run(self, input_files, b0_threshold=50, bvecs_tol=0.01,
+            bshell_thr=100, reference=None):
         """ Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
         program identifies the type of file by its extension.
@@ -37,6 +38,10 @@ class IoInfoFlow(Workflow):
             b-vectors are unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+
         """
         np.set_printoptions(3, suppress=True)
 
@@ -49,6 +54,7 @@ class IoInfoFlow(Workflow):
             logging.info('-----------' + mult_*'-')
 
             ipath_lower = input_path.lower()
+            extension = os.path.splitext(ipath_lower)[1]
 
             if ipath_lower.endswith('.nii') or ipath_lower.endswith('.nii.gz'):
 
@@ -77,7 +83,7 @@ class IoInfoFlow(Workflow):
                                          np.percentile(data[..., 0], 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
-                logging.info('Affine Native to RAS matrix \n{0}'.format(affine))
+                logging.info(f'Affine Native to RAS matrix \n{affine}')
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
@@ -111,6 +117,47 @@ class IoInfoFlow(Workflow):
                              .format(len(res[0])))
                 logging.info('Total number of non-unit bvectors {0}\n'
                              .format(ncl1))
+
+            if extension in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                             '.dpy']:
+
+                sft = None
+                if extension in ['.trk', '.trx']:
+                    sft = load_tractogram(input_path, 'same',
+                                          bbox_valid_check=False)
+                else:
+                    sft = load_tractogram(input_path, reference,
+                                          bbox_valid_check=False)
+
+                lengths_mm = list(length(sft.streamlines))
+
+                sft.to_voxmm()
+
+                lengths, steps = [], []
+                for streamline in sft.streamlines:
+                    lengths += [len(streamline)]
+                    steps += [np.sqrt(np.sum(np.diff(
+                        streamline, axis=0) ** 2, axis=1))]
+                steps = np.hstack(steps)
+
+                logging.info(f'Number of streamlines: {len(sft)}')
+                logging.info(f'min_length_mm: {float(np.min(lengths_mm))}')
+                logging.info(f'mean_length_mm: {float(np.mean(lengths_mm))}')
+                logging.info(f'max_length_mm: {float(np.max(lengths_mm))}')
+                logging.info(f'std_length_mm: {float(np.std(lengths_mm))}')
+                logging.info(f'min_length_nb_points: {float(np.min(lengths))}')
+                logging.info('mean_length_nb_points: '
+                             f'{float(np.mean(lengths))}')
+                logging.info(f'max_length_nb_points: {float(np.max(lengths))}')
+                logging.info(f'std_length_nb_points: {float(np.std(lengths))}')
+                logging.info(f'min_step_size: {float(np.min(steps))}')
+                logging.info(f'mean_step_size: {float(np.mean(steps))}')
+                logging.info(f'max_step_size: {float(np.max(steps))}')
+                logging.info(f'std_step_size: {float(np.std(steps))}')
+                logging.info('data_per_point_keys: '
+                             f'{list(sft.data_per_point.keys())}')
+                logging.info('data_per_streamline_keys: '
+                             f'{list(sft.data_per_streamline.keys())}')
 
         np.set_printoptions()
 

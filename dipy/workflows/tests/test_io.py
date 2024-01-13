@@ -35,13 +35,23 @@ def test_io_info():
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
 
-    file = open(fname_log, 'r')
-    lines = file.readlines()
-    try:
-        npt.assert_equal(lines[-3], 'INFO Total number of unit bvectors 25\n')
-    except IndexError:  # logging maybe disabled in IDE setting
-        pass
-    file.close()
+    filepath_dix, _, _ = get_fnames('gold_standard_tracks')
+    io_info_flow = IoInfoFlow()
+    io_info_flow.run([filepath_dix['gs.trx'], filepath_dix['gs.trk']])
+
+    io_info_flow = IoInfoFlow()
+    npt.assert_raises(TypeError, io_info_flow.run, filepath_dix['gs.tck'])
+
+    io_info_flow = IoInfoFlow()
+    io_info_flow.run(filepath_dix['gs.tck'], reference=filepath_dix['gs.nii'])
+
+    with open(fname_log, 'r') as file:
+        lines = file.readlines()
+        try:
+            npt.assert_equal(lines[-3],
+                             'INFO Total number of unit bvectors 25\n')
+        except IndexError:  # logging maybe disabled in IDE setting
+            pass
 
 
 def test_io_fetch():
