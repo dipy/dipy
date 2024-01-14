@@ -1,4 +1,3 @@
-import json
 import os
 from os.path import join as pjoin
 from copy import deepcopy
@@ -10,7 +9,7 @@ import numpy.testing as npt
 from numpy.testing import assert_allclose, assert_array_equal, assert_
 import pytest
 
-from dipy.data import fetch_gold_standard_io
+from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import is_header_compatible
@@ -28,22 +27,13 @@ FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 def setup_module():
     global FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA
     try:
-        files, folder = fetch_gold_standard_io()
+        FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = get_fnames(
+            'gold_standard_tracks')
     except (HTTPError, URLError) as e:
         FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
         pytest.skip(error_msg, allow_module_level=True)
         return
-
-    FILEPATH_DIX = {}
-    for filename in files:
-        FILEPATH_DIX[filename] = os.path.join(folder, filename)
-
-    with open(FILEPATH_DIX['points_data.json']) as json_file:
-        POINTS_DATA = dict(json.load(json_file))
-
-    with open(FILEPATH_DIX['streamlines_data.json']) as json_file:
-        STREAMLINES_DATA = dict(json.load(json_file))
 
 
 def teardown_module():
