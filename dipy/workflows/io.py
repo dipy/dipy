@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 from inspect import getmembers, isfunction
+import warnings
 
 import trx.trx_file_memmap as tmm
 import numpy as np
@@ -378,3 +379,73 @@ class ConvertSHFlow(Workflow):
             data, affine, image = load_nifti(in_file, return_img=True)
             data = convert_sh_descoteaux_tournier(data)
             save_nifti(out_file, data, affine, image.header)
+
+
+class ConvertTractogramFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'convert_tractogram'
+
+    def run(self, input_files, reference=None, pos_dtype='float32',
+            offsets_dtype='uint32', out_dir='',
+            out_tractogram='converted_tractogram.trk'):
+        """Converts tractogram between different formats.
+
+        Parameters
+        ----------
+        input_files : variable string
+            Any number of tractogram files
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+        pos_dtype : string, optional
+            Data type of the tractogram points, used for vtk files.
+        offsets_dtype : string, optional
+            Data type of the tractogram offsets, used for vtk files.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_tractogram : variable string, optional
+            Name of the resulting tractogram
+
+        """
+        io_it = self.get_io_iterator()
+
+        for fpath, otracks in io_it:
+            in_extension = fpath.lower().split('.')[-1]
+            out_extension = otracks.lower().split('.')[-1]
+
+            if in_extension == out_extension:
+                warnings.warn('Input and output are the same file format, '
+                              'Skipping...')
+                continue
+
+            if not reference and in_extension in ['trx', 'trk']:
+                reference = 'same'
+
+            if not reference and in_extension not in ['trx', 'trk']:
+                raise ValueError("No reference provided. It is needed for tck,"
+                                 "fib, dpy or vtk files")
+
+            sft = load_tractogram(fpath, reference, bbox_valid_check=False)
+
+            if out_extension != 'trx':
+                if out_extension == 'vtk':
+                    if sft.streamlines._data.dtype.name != pos_dtype:
+                        sft.streamlines._data = \
+                            sft.streamlines._data.astype(pos_dtype)
+                    if offsets_dtype == 'uint64' or offsets_dtype == 'uint32':
+                        offsets_dtype = offsets_dtype[1:]
+                    if sft.streamlines._offsets.dtype.name != offsets_dtype:
+                        sft.streamlines._offsets = \
+                            sft.streamlines._offsets.astype(offsets_dtype)
+                save_tractogram(sft, otracks, bbox_valid_check=False)
+            else:
+                trx = tmm.TrxFile.from_sft(sft)
+                if trx.streamlines._data.dtype.name != pos_dtype:
+                    trx.streamlines._data = \
+                        trx.streamlines._data.astype(pos_dtype)
+                if trx.streamlines._offsets.dtype.name != offsets_dtype:
+                    trx.streamlines._offsets = trx.streamlines._offsets.astype(
+                        offsets_dtype)
+                tmm.save(trx, otracks)
+                trx.close()

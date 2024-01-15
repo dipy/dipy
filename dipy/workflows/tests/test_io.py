@@ -12,7 +12,8 @@ from dipy.io.streamline import load_tractogram
 from dipy.testing import assert_true
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
-                               ConcatenateTractogramFlow, ConvertSHFlow)
+                               ConcatenateTractogramFlow, ConvertSHFlow,
+                               ConvertTractogramFlow)
 
 
 fname_log = mkstemp()[1]
@@ -147,3 +148,23 @@ def test_convert_sh_flow():
 
         # Compare
         npt.assert_array_almost_equal(img_out, expected_img_out)
+
+
+def test_convert_tractogram_flow():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames('gold_standard_tracks')
+        input_files = [v for k, v in data_path.items()
+                       if k in ['gs.tck', 'gs.trx']]
+
+        convert_tractogram_flow = ConvertTractogramFlow(mix_names=True)
+        convert_tractogram_flow.run(input_files,
+                                    reference=data_path['gs.nii'],
+                                    out_dir=out_dir)
+
+        convert_tractogram_flow._force_overwrite = True
+        npt.assert_raises(ValueError, convert_tractogram_flow.run,
+                          input_files, out_dir=out_dir)
+
+        npt.assert_warns(UserWarning, convert_tractogram_flow.run,
+                         data_path['gs.trx'], out_dir=out_dir,
+                         out_tractogram='gs_converted.trx')
