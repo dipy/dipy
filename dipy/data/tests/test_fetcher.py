@@ -1,18 +1,14 @@
-import tempfile
-import os.path as op
-import sys
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
-import numpy.testing as npt
-import dipy.data.fetcher as fetcher
-from dipy.data import SPHERE_FILES
+import os.path as op
 from threading import Thread
-if sys.version_info[0] < 3:
-    from SimpleHTTPServer import SimpleHTTPRequestHandler  # Python 2
-    from SocketServer import TCPServer as HTTPServer
-    from urllib import pathname2url
-else:
-    from http.server import HTTPServer, SimpleHTTPRequestHandler  # Python 3
-    from urllib.request import pathname2url
+import tempfile
+from urllib.request import pathname2url
+
+import numpy.testing as npt
+
+from dipy.data import SPHERE_FILES
+import dipy.data.fetcher as fetcher
 
 
 def test_check_md5():
