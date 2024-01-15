@@ -37,7 +37,6 @@ classifiers = [
 ]
 dynamic = ['version']
 dependencies = [
-    "cython>=0.29.24, !=0.29.29",
     "numpy>=1.22.4",
     "scipy>=1.8",
     "nibabel>=3.0.0",
