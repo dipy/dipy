@@ -13,65 +13,77 @@ from dipy.reconst.dti import (eig_from_lo_tri)
 
 from dipy.data import default_sphere, get_sphere
 
-fimg, fbvals, fbvecs = get_fnames('small_64D')
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
-
-# 2 shells for techniques that requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
-
-# single fiber simulate (which is the assumption of our model)
-FIE = np.array([[[0.30, 0.32], [0.74, 0.51]],
-                [[0.47, 0.21], [0.80, 0.63]]])
-RDI = np.zeros((2, 2, 2))
-ADI = np.array([[[1e-3, 1.3e-3], [0.8e-3, 1e-3]],
-                [[0.9e-3, 0.99e-3], [0.89e-3, 1.1e-3]]])
-ADE = np.array([[[2.2e-3, 2.3e-3], [2.8e-3, 2.1e-3]],
-                [[1.9e-3, 2.5e-3], [1.89e-3, 2.1e-3]]])
-Tor = np.array([[[2.6, 2.4], [2.8, 2.1]],
-                [[2.9, 2.5], [2.7, 2.3]]])
-RDE = ADE / Tor
-
-# prepare simulation:
-DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
-
-# Diffusion microstructural model assumes that signal does not have Taylor
-# approximation components larger than the fourth order. Thus parameter
-# estimates are only equal to the ground truth values of the simulation
-# if signals taylor components larger than the fourth order are removed.
-# Signal without this taylor components can be generated using the
-# multi_tensor_dki simulations. Therefore we used this function to test the
-# expected estimates of the model.
-
-DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
-
-# Signal with all taylor components can be simulated using the function
-# multi_tensor. Generating this signals will be useful to test the prediction
-# procedures of DKI-based microstructural model.
+gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
+FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
 
 
-for i in range(2):
-    for j in range(2):
-        for k in range(2):
-            ADi = ADI[i, j, k]
-            RDi = RDI[i, j, k]
-            ADe = ADE[i, j, k]
-            RDe = RDE[i, j, k]
-            fie = FIE[i, j, k]
-            mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
-            frac = [fie*100, (1 - fie)*100]
-            theta = random.uniform(0, 180)
-            phi = random.uniform(0, 320)
-            angles = [(theta, phi), (theta, phi)]
-            signal, dt, kt = multi_tensor_dki(gtab_2s, mevals,
-                                              angles=angles,
+def setup_module():
+    global gtab_2s, DWIsim, DWIsim_all_taylor, FIE, RDI, ADI, ADE, Tor, RDE
+
+    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    # 2 shells for techniques that requires multishell data
+    bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+
+    # single fiber simulate (which is the assumption of our model)
+    FIE = np.array([[[0.30, 0.32], [0.74, 0.51]],
+                    [[0.47, 0.21], [0.80, 0.63]]])
+    RDI = np.zeros((2, 2, 2))
+    ADI = np.array([[[1e-3, 1.3e-3], [0.8e-3, 1e-3]],
+                    [[0.9e-3, 0.99e-3], [0.89e-3, 1.1e-3]]])
+    ADE = np.array([[[2.2e-3, 2.3e-3], [2.8e-3, 2.1e-3]],
+                    [[1.9e-3, 2.5e-3], [1.89e-3, 2.1e-3]]])
+    Tor = np.array([[[2.6, 2.4], [2.8, 2.1]],
+                    [[2.9, 2.5], [2.7, 2.3]]])
+    RDE = ADE / Tor
+
+    # prepare simulation:
+    DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+    # Diffusion microstructural model assumes that signal does not have Taylor
+    # approximation components larger than the fourth order. Thus parameter
+    # estimates are only equal to the ground truth values of the simulation
+    # if signals taylor components larger than the fourth order are removed.
+    # Signal without this taylor components can be generated using the
+    # multi_tensor_dki simulations. Therefore we used this function to test the
+    # expected estimates of the model.
+
+    DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+    # Signal with all taylor components can be simulated using the function
+    # multi_tensor. Generating this signals will be useful to test the
+    # prediction procedures of DKI-based microstructural model.
+
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ADi = ADI[i, j, k]
+                RDi = RDI[i, j, k]
+                ADe = ADE[i, j, k]
+                RDe = RDE[i, j, k]
+                fie = FIE[i, j, k]
+                mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+                frac = [fie*100, (1 - fie)*100]
+                theta = random.uniform(0, 180)
+                phi = random.uniform(0, 320)
+                angles = [(theta, phi), (theta, phi)]
+                signal, dt, kt = multi_tensor_dki(gtab_2s, mevals,
+                                                  angles=angles,
+                                                  fractions=frac, snr=None)
+                DWIsim[i, j, k, :] = signal
+                signal, sticks = multi_tensor(gtab_2s, mevals, angles=angles,
                                               fractions=frac, snr=None)
-            DWIsim[i, j, k, :] = signal
-            signal, sticks = multi_tensor(gtab_2s, mevals, angles=angles,
-                                          fractions=frac, snr=None)
-            DWIsim_all_taylor[i, j, k, :] = signal
+                DWIsim_all_taylor[i, j, k, :] = signal
+
+
+def teardown_module():
+    global gtab_2s, DWIsim, DWIsim_all_taylor, FIE, RDI, ADI, ADE, Tor, RDE
+    gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
+    FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
 
 
 def test_single_fiber_model():

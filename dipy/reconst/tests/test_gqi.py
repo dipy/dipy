@@ -13,8 +13,6 @@ from dipy.direction.peaks import peak_directions
 from numpy.testing import assert_equal, assert_almost_equal
 
 
-
-
 def test_gqi():
     # load repulsion 724 sphere
     sphere = default_sphere
