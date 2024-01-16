@@ -1,21 +1,15 @@
-import sys
+import argparse
 import inspect
 
-import argparse
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
 def get_args_default(func):
-    if sys.version_info[0] >= 3:
-        sig_object = inspect.signature(func)
-        params = sig_object.parameters.values()
-        names = [param.name for param in params if param.name != 'self']
-        defaults = [param.default for param in params
-                    if param.default is not inspect._empty]
-    else:
-        specs = inspect.getargspec(func)
-        names = specs.args[1:]
-        defaults = specs.defaults
+    sig_object = inspect.signature(func)
+    params = sig_object.parameters.values()
+    names = [param.name for param in params if param.name != 'self']
+    defaults = [param.default for param in params
+                if param.default is not inspect._empty]
 
     return names, defaults
 

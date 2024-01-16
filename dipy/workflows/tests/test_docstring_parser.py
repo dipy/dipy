@@ -30,16 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 # -*- encoding:utf-8 -*-
 
-import sys
 import textwrap
 
 from dipy.workflows.docstring_parser import NumpyDocString
 import numpy.testing as npt
-
-if sys.version_info[0] >= 3:
-    def sixu(s): return s
-else:
-    def sixu(s): return unicode(s, 'unicode_escape')
 
 
 doc_txt = """\
