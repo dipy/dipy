@@ -993,13 +993,16 @@ def test_convert_sh_to_legacy():
 
 
 def test_wigner_rotation():
-    b = 3  # Range of quantum numbers
-    alpha, beta, gamma = np.pi / 4, np.pi / 3, np.pi / 6  # Euler angles for rotation
+    # Range of quantum numbers
+    b = 3  
+    # Euler angles for rotation
+    alpha, beta, gamma = np.pi / 4, np.pi / 3, np.pi / 6  
 
-    # using an identity matrix for one quantum number, padded to the correct size
+    # using an identity matrix for one quantum number padded to the correct size
     x = np.zeros((2 * b, 2 * b, 2 * b), dtype=np.complex128)
     x[:3, :3, :3] = np.eye(3)
 
     z = wigner_rotation(x, alpha, beta, gamma)
     
-    assert z.shape == x.shape, "Output array shape does not match input array shape"
+    assert z.shape == x.shape, \
+        "Output array shape does not match input array shape"

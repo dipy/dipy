@@ -1579,13 +1579,14 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
 
 
 def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
-    """Returns an array of all possible wigner-D matrices for a range of quantum numbers (l)
+    """Returns an array of all possible wigner-D matrices for a range 
+    of quantum numbers (l)
 
     Parameters
     ----------
     quant_order : int
-        The upper limit for the range of quantum numbers. The function generates Wigner-D
-        matrices for each quantum number from 0 to b-1.
+        The upper limit for the range of quantum numbers. The function generates
+        Wigner-D matrices for each quantum number from 0 to b-1.
     alpha : float
         First Euler angle for rotation (range: 0 <= alpha <= 2pi)
     beta : float
@@ -1596,7 +1597,8 @@ def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
     Returns
     -------
     Us : list of ndarray
-        A list of Wigner-D matrices, each corresponding to a different quantum number 'l'.
+        A list of Wigner-D matrices, each corresponding to a different quantum 
+        number 'l'.
 
     Notes
     -----
@@ -1604,17 +1606,22 @@ def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
     - The 'Condon-Shortley' phase convention is used.
     """
     Us = [wigner_D_matrix(l, alpha, beta, gamma,
-                          field='complex', normalization='quantum', order='centered', condon_shortley='cs')
+                          field='complex', normalization='quantum', 
+                          order='centered', condon_shortley='cs')
           for l in range(quant_order)]
-    Us = [Us[l].astype(np.complex64).view(np.float32).reshape((2 * l + 1, 2 * l + 1, 2)) for l in range(quant_order)]
+    Us = [Us[l].astype(np.complex64)
+          .view(np.float32)
+          .reshape((2 * l + 1, 2 * l + 1, 2)) 
+          for l in range(quant_order)]
     return Us
 
 
 def wigner_rotation(signal, alpha, beta, gamma):
-    """Performs a Wigner rotation on a given input array 'x', representing spherical
-    harmonics coefficients. This rotation is defined by Euler angles alpha, beta,
-    and gamma. The function first sets up the Wigner-D matrices for the specified
-    range of quantum numbers, then applies a rotation in the spherical harmonic domain.
+    """Performs a Wigner rotation on a given input array 'x', representing 
+    spherical harmonics coefficients. This rotation is defined by Euler angles 
+    alpha, beta, and gamma. The function first sets up the Wigner-D matrices for
+    the specified range of quantum numbers, then applies a rotation in the 
+    spherical harmonic domain.
 
     Parameters
     ----------
@@ -1632,12 +1639,12 @@ def wigner_rotation(signal, alpha, beta, gamma):
     Returns
     -------
     z : ndarray
-        The rotated array, with the same shape as the input 'x', representing the
+       The rotated array, with the same shape as the input 'x', representing the
         spherical harmonics coefficients after the Wigner rotation
     
     References
     ----------
-    .. [1] Taco S. Cohen, Mario Geiger, Jonas Köhler, Max Welling, Spherical CNNs. 
+     [1] Taco S. Cohen, Mario Geiger, Jonas Köhler, Max Welling, Spherical CNNs. 
            International Conference on Learning Representations (ICLR), 2018.
     """
     b = signal.shape[-1] // 2
