@@ -27,20 +27,21 @@ def z_rot_mat(angle, l):
     angle : float
         The angle in radians by which to rotate around the z-axis.
     l : int
-        The degree of the spherical harmonics. This determines the size of the rotation matrix,
-        which will be of dimension (2 * l + 1) x (2 * l + 1).
+        The degree of the spherical harmonics. This determines the size of the 
+        rotation matrix, which will be of dimension (2 * l + 1) x (2 * l + 1).
 
     Returns
     -------
     M : ndarray
-        The rotation matrix of size (2 * l + 1) x (2 * l + 1) representing the z-axis rotation.
-        This matrix is in the basis of real centered spherical harmonics and is suitable for
-        applying rotational transformations to spherical harmonics coefficients.
+        The rotation matrix of size (2 * l + 1) x (2 * l + 1) representing the 
+        z-axis rotation. This matrix is in the basis of real centered spherical 
+        harmonics and is suitable for applying rotational transformations to 
+        spherical harmonics coefficients.
 
     Examples
     --------
-    To create a rotation matrix for a 45-degree rotation (pi/4 radians) in the space of
-    spherical harmonics of degree 2:
+    To create a rotation matrix for a 45-degree rotation (pi/4 radians) 
+    in the space of spherical harmonics of degree 2:
 
         >>> z_matrix = z_rot_mat(np.pi / 4, 2)
         >>> print(z_matrix)
@@ -72,16 +73,18 @@ def rot_mat(alpha, beta, gamma, l, J):
     gamma : float
         The third ZYZ-Euler angle for the rotation around the z-axis.
     l : int
-        The degree of the spherical harmonics. Determines the dimension of the rotation matrix,
-        which will be of size (2 * l + 1) x (2 * l + 1).
+        The degree of the spherical harmonics. Determines the dimension of the 
+        rotation matrix, which will be of size (2 * l + 1) x (2 * l + 1).
     J : ndarray
-        The matrix used for conversion between the complex and real spherical harmonics bases.
+        The matrix used for conversion between the complex and real spherical 
+        harmonics bases.
 
     Returns
     -------
     ndarray
-        A rotation matrix of size (2 * l + 1) x (2 * l + 1) that represents the rotation defined
-        by the given ZYZ-Euler angles in the basis of real spherical harmonics.
+        A rotation matrix of size (2 * l + 1) x (2 * l + 1) that represents the 
+        rotation defined by the given ZYZ-Euler angles in the basis of real 
+        spherical harmonics.
 
     References
     ----------
@@ -97,20 +100,23 @@ def rot_mat(alpha, beta, gamma, l, J):
 
 def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
                            to=('real', 'quantum', 'centered', 'cs')):
-    """Compute change-of-basis matrix that takes the 'frm' basis to the 'to' basis.
-    Each basis is identified by:
+    """Compute change-of-basis matrix that takes the 'frm' basis to the 'to' 
+    basis. Each basis is identified by:
      1) A field (real or complex)
-     2) A normalization / phase convention ('seismology', 'quantum', 'nfft', or 'geodesy')
+     2) A normalization / phase convention ('seismology', 'quantum', 'nfft', or 
+     'geodesy')
      3) An ordering convention ('centered', 'block')
      4) Whether to use Condon-Shortley phase (-1)^m for m > 0 ('cs', 'nocs')
 
     Let B = change_of_basis_matrix(l, frm, to).
-    Then if Y is a vector in the frm basis, B.dot(Y) represents the same vector in the to basis.
+    Then if Y is a vector in the frm basis, B.dot(Y) represents the same 
+    vector in the to basis.
 
     Parameters
     ----------
     l : int or iterable of int
-        The weight (non-negative integer) of the irreducible representation, or an iterable of weights.
+        The weight (non-negative integer) of the irreducible representation, 
+        or an iterable of weights.
     frm : tuple of str
         A 3-tuple (field, normalization, ordering) indicating the input basis.
     to : tuple of str
@@ -135,7 +141,8 @@ def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
     else:
         raise ValueError('Invalid from_order: ' + str(from_ordering))
 
-    # Make sure we're using CS-phase (this should work for both real and complex bases)
+    # Make sure we're using CS-phase (this should work for both real and 
+    # complex bases)
     if from_cs == 'nocs':
         m = np.arange(-l, l + 1)
         B = ((-1.) ** (m * (m > 0)))[:, None] * B
@@ -219,7 +226,10 @@ def _cc2rc(l):
 
 
 def wigner_d_matrix(l, beta,
-                    field='real', normalization='quantum', order='centered', condon_shortley='cs'):
+                    field='real', 
+                    normalization='quantum', 
+                    order='centered', 
+                    condon_shortley='cs'):
     """
     Compute the Wigner-d matrix of degree l at beta, in the basis defined by
     (field, normalization, order, condon_shortley)
@@ -227,31 +237,34 @@ def wigner_d_matrix(l, beta,
     Parameters
     ----------
     l : int
-        The degree of the Wigner-d function, where l >= 0. Determines the size of the 
-        resulting matrix.
+        The degree of the Wigner-d function, where l >= 0. Determines the size 
+        of the resulting matrix.
     beta : float
         The rotation angle in radians for which the Wigner-d matrix is computed. 
         Must be in the range 0 <= beta <= pi.
     field : str, optional
-        Specifies whether the matrix is in the 'real' or 'complex' field. Default is 'real'.
+        Specifies whether the matrix is in the 'real' or 'complex' field. 
     normalization : str, optional
-        The normalization convention used, which can be 'quantum', 'seismology', 'geodesy', 
-        or 'nfft'. Default is 'quantum'.
+        The normalization convention used, which can be 'quantum', 'seismology',
+        'geodesy', or 'nfft'.
     order : str, optional
-        The ordering convention of the matrix, either 'centered' or 'block'. Default is 'centered'.
+        The ordering convention of the matrix, either 'centered' or 'block'. 
     condon_shortley : str, optional
-        Specifies whether to use the Condon-Shortley phase, 'cs' or 'nocs'. Default is 'cs'.
+        Specifies whether to use the Condon-Shortley phase, 'cs' or 'nocs'. 
 
     Returns
     -------
     ndarray
-        The Wigner-d matrix d^l_mn(beta) of dimensions (2l + 1) x (2l + 1) in the chosen basis.
+        The Wigner-d matrix d^l_mn(beta) of dimensions (2l + 1) x (2l + 1) in 
+        the chosen basis.
     """
     Jd = load_J_matrix()
-    # This returns the d matrix in the (real, quantum-normalized, centered, cs) convention
+    # This returns the d matrix in the (real, quantum-normalized, centered, cs) 
+    # convention
     d = rot_mat(alpha=0., beta=beta, gamma=0., l=l, J=Jd[l])
 
-    if (field, normalization, order, condon_shortley) != ('real', 'quantum', 'centered', 'cs'):
+    if (field, normalization, order, condon_shortley) != \
+        ('real', 'quantum', 'centered', 'cs'):
         # TODO use change of basis function instead of matrix?
         B = change_of_basis_matrix(
             l,
@@ -272,7 +285,10 @@ def wigner_d_matrix(l, beta,
 
 
 def wigner_D_matrix(l, alpha, beta, gamma,
-                    field='real', normalization='quantum', order='centered', condon_shortley='cs'):
+                    field='real', 
+                    normalization='quantum', 
+                    order='centered', 
+                    condon_shortley='cs'):
     """
     Evaluate the Wigner-d matrix D^l_mn(alpha, beta, gamma)
 
@@ -288,25 +304,26 @@ def wigner_D_matrix(l, alpha, beta, gamma,
     gamma : float
         Third Euler angle for rotation (range: 0 <= gamma <= 2pi).
     field : str, optional
-        Specifies whether the matrix is in the 'real' or 'complex' field. Default is 'real'.
+        Specifies whether the matrix is in the 'real' or 'complex' field. 
     normalization : str, optional
-        The normalization convention used, can be 'quantum', 'seismology', 'geodesy', 
-        or 'nfft'. Default is 'quantum'.
+        The normalization convention used, can be 'quantum', 'seismology', 
+        'geodesy', or 'nfft'. 
     order : str, optional
-        The ordering convention of the matrix, either 'centered' or 'block'. Default is 'centered'.
+        The ordering convention of the matrix, either 'centered' or 'block'. 
     condon_shortley : str, optional
-        Specifies whether to use the Condon-Shortley phase, 'cs' or 'nocs'. Default is 'cs'.
+        Specifies whether to use the Condon-Shortley phase, 'cs' or 'nocs'. 
 
     Returns
     -------
     ndarray
-        The Wigner-D matrix D^l_mn(alpha, beta, gamma) of dimensions (2l + 1) x (2l + 1)
-        in the chosen basis.
+        The Wigner-D matrix D^l_mn(alpha, beta, gamma) of dimensions 
+        (2l + 1) x (2l + 1) in the chosen basis.
     """
     Jd = load_J_matrix()
     D = rot_mat(alpha=alpha, beta=beta, gamma=gamma, l=l, J=Jd[l])
 
-    if (field, normalization, order, condon_shortley) != ('real', 'quantum', 'centered', 'cs'):
+    if (field, normalization, order, condon_shortley) != \
+        ('real', 'quantum', 'centered', 'cs'):
         B = change_of_basis_matrix(
             l,
             frm=('real', 'quantum', 'centered', 'cs'),
@@ -338,7 +355,8 @@ def quadrature_weights(b, grid_type='SOFT'):
     This grid can be obtained from the function: np.meshgrid
 
     The quadrature weights for this grid are
-    w_B(j) = 2/b * sin(pi(2j + 1) / 4b) * sum_{k=0}^{b-1} 1 / (2 k + 1) sin((2j + 1)(2k + 1) pi / 4b)
+    w_B(j) = 2/b * sin(pi(2j + 1) / 4b) * sum_{k=0}^{b-1} 1 
+    / (2 k + 1) sin((2j + 1)(2k + 1) pi / 4b)
     This is eq. 23 in [1] and eq. 2.15 in [2].
 
     Parameters
@@ -346,8 +364,9 @@ def quadrature_weights(b, grid_type='SOFT'):
     b : int
         The bandwidth parameter. The grid will have the shape (2b x 2b x 2b).
     grid_type : str, optional
-        The type of grid used for the calculation. Default is 'SOFT', referring to
-        the grid used in SO(3) Fourier Transforms as defined by Kostelec & Rockmore.
+        The type of grid used for the calculation. Default is 'SOFT', referring 
+        to the grid used in SO(3) Fourier Transforms as defined by 
+        Kostelec & Rockmore.
 
     Returns
     -------
@@ -356,7 +375,8 @@ def quadrature_weights(b, grid_type='SOFT'):
 
     References
     ----------
-    [1] Peter J. Kostelec and Daniel N. Rockmore, "SOFT: SO(3) Fourier Transforms".
+    [1] Peter J. Kostelec and Daniel N. Rockmore, "SOFT: SO(3) Fourier 
+    Transforms".
     [2] Peter J. Kostelec and Daniel N. Rockmore, "FFTs on the Rotation Group".
     """
     if grid_type == 'SOFT':
@@ -382,9 +402,10 @@ def _setup_wigner(b, nl, weighted):
 
 
 def _setup_so3_fft(b, nl, weighted):
-    """Set up the necessary components for performing an SO(3) Fourier transform up to 
-    a specified bandwidth. This function computes a series of Wigner-d matrices 
-    and applies quadrature weights appropriate for the SO(3) Fourier transform.
+    """Set up the necessary components for performing an SO(3) Fourier 
+    transform up to a specified bandwidth. This function computes a series of 
+    Wigner-d matrices and applies quadrature weights appropriate for the SO(3) 
+    Fourier transform.
 
     Parameters
     ----------
@@ -392,20 +413,21 @@ def _setup_so3_fft(b, nl, weighted):
         Bandwidth parameter determining the resolution of the transform. The 
         number of grid points in beta is 2b.
     nl : int
-        The maximum degree 'l' for which the Wigner-d matrices are computed. This 
-        value sets the limit on the size of the matrices, with each having dimensions 
-        (2l + 1) x (2l + 1).
+        The maximum degree 'l' for which the Wigner-d matrices are computed. 
+        This value sets the limit on the size of the matrices, with each having 
+        dimensions (2l + 1) x (2l + 1).
     weighted : bool
-        A flag indicating whether the quadrature weights should be applied. If True, 
-        the Wigner-d matrices are weighted according to the SO(3) Fourier transform 
-        quadrature weights. If False, they are scaled by a factor of (2l + 1).
+        A flag indicating whether the quadrature weights should be applied. 
+        If True, the Wigner-d matrices are weighted according to the SO(3) 
+        Fourier transform quadrature weights. If False, they are scaled by a 
+        factor of (2l + 1).
 
     Returns
     -------
     ndarray
         A 2D array of shape (2b, sum(2l + 1)^2 for l=0 to nl-1) containing the 
-        flattened Wigner-d matrices for each beta and each degree l, appropriately 
-        weighted or scaled.
+        flattened Wigner-d matrices for each beta and each degree l, 
+        appropriately weighted or scaled.
     """
     betas = (np.arange(2 * b) + 0.5) / (2 * b) * np.pi
     w = quadrature_weights(b)
@@ -416,7 +438,10 @@ def _setup_so3_fft(b, nl, weighted):
         ds = []
         for l in range(nl):
             d = wigner_d_matrix(l, beta,
-                                field='complex', normalization='quantum', order='centered', condon_shortley='cs')
+                                field='complex', 
+                                normalization='quantum', 
+                                order='centered', 
+                                condon_shortley='cs')
             d = d.reshape(((2 * l + 1) ** 2,))
 
             if weighted:
@@ -434,42 +459,47 @@ def _setup_so3_fft(b, nl, weighted):
 
 def so3_rfft(x, for_grad=False, b_out=None):
     """
-    Perform a real Fourier transform on the SO(3) group. This function transforms 
-    a signal defined on the 3D rotation group to its spectral representation using 
-    the Wigner-D functions.
+    Perform a real Fourier transform on the SO(3) group. This function 
+    transforms a signal defined on the 3D rotation group to its spectral 
+    representation using the Wigner-D functions.
 
     Parameters
     ----------
     x : ndarray
-        The input signal array with dimensions [..., beta, alpha, gamma], where 'beta', 
-        'alpha', and 'gamma' are the Euler angles defining the rotation, and '...' 
-        represents any number of leading batch dimensions.
+        The input signal array with dimensions [..., beta, alpha, gamma], 
+        where 'beta', 'alpha', and 'gamma' are the Euler angles defining the 
+        rotation, and '...' represents any number of leading batch dimensions.
     for_grad : bool, optional
-        If True, the Wigner-D matrices are not weighted, which is required for gradient 
-        computation.
+        If True, the Wigner-D matrices are not weighted, which is required for 
+        gradient computation.
     b_out : int, optional
-        The bandwidth of the output. If None, it defaults to the input bandwidth.
+        The bandwidth of the output. If None, it defaults to the input 
+        bandwidth.
 
     Returns
     -------
     ndarray
         The spectral representation of the input signal with dimensions 
-        [l * m * n, ..., complex], where 'l * m * n' represents the spectral coefficients 
-        and '...' are the batch dimensions. The output is complex-valued.
+        [l * m * n, ..., complex], where 'l * m * n' represents the spectral 
+        coefficients and '...' are the batch dimensions. 
+        The output is complex-valued.
     """
     b_in = x.shape[-1] // 2
 
     if x.shape[-1] != 2 * b_in:
-        raise ValueError(f"Expected the last dimension of input to be twice the \
-                         value of b_in (2 * {b_in}), but got {x.shape[-1]}.")
+        raise ValueError(f"Expected the last dimension of input to be twice \
+                         the value of b_in (2 * {b_in}), but got \
+                            {x.shape[-1]}.")
 
     if x.shape[-2] != 2 * b_in:
-        raise ValueError(f"Expected the second-to-last dimension of input to be \
-                         twice the value of b_in (2 * {b_in}), but got {x.shape[-2]}.")
+        raise ValueError(f"Expected the second-to-last dimension of input to \
+                         be twice the value of b_in (2 * {b_in}), but got \
+                            {x.shape[-2]}.")
 
     if x.shape[-3] != 2 * b_in:
-        raise ValueError(f"Expected the third-to-last dimension of input to be \
-                         twice the value of b_in (2 * {b_in}), but got {x.shape[-3]}.")
+        raise ValueError(f"Expected the third-to-last dimension of input to \
+                         be twice the value of b_in (2 * {b_in}), but got \
+                            {x.shape[-3]}.")
 
     if b_out is None:
         b_out = b_in
@@ -516,29 +546,29 @@ def so3_rfft(x, for_grad=False, b_out=None):
 def so3_rifft(x, for_grad=False, b_out=None):
     """
     Perform an inverse real Fourier transform on the SO(3) group. This function 
-    transforms a spectral representation back into its signal representation on the 
-    3D rotation group using the inverse Wigner-D functions.
+    transforms a spectral representation back into its signal representation on 
+    the 3D rotation group using the inverse Wigner-D functions.
 
     Parameters
     ----------
     x : ndarray
-        The input spectral representation with dimensions [l * m * n, ..., complex], 
-        where 'l * m * n' represents the spectral coefficients and '...' are the 
-        batch dimensions. The input must be complex-valued (last dimension size 2).
+        The input spectral representation with dimensions 
+        [l * m * n, ..., complex], where 'l * m * n' represents the spectral 
+        coefficients and '...' are the batch dimensions. The input must be 
+        complex-valued (last dimension size 2).
     for_grad : bool, optional
-        If True, the Wigner-D matrices are not weighted, which is required for gradient 
-        computation.
+        If True, the Wigner-D matrices are not weighted, which is required for 
+        gradient computation.
     b_out : int, optional
-        The bandwidth of the output. If None, it defaults to the input bandwidth.
+        The bandwidth of the output. If None, it defaults to the input 
+        bandwidth.
 
     Returns
     -------
     ndarray
         The signal representation of the spectral input with dimensions 
-        [..., beta, alpha, gamma], where 'beta', 'alpha', and 'gamma' are the Euler 
-        angles defining the rotation and '...' are the 
-        batch dimensions.
-
+        [..., beta, alpha, gamma], where 'beta', 'alpha', and 'gamma' are the 
+        Euler angles defining the rotation and '...' are the batch dimensions.
     """
     assert x.shape[-1] == 2
     nspec = x.shape[0]
@@ -563,19 +593,20 @@ def so3_rifft(x, for_grad=False, b_out=None):
         end = start + (2 * l + 1)**2
         s = slice(start, end)
 
-        out = np.einsum("mnzc,bmn->zbmnc", x[s].reshape(
-            2 * l + 1, 2 * l + 1, -1, 2), wigner[:, s].reshape(-1, 2 * l + 1, 2 * l + 1))
+        out = np.einsum("mnzc,bmn->zbmnc", 
+                        x[s].reshape(2 * l + 1, 2 * l + 1, -1, 2), 
+                        wigner[:, s].reshape(-1, 2 * l + 1, 2 * l + 1))
         l1 = min(l, b_out - 1)
 
-        output[:, :, :l1 + 1, :l1 + 1] += out[:,
-                                              :, l: l + l1 + 1, l: l + l1 + 1]
+        output[:, :, :l1 + 1, :l1 + 1] += \
+            out[:, :, l: l + l1 + 1, l: l + l1 + 1]
         if l > 0:
             output[:, :, -l1:, :l1 + 1] += out[:, :, l - l1: l, l: l + l1 + 1]
             output[:, :, :l1 + 1, -l1:] += out[:, :, l: l + l1 + 1, l - l1: l]
             output[:, :, -l1:, -l1:] += out[:, :, l - l1: l, l - l1: l]
 
-    ifft_output = np.fft.ifft2(
-        (output[..., 0] + 1j * output[..., 1]), axes=[2, 3]) * float(output.shape[-2]) ** 2
+    ifft_output = np.fft.ifft2((output[..., 0] + 1j * output[..., 1]), 
+                               axes=[2, 3]) * float(output.shape[-2]) ** 2
     output = np.real(ifft_output)
 
     output = np.reshape(output, [*batch_size, 2 * b_out, 2 * b_out, 2 * b_out])
@@ -583,18 +614,19 @@ def so3_rifft(x, for_grad=False, b_out=None):
 
 
 def complex_mm(x, y, conj_x=False, conj_y=False):
-    """Perform matrix multiplication (mm) of complex matrices. Given two complex matrices
-    'x' and 'y', this function computes their product. The function also supports 
-    optional conjugation of either or both input matrices before multiplication.
+    """Perform matrix multiplication (mm) of complex matrices. Given two complex
+      matrices 'x' and 'y', this function computes their product. The function 
+      also supports optional conjugation of either or both input matrices before
+      multiplication.
 
     Parameters
     ----------
     x : ndarray
-        First input complex matrix of shape [i, k, complex] (M, K, 2), where the last 
-        dimension holds the real and imaginary parts.
+        First input complex matrix of shape [i, k, complex] (M, K, 2), where the
+        last dimension holds the real and imaginary parts.
     y : ndarray
-        Second input complex matrix of shape [k, j, complex] (K, N, 2), similar in 
-        structure to 'x'.
+        Second input complex matrix of shape [k, j, complex] (K, N, 2), similar 
+        in structure to 'x'.
     conj_x : bool, optional
         If True, conjugate matrix 'x' before multiplication. Default is False.
     conj_y : bool, optional
