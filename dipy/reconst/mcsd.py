@@ -439,11 +439,12 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     bvals : ndarray
         Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
-    wm_rf : (4, len(bvals)) ndarray
-        Response function of the WM tissue, for each bvals.
-    gm_rf : (4, len(bvals)) ndarray
+    wm_rf : (N-1, 4) ndarray
+        Response function of the WM tissue, for each bvals,
+        where N is the number of unique b-values including the b0.
+    gm_rf : (N-1, 4) ndarray
         Response function of the GM tissue, for each bvals.
-    csf_rf : (4, len(bvals)) ndarray
+    csf_rf : (N-1, 4) ndarray
         Response function of the CSF tissue, for each bvals.
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
