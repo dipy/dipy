@@ -2,13 +2,19 @@ import logging
 import os
 from tempfile import mkstemp, TemporaryDirectory
 
+import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti
-from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
-from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
+from dipy.io.image import load_nifti, save_nifti
+from dipy.io.streamline import load_tractogram
+from dipy.testing import assert_true
+from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
+                               ConcatenateTractogramFlow, ConvertSHFlow,
+                               ConvertTractogramFlow)
+
 
 fname_log = mkstemp()[1]
 
@@ -30,13 +36,23 @@ def test_io_info():
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
 
-    file = open(fname_log, 'r')
-    lines = file.readlines()
-    try:
-        npt.assert_equal(lines[-3], 'INFO Total number of unit bvectors 25\n')
-    except IndexError:  # logging maybe disabled in IDE setting
-        pass
-    file.close()
+    filepath_dix, _, _ = get_fnames('gold_standard_tracks')
+    io_info_flow = IoInfoFlow()
+    io_info_flow.run([filepath_dix['gs.trx'], filepath_dix['gs.trk']])
+
+    io_info_flow = IoInfoFlow()
+    npt.assert_raises(TypeError, io_info_flow.run, filepath_dix['gs.tck'])
+
+    io_info_flow = IoInfoFlow()
+    io_info_flow.run(filepath_dix['gs.tck'], reference=filepath_dix['gs.nii'])
+
+    with open(fname_log, 'r') as file:
+        lines = file.readlines()
+        try:
+            npt.assert_equal(lines[-3],
+                             'INFO Total number of unit bvectors 25\n')
+        except IndexError:  # logging maybe disabled in IDE setting
+            pass
 
 
 def test_io_fetch():
@@ -91,3 +107,74 @@ def test_split_flow():
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_affine, affine)
+
+
+def test_concatenate_flow():
+    with TemporaryDirectory() as out_dir:
+        concatenate_flow = ConcatenateTractogramFlow()
+        data_path, _, _ = get_fnames('gold_standard_tracks')
+        input_files = [v for k, v in data_path.items()
+                       if k in ['gs.trk', 'gs.tck', 'gs.trx', 'gs.fib']
+                       ]
+        concatenate_flow.run(*input_files, out_dir=out_dir)
+        assert_true(
+            concatenate_flow.last_generated_outputs['out_extension'].endswith(
+                'trx'))
+        assert_true(os.path.isfile(
+            concatenate_flow.last_generated_outputs['out_tractogram'] +
+            ".trx"))
+
+        trk = load_tractogram(
+            concatenate_flow.last_generated_outputs['out_tractogram'] + ".trx",
+            'same')
+        npt.assert_equal(len(trk), 13)
+
+
+def test_convert_sh_flow():
+    with TemporaryDirectory() as out_dir:
+        filepath_in = os.path.join(out_dir, 'sh_coeff_img.nii.gz')
+        filename_out = 'sh_coeff_img_converted.nii.gz'
+        filepath_out = os.path.join(out_dir, filename_out)
+
+        # Create an input image
+        dim0, dim1, dim2 = 2, 3, 3  # spatial dimensions of array
+        num_sh_coeffs = 15  # 15 sh coeffs means l_max is 4
+        img_in = np.arange(
+            dim0*dim1*dim2*num_sh_coeffs, dtype=float
+        ).reshape(dim0, dim1, dim2, num_sh_coeffs)
+        save_nifti(filepath_in, img_in, np.eye(4))
+
+        # Compute expected result to compare against later
+        expected_img_out = convert_sh_descoteaux_tournier(img_in)
+
+        # Run the workflow and load the output
+        workflow = ConvertSHFlow()
+        workflow.run(
+            filepath_in,
+            out_dir=out_dir,
+            out_file=filename_out,
+        )
+        img_out, _ = load_nifti(filepath_out)
+
+        # Compare
+        npt.assert_array_almost_equal(img_out, expected_img_out)
+
+
+def test_convert_tractogram_flow():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames('gold_standard_tracks')
+        input_files = [v for k, v in data_path.items()
+                       if k in ['gs.tck', 'gs.trx']]
+
+        convert_tractogram_flow = ConvertTractogramFlow(mix_names=True)
+        convert_tractogram_flow.run(input_files,
+                                    reference=data_path['gs.nii'],
+                                    out_dir=out_dir)
+
+        convert_tractogram_flow._force_overwrite = True
+        npt.assert_raises(ValueError, convert_tractogram_flow.run,
+                          input_files, out_dir=out_dir)
+
+        npt.assert_warns(UserWarning, convert_tractogram_flow.run,
+                         data_path['gs.trx'], out_dir=out_dir,
+                         out_tractogram='gs_converted.trx')

@@ -37,7 +37,6 @@ classifiers = [
 ]
 dynamic = ['version']
 dependencies = [
-    "cython>=0.29.24, !=0.29.29",
     "numpy>=1.22.4",
     "scipy>=1.8",
     "nibabel>=3.0.0",
@@ -76,11 +75,14 @@ dipy_labelsbundles = "dipy.workflows.cli:run"
 dipy_median_otsu = "dipy.workflows.cli:run"
 dipy_recobundles = "dipy.workflows.cli:run"
 dipy_reslice = "dipy.workflows.cli:run"
+dipy_sh_convert_mrtrix = "dipy.workflows.cli:run"
 dipy_snr_in_cc = "dipy.workflows.cli:run"
 dipy_split = "dipy.workflows.cli:run"
 dipy_track = "dipy.workflows.cli:run"
 dipy_track_pft = "dipy.workflows.cli:run"
 dipy_slr = "dipy.workflows.cli:run"
+dipy_concatenate_tractograms = "dipy.workflows.cli:run"
+dipy_convert_tractogram = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]

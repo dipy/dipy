@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -7,6 +8,7 @@ import pytest
 from dipy.data import DATA_DIR
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
+from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
@@ -131,6 +133,21 @@ def test_horizon(rng):
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_horizon_wrong_dtype_images():
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = np.random.rand(197, 233, 189).astype(np.bool_)
+    images = [(data, affine)]
+    with warnings.catch_warnings(record=True) as l_warns:
+        horizon(images=images, interactive=False)
+        check_for_warnings(l_warns, 'skipping image 1, passed image is not in '
+                           + 'numerical format')
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

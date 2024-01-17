@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_python: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
         cibw_manylinux: [manylinux2014]
         cibw_arch: ["x86_64", "aarch64"]
     steps:
@@ -59,7 +59,7 @@ jobs:
             CIBW_TEST_SKIP: "*_aarch64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
             name: wheels
             path: ./dist/*.whl
@@ -72,7 +72,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_python: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
         cibw_manylinux: [manylinux1]
         cibw_arch: ["x86_64", "arm64"]
     steps:
@@ -98,7 +98,7 @@ jobs:
             CIBW_TEST_SKIP: "*_aarch64 *-macosx_arm64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
             name: wheels
             path: ./dist/*.whl
@@ -111,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest]
-        cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_python: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
         cibw_arch: ["AMD64"]
     steps:
       - uses: actions/checkout@v4
@@ -129,7 +129,7 @@ jobs:
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
             name: wheels
             path: ./dist/*.whl
@@ -142,7 +142,7 @@ jobs:
       if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
       runs-on: ubuntu-latest
       steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: wheels

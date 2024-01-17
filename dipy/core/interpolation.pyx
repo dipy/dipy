@@ -89,7 +89,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
 cdef cnp.npy_intp offset(cnp.npy_intp *indices,
                          cnp.npy_intp *strides,
                          int lenind,
-                         int typesize) nogil:
+                         int typesize) noexcept nogil:
     """ Access any element of any ndimensional numpy array using cython.
 
     Parameters
@@ -114,7 +114,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     return summ
 
 
-cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) nogil:
+cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) noexcept nogil:
     """Splits a global offset into an integer index and a relative offset"""
     offset[0] -= .5
     if offset[0] <= 0:
@@ -129,7 +129,7 @@ cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) no
 
 
 @cython.profile(False)
-cdef inline float wght(int i, float r) nogil:
+cdef inline float wght(int i, float r) noexcept nogil:
     if i:
         return r
     else:
@@ -244,7 +244,7 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
 
 cdef void _trilinear_interpolation_iso(double *X,
                                        double *W,
-                                       cnp.npy_intp *IN) nogil:
+                                       cnp.npy_intp *IN) noexcept nogil:
     """ Interpolate in 3d volumes given point X
 
     Returns
@@ -295,7 +295,7 @@ cdef void _trilinear_interpolation_iso(double *X,
 cdef int trilinear_interpolate4d_c(
         double[:, :, :, :] data,
         double* point,
-        double[:] result) nogil:
+        double[:] result) noexcept nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
@@ -438,7 +438,7 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
 
 
 cdef inline int _interpolate_vector_2d(floating[:, :, :] field, double dii,
-                                       double djj, floating *out) nogil:
+                                       double djj, floating *out) noexcept nogil:
     r"""Bilinear interpolation of a 2D vector field
 
     Interpolates the 2D displacement field at (dii, djj) and stores the
@@ -548,7 +548,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
 
 
 cdef inline int _interpolate_scalar_2d(floating[:, :] image, double dii,
-                                       double djj, floating *out) nogil:
+                                       double djj, floating *out) noexcept nogil:
     r"""Bilinear interpolation of a 2D scalar image
 
     Interpolates the 2D image at (dii, djj) and stores the
@@ -652,7 +652,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
 
 
 cdef inline int _interpolate_scalar_nn_2d(number[:, :] image, double dii,
-                                          double djj, number *out) nogil:
+                                          double djj, number *out) noexcept nogil:
     r"""Nearest-neighbor interpolation of a 2D scalar image
 
     Interpolates the 2D image at (dii, djj) using nearest neighbor
@@ -746,7 +746,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
 
 cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
                                          double dii, double djj,
-                                         number *out) nogil:
+                                         number *out) noexcept nogil:
     r"""Nearest-neighbor interpolation of a 3D scalar image
 
     Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
@@ -849,7 +849,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
 
 cdef inline int _interpolate_scalar_3d(floating[:, :, :] volume,
                                        double dkk, double dii, double djj,
-                                       floating *out) nogil:
+                                       floating *out) noexcept nogil:
     r"""Trilinear interpolation of a 3D scalar image
 
     Interpolates the 3D image at (dkk, dii, djj) and stores the
@@ -982,7 +982,7 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
 
 cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
                                        double dii, double djj,
-                                       floating* out) nogil:
+                                       floating* out) noexcept nogil:
     r"""Trilinear interpolation of a 3D vector field
 
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the

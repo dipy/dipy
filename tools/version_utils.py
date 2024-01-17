@@ -19,7 +19,7 @@ import argparse
 
 
 MAJOR = 1
-MINOR = 8
+MINOR = 9
 MICRO = 0
 ISRELEASED = False
 IS_RELEASE_BRANCH = False

@@ -39,13 +39,13 @@ cdef class Transform:
         self.number_of_parameters = -1
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         return -1
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         return
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] T)nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] T) noexcept nogil:
         return
 
     def jacobian(self, double[:] theta, double[:] x):
@@ -122,7 +122,7 @@ cdef class TranslationTransform2D(Transform):
         self.number_of_parameters = 2
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the 2D translation transform
         The transformation is given by:
 
@@ -157,7 +157,7 @@ cdef class TranslationTransform2D(Transform):
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -169,7 +169,7 @@ cdef class TranslationTransform2D(Transform):
         """
         theta[:2] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D translation transform
 
         Parameters
@@ -192,7 +192,7 @@ cdef class TranslationTransform3D(Transform):
         self.number_of_parameters = 3
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the 3D translation transform
         The transformation is given by:
 
@@ -228,7 +228,7 @@ cdef class TranslationTransform3D(Transform):
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -240,7 +240,7 @@ cdef class TranslationTransform3D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 3D translation transform
 
         Parameters
@@ -264,7 +264,7 @@ cdef class RotationTransform2D(Transform):
         self.number_of_parameters = 1
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 2D rotation with parameter theta, at x
 
         The transformation is given by:
@@ -301,7 +301,7 @@ cdef class RotationTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -313,7 +313,7 @@ cdef class RotationTransform2D(Transform):
         """
         theta[0] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D rotation transform
 
         Parameters
@@ -339,7 +339,7 @@ cdef class RotationTransform3D(Transform):
         self.number_of_parameters = 3
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 3D rotation with parameters theta, at x
 
         Parameters
@@ -382,7 +382,7 @@ cdef class RotationTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -394,7 +394,7 @@ cdef class RotationTransform3D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 3D rotation transform
 
         The matrix is the product of rotation matrices of angles theta[0],
@@ -441,7 +441,7 @@ cdef class RigidTransform2D(Transform):
         self.number_of_parameters = 3
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 2D rigid transform (rotation + translation)
 
         The transformation is given by:
@@ -482,7 +482,7 @@ cdef class RigidTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -497,7 +497,7 @@ cdef class RigidTransform2D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D rigid transform
 
         Parameters
@@ -533,7 +533,7 @@ cdef class RigidTransform3D(Transform):
         self.number_of_parameters = 6
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 3D rigid transform (rotation + translation)
 
         Parameters
@@ -587,7 +587,7 @@ cdef class RigidTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -605,7 +605,7 @@ cdef class RigidTransform3D(Transform):
         """
         theta[:6] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 3D rigid transform
 
         Parameters
@@ -658,7 +658,7 @@ cdef class RigidIsoScalingTransform2D(Transform):
         self.number_of_parameters = 4
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 2D rigid isoscaling transform.
 
         The transformation (rotation + translation + isoscaling) is given by:
@@ -699,7 +699,7 @@ cdef class RigidIsoScalingTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         """ Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -716,7 +716,7 @@ cdef class RigidIsoScalingTransform2D(Transform):
         theta[:3] = 0
         theta[3] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D rigid isoscaling transform
 
         Parameters
@@ -757,7 +757,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         self.number_of_parameters = 7
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 3D isoscaling rigid transform.
 
         (rotation + translation + scaling)
@@ -825,7 +825,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         """ Parameter values corresponding to the identity
 
         Sets in theta the parameter values corresponding to the identity
@@ -847,7 +847,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         theta[:6] = 0
         theta[6] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         """ Matrix associated with the 3D rigid isoscaling transform
 
         Parameters
@@ -903,7 +903,7 @@ cdef class RigidScalingTransform2D(Transform):
         self.number_of_parameters = 5
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of a 2D rigid scaling transform.
 
         The transformation (rotation + translation + scaling) is given by:
@@ -946,7 +946,7 @@ cdef class RigidScalingTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         """ Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -964,7 +964,7 @@ cdef class RigidScalingTransform2D(Transform):
         theta[:3] = 0
         theta[3], theta[4] = 1, 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D rigid scaling transform
 
         Parameters
@@ -1007,7 +1007,7 @@ cdef class RigidScalingTransform3D(Transform):
         self.number_of_parameters = 9
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         """Jacobian matrix of a 3D rigid scaling transform.
 
         (rotation + translation + scaling)
@@ -1079,7 +1079,7 @@ cdef class RigidScalingTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -1101,7 +1101,7 @@ cdef class RigidScalingTransform3D(Transform):
         theta[:6] = 0
         theta[6:9] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 3D rigid scaling transform
 
         Parameters
@@ -1152,7 +1152,7 @@ cdef class ScalingTransform2D(Transform):
         self.number_of_parameters = 1
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the isotropic 2D scale transform
         The transformation is given by:
 
@@ -1181,7 +1181,7 @@ cdef class ScalingTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -1193,7 +1193,7 @@ cdef class ScalingTransform2D(Transform):
         """
         theta[0] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 2D (isotropic) scaling transform
 
         Parameters
@@ -1216,7 +1216,7 @@ cdef class ScalingTransform3D(Transform):
         self.number_of_parameters = 1
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the isotropic 3D scale transform
         The transformation is given by:
 
@@ -1245,7 +1245,7 @@ cdef class ScalingTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -1257,7 +1257,7 @@ cdef class ScalingTransform3D(Transform):
         """
         theta[0] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with the 3D (isotropic) scaling transform
 
         Parameters
@@ -1281,7 +1281,7 @@ cdef class AffineTransform2D(Transform):
         self.number_of_parameters = 6
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the 2D affine transform
         The transformation is given by:
 
@@ -1325,7 +1325,7 @@ cdef class AffineTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -1338,7 +1338,7 @@ cdef class AffineTransform2D(Transform):
         theta[0], theta[1], theta[2] = 1, 0, 0
         theta[3], theta[4], theta[5] = 0, 1, 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with a general 2D affine transform
 
         The transformation is given by the matrix:
@@ -1367,7 +1367,7 @@ cdef class AffineTransform3D(Transform):
         self.number_of_parameters = 12
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
-                       double[:, :] J)nogil:
+                       double[:, :] J) noexcept nogil:
         r""" Jacobian matrix of the 3D affine transform
         The transformation is given by:
 
@@ -1422,7 +1422,7 @@ cdef class AffineTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
-    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+    cdef void _get_identity_parameters(self, double[:] theta) noexcept nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
         transform
@@ -1436,7 +1436,7 @@ cdef class AffineTransform3D(Transform):
         theta[4], theta[5], theta[6], theta[7] = 0, 1, 0, 0
         theta[8], theta[9], theta[10], theta[11] = 0, 0, 1, 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) noexcept nogil:
         r""" Matrix associated with a general 3D affine transform
 
         The transformation is given by the matrix:

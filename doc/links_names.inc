@@ -81,6 +81,10 @@
 .. _cython: https://cython.org
 .. _travis-ci: https://travis-ci.com/
 
+.. Scientific Python practices
+.. _`Scientific Python`: https://scientific-python.org/
+.. _`SPEC 0 — Minimum Supported Versions`: https://scientific-python.org/specs/spec-0000/
+
 .. Other python projects
 .. _numpy: https://numpy.org
 .. _scipy: https://www.scipy.org

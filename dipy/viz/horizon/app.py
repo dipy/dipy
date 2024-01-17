@@ -12,7 +12,7 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
-from dipy.viz.horizon.util import check_img_shapes
+from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -442,6 +442,7 @@ class Horizon:
                     self.__clusters_visualizer, self.cluster_thr))
 
         synchronize_slices = False
+        self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors

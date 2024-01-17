@@ -2,7 +2,7 @@ from numpy.testing import assert_equal
 from dipy.align.streamwarp import (bundlewarp,
                                    bundlewarp_shape_analysis,
                                    bundlewarp_vector_filed)
-import pytest
+
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import set_number_of_points, Streamlines
 

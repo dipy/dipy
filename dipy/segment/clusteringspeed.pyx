@@ -53,7 +53,7 @@ cdef print_node(CentroidNode* node, prepend=""):
     return txt
 
 
-cdef void aabb_creation(Data2D streamline, float* aabb) nogil:
+cdef void aabb_creation(Data2D streamline, float* aabb) noexcept nogil:
     """ Creates AABB enveloping the given streamline.
 
     Notes
@@ -81,7 +81,7 @@ cdef void aabb_creation(Data2D streamline, float* aabb) nogil:
         aabb[d] = min_[d] + aabb[d + 3]  # center
 
 
-cdef inline int aabb_overlap(float* aabb1, float* aabb2, float padding=0.) nogil:
+cdef inline int aabb_overlap(float* aabb1, float* aabb2, float padding=0.) noexcept nogil:
     """ SIMD optimized AABB-AABB test
 
     Optimized by removing conditional branches
@@ -161,7 +161,7 @@ cdef class QuickBundlesX:
             free(self.current_streamline)
             self.current_streamline = NULL
 
-    cdef int _add_child(self, CentroidNode* node) nogil:
+    cdef int _add_child(self, CentroidNode* node) noexcept nogil:
         cdef double threshold = 0.0  # Leaf node doesn't need threshold.
         if node.level+1 < self.nb_levels:
             threshold = self.thresholds[node.level+1]
@@ -177,7 +177,7 @@ cdef class QuickBundlesX:
 
         return node.nb_children-1
 
-    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil:
+    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) noexcept nogil:
         cdef Data2D element = streamline_infos.features[0]
         cdef int C = node.size
         cdef cnp.npy_intp n, d
@@ -200,7 +200,7 @@ cdef class QuickBundlesX:
         # Update AABB
         aabb_creation(centroid, node.aabb)
 
-    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil:
+    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) noexcept nogil:
         cdef:
             float dist, dist_flip
             cnp.npy_intp k
@@ -324,11 +324,11 @@ cdef class Clusters:
         free(self.clusters_size)
         self.clusters_size = NULL
 
-    cdef int c_size(Clusters self) nogil:
+    cdef int c_size(Clusters self) noexcept nogil:
         """ Returns the number of clusters. """
         return self._nb_clusters
 
-    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) nogil except *:
+    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) noexcept nogil:
         """ Assigns an element to a cluster.
 
         Parameters
@@ -345,7 +345,7 @@ cdef class Clusters:
         self.clusters_indices[id_cluster][C] = id_element
         self.clusters_size[id_cluster] += 1
 
-    cdef int c_create_cluster(Clusters self) nogil except -1:
+    cdef int c_create_cluster(Clusters self) except -1 nogil:
         """ Creates a cluster and adds it at the end of the list.
 
         Returns
@@ -409,7 +409,7 @@ cdef class ClustersCentroid(Clusters):
         free(self._updated_centroids)
         self._updated_centroids = NULL
 
-    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) nogil except *:
+    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) noexcept nogil:
         """ Assigns an element to a cluster.
 
         In addition of keeping element's index, an updated version of the
@@ -436,7 +436,7 @@ cdef class ClustersCentroid(Clusters):
 
         Clusters.c_assign(self, id_cluster, id_element, element)
 
-    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1:
+    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) except -1 nogil:
         """ Update the centroid of a cluster.
 
         Parameters
@@ -466,7 +466,7 @@ cdef class ClustersCentroid(Clusters):
 
         return converged
 
-    cdef int c_create_cluster(ClustersCentroid self) nogil except -1:
+    cdef int c_create_cluster(ClustersCentroid self) except -1 nogil:
         """ Creates a cluster and adds it at the end of the list.
 
         Returns
@@ -504,7 +504,7 @@ cdef class QuickBundles:
         self.stats.nb_mdf_calls = 0
         self.stats.nb_aabb_calls = 0
 
-    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *:
+    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) noexcept nogil:
         """ Finds the nearest cluster of a datum given its `features` vector.
 
         Parameters
@@ -540,7 +540,7 @@ cdef class QuickBundles:
 
         return nearest_cluster
 
-    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1:
+    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) except -1 nogil:
         """ Compute the assignment step of the QuickBundles algorithm.
 
         It will assign a datum to its closest cluster according to a given
@@ -601,7 +601,7 @@ cdef class QuickBundles:
         self.clusters.c_assign(nearest_cluster.id, datum_id, features_to_add)
         return nearest_cluster.id
 
-    cdef void update_step(QuickBundles self, int cluster_id) nogil except *:
+    cdef void update_step(QuickBundles self, int cluster_id) noexcept nogil:
         """ Compute the update step of the QuickBundles algorithm.
 
         It will update the centroid of a cluster given its index.

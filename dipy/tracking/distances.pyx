@@ -116,7 +116,7 @@ def inner_3vecs(vec1, vec2):
     return cinner_3vecs(<float *> cnp.PyArray_DATA(fvec1), <float*> cnp.PyArray_DATA(fvec2))
 
 
-cdef inline float cinner_3vecs(float *vec1, float *vec2) nogil:
+cdef inline float cinner_3vecs(float *vec1, float *vec2) noexcept nogil:
     cdef int i
     cdef float ip = 0
     for i from 0<=i<3:
@@ -134,7 +134,7 @@ def sub_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
+cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
     cdef int i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]-vec2[i]
@@ -150,7 +150,7 @@ def add_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
+cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
     cdef int i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]+vec2[i]
@@ -164,7 +164,7 @@ def mul_3vecs(vec1, vec2):
                <float *> cnp.PyArray_DATA(vec_out))
     return vec_out
 
-cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
+cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
     cdef int i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]*vec2[i]
@@ -176,7 +176,7 @@ def mul_3vec(a, vec):
               <float *> cnp.PyArray_DATA(vec_out))
     return vec_out
 
-cdef inline void cmul_3vec(float a, float *vec, float *vec_out) nogil:
+cdef inline void cmul_3vec(float a, float *vec, float *vec_out) noexcept nogil:
     cdef int i
     for i from 0<=i<3:
         vec_out[i] = a*vec[i]
@@ -651,7 +651,7 @@ cdef inline cnp.float32_t czhang(cnp.npy_intp t1_len,
                                  cnp.npy_intp t2_len,
                                  cnp.float32_t *track2_ptr,
                                  cnp.float32_t *min_buffer,
-                                 int metric_type) nogil:
+                                 int metric_type) noexcept nogil:
     """ Note ``nogil`` - no python calls allowed in this function """
     cdef:
         cnp.float32_t *min_t2t1
@@ -691,7 +691,7 @@ cdef inline void min_distances(cnp.npy_intp t1_len,
                                cnp.npy_intp t2_len,
                                cnp.float32_t *track2_ptr,
                                cnp.float32_t *min_t2t1,
-                               cnp.float32_t *min_t1t2) nogil:
+                               cnp.float32_t *min_t1t2) noexcept nogil:
     cdef:
         cnp.float32_t *t1_pt
         cnp.float32_t *t2_pt
@@ -1374,7 +1374,7 @@ def point_segment_sq_distance(a, b, c):
 
 
 @cython.cdivision(True)
-cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
+cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) noexcept nogil:
     """ Calculate the squared distance from a point c to a line segment ab.
 
     """
@@ -1442,7 +1442,7 @@ def track_dist_3pts(tracka,trackb):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
+cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) noexcept nogil:
     r""" Direct and flip average distance between two tracks
 
     Parameters
@@ -1501,7 +1501,7 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
 
 
 @cython.cdivision(True)
-cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
+cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) noexcept nogil:
     """ Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
 

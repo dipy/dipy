@@ -26,62 +26,87 @@ from dipy.utils.tripwire import TripWireError
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
-fimg, fbvals, fbvecs = get_fnames('small_64D')
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
+gtab, gtab_2s, crossing_ref, signal_cross = None, None, None, None
+multi_params, Kref_sphere, DWI = None, None, None
+mevals_cross, angles_cross, frac_cross, kt_cross = None, None, None, None
+dt_sph, evals_sph, kt_sph, params_sph = None, None, None, None
 
-# 2 shells for techniques that requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
-# Simulation 1. signals of two crossing fibers are simulated
-mevals_cross = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
-                         [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
-angles_cross = [(80, 10), (80, 10), (20, 30), (20, 30)]
-fie = 0.49
-frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
-# Noise free simulates
-signal_cross, dt_cross, kt_cross = multi_tensor_dki(gtab_2s, mevals_cross,
-                                                    S0=100,
-                                                    angles=angles_cross,
-                                                    fractions=frac_cross,
-                                                    snr=None)
-evals_cross, evecs_cross = decompose_tensor(from_lower_triangular(dt_cross))
-crossing_ref = np.concatenate((evals_cross, evecs_cross[0], evecs_cross[1],
-                               evecs_cross[2], kt_cross), axis=0)
+def setup_module():
+    global gtab, gtab_2s, crossing_ref, signal_cross
+    global multi_params, Kref_sphere, DWI
+    global mevals_cross, angles_cross, frac_cross, kt_cross
+    global dt_sph, evals_sph, kt_sph, params_sph
 
-# Simulation 2. Spherical kurtosis tensor.- for white matter, this can be a
-# biological implausible scenario, however this simulation is useful for
-# testing the estimation of directional apparent kurtosis and the mean
-# kurtosis, since its directional and mean kurtosis ground truth are a constant
-# which can be calculated easily mathematically.
-Di = 0.00099
-De = 0.00226
-mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
-frac_sph = [50, 50]
-signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
-                                              fractions=frac_sph,
-                                              snr=None)
-evals_sph, evecs_sph = decompose_tensor(from_lower_triangular(dt_sph))
-params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
-                             evecs_sph[2], kt_sph), axis=0)
-# Compute ground truth - since KT is spherical, apparent kurtosis coefficient
-# for all gradient directions and mean kurtosis have to be equal to Kref_sph.
-f = 0.5
-Dg = f*Di + (1-f)*De
-Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
+    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
 
-# Simulation 3. Multi-voxel simulations - dataset of four voxels is simulated.
-# Since the objective of this simulation is to see if procedures are able to
-# work with multi-dimensional data all voxels contains the same crossing signal
-# produced in simulation 1.
+    # 2 shells for techniques that requires multishell data
+    bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
-DWI = np.zeros((2, 2, 1, len(gtab_2s.bvals)))
-DWI[0, 0, 0] = DWI[0, 1, 0] = DWI[1, 0, 0] = DWI[1, 1, 0] = signal_cross
-multi_params = np.zeros((2, 2, 1, 27))
-multi_params[0, 0, 0] = multi_params[0, 1, 0] = crossing_ref
-multi_params[1, 0, 0] = multi_params[1, 1, 0] = crossing_ref
+    # Simulation 1. signals of two crossing fibers are simulated
+    mevals_cross = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
+                            [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    angles_cross = [(80, 10), (80, 10), (20, 30), (20, 30)]
+    fie = 0.49
+    frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+    # Noise free simulates
+    signal_cross, dt_cross, kt_cross = multi_tensor_dki(gtab_2s, mevals_cross,
+                                                        S0=100,
+                                                        angles=angles_cross,
+                                                        fractions=frac_cross,
+                                                        snr=None)
+    evals_cross, evecs_cross = decompose_tensor(
+        from_lower_triangular(dt_cross))
+    crossing_ref = np.concatenate((evals_cross, evecs_cross[0], evecs_cross[1],
+                                   evecs_cross[2], kt_cross), axis=0)
+
+    # Simulation 2. Spherical kurtosis tensor.- for white matter, this can be a
+    # biological implausible scenario, however this simulation is useful for
+    # testing the estimation of directional apparent kurtosis and the mean
+    # kurtosis, since its directional and mean kurtosis ground truth are a
+    # constant which can be calculated easily mathematically.
+    Di = 0.00099
+    De = 0.00226
+    mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
+    frac_sph = [50, 50]
+    signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
+                                                  fractions=frac_sph, snr=None)
+    evals_sph, evecs_sph = decompose_tensor(from_lower_triangular(dt_sph))
+    params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
+                                evecs_sph[2], kt_sph), axis=0)
+    # Compute ground truth - since KT is spherical, apparent kurtosis
+    # coefficient for all gradient directions and mean kurtosis have to be
+    # equal to Kref_sph.
+    f = 0.5
+    Dg = f*Di + (1-f)*De
+    Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
+
+    # Simulation 3. Multi-voxel simulations - dataset of four voxels is
+    # simulated. Since the objective of this simulation is to see if
+    # procedures are able to work with multi-dimensional data all voxels
+    # contains the same crossing signal produced in simulation 1.
+
+    DWI = np.zeros((2, 2, 1, len(gtab_2s.bvals)))
+    DWI[0, 0, 0] = DWI[0, 1, 0] = DWI[1, 0, 0] = DWI[1, 1, 0] = signal_cross
+    multi_params = np.zeros((2, 2, 1, 27))
+    multi_params[0, 0, 0] = multi_params[0, 1, 0] = crossing_ref
+    multi_params[1, 0, 0] = multi_params[1, 1, 0] = crossing_ref
+
+
+def teardown_module():
+    global gtab, gtab_2s, crossing_ref, signal_cross
+    global multi_params, Kref_sphere, DWI
+    global mevals_cross, angles_cross, frac_cross, kt_cross
+    global dt_sph, evals_sph, kt_sph, params_sph
+    gtab, gtab_2s, crossing_ref, signal_cross = None, None, None, None
+    multi_params, Kref_sphere, DWI = None, None, None
+    mevals_cross, angles_cross, frac_cross, kt_cross = None, None, None, \
+        None
+    dt_sph, evals_sph, kt_sph, params_sph = None, None, None, None
 
 
 def test_positive_evals():
@@ -484,6 +509,7 @@ def test_compare_MK_method():
 def test_single_voxel_DKI_stats():
     # tests if AK and RK are equal to expected values for a single fiber
     # simulate randomly oriented
+    fie = 0.49
     ADi = 0.00099
     ADe = 0.00226
     RDi = 0

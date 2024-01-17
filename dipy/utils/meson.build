@@ -30,6 +30,7 @@ python_sources = [
   'multiproc.py',
   'optpkg.py',
   'parallel.py',
+  'tractogram.py',
   'tripwire.py',
   'volume.py',
   ]

@@ -261,7 +261,7 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     cdef double k2(self, double [:] x, double [:] y,
-                   double [:] r, double [:] v) nogil:
+                   double [:] r, double [:] v) noexcept nogil:
         """ Evaluate the kernel at position x relative to
         position y, with orientation r relative to orientation v.
 
@@ -308,7 +308,7 @@ cdef class EnhancementKernel:
     @cython.cdivision(True)
     cdef double [:] coordinate_map(self, double x, double y,
                                    double z, double beta,
-                                   double gamma) nogil:
+                                   double gamma) noexcept nogil:
         """ Compute a coordinate map for the kernel
 
         Parameters
@@ -371,7 +371,7 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double kernel(self, double [:] c) nogil:
+    cdef double kernel(self, double [:] c) noexcept nogil:
         """ Internal function, evaluates the kernel based on the coordinate map.
 
         Parameters
@@ -396,7 +396,7 @@ cdef double PI = 3.1415926535897932
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:] euler_angles(double [:] inp) nogil:
+cdef double [:] euler_angles(double [:] inp) noexcept nogil:
     """ Compute the Euler angles for a given input vector
 
     Parameters
@@ -441,7 +441,7 @@ cdef double [:] euler_angles(double [:] inp) nogil:
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:,:] R(double [:] inp) nogil:
+cdef double [:,:] R(double [:] inp) noexcept nogil:
     """ Compute the Rotation matrix for a given input vector
 
     Parameters

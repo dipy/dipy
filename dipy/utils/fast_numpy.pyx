@@ -2,7 +2,7 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) nogil:
+cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) noexcept nogil:
     cdef:
         int idx
         cnp.float_t current
@@ -14,7 +14,7 @@ cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) nogil:
     return 0
 
 
-cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) nogil:
+cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) noexcept nogil:
     cdef:
         int i = 0
         cnp.float_t csum = 0
@@ -23,21 +23,21 @@ cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) nogil:
         arr_out[i] = csum
 
 
-cdef void copy_point(double * a, double * b) nogil:
+cdef void copy_point(double * a, double * b) noexcept nogil:
     cdef:
         int i = 0
     for i in range(3):
         b[i] = a[i]
 
 
-cdef void scalar_muliplication_point(double * a, double scalar) nogil:
+cdef void scalar_muliplication_point(double * a, double scalar) noexcept nogil:
     cdef:
         int i = 0
     for i in range(3):
         a[i] *= scalar
 
 
-cdef double norm(double * v) nogil:
+cdef double norm(double * v) noexcept nogil:
     """Compute the vector norm.
 
     Parameters
@@ -49,7 +49,7 @@ cdef double norm(double * v) nogil:
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 
-cdef double dot(double * v1, double * v2) nogil:
+cdef double dot(double * v1, double * v2) noexcept nogil:
     """Compute vectors dot product.
 
     Parameters
@@ -67,7 +67,7 @@ cdef double dot(double * v1, double * v2) nogil:
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
 
-cdef void normalize(double * v) nogil:
+cdef void normalize(double * v) noexcept nogil:
     """Normalize the vector.
 
     Parameters
@@ -86,7 +86,7 @@ cdef void normalize(double * v) nogil:
     v[2] = v[2] * scale
 
 
-cdef void cross(double * out, double * v1, double * v2) nogil:
+cdef void cross(double * out, double * v1, double * v2) noexcept nogil:
     """Compute vectors cross product.
 
     Parameters
@@ -108,7 +108,7 @@ cdef void cross(double * out, double * v1, double * v2) nogil:
     out[2] = v1[0] * v2[1] - v1[1] * v2[0]
 
 
-cdef void random_vector(double * out) nogil:
+cdef void random_vector(double * out) noexcept nogil:
     """Generate a unit random vector
 
     Parameters
@@ -126,7 +126,7 @@ cdef void random_vector(double * out) nogil:
     normalize(out)
 
 
-cdef void random_perpendicular_vector(double * out, double * v) nogil:
+cdef void random_perpendicular_vector(double * out, double * v) noexcept nogil:
     """Generate a random perpendicular vector
 
     Parameters
@@ -148,7 +148,7 @@ cdef void random_perpendicular_vector(double * out, double * v) nogil:
     normalize(out)
 
 
-cpdef (double, double) random_point_within_circle(double r) nogil:
+cpdef (double, double) random_point_within_circle(double r) noexcept nogil:
     """Generate a random point within a circle
 
     Parameters
@@ -174,7 +174,7 @@ cpdef (double, double) random_point_within_circle(double r) nogil:
     return (r * x, r * y)
 
 
-cpdef double random() nogil:
+cpdef double random() noexcept nogil:
     """Sample a random number between 0 and 1.
 
     Returns
@@ -185,7 +185,7 @@ cpdef double random() nogil:
     return rand() / float(RAND_MAX)
 
 
-cpdef void seed(cnp.npy_uint32 s) nogil:
+cpdef void seed(cnp.npy_uint32 s) noexcept nogil:
     """Set the random seed of stdlib.
 
     Parameters

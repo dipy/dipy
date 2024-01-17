@@ -2,6 +2,7 @@ import pytest
 import warnings
 
 import numpy.testing as npt
+from dipy.testing import check_for_warnings
 
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import use_xvfb
@@ -85,14 +86,6 @@ def test_build_slider():
     npt.assert_equal(double_slider.obj.text[0].font_size, 16)
     npt.assert_equal(double_slider.obj.text[1].font_size, 16)
     npt.assert_equal(double_slider.selected_value, (4, 5))
-
-
-def check_for_warnings(warn_printed, w_msg):
-    selected_w = [w for w in warn_printed if issubclass(w.category,
-                                                        UserWarning)]
-    assert len(selected_w) >= 1
-    msg = [str(m.message) for m in selected_w]
-    npt.assert_equal(w_msg in msg, True)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

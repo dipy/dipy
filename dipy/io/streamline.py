@@ -36,7 +36,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                         '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -121,7 +122,8 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                         '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
