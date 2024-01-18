@@ -6,6 +6,7 @@
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
+from dipy.utils.fast_numpy cimport random
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
@@ -17,7 +18,7 @@ cdef class StoppingCriterion:
 
         return self.check_point_c(&point[0])
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
          pass
 
 
@@ -31,7 +32,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
         self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
         cdef:
             unsigned char result
             int err
@@ -68,7 +69,7 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
         cdef:
             double result
             int err
@@ -189,7 +190,7 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -251,10 +252,11 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         self.average_voxel_size = average_voxel_size
         self.correction_factor = step_size / average_voxel_size
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
+            double p
 
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point, self.interp_out_view)
@@ -277,19 +279,22 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             raise RuntimeError("Unexpected interpolation error " +
                                "(exclude_map - code:%i)" % exclude_err)
 
-        rng = np.random.default_rng()
+        # rng = np.random.default_rng()
+
         # test if the tracking continues
         if include_result + exclude_result <= 0:
             return TRACKPOINT
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
-        if rng.random() < p:
+        # if rng.random() < p:
+        if random() < p:
             return TRACKPOINT
 
         # test if the tracking stopped in the include tissue map
         p = (include_result / (include_result + exclude_result))
-        if rng.random() < p:
+        # if rng.random() < p:
+        if random() < p:
             return ENDPOINT
 
         # the tracking stopped in the exclude tissue map
