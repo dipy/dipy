@@ -52,7 +52,7 @@ cdef void random_perpendicular_vector(
 cpdef (double, double) random_point_within_circle(
         double r) noexcept nogil
 
-cpdef double random() nogil
+cpdef double random() noexcept nogil
 
 cpdef void seed(cnp.npy_uint32 s) nogil
 
