@@ -1,7 +1,9 @@
 # cython: boundscheck=False
 # cython: initializedcheck=False
 # cython: wraparound=False
+# cython: Nonecheck=False
 
+from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
@@ -24,7 +26,7 @@ from libc.stdlib cimport malloc, free
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
-                               TrackingParameters params,
+                               ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen):
     cdef:
         cnp.npy_intp _len=seed_positons.shape[0]
@@ -57,7 +59,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
-                               TrackingParameters params,
+                               ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr tracker,
                                double[:,:,:] streamlines,
@@ -66,8 +68,8 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
         cnp.npy_intp i, j, k
 
 
-    # <<cython.parallel.prange>>
-    for i in range(nbr_seeds):
+    for i in prange(nbr_seeds, nogil=True):
+    # for i in range(nbr_seeds):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
 
         # initialize to 0. It will be replaced when better handling various
@@ -103,13 +105,14 @@ cdef int generate_local_streamline(double* seed,
                                    double* stream,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
-                                   TrackingParameters params,
-                                   PmfGen pmf_gen):
+                                   ProbabilisticTrackingParameters params,
+                                   PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j
         double point[3]
         double voxdir[3]
         StreamlineStatus stream_status_forward, stream_status_backward
+
     # set the initial position
     copy_point(seed, point)
     copy_point(direction, voxdir)
@@ -118,7 +121,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if tracker(&point[0], &voxdir[0], params, pmf_gen):  # , pmf_gen_func):
+        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):  # , pmf_gen_func):
             break
         # update position
         for j in range(3):
@@ -139,7 +142,7 @@ cdef int generate_local_streamline(double* seed,
         voxdir[j] = voxdir[j] * -1
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
-        if tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -160,7 +163,7 @@ cdef int generate_local_streamline(double* seed,
 cdef double* get_pmf(double* point,
                      PmfGen pmf_gen,
                      double pmf_threshold,
-                     int pmf_len):
+                     int pmf_len) noexcept nogil:
     cdef:
         cnp.npy_intp i
         double* pmf
@@ -182,27 +185,17 @@ cdef double* get_pmf(double* point,
 cdef int probabilistic_tracker(double* point,
                                double* direction,
                                ProbabilisticTrackingParameters params,
-                               PmfGen pmf_gen):
+                               PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, idx
-        double[:] newdir
+        double* newdir
         double* pmf
         double last_cdf, cos_sim
         double max_pmf=0
         double absolute_pmf_threshold
 
-    #pmf = get_pmf(point, params.pmf_gen, params.pmf_threshold, params.pmf_len)
+    pmf = get_pmf(point, pmf_gen, params.pmf_threshold, params.pmf_len)
 
-
-    pmf = pmf_gen.get_pmf_c(point)
-    for i in range(params.pmf_len):
-        if pmf[i] > max_pmf:
-            max_pmf = pmf[i]
-    absolute_pmf_threshold = params.pmf_threshold * max_pmf
-
-    for i in range(params.pmf_len):
-        if pmf[i] < absolute_pmf_threshold:
-            pmf[i] = 0.0
 
 
 
@@ -228,17 +221,17 @@ cdef int probabilistic_tracker(double* point,
 
     idx = where_to_insert(pmf, random() * last_cdf, params.pmf_len)
 
-    newdir = params.vertices[idx]
+    newdir = &params.vertices[idx][0]
     # Update direction
     if (direction[0] * newdir[0]
         + direction[1] * newdir[1]
         + direction[2] * newdir[2] > 0):
-        copy_point(&newdir[0], direction)
+        copy_point(newdir, direction)
     else:
         newdir[0] = newdir[0] * -1
         newdir[1] = newdir[1] * -1
         newdir[2] = newdir[2] * -1
-        copy_point(&newdir[0], direction)
+        copy_point(newdir, direction)
     return 0
 
 #get_direction_c of the DG
