@@ -15,12 +15,12 @@ cdef class TrackingParameters():
 ctypedef int (*func_ptr)(double* point,
                          double* direction,
                          ProbabilisticTrackingParameters,
-                         PmfGen)
+                         PmfGen) nogil
 
 cpdef list generate_tractogram(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
-                               TrackingParameters params,
+                               ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen)
 
 
@@ -28,7 +28,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
-                               TrackingParameters params,
+                               ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr traker,
                                double[:,:,:] streamlines,
@@ -42,14 +42,14 @@ cdef int generate_local_streamline(double* seed,
                                 #    sc_ptr stopping_criterion,
                                 #    pmf_ptr pmf_gen,
                                    StoppingCriterion sc,
-                                   TrackingParameters params,
-                                   PmfGen pmf_gen)
+                                   ProbabilisticTrackingParameters params,
+                                   PmfGen pmf_gen) noexcept nogil
 
 
 cdef double* get_pmf(double* point,
                      PmfGen pmf_gen,
                      double pmf_threshold,
-                     int pmf_len)
+                     int pmf_len) noexcept nogil
 
 
 cdef class ProbabilisticTrackingParameters(TrackingParameters):
@@ -64,7 +64,7 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
 cdef int probabilistic_tracker(double* point,
                                double* direction,
                                ProbabilisticTrackingParameters params,
-                               PmfGen pmf_gen)
+                               PmfGen pmf_gen) noexcept nogil
 
 cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
     pass

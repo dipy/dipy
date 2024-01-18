@@ -12,7 +12,7 @@ cdef class StoppingCriterion:
         double interp_out_double[1]
         double[::1] interp_out_view
     cpdef StreamlineStatus check_point(self, double[::1] point)
-    cdef StreamlineStatus check_point_c(self, double* point)
+    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil
 
 
 cdef class BinaryStoppingCriterion(StoppingCriterion):
