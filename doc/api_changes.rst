@@ -5,6 +5,12 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.9.0 changes
+------------------
+
+- The module ``dipy.boots.resampling`` has moved to ``dipy.stats.resampling``.
+- The package ``dipy.boots`` has been removed.
+
 DIPY 1.8.0 changes
 ------------------
 **Gradients**

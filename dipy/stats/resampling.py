@@ -4,13 +4,6 @@ import numpy as np
 import scipy as sp
 
 
-import warnings
-
-warningMsg = "This module is most likely to change both as\
-                a name and in structure in the future"
-warnings.warn(warningMsg, FutureWarning)
-
-
 def bs_se(bs_pdf):
     """ Calculate the bootstrap standard error estimate of a statistic.
     """
@@ -279,13 +272,13 @@ def jackknife(pdf, statistic=np.std, M=None):
     for ii in range(0, M):
         rand_index = np.round(rng.random() * (N - 1))
         # choose a unique random sample to remove
-        while pdf_mask[rand_index] == 0:
+        while pdf_mask[int(rand_index)] == 0:
             rand_index = np.round(rng.random() * (N - 1))
         # set mask to zero for chosen random index so not to choose again
-        pdf_mask[rand_index] = 0
-        mask_index[rand_index] = 0
+        pdf_mask[int(rand_index)] = 0
+        mask_index[int(rand_index)] = 0
         jk_pdf[ii] = statistic(pdf[mask_index > 0])  # compute n-1 statistic
-        mask_index[rand_index] = 1
+        mask_index[int(rand_index)] = 1
 
     return (jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)),
             np.sqrt(N - 1) * np.std(jk_pdf))
