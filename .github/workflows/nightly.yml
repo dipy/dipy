@@ -59,9 +59,11 @@ jobs:
             CIBW_TEST_SKIP: "*_aarch64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+      - name: Rename Python version
+        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
-            name: wheels
+            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
 
   build_osx_wheels:
@@ -98,9 +100,11 @@ jobs:
             CIBW_TEST_SKIP: "*_aarch64 *-macosx_arm64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+      - name: Rename Python version
+        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
-            name: wheels
+            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
 
   build_windows_wheels:
@@ -129,9 +133,12 @@ jobs:
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
+      - name: Rename Python version
+        shell: bash
+        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
-            name: wheels
+            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
 
   upload_anaconda:
@@ -145,10 +152,11 @@ jobs:
       - uses: actions/download-artifact@v4
         id: download
         with:
-          name: wheels
+          pattern: wheels-*
           path: ./dist
+          merge-multiple: true
       - name: Upload wheel
-        uses: skoudoro/upload-nightly-action@9b762da1a334889ef13c35cb8b0161c1e49f4749   # scientific-python/upload-nightly-action@main
+        uses: scientific-python/upload-nightly-action@66bc1b6beedff9619cdff8f3361a06802c8f5874   # scientific-python/upload-nightly-action@main
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_NIGHTLY_TOKEN}}
