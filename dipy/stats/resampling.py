@@ -11,7 +11,7 @@ def bs_se(bs_pdf):
     return np.std(bs_pdf) * np.sqrt(N / (N - 1))
 
 
-def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
+def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
     """
 
     Bootstrap resampling [1]_ to accurately estimate the standard error and
@@ -29,6 +29,9 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
         Total number of bootstrap resamples in bootstrap pdf. (Default: 1000)
     alpha : float (optional)
         Percentile for confidence interval of the statistic. (Default: 0.05)
+    rng : numpy.random.Generator
+        Random number generator to use for sampling. If None, the generator
+        is initialized using the default BitGenerator.
 
     Returns
     -------
@@ -65,17 +68,17 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     N = len(x)
     bs_pdf = np.empty((B,))
 
-    rng = np.random.default_rng()
+    rng = rng or np.random.default_rng()
 
     for ii in range(0, B):
         # resample with replacement
         rand_index = np.int16(np.round(rng.random(N) * (N - 1)))
         bs_pdf[ii] = statistic(x[rand_index])
 
-    return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha=alpha)
+    return bs_pdf, bs_se(bs_pdf), abc(x, statistic=statistic, alpha=alpha)
 
 
-def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
+def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     """Calculate the bootstrap confidence interval by approximating the BCa.
 
     Parameters
@@ -205,7 +208,7 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
              __tt(x, p_0, statistic)) / eps**2)
 
 
-def jackknife(pdf, statistic=np.std, M=None):
+def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
     """
     Jackknife resampling [3]_ to quickly estimate the bias and standard
     error of a desired statistic in a probability distribution function (pdf).
@@ -229,6 +232,9 @@ def jackknife(pdf, statistic=np.std, M=None):
         Bias of the jackknife pdf of the statistic.
     se : float
         Standard error of the statistic.
+    rng : numpy.random.Generator
+        Random number generator to use for sampling. If None, the generator
+        is initialized using the default BitGenerator.
 
     See Also
     --------
@@ -267,7 +273,7 @@ def jackknife(pdf, statistic=np.std, M=None):
     M = np.minimum(M, N - 1)
     jk_pdf = np.empty((M,))
 
-    rng = np.random.default_rng()
+    rng = rng or np.random.default_rng()
 
     for ii in range(0, M):
         rand_index = np.round(rng.random() * (N - 1))
