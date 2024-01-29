@@ -156,7 +156,7 @@ jobs:
           path: ./dist
           merge-multiple: true
       - name: Upload wheel
-        uses: scientific-python/upload-nightly-action@3eb3a42b50671237cace9be2d18a3e4b3845d3c4   # scientific-python/upload-nightly-action@main
+        uses: scientific-python/upload-nightly-action@66bc1b6beedff9619cdff8f3361a06802c8f5874   # scientific-python/upload-nightly-action@main
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_NIGHTLY_TOKEN}}
