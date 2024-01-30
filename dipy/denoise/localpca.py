@@ -1,20 +1,10 @@
 import copy
-
-from packaging.version import Version
 from warnings import warn
 
 import numpy as np
-import scipy
-
-try:
-    from scipy.linalg.lapack import dgesvd as svd
-    svd_args = [1, 0]
-    # If you have an older version of scipy, we fall back
-    # on the standard scipy SVD API:
-except ImportError:
-    from scipy.linalg import svd
-    svd_args = [False]
+from scipy.linalg.lapack import dgesvd as svd
 from scipy.linalg import eigh
+
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 
 
@@ -125,8 +115,9 @@ def create_patch_radius_arr(arr, pr):
 
 
 def compute_patch_size(patch_radius):
-    """Compute the patch size from the patch radius: it is twice the radius plus
-    one.
+    """Compute patch size from the patch radius.
+
+    it is twice the radius plus one.
 
     Parameters
     ----------
@@ -292,7 +283,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     # account for mean subtraction by testing #samples - 1
     if (num_samples - 1) < arr.shape[-1] and not suppress_warning:
         spr = compute_suggested_patch_radius(arr, patch_size)
-        warn(dimensionality_problem_message(arr, num_samples, spr), UserWarning)
+        warn(dimensionality_problem_message(arr, num_samples, spr),
+             UserWarning)
 
     if isinstance(sigma, np.ndarray):
         var = sigma ** 2
@@ -316,11 +308,10 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
-    SCIPY_LESS_1_5_0 = Version(scipy.__version__) < Version('1.5.0')
-    kw_eigh = {'turbo': True} if SCIPY_LESS_1_5_0 else {}  # {'driver': 'gvd'}
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
-        for j in range(patch_radius_arr[1], arr.shape[1] - patch_radius_arr[1]):
+        for j in range(patch_radius_arr[1],
+                       arr.shape[1] - patch_radius_arr[1]):
             for i in range(
                     patch_radius_arr[0], arr.shape[0] - patch_radius_arr[0]):
                 # Shorthand for indexing variables:
@@ -342,6 +333,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 if is_svd:
                     # PCA using an SVD
+                    svd_args = [1, 0]
                     U, S, Vt = svd(X, *svd_args)[:3]
                     # Items in S are the eigenvalues, but in ascending order
                     # We invert the order (=> descending), square and normalize
@@ -355,7 +347,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                     # PCA using an Eigenvalue decomposition
                     C = np.transpose(X).dot(X)
                     C = C / X.shape[0]
-                    [d, W] = eigh(C, **kw_eigh)
+                    [d, W] = eigh(C)
 
                 if sigma is None:
                     # Random matrix theory

@@ -1,5 +1,4 @@
 from packaging.version import Version
-import warnings
 
 import numpy as np
 

@@ -38,7 +38,6 @@ Utilities
 import sys
 
 from dipy.version import version as __version__
-from .testing import setup_test
 
 # Plumb in version etc info stuff
 from .pkg_info import get_pkg_info as _get_pkg_info
