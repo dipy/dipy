@@ -88,3 +88,11 @@ def test_convert_tensor():
     converted_tensor = convert_tensors(tensor, 'ants', 'dipy')
     expected_tensor = np.array([1, 2, 3, 4, 5, 6])
     npt.assert_array_equal(converted_tensor, expected_tensor)
+
+    # Test case 7: Convert from 'dipy' to 'dipy'
+    tensor = np.array([[[[[1, 2, 3, 4, 5, 6]]]]])
+    converted_tensor = convert_tensors(tensor, 'dipy', 'dipy')
+    npt.assert_array_equal(converted_tensor, tensor)
+
+    npt.assert_raises(ValueError, convert_tensors, tensor, 'amico', 'dipy')
+    npt.assert_raises(ValueError, convert_tensors, tensor, 'dipy', 'amico')

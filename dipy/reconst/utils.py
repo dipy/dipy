@@ -234,10 +234,10 @@ def convert_tensors(tensor, from_format, to_format):
       See: https://github.com/dipy/dipy/blob/master/dipy/reconst/dti.py#L1639
     - MRTRIX order: [Dxx, Dyy, Dzz, Dxy, Dxz, Dyz]
        Shape: [i, j , k, 6].
-       See: https://mrtrix.readthedocs.io/en/dev/reference/commands/dwi2tensor.html
+       See: https://mrtrix.readthedocs.io/en/dev/reference/commands/dwi2tensor.html  # noqa
     - ANTS: [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
        Shape: [i, j , k, 1, 6]  -  Note the extra dimension (5D)
-       See: https://github.com/ANTsX/ANTs/wiki/Importing-diffusion-tensor-data-from-other-software
+       See: https://github.com/ANTsX/ANTs/wiki/Importing-diffusion-tensor-data-from-other-software  # noqa
     - FSL: [Dxx, Dxy, Dxz, Dyy, Dyz, Dzz]
       Shape: [i, j , k, 6]. (Also used for the Fibernavigator)
       Ref: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide
