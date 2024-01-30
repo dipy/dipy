@@ -7,6 +7,12 @@ renamed or are deprecated (not recommended) during different release circles.
 
 DIPY 1.9.0 changes
 ------------------
+
+**General**
+
+- The module ``dipy.boots.resampling`` has moved to ``dipy.stats.resampling``.
+- The package ``dipy.boots`` has been removed.
+
 **IO**
 
 - ``dipy.io.bvectxt`` module is removed
