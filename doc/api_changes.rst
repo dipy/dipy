@@ -5,6 +5,12 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.9.0 changes
+------------------
+**IO**
+
+- ``dipy.io.bvectxt`` module is removed
+
 DIPY 1.8.0 changes
 ------------------
 **Gradients**
