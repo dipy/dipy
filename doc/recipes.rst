@@ -42,8 +42,12 @@ answer it yourself and contribute to the documentation!
 
    .. code-block:: Python
 
-       from dipy.io import convert_tensor
-       convert_tensor('dti.nii.gz', 'dti.bval', 'dti.bvec', 'fsl', 'dti.nii.gz')
+        from dipy.reconst.utils import convert_tensors
+        from dipy.io.image import load_nifti, save_nifti
+
+        data, affine, img = load_nifti('my_data.nii.gz', return_img=True)
+        otensor = convert_tensors(data, 'dipy', 'fsl')
+        save_nifti(otensor, data, affine, image.header)
 
 
 .. include:: links_names.inc
