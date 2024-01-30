@@ -13,14 +13,8 @@ def load_J_matrix():
 
 
 def z_rot_mat(angle, l):
-    """
-    Create the matrix representation of a z-axis rotation by the given angle,
-    in the irrep l of dimension 2 * l + 1, in the basis of real centered
-    spherical harmonics.
-
-    Note: this function is easy to use, but inefficient: only the entries
-    on the diagonal and anti-diagonal are non-zero, so explicitly constructing
-    this matrix is unnecessary.
+    """Create a matrix for z-axis rotation by an angle in the basis of real 
+    centered spherical harmonics of degree l.
 
     Parameters
     ----------
@@ -58,11 +52,8 @@ def z_rot_mat(angle, l):
 
 
 def rot_mat(alpha, beta, gamma, l, J):
-    """ Compute the representation matrix of a rotation by ZYZ-Euler
-    angles (alpha, beta, gamma) in representation l in the basis
-    of real spherical harmonics. The result is the same as the 
-    wignerD_mat function by Johann Goetz, when the sign of alpha
-    and gamma is flipped.
+    """Compute a rotation matrix for ZYZ-Euler angles in the real spherical 
+    harmonics basis.
 
     Parameters
     ----------
@@ -101,7 +92,9 @@ def rot_mat(alpha, beta, gamma, l, J):
 def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
                            to=('real', 'quantum', 'centered', 'cs')):
     """Compute change-of-basis matrix that takes the 'frm' basis to the 'to' 
-    basis. Each basis is identified by:
+    basis. 
+    
+    Each basis is identified by:
      1) A field (real or complex)
      2) A normalization / phase convention ('seismology', 'quantum', 'nfft', or 
      'geodesy')
@@ -176,8 +169,7 @@ def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
 
 
 def _cc2rc(l):
-    """
-    Compute change of basis matrix from the complex centered (cc) basis
+    """Compute change of basis matrix from the complex centered (cc) basis
     to the real centered (rc) basis.
 
     Let Y be a vector of complex spherical harmonics:
@@ -230,8 +222,7 @@ def wigner_d_matrix(l, beta,
                     normalization='quantum', 
                     order='centered', 
                     condon_shortley='cs'):
-    """
-    Compute the Wigner-d matrix of degree l at beta, in the basis defined by
+    """Compute the Wigner-d matrix of degree l at beta, in the basis defined by
     (field, normalization, order, condon_shortley)
 
     Parameters
@@ -289,8 +280,7 @@ def wigner_D_matrix(l, alpha, beta, gamma,
                     normalization='quantum', 
                     order='centered', 
                     condon_shortley='cs'):
-    """
-    Evaluate the Wigner-d matrix D^l_mn(alpha, beta, gamma)
+    """Evaluate the Wigner-d matrix D^l_mn(alpha, beta, gamma)
 
     Parameters
     ----------
@@ -336,7 +326,9 @@ def wigner_D_matrix(l, alpha, beta, gamma,
 
         if field == 'real':
             # print('WIGNER D IMAG PART:', np.sum(np.abs(D.imag)))
-            assert np.isclose(np.sum(np.abs(D.imag)), 0.0)
+            if not np.isclose(np.sum(np.abs(D.imag)), 0.0):
+                raise ValueError("Imaginary part of the Wigner-D matrix in the \
+                                 'real' field should be close to 0.")
             D = D.real
 
     return D
@@ -344,8 +336,7 @@ def wigner_D_matrix(l, alpha, beta, gamma,
 
 @lru_cache(maxsize=32)
 def quadrature_weights(b, grid_type='SOFT'):
-    """
-    Compute quadrature weights for the grid used by Kostelec & Rockmore [1, 2].
+    """Compute quadrature weights for the grid used by Kostelec & Rockmore [1,2]
 
     This grid is:
     alpha = 2 pi i / 2b
@@ -402,10 +393,8 @@ def _setup_wigner(b, nl, weighted):
 
 
 def _setup_so3_fft(b, nl, weighted):
-    """Set up the necessary components for performing an SO(3) Fourier 
-    transform up to a specified bandwidth. This function computes a series of 
-    Wigner-d matrices and applies quadrature weights appropriate for the SO(3) 
-    Fourier transform.
+    """Prepare components for SO(3) Fourier transform up to a given bandwidth, 
+    computing Wigner-d matrices with optional quadrature weights.
 
     Parameters
     ----------
@@ -431,7 +420,10 @@ def _setup_so3_fft(b, nl, weighted):
     """
     betas = (np.arange(2 * b) + 0.5) / (2 * b) * np.pi
     w = quadrature_weights(b)
-    assert len(w) == len(betas)
+    
+    if len(w) != len(betas):
+        raise ValueError("The length of quadrature weights does not match the \
+                         number of beta grid points.")
 
     dss = []
     for b, beta in enumerate(betas):
@@ -458,10 +450,8 @@ def _setup_so3_fft(b, nl, weighted):
 
 
 def so3_rfft(x, for_grad=False, b_out=None):
-    """
-    Perform a real Fourier transform on the SO(3) group. This function 
-    transforms a signal defined on the 3D rotation group to its spectral 
-    representation using the Wigner-D functions.
+    """Transform a signal on the SO(3) rotation group to its spectral 
+    representation using Wigner-D functions.
 
     Parameters
     ----------
@@ -544,10 +534,8 @@ def so3_rfft(x, for_grad=False, b_out=None):
 
 
 def so3_rifft(x, for_grad=False, b_out=None):
-    """
-    Perform an inverse real Fourier transform on the SO(3) group. This function 
-    transforms a spectral representation back into its signal representation on 
-    the 3D rotation group using the inverse Wigner-D functions.
+    """Transform a spectral representation on the SO(3) rotation group back into
+    its signal representation using inverse Wigner-D functions.
 
     Parameters
     ----------
@@ -570,10 +558,16 @@ def so3_rifft(x, for_grad=False, b_out=None):
         [..., beta, alpha, gamma], where 'beta', 'alpha', and 'gamma' are the 
         Euler angles defining the rotation and '...' are the batch dimensions.
     """
-    assert x.shape[-1] == 2
+    if x.shape[-1] != 2:
+        raise ValueError("Input array 'x' must have a last dimension of size 2,\
+                         representing complex numbers.")
     nspec = x.shape[0]
     b_in = round((3 / 4 * nspec) ** (1 / 3))
-    assert nspec == b_in * (4 * b_in**2 - 1) // 3
+
+    if nspec != b_in * (4 * b_in**2 - 1) // 3:
+        raise ValueError(f"The number of spectral coefficients ({nspec}) does \
+                         not match the expected count for the input bandwidth\
+                         ({b_in}).")
     if b_out is None:
         b_out = b_in
     batch_size = x.shape[1:-1]
@@ -614,10 +608,8 @@ def so3_rifft(x, for_grad=False, b_out=None):
 
 
 def complex_mm(x, y, conj_x=False, conj_y=False):
-    """Perform matrix multiplication (mm) of complex matrices. Given two complex
-      matrices 'x' and 'y', this function computes their product. The function 
-      also supports optional conjugation of either or both input matrices before
-      multiplication.
+    """Compute the product of two complex matrices, optionally conjugating 
+    inputs, and returns the complex matrix result.
 
     Parameters
     ----------

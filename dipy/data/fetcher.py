@@ -691,8 +691,8 @@ fetch_bundle_warp_dataset = _make_fetcher(
      'c1499005baccfab865ce38368d7a4c7f'],
     doc="Download Bundle Warp dataset")
 
-fetch_wigner_Jmat = _make_fetcher(
-    "fetch_wigner_Jmat",
+fetch_wigner_jmat = _make_fetcher(
+    "fetch_wigner_jmat",
     pjoin(dipy_home, 'wigner'),
     'https://ndownloader.figshare.com/files/',
     ['43638069'],
@@ -921,7 +921,7 @@ def get_fnames(name='small_64D'):
         test_data = pjoin(folder, 'evac_test_data.npz')
         return test_data
     if name == 'wigner_jmat':
-        files, folder = fetch_wigner_Jmat()
+        files, folder = fetch_wigner_jmat()
         weight = pjoin(folder, 'J_dense_0-150.npy')
         return weight
     if name == 'DiB_70_lte_pte_ste':

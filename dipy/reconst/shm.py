@@ -1631,14 +1631,14 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
 
 
 def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
-    """Returns an array of all possible wigner-D matrices for a range 
+    """Return an array of all possible wigner-D matrices for a range 
     of quantum numbers (l)
 
     Parameters
     ----------
     quant_order : int
         The upper limit for the range of quantum numbers. The function generates
-        Wigner-D matrices for each quantum number from 0 to b-1.
+        Wigner-D matrices for each quantum number from 0 to l-1.
     alpha : float
         First Euler angle for rotation (range: 0 <= alpha <= 2pi)
     beta : float
@@ -1669,11 +1669,8 @@ def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
 
 
 def wigner_rotation(signal, alpha, beta, gamma):
-    """Performs a Wigner rotation on a given input array 'x', representing 
-    spherical harmonics coefficients. This rotation is defined by Euler angles 
-    alpha, beta, and gamma. The function first sets up the Wigner-D matrices for
-    the specified range of quantum numbers, then applies a rotation in the 
-    spherical harmonic domain.
+    """Rotate spherical harmonics using Wigner-D matrices defined by Euler 
+    angles alpha, beta, and gamma.
 
     Parameters
     ----------
@@ -1691,8 +1688,8 @@ def wigner_rotation(signal, alpha, beta, gamma):
     Returns
     -------
     z : ndarray
-       The rotated array, with the same shape as the input 'x', representing the
-        spherical harmonics coefficients after the Wigner rotation
+       The rotated array, with the same shape as the input signal, representing 
+       the spherical harmonics coefficients after the Wigner rotation
     
     References
     ----------
@@ -1702,9 +1699,9 @@ def wigner_rotation(signal, alpha, beta, gamma):
     b = signal.shape[-1] // 2
     signal_size = signal.shape
     Us = _setup_wigner_rotation(b, alpha, beta, gamma)
-    # fourier transform
+    # Fourier Transform
     signal = so3_rfft(signal, b_out=None)  # [l * m * n, ..., complex]
-    # rotated spectrum
+    # Rotated Spectrum
     Fz_list = []
     begin = 0
     for l in range(b):
@@ -1722,6 +1719,7 @@ def wigner_rotation(signal, alpha, beta, gamma):
         Fz_list.append(Fz)
         begin += size
     Fz = np.concatenate(Fz_list, axis=0)  # [l * m * n, batch, complex]
+    # Inverse Fourier Transform
     z = so3_rifft(Fz, b_out=None)
     z = np.reshape(z, signal_size)
     return z
