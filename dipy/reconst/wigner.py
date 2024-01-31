@@ -96,8 +96,7 @@ def change_of_basis_matrix(l, frm=('complex', 'seismology', 'centered', 'cs'),
     
     Each basis is identified by:
      1) A field (real or complex)
-     2) A normalization / phase convention ('seismology', 'quantum', 'nfft', or 
-     'geodesy')
+     2) A normalization / phase convention 
      3) An ordering convention ('centered', 'block')
      4) Whether to use Condon-Shortley phase (-1)^m for m > 0 ('cs', 'nocs')
 
@@ -236,8 +235,7 @@ def wigner_d_matrix(l, beta,
     field : str, optional
         Specifies whether the matrix is in the 'real' or 'complex' field. 
     normalization : str, optional
-        The normalization convention used, which can be 'quantum', 'seismology',
-        'geodesy', or 'nfft'.
+        The normalization convention used, which defaults to 'quantum'
     order : str, optional
         The ordering convention of the matrix, either 'centered' or 'block'. 
     condon_shortley : str, optional
@@ -296,8 +294,7 @@ def wigner_D_matrix(l, alpha, beta, gamma,
     field : str, optional
         Specifies whether the matrix is in the 'real' or 'complex' field. 
     normalization : str, optional
-        The normalization convention used, can be 'quantum', 'seismology', 
-        'geodesy', or 'nfft'. 
+        The normalization convention used, defaults to 'quantum'. 
     order : str, optional
         The ordering convention of the matrix, either 'centered' or 'block'. 
     condon_shortley : str, optional
