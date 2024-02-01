@@ -10,6 +10,7 @@ from dipy.utils.deprecator import deprecated_params
 import scipy.fft
 _fft = scipy.fft
 
+
 def _image_tv(x, axis=0, n_points=3):
     """ Computes total variation (TV) of matrix x across a given axis and
     along two directions.

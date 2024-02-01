@@ -342,3 +342,6 @@ def patch2self(data, bvals, patch_radius=(0, 0, 0), model='ols',
         denoised_arr.clip(min=0, out=denoised_arr)
 
     return np.array(denoised_arr, dtype=out_dtype)
+
+
+p2s = patch2self

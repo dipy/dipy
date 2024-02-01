@@ -299,8 +299,10 @@ generate_version = custom_target(
 # ------------------------------------------------------------------------
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'conftest.py',
-  'pkg_info.py'
+  'pkg_info.py',
+  'py.typed'
 ]
 
 py3.install_sources(
