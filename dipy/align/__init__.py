@@ -1,18 +1,10 @@
+from enum import Enum
+
 import numpy as np
 floating = np.float32
 
 
-class Bunch:
-    def __init__(self, **kwds):
-        r"""A 'bunch' of values (a replacement of Enum)
-
-        This is a temporary replacement of Enum, which is not available
-        on all versions of Python 2
-        """
-        self.__dict__.update(kwds)
-
-
-VerbosityLevels = Bunch(NONE=0, STATUS=1, DIAGNOSE=2, DEBUG=3)
+VerbosityLevels = Enum(NONE=0, STATUS=1, DIAGNOSE=2, DEBUG=3)
 r""" VerbosityLevels
 This enum defines the four levels of verbosity we use in the align
 module.

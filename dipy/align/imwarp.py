@@ -1,7 +1,8 @@
 """  Classes and functions for Symmetric Diffeomorphic Registration """
 
-import logging
 import abc
+from enum import Enum
+import logging
 
 import numpy as np
 import numpy.linalg as npl
@@ -11,17 +12,16 @@ from nibabel.streamlines import ArraySequence as Streamlines
 from dipy.align import vector_fields as vfu
 from dipy.align import floating
 from dipy.align import VerbosityLevels
-from dipy.align import Bunch
 from dipy.align.scalespace import ScaleSpace
 
-RegistrationStages = Bunch(INIT_START=0,
-                           INIT_END=1,
-                           OPT_START=2,
-                           OPT_END=3,
-                           SCALE_START=4,
-                           SCALE_END=5,
-                           ITER_START=6,
-                           ITER_END=7)
+RegistrationStages = Enum(INIT_START=0,
+                          INIT_END=1,
+                          OPT_START=2,
+                          OPT_END=3,
+                          SCALE_START=4,
+                          SCALE_END=5,
+                          ITER_START=6,
+                          ITER_END=7)
 """Registration Stages
 
 This enum defines the different stages which the Volumetric Registration
