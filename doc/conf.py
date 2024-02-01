@@ -402,7 +402,7 @@ html_theme_options = {
           "link_type": "external"
         },
         {
-          "name": "Google supported DIPY through the Google Summer of Code Program during multiple Summer (2015-2024)",
+          "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",
           "link": "https://summerofcode.withgoogle.com/",
           "link_type": "external"
         },
