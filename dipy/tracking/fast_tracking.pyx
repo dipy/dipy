@@ -3,10 +3,12 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
+cimport cython
 from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
+#from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
@@ -20,6 +22,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                INVALIDPOINT)
 
 from libc.stdlib cimport malloc, free
+from libc.math cimport floor
+from libc.time cimport time, time_t
 
 
 #need cpdef to access cdef functions?
@@ -33,13 +37,18 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
         double[:,:,:] streamlines_arr
         double[:] status_arr
         cnp.npy_intp i, j
+        time_t t1, t2
 
     # temporary array to store generated streamlines
     streamlines_arr =  np.array(np.zeros((_len, params.max_len * 2 + 1, 3)), order='C')
     status_arr =  np.array(np.zeros((_len)), order='C')
-
+    print("1")
+    t1 = time(NULL)
     generate_tractogram_c(seed_positons, seed_directions, _len, sc, params,
                           pmf_gen, &probabilistic_tracker, streamlines_arr, status_arr)
+    print("2")
+    t2 = time(NULL)
+    print(t2-t1)
     streamlines = []
     for i in range(_len):
         # array to list
@@ -69,7 +78,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
 
 
     for i in prange(nbr_seeds, nogil=True):
-    # for i in range(nbr_seeds):
+    #for i in range(nbr_seeds):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
 
         # initialize to 0. It will be replaced when better handling various
@@ -126,7 +135,6 @@ cdef int generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-
         copy_point(point, &stream[(params.max_len + i )* 3])
 
         stream_status_forward = sc.check_point_c(point)
@@ -135,7 +143,7 @@ cdef int generate_local_streamline(double* seed,
             stream_status_forward == OUTSIDEIMAGE):
             break
 
-    # backward tracking
+    # # backward tracking
     copy_point(seed, point)
     copy_point(direction, voxdir)
     for j in range(3):
@@ -147,30 +155,93 @@ cdef int generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-
         copy_point(point, &stream[(params.max_len + i )* 3])
-
 
         stream_status_backward = sc.check_point_c(point)
         if (stream_status_backward == ENDPOINT or
             stream_status_backward == INVALIDPOINT or
             stream_status_backward == OUTSIDEIMAGE):
             break
-    # need to handle stream status
+    # # need to handle stream status
     return 0 #stream_status
 
 
-cdef double* get_pmf(double* point,
-                     PmfGen pmf_gen,
-                     double pmf_threshold,
-                     int pmf_len) noexcept nogil:
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef int trilinear_interpolate4d_c(
+        double[:, :, :, :] data,
+        double* point,
+        double* result) noexcept nogil:
+    """Tri-linear interpolation along the last dimension of a 4d array
+
+    Parameters
+    ----------
+    point : 1d array (3,)
+        3 doubles representing a 3d point in space. If point has integer values
+        ``[i, j, k]``, the result will be the same as ``data[i, j, k]``.
+    data : 4d array
+        Data to be interpolated.
+    result : 1d array
+        The result of interpolation. Should have length equal to the
+        ``data.shape[3]``.
+    Returns
+    -------
+    err : int
+         0 : successful interpolation.
+        -1 : point is outside the data area, meaning round(point) is not a
+             valid index to data.
+        -2 : point has the wrong shape
+        -3 : shape of data and result do not match
+
+    """
+    cdef:
+        cnp.npy_intp flr, N
+        double w, rem
+        cnp.npy_intp index[3][2]
+        double weight[3][2]
+
+    #if data.shape[3] != result.shape[0]:
+    #    return -3
+
+    for i in range(3):
+        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
+            return -1
+
+        flr = <cnp.npy_intp> floor(point[i])
+        rem = point[i] - flr
+
+        index[i][0] = flr + (flr == -1)
+        index[i][1] = flr + (flr != (data.shape[i] - 1))
+        weight[i][0] = 1 - rem
+        weight[i][1] = rem
+
+    N = data.shape[3]
+    for i in range(N):
+        result[i] = 0
+
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                w = weight[0][i] * weight[1][j] * weight[2][k]
+                for L in range(N):
+                    result[L] += w * data[index[0][i], index[1][j],
+                                          index[2][k], L]
+    return 0
+
+
+cdef int get_pmf(double* pmf,
+                 double* point,
+                 PmfGen pmf_gen,
+                 double pmf_threshold,
+                 int pmf_len) noexcept nogil:
     cdef:
         cnp.npy_intp i
-        double* pmf
         double absolute_pmf_threshold
         double max_pmf=0
 
-    pmf = pmf_gen.get_pmf_c(point)
+    if trilinear_interpolate4d_c(pmf_gen.data, point, pmf):
+        return 1
+
     for i in range(pmf_len):
         if pmf[i] > max_pmf:
             max_pmf = pmf[i]
@@ -179,7 +250,8 @@ cdef double* get_pmf(double* point,
     for i in range(pmf_len):
         if pmf[i] < absolute_pmf_threshold:
             pmf[i] = 0.0
-    return pmf
+
+    return 0
 
 
 cdef int probabilistic_tracker(double* point,
@@ -187,21 +259,17 @@ cdef int probabilistic_tracker(double* point,
                                ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen) noexcept nogil:
     cdef:
-        cnp.npy_intp i, idx
+        cnp.npy_intp i, idx, res
         double* newdir
         double* pmf
         double last_cdf, cos_sim
-        double max_pmf=0
-        double absolute_pmf_threshold
 
-    pmf = get_pmf(point, pmf_gen, params.pmf_threshold, params.pmf_len)
-
-
-
-
-
-
+    pmf = <double*> malloc(params.pmf_len * sizeof(double))
+    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, params.pmf_len):
+        free(pmf)
+        return 1
     if norm(direction) == 0:
+        free(pmf)
         return 1
     normalize(direction)
 
@@ -217,10 +285,11 @@ cdef int probabilistic_tracker(double* point,
     cumsum(pmf, pmf, params.pmf_len)
     last_cdf = pmf[params.pmf_len - 1]
     if last_cdf == 0:
+        free(pmf)
         return 1
 
     idx = where_to_insert(pmf, random() * last_cdf, params.pmf_len)
-
+    #idx=0 ######################################################################### REMOVE
     newdir = &params.vertices[idx][0]
     # Update direction
     if (direction[0] * newdir[0]
@@ -232,6 +301,7 @@ cdef int probabilistic_tracker(double* point,
         newdir[1] = newdir[1] * -1
         newdir[2] = newdir[2] * -1
         copy_point(newdir, direction)
+    free(pmf)
     return 0
 
 #get_direction_c of the DG
