@@ -45,11 +45,15 @@ cdef int generate_local_streamline(double* seed,
                                    ProbabilisticTrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil
 
+cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
+                                   double* point,
+                                   double* result) noexcept nogil
 
-cdef double* get_pmf(double* point,
-                     PmfGen pmf_gen,
-                     double pmf_threshold,
-                     int pmf_len) noexcept nogil
+cdef int get_pmf(double* pmf,
+                 double* point,
+                 PmfGen pmf_gen,
+                 double pmf_threshold,
+                 int pmf_len) noexcept nogil
 
 
 cdef class ProbabilisticTrackingParameters(TrackingParameters):
