@@ -17,9 +17,10 @@ import numpy as np
 from dipy.direction import peak_directions
 
 
-def bingham_to_sf(f0, k1, k2 , major_axis, minor_axis, vertices):
+def bingham_odf(f0, k1, k2 , major_axis, minor_axis, vertices):
     """
-    Evaluate Bingham distribution for a sphere.
+    Evaluate Bingham distribution on the sphere
+    described by `vertices`.
 
     Parameters
     ----------
@@ -43,10 +44,10 @@ def bingham_to_sf(f0, k1, k2 , major_axis, minor_axis, vertices):
     return sf.T
 
 
-def bingham_fit_sf(sf, sphere, max_search_angle=15,
-                      min_sep_angle=15, rel_th=0.1):
+def bingham_fit_odf(odf, sphere, max_search_angle=15,
+                    min_sep_angle=15, rel_th=0.1):
     """
-    Fit a Bingham distribution onto each principal SF lobe. Lobes
+    Fit a Bingham distribution onto each principal ODF lobe. Lobes
     are first found by performing a peak extraction on the input
     SF, and Bingham distributions are then fitting around each of
     the extracted peaks using the method described in Riffert et
@@ -54,8 +55,8 @@ def bingham_fit_sf(sf, sphere, max_search_angle=15,
 
     Parameters
     ----------
-    sf: ndarray
-        Spherical function (SF) evaluated on the sphere `sphere`.
+    odf: ndarray
+        ODF evaluated on the sphere `sphere`.
     sphere: DIPY Sphere
         Sphere on which the SF is defined.
     max_search_angle: float, optional
@@ -78,13 +79,13 @@ def bingham_fit_sf(sf, sphere, max_search_angle=15,
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     # extract all maximum on the SF
-    peaks, _, _ = peak_directions(sf, sphere,
+    peaks, _, _ = peak_directions(odf, sphere,
                                   relative_peak_threshold=rel_th,
                                   min_separation_angle=min_sep_angle)
 
     fits = []
     for peak in peaks:
-        fit = _bingham_fit_peak(sf, peak, sphere, max_search_angle)
+        fit = _bingham_fit_peak(odf, peak, sphere, max_search_angle)
         fits.append(fit)
 
     return fits
@@ -169,7 +170,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     return f0, k1, k2, mu1, mu2
 
 
-def bingham_to_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
+def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
     """
     Compute fiber density for each lobe for a given Bingham ODF.
 
@@ -211,13 +212,13 @@ def bingham_to_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
 
     fd = []
     for f0, k1, k2, mu1, mu2 in bingham_fits:
-        bingham_eval = bingham_to_sf(f0, k1, k2, mu1, mu2, u)
+        bingham_eval = bingham_odf(f0, k1, k2, mu1, mu2, u)
         fd.append(np.sum(bingham_eval * sin_theta * dtheta * dphi))
 
     return fd
 
 
-def bingham_to_fiber_spread(bingham_fits, fd=None):
+def bingham_fiber_spread(bingham_fits, fd=None):
     """
     Compute fiber spread for each lobe for a given Bingham volume.
 
@@ -247,7 +248,7 @@ def bingham_to_fiber_spread(bingham_fits, fd=None):
     f0 = np.array([x for x, _,_,_,_ in bingham_fits])
 
     if fd is None:
-        fd = bingham_to_fiber_density(bingham_fits)
+        fd = bingham_fiber_density(bingham_fits)
     fd = np.asarray(fd)
 
     fs = np.zeros((len(f0),))
