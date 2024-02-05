@@ -17,7 +17,7 @@ import numpy as np
 from dipy.direction import peak_directions
 
 
-def bingham_odf(f0, k1, k2 , major_axis, minor_axis, vertices):
+def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     """
     Evaluate Bingham distribution on the sphere
     described by `vertices`.
@@ -40,7 +40,7 @@ def bingham_odf(f0, k1, k2 , major_axis, minor_axis, vertices):
         vertices /= np.linalg.norm(vertices, axis=-1, keepdims=True)
 
     sf = f0*np.exp(-k1*vertices.dot(major_axis)**2
-                   -k2*vertices.dot(minor_axis)**2)
+                   - k2*vertices.dot(minor_axis)**2)
     return sf.T
 
 
@@ -245,7 +245,7 @@ def bingham_fiber_spread(bingham_fits, fd=None):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    f0 = np.array([x for x, _,_,_,_ in bingham_fits])
+    f0 = np.array([x for x, _, _, _, _ in bingham_fits])
 
     if fd is None:
         fd = bingham_fiber_density(bingham_fits)
