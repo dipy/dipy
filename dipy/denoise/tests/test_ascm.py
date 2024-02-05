@@ -7,6 +7,7 @@ from numpy.testing import (assert_,
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_ascm_static():
@@ -19,8 +20,9 @@ def test_ascm_static():
     assert_array_almost_equal(S0, S0n)
 
 
-def test_ascm_random_noise():
-    S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
+@set_random_number_generator()
+def test_ascm_random_noise(rng):
+    S0 = 100 + 2 * rng.standard_normal((22, 23, 30))
     S0n1 = non_local_means(S0, sigma=1, rician=False,
                            patch_radius=1, block_radius=1)
     S0n2 = non_local_means(S0, sigma=1, rician=False,
@@ -35,12 +37,13 @@ def test_ascm_random_noise():
     assert_equal(np.round(S0n.mean()), 100)
 
 
-def test_ascm_rmse_with_nlmeans():
+@set_random_number_generator()
+def test_ascm_rmse_with_nlmeans(rng):
     # checks the smoothness
     S0 = np.ones((30, 30, 30)) * 100
     S0[10:20, 10:20, 10:20] = 50
     S0[20:30, 20:30, 20:30] = 0
-    S0_noise = S0 + 20 * np.random.standard_normal((30, 30, 30))
+    S0_noise = S0 + 20 * rng.standard_normal((30, 30, 30))
     print("Original RMSE", np.sum(np.abs(S0 - S0_noise)) / np.sum(S0))
 
     S0n1 = non_local_means(
@@ -67,12 +70,13 @@ def test_ascm_rmse_with_nlmeans():
     assert_(90 < np.mean(S0n) < 110)
 
 
-def test_sharpness():
+@set_random_number_generator()
+def test_sharpness(rng):
     # check the edge-preserving nature
     S0 = np.ones((30, 30, 30)) * 100
     S0[10:20, 10:20, 10:20] = 50
     S0[20:30, 20:30, 20:30] = 0
-    S0_noise = S0 + 20 * np.random.standard_normal((30, 30, 30))
+    S0_noise = S0 + 20 * rng.standard_normal((30, 30, 30))
     S0n1 = non_local_means(
         S0_noise,
         sigma=400,
@@ -105,7 +109,7 @@ def test_ascm_accuracy():
 
     # the test data was constructed in this manner
     mask = test_data > 50
-    sigma = estimate_sigma(test_data, N=4)
+    sigma = estimate_sigma(test_data, N=4).item()
 
     den_small = non_local_means(
         test_data,
@@ -124,6 +128,6 @@ def test_ascm_accuracy():
         rician=True)
 
     S0n = np.array(adaptive_soft_matching(test_data,
-                                          den_small, den_large, sigma[0]))
+                                          den_small, den_large, sigma))
 
-    assert_array_almost_equal(S0n, test_ascm_data_ref)
+    assert_array_almost_equal(S0n, test_ascm_data_ref, decimal=4)

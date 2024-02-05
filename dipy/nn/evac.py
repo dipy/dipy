@@ -2,29 +2,22 @@
 """
 Class and helper functions for fitting the EVAC+ model.
 """
-
-
-from packaging.version import Version
 import logging
 import numpy as np
-from scipy.ndimage import affine_transform
 
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.io.image import load_nifti
 from dipy.align.reslice import reslice
 from dipy.nn.utils import normalize, set_logger_level, transform_img
-from dipy.nn.utils import recover_img
+from dipy.nn.utils import recover_img, correct_minor_errors
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Softmax, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LayerNormalization, LeakyReLU
+    from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
     from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 else:
     class Model:
         pass
@@ -99,13 +92,13 @@ class Block(Layer):
                                           padding=padding))
             self.layer_list.append(Dropout(drop_r))
             self.layer_list.append(LayerNormalization())
-            self.layer_list.append(LeakyReLU())
+            self.layer_list.append(ReLU())
         if layer_type=='down':
             self.layer_list2.append(Conv3D(1, 2, strides=2, padding='same'))
-            self.layer_list2.append(LeakyReLU())
+            self.layer_list2.append(ReLU())
         elif layer_type=='up':
             self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding='same'))
-            self.layer_list2.append(LeakyReLU())
+            self.layer_list2.append(ReLU())
 
         self.channel_sum = ChannelSum()
         self.add = Add()
@@ -303,7 +296,8 @@ class EVACPlus:
 
     def predict(self, T1, affine,
                 voxsize=(1, 1, 1), batch_size=None,
-                return_affine=False, return_prob=False):
+                return_affine=False, return_prob=False,
+                largest_area=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
 
@@ -311,7 +305,7 @@ class EVACPlus:
         ----------
         T1 : np.ndarray or list of np.ndarrys
             For a single image, input should be a 3D array.
-            If multiple images, it should be a 4D array or a list.
+            If multiple images, it should be a a list or tuple.
 
         affine : np.ndarray (4, 4) or (batch, 4, 4)
             or list of np.ndarrays with len of batch
@@ -342,6 +336,11 @@ class EVACPlus:
             binary mask. Useful for testing.
             Default is False
 
+        largest_area : bool, optional
+            Whether to exclude only the largest background/foreground.
+            Useful for solving minor errors.
+            Default is True
+
         Returns
         -------
         pred_output : np.ndarray (...) or (batch, ...)
@@ -350,6 +349,7 @@ class EVACPlus:
         affine : np.ndarray (...) or (batch, ...)
             affine matrix of mask
             only if return_affine is True
+
         """
 
         voxsize = np.array(voxsize)
@@ -358,7 +358,7 @@ class EVACPlus:
         if isinstance(T1, (list, tuple)):
             dim = 4
             T1 = np.array(T1)
-        elif len(T1.shape)==3:
+        elif len(T1.shape) == 3:
             dim = 3
             if batch_size is not None:
                 logger.warning('Batch size specified, but not used',
@@ -370,24 +370,27 @@ class EVACPlus:
             affine = np.expand_dims(affine, 0)
             voxsize = np.expand_dims(voxsize, 0)
         else:
-            raise ValueError("T1 data should be a np.ndarray of dimension 3 or"
-                             "a list/tuple of it")
+            raise ValueError("T1 data should be a np.ndarray of dimension 3 "
+                             "or a list/tuple of it")
 
         input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))
+        ori_shapes = np.zeros((len(T1), 3)).astype(int)
 
         # Normalize the data.
         n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
             n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine = transform_img(n_T1[i],
-                                            affine[i])
+            t_img, t_affine, ori_shape = transform_img(n_T1[i],
+                                                       affine[i],
+                                                       voxsize[i])
             input_data[..., i] = t_img
             rev_affine[i] = t_affine
+            ori_shapes[i] = ori_shape
 
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128),
-                               dtype=np.float32)
+                              dtype=np.float32)
         for batch_idx in range(batch_size, len(T1)+1, batch_size):
             batch = input_data[..., batch_idx-batch_size:batch_idx]
             temp_input = prepare_img(batch)
@@ -403,9 +406,13 @@ class EVACPlus:
         for i, T1_img in enumerate(T1):
             output = recover_img(prediction[i],
                                  rev_affine[i],
-                                 T1_img.shape)
-            if return_prob == False:
+                                 voxsize=voxsize[i],
+                                 ori_shape=ori_shapes[i],
+                                 image_shape=T1_img.shape)
+            if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
+                if largest_area:
+                    output = correct_minor_errors(output)
             output_mask.append(output)
 
         if dim == 3:

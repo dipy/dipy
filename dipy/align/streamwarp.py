@@ -236,23 +236,31 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp
-    displacements and BUAN
+    displacements and BUAN.
+
+    Depending on the number of points of a streamline, and the number of
+    segments requested, multiple points may be considered for the computation
+    of a given segment; a segment may contain information from a single point;
+    or some segments may not contain information from any points. In the latter
+    case, the segment will contain an ``np.nan`` value. The point-to-segment
+    mapping is defined by the :func:`assignment_map`: for each segment index,
+    the point information of the matching index positions, as returned by
+    :func:`assignment_map`, are considered for the computation.
 
     Parameters
     ----------
     moving_aligned : Streamlines
         Linearly (affinely) moved bundle
     deformed_bundle : Streamlines
-        Nonlinearly (warped) bundle
-    no_disks : int
+        Nonlinearly (warped) moved bundle
+    no_disks : int, optional
         Number of segments to be created along the length of the bundle
-        (Default 10)
     plotting : Boolean, optional
-        Plot bundle shape profile (default False)
+        Plot bundle shape profile
 
     Returns
     -------
-    shape_profilen : np.ndarray
+    shape_profile : np.ndarray
         Float array containing bundlewarp displacement magnitudes along the
         length of the bundle
     stdv : np.ndarray
@@ -265,7 +273,9 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
     indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
 
-    colors = np.random.rand(n, 3)
+    rng = np.random.default_rng()
+
+    colors = rng.random((n, 3))
 
     disks_color = []
     for _, ind in enumerate(indx):
@@ -278,8 +288,13 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
 
     for i in range(n):
 
-        shape_profile[i] = np.mean(offsets[indx == i])
-        stdv[i] = np.std(offsets[indx == i])
+        mask = indx == i
+        if sum(mask):
+            shape_profile[i] = np.mean(offsets[mask])
+            stdv[i] = np.std(offsets[mask])
+        else:
+            shape_profile[i] = np.nan
+            stdv[i] = np.nan
 
     if plotting:
         bundle_shape_profile(x, shape_profile, stdv)

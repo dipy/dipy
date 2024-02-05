@@ -69,12 +69,12 @@ jobs:
       COVERAGE: ${{ inputs.coverage }}
       CODECOV_TOKEN: ${{ secrets.codecov-token }}
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
-      PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+      PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"  # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       if: ${{ matrix.install-type != 'conda' }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up Virtualenv
@@ -83,7 +83,7 @@ jobs:
         python -m pip install --upgrade pip virtualenv
         virtualenv $VENV_ARGS venv
     - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       if: ${{ matrix.install-type == 'conda' }}
       with:
         auto-update-conda: true
@@ -93,9 +93,28 @@ jobs:
         channels: defaults, conda-forge
         use-only-tar-bz2: true
     - name: Install Dependencies
-      run: tools/ci/install_dependencies.sh
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/install_dependencies.sh || echo "::warning::Experimental Job so Install Dependencies failure ignored!"
+        else
+          tools/ci/install_dependencies.sh
+        fi
+    # No need to update mingw-w64, we use msvc
+    # mingw-w64 does not manage well openmp threads so we avoid it for now
+    # Note that compilation works with mingw-w64 but 2-3 tests fail due to openmp
+    # - name: Install rtools (mingw-w64)
+    #   if runner.os == 'Windows'
+    #   run: |
+    #     choco install rtools -y --no-progress --force --version=4.0.0.20220206
+    #     echo "/c/rtools40/ucrt64/bin;" >> $GITHUB_PATH
+    #     echo "PKG_CONFIG_PATH=/c/opt/64/lib/pkgconfig;" >> $GITHUB_ENV
     - name: Install DIPY
-      run: tools/ci/install.sh
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/install.sh || echo "::warning::Experimental Job so Install DIPY failure ignored!"
+        else
+          tools/ci/install.sh
+        fi
     - name: Setup Headless
       if: ${{ inputs.enable-viz-tests }}
       run: tools/ci/setup_headless.sh
@@ -117,7 +136,3 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         verbose: true
-    # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    # - name: Setup tmate session
-    #   if: ${{ failure() }}
-    #   uses: mxschmitt/action-tmate@v3

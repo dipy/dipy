@@ -17,6 +17,71 @@ from dipy.reconst.dki import (mean_kurtosis,
                               mean_kurtosis_tensor,
                               kurtosis_fractional_anisotropy)
 
+gtab1, gtab2, gtab, DTDs, S0 = None, None, None, None, None
+
+
+def setup_module():
+    global gtab1, gtab2, gtab, DTDs, S0
+    # Generating the DDE acquisition parameters (gtab1 and gtab2) for CTI
+    # based on the minimal requirements.
+    # This code then further generates the corresponding QTE gtab to test
+    # simulated signals based on multiple Gaussian components.
+    # In this scenario, CTI should yield analogous Kaniso and Kiso values as
+    # compared to QTE, while Kmicro would be zero.
+
+    rng = np.random.default_rng(1234)
+    n_pts = 20
+    theta = np.pi * rng.random(n_pts)
+    phi = 2 * np.pi * rng.random(n_pts)
+    hsph_initial = HemiSphere(theta=theta, phi=phi)
+    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
+
+    # Generating gtab1
+    bvecs1 = np.concatenate([hsph_updated.vertices] * 4)
+    bvecs1 = np.append(bvecs1, [[0, 0, 0]], axis=0)
+    bvals1 = np.array([2] * 20 + [1] * 20 + [1] * 20 + [1] * 20 + [0])
+    gtab1 = gradient_table(bvals1, bvecs1)
+
+    # Generating perpendicular directions to hsph_updated
+    hsph_updated90 = _perpendicular_directions_temp(hsph_updated.vertices)
+    dot_product = np.sum(hsph_updated.vertices * hsph_updated90, axis=1)
+    are_perpendicular = np.isclose(dot_product, 0)
+
+    # Generating gtab2
+    bvecs2 = np.concatenate(([hsph_updated.vertices] * 2) +
+                            [hsph_updated90] + ([hsph_updated.vertices]))
+    bvecs2 = np.append(bvecs2, [[0, 0, 0]], axis=0)
+    bvals2 = np.array([0] * 20 + [1] * 20 + [1] * 20 + [0] * 20 + [0])
+    gtab2 = gradient_table(bvals2, bvecs2)
+
+    e1 = bvecs1
+    e2 = bvecs2
+    e3 = np.cross(e1, e2)
+    V = np.stack((e1, e2, e3), axis=-1)
+    V_transpose = np.transpose(V, axes=(0, 2, 1))
+    B = np.zeros((81, 3, 3))
+    b = np.zeros((3, 3))
+    for i in range(81):
+        b[0, 0] = bvals1[i]
+        b[1, 1] = bvals2[i]
+        B[i] = np.matmul(V[i], np.matmul(b, V_transpose[i]))
+    gtab = gradient_table(bvals1, bvecs1, btens=B)
+    S0 = 100
+    anisotropic_DTD = _anisotropic_DTD()
+    isotropic_DTD = _isotropic_DTD()
+
+    DTDs = [
+        anisotropic_DTD,
+        isotropic_DTD,
+        np.concatenate((anisotropic_DTD, isotropic_DTD))
+    ]
+    DTD_labels = ['Anisotropic DTD', 'Isotropic DTD', 'Combined DTD']
+
+
+def teardown_module():
+    global gtab1, gtab2, gtab, DTDs, S0
+    gtab1, gtab2, gtab, DTDs, S0 = None, None, None, None, None
+
 
 def _perpendicular_directions_temp(v, num=20, half=False):
     """
@@ -60,61 +125,6 @@ def _perpendicular_directions_temp(v, num=20, half=False):
         psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
                              (v[0]*cosa - v[2]*v[1]*sina) / sq])
     return psamples.T
-
-# Generating the DDE acquisition parameters (gtab1 and gtab2) for CTI based on
-# the minimal requirements.
-# This code then further generates the corresponding QTE gtab to test simulated
-# signals based on multiple Gaussian components.
-# In this scenario, CTI should yield analogous Kaniso and Kiso values as
-# compared to QTE, while Kmicro would be zero.
-
-
-n_pts = 20
-theta = np.pi * np.random.rand(n_pts)
-phi = 2 * np.pi * np.random.rand(n_pts)
-hsph_initial = HemiSphere(theta=theta, phi=phi)
-hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-
-# Generating gtab1
-bvecs1 = np.concatenate([hsph_updated.vertices] * 4)
-bvecs1 = np.append(bvecs1, [[0, 0, 0]], axis=0)
-bvals1 = np.array([2] * 20 + [1] * 20 + [1] * 20 + [1] * 20 + [0])
-gtab1 = gradient_table(bvals1, bvecs1)
-
-# Generating perpendicular directions to hsph_updated
-hsph_updated90 = _perpendicular_directions_temp(hsph_updated.vertices)
-dot_product = np.sum(hsph_updated.vertices * hsph_updated90, axis=1)
-are_perpendicular = np.isclose(dot_product, 0)
-
-# Generating gtab2
-bvecs2 = np.concatenate(([hsph_updated.vertices] * 2) +
-                        [hsph_updated90] + ([hsph_updated.vertices]))
-bvecs2 = np.append(bvecs2, [[0, 0, 0]], axis=0)
-bvals2 = np.array([0] * 20 + [1] * 20 + [1] * 20 + [0] * 20 + [0])
-gtab2 = gradient_table(bvals2, bvecs2)
-
-e1 = bvecs1
-e2 = bvecs2
-e3 = np.cross(e1, e2)
-V = np.stack((e1, e2, e3), axis=-1)
-V_transpose = np.transpose(V, axes=(0, 2, 1))
-B = np.zeros((81, 3, 3))
-b = np.zeros((3, 3))
-for i in range(81):
-    b[0, 0] = bvals1[i]
-    b[1, 1] = bvals2[i]
-    B[i] = np.matmul(V[i], np.matmul(b, V_transpose[i]))
-gtab = gradient_table(bvals1, bvecs1, btens=B)
-S0 = 100
-anisotropic_DTD = _anisotropic_DTD()
-isotropic_DTD = _isotropic_DTD()
-
-DTDs = [
-    anisotropic_DTD,
-    isotropic_DTD,
-    np.concatenate((anisotropic_DTD, isotropic_DTD))
-]
-DTD_labels = ['Anisotropic DTD', 'Isotropic DTD', 'Combined DTD']
 
 
 def construct_cti_params(evals, evecs, kt, fct):
@@ -319,7 +329,8 @@ def test_cti_fits():
         kfa_result = ctiF.kfa
         kurtosis_fractional_anisotropy_result = kurtosis_fractional_anisotropy(
             cti_params)
-        assert np.allclose(kfa_result, kurtosis_fractional_anisotropy_result), (
+        assert np.allclose(kfa_result,
+                           kurtosis_fractional_anisotropy_result), (
             "The results of the kfa function from CorrelationTensorFit and the"
             "kurtosis_fractional_anisotropy function from dki.py are not equal"
         )

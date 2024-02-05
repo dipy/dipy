@@ -106,7 +106,10 @@ class ApiDocWriter:
         # It's also possible to imagine caching the module parsing here
         self._package_name = package_name
         root_module = self._import(package_name)
-        self.root_path = root_module.__path__[-1]
+        if root_module.__path__:
+            self.root_path = root_module.__path__[-1]
+        else:
+            self.root_path = os.path.dirname(root_module.__file__)
         self.written_modules = None
 
     package_name = property(get_package_name, set_package_name, None,
@@ -224,7 +227,7 @@ class ApiDocWriter:
         pat = re.compile(patterns)
 
         if mod.__file__.endswith('.py'):
-            with open(mod.__file__) as fi:
+            with open(mod.__file__, encoding="utf8") as fi:
                 node = ast.parse(fi.read())
 
             functions = []

@@ -11,7 +11,7 @@ Overview
 Debian / Ubuntu  ``sudo apt-get install git-core``
 Fedora           ``sudo yum install git-core``
 Windows          Download and install msysGit_
-OS X             Use the git-osx-installer_
+macOS            Use the git-osx-installer_
 ================ =============
 
 In detail

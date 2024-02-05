@@ -6,7 +6,6 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
-import numpy.random as random
 from dipy.align.fused_types cimport floating
 from dipy.align import vector_fields as vf
 
@@ -1290,7 +1289,7 @@ def compute_parzen_mi(double[:, :] joint,
 
 
 def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
-                          double sigma=0.25, int seed=1234):
+                          double sigma=0.25, object rng=None):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 
     The sampling is made by taking all pixels whose index (in lexicographical
@@ -1350,11 +1349,12 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
     if not vf.is_valid_affine(grid2world, dim):
         raise ValueError("Invalid grid-to-space matrix")
 
-    random.seed(seed)
+    if rng is None:
+        rng = np.random.default_rng(1234)
     if dim == 2:
         n = shape[0] * shape[1]
         m = n // k
-        samples = random.randn(m, dim) * sigma
+        samples = rng.standard_normal((m, dim)) * sigma
         with nogil:
             for i in range(m):
                 r = ((i * k) // shape[1]) + samples[i, 0]
@@ -1365,7 +1365,7 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
         slice_size = shape[1] * shape[2]
         n = shape[0] * slice_size
         m = n // k
-        samples = random.randn(m, dim) * sigma
+        samples = rng.standard_normal((m, dim)) * sigma
         with nogil:
             for i in range(m):
                 s = ((i * k) // slice_size) + samples[i, 0]

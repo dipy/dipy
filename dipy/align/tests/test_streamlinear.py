@@ -27,6 +27,7 @@ from dipy.data import get_fnames, two_cingulum_bundles, read_five_af_bundles
 from dipy.align.bundlemin import (_bundle_minimum_distance_matrix,
                                   _bundle_minimum_distance,
                                   distance_matrix_mdf)
+from dipy.testing.decorators import set_random_number_generator
 
 
 def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
@@ -198,12 +199,12 @@ def test_min_vs_min_fast_precision():
     assert_equal(bmd.distance(x_test), bmdf.distance(x_test))
 
 
-def test_same_number_of_points():
-
-    A = [np.random.rand(10, 3), np.random.rand(20, 3)]
-    B = [np.random.rand(21, 3), np.random.rand(30, 3)]
-    C = [np.random.rand(10, 3), np.random.rand(10, 3)]
-    D = [np.random.rand(20, 3), np.random.rand(20, 3)]
+@set_random_number_generator()
+def test_same_number_of_points(rng):
+    A = [rng.random((10, 3)), rng.random((20, 3))]
+    B = [rng.random((21, 3)), rng.random((30, 3))]
+    C = [rng.random((10, 3)), rng.random((10, 3))]
+    D = [rng.random((20, 3)), rng.random((20, 3))]
 
     slr = StreamlineLinearRegistration()
     assert_raises(ValueError, slr.optimize, A, B)
@@ -254,14 +255,14 @@ def test_efficient_bmd():
     assert_almost_equal(dist, dist2)
 
 
-def test_openmp_locks():
-
+@set_random_number_generator()
+def test_openmp_locks(rng):
     static = []
     moving = []
     pts = 20
 
     for i in range(1000):
-        s = np.random.rand(pts, 3)
+        s = rng.random((pts, 3))
         static.append(s)
         moving.append(s + 2)
 
@@ -413,18 +414,18 @@ def test_vectorize_streamlines():
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
 
-def test_x0_input():
-
+@set_random_number_generator()
+def test_x0_input(rng):
     for x0 in [6, 7, 12, "Rigid", 'rigid', "similarity", "Affine"]:
         StreamlineLinearRegistration(x0=x0)
 
-    for x0 in [np.random.rand(6), np.random.rand(7), np.random.rand(12)]:
+    for x0 in [rng.random(6), rng.random(7), rng.random(12)]:
         StreamlineLinearRegistration(x0=x0)
 
-    for x0 in [8, 20, "Whatever", np.random.rand(20), np.random.rand(20, 3)]:
+    for x0 in [8, 20, "Whatever", rng.random(20), rng.random((20, 3))]:
         assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
-    x0 = np.random.rand(4, 3)
+    x0 = rng.random((4, 3))
     assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
     x0_6 = np.zeros(6)
@@ -438,10 +439,10 @@ def test_x0_input():
         assert_equal(slr.x0, x0_s[i])
 
 
-def test_compose_decompose_matrix44():
-
+@set_random_number_generator()
+def test_compose_decompose_matrix44(rng):
     for i in range(20):
-        x0 = np.random.rand(12)
+        x0 = rng.random(12)
         mat = compose_matrix44(x0[:6])
         assert_array_almost_equal(x0[:6], decompose_matrix44(mat, size=6))
         mat = compose_matrix44(x0[:7])
@@ -482,9 +483,10 @@ def test_cascade_of_optimizations_and_threading():
     assert_(slm3.fopt < slm2.fopt)
 
 
-def test_wrong_num_threads():
-    A = [np.random.rand(10, 3), np.random.rand(10, 3)]
-    B = [np.random.rand(10, 3), np.random.rand(10, 3)]
+@set_random_number_generator()
+def test_wrong_num_threads(rng):
+    A = [rng.random((10, 3)), rng.random((10, 3))]
+    B = [rng.random((10, 3)), rng.random((10, 3))]
 
     slr = StreamlineLinearRegistration(num_threads=0)
     assert_raises(ValueError, slr.optimize, A, B)

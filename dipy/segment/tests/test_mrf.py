@@ -5,34 +5,35 @@ from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
                               IteratedConditionalModes)
 from dipy.segment.tissue import (TissueClassifierHMRF)
+from dipy.testing.decorators import set_random_number_generator
 
 
-# Load a coronal slice from a T1-weighted MRI
-fname = get_fnames('t1_coronal_slice')
-single_slice = np.load(fname)
+def create_image():
+    # Load a coronal slice from a T1-weighted MRI
+    fname = get_fnames('t1_coronal_slice')
+    single_slice = np.load(fname)
 
-# Stack a few copies to form a 3D volume
-nslices = 5
-image = np.zeros(shape=single_slice.shape + (nslices,))
-image[..., :nslices] = single_slice[..., None]
+    # Stack a few copies to form a 3D volume
+    nslices = 5
+    image = np.zeros(shape=single_slice.shape + (nslices,))
+    image[..., :nslices] = single_slice[..., None]
+    return image
 
-# Set up parameters
-nclasses = 4
-beta = np.float64(0.0)
-max_iter = 10
-background_noise = True
 
 # Making squares
-square = np.zeros((256, 256, 3), dtype=np.int16)
-square[42:213, 42:213, :] = 1
-square[71:185, 71:185, :] = 2
-square[99:157, 99:157, :] = 3
+def create_square():
+    square = np.zeros((256, 256, 3), dtype=np.int16)
+    square[42:213, 42:213, :] = 1
+    square[71:185, 71:185, :] = 2
+    square[99:157, 99:157, :] = 3
+
+    return square
 
 
-def create_square_uniform():
+def create_square_uniform(rng):
     square_1 = np.zeros((256, 256, 3)) + 0.001
-    square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
-    rng = np.random.default_rng(1234)
+    square_1 = add_noise(square_1, 10000, 1,
+                         noise_type='gaussian', rng=rng)
     temp_1 = rng.integers(1, 21, size=(171, 171, 3))
     temp_1 = np.where(temp_1 < 20, 1, 3)
     square_1[42:213, 42:213, :] = temp_1
@@ -46,11 +47,11 @@ def create_square_uniform():
     return square_1
 
 
-def create_square_gauss():
+def create_square_gauss(rng):
     square_gauss = np.zeros((256, 256, 3)) + 0.001
-    square_gauss = add_noise(square_gauss, 10000, 1, noise_type='gaussian')
+    square_gauss = add_noise(square_gauss, 10000, 1,
+                             noise_type='gaussian', rng=rng)
     square_gauss[42:213, 42:213, :] = 1
-    rng = np.random.default_rng(1234)
     noise_1 = rng.normal(1.001, 0.0001,
                          size=square_gauss[42:213, 42:213, :].shape)
     square_gauss[42:213, 42:213, :] = square_gauss[42:213, 42:213, :] + noise_1
@@ -68,6 +69,10 @@ def create_square_gauss():
 
 def test_grayscale_image():
 
+    nclasses = 4
+    beta = np.float64(0.0)
+
+    image = create_image()
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
@@ -134,9 +139,12 @@ def test_grayscale_image():
 
 def test_grayscale_iter():
 
-    max_iter = 15
+    nclasses = 4
     beta = np.float64(0.1)
+    max_iter = 15
+    background_noise = True
 
+    image = create_image()
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
@@ -235,13 +243,18 @@ def test_grayscale_iter():
     npt.assert_(np.abs(np.sum(difference_map)) != 0)
 
 
-def test_square_iter():
+@set_random_number_generator()
+def test_square_iter(rng):
+
+    nclasses = 4
+    beta = np.float64(0.0)
+    max_iter = 10
 
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    initial_segmentation = square
-    square_gauss = create_square_gauss()
+    initial_segmentation = create_square()
+    square_gauss = create_square_gauss(rng)
 
     mu, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
                                 nclasses)
@@ -328,13 +341,17 @@ def test_square_iter():
     npt.assert_(np.abs(np.sum(difference_map)) == 0.0)
 
 
-def test_icm_square():
+@set_random_number_generator()
+def test_icm_square(rng):
+
+    nclasses = 4
+    max_iter = 10
 
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    initial_segmentation = square
-    square_1 = create_square_uniform()
+    initial_segmentation = create_square()
+    square_1 = create_square_uniform(rng)
 
     mu, sigma = com.seg_stats(square_1, initial_segmentation,
                               nclasses)
@@ -366,7 +383,7 @@ def test_icm_square():
         initial_segmentation = final_segmentation_1
 
     beta = 2
-    initial_segmentation = square
+    initial_segmentation = create_square()
 
     for j in range(max_iter):
 
@@ -386,9 +403,12 @@ def test_classify():
 
     imgseg = TissueClassifierHMRF()
 
+    nclasses = 4
     beta = 0.1
     tolerance = 0.0001
     max_iter = 10
+
+    image = create_image()
 
     npt.assert_(image.max() == 1.0)
     npt.assert_(image.min() == 0.0)

@@ -257,7 +257,7 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
+cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) noexcept nogil:
     """Sorts `A` in-place and applies the same reordering to `B`"""
     cdef:
         cnp.npy_intp n = A.shape[0]
@@ -280,7 +280,7 @@ cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
-                             cnp.npy_intp *wpeak_ptr) nogil:
+                             cnp.npy_intp *wpeak_ptr) noexcept nogil:
     """Compares every pair of points in edges
 
     Parameters

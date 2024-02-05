@@ -1,15 +1,11 @@
 import pytest
-from packaging.version import Version
 from numpy.testing import assert_equal, assert_
 
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 
 if have_tf:
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
-
     from dipy.nn.model import SingleLayerPerceptron, MultipleLayerPercepton
 
 
@@ -18,7 +14,7 @@ def test_default_mnist_sequential():
 
     mnist = tf.keras.datasets.mnist
 
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -44,7 +40,7 @@ def test_default_mnist_sequential():
 def test_default_mnist_slp():
 
     mnist = tf.keras.datasets.mnist
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -64,7 +60,7 @@ def test_default_mnist_slp():
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_mnist_mlp():
     mnist = tf.keras.datasets.mnist
-    epochs = 1
+    epochs = 5
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0

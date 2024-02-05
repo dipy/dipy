@@ -4,7 +4,6 @@ Script to generate documentation for command line utilities
 """
 import os
 from os.path import join as pjoin
-import re
 from subprocess import Popen, PIPE, CalledProcessError
 import sys
 import importlib
@@ -92,41 +91,40 @@ if __name__ == '__main__':
     except ImportError:
         abort("Cannot import " + package)
 
-    module = sys.modules[package]
 
-    # Check that the source version is equal to the installed
-    # version. If the versions mismatch the API documentation sources
-    # are not (re)generated. This avoids automatic generation of documentation
-    # for older or newer versions if such versions are installed on the system.
+    # NOTE: with the new versioning scheme, this check is not needed anymore
+    # Also, this might be needed if we do not use spin to generate the docs
+    # module = sys.modules[package]
 
-    installed_version = Version(module.__version__)
+    # # Check that the source version is equal to the installed
+    # # version. If the versions mismatch the API documentation sources
+    # # are not (re)generated. This avoids automatic generation of documentation
+    # # for older or newer versions if such versions are installed on the system.
 
-    info_file = pjoin('..', package, 'info.py')
-    info_lines = open(info_file).readlines()
-    source_version = '.'.join(
-        [v.split('=')[1].strip(" '\n.")
-         for v in info_lines
-         if re.match('^_version_(major|minor|micro|extra)', v)]).strip('.')
-    source_version = Version(source_version)
-    print('***', source_version)
+    # installed_version = Version(module.__version__)
 
-    if source_version != installed_version:
-        print('***', installed_version)
-        abort("Installed version does not match source version")
+    # info_file = pjoin('..', package, 'info.py')
+    # info_lines = open(info_file).readlines()
+    # source_version = '.'.join(
+    #     [v.split('=')[1].strip(" '\n.")
+    #      for v in info_lines
+    #      if re.match('^_version_(major|minor|micro|extra)', v)]).strip('.')
+    # source_version = Version(source_version)
+    # print('***', source_version)
+
+    # if source_version != installed_version:
+    #     print('***', installed_version)
+    #     abort("Installed version does not match source version")
 
 
     # generate docs
     command_list = []
 
-    workflows_folder = pjoin('..', 'bin')
     workflow_module = importlib.import_module("dipy.workflows.workflow")
+    cli_module = importlib.import_module("dipy.workflows.cli")
 
-    workflow_flist = [os.path.abspath(pjoin(workflows_folder, f))
-                      for f in os.listdir(workflows_folder)
-                      if os.path.isfile(pjoin(workflows_folder, f)) and
-                      f.lower().startswith("dipy_")]
+    workflows_dict = getattr(cli_module, "cli_flows")
 
-    workflow_flist = sorted(workflow_flist)
     workflow_desc = {}
     # We get all workflows class obj in a dictionary
     for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
@@ -146,16 +144,9 @@ if __name__ == '__main__':
         workflow_desc.update(d_wkflw)
 
     cmd_list = []
-    for fpath in workflow_flist:
-        fname = os.path.basename(fpath)
-        with open(fpath) as file_object:
-            flow_name = set(re.findall(r"[A-Z]\w+Flow", file_object.read(),
-                                       re.X | re.M))
+    for fname, wflw_value in workflows_dict.items():
+        flow_module_name, flow_name = wflw_value
 
-        if not flow_name or len(flow_name) != 1:
-            continue
-
-        flow_name = list(flow_name)[-1]
         print("Generating docs for: {0} ({1})".format(fname, flow_name))
         out_fname = fname + ".rst"
         with open(pjoin(outdir, out_fname), "w") as fp:
@@ -164,7 +155,7 @@ if __name__ == '__main__':
             # Trick to avoid docgen_cmd.py as cmd line
             help_txt = workflow_desc[flow_name]["help"]
             help_txt = help_txt.replace("docgen_cmd.py", fname)
-            help_txt = help_txt.replace("usage:", format_title('usage'))
+            help_txt = help_txt.replace("usage: ", format_title('usage'))
             help_txt = help_txt.replace("positional arguments:",
                                         format_title("positional arguments"))
             help_txt = help_txt.replace("optional arguments:",

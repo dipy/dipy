@@ -7,14 +7,11 @@ from warnings import warn
 
 import numpy as np
 
-from packaging.version import Version
-
 from dipy.reconst.base import ReconstModel
-from dipy.core.ndindex import ndindex
 from dipy.reconst.dti import auto_attr
 from dipy.utils.optpkg import optional_package
 
-cp, have_cvxpy, _ = optional_package("cvxpy")
+cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 # XXX Eventually to be replaced with `reconst.dti.lower_triangular`
@@ -546,7 +543,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     """
 
     if not have_cvxpy:
-        raise ValueError(
+        raise ImportError(
                     'CVXPY package needed to enforce constraints')
 
     if cvxpy_solver not in cp.installed_solvers():
@@ -568,10 +565,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     dc = cvxpy_1x6_to_3x3(x[1:7])
     cc = cvxpy_1x21_to_6x6(x[7:])
     constraints = [dc >> 0, cc >> 0]
-    if Version(cp.__version__) < Version('1.1'):
-        objective = cp.Minimize(cp.norm(A * x - y))
-    else:
-        objective = cp.Minimize(cp.norm(A @ x - y))
+    objective = cp.Minimize(cp.norm(A @ x - y))
     prob = cp.Problem(objective, constraints)
     unconstrained = cp.Problem(objective)
 

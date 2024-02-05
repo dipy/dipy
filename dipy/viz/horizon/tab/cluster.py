@@ -1,9 +1,9 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider)
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import ui
@@ -11,7 +11,6 @@ if has_fury:
 
 class ClustersTab(HorizonTab):
     def __init__(self, clusters_visualizer, threshold):
-
         self.__visualizer = clusters_visualizer
 
         self.__centroid_actors = self.__visualizer.centroid_actors

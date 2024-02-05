@@ -1,398 +1,444 @@
 import warnings
 
+from functools import partial
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
-                                  color_single_slider)
+from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
+                                  build_switcher, build_checkbox)
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
-    from fury import colormap, ui
-    from fury.data import read_viz_icons
+    from fury import colormap
 
 
 class SlicesTab(HorizonTab):
-    def __init__(self, slices_visualizer, id=0):
+    """Interaction tab for slice visualization.
 
-        self.__visualizer = slices_visualizer
+    Attributes
+    ----------
+    name : str
+        Name of the tab.
+    """
+    def __init__(self, slices_visualizer, slice_id=0,
+                 force_render=lambda _element: None):
+        super().__init__()
+        self._visualizer = slices_visualizer
 
-        self.__actors = self.__visualizer.slice_actors
-        if id == 0:
-            self.__name = 'Image'
+        if slice_id == 0:
+            self._name = 'Image'
         else:
-            self.__name = f'Image {id}'
+            self._name = f'Image {slice_id}'
 
-        self.__tab_id = 0
-        self.__tab_ui = None
+        self._force_render = force_render
+        self._tab_id = 0
 
-        self.__data_shape = self.__visualizer.data_shape
-        self.__selected_slice_x = self.__visualizer.selected_slices[0]
-        self.__selected_slice_y = self.__visualizer.selected_slices[1]
-        self.__selected_slice_z = self.__visualizer.selected_slices[2]
-        self.__min_intensity = self.__visualizer.intensities_range[0]
-        self.__max_intensity = self.__visualizer.intensities_range[1]
+        self.on_slice_change = lambda _tab_id, _x, _y, _z: None
 
-        self.__slider_label_opacity = build_label(text='Opacity')
+        self._opacity_toggle = build_checkbox(
+            labels=[''],
+            checked_labels=[''],
+            on_change=self._toggle_opacity)
 
-        opacity = 1
+        self._slice_opacity_label, self._slice_opacity = build_slider(
+            initial_value=1.,
+            max_value=1.,
+            text_template='{ratio:.0%}',
+            on_change=self._change_opacity,
+            label='Opacity'
+        )
 
-        length = 450
-        lw = 3
-        radius = 8
-        fs = 16
+        self._slice_x_label, self._slice_x = build_slider(
+            initial_value=self._visualizer.selected_slices[0],
+            max_value=self._visualizer.data_shape[0] - 1,
+            text_template='{value:.0f}',
+            label='X Slice'
+        )
 
-        tt = '{ratio:.0%}'
+        self._change_slice_x = partial(self._change_slice_value,
+                                       selected_slice=self._slice_x)
+        self._adjust_slice_x = partial(self._change_slice_value,
+                                       selected_slice=self._slice_x,
+                                       sync_slice=True)
+        self._visualize_slice_x = partial(
+            self._visualizer.slice_actors[0].display_extent,
+            y1=0, y2=self._visualizer.data_shape[1] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
-        self.__slider_opacity = ui.LineSlider2D(
-            initial_value=opacity, max_value=1., length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        self._slice_x.obj.on_value_changed = self._adjust_slice_x
+        self._slice_x.obj.on_moving_slider = self._change_slice_x
 
-        color_single_slider(self.__slider_opacity)
+        self._change_slice_visibility_x = partial(
+            self._update_slice_visibility, selected_slice=self._slice_x,
+            actor=self._visualizer.slice_actors[0])
 
-        self.__slices_opacity = 1
+        self._slice_x_toggle = build_checkbox(
+            labels=[''],
+            checked_labels=[''],
+            on_change=self._change_slice_visibility_x)
 
-        self.__slider_opacity.on_change = self.__change_opacity
+        self._slice_y_label, self._slice_y = build_slider(
+            initial_value=self._visualizer.selected_slices[1],
+            max_value=self._visualizer.data_shape[1] - 1,
+            text_template='{value:.0f}',
+            label='Y Slice'
+        )
 
-        self.__slider_label_x = build_label(text='X Slice')
-        self.__slider_label_y = build_label(text='Y Slice')
-        self.__slider_label_z = build_label(text='Z Slice')
+        self._change_slice_y = partial(self._change_slice_value,
+                                       selected_slice=self._slice_y)
+        self._adjust_slice_y = partial(self._change_slice_value,
+                                       selected_slice=self._slice_y,
+                                       sync_slice=True)
+        self._visualize_slice_y = partial(
+            self._visualizer.slice_actors[1].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
-        tt = '{value:.0f}'
+        self._slice_y.obj.on_value_changed = self._adjust_slice_y
+        self._slice_y.obj.on_moving_slider = self._change_slice_y
 
-        self.__slider_slice_x = ui.LineSlider2D(
-            initial_value=self.__selected_slice_x,
-            max_value=self.__data_shape[0] - 1, length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        self._change_slice_visibility_y = partial(
+            self._update_slice_visibility, selected_slice=self._slice_y,
+            actor=self._visualizer.slice_actors[1])
 
-        self.__slider_slice_y = ui.LineSlider2D(
-            initial_value=self.__selected_slice_y,
-            max_value=self.__data_shape[1] - 1, length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        self._slice_y_toggle = build_checkbox(
+            labels=[''],
+            checked_labels=[''],
+            on_change=self._change_slice_visibility_y)
 
-        self.__slider_slice_z = ui.LineSlider2D(
-            initial_value=self.__selected_slice_z,
-            max_value=self.__data_shape[2] - 1, length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        self._slice_z_label, self._slice_z = build_slider(
+            initial_value=self._visualizer.selected_slices[2],
+            max_value=self._visualizer.data_shape[2] - 1,
+            text_template='{value:.0f}',
+            label='Z Slice'
+        )
 
-        color_single_slider(self.__slider_slice_x)
-        color_single_slider(self.__slider_slice_y)
-        color_single_slider(self.__slider_slice_z)
+        self._change_slice_z = partial(self._change_slice_value,
+                                       selected_slice=self._slice_z)
+        self._adjust_slice_z = partial(self._change_slice_value,
+                                       selected_slice=self._slice_z,
+                                       sync_slice=True)
+        self._visualize_slice_z = partial(
+            self._visualizer.slice_actors[2].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            y1=0, y2=self._visualizer.data_shape[1] - 1)
 
-        self.__slider_slice_x.on_change = self.__change_slice_x
-        self.__slider_slice_y.on_change = self.__change_slice_y
-        self.__slider_slice_z.on_change = self.__change_slice_z
+        self._slice_z.obj.on_value_changed = self._adjust_slice_z
+        self._slice_z.obj.on_moving_slider = self._change_slice_z
 
-        icon_files = []
-        icon_files.append(('minus', read_viz_icons(fname='minus.png')))
-        icon_files.append(('plus', read_viz_icons(fname='plus.png')))
+        self._change_slice_visibility_z = partial(
+            self._update_slice_visibility, selected_slice=self._slice_z,
+            actor=self._visualizer.slice_actors[2])
 
-        self.__button_slice_x = ui.Button2D(
-            icon_fnames=icon_files, size=(25, 25))
-        self.__button_slice_y = ui.Button2D(
-            icon_fnames=icon_files, size=(25, 25))
-        self.__button_slice_z = ui.Button2D(
-            icon_fnames=icon_files, size=(25, 25))
+        self._slice_z_toggle = build_checkbox(
+            labels=[''],
+            checked_labels=[''],
+            on_change=self._change_slice_visibility_z)
 
-        self.__slice_visibility_x = True
-        self.__slice_visibility_y = True
-        self.__slice_visibility_z = True
+        self._voxel_label = build_label(text='Voxel', is_horizon_label=True)
+        self._voxel_data = build_label(text='', is_horizon_label=True)
 
-        self.__button_slice_x.on_left_mouse_button_clicked = (
-            self.__change_slice_visibility_x)
-        self.__button_slice_y.on_left_mouse_button_clicked = (
-            self.__change_slice_visibility_y)
-        self.__button_slice_z.on_left_mouse_button_clicked = (
-            self.__change_slice_visibility_z)
+        self._visualizer.register_picker_callback(self._change_picked_voxel)
 
-        self.__slider_label_intensities = build_label(text='Intensities')
+        self.register_elements(
+            self._opacity_toggle,
+            self._slice_opacity_label,
+            self._slice_opacity,
+            self._slice_x_toggle,
+            self._slice_x_label,
+            self._slice_x,
+            self._slice_y_toggle,
+            self._slice_y_label,
+            self._slice_y,
+            self._slice_z_toggle,
+            self._slice_z_label,
+            self._slice_z,
+            self._voxel_label,
+            self._voxel_data
+        )
 
-        self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=self.__visualizer.intensities_range,
-            min_value=self.__visualizer.volume_min,
-            max_value=self.__visualizer.volume_max, length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+        if not self._visualizer.rgb:
+            self._intensities_label, self._intensities = build_slider(
+                initial_value=self._visualizer.intensities_range,
+                min_value=self._visualizer.volume_min,
+                max_value=self._visualizer.volume_max,
+                text_template='{value:.0f}',
+                on_change=self._change_intensity,
+                label='Intensities',
+                is_double_slider=True
+            )
 
-        color_double_slider(self.__slider_intensities)
+            self._supported_colormap = [
+                {'label': 'Gray', 'value': 'gray'},
+                {'label': 'Bone', 'value': 'bone'},
+                {'label': 'Cividis', 'value': 'cividis'},
+                {'label': 'Inferno', 'value': 'inferno'},
+                {'label': 'Magma', 'value': 'magma'},
+                {'label': 'Viridis', 'value': 'viridis'},
+                {'label': 'Jet', 'value': 'jet'},
+                {'label': 'Pastel 1', 'value': 'Pastel1'},
+                {'label': 'Distinct', 'value': 'dist'},
 
-        self.__slider_intensities.on_change = self.__change_intensity
+            ]
 
-        self.__buttons_label_colormap = build_label(text='Colormap')
+            self._colormap_switcher_label, self._colormap_switcher = \
+                build_switcher(
+                    items=self._supported_colormap,
+                    label='Colormap',
+                    on_value_changed=self._change_color_map
+                )
 
-        self.__supported_colormaps = {
-            'Gray': 'gray', 'Bone': 'bone', 'Cividis': 'cividis',
-            'Inferno': 'inferno', 'Magma': 'magma', 'Viridis': 'viridis',
-            'Jet': 'jet', 'Pastel 1': 'Pastel1', 'Distinct': 'dist'}
+            self.register_elements(
+                self._intensities_label,
+                self._intensities,
+                self._colormap_switcher_label,
+                self._colormap_switcher,
+            )
 
-        self.__selected_colormap_idx = 0
-        selected_colormap = list(self.__supported_colormaps)[
-            self.__selected_colormap_idx]
-        self.__colormap = self.__supported_colormaps[selected_colormap]
+            if len(self._visualizer.data_shape) == 4:
+                self._volume_label, self._volume = build_slider(
+                    initial_value=0,
+                    max_value=self._visualizer.data_shape[-1] - 1,
+                    on_moving_slider=self._change_volume,
+                    text_template='{value:.0f}',
+                    label='Volume'
+                )
+                self.register_elements(self._volume_label, self._volume)
 
-        self.__label_selected_colormap = build_label(text=selected_colormap)
+    def _change_color_map(self, _idx, _value):
+        self._update_colormap()
+        self._force_render(self)
 
-        self.__button_previous_colormap = ui.Button2D(
-            icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
-            size=(25, 25))
+    def _change_intensity(self, slider):
+        self._intensities.selected_value[0] = slider.left_disk_value
+        self._intensities.selected_value[1] = slider.right_disk_value
+        self._update_colormap()
 
-        self.__button_next_colormap = ui.Button2D(
-            icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
-            size=(25, 25))
+    def _change_opacity(self, slider):
+        self._slice_opacity.selected_value = slider.value
+        self._update_opacities()
 
-        self.__button_previous_colormap.on_left_mouse_button_clicked = (
-            self.__change_colormap_previous)
-        self.__button_next_colormap.on_left_mouse_button_clicked = (
-            self.__change_colormap_next)
+    def _toggle_opacity(self, checkbox):
+        if '' in checkbox.checked_labels:
+            self._slice_opacity.selected_value = 1
+            self._slice_opacity.obj.value = 1
+        else:
+            self._slice_opacity.selected_value = 0
+            self._slice_opacity.obj.value = 0
+        self._update_opacities()
 
-        data_ndim = len(self.__data_shape)
+    def _change_picked_voxel(self, message):
+        self._voxel_data.obj.message = message
+        self._voxel_data.selected_value = message
 
-        self.__picker_label_voxel = build_label(text='Voxel')
+    def _change_slice_value(
+            self, slider, selected_slice, sync_slice=False):
+        selected_slice.selected_value = int(np.rint(slider.value))
+        if not sync_slice:
+            self.on_slice_change(
+                self._tab_id,
+                self._slice_x.selected_value,
+                self._slice_y.selected_value,
+                self._slice_z.selected_value
+            )
+        self._visualize_slice_x(x1=self._slice_x.selected_value,
+                                x2=self._slice_x.selected_value)
+        self._visualize_slice_y(y1=self._slice_y.selected_value,
+                                y2=self._slice_y.selected_value)
+        self._visualize_slice_z(z1=self._slice_z.selected_value,
+                                z2=self._slice_z.selected_value)
 
-        self.__label_picked_voxel = build_label(text='')
+    def _update_slice_visibility(
+            self, checkboxes, selected_slice, actor, visibility=None):
 
-        self.__visualizer.register_picker_callback(self.__change_picked_voxel)
+        if checkboxes is not None and '' in checkboxes.checked_labels:
+            visibility = True
+        elif visibility is None:
+            visibility = False
 
-        if data_ndim == 4:
-            self.__slider_label_volume = build_label(text='Volume')
+        selected_slice.visibility = visibility
+        selected_slice.obj.set_visibility(visibility)
+        actor.SetVisibility(visibility)
 
-            self.__selected_volume_idx = 0
-
-            self.__slider_volume = ui.LineSlider2D(
-                initial_value=self.__selected_volume_idx,
-                max_value=self.__data_shape[-1] - 1, length=length,
-                line_width=lw, outer_radius=radius, font_size=fs,
-                text_template=tt)
-
-            color_single_slider(self.__slider_volume)
-
-            self.__slider_volume.handle_events(
-                self.__slider_volume.handle.actor)
-            self.__slider_volume.on_left_mouse_button_released = (
-                self.__change_volume)
-
-    def __change_colormap_next(self, i_ren, _obj, _button):
-        selected_color_idx = self.__selected_colormap_idx + 1
-        if selected_color_idx >= len(self.__supported_colormaps):
-            selected_color_idx = 0
-        self.__selected_colormap_idx = selected_color_idx
-        selected_colormap = list(self.__supported_colormaps)[
-            self.__selected_colormap_idx]
-        self.__label_selected_colormap.message = selected_colormap
-        self.__colormap = self.__supported_colormaps[selected_colormap]
-        self.__update_colormap()
-        i_ren.force_render()
-
-    def __change_colormap_previous(self, i_ren, _obj, _button):
-        selected_colormap_idx = self.__selected_colormap_idx - 1
-        if selected_colormap_idx < 0:
-            selected_colormap_idx = len(self.__supported_colormaps) - 1
-        self.__selected_colormap_idx = selected_colormap_idx
-        selected_colormap = list(self.__supported_colormaps)[
-            self.__selected_colormap_idx]
-        self.__label_selected_colormap.message = selected_colormap
-        self.__colormap = self.__supported_colormaps[selected_colormap]
-        self.__update_colormap()
-        i_ren.force_render()
-
-    def __change_intensity(self, slider):
-        self.__min_intensity = slider.left_disk_value
-        self.__max_intensity = slider.right_disk_value
-        self.__update_colormap()
-
-    def __change_opacity(self, slider):
-        self.__slices_opacity = slider.value
-        self.__update_opacities()
-
-    def __change_picked_voxel(self, message):
-        self.__label_picked_voxel.message = message
-
-    def __change_slice_x(self, slider):
-        self.__selected_slice_x = int(np.rint(slider.value))
-        self.__actors[0].display_extent(
-            self.__selected_slice_x, self.__selected_slice_x,
-            0, self.__data_shape[1] - 1, 0, self.__data_shape[2] - 1)
-
-    def __change_slice_y(self, slider):
-        self.__selected_slice_y = int(np.rint(slider.value))
-        self.__actors[1].display_extent(
-            0, self.__data_shape[0] - 1, self.__selected_slice_y,
-            self.__selected_slice_y, 0, self.__data_shape[2] - 1)
-
-    def __change_slice_z(self, slider):
-        self.__selected_slice_z = int(np.rint(slider.value))
-        self.__actors[2].display_extent(
-            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1,
-            self.__selected_slice_z, self.__selected_slice_z)
-
-    def __change_slice_visibility_x(self, i_ren, _obj, _button):
-        self.__slice_visibility_x = not self.__slice_visibility_x
-        self.__update_slice_visibility_x()
-        _button.next_icon()
-        i_ren.force_render()
-
-    def __change_slice_visibility_y(self, i_ren, _obj, _button):
-        self.__slice_visibility_y = not self.__slice_visibility_y
-        self.__update_slice_visibility_y()
-        _button.next_icon()
-        i_ren.force_render()
-
-    def __change_slice_visibility_z(self, i_ren, _obj, _button):
-        self.__slice_visibility_z = not self.__slice_visibility_z
-        self.__update_slice_visibility_z()
-        _button.next_icon()
-        i_ren.force_render()
-
-    def __change_volume(self, istyle, obj, slider):
+    def _change_volume(self, slider):
         value = int(np.rint(slider.value))
-        if value != self.__selected_volume_idx:
+        if value != self._volume.selected_value:
             visible_slices = (
-                self.__selected_slice_x, self.__selected_slice_y,
-                self.__selected_slice_z)
-            valid_vol = self.__visualizer.change_volume(
-                self.__selected_volume_idx, value,
-                [self.__min_intensity, self.__max_intensity], visible_slices)
+                self._slice_x.selected_value, self._slice_y.selected_value,
+                self._slice_z.selected_value)
+            valid_vol = self._visualizer.change_volume(
+                self._volume.selected_value, value,
+                [self._intensities.selected_value[0],
+                 self._intensities.selected_value[1]], visible_slices)
             if not valid_vol:
                 warnings.warn(
                     f'Volume N°{value} does not have any contrast. Please, '
                     'check the value ranges of your data. Returning to '
                     'previous volume.')
-                self.__slider_volume.value = self.__selected_volume_idx
+                self._volume.obj.value = self._volume.selected_value
             else:
-                intensities_range = self.__visualizer.intensities_range
+                intensities_range = self._visualizer.intensities_range
 
                 # Updating the colormap
-                self.__min_intensity = intensities_range[0]
-                self.__max_intensity = intensities_range[1]
-                self.__update_colormap()
+                self._intensities.selected_value[0] = intensities_range[0]
+                self._intensities.selected_value[1] = intensities_range[1]
+                self._update_colormap()
 
                 # Updating intensities slider
-                self.__slider_intensities.initial_values = intensities_range
-                self.__slider_intensities.min_value = (
-                    self.__visualizer.volume_min)
-                self.__slider_intensities.max_value = (
-                    self.__visualizer.volume_max)
-                self.__slider_intensities.update(0)
-                self.__slider_intensities.update(1)
+                self._intensities.obj.initial_values = intensities_range
+                self._intensities.obj.min_value = (
+                    self._visualizer.volume_min)
+                self._intensities.obj.max_value = (
+                    self._visualizer.volume_max)
+                self._intensities.obj.update(0)
+                self._intensities.obj.update(1)
 
                 # Updating opacities
-                self.__update_opacities()
+                self._update_opacities()
 
                 # Updating visibilities
-                self.__update_slice_visibility_x()
-                self.__update_slice_visibility_y()
-                self.__update_slice_visibility_z()
+                slices = [self._slice_x, self._slice_y, self._slice_z]
+                for i, s in enumerate(slices):
+                    self._update_slice_visibility(
+                        None,
+                        s,
+                        self._visualizer.slice_actors[i],
+                        s.visibility
+                    )
 
-                self.__selected_volume_idx = value
-                istyle.force_render()
+                self._volume.selected_value = value
+                self._force_render(self)
 
-    def __update_colormap(self):
-        if self.__colormap == 'dist':
+    def _update_colormap(self):
+        if self._colormap_switcher.selected_value[1] == 'dist':
             rgb = colormap.distinguishable_colormap(nb_colors=256)
             rgb = np.asarray(rgb)
         else:
             rgb = colormap.create_colormap(
-                np.linspace(self.__min_intensity, self.__max_intensity, 256),
-                name=self.__colormap, auto=True)
+                np.linspace(self._intensities.selected_value[0],
+                            self._intensities.selected_value[1], 256),
+                name=self._colormap_switcher.selected_value[1], auto=True)
         num_lut = rgb.shape[0]
 
         lut = colormap.LookupTable()
         lut.SetNumberOfTableValues(num_lut)
-        lut.SetRange(self.__min_intensity, self.__max_intensity)
+        lut.SetRange(self._intensities.selected_value[0],
+                     self._intensities.selected_value[1])
         for i in range(num_lut):
             r, g, b = rgb[i]
             lut.SetTableValue(i, r, g, b)
         lut.SetRampToLinear()
         lut.Build()
 
-        for slice_actor in self.__actors:
+        for slice_actor in self._visualizer.slice_actors:
             slice_actor.output.SetLookupTable(lut)
             slice_actor.output.Update()
 
-    def __update_opacities(self):
-        for slice_actor in self.__actors:
-            slice_actor.GetProperty().SetOpacity(self.__slices_opacity)
+    def _update_opacities(self):
+        for slice_actor in self._visualizer.slice_actors:
+            slice_actor.GetProperty().SetOpacity(
+                self._slice_opacity.selected_value)
 
-    def __update_slice_visibility_x(self):
-        self.__slider_slice_x.set_visibility(self.__slice_visibility_x)
-        self.__actors[0].SetVisibility(self.__slice_visibility_x)
+    def on_tab_selected(self):
+        self._slice_x.obj.set_visibility(self._slice_x.visibility)
+        self._slice_y.obj.set_visibility(self._slice_y.visibility)
+        self._slice_z.obj.set_visibility(self._slice_z.visibility)
 
-    def __update_slice_visibility_y(self):
-        self.__slider_slice_y.set_visibility(self.__slice_visibility_y)
-        self.__actors[1].SetVisibility(self.__slice_visibility_y)
+    def update_slices(self, x_slice, y_slice, z_slice):
+        """Updates slicer positions.
 
-    def __update_slice_visibility_z(self):
-        self.__slider_slice_z.set_visibility(self.__slice_visibility_z)
-        self.__actors[2].SetVisibility(self.__slice_visibility_z)
+        Parameters
+        ----------
+        x_slice: float
+            x-value where the slicer should be placed
+        y_slice: float
+            y-value where the slicer should be placed
+        z_slice: float
+            z-value where the slicer should be placed
+        """
+        if not self._slice_x.obj.value == x_slice:
+            self._slice_x.obj.value = x_slice
 
-    def build(self, tab_id, tab_ui):
-        self.__tab_id = tab_id
-        self.__tab_ui = tab_ui
+        if not self._slice_y.obj.value == y_slice:
+            self._slice_y.obj.value = y_slice
+
+        if not self._slice_z.obj.value == z_slice:
+            self._slice_z.obj.value = z_slice
+
+    def build(self, tab_id, _tab_ui):
+        """Build all the elements under the tab.
+
+        Parameters
+        ----------
+        tab_id : int
+            Id of the tab.
+        tab_ui : TabUI
+            FURY TabUI object for tabs panel.
+
+        Notes
+        -----
+        tab_ui will removed once every all tabs adapt new build architecture.
+        """
+        self._tab_id = tab_id
 
         x_pos = .02
+        self._opacity_toggle.position = (x_pos, .85)
+        self._slice_x_toggle.position = (x_pos, .62)
+        self._slice_y_toggle.position = (x_pos, .38)
+        self._slice_z_toggle.position = (x_pos, .15)
 
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_opacity, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_x, (x_pos, .62))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_y, (x_pos, .38))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_z, (x_pos, .15))
+        x_pos = .05
+        self._slice_opacity_label.position = (x_pos, .85)
+        self._slice_x_label.position = (x_pos, .62)
+        self._slice_y_label.position = (x_pos, .38)
+        self._slice_z_label.position = (x_pos, .15)
 
-        x_pos = .1
-
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__button_slice_x, (x_pos, .60))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__button_slice_y, (x_pos, .36))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__button_slice_z, (x_pos, .13))
-
-        x_pos = .12
-
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_opacity, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_x, (x_pos, .62))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_y, (x_pos, .38))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_z, (x_pos, .15))
+        x_pos = .10
+        self._slice_opacity.position = (x_pos, .85)
+        self._slice_x.position = (x_pos, .62)
+        self._slice_y.position = (x_pos, .38)
+        self._slice_z.position = (x_pos, .15)
 
         x_pos = .52
-
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__buttons_label_colormap, (x_pos, .56))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__picker_label_voxel, (x_pos, .38))
+        self._voxel_label.position = (x_pos, .38)
 
         x_pos = .60
+        self._voxel_data.position = (x_pos, .38)
 
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_intensities, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__button_previous_colormap, (x_pos, .54))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__label_selected_colormap, (.63, .56))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__button_next_colormap, (.69, .54))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__label_picked_voxel, (x_pos, .38))
+        if not self._visualizer.rgb:
 
-        data_ndim = len(self.__data_shape)
-
-        if data_ndim == 4:
             x_pos = .52
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_label_volume, (x_pos, .15))
+            self._intensities_label.position = (x_pos, .85)
+            self._colormap_switcher_label.position = (x_pos, .56)
 
             x_pos = .60
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_volume, (x_pos, .15))
+            self._intensities.position = (x_pos, .85)
+            self._colormap_switcher.position = [
+                (x_pos, .54), (0.63, .54), (0.69, .54)
+            ]
+
+            if len(self._visualizer.data_shape) == 4:
+                x_pos = .52
+                self._volume_label.position = (x_pos, .15)
+
+                x_pos = .60
+                self._volume.position = (x_pos, .15)
 
     @property
     def name(self):
-        return self.__name
+        """Name of the tab.
+        """
+        return self._name
+
+    @property
+    def tab_id(self):
+        """Id of the tab.
+        """
+        return self._tab_id
+
+    @property
+    def actors(self):
+        """visualization actors controlled by tab.
+        """
+        return self._visualizer.slice_actors

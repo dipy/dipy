@@ -2,13 +2,17 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
-from dipy.core.gradients import (gradient_table, GradientTable,
+from dipy.core.gradients import (b0_threshold_empty_gradient_message,
+                                 b0_threshold_update_slicing_message,
+                                 gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
                                  gradient_table_from_gradient_strength_bvecs,
                                  WATER_GYROMAGNETIC_RATIO,
+                                 mask_non_weighted_bvals,
                                  orientation_to_string,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
@@ -20,11 +24,30 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.testing import clear_and_catch_warnings
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_unique_bvals_deprecated():
     npt.assert_raises(ExpiredDeprecationError, unique_bvals,
                       np.array([0, 800, 1400, 1401, 1405]))
+
+
+def test_mask_non_weighted_bvals():
+
+    bvals = np.array([0., 100., 200., 300., 400.])
+    b0_threshold = 0.
+    expected_val = np.asarray([True, False, False, False, False])
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
+
+    b0_threshold = 50
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
+
+    b0_threshold = 200.
+    expected_val = np.asarray([True, True, True, False, False])
+    obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
+    assert np.array_equal(obtained_val, expected_val)
 
 
 def test_btable_prepare():
@@ -354,7 +377,8 @@ def test_qvalues():
     npt.assert_almost_equal(bt.qvals, qvals)
 
 
-def test_reorient_bvecs():
+@set_random_number_generator()
+def test_reorient_bvecs(rng):
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
     bvecs = np.array([[0, 0, 0],
@@ -379,7 +403,7 @@ def test_reorient_bvecs():
     rotation_affines = []
     rotated_bvecs = bvecs[:]
     for i in np.where(~gt.b0s_mask)[0]:
-        rot_ang = np.random.rand()
+        rot_ang = rng.random()
         cos_rot = np.cos(rot_ang)
         sin_rot = np.sin(rot_ang)
         rotation_affines.append(np.array([[1, 0, 0, 0],
@@ -449,29 +473,41 @@ def test_nan_bvecs():
         npt.assert_(len(selected_w) == 0)
 
 
-def test_generate_bvecs():
+@set_random_number_generator()
+def test_generate_bvecs(rng):
     """Tests whether we have properly generated bvecs.
     """
     # Test if the generated b-vectors are unit vectors
-    bvecs = generate_bvecs(100)
+    bvecs = generate_bvecs(100, rng=rng)
     norm = [np.linalg.norm(v) for v in bvecs]
     npt.assert_almost_equal(norm, np.ones(100))
 
     # Test if two generated vectors are almost orthogonal
-    bvecs_2 = generate_bvecs(2)
+    bvecs_2 = generate_bvecs(2, rng=rng)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
 def test_getitem_idx():
     # Create a GradientTable object with some test b-values and b-vectors
-    bvals = np.array([0, 100, 200, 300, 400])
+    bvals = np.array([0., 100., 200., 300., 400.])
     # value should be in increasing order as b-value affects the diffusion
     # weighting of the image, and the amount of diffusion weighting increases
     # with increasing b-value.
     bvecs = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]])
     # the b-vectors should be unit-length vectors
     gradients = bvals[:, None] * bvecs
+
+    # Test a too large b0 threshold value
+    b0_threshold = 100
+    gtab = GradientTable(gradients, b0_threshold=b0_threshold)
+
+    idx = 1
+    with pytest.raises(ValueError) as excinfo:
+        _ = gtab[idx]
+        assert str(excinfo.value) == b0_threshold_empty_gradient_message(
+            bvals, [idx], b0_threshold)
+
     gtab = GradientTable(gradients)
 
     # Test with a single index
@@ -480,11 +516,18 @@ def test_getitem_idx():
     assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
 
     # Test with a range of indices
-    gtab_slice2 = gtab[2:5]
-    assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
-    assert np.array_equal(gtab_slice2.bvecs,
-                          np.array([[0., 1., 0.], [0., 0., 1.],
-                                    [1., 0., 0.]]))
+    gtab = GradientTable(gradients)
+    idx_start = 2
+    idx_end = 5
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=b0_threshold_update_slicing_message(idx_start),
+            category=UserWarning)
+        gtab_slice2 = gtab[idx_start:idx_end]
+        assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
+        assert np.array_equal(gtab_slice2.bvecs,
+                              np.array([[0., 1., 0.], [0., 0., 1.],
+                                        [1., 0., 0.]]))
 
 
 def test_round_bvals():
@@ -625,7 +668,8 @@ def test_check_multi_b():
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
-def test_btens_to_params():
+@set_random_number_generator()
+def test_btens_to_params(rng):
     """
     Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
@@ -687,14 +731,14 @@ def test_btens_to_params():
     # Test function after rotating+scaling baseline tensors
     # -----------------------------------------------------
 
-    scales = np.concatenate((np.array([1]), np.random.random(n_scales)))
+    scales = np.concatenate((np.array([1]), rng.random(n_scales)))
 
     for scale in scales:
 
         ebs = expected_bvals*scale
 
         # Generate `n_rotations` random 3-element vectors of norm 1
-        v = np.random.random((n_rotations, 3)) - 0.5
+        v = rng.random((n_rotations, 3)) - 0.5
         u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
 
         for rot_idx in range(n_rotations):

@@ -72,7 +72,7 @@ def _add_rayleigh(sig, noise1, noise2):
     return sig + np.sqrt(noise1 ** 2 + noise2 ** 2)
 
 
-def add_noise(signal, snr, S0, noise_type='rician'):
+def add_noise(signal, snr, S0, noise_type='rician', rng=None):
     r""" Add noise of specified distribution to the signal from a single voxel.
 
     Parameters
@@ -88,6 +88,9 @@ def add_noise(signal, snr, S0, noise_type='rician'):
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise, 'rician' for Rice-distributed noise (default) or
         'rayleigh' for a Rayleigh distribution.
+    rng : numpy.random.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -116,18 +119,21 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     if snr is None:
         return signal
 
+    if rng is None:
+        rng = np.random.default_rng()
+
     sigma = S0 / snr
 
     noise_adder = {'gaussian': _add_gaussian,
                    'rician': _add_rician,
                    'rayleigh': _add_rayleigh}
 
-    noise1 = np.random.normal(0, sigma, size=signal.shape)
+    noise1 = rng.normal(0, sigma, size=signal.shape)
 
     if noise_type == 'gaussian':
         noise2 = None
     else:
-        noise2 = np.random.normal(0, sigma, size=signal.shape)
+        noise2 = rng.normal(0, sigma, size=signal.shape)
 
     return noise_adder[noise_type](signal, noise1, noise2)
 
@@ -312,7 +318,7 @@ def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
     return S, sticks
 
 
-def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
+def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
     """ Simulate diffusion-weighted signals with a single tensor.
 
     Parameters
@@ -351,6 +357,9 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
            Chemical Physics, nr. 42, pp. 288--292, 1965.
 
     """
+    if rng is None:
+        rng = np.random.default_rng()
+
     if evals is None:
         evals = diffusion_evals
 
@@ -371,13 +380,13 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         for (i, b) in enumerate(gtab.btens):
             S[i] = S0 * np.exp(- np.sum(b * D))
 
-    S = add_noise(S, snr, S0)
+    S = add_noise(S, snr, S0, rng=rng)
 
     return S.reshape(out_shape)
 
 
 def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
-                 fractions=(50, 50), snr=20):
+                 fractions=(50, 50), snr=20, rng=None):
     r""" Simulate a Multi-Tensor signal.
 
     Parameters
@@ -423,6 +432,9 @@ def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
     >>> S = multi_tensor(gtab, mevals)
 
     """
+    if rng is None:
+        rng = np.random.default_rng()
+
     if np.round(np.sum(fractions), 2) != 100.0:
         raise ValueError('Fractions should sum to 100')
 
@@ -437,7 +449,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
                                                  evecs=all_tensor_evecs(
                                                      sticks[i]), snr=None)
 
-    return add_noise(S, snr, S0), sticks
+    return add_noise(S, snr, S0, rng=rng), sticks
 
 
 def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),

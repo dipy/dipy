@@ -1,11 +1,18 @@
+import importlib
 import os
 import sys
-
-import numpy as np
 import logging
-import importlib
 from inspect import getmembers, isfunction
+import warnings
+
+import trx.trx_file_memmap as tmm
+import numpy as np
+
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.tracking.streamlinespeed import length
+from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
 
 
@@ -15,8 +22,8 @@ class IoInfoFlow(Workflow):
     def get_short_name(cls):
         return 'io_info'
 
-    def run(self, input_files,
-            b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
+    def run(self, input_files, b0_threshold=50, bvecs_tol=0.01,
+            bshell_thr=100, reference=None):
         """ Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
         program identifies the type of file by its extension.
@@ -32,6 +39,10 @@ class IoInfoFlow(Workflow):
             b-vectors are unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+
         """
         np.set_printoptions(3, suppress=True)
 
@@ -44,6 +55,7 @@ class IoInfoFlow(Workflow):
             logging.info('-----------' + mult_*'-')
 
             ipath_lower = input_path.lower()
+            extension = os.path.splitext(ipath_lower)[1]
 
             if ipath_lower.endswith('.nii') or ipath_lower.endswith('.nii.gz'):
 
@@ -72,7 +84,7 @@ class IoInfoFlow(Workflow):
                                          np.percentile(data[..., 0], 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
-                logging.info('Affine Native to RAS matrix \n{0}'.format(affine))
+                logging.info(f'Affine Native to RAS matrix \n{affine}')
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
@@ -106,6 +118,47 @@ class IoInfoFlow(Workflow):
                              .format(len(res[0])))
                 logging.info('Total number of non-unit bvectors {0}\n'
                              .format(ncl1))
+
+            if extension in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib',
+                             '.dpy']:
+
+                sft = None
+                if extension in ['.trk', '.trx']:
+                    sft = load_tractogram(input_path, 'same',
+                                          bbox_valid_check=False)
+                else:
+                    sft = load_tractogram(input_path, reference,
+                                          bbox_valid_check=False)
+
+                lengths_mm = list(length(sft.streamlines))
+
+                sft.to_voxmm()
+
+                lengths, steps = [], []
+                for streamline in sft.streamlines:
+                    lengths += [len(streamline)]
+                    steps += [np.sqrt(np.sum(np.diff(
+                        streamline, axis=0) ** 2, axis=1))]
+                steps = np.hstack(steps)
+
+                logging.info(f'Number of streamlines: {len(sft)}')
+                logging.info(f'min_length_mm: {float(np.min(lengths_mm))}')
+                logging.info(f'mean_length_mm: {float(np.mean(lengths_mm))}')
+                logging.info(f'max_length_mm: {float(np.max(lengths_mm))}')
+                logging.info(f'std_length_mm: {float(np.std(lengths_mm))}')
+                logging.info(f'min_length_nb_points: {float(np.min(lengths))}')
+                logging.info('mean_length_nb_points: '
+                             f'{float(np.mean(lengths))}')
+                logging.info(f'max_length_nb_points: {float(np.max(lengths))}')
+                logging.info(f'std_length_nb_points: {float(np.std(lengths))}')
+                logging.info(f'min_step_size: {float(np.min(steps))}')
+                logging.info(f'mean_step_size: {float(np.mean(steps))}')
+                logging.info(f'max_step_size: {float(np.max(steps))}')
+                logging.info(f'std_step_size: {float(np.std(steps))}')
+                logging.info('data_per_point_keys: '
+                             f'{list(sft.data_per_point.keys())}')
+                logging.info('data_per_streamline_keys: '
+                             f'{list(sft.data_per_streamline.keys())}')
 
         np.set_printoptions()
 
@@ -219,9 +272,9 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
-            # We load the module again so that if we run another one of these in
-            # the same process, we don't have the env variable pointing to the
-            # wrong place
+            # We load the module again so that if we run another one of these
+            # in the same process, we don't have the env variable pointing
+            # to the wrong place
             self.load_module('dipy.data.fetcher')
 
 
@@ -257,3 +310,189 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, image.header)
 
             logging.info('Split volume saved as {0}'.format(osplit))
+
+
+class ConcatenateTractogramFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'concatracks'
+
+    def run(self, tractogram_files, reference=None, delete_dpv=False,
+            delete_dps=False, delete_groups=False, check_space_attributes=True,
+            preallocation=False, out_dir='',
+            out_extension='trx',
+            out_tractogram='concatenated_tractogram'):
+        """Concatenate multiple tractograms into one.
+
+        Parameters
+        ----------
+        tractogram_list : variable string
+            The stateful tractogram filenames to concatenate
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+        delete_dpv : bool, optional
+            Delete dpv keys that do not exist in all the provided TrxFiles
+        delete_dps : bool, optional
+            Delete dps keys that do not exist in all the provided TrxFile
+        delete_groups : bool, optional
+            Delete all the groups that currently exist in the TrxFiles
+        check_space_attributes : bool, optional
+            Verify that dimensions and size of data are similar between all the
+            TrxFiles
+        preallocation : bool, optional
+            Preallocated TrxFile has already been generated and is the first
+            element in trx_list (Note: delete_groups must be set to True as
+            well)
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_extension : string, optional
+            Extension of the resulting tractogram
+        out_tractogram : string, optional
+            Name of the resulting tractogram
+
+        """
+        io_it = self.get_io_iterator()
+
+        trx_list = []
+        has_group = False
+        for fpath, oext, otracks in io_it:
+
+            if fpath.lower().endswith('.trx') or \
+               fpath.lower().endswith('.trk'):
+                reference = 'same'
+
+            if not reference:
+                raise ValueError("No reference provided. It is needed for tck,"
+                                 "fib, dpy or vtk files")
+
+            tractogram_obj = load_tractogram(fpath, reference,
+                                             bbox_valid_check=False)
+
+            if not isinstance(tractogram_obj, tmm.TrxFile):
+                tractogram_obj = tmm.TrxFile.from_sft(tractogram_obj)
+            elif len(tractogram_obj.groups):
+                has_group = True
+            trx_list.append(tractogram_obj)
+
+        trx = concatenate_tractogram(
+            trx_list, delete_dpv=delete_dpv, delete_dps=delete_dps,
+            delete_groups=delete_groups or not has_group,
+            check_space_attributes=check_space_attributes,
+            preallocation=preallocation)
+
+        valid_extensions = ['trk', 'trx', "tck", "fib", "dpy", "vtk"]
+        if out_extension.lower() not in valid_extensions:
+            raise ValueError("Invalid extension. Valid extensions are: "
+                             "{0}".format(valid_extensions))
+
+        out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
+        save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
+
+
+class ConvertSHFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'convert_dipy_mrtrix'
+
+    def run(
+        self,
+        input_files,
+        out_dir='',
+        out_file='sh_convert_dipy_mrtrix_out.nii.gz',
+    ):
+        """ Converts SH basis representation between DIPY and MRtrix3 formats.
+        Because this conversion is equal to its own inverse, it can be used to
+        convert in either direction: DIPY to MRtrix3 or vice versa.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input files. This path may contain wildcards to
+            process multiple inputs at once.
+
+        out_dir : string, optional
+            Where the resulting file will be saved. (default '')
+
+        out_file : string, optional
+            Name of the result file to be saved.
+            (default 'sh_convert_dipy_mrtrix_out.nii.gz')
+        """
+
+        io_it = self.get_io_iterator()
+
+        for in_file, out_file in io_it:
+
+            data, affine, image = load_nifti(in_file, return_img=True)
+            data = convert_sh_descoteaux_tournier(data)
+            save_nifti(out_file, data, affine, image.header)
+
+
+class ConvertTractogramFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'convert_tractogram'
+
+    def run(self, input_files, reference=None, pos_dtype='float32',
+            offsets_dtype='uint32', out_dir='',
+            out_tractogram='converted_tractogram.trk'):
+        """Converts tractogram between different formats.
+
+        Parameters
+        ----------
+        input_files : variable string
+            Any number of tractogram files
+        reference : string, optional
+            Reference anatomy for tck/vtk/fib/dpy file.
+            support (.nii or .nii.gz).
+        pos_dtype : string, optional
+            Data type of the tractogram points, used for vtk files.
+        offsets_dtype : string, optional
+            Data type of the tractogram offsets, used for vtk files.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_tractogram : variable string, optional
+            Name of the resulting tractogram
+
+        """
+        io_it = self.get_io_iterator()
+
+        for fpath, otracks in io_it:
+            in_extension = fpath.lower().split('.')[-1]
+            out_extension = otracks.lower().split('.')[-1]
+
+            if in_extension == out_extension:
+                warnings.warn('Input and output are the same file format, '
+                              'Skipping...')
+                continue
+
+            if not reference and in_extension in ['trx', 'trk']:
+                reference = 'same'
+
+            if not reference and in_extension not in ['trx', 'trk']:
+                raise ValueError("No reference provided. It is needed for tck,"
+                                 "fib, dpy or vtk files")
+
+            sft = load_tractogram(fpath, reference, bbox_valid_check=False)
+
+            if out_extension != 'trx':
+                if out_extension == 'vtk':
+                    if sft.streamlines._data.dtype.name != pos_dtype:
+                        sft.streamlines._data = \
+                            sft.streamlines._data.astype(pos_dtype)
+                    if offsets_dtype == 'uint64' or offsets_dtype == 'uint32':
+                        offsets_dtype = offsets_dtype[1:]
+                    if sft.streamlines._offsets.dtype.name != offsets_dtype:
+                        sft.streamlines._offsets = \
+                            sft.streamlines._offsets.astype(offsets_dtype)
+                save_tractogram(sft, otracks, bbox_valid_check=False)
+            else:
+                trx = tmm.TrxFile.from_sft(sft)
+                if trx.streamlines._data.dtype.name != pos_dtype:
+                    trx.streamlines._data = \
+                        trx.streamlines._data.astype(pos_dtype)
+                if trx.streamlines._offsets.dtype.name != offsets_dtype:
+                    trx.streamlines._offsets = trx.streamlines._offsets.astype(
+                        offsets_dtype)
+                tmm.save(trx, otracks)
+                trx.close()

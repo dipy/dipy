@@ -1,7 +1,7 @@
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider)
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import ui

@@ -1,4 +1,4 @@
-import warnings
+from packaging.version import Version
 
 import numpy as np
 
@@ -11,10 +11,12 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
+from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
+    from fury import __version__ as fury_version
     from fury import actor, ui, window
     from fury.colormap import distinguishable_colormap
 
@@ -36,7 +38,7 @@ HELP_MESSAGE = """
 class Horizon:
 
     def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 cluster_thr=15.0, random_colors=None, length_gt=0,
+                 rgb=False, cluster_thr=15.0, random_colors=None, length_gt=0,
                  length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
@@ -56,6 +58,8 @@ class Horizon:
             Contains peak directions and spherical harmonic coefficients
         cluster : bool
             Enable QuickBundlesX clustering
+        rgb : bool, optional
+            Enable the color image (rgb only, alpha channel will be ignored).
         cluster_thr : float
             Distance threshold used for clustering. Default value 15.0 for
             small animal data you may need to use something smaller such
@@ -117,8 +121,15 @@ class Horizon:
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
+        if not has_fury:
+            raise ImportError('Horizon requires FURY. Please install it '
+                              'with pip install fury')
+        if Version(fury_version) < Version('0.9.0'):
+            ValueError('Horizon requires FURY version 0.9.0 or higher.'
+                       ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster
+        self.rgb = rgb
         self.cluster_thr = cluster_thr
         self.random_colors = random_colors
         self.length_lt = length_lt
@@ -362,6 +373,12 @@ class Horizon:
         scene.background(self.bg_color)
         return scene
 
+    def _show_force_render(self, _element):
+        """
+        Callback function for lower level elements to force render.
+        """
+        self.show_m.render()
+
     def build_show(self, scene):
 
         title = 'Horizon ' + horizon_version
@@ -409,6 +426,8 @@ class Horizon:
 
             if self.cluster:
                 # Information panel
+                # It will be changed once all the elements wrapped in horizon
+                # elements.
                 text_block = build_label(HELP_MESSAGE, 18)
                 text_block.message = HELP_MESSAGE
 
@@ -421,11 +440,14 @@ class Horizon:
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
 
+        synchronize_slices = False
+        self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors
             roi_actors = []
             img_count = 0
+            synchronize_slices = check_img_shapes(self.images)
             for img in self.images:
                 data, affine = img
                 self.vox2ras = affine
@@ -442,16 +464,18 @@ class Horizon:
                         slices_viz = SlicesVisualizer(
                             self.show_m.iren, scene, data, affine=affine,
                             world_coords=self.world_coords,
-                            percentiles=[0, 100])
+                            percentiles=[0, 100], rgb=self.rgb)
                         self.__tabs.append(SlicesTab(
-                            slices_viz, id=img_count + 1))
+                            slices_viz, slice_id=img_count + 1,
+                            force_render=self._show_force_render))
                         img_count += 1
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
-                        world_coords=self.world_coords)
+                        world_coords=self.world_coords, rgb=self.rgb)
                     self.__tabs.append(SlicesTab(
-                        slices_viz, id=img_count + 1))
+                        slices_viz, slice_id=img_count + 1,
+                        force_render=self._show_force_render))
                     img_count += 1
             if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
@@ -470,7 +494,15 @@ class Horizon:
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
-            self.__tab_mgr = TabManager(self.__tabs, self.__win_size)
+            self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
+                                        synchronize_slices)
+
+            def tab_changed(actors):
+                for act in actors:
+                    scene.rm(act)
+                    scene.add(act)
+
+            self.__tab_mgr.tab_changed = tab_changed
             scene.add(self.__tab_mgr.tab_ui)
 
         self.show_m.initialize()
@@ -593,7 +625,7 @@ class Horizon:
 
 
 def horizon(tractograms=None, images=None, pams=None,
-            cluster=False, cluster_thr=15.0,
+            cluster=False, rgb=False, cluster_thr=15.0,
             random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
@@ -613,6 +645,8 @@ def horizon(tractograms=None, images=None, pams=None,
         Contains peak directions and spherical harmonic coefficients
     cluster : bool
         Enable QuickBundlesX clustering
+    rgb: bool, optional
+        Enable the color image.
     cluster_thr : float
         Distance threshold used for clustering. Default value 15.0 for
         small animal data you may need to use something smaller such
@@ -672,7 +706,7 @@ def horizon(tractograms=None, images=None, pams=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
+    hz = Horizon(tractograms, images, pams, cluster, rgb, cluster_thr,
                  random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
                  world_coords, interactive, out_png, recorded_events,
                  return_showm, bg_color=bg_color,

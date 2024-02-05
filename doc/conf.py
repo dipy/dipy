@@ -12,7 +12,7 @@
 import os
 import re
 import sys
-import json
+from datetime import datetime
 
 # Doc generation depends on being able to import dipy
 try:
@@ -20,23 +20,12 @@ try:
 except ImportError:
     raise RuntimeError('Cannot import dipy, please investigate')
 
-from packaging.version import Version
-import sphinx
-if Version(sphinx.__version__) < Version('2'):
-    raise RuntimeError('Need sphinx >= 2 for numpydoc to work correctly')
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.append(os.path.abspath('sphinxext'))
 
 # -- General configuration -----------------------------------------------------
-
-# We load the DIPY release info into a dict by explicit execution
-rel = {}
-with open(os.path.join('..', 'dipy', 'info.py')) as f:
-    exec(f.read(), rel)
-
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -51,16 +40,10 @@ extensions = ['sphinx.ext.autodoc',
               'prepare_gallery',
               'math_dollar',  # has to go before numpydoc
               'sphinx_gallery.gen_gallery',
-            #   'numpydoc',
+              # 'numpydoc',
               'github',
-              'jinja',
               'sphinx_design',
 ]
-
-# Providing different contexts for the jinja directive
-jinja_contexts = {
-    "documentation": json.load(open("./context/documentation.json"))
-}
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
@@ -82,14 +65,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'dipy'
-copyright = "Copyright 2008-2023, DIPY developers. Created using Grg Sphinx Theme and PyData Sphinx Theme."
+copyright = f"Copyright 2008-{datetime.now().year}, DIPY developers. Created using Grg Sphinx Theme and PyData Sphinx Theme."
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = rel['__version__']
+version = dipy.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -172,7 +155,7 @@ html_theme_options = {
           },
           {
             "name": "Recipes",
-            "url": "recipes/index",
+            "url": "recipes",
           },
           {
             "name": "CLI / Workflows",
@@ -336,6 +319,7 @@ html_theme_options = {
   "logo": {
     "image_dark": "_static/images/logos/dipy-logo.png",
     "alt_text": "DIPY",
+    "link": "https://dipy.org",
   },
   "footer_start": ["components/footer-sign-up.html"],
   "footer_signup_data": {
@@ -547,7 +531,7 @@ sphinx_gallery_conf = {
      'reference_url': {'dipy': None, },
      'abort_on_example_error': False,
      'filename_pattern': re.escape(os.sep),
-     'default_thumb_file': html_logo,
+     'default_thumb_file': "_static/images/logos/dipy_full_logo.png",
     #  'pypandoc': {'extra_args': ['--mathjax',]},
 }
 

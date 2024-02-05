@@ -1,12 +1,10 @@
-import warnings
-
 import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
-from dipy.tracking.streamline import Streamlines, length
+from dipy.tracking.streamline import length
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import actor

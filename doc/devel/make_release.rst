@@ -15,25 +15,31 @@ Release checklist
   outstanding issues that can be closed, and whether there are any issues that
   should delay the release.  Label them !
 
-* Check whether there are no build failing on `Travis`. Indeed, ``PRE`` build is
+* Check whether there are no build failing on `DIPY Github Actions`_. Indeed, ``PRE`` build is
   allowed to fail and does not block a PR merge but it should block release !
   So make sure that ``PRE`` build is not failing.
 
-* Review and update the release notes.  Review and update the :file:`Changelog`
-  file.  Get a partial list of contributors with something like::
+* Generate, Review and update the release notes. Run the following command from
+  the root directory of DIPY::
 
-      git shortlog -ns 0.6.0..
+    python tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
 
-  where ``0.6.0`` was the last release tag name.
+  where ``1.7.0`` was the last release tag name.
 
-  Then manually go over ``git shortlog 0.6.0..`` to make sure the release notes
+* Review and update the :file:`Changelog` file.  Get a partial list of
+  contributors with something like::
+
+      git shortlog -ns 0.1.7.0..
+
+  where ``1.7.0`` was the last release tag name.
+
+  Then manually go over ``git shortlog 0.7.0..`` to make sure the release notes
   are as complete as possible and that every contributor was recognized.
 
 * Use the opportunity to update the ``.mailmap`` file if there are any duplicate
-  authors listed from ``git shortlog -ns``.
+  authors listed from ``git shortlog -nse``.
 
-* Add any new authors to the ``AUTHORS`` file.  Add any new entries to the
-  ``THANKS`` file.
+* Add any new authors to the ``AUTHORS`` file.
 
 * Check the copyright years in ``doc/conf.py`` and ``LICENSE``
 
@@ -46,13 +52,11 @@ Release checklist
   We really need an automated run of these using the buildbots, but we haven't
   done it yet.
 
-* Check the ``long_description`` in ``dipy/info.py``.  Check it matches the
-  ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
-  Check all the links are still valid.
+* Check the ``README`` in the root directory. Check all the links are still valid.
 
-* Check all the DIPY builds are green on the nipy `buildbots`_
+* Check all the DIPY builds are green on the nipy `DIPY Github Actions`_
 
-* If you have travis-ci_ building set up you might want to push the code in its
+* If you have `DIPY Github Actions`_ building set up you might want to push the code in its
   current state to a branch that will build, e.g.::
 
     git branch -D pre-release-test # in case branch already exists
@@ -62,12 +66,12 @@ Release checklist
 
     make distclean
     git clean -fxd
-    python setup.py build_ext --inplace
+    python -m build  or  pip install --no-build-isolation  -e .
 
 * Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
 
     cd ..
-    pytest -sv --with-doctest dipy
+    pytest -svv --with-doctest --pyargs dipy
     cd dipy # back to the root directory
 
 * Check the documentation doctests::
@@ -82,11 +86,11 @@ Release checklist
 
 * Build and test the DIPY wheels.  See the `wheel builder README
   <https://github.com/MacPython/dipy-wheels>`_ for instructions.  In summary,
-  clone the wheel-building repo, edit the ``.travis.yml`` and ``appveyor.yml``
+  clone the wheel-building repo, edit the ``.github/workflows/wheel.yml``
   text files (if present) with the branch or commit for the release, commit
   and then push back up to github.  This will trigger a wheel build and test
-  on OSX, Linux and Windows. Check the build has passed on the Travis-CI
-  interface at https://travis-ci.org/MacPython/dipy-wheels.  You'll need
+  on macOS, Linux and Windows. Check the build has passed on the Github Actions
+  interface at https://github.com/MacPython/dipy-wheels/actions.  You'll need
   commit privileges to the ``dipy-wheels`` repo; ask Matthew Brett or on the
   mailing list if you do not have them.
 
@@ -106,14 +110,23 @@ version number, so you might want to make the release commit on your local
 machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
 then do you push to upstream on github.
 
-* Make the release commit.  Edit :file:`dipy/info.py` to set
-  ``_version_extra`` to ``''``; commit.  Push.
+* Make the release commit.  Edit :file:`dipy/meson.build` and
+  :file:`dipy/tools/version_utils.py`` to get the correct version number
+  (set version: in the former, and ISRELEASED = True in the latter) and commit
+  it with a message like REL: set version to <version-number>.
+  Don’t push this commit to the DIPY_ repo yet.;
+
+* Finally tag the release locally with git tag <v1.x.y>. Continue with building
+  release artifacts (next section). Only push the release commit to the DIPY_
+  repo once you have built the sdists and docs successfully.
+  Then continue with building wheels. Only push the release tag to the repo once
+   all wheels have been built successfully on `DIPY Github Actions`_.
 
 * For the wheel build / upload, follow the `wheel builder README`_
-  instructions again.  Edit the ``.travis.yml`` and ``appveyor.yml`` files (if
+  instructions again.  Edit the ``.github/workflows/wheel.yml`` files (if
   present) to give the release tag to build.  Check the build has passed on
-  the Travis-CI interface at https://travis-ci.org/MacPython/dipy-wheels.  Now
-  follow the instructions in the page above to download the built wheels to a
+  the Github Interface interface at https://github.com/MacPython/dipy-wheels/actions.
+  Now follow the instructions in the page above to download the built wheels to a
   local machine and upload to PyPI.
 
 * Now it's time for the source release. Build the release files::
@@ -122,33 +135,17 @@ then do you push to upstream on github.
     git clean -fxd
     make source-release
 
-* Once everything looks good, upload the source release to PyPi.  See
-  `setuptools intro`_::
+* Once everything looks good, upload the source release to PyPi::
 
-    python setup.py register
-    python setup.py sdist --formats=gztar,zip upload
-
-* Remember you'll need your ``~/.pypirc`` file set up right for this to work.
-  See `setuptools intro`_.  The file should look something like this::
-
-    [distutils]
-    index-servers =
-        pypi
-
-    [pypi]
-    username:your.pypi.username
-    password:your-password
-
-    [server-login]
-    username:your.pypi.username
-    password:your-password
+    pip install twine
+    twine upload dist/*
 
 * Check how everything looks on pypi - the description, the packages.  If
   necessary delete the release and try again if it doesn't look right.
 
-* Make an annotated tag for the release with tag of form ``0.6.0``::
+* Make an annotated tag for the release with tag of form ``1.8.0``::
 
-    git tag -am 'Second public release' 0.6.0
+    git tag -am 'Public release 1.8.0' 1.8.0
 
 * Set up maintenance / development branches
 
@@ -158,13 +155,13 @@ then do you push to upstream on github.
 
   * Branch to maintenance::
 
-      git co -b maint/0.6.x
+      git co -b maint/1.8.x
 
     Set ``_version_extra`` back to ``.dev`` and bump ``_version_micro`` by 1.
-    Thus the maintenance series will have version numbers like - say - '0.6.1.dev'
-    until the next maintenance release - say '0.6.1'.  Commit.
+    Thus the maintenance series will have version numbers like - say - '1.8.1.dev'
+    until the next maintenance release - say '1.8.1'.  Commit.
 
-    Push with something like ``git push upstream-rw maint/0.6.x --set-upstream``
+    Push with something like ``git push upstream-rw maint/1.8.x --set-upstream``
 
   * Start next development series::
 
@@ -178,14 +175,14 @@ then do you push to upstream on github.
     the maintenance branch `info.py` edits as seen but discarded, so we can
     merge from maintenance in future without getting spurious merge conflicts::
 
-       git merge -s ours maint/0.6.x
+       git merge -s ours maint/1.8.x
 
     Push with something like ``git push upstream-rw main-master:master``
 
-  If this is just a maintenance release from ``maint/0.6.x`` or similar, just
-  tag and set the version number to - say - ``0.6.2.dev``.
+  If this is just a maintenance release from ``maint/1.8.x`` or similar, just
+  tag and set the version number to - say - ``1.8.2.dev``.
 
-* Push the tag with ``git push upstream-rw 0.6.0``
+* Push the tag with ``git push upstream-rw 1.8.0``
 
 Uploading binary builds for the release
 =======================================
@@ -199,14 +196,10 @@ tag to github, so the buildbots can find the released code and build it.
   to the web interface for the binary builder, go to the "Force build" section,
   enter your username and password for the buildbot web service and enter the
   commit tag name in the *revision* field.  For example, if the tag was
-  ``0.6.0`` then you would enter ``0.6.0`` in the revision field of the form.
+  ``1.8.0`` then you would enter ``1.8.0`` in the revision field of the form.
   This builds the exact commit labeled by the tag, which is what we want.
 
-* Trigger binary builds for Windows from the buildbots. See builders
-  ``dipy-bdist32-26``, ``dipy-bdist32-27``.  The ``exe`` builds will appear in
-  http://nipy.bic.berkeley.edu/dipy-dist .  Check that the binary build version
-  numbers are release numbers (``dipy-0.6.0.win32.exe`` rather than
-  ``dipy-0.6.0.dev.win32.exe``).
+* Trigger binary builds for Windows from the ``https://github.com/MacPython/dipy-wheels``
 
   Download the builds and upload to pypi.
 
@@ -219,31 +212,28 @@ tag to github, so the buildbots can find the released code and build it.
 
     make distclean
     git clean -fxd
-    c:\Python26\python.exe setup.py bdist_egg upload
-    c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
 
-* Trigger binary builds for OSX from the buildbots ``dipy-bdist-mpkg-2.6``,
-  ``dipy-bdist-mpkg-2.7``. ``egg`` and ``mpkg`` builds will appear in
-  http://nipy.bic.berkeley.edu/dipy-dist .  Download the eggs and upload to
-  pypi.
+* Trigger binary builds for macOS from the buildbots ``https://github.com/MacPython/dipy-wheels``.
+  Download the eggs and upload to pypi.
 
   Upload the dmg files with the *files* interface for the new DIPY release.
 
-* Building OSX dmgs from the mpkg builds.
+* Building macOS dmgs from the mpkg builds.
 
   The buildbot binary builders build ``mpkg`` directories, which are installers
-  for OSX.
+  for macOS.
 
   These need their permissions to be fixed because the installers should install
   the files as the root user, group ``admin``.  The all need to be converted to
-  OSX disk images.  Use the ``./tools/build_dmgs.py``, with something like this
-  command line::
+  macOS disk images.  Use the ``./tools/build_dmgs.py``, with something like
+  this command line::
 
-    ./tools/build_dmgs "dipy-dist/dipy-0.6.0-py*.mpkg"
+    ./tools/build_dmgs "dipy-dist/dipy-1.8.0-py*.mpkg"
 
   For this to work you'll need several things:
 
-    * An account on a OSX box with sudo (Admin user) on which to run the script.
+    * An account on a macOS box with sudo (Admin user) on which to run the
+      script.
     * ssh access to the buildbot server http://nipy.bic.berkeley.edu (ask
       Matthew or Eleftherios).
     * a development version of ``bdist_mpkg`` installed from
@@ -266,6 +256,5 @@ Other stuff that needs doing for the release
 
 * Announce to the mailing lists.  With fear and trembling.
 
-.. _setuptools intro: http://packages.python.org/an_example_pypi_project/setuptools.html
 
 .. include:: ../links_names.inc

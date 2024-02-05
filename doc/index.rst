@@ -35,10 +35,10 @@ Quick links
         Browse our tutorials gallery.
 
     .. grid-item-card:: :octicon:`image` Recipes
-        :link: recipes/index
+        :link: recipes
         :link-type: any
 
-        How to do ....?  This dedicated section will provide you quick and direct answer.
+        How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
 
     .. grid-item-card:: :octicon:`zap` Workflows
         :link: interfaces/index
@@ -90,6 +90,19 @@ Quick links
 Highlights
 **********
 
+**DIPY 1.8.0** is now available. New features include:
+
+- Python 3.12.0 support.
+- Cython 3.0.0 compatibility.
+- Migrated to Meson build system. Setuptools is no more.
+- EVAC+ novel DL-based brain extraction method added.
+- Parallel Transport Tractography (PTT) 10X faster.
+- Many Horizon updates. Fast overlays of many images.
+- New Correlation Tensor Imaging (CTI) method added.
+- Improved warnings for optional dependencies.
+- Large documentation update. New theme/design integration.
+- Closed 197 issues and merged 130 pull requests.
+
 **DIPY 1.7.0** is now available. New features include:
 
 - NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
@@ -110,9 +123,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
 - :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
 - :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
-- :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 11, 2022.
+
 
 
 

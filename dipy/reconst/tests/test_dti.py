@@ -1,5 +1,7 @@
 """Testing DTI."""
 
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
@@ -7,7 +9,7 @@ import scipy.optimize as opt
 
 import dipy.reconst.dti as dti
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.reconst.dti import (axial_diffusivity, color_fa,
+from dipy.reconst.dti import (ols_resort_msg, axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
                               geodesic_anisotropy, lower_triangular,
                               mean_diffusivity, radial_diffusivity,
@@ -24,6 +26,8 @@ import dipy.core.sphere as dps
 
 from dipy.sims.voxel import single_tensor
 
+from dipy.testing.decorators import set_random_number_generator
+
 
 def test_roll_evals():
     # Just making sure this never passes through
@@ -31,9 +35,10 @@ def test_roll_evals():
     npt.assert_raises(ValueError, dti._roll_evals, weird_evals)
 
 
-def test_tensor_algebra():
+@set_random_number_generator()
+def test_tensor_algebra(rng):
     # Test that the computation of tensor determinant and norm is correct
-    test_arr = np.random.rand(10, 3, 3)
+    test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
     t_norm = dti.norm(test_arr)
     for i, x in enumerate(test_arr):
@@ -511,7 +516,8 @@ def test_mask():
                                     dtifit.S0_hat[0, 0, 0])
 
 
-def test_nnls_jacobian_func():
+@set_random_number_generator()
+def test_nnls_jacobian_func(rng):
     b0 = 1000.
     bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
@@ -526,7 +532,7 @@ def test_nnls_jacobian_func():
     # Signals
     Y = np.exp(np.dot(X, D_orig))
     scale = 10
-    error = np.random.normal(scale=scale, size=Y.shape)
+    error = rng.normal(scale=scale, size=Y.shape)
     Y = Y + error
 
     # although sigma and gmm gradients seem correct from inspection,
@@ -646,7 +652,11 @@ def test_nlls_fit_tensor():
     sigma = np.ones(Y_less.shape[-1])
     tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS',
                                    weighting='sigma', sigma=sigma)
-    tmf = tensor_model.fit(Y_less)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=ols_resort_msg,
+            category=UserWarning)
+        tmf = tensor_model.fit(Y_less)
 
     # Test sigma with an array of wrong size
     sigma = np.ones(Y_less.shape[-1] + 10)

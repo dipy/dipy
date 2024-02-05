@@ -1,7 +1,7 @@
 .. _commit-codes:
 
-Commit message codes
----------------------
+:octicon:`git-commit;1em;sd-text-info` Commit message codes
+-----------------------------------------------------------
 
 Please prefix all commit summaries with one (or more) of the following labels.
 This should help others to easily classify the commits into meaningful

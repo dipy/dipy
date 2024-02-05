@@ -17,6 +17,7 @@ from numpy.testing import (assert_array_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
+from dipy.testing.decorators import set_random_number_generator
 
 factors = {('TRANSLATION', 2): 2.0,
            ('ROTATION', 2): 0.1,
@@ -30,7 +31,7 @@ factors = {('TRANSLATION', 2): 2.0,
            ('AFFINE', 3): 0.1}
 
 
-def create_random_image_pair(sh, nvals, seed):
+def create_random_image_pair(sh, nvals, rng=None):
     r""" Create a pair of images with an arbitrary, non-uniform joint PDF
 
     Parameters
@@ -41,6 +42,9 @@ def create_random_image_pair(sh, nvals, seed):
         maximum number of different values in the generated 2D images.
         The voxel intensities of the returned images will be in
         {0, 1, ..., nvals-1}
+    rng : numpy.random.generator
+        numpy's random generator. If None, it is set with a random seed.
+        Default is None
 
     Returns
     -------
@@ -49,18 +53,19 @@ def create_random_image_pair(sh, nvals, seed):
     moving : array, shape=sh
         second image in the image pair
     """
-    np.random.seed(seed)
+    if rng is None:
+        rng = np.random.default_rng()
     sz = reduce(mul, sh, 1)
     sh = tuple(sh)
-    static = np.random.randint(0, nvals, sz).reshape(sh)
+    static = rng.integers(0, nvals, sz).reshape(sh)
 
     # This is just a simple way of making  the distribution non-uniform
     moving = static.copy()
-    moving += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
+    moving += rng.integers(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     # This is just a simple way of making  the distribution non-uniform
     static = moving.copy()
-    static += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
+    static += rng.integers(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     return static.astype(np.float64), moving.astype(np.float64)
 
@@ -172,10 +177,10 @@ def test_parzen_joint_histogram():
                     assert_equal(index, P.padding + i)
 
 
-def test_parzen_densities():
+@set_random_number_generator(1246592)
+def test_parzen_densities(rng):
     # Test the computation of the joint intensity distribution
     # using a dense and a sparse set of values
-    seed = 1246592
     nbins = 32
     nr = 30
     nc = 35
@@ -185,10 +190,10 @@ def test_parzen_densities():
     for dim in [2, 3]:
         if dim == 2:
             shape = (nr, nc)
-            static, moving = create_random_image_pair(shape, nvals, seed)
+            static, moving = create_random_image_pair(shape, nvals, rng)
         else:
             shape = (ns, nr, nc)
-            static, moving = create_random_image_pair(shape, nvals, seed)
+            static, moving = create_random_image_pair(shape, nvals, rng)
 
         # Initialize
         parzen_hist = ParzenJointHistogram(nbins)
@@ -256,7 +261,7 @@ def test_parzen_densities():
                                   expected_smarginal_sparse)
 
 
-def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
+def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
     r""" Creates a pair of images related to each other by an affine transform
 
     We transform the static image with a random transform so that the
@@ -274,11 +279,17 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
         added to the identity parameters to create the random transform
     nslices: int
         number of slices to be stacked to form the volumes
+    sigma: float
+        standard deviation of the gaussian filter
+    rng: np.random.Generator
+        numpy's random generator. If None, it is set with a random seed.
+        Default is None
     """
+    if rng is None:
+        rng = np.random.default_rng()
     dim = 2 if nslices == 1 else 3
     if transform.get_dim() != dim:
         raise ValueError("Transform and requested volume have different dims.")
-    np.random.seed(3147702)
     zero_slices = nslices // 3
 
     fname = get_fnames('t1_coronal_slice')
@@ -303,7 +314,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     # Create a transform by slightly perturbing the identity parameters
     theta = transform.get_identity_parameters()
     n = transform.get_number_of_parameters()
-    theta += np.random.rand(n) * rfactor
+    theta += rng.random(n) * rfactor
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
@@ -315,7 +326,8 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     return static, moving, static_g2w, moving_g2w, smask, mmask, M
 
 
-def test_joint_pdf_gradients_dense():
+@set_random_number_generator(3147702)
+def test_joint_pdf_gradients_dense(rng):
     # Compare the analytical and numerical (finite differences) gradient of
     # the joint distribution (i.e. derivatives of each histogram cell) w.r.t.
     # the transform parameters. Since the histograms are discrete partitions
@@ -350,7 +362,8 @@ def test_joint_pdf_gradients_dense():
         theta = transform.get_identity_parameters()
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 5.0)
+            setup_random_transform(transform, factor, nslices, 5.0,
+                                   rng=rng)
         parzen_hist = ParzenJointHistogram(32)
         parzen_hist.setup(static, moving, smask, mmask)
 
@@ -411,7 +424,8 @@ def test_joint_pdf_gradients_dense():
         assert(std_cosine < 0.25)
 
 
-def test_joint_pdf_gradients_sparse():
+@set_random_number_generator(3147702)
+def test_joint_pdf_gradients_sparse(rng):
     h = 1e-4
 
     # Make sure dictionary entries are processed in the same order regardless
@@ -434,16 +448,16 @@ def test_joint_pdf_gradients_sparse():
         theta = transform.get_identity_parameters()
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 5.0)
+            setup_random_transform(transform, factor, nslices, 5.0,
+                                   rng=rng)
         parzen_hist = ParzenJointHistogram(32)
         parzen_hist.setup(static, moving, smask, mmask)
 
         # Sample the fixed-image domain
         k = 3
         sigma = 0.25
-        seed = 1234
         shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2w, sigma, seed)
+        samples = sample_domain_regular(k, shape, static_g2w, sigma, rng)
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_g2w)
@@ -510,8 +524,8 @@ def test_joint_pdf_gradients_sparse():
         # the same direction. Disregard very small gradients
         mean_cosine = P[P != 0].mean()
         std_cosine = P[P != 0].std()
-        assert(mean_cosine > 0.99)
-        assert(std_cosine < 0.15)
+        assert(mean_cosine > 0.98)
+        assert(std_cosine < 0.16)
 
 
 def test_sample_domain_regular():
@@ -580,7 +594,7 @@ def test_exceptions():
         valid_grad = np.empty(shape + (dim,), dtype=np.float64)
 
         invalid_img = np.empty((2, 2, 2, 2), dtype=np.float64)
-        invalid_grad_type = valid_grad.astype(np.int32)
+        invalid_grad_type = np.empty_like(valid_grad, dtype=np.int32)
         invalid_grad_dim = np.empty(shape + (dim + 1,), dtype=np.float64)
 
         for s, m, g in [(valid_img, valid_img, invalid_grad_type),

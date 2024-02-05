@@ -1,9 +1,7 @@
 """ Routines to support optional packages """
 
-try:
-    import importlib
-except ImportError:
-    import dipy.utils._importlib as importlib
+import importlib
+from packaging.version import Version
 
 try:
     import pytest
@@ -15,7 +13,7 @@ else:
 from dipy.utils.tripwire import TripWire
 
 
-def optional_package(name, trip_msg=None):
+def optional_package(name, *, trip_msg=None, min_version=None):
     """ Return package-like thing and module setup for package `name`
 
     Parameters
@@ -26,6 +24,10 @@ def optional_package(name, trip_msg=None):
         message to give when someone tries to use the return package, but we
         could not import it, and have returned a TripWire object instead.
         Default message if None.
+    min_version : None or str
+        If not None, require that the imported package be at least this
+        version.  If the package has no ``__version__`` attribute, or if the
+        version is not parseable, raise an error.
 
     Returns
     -------
@@ -77,7 +79,18 @@ def optional_package(name, trip_msg=None):
         pass
     else:  # import worked
         # top level module
-        return pkg, True, lambda: None
+        if not min_version:
+            return pkg, True, lambda: None
+
+        current_version = getattr(pkg, '__version__', '0.0.0')
+        if Version(current_version) >= Version(min_version):
+            return pkg, True, lambda: None
+
+        if trip_msg is None:
+            trip_msg = (f'We need at least version {min_version} of '
+                        f'package {name}, but ``import {name}`` '
+                        f'found version {pkg.__version__}')
+
     if trip_msg is None:
         trip_msg = ('We need package %s for these functions, but '
                     '``import %s`` raised an ImportError'

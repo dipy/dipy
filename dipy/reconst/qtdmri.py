@@ -1,5 +1,3 @@
-from packaging.version import Version
-
 import numpy as np
 
 from dipy.reconst.cache import Cache
@@ -20,7 +18,7 @@ import dipy.reconst.dti as dti
 from dipy.utils.optpkg import optional_package
 import random
 
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
@@ -213,7 +211,7 @@ class QtdmriModel(Cache):
             if not have_cvxpy:
                 msg = "cvxpy must be installed for Laplacian or l1 "
                 msg += "regularization."
-                raise ValueError(msg)
+                raise ImportError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
@@ -351,20 +349,14 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
-            else:
-                design_matrix = cvxpy.Constant(M) @ c
+            design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix - data_norm) +
                 lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
-                else:
-                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
+                constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -381,20 +373,14 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
-            else:
-                design_matrix = cvxpy.Constant(M) @ c
+            design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix - data_norm) +
                 alpha * cvxpy.norm1(c)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
-                else:
-                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
+                constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -432,10 +418,7 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
-            else:
-                design_matrix = cvxpy.Constant(M) @ c
+            design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix - data_norm) +
                 alpha * cvxpy.norm1(c) +
@@ -443,10 +426,7 @@ class QtdmriModel(Cache):
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
-                else:
-                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
+                constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -1070,52 +1050,8 @@ class QtdmriFit:
         return eap
 
 
-def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
-    """Generates the matrix that maps the qtdmri coefficients to MAP-MRI
-    coefficients. The conversion is done by only evaluating the time basis for
-    a diffusion time tau and summing up coefficients with the same spatial
-    basis orders [1].
-
-    Parameters
-    ----------
-    radial_order : unsigned int,
-        an even integer representing the spatial/radial order of the basis.
-    time_order : unsigned int,
-        an integer larger or equal than zero representing the time order
-        of the basis.
-    ut : float
-        temporal scaling factor
-    tau : float
-        diffusion time (big_delta - small_delta / 3.) in seconds
-
-    References
-    ----------
-    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-        Representation of dMRI in Space and Time", Medical Image Analysis,
-        2017.
-    """
-    mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
-    n_elem_mapmri = int(mapmri_ind_mat.shape[0])
-    qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
-    n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
-
-    temporal_storage = np.zeros(time_order + 1)
-    for o in range(time_order + 1):
-        temporal_storage[o] = temporal_basis(o, ut, tau)
-
-    counter = 0
-    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
-    for nxt, nyt, nzt, o in qtdmri_ind_mat:
-        index_overlap = np.all([nxt == mapmri_ind_mat[:, 0],
-                                nyt == mapmri_ind_mat[:, 1],
-                                nzt == mapmri_ind_mat[:, 2]], 0)
-        mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
-        counter += 1
-    return mapmri_mat
-
-
-def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
-    """Generates the matrix that maps the spherical qtdmri coefficients to
+def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
+    """Generate the matrix that maps the spherical qtdmri coefficients to
     MAP-MRI coefficients. The conversion is done by only evaluating the time
     basis for a diffusion time tau and summing up coefficients with the same
     spatial basis orders [1].
@@ -1131,6 +1067,9 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         temporal scaling factor
     tau : float
         diffusion time (big_delta - small_delta / 3.) in seconds
+    isotropic : bool
+        `True` if the case is isotropic.
+
 
     References
     ----------
@@ -1138,9 +1077,14 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
+    if isotropic:
+        mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
+        qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
+    else:
+        mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
+        qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
+
     n_elem_mapmri = int(mapmri_ind_mat.shape[0])
-    qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
     n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
 
     temporal_storage = np.zeros(time_order + 1)
@@ -1148,14 +1092,70 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
-    mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
+    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
     for j, ll, m, o in qtdmri_ind_mat:
         index_overlap = np.all([j == mapmri_ind_mat[:, 0],
                                 ll == mapmri_ind_mat[:, 1],
                                 m == mapmri_ind_mat[:, 2]], 0)
-        mapmri_isotropic_mat[:, counter] = temporal_storage[o] * index_overlap
+        mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
-    return mapmri_isotropic_mat
+    return mapmri_mat
+
+
+def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generate the matrix that maps the qtdmri coefficients to MAP-MRI
+    coefficients for the anisotropic case. The conversion is done by only
+    evaluating the time basis for a diffusion time tau and summing up
+    coefficients with the same spatial basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
+
+    return _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, False)
+
+
+def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generate the matrix that maps the spherical qtdmri coefficients to
+    MAP-MRI coefficients for the isotropic case. The conversion is done by only
+    evaluating the time basis for a diffusion time tau and summing up
+    coefficients with the same spatial basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
+
+    return _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, True)
 
 
 def qtdmri_temporal_normalization(ut):
@@ -1853,8 +1853,8 @@ def qtdmri_isotropic_scaling(data, q, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    us = np.sqrt(np.dot(logE_q, inv_B_q))
-    ut = np.dot(logE_tau, inv_B_tau)
+    us = np.sqrt(np.dot(logE_q, inv_B_q)).item()
+    ut = np.dot(logE_tau, inv_B_tau).item()
     return us, ut
 
 
@@ -1877,7 +1877,7 @@ def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
-    ut = np.dot(logE_tau, inv_B_tau)
+    ut = np.dot(logE_tau, inv_B_tau).item()
 
     return us, ut, R
 
@@ -1978,12 +1978,8 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
         while cv_old >= cv_new and counter < weight_array.shape[0]:
             alpha = weight_array[counter]
             c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M[test]) * c
-                recovered_signal = cvxpy.Constant(M[sub]) * c
-            else:
-                design_matrix = cvxpy.Constant(M[test]) @ c
-                recovered_signal = cvxpy.Constant(M[sub]) @ c
+            design_matrix = cvxpy.Constant(M[test]) @ c
+            recovered_signal = cvxpy.Constant(M[sub]) @ c
             data = cvxpy.Constant(E[test])
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix - data) +
@@ -2040,12 +2036,8 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         cv_old = errorlist[i, 0]
         cv_new = errorlist[i, 0]
         c = cvxpy.Variable(M.shape[1])
-        if Version(cvxpy.__version__) < Version('1.1'):
-            design_matrix = cvxpy.Constant(M[test]) * c
-            recovered_signal = cvxpy.Constant(M[sub]) * c
-        else:
-            design_matrix = cvxpy.Constant(M[test]) @ c
-            recovered_signal = cvxpy.Constant(M[sub]) @ c
+        design_matrix = cvxpy.Constant(M[test]) @ c
+        recovered_signal = cvxpy.Constant(M[sub]) @ c
 
         data = cvxpy.Constant(E[test])
         constraints = []

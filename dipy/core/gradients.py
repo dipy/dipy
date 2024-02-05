@@ -10,7 +10,6 @@ from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 from dipy.utils.deprecator import deprecate_with_version
-from dipy.utils.deprecator import deprecated_params
 
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -50,6 +49,73 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
         return np.unique(b), b
 
     return np.unique(b)
+
+
+def b0_threshold_empty_gradient_message(bvals, idx, b0_threshold):
+    """Message about the ``b0_threshold`` value resulting in no gradient
+    selection.
+
+    Parameters
+    ----------
+    bvals : (N,) ndarray
+        The b-value, or magnitude, of each gradient direction.
+    idx : ndarray
+        Indices of the gradients to be selected.
+    b0_threshold : float
+        Gradients with b-value less than or equal to `b0_threshold` are
+        considered to not have diffusion weighting.
+
+    Returns
+    -------
+    str
+        Message.
+    """
+
+    return (
+        "Filtering gradient values with a b0 threshold value "
+        f"of {b0_threshold} results in no gradients being "
+        f"selected for the b-values ({bvals[idx]}) corresponding "
+        f"to the requested indices ({idx}). Lower the b0 threshold "
+        "value.")
+
+
+def b0_threshold_update_slicing_message(slice_start):
+    """Message for b0 threshold value update for slicing.
+
+    Parameters
+    ----------
+    slice_start : int
+        Starting index for slicing.
+
+    Returns
+    -------
+    str
+        Message.
+    """
+
+    return f"Updating b0_threshold to {slice_start} for slicing."
+
+
+def mask_non_weighted_bvals(bvals, b0_threshold):
+    """Create a diffusion gradient-weighting mask for the b-values according to
+    the provided b0 threshold value.
+
+    Parameters
+    ----------
+    bvals : (N,) ndarray
+        The b-value, or magnitude, of each gradient direction.
+    b0_threshold : float
+        Gradients with b-value less than or equal to `b0_threshold` are
+        considered to not have diffusion weighting.
+
+    Returns
+    -------
+    ndarray
+        Gradient-weighting mask: True for all b-value indices whose value is
+        smaller or equal to ``b0_threshold``; False otherwise.
+     """
+
+    return bvals <= b0_threshold
 
 
 class GradientTable:
@@ -202,7 +268,7 @@ class GradientTable:
 
     @auto_attr
     def b0s_mask(self):
-        return self.bvals <= self.b0_threshold
+        return mask_non_weighted_bvals(self.bvals, self.b0_threshold)
 
     @auto_attr
     def bvecs(self):
@@ -223,11 +289,18 @@ class GradientTable:
             if slice_start != self.b0_threshold:
                 # Update b0_threshold and warn the user
                 self.b0_threshold = slice_start
-                warn(f"Updating b0_threshold to {slice_start} for slicing.",
+                warn(b0_threshold_update_slicing_message(slice_start),
                      UserWarning, stacklevel=2)
                 idx = range(*idx.indices(len(self.bvals)))
 
-        mask = self.bvals[idx] > self.b0_threshold
+        mask = np.logical_not(
+            mask_non_weighted_bvals(self.bvals[idx], self.b0_threshold))
+        if not any(mask):
+            raise ValueError(
+                b0_threshold_empty_gradient_message(
+                    self.bvals, idx, self.b0_threshold)
+            )
+
         # Apply the mask to select the desired b-values and b-vectors
         bvals_selected = self.bvals[idx][mask]
         bvecs_selected = self.bvecs[idx, :][mask, :]
@@ -269,8 +342,10 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     bvecs : array_like (N, 3)
         The direction, represented as a unit vector, of each gradient.
     b0_threshold : float
-        Gradients with b-value less than or equal to `bo_threshold` are
-        considered to not have diffusion weighting.
+        Gradients with b-value less than or equal to `b0_threshold` are
+        considered to not have diffusion weighting. If its value is equal to or
+        larger than all values in b-vals, then it is assumed that no
+        thresholding is requested.
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
@@ -327,11 +402,14 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     if b0_threshold >= 200:
         warn("b0_threshold has a value > 199")
 
-    # checking for the correctness of bvals
-    if b0_threshold < bvals.min():
-        warn("b0_threshold (value: {0}) is too low, increase your "
-             "b0_threshold. It should be higher than the lowest b0 value "
-             "({1}).".format(b0_threshold, bvals.min()))
+    # If all b-values are smaller or equal to the b0 threshold, it is assumed
+    # that no thresholding is requested
+    if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+        # checking for the correctness of bvals
+        if b0_threshold < bvals.min():
+            warn("b0_threshold (value: {0}) is too low, increase your "
+                 "b0_threshold. It should be higher than the lowest b0 value "
+                 "({1}).".format(b0_threshold, bvals.min()))
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
@@ -704,7 +782,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
                           b0_threshold=gtab.b0_threshold, atol=atol)
 
 
-def generate_bvecs(N, iters=5000):
+def generate_bvecs(N, iters=5000, rng=None):
     """Generates N bvectors.
 
     Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
@@ -717,6 +795,9 @@ def generate_bvecs(N, iters=5000):
         of bvals used.
     iters : int
         Number of iterations to run.
+    rng : numpy.random.Generator, optional
+        Numpy's random number generator. If None, the generator is created.
+        Default is None.
 
     Returns
     -------
@@ -724,8 +805,10 @@ def generate_bvecs(N, iters=5000):
         The generated directions, represented as a unit vector, of each
         gradient.
     """
-    theta = np.pi * np.random.rand(N)
-    phi = 2 * np.pi * np.random.rand(N)
+    if rng is None:
+        rng = np.random.default_rng()
+    theta = np.pi * rng.random(N)
+    phi = 2 * np.pi * rng.random(N)
     hsph_initial = HemiSphere(theta=theta, phi=phi)
     hsph_updated, potential = disperse_charges(hsph_initial, iters)
     bvecs = hsph_updated.vertices

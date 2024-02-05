@@ -7,6 +7,7 @@ from dipy.reconst.dti import TensorModel
 from dipy.sims.phantom import orbital_phantom
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.testing.decorators import set_random_number_generator
 
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
@@ -53,9 +54,8 @@ def test_phantom():
     assert_array_almost_equal(FA.max(), expected_fa, decimal=2)
 
 
-def test_add_noise():
-    np.random.seed(1980)
-
+@set_random_number_generator(1980)
+def test_add_noise(rng):
     N = 50
     S0 = 100
 
@@ -66,7 +66,8 @@ def test_add_noise():
                    scale=(3, 3, 3),
                    angles=np.linspace(0, 2 * np.pi, 16),
                    radii=np.linspace(0.2, 2, 6),
-                   S0=S0)
+                   S0=S0,
+                   rng=rng)
 
     vol = orbital_phantom(gtab, **options)
 

@@ -27,15 +27,13 @@ PLoS ONE 17(9): e0274396. https://doi.org/10.1371/journal.pone.0274396
 
 """
 
-from packaging.version import Version
 from dipy.utils.optpkg import optional_package
 import numpy as np
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Input, Conv1D, Activation
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
+
 sklearn, have_sklearn, _ = optional_package('sklearn.model_selection')
 
 

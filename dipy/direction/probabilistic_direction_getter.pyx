@@ -80,11 +80,13 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             cnp.npy_intp i, idx, _len
-            double[:] newdir, pmf
+            double[:] newdir
+            double* pmf
             double last_cdf, cos_sim
 
+        _len = self.len_pmf
         pmf = self._get_pmf(point)
-        _len = pmf.shape[0]
+
 
         if norm(direction) == 0:
             return 1
@@ -100,12 +102,12 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
                 if cos_sim < self.cos_similarity:
                     pmf[i] = 0
 
-            cumsum(&pmf[0], &pmf[0], _len)
+            cumsum(pmf, pmf, _len)
             last_cdf = pmf[_len - 1]
             if last_cdf == 0:
                 return 1
 
-        idx = where_to_insert(&pmf[0], random() * last_cdf, _len)
+        idx = where_to_insert(pmf, random() * last_cdf, _len)
 
         newdir = self.vertices[idx]
         # Update direction and return 0 for error
@@ -147,11 +149,12 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef:
             cnp.npy_intp _len, max_idx
-            double[:] newdir, pmf
+            double[:] newdir
+            double* pmf
             double max_value, cos_sim
 
         pmf = self._get_pmf(point)
-        _len = pmf.shape[0]
+        _len = self.len_pmf
         max_idx = 0
         max_value = 0.0
 

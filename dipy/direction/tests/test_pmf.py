@@ -5,28 +5,29 @@ import numpy.testing as npt
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
+from dipy.reconst import shm
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
-from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.sims.voxel import single_tensor
+from dipy.testing.decorators import set_random_number_generator
 
 response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
-def test_pmf_val():
+@set_random_number_generator()
+def test_pmf_val(rng):
     sphere = get_sphere('symmetric724')
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
+            'ignore', message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        pmfgen = SHCoeffPmfGen(np.random.random([2, 2, 2, 28]), sphere, None)
+        pmfgen = SHCoeffPmfGen(rng.random([2, 2, 2, 28]), sphere, None)
     point = np.array([1, 1, 1], dtype='float')
 
     for idx in [0, 5, 15, -1]:
         pmf = pmfgen.get_pmf(point)
         # Create a direction vector close to the vertex idx
-        xyz = sphere.vertices[idx] + np.random.random([3]) / 100
+        xyz = sphere.vertices[idx] + rng.random([3]) / 100
         pmf_idx = pmfgen.get_pmf_value(point, xyz)
         # Test that the pmf sampled for the direction xyz is correct
         npt.assert_array_almost_equal(pmf[idx], pmf_idx)
@@ -36,7 +37,7 @@ def test_pmf_from_sh():
     sphere = HemiSphere.from_sphere(unit_octahedron)
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
+            'ignore', message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         pmfgen = SHCoeffPmfGen(np.ones([2, 2, 2, 28]), sphere, None)
 

@@ -123,7 +123,7 @@ def streamline_mapping(streamlines, affine=None,
 
     """
     cdef:
-        cnp.int_t[:, :] voxel_indices
+        cnp.npy_intp[:, :] voxel_indices
 
     lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
@@ -160,7 +160,7 @@ def streamline_mapping(streamlines, affine=None,
 @cython.wraparound(False)
 cdef inline cnp.double_t norm(cnp.double_t x,
                               cnp.double_t y,
-                              cnp.double_t z) nogil:
+                              cnp.double_t z) noexcept nogil:
     cdef cnp.double_t val = sqrt(x*x + y*y + z*z)
     return val
 
@@ -171,7 +171,7 @@ cdef inline cnp.double_t norm(cnp.double_t x,
 cdef inline void c_get_closest_edge(cnp.double_t* p,
                                     cnp.double_t* direction,
                                     cnp.double_t* edge,
-                                    double eps=1.) nogil:
+                                    double eps=1.) noexcept nogil:
      edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
      edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
      edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
@@ -228,7 +228,7 @@ def _streamlines_in_mask(list streamlines,
 @cython.cdivision(True)
 cdef cnp.npy_intp _streamline_in_mask(
         cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) nogil:
+        cnp.uint8_t[:,:,:] mask) noexcept nogil:
     """
     Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.
@@ -398,8 +398,8 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     vox_sizes = np.asarray(vox_sizes).astype(np.double)
     n_voxels = np.prod(vol_dims)
     # output track counts array, flattened
-    cdef cnp.ndarray[cnp.int_t, ndim=1] tcs = \
-        np.zeros((n_voxels,), dtype=int)
+    cdef cnp.ndarray[cnp.npy_intp, ndim=1] tcs = \
+        np.zeros((n_voxels,), dtype=np.intp)
     # pointer to output track indices
     cdef cnp.npy_intp i
     if return_elements:

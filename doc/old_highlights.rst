@@ -4,6 +4,20 @@
 Older Highlights
 ****************
 
+**DIPY 1.7.0** is now available. New features include:
+
+- NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
+- NF: DKI+ - Diffusion Kurtosis modeling with advanced constraints added.
+- NF: Synb0 - Synthetic b0 creation added using deep learning added.
+- NF: New Parallel Transport Tractography (PTT) added.
+- NF: Fast Streamline Search algorithm added.
+- NF: New denoising methods based on 1D CNN added.
+- Handle Asymmetric Spherical Functions.
+- Large update of DIPY Horizon features.
+- Multiple Workflows updated
+- Large codebase cleaning.
+- Large documentation update. Integration of Sphinx-Gallery.
+- Closed 53 issues and merged 34 pull requests.
 
 **DIPY 1.6.0** is now available. New features include:
 
@@ -172,7 +186,7 @@ Older Highlights
 **DIPY 0.13.0** is now available. New features include:
 
 - Faster local PCA implementation.
-- Fixed different issues with OpenMP and Windows / OSX.
+- Fixed different issues with OpenMP and Windows / macOS.
 - Replacement of cvxopt by cvxpy.
 - Replacement of Pytables by h5py.
 - Updated API to support latest numpy version (1.14).

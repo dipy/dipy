@@ -1,24 +1,39 @@
-import os
 import tempfile
-import pytest
+from urllib.error import URLError, HTTPError
 
-from dipy.data import fetch_gold_standard_io
-from dipy.io.streamline import load_tractogram
-from dipy.io.utils import (create_nifti_header,
-                           decfa, decfa_to_float,
-                           get_reference_info,
-                           is_reference_info_valid,
-                           read_img_arr_or_path)
+import pytest
 
 import nibabel as nib
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
 import trx.trx_file_memmap as tmm
 
-filepath_dix = {}
-files, folder = fetch_gold_standard_io()
-for filename in files:
-    filepath_dix[filename] = os.path.join(folder, filename)
+from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
+from dipy.io.utils import (create_nifti_header,
+                           decfa, decfa_to_float,
+                           get_reference_info,
+                           is_reference_info_valid,
+                           read_img_arr_or_path)
+from dipy.testing.decorators import set_random_number_generator
+
+FILEPATH_DIX = None
+
+
+def setup_module():
+    global FILEPATH_DIX
+    try:
+        FILEPATH_DIX, _, _ = get_fnames('gold_standard_tracks')
+    except (HTTPError, URLError) as e:
+        FILEPATH_DIX = None
+        error_msg = f'"Tests Data failed to download." Reason: {e}'
+        pytest.skip(error_msg, allow_module_level=True)
+        return
+
+
+def teardown_module():
+    global FILEPATH_DIX
+    FILEPATH_DIX = None,
 
 
 def test_decfa():
@@ -126,8 +141,8 @@ def reference_info_zero_affine():
 
 
 def test_reference_trk_file_info_identical():
-    tuple_1 = get_reference_info(filepath_dix['gs.trk'])
-    tuple_2 = get_reference_info(filepath_dix['gs.nii'])
+    tuple_1 = get_reference_info(FILEPATH_DIX['gs.trk'])
+    tuple_2 = get_reference_info(FILEPATH_DIX['gs.nii'])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -138,8 +153,8 @@ def test_reference_trk_file_info_identical():
 
 
 def test_reference_trx_file_info_identical():
-    tuple_1 = get_reference_info(filepath_dix['gs.trx'])
-    tuple_2 = get_reference_info(filepath_dix['gs.nii'])
+    tuple_1 = get_reference_info(FILEPATH_DIX['gs.trx'])
+    tuple_2 = get_reference_info(FILEPATH_DIX['gs.nii'])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -150,9 +165,9 @@ def test_reference_trx_file_info_identical():
 
 
 def test_reference_obj_info_identical():
-    sft = load_tractogram(filepath_dix['gs.trk'], 'same')
-    trx = tmm.load(filepath_dix['gs.trx'])
-    img = nib.load(filepath_dix['gs.nii'])
+    sft = load_tractogram(FILEPATH_DIX['gs.trk'], 'same')
+    trx = tmm.load(FILEPATH_DIX['gs.trx'])
+    img = nib.load(FILEPATH_DIX['gs.nii'])
 
     tuple_1 = get_reference_info(sft)
     tuple_2 = get_reference_info(trx)
@@ -173,9 +188,9 @@ def test_reference_obj_info_identical():
 
 
 def test_reference_header_info_identical():
-    trk = nib.streamlines.load(filepath_dix['gs.trk'])
-    trx = tmm.load(filepath_dix['gs.trx'])
-    img = nib.load(filepath_dix['gs.nii'])
+    trk = nib.streamlines.load(FILEPATH_DIX['gs.trk'])
+    trx = tmm.load(FILEPATH_DIX['gs.trx'])
+    img = nib.load(FILEPATH_DIX['gs.nii'])
 
     tuple_1 = get_reference_info(trk.header)
     tuple_2 = get_reference_info(trx.header)
@@ -200,10 +215,11 @@ def test_all_zeros_affine():
             msg='An all zeros affine should not be valid')
 
 
-def test_read_img_arr_or_path():
-    data = np.random.rand(4, 4, 4, 3)
+@set_random_number_generator()
+def test_read_img_arr_or_path(rng):
+    data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
-    aff[:3, :] = np.random.randn(3, 4)
+    aff[:3, :] = rng.standard_normal((3, 4))
     img = nib.Nifti1Image(data, aff)
     path = tempfile.NamedTemporaryFile().name + '.nii.gz'
     nib.save(img, path)

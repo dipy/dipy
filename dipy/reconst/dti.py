@@ -1,15 +1,11 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-from packaging.version import Version
 import warnings
-
 import functools
 
 import numpy as np
-
 import scipy.optimize as opt
 
-from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
@@ -20,6 +16,8 @@ from dipy.utils.volume import adjacency_calc
 
 
 MIN_POSITIVE_SIGNAL = 0.0001
+
+ols_resort_msg = "Resorted to OLS solution in some voxels"
 
 
 def _roll_evals(evals, axis=-1):
@@ -1443,22 +1441,17 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     w = np.exp(fit_result @ design_matrix.T)
 
     # the weighted problem design_matrix * w is much larger (differs per voxel)
-    if Version(np.__version__) < Version('1.14'):
-        fit_result = np.einsum('...ij,...j',
-                               pinv(design_matrix * w[..., None]),
-                               w * log_s)
-    else:
-        fit_result = np.einsum('...ij,...j',
-                               np.linalg.pinv(design_matrix * w[..., None]),
-                               w * log_s)
+    fit_result = np.einsum('...ij,...j',
+                           np.linalg.pinv(design_matrix * w[..., None]),
+                           w * log_s)
 
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
                 np.exp(-fit_result[:, -1])), None
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min()), None
+        return eig_from_lo_tri(
+            fit_result, min_diffusivity=tol / -design_matrix.min()), None
 
 
 @iter_fit_tensor()
@@ -1833,7 +1826,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
@@ -2052,7 +2045,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn("Resorted to OLS solution in some voxels", UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning)
 
     params.shape = data.shape[:-1] + (npa,)
     extra = {"robust": robust}

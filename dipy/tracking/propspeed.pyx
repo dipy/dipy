@@ -78,7 +78,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
                                      cnp.npy_intp peaks,
                                      double *odf_vertices,
                                      double qa_thr, double ang_thr,
-                                     double *direction) nogil:
+                                     double *direction) noexcept nogil:
     """ Give the nearest direction to a point, checking threshold and angle
 
     Parameters
@@ -165,7 +165,7 @@ cdef cnp.npy_intp _propagation_direction(double *point,
                                          cnp.npy_intp *qa_shape,
                                          cnp.npy_intp* strides,
                                          double *direction,
-                                         double total_weight) nogil:
+                                         double total_weight) noexcept nogil:
     cdef:
         double total_w = 0 # total weighting useful for interpolation
         double delta = 0 # store delta function (stopping function) result
@@ -233,7 +233,7 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
                                      double qa_thr,
                                      cnp.npy_intp* strides,
                                      cnp.npy_intp ref,
-                                     double* direction) nogil:
+                                     double* direction) noexcept nogil:
     """ First direction that we get from a seeding point
     """
     cdef:

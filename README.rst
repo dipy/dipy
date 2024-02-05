@@ -26,8 +26,8 @@
 
 DIPY [DIPYREF]_ is a python library for the analysis of MR diffusion imaging.
 
-DIPY is for research only; please do not use results from DIPY for
-clinical decisions.
+DIPY is for research only; please contact admins@dipy.org if you plan to deploy
+in clinical settings.
 
 Website
 =======
@@ -73,6 +73,14 @@ or using `conda`::
 For detailed installation instructions, including instructions for installing
 from source, please read our `installation documentation <https://dipy.org/documentation/latest/installation/>`_.
 
+Python versions and dependencies
+--------------------------------
+
+DIPY follows the `Scientific Python`_ `SPEC 0 — Minimum Supported Versions`_
+recommendation as closely as possible, including the supported Python and
+dependencies versions.
+
+Further information can be found in `Toolchain Roadmap <https://docs.dipy.org/stable/devel/toolchain.html>`_.
 
 License
 =======
@@ -92,3 +100,7 @@ Reference
     S. Van Der Walt, M. Descoteaux, I. Nimmo-Smith and DIPY contributors,
     "DIPY, a library for the analysis of diffusion MRI data",
     Frontiers in Neuroinformatics, vol. 8, p. 8, Frontiers, 2014.
+
+
+.. _`Scientific Python`: https://scientific-python.org/
+.. _`SPEC 0 — Minimum Supported Versions`: https://scientific-python.org/specs/spec-0000/

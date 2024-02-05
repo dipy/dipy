@@ -23,19 +23,9 @@ from dipy.stats.analysis import anatomical_measures
 from dipy.stats.analysis import peak_values
 
 pd, have_pd, _ = optional_package("pandas")
-smf, have_smf, _ = optional_package("statsmodels")
-tables, have_tables, _ = optional_package("tables")
+smf, have_smf, _ = optional_package("statsmodels.formula.api")
 matplt, have_matplotlib, _ = optional_package("matplotlib")
-
-if have_pd:
-    import pandas as pd
-
-if have_smf:
-    import statsmodels.formula.api as smf
-
-if have_matplotlib:
-    import matplotlib as matplt
-    import matplotlib.pyplot as plt
+plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 class SNRinCCFlow(Workflow):
@@ -553,7 +543,7 @@ class BundleShapeAnalysis(Workflow):
         populations. Sci Rep 10, 17149 (2020)
 
         """
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
         all_subjects = []
         if os.path.isdir(subject_folder):
             groups = os.listdir(subject_folder)

@@ -1,4 +1,3 @@
-from packaging.version import Version
 import numbers
 import warnings
 
@@ -17,7 +16,7 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
@@ -382,16 +381,8 @@ def solve_qp(P, Q, G, H):
     """
     x = cvxpy.Variable(Q.shape[0])
     P = cvxpy.Constant(P)
-    if Version(cvxpy.__version__) >= Version('1.3'):
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P, True) + Q @ x)
-        constraints = [G @ x <= H]
-    elif Version(cvxpy.__version__) >= Version('1.2'):
-        P_psd = cvxpy.atoms.affine.wraps.psd_wrap(P)
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P_psd) + Q @ x)
-        constraints = [G @ x <= H]
-    elif Version(cvxpy.__version__) < Version('1.2'):
-        msg = """Dipy does not support versions of cvxpy below 1.2."""
-        raise ValueError(msg)
+    objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P, True) + Q @ x)
+    constraints = [G @ x <= H]
 
     # setting up the problem
     prob = cvxpy.Problem(objective, constraints)
@@ -437,7 +428,7 @@ class QpFitter:
 
 
 def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
-                               sphere=None, tol=20):
+                               sphere=None, tol=20, btens=None):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
@@ -447,26 +438,41 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     bvals : ndarray
         Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
-    wm_rf : (4, len(bvals)) ndarray
-        Response function of the WM tissue, for each bvals.
-    gm_rf : (4, len(bvals)) ndarray
+    wm_rf : (N-1, 4) ndarray
+        Response function of the WM tissue, for each bvals,
+        where N is the number of unique b-values including the b0.
+    gm_rf : (N-1, 4) ndarray
         Response function of the GM tissue, for each bvals.
-    csf_rf : (4, len(bvals)) ndarray
+    csf_rf : (N-1, 4) ndarray
         Response function of the CSF tissue, for each bvals.
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
     tol : int, optional
         Tolerance gap for b-values clustering.
+    btens : can be any of two options, optional
+
+        1. an array of strings of shape (N,) specifying
+           encoding tensor shape associated with all unique b-values
+           separately. N corresponds to the number of unique b-values,
+           including the b0. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding.
+        2. an array of shape (N,3,3) specifying the b-tensor of each unique
+           b-values exactly. N corresponds to the number of unique b-values,
+           including the b0.
 
     Returns
     -------
     MultiShellResponse
         MultiShellResponse object.
-    """
-    NUMPY_1_14_PLUS = Version(np.__version__) >= Version('1.14.0')
-    rcond_value = None if NUMPY_1_14_PLUS else -1
 
+    """
     bvals = np.array(bvals, copy=True)
+    if btens is None:
+        btens = np.repeat(["LTE"], len(bvals))
+    elif len(btens) != len(bvals):
+        msg = """bvals and btens parameters must have the same dimension."""
+        raise ValueError(msg)
     evecs = np.zeros((3, 3))
     z = np.array([0, 0, 1.])
     evecs[:, 0] = z
@@ -487,20 +493,21 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     response = np.empty([len(bvals), len(n) + 2])
 
     if bvals[0] < tol:
-        gtab = GradientTable(big_sphere.vertices * 0)
+        gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
         wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs,
                                     snr=None)
-        response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=rcond_value)[0]
+        response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         response[0, 1] = gm_rf[0, 3] / A
         response[0, 0] = csf_rf[0, 3] / A
 
         for i, bvalue in enumerate(bvals[1:]):
-            gtab = GradientTable(big_sphere.vertices * bvalue)
+            gtab = GradientTable(big_sphere.vertices * bvalue,
+                                 btens=btens[i + 1])
             wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
                                         snr=None)
             response[i+1, 2:] = np.linalg.lstsq(B, wm_response,
-                                                rcond=rcond_value)[0]
+                                                rcond=None)[0]
 
             response[i+1, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
             response[i+1, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
@@ -510,11 +517,12 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     else:
         warnings.warn("""No b0 given. Proceeding either way.""", UserWarning)
         for i, bvalue in enumerate(bvals):
-            gtab = GradientTable(big_sphere.vertices * bvalue)
+            gtab = GradientTable(big_sphere.vertices * bvalue,
+                                 btens=btens[i])
             wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
                                         snr=None)
             response[i, 2:] = np.linalg.lstsq(B, wm_response,
-                                              rcond=rcond_value)[0]
+                                              rcond=None)[0]
 
             response[i, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
             response[i, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A

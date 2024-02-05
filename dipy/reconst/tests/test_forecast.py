@@ -14,8 +14,8 @@ import pytest
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 

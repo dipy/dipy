@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -7,11 +8,13 @@ import pytest
 from dipy.data import DATA_DIR
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
+from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import set_random_number_generator
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
     from fury import window
@@ -22,14 +25,15 @@ skip_it = use_xvfb == 'skip'
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_horizon_events():
+@set_random_number_generator()
+def test_horizon_events(rng):
     # using here MNI template affine 2009a
     affine = np.array([[1., 0., 0., -98.],
                        [0., 1., 0., -134.],
                        [0., 0., 1., -72.],
                        [0., 0., 0., 1.]])
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
 
     images = [(data, affine)]
@@ -59,8 +63,8 @@ def test_horizon_events():
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_horizon():
-
+@set_random_number_generator()
+def test_horizon(rng):
     s1 = 10 * np.array([[0, 0, 0],
                         [1, 0, 0],
                         [2, 0, 0],
@@ -89,7 +93,7 @@ def test_horizon():
                        [0., 0., 1., -72.],
                        [0., 0., 0., 1.]])
 
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
 
     streamlines._data += np.array([-98., -134., -72.])
@@ -132,9 +136,24 @@ def test_horizon():
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_roi_images():
-    np.random.seed(42)
-    img1 = np.random.rand(5, 5, 5)
+def test_horizon_wrong_dtype_images():
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = np.random.rand(197, 233, 189).astype(np.bool_)
+    images = [(data, affine)]
+    with warnings.catch_warnings(record=True) as l_warns:
+        horizon(images=images, interactive=False)
+        check_for_warnings(l_warns, 'skipping image 1, passed image is not in '
+                           + 'numerical format')
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@set_random_number_generator(42)
+def test_roi_images(rng):
+    img1 = rng.random((5, 5, 5))
     img2 = np.zeros((5, 5, 5))
     img2[2, 2, 2] = 1
     img3 = np.zeros((5, 5, 5))
@@ -151,7 +170,10 @@ def test_roi_images():
     npt.assert_equal(analysis.actors, 2)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_small_horizon_import():
     from dipy.viz import horizon as Horizon
-    assert Horizon == horizon
+    if has_fury:
+        assert Horizon == horizon
+    else:
+        npt.assert_raises(ImportError, Horizon)

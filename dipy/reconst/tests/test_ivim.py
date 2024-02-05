@@ -25,7 +25,7 @@ from dipy.sims.voxel import multi_tensor
 
 from dipy.utils.optpkg import optional_package
 
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="REQUIRES CVXPY")
 
 
@@ -78,8 +78,7 @@ def setup_module():
                             120., 140., 160., 180., 200., 300., 400.,
                             500., 600., 700., 800., 900., 1000.])
 
-    with pytest.warns(UserWarning):
-        gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
     bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
                                        120., 140., 160., 180., 200., 300.,

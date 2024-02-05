@@ -1,5 +1,3 @@
-from packaging.version import Version
-
 import numpy as np
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -22,7 +20,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
 from dipy.data import load_sdp_constraints
 
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class MapmriModel(ReconstModel, Cache):
@@ -263,7 +261,8 @@ class MapmriModel(ReconstModel, Cache):
 
         if positivity_constraint:
             if not have_cvxpy:
-                raise ValueError('CVXPY package needed to enforce constraints.')
+                raise ImportError('CVXPY package needed to enforce '
+                                  'constraints.')
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     installed_solvers = ', '.join(cvxpy.installed_solvers())
@@ -415,10 +414,7 @@ class MapmriModel(ReconstModel, Cache):
                 coef = self.sdp.solve(M, data_norm, solver=self.cvxpy_solver)
             else:
                 c = cvxpy.Variable(M.shape[1])
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    design_matrix = cvxpy.Constant(M) * c
-                else:
-                    design_matrix = cvxpy.Constant(M) @ c
+                design_matrix = cvxpy.Constant(M) @ c
                 # workaround for the bug on cvxpy 1.0.15 when lopt = 0
                 # See https://github.com/cvxgrp/cvxpy/issues/672
                 if not lopt:
@@ -450,12 +446,7 @@ class MapmriModel(ReconstModel, Cache):
                         K = K_dependent * self.pos_K_independent
 
                 M0 = M[self.gtab.b0s_mask, :]
-                if Version(cvxpy.__version__) < Version('1.1'):
-                    constraints = [(M0[0] * c) == 1,
-                                   (K * c) >= -0.1]
-                else:
-                    constraints = [(M0[0] @ c) == 1,
-                                   (K @ c) >= -0.1]
+                constraints = [(M0[0] @ c) == 1, (K @ c) >= -0.1]
                 prob = cvxpy.Problem(objective, constraints)
                 try:
                     prob.solve(solver=self.cvxpy_solver)

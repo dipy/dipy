@@ -2,9 +2,6 @@
 """
 Class and helper functions for fitting the Histological ResDNN model.
 """
-
-
-from packaging.version import Version
 import logging
 import numpy as np
 
@@ -16,12 +13,10 @@ from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.nn.utils import set_logger_level
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Input, Dense, Add
-    if Version(tf.__version__) < Version('2.0.0'):
-        raise ImportError('Please upgrade to TensorFlow 2+')
 else:
     logging.warning('This model requires Tensorflow.\
                     Please install these packages using \

@@ -10,6 +10,7 @@ from dipy.sims.voxel import (_check_directions, all_tensor_evecs, add_noise,
 from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.testing.decorators import set_random_number_generator
 
 
 def setup_module():
@@ -130,16 +131,15 @@ def test_multi_tensor():
     assert_array_almost_equal(S, Ssingle)
 
 
-def test_snr():
-    np.random.seed(1978)
-
+@set_random_number_generator(2000)
+def test_snr(rng=None):
     s = single_tensor(gtab)
 
     # For reasonably large SNR, var(signal) ~= sigma**2, where sigma = 1/SNR
     for snr in [5, 10, 20]:
         sigma = 1.0 / snr
         for j in range(1000):
-            s_noise = add_noise(s, snr, 1, noise_type='rician')
+            s_noise = add_noise(s, snr, 1, noise_type='rician', rng=rng)
 
         assert_array_almost_equal(np.var(s_noise - s), sigma ** 2, decimal=2)
 

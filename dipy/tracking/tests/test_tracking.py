@@ -25,6 +25,7 @@ from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
                                               StreamlineStatus)
 from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
+from dipy.testing.decorators import set_random_number_generator
 
 
 def allclose(x, y, atol=None):
@@ -228,7 +229,8 @@ def test_save_seeds():
     npt.assert_equal(seed, seeds[1])
 
 
-def test_tracking_max_angle():
+@set_random_number_generator(0)
+def test_tracking_max_angle(rng):
     """This tests that the angle between streamline points is always smaller
     then the input `max_angle` parameter.
     """
@@ -242,7 +244,6 @@ def test_tracking_max_angle():
                     if cos_sim < min_cos_sim:
                         min_cos_sim = cos_sim
         return min_cos_sim
-    np.random.seed(0)  # Random number generator initialization
 
     for sphere in [get_sphere('repulsion100'),
                    HemiSphere.from_sphere(get_sphere('repulsion100'))]:
@@ -250,7 +251,7 @@ def test_tracking_max_angle():
         shape_img.extend([sphere.vertices.shape[0]])
         mask = np.ones(shape_img[:3])
         affine = np.eye(4)
-        random_pmf = np.random.random(shape_img)
+        random_pmf = rng.random(shape_img)
         seeds = seeds_from_mask(mask, affine, density=1)
         sc = ActStoppingCriterion.from_pve(mask,
                                            np.zeros(shape_img[:3]),
@@ -373,7 +374,8 @@ def test_probabilistic_odf_weighted_tracker():
     npt.assert_equal(tracking_1, tracking_2)
 
 
-def test_particle_filtering_tractography():
+@set_random_number_generator(0)
+def test_particle_filtering_tractography(rng):
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
@@ -409,8 +411,7 @@ def test_particle_filtering_tractography():
     # Random pmf in every voxel
     shape_img = list(simple_wm.shape)
     shape_img.extend([sphere.vertices.shape[0]])
-    np.random.seed(0)  # Random number generator initialization
-    pmf = np.random.random(shape_img)
+    pmf = rng.random(shape_img)
 
     # Test that PFT recover equal or more streamlines than localTracking
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
@@ -958,7 +959,8 @@ def test_affine_transformations():
         npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
 
 
-def test_random_seed_initialization():
+@set_random_number_generator()
+def test_random_seed_initialization(rng):
     """Test that the random generator can be initialized correctly with the
     tracking seeds.
     """
@@ -969,13 +971,13 @@ def test_random_seed_initialization():
     z = np.array([1., 1, 1, 51.67881720942744])
 
     seeds = np.row_stack([np.column_stack([x, y, z]),
-                          np.random.random((10, 3))])
+                          rng.random((10, 3))])
     sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
     randoms_seeds = [None, 0, 1, -1, np.iinfo(np.uint32).max + 1] \
-        + list(np.random.random(10)) \
-        + list(np.random.randint(0, np.iinfo(np.int32).max, 10))
+        + list(rng.random(10)) \
+        + list(rng.integers(0, np.iinfo(np.int32).max, 10))
 
     for rdm_seed in randoms_seeds:
         _ = Streamlines(LocalTracking(direction_getter=dg,

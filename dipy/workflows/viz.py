@@ -10,7 +10,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
 
-fury, has_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 
 if has_fury:
@@ -25,7 +25,7 @@ class HorizonFlow(Workflow):
     def get_short_name(cls):
         return 'horizon'
 
-    def run(self, input_files, cluster=False, cluster_thr=15.,
+    def run(self, input_files, cluster=False, rgb=False, cluster_thr=15.,
             random_colors=None, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
@@ -42,6 +42,8 @@ class HorizonFlow(Workflow):
         input_files : variable string
         cluster : bool, optional
             Enable QuickBundlesX clustering.
+        rgb : bool, optional
+            Enable the color image (rgb only, alpha channel will be ignored).
         cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal brains you may need to use something smaller such
@@ -106,6 +108,7 @@ class HorizonFlow(Workflow):
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
+        super(HorizonFlow, self).__init__(force=True)
         verbose = True
         tractograms = []
         images = []
@@ -236,7 +239,7 @@ class HorizonFlow(Workflow):
 
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
-                cluster=cluster, cluster_thr=cluster_thr,
+                cluster=cluster, rgb=rgb, cluster_thr=cluster_thr,
                 random_colors=random_colors, bg_color=bg_color,
                 order_transparent=order_transparent,
                 length_gt=length_gt, length_lt=length_lt,
