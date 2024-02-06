@@ -99,15 +99,12 @@ jobs:
         else
           tools/ci/install_dependencies.sh
         fi
-    # No need to update mingw-w64, we use msvc
-    # mingw-w64 does not manage well openmp threads so we avoid it for now
-    # Note that compilation works with mingw-w64 but 2-3 tests fail due to openmp
-    # - name: Install rtools (mingw-w64)
-    #   if runner.os == 'Windows'
-    #   run: |
-    #     choco install rtools -y --no-progress --force --version=4.0.0.20220206
-    #     echo "/c/rtools40/ucrt64/bin;" >> $GITHUB_PATH
-    #     echo "PKG_CONFIG_PATH=/c/opt/64/lib/pkgconfig;" >> $GITHUB_ENV
+    - name: Install OpenMP on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install llvm
+        brew install libomp
+        echo "CC=clang" >> $GITHUB_ENV
     - name: Install DIPY
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then

@@ -139,6 +139,22 @@ np_dep = declare_dependency(include_directories: inc_np)
 # Define Optimisation for cython extensions
 # ------------------------------------------------------------------------
 omp = dependency('openmp', required: false)
+if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
+  # Check for libomp (OpenMP) using Homebrew
+  brew = find_program('brew', required : false)
+  if brew.found()
+    output = run_command(brew, 'list', 'libomp', check: true)
+    output = output.stdout().strip()
+    if output.contains('/libomp/')
+      omp_prefix = fs.parent(output.split('\n')[0])
+      message('OpenMP Found: YES (Manual search) - ', omp_prefix)
+      omp = declare_dependency(compile_args : ['-Xpreprocessor', '-fopenmp'],
+                               link_args : ['-L' + omp_prefix + '/lib', '-lomp'],
+                               include_directories : include_directories(omp_prefix / 'include')
+                              )
+    endif
+  endif
+endif
 
 # SSE intrinsics
 sse2_cflags = []
