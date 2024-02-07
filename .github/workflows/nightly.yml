@@ -95,11 +95,13 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
+            CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
             CIBW_TEST_SKIP: "*_aarch64 *-macosx_arm64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+            CC: clang
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
