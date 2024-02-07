@@ -128,28 +128,7 @@ Announcements
 - :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
 
 
-
-
-
 See some of our :ref:`Past Announcements <old_news>`
-
-*******
-Support
-*******
-
-We acknowledge support from the following organizations:
-
-- The department of Intelligent Systems Engineering of Indiana University.
-
-- The National Institute of Biomedical Imaging and Bioengineering, NIH.
-
-- The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the
-  University of Washington eScience Institute Data Science Environment.
-
-- Google supported DIPY through the Google Summer of Code Program during
-  Summer 2015, 2016 and 2018.
-
-- The International Neuroinformatics Coordination Facility.
 
 
 .. This tree is helping populate the side navigation panel
