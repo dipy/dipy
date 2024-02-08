@@ -27,13 +27,13 @@ from libc.time cimport time, time_t
 
 
 #need cpdef to access cdef functions?
-cpdef list generate_tractogram(double[:,::1] seed_positons,
+cpdef list generate_tractogram(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
                                ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen):
     cdef:
-        cnp.npy_intp _len=seed_positons.shape[0]
+        cnp.npy_intp _len=seed_positions.shape[0]
         double[:,:,:] streamlines_arr
         double[:] status_arr
         cnp.npy_intp i, j
@@ -44,7 +44,7 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
     status_arr =  np.array(np.zeros((_len)), order='C')
     print("1")
     t1 = time(NULL)
-    generate_tractogram_c(seed_positons, seed_directions, _len, sc, params,
+    generate_tractogram_c(seed_positions, seed_directions, _len, sc, params,
                           pmf_gen, &probabilistic_tracker, streamlines_arr, status_arr)
     print("2")
     t2 = time(NULL)
@@ -64,7 +64,7 @@ cpdef list generate_tractogram(double[:,::1] seed_positons,
     return streamlines
 
 
-cdef int generate_tractogram_c(double[:,::1] seed_positons,
+cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
@@ -76,7 +76,6 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
     cdef:
         cnp.npy_intp i, j, k
 
-
     for i in prange(nbr_seeds, nogil=True):
     #for i in range(nbr_seeds):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
@@ -86,7 +85,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positons,
         for j in range(params.max_len * 3 * 2 + 1):
             stream[j] = 0
 
-        status[i] = generate_local_streamline(&seed_positons[i][0],
+        status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
                                               stream,
                                               tracker,
@@ -130,7 +129,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):  # , pmf_gen_func):
+        if tracker(&point[0], &voxdir[0], params, pmf_gen):  # , pmf_gen_func):
             break
         # update position
         for j in range(3):
@@ -150,7 +149,7 @@ cdef int generate_local_streamline(double* seed,
         voxdir[j] = voxdir[j] * -1
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -316,10 +315,10 @@ cdef int deterministic_maximum_tracker(double* point,
     return 1
 
 #get_direction_c of the DG
-cdef int paralle_transport_tracker(double* point,
-                                   double* direction,
-                                   ParalleTransportTrackingParameters params,
-                                   PmfGen pmf_gen):
+cdef int parallel_transport_tracker(double* point,
+                                    double* direction,
+                                    ParallelTransportTrackingParameters params,
+                                    PmfGen pmf_gen):
     # update point and dir with new position and direction
 
     # return 1 if the propagation failed.
