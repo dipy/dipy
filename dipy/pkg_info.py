@@ -86,3 +86,8 @@ def get_pkg_info(pkg_path):
         sys_platform=sys.platform,
         np_version=numpy.__version__,
         dipy_version=dipy.__version__)
+
+
+def get_info():
+    """ Return dict describing the context of DIPY package"""
+    return get_pkg_info(os.path.dirname(__file__))

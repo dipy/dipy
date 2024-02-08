@@ -66,6 +66,7 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       VENV_ARGS: "--python=python"
       USE_PRE: ${{ inputs.use-pre }}
+      EAGER_IMPORT: true
       COVERAGE: ${{ inputs.coverage }}
       CODECOV_TOKEN: ${{ secrets.codecov-token }}
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
