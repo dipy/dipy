@@ -15,16 +15,16 @@ cdef class TrackingParameters():
 ctypedef int (*func_ptr)(double* point,
                          double* direction,
                          ProbabilisticTrackingParameters,
-                         PmfGen) nogil
+                         PmfGen) noexcept nogil
 
-cpdef list generate_tractogram(double[:,::1] seed_positons,
+cpdef list generate_tractogram(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
                                ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen)
 
 
-cdef int generate_tractogram_c(double[:,::1] seed_positons,
+cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
@@ -79,7 +79,7 @@ cdef int deterministic_maximum_tracker(double* point,
                                        DeterministicTrackingParameters params,
                                        PmfGen pmf_gen,)
 
-cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
+cdef class ParallelTransportTrackingParameters(ProbabilisticTrackingParameters):
     cdef:
         double      angular_separation
         double      data_support_exponent
@@ -103,7 +103,7 @@ cdef class ParalleTransportTrackingParameters(ProbabilisticTrackingParameters):
         int         rejection_sampling_nbr_sample
 
 
-cdef int paralle_transport_tracker(double* point,
-                                   double* direction,
-                                   ParalleTransportTrackingParameters params,
-                                   PmfGen pmf_gen)
+cdef int parallel_transport_tracker(double* point,
+                                    double* direction,
+                                    ParallelTransportTrackingParameters params,
+                                    PmfGen pmf_gen)
