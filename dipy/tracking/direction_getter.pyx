@@ -117,7 +117,7 @@ cdef class DirectionGetter:
 
        stream_status = TRACKPOINT
        for i in range(1, len_streamlines):
-           if self.get_direction_c(point, &direction[0]):
+           if self.get_direction_c(point, direction):
                break
            for j in range(3):
                voxdir[j] = direction[j] / voxel_size[j]
@@ -135,10 +135,8 @@ cdef class DirectionGetter:
            i = streamline.shape[0]
        return i, stream_status
 
-    cpdef int get_direction(self,
-                            double[::1] point,
-                            double[::1] direction) except -1:
-        return self.get_direction_c(&point[0], &direction[0])
+    def get_direction(self, double[::1] point, double[::1] direction):
+        return self.get_direction_c(point, direction)
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         pass

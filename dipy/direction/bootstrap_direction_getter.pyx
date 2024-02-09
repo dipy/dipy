@@ -154,7 +154,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             self.pmf[i] = 0.0
 
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Attempt direction getting on a few bootstrap samples.
 
         Returns
@@ -168,7 +168,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         for _ in range(self.max_attempts):
-            pmf = self.get_pmf(<double[:3]> point)
+            pmf = self.get_pmf(point)
             peaks = peak_directions(pmf, self.sphere, **self._pf_kwargs)[0]
             if len(peaks) > 0:
                 return closest_peak(peaks, direction, self.cos_similarity)
