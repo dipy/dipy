@@ -30,7 +30,7 @@ from libc.time cimport time, time_t
 cpdef list generate_tractogram(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
-                               ProbabilisticTrackingParameters params,
+                               DeterministicTrackingParameters params,
                                PmfGen pmf_gen):
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
@@ -45,7 +45,7 @@ cpdef list generate_tractogram(double[:,::1] seed_positions,
     print("1")
     t1 = time(NULL)
     generate_tractogram_c(seed_positions, seed_directions, _len, sc, params,
-                          pmf_gen, &probabilistic_tracker, streamlines_arr, status_arr)
+                          pmf_gen, &deterministic_maximum_tracker, streamlines_arr, status_arr)
     print("2")
     t2 = time(NULL)
     print(t2-t1)
@@ -68,7 +68,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
-                               ProbabilisticTrackingParameters params,
+                               DeterministicTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr tracker,
                                double[:,:,:] streamlines,
@@ -113,7 +113,7 @@ cdef int generate_local_streamline(double* seed,
                                    double* stream,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
-                                   ProbabilisticTrackingParameters params,
+                                   DeterministicTrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j
@@ -258,11 +258,17 @@ cdef int probabilistic_tracker(double* point,
                                ProbabilisticTrackingParameters params,
                                PmfGen pmf_gen) noexcept nogil:
     cdef:
-        cnp.npy_intp i, idx, res
+        cnp.npy_intp i, idx
         double* newdir
         double* pmf
         double last_cdf, cos_sim
-        cnp.npy_intp len_pmf =pmf_gen.pmf.shape[0]
+        cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+        # This requires the GIL
+        # The problem is instanciating double[:] without GIL
+        #double[:] pmf = cython.view.array(size = len_pmf,
+        #                                  itemsize = sizeof(double),
+        #                                  format = "double",
+        #                                  allocate_buffer = True)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
     if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
@@ -296,29 +302,68 @@ cdef int probabilistic_tracker(double* point,
         + direction[2] * newdir[2] > 0):
         copy_point(newdir, direction)
     else:
-        newdir[0] = newdir[0] * -1
-        newdir[1] = newdir[1] * -1
-        newdir[2] = newdir[2] * -1
         copy_point(newdir, direction)
+        direction[0] = direction[0] * -1
+        direction[1] = direction[1] * -1
+        direction[2] = direction[2] * -1
     free(pmf)
     return 0
 
-#get_direction_c of the DG
+
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
                                        DeterministicTrackingParameters params,
-                                       PmfGen pmf_gen):
-    # update point and dir with new position and direction
+                                       PmfGen pmf_gen) noexcept nogil:
+    cdef:
+        cnp.npy_intp i, max_idx
+        double max_value=0
+        double* newdir
+        double* pmf
+        double cos_sim
+        cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
-    # return 1 if the propagation failed.
+    pmf = <double*> malloc(len_pmf * sizeof(double))
+    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
+        free(pmf)
+        return 1
+    if norm(direction) == 0:
+        free(pmf)
+        return 1
+    normalize(direction)
 
-    return 1
+    for i in range(len_pmf):
+        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
+                + pmf_gen.vertices[i][1] * direction[1] \
+                + pmf_gen.vertices[i][2] * direction[2]
+        if cos_sim < 0:
+            cos_sim = cos_sim * -1
+        if cos_sim > params.cos_similarity and pmf[i] > max_value:
+            max_idx = i
+            max_value = pmf[i]
+
+    if max_value <= 0:
+        free(pmf)
+        return 1
+
+    newdir = &pmf_gen.vertices[max_idx][0]
+    # Update direction
+    if (direction[0] * newdir[0]
+        + direction[1] * newdir[1]
+        + direction[2] * newdir[2] > 0):
+        copy_point(newdir, direction)
+    else:
+        copy_point(newdir, direction)
+        direction[0] = direction[0] * -1
+        direction[1] = direction[1] * -1
+        direction[2] = direction[2] * -1
+    free(pmf)
+    return 0
 
 #get_direction_c of the DG
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
                                     ParallelTransportTrackingParameters params,
-                                    PmfGen pmf_gen):
+                                    PmfGen pmf_gen) noexcept nogil:
     # update point and dir with new position and direction
 
     # return 1 if the propagation failed.
