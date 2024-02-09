@@ -14,13 +14,13 @@ cdef class TrackingParameters():
 
 ctypedef int (*func_ptr)(double* point,
                          double* direction,
-                         ProbabilisticTrackingParameters,
+                         DeterministicTrackingParameters,
                          PmfGen) noexcept nogil
 
 cpdef list generate_tractogram(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                StoppingCriterion sc,
-                               ProbabilisticTrackingParameters params,
+                               DeterministicTrackingParameters params,
                                PmfGen pmf_gen)
 
 
@@ -28,7 +28,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_seeds,
                                StoppingCriterion sc,
-                               ProbabilisticTrackingParameters params,
+                               DeterministicTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr traker,
                                double[:,:,:] streamlines,
@@ -39,10 +39,8 @@ cdef int generate_local_streamline(double* seed,
                                    double* position,
                                    double* stream,
                                    func_ptr tracker,
-                                #    sc_ptr stopping_criterion,
-                                #    pmf_ptr pmf_gen,
                                    StoppingCriterion sc,
-                                   ProbabilisticTrackingParameters params,
+                                   DeterministicTrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil
 
 cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
@@ -74,7 +72,7 @@ cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
                                        DeterministicTrackingParameters params,
-                                       PmfGen pmf_gen,)
+                                       PmfGen pmf_gen) noexcept nogil
 
 cdef class ParallelTransportTrackingParameters(ProbabilisticTrackingParameters):
     cdef:
@@ -103,4 +101,4 @@ cdef class ParallelTransportTrackingParameters(ProbabilisticTrackingParameters):
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
                                     ParallelTransportTrackingParameters params,
-                                    PmfGen pmf_gen)
+                                    PmfGen pmf_gen) noexcept nogil
