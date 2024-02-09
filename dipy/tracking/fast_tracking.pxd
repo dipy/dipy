@@ -60,9 +60,6 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
     cdef:
         double       cos_similarity
         double       pmf_threshold
-        #PmfGen       pmf_gen
-        int          pmf_len
-        double[:, :] vertices
 
 
 cdef int probabilistic_tracker(double* point,
