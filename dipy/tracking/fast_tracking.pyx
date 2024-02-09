@@ -262,9 +262,10 @@ cdef int probabilistic_tracker(double* point,
         double* newdir
         double* pmf
         double last_cdf, cos_sim
+        cnp.npy_intp len_pmf =pmf_gen.pmf.shape[0]
 
-    pmf = <double*> malloc(params.pmf_len * sizeof(double))
-    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, params.pmf_len):
+    pmf = <double*> malloc(len_pmf * sizeof(double))
+    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
         free(pmf)
         return 1
     if norm(direction) == 0:
@@ -272,24 +273,23 @@ cdef int probabilistic_tracker(double* point,
         return 1
     normalize(direction)
 
-    for i in range(params.pmf_len):
-        cos_sim = params.vertices[i][0] * direction[0] \
-                + params.vertices[i][1] * direction[1] \
-                + params.vertices[i][2] * direction[2]
+    for i in range(len_pmf):
+        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
+                + pmf_gen.vertices[i][1] * direction[1] \
+                + pmf_gen.vertices[i][2] * direction[2]
         if cos_sim < 0:
             cos_sim = cos_sim * -1
         if cos_sim < params.cos_similarity:
             pmf[i] = 0
 
-    cumsum(pmf, pmf, params.pmf_len)
-    last_cdf = pmf[params.pmf_len - 1]
+    cumsum(pmf, pmf, len_pmf)
+    last_cdf = pmf[len_pmf - 1]
     if last_cdf == 0:
         free(pmf)
         return 1
 
-    idx = where_to_insert(pmf, random() * last_cdf, params.pmf_len)
-    #idx=0 ######################################################################### REMOVE
-    newdir = &params.vertices[idx][0]
+    idx = where_to_insert(pmf, random() * last_cdf, len_pmf)
+    newdir = &pmf_gen.vertices[idx][0]
     # Update direction
     if (direction[0] * newdir[0]
         + direction[1] * newdir[1]
@@ -330,8 +330,7 @@ cdef int parallel_transport_tracker(double* point,
 cdef class ProbabilisticTrackingParameters(TrackingParameters):
 
     def __cinit__(self, int max_len, double step_size, double[:] voxel_size,
-                  double cos_similarity, double pmf_threshold, #PmfGen pmf_gen,
-                  int pmf_len, double[:,:] vertices):
+                  double cos_similarity, double pmf_threshold):
         cdef:
             cnp.npy_intp i
         self.max_len = max_len
@@ -339,9 +338,6 @@ cdef class ProbabilisticTrackingParameters(TrackingParameters):
         self.voxel_size = voxel_size
         self.cos_similarity = cos_similarity
         self.pmf_threshold = pmf_threshold
-        #self.pmf_gen = pmf_gen
-        self.pmf_len = pmf_len
-        self.vertices = vertices
 
         for i in range(3):
             self.inv_voxel_size[i] = 1. / voxel_size[i]
