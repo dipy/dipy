@@ -1038,13 +1038,12 @@ def test_wigner_rotation():
     # Range of quantum numbers
     b = 3  
     # Euler angles for rotation
-    alpha, beta, gamma = np.pi / 4, np.pi / 3, np.pi / 6  
+    alpha, beta, gamma = np.radians([180, 0, 0])
 
-    # using an identity matrix for one quantum number padded to the correct size
-    x = np.zeros((2 * b, 2 * b, 2 * b), dtype=np.complex128)
-    x[:3, :3, :3] = np.eye(3)
+    initial_sphere = np.zeros((2*b, 2*b, 2*b))
+    initial_sphere[0, 0, 0] = 1
 
-    z = wigner_rotation(x, alpha, beta, gamma)
+    rotated_sphere = wigner_rotation(initial_sphere, alpha, beta, gamma)
     
-    assert z.shape == x.shape, \
-        "Output array shape does not match input array shape"
+    assert rotated_sphere[-1, -1, -1] == 1, \
+        "The rotation did not move the top value to the bottom as expected."
