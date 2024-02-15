@@ -263,6 +263,12 @@ cdef int probabilistic_tracker(double* point,
         double* pmf
         double last_cdf, cos_sim
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+        # This requires the GIL
+        # The problem is instanciating double[:] without GIL
+        #double[:] pmf = cython.view.array(size = len_pmf,
+        #                                  itemsize = sizeof(double),
+        #                                  format = "double",
+        #                                  allocate_buffer = True)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
     if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
