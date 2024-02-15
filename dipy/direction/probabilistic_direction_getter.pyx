@@ -1,6 +1,7 @@
 # cython: boundscheck=False
 # cython: initializedcheck=False
 # cython: wraparound=False
+# cython: nonecheck=False
 
 """
 Implementation of a probabilistic direction getter based on sampling from
@@ -61,7 +62,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         self.vertices = self.sphere.vertices.copy()
 
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Samples a pmf to updates ``direction`` array with a new direction.
 
         Parameters
@@ -81,16 +82,16 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         cdef:
             cnp.npy_intp i, idx, _len
             double[:] newdir
-            double* pmf
+            double[:] pmf
             double last_cdf, cos_sim
 
         _len = self.len_pmf
         pmf = self._get_pmf(point)
 
 
-        if norm(direction) == 0:
+        if norm(&direction[0]) == 0:
             return 1
-        normalize(direction)
+        normalize(&direction[0])
 
         with nogil:
             for i in range(_len):
@@ -102,24 +103,24 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
                 if cos_sim < self.cos_similarity:
                     pmf[i] = 0
 
-            cumsum(pmf, pmf, _len)
+            cumsum(&pmf[0], &pmf[0], _len)
             last_cdf = pmf[_len - 1]
             if last_cdf == 0:
                 return 1
 
-        idx = where_to_insert(pmf, random() * last_cdf, _len)
+        idx = where_to_insert(&pmf[0], random() * last_cdf, _len)
 
         newdir = self.vertices[idx]
         # Update direction and return 0 for error
         if (direction[0] * newdir[0]
             + direction[1] * newdir[1]
             + direction[2] * newdir[2] > 0):
-            copy_point(&newdir[0], direction)
+            copy_point(&newdir[0], &direction[0])
         else:
             newdir[0] = newdir[0] * -1
             newdir[1] = newdir[1] * -1
             newdir[2] = newdir[2] * -1
-            copy_point(&newdir[0], direction)
+            copy_point(&newdir[0], &direction[0])
         return 0
 
 
@@ -132,7 +133,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold, **kwargs)
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Find direction with the highest pmf to updates ``direction`` array
         with a new direction.
         Parameters
@@ -150,7 +151,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         cdef:
             cnp.npy_intp _len, max_idx
             double[:] newdir
-            double* pmf
+            double[:] pmf
             double max_value, cos_sim
 
         pmf = self._get_pmf(point)
@@ -158,9 +159,9 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         max_idx = 0
         max_value = 0.0
 
-        if norm(direction) == 0:
+        if norm(&direction[0]) == 0:
             return 1
-        normalize(direction)
+        normalize(&direction[0])
 
         with nogil:
             for i in range(_len):
@@ -181,10 +182,10 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
             if (direction[0] * newdir[0]
                 + direction[1] * newdir[1]
                 + direction[2] * newdir[2] > 0):
-                copy_point(&newdir[0], direction)
+                copy_point(&newdir[0], &direction[0])
             else:
                 newdir[0] = newdir[0] * -1
                 newdir[1] = newdir[1] * -1
                 newdir[2] = newdir[2] * -1
-                copy_point(&newdir[0], direction)
+                copy_point(&newdir[0], &direction[0])
         return 0

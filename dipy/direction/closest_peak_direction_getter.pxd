@@ -5,7 +5,7 @@ from dipy.tracking.direction_getter cimport DirectionGetter
 
 
 cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
-                      double* direction, double cos_similarity)
+                      double[::1] direction, double cos_similarity)
 
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
@@ -22,19 +22,14 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         self,
         double[::1] point)
 
-    cdef double* _get_pmf(
+    cdef double[:] _get_pmf(
         self,
-        double* point) nogil
-
-    cpdef int get_direction(
-        self,
-        double[::1] point,
-        double[::1] direction) except -1
+        double[::1] point) nogil
 
     cdef int get_direction_c(
         self,
-        double* point,
-        double* direction)
+        double[::1] point,
+        double[::1] direction)
 
 
 cdef class BaseDirectionGetter(BasePmfDirectionGetter):
