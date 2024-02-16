@@ -1,0 +1,30 @@
+name: s390x Test
+
+on:
+    push:
+      branches: [ master ]
+    pull_request:
+      branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        run: |
+          sudo apt-get install -y qemu-system-s390x qemu-user-static
+          sudo update-binfmts --enable qemu-s390x
+          sudo service binfmt-support start
+
+      - name: Set up Debian s390x Environment
+        run: |
+          sudo debootstrap --arch s390x sid /srv/chroot/sid-390x http://ftp.fr.debian.org/debian
+
+      - name: Run Test Suite
+        run: |
+          sudo chroot /srv/chroot/sid-390x uname -m
+          sudo chroot /srv/chroot/sid-390x # Your test commands here
