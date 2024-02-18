@@ -1434,7 +1434,7 @@ def radial_tensor_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     Returns
     -------
     rtk : array
-        Calculated RK.
+        Calculated rescaled radial tensor kurtosis (RTK).
 
     Notes
     -----
@@ -2251,6 +2251,53 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis_tensor(self.model_params, min_kurtosis,
                                     max_kurtosis)
+    
+    def rkt(self, min_kurtosis=-3./7, max_kurtosis=10):
+            r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
+
+            Parameters
+            ----------
+            min_kurtosis : float (optional)
+                To keep kurtosis values within a plausible biophysical range,
+                radial kurtosis values that are smaller than `min_kurtosis` are
+                replaced with `min_kurtosis`. Default = -3./7 (theoretical
+                kurtosis limit for regions that consist of water confined to
+                spherical pores [3]_)
+            max_kurtosis : float (optional)
+                To keep kurtosis values within a plausible biophysical range,
+                radial kurtosis values that are larger than `max_kurtosis` are
+                replaced with `max_kurtosis`. Default = 10
+
+            Returns
+            -------
+            rtk : array
+                Calculated escaled radial tensor kurtosis (RTK).
+
+            Notes
+            -----
+            Rescaled radial tensor kurtosis (RTK) is defined as ([1]_):
+         
+            .. math::
+
+            RKT = \frac{3}{8} \frac{MD^2}{RD^2} (W_{2222} + W_{3333} + 2*W_{2233})
+            
+            where W is the kurtosis tensor rotated to a coordinate system in which the
+            3 orthonormal eigenvectors of DT are the base coordinate, MD is the mean
+            diffusivity, and RD is the radial diffusivity.
+            
+            References
+            ----------
+            .. [1] Hansen, B., Shemesh, N., and Jespersen, S. N. (2017).
+                   Fast imaging of mean, axial and radial diffusion kurtosis.
+                   Neuroimage 142,  381–393. doi:10.1016/j.neuroimage.2016.08.022
+            .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+                   Robust estimation from DW-MRI using homogeneous polynomials.
+                   Proceedings of the 8th {IEEE} International Symposium on
+                   Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
+                   doi: 10.1109/ISBI.2011.5872402
+            """
+            return radial_tensor_kurtosis(self.model_params, min_kurtosis,
+                                          max_kurtosis)
 
     @property
     def kfa(self):
