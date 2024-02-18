@@ -1,10 +1,10 @@
 name: s390x Test
 
 on:
-    push:
-      branches: [ master ]
-    pull_request:
-      branches: [ master ]
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   test:
@@ -24,7 +24,41 @@ jobs:
         run: |
           sudo debootstrap --arch s390x sid /srv/chroot/sid-390x http://ftp.fr.debian.org/debian
 
-      - name: Run Test Suite
+      - name: Install Dependencies
         run: |
-          sudo chroot /srv/chroot/sid-390x uname -m
-          sudo chroot /srv/chroot/sid-390x # Your test commands here
+          sudo chroot /srv/chroot/sid-390x apt-get update
+          sudo chroot /srv/chroot/sid-390x apt-get install -y python3 python3-pip
+          sudo chroot /srv/chroot/sid-390x pip3 install cython numpy==1.22.4 scipy==1.8 nibabel==3.0.0 h5py==3.1.0 tqdm
+
+      - name: Install DIPY
+        run: |
+          sudo chroot /srv/chroot/sid-390x apt-get install -y python3-pip
+          sudo chroot /srv/chroot/sid-390x pip3 install dipy
+
+      - name: Run Compatibility Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k compat
+
+      - name: Run Optional Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k optional
+
+      - name: Run Parallel Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k parallel
+
+      - name: Run Pre Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k pre
+
+      - name: Run Template Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k template
+
+      - name: Run Visualization Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test -k viz
+
+      - name: Run General Tests
+        run: |
+          sudo chroot /srv/chroot/sid-390x python3 -m dipy.test
