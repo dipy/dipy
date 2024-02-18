@@ -6,7 +6,7 @@ import warnings
 import scipy.optimize as opt
 import dipy.core.sphere as dps
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import (TensorFit, mean_diffusivity,
+from dipy.reconst.dti import (TensorFit, mean_diffusivity, radial_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
                               MIN_POSITIVE_SIGNAL, nlls_fit_tensor,
@@ -1407,6 +1407,96 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
         MKT = MKT.clip(max=max_kurtosis)
 
     return MKT
+
+
+def radial_tensor_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
+    r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, radial
+        kurtosis values that are smaller than `min_kurtosis` are replaced with
+        `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
+        that consist of water confined to spherical pores [3]_)
+    max_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, radial
+        kurtosis values that are larger than `max_kurtosis` are replaced with
+        `max_kurtosis`. Default = 10
+
+    Returns
+    -------
+    rtk : array
+        Calculated RK.
+
+    Notes
+    -----
+    Rescaled radial tensor kurtosis (RTK) is defined as ([1]_):
+ 
+    .. math::
+
+    RKT = \frac{3}{8} \frac{MD^2}{RD^2} (W_{2222} + W_{3333} + 2*W_{2233})
+    
+    where W is the kurtosis tensor rotated to a coordinate system in which the
+    3 orthonormal eigenvectors of DT are the base coordinate, MD is the mean
+    diffusivity, and RD is the radial diffusivity.
+    
+    References
+    ----------
+    .. [1] Hansen, B., Shemesh, N., and Jespersen, S. N. (2017).
+           Fast imaging of mean, axial and radial diffusion kurtosis.
+           Neuroimage 142,  381–393. doi:10.1016/j.neuroimage.2016.08.022
+    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+           Robust estimation from DW-MRI using homogeneous polynomials.
+           Proceedings of the 8th {IEEE} International Symposium on
+           Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
+           doi: 10.1109/ISBI.2011.5872402
+    """
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split the model parameters to three variable containing the evals,
+    # evecs, and kurtosis elements
+    evals, evecs, kt = split_dki_param(dki_params)
+    
+    # Initializes RKT
+    RTK = np.zeros(kt.shape[:-1])
+    
+    # select relevant voxels to process
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+
+    # Rotate the kurtosis tensor from the standard Cartesian coordinate
+    # system to another coordinate system in which the 3 orthonormal
+    # eigenvectors of DT are the base coordinate
+    Wyyyy = Wrotate_element(kt, 1, 1, 1, 1, evecs)
+    Wzzzz = Wrotate_element(kt, 2, 2, 2, 2, evecs)
+    Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
+
+    # Compute radial kurtois tensor
+    WTK = 3/8 * (Wyyyy +  Wzzzz +  2*Wyyzz)
+    
+    # Rescaling radial kurtosis tensor
+    md = mean_diffusivity(evals)
+    rd = radial_diffusivity(evals)
+    RTK[rel_i] = WTK * md ** 2 / rd ** 2
+
+    if min_kurtosis is not None:
+        RTK = RTK.clip(min=min_kurtosis)
+
+    if max_kurtosis is not None:
+        RTK = RTK.clip(max=max_kurtosis)
+
+    return RTK.reshape(outshape)
 
 
 def kurtosis_fractional_anisotropy(dki_params):
