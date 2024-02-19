@@ -9,7 +9,6 @@ Subpackages
 ::
 
  align         -- Registration, streamline alignment, volume resampling
- boots         -- Bootstrapping algorithms
  core          -- Spheres, gradient tables
  core.geometry -- Spherical geometry, coordinate and vector manipulation
  core.meshes   -- Point distributions on the sphere
@@ -52,7 +51,6 @@ del sys
 
 submodules = [
     'align',
-    'boots',
     'core',
     'data',
     'denoise',
