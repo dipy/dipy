@@ -21,89 +21,81 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
 
+from nibabel.streamlines import ArraySequence as Streamlines
+
 from libc.stdlib cimport malloc, free
+from libc.string cimport memcpy
 from libc.math cimport floor
-from libc.time cimport time, time_t
 
 
-#need cpdef to access cdef functions?
-cpdef list generate_tractogram(double[:,::1] seed_positions,
-                               double[:,::1] seed_directions,
-                               StoppingCriterion sc,
-                               DeterministicTrackingParameters params,
-                               PmfGen pmf_gen):
+
+def generate_tractogram(double[:,::1] seed_positions,
+                        double[:,::1] seed_directions,
+                        StoppingCriterion sc,
+                        DeterministicTrackingParameters params,
+                        PmfGen pmf_gen,
+                        int nbr_threads=0):
+
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
-        double[:,:,:] streamlines_arr
-        double[:] status_arr
-        cnp.npy_intp i, j
-        time_t t1, t2
+        cnp.npy_intp i
+        double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
+        int* length_arr = <int*> malloc(_len * sizeof(int))
+        int* status_arr = <int*> malloc(_len * sizeof(double))
 
-    # temporary array to store generated streamlines
-    streamlines_arr =  np.array(np.zeros((_len, params.max_len * 2 + 1, 3)), order='C')
-    status_arr =  np.array(np.zeros((_len)), order='C')
-    print("1")
-    t1 = time(NULL)
-    generate_tractogram_c(seed_positions, seed_directions, _len, sc, params,
-                          pmf_gen, &deterministic_maximum_tracker, streamlines_arr, status_arr)
-    print("2")
-    t2 = time(NULL)
-    print(t2-t1)
+    generate_tractogram_c(seed_positions, seed_directions, nbr_threads, sc, params,
+                          pmf_gen, &deterministic_maximum_tracker,
+                          streamlines_arr, length_arr, status_arr)
     streamlines = []
     for i in range(_len):
-        # array to list
-        s = []
-        for j in range(params.max_len):
-            if norm(&streamlines_arr[i,j,0]) > 0:
-                s.append(list(np.copy(streamlines_arr[i,j])))
-            else:
-                break
-        if len(s) > 1:
-            streamlines.append(np.array(s))
+        if length_arr[i] > 3:
+            s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
+            streamlines.append(s.copy().reshape((-1,3)))
+        free(streamlines_arr[i])
 
+    free(streamlines_arr)
+    free(length_arr)
+    free(status_arr)
     return streamlines
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
-                               int nbr_seeds,
+                               int nbr_threads,
                                StoppingCriterion sc,
                                DeterministicTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr tracker,
-                               double[:,:,:] streamlines,
-                               double[:] status):
+                               double** streamlines,
+                               int* lengths,
+                               int* status):
     cdef:
+        cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i, j, k
 
-    for i in prange(nbr_seeds, nogil=True):
-    #for i in range(nbr_seeds):
+    if nbr_threads<= 0:
+        nbr_threads = 0
+#, use_threads_if=nbr_threads>1
+    for i in prange(_len, nogil=True, num_threads=nbr_threads):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
-
-        # initialize to 0. It will be replaced when better handling various
-        # streamline lengtyh
-        for j in range(params.max_len * 3 * 2 + 1):
-            stream[j] = 0
+        stream_idx = <int*> malloc(2 * sizeof(int))
 
         status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
                                               stream,
+                                              stream_idx,
                                               tracker,
                                               sc,
                                               params,
                                               pmf_gen)
-        # copy the v
-        k = 0
-        for j in range(params.max_len * 2 + 1):
-            if (stream[j * 3] != 0
-                and stream[j * 3 + 1] !=0
-                and stream[j * 3 + 2] != 0):
-                streamlines[i,k,0] = stream[j * 3]
-                streamlines[i,k,1] = stream[j * 3 + 1]
-                streamlines[i,k,2] = stream[j * 3 + 2]
-                k = k + 1
 
+        # copy the streamlines points from the buffer to a 1d vector of the streamline length
+        lengths[i] = stream_idx[1] - stream_idx[0]
+        if lengths[i] > 0:
+            streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
+            memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
         free(stream)
+        free(stream_idx)
 
     return 0
 
@@ -111,6 +103,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
 cdef int generate_local_streamline(double* seed,
                                    double* direction,
                                    double* stream,
+                                   int* stream_idx,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
                                    DeterministicTrackingParameters params,
@@ -129,7 +122,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if tracker(&point[0], &voxdir[0], params, pmf_gen):  # , pmf_gen_func):
+        if tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -141,6 +134,7 @@ cdef int generate_local_streamline(double* seed,
             stream_status_forward == INVALIDPOINT or
             stream_status_forward == OUTSIDEIMAGE):
             break
+    stream_idx[1] = params.max_len + i -1
 
     # # backward tracking
     copy_point(seed, point)
@@ -149,18 +143,20 @@ cdef int generate_local_streamline(double* seed,
         voxdir[j] = voxdir[j] * -1
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
+        ##### VOXDIR should be the real first direction #####
         if tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        copy_point(point, &stream[(params.max_len + i )* 3])
+        copy_point(point, &stream[(params.max_len - i )* 3])
 
         stream_status_backward = sc.check_point_c(point)
         if (stream_status_backward == ENDPOINT or
             stream_status_backward == INVALIDPOINT or
             stream_status_backward == OUTSIDEIMAGE):
             break
+    stream_idx[0] = params.max_len - i + 1
     # # need to handle stream status
     return 0 #stream_status
 
@@ -263,12 +259,6 @@ cdef int probabilistic_tracker(double* point,
         double* pmf
         double last_cdf, cos_sim
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
-        # This requires the GIL
-        # The problem is instanciating double[:] without GIL
-        #double[:] pmf = cython.view.array(size = len_pmf,
-        #                                  itemsize = sizeof(double),
-        #                                  format = "double",
-        #                                  allocate_buffer = True)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
     if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
