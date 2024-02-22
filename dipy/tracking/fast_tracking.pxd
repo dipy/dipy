@@ -17,35 +17,28 @@ ctypedef int (*func_ptr)(double* point,
                          DeterministicTrackingParameters,
                          PmfGen) noexcept nogil
 
-cpdef list generate_tractogram(double[:,::1] seed_positions,
-                               double[:,::1] seed_directions,
-                               StoppingCriterion sc,
-                               DeterministicTrackingParameters params,
-                               PmfGen pmf_gen)
-
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
-                               int nbr_seeds,
+                               int nbr_threads,
                                StoppingCriterion sc,
                                DeterministicTrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr traker,
-                               double[:,:,:] streamlines,
-                               double[:] status)
+                               double** streamlines,
+                               int* length,
+                               int* status)
 
 
 cdef int generate_local_streamline(double* seed,
                                    double* position,
                                    double* stream,
+                                   int* stream_idx,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
                                    DeterministicTrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil
 
-cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
-                                   double* point,
-                                   double* result) noexcept nogil
 
 cdef int get_pmf(double* pmf,
                  double* point,
