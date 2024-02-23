@@ -34,7 +34,7 @@ dt_sph, evals_sph, kt_sph, params_sph = None, None, None, None
 
 def setup_module():
     global gtab, gtab_2s, crossing_ref, signal_cross
-    global multi_params, Kref_sphere, DWI
+    global multi_params, Kref_sphere, DWI, S0
     global mevals_cross, angles_cross, frac_cross, kt_cross
     global dt_sph, evals_sph, kt_sph, params_sph
 
@@ -53,9 +53,10 @@ def setup_module():
     angles_cross = [(80, 10), (80, 10), (20, 30), (20, 30)]
     fie = 0.49
     frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+    S0 = 100
     # Noise free simulates
     signal_cross, dt_cross, kt_cross = multi_tensor_dki(gtab_2s, mevals_cross,
-                                                        S0=100,
+                                                        S0=S0,
                                                         angles=angles_cross,
                                                         fractions=frac_cross,
                                                         snr=None)
@@ -73,7 +74,7 @@ def setup_module():
     De = 0.00226
     mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
     frac_sph = [50, 50]
-    signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
+    signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=S0,
                                                   fractions=frac_sph, snr=None)
     evals_sph, evecs_sph = decompose_tensor(from_lower_triangular(dt_sph))
     params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
@@ -188,6 +189,15 @@ def test_dki_fits():
 
     dkiF_multi = dki_rtM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
+    # testing return of S0
+    dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS",
+                                         return_S0_hat=True)
+    dki_S0F = dki_S0M.fit(signal_cross)
+    dki_S0F_S0 = dki_S0F.model_S0
+
+    assert_array_almost_equal(dki_S0F_S0,
+                              np.full(dki_S0F.model_params.shape[0:-1], S0))
 
 
 def test_apparent_kurtosis_coef():
