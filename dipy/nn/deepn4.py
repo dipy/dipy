@@ -157,7 +157,7 @@ class DeepN4:
         r"""
 
         To obtain the pre-trained model, use fetch_default_weights() like:
-        >>> deepn4_model = DeepN4() 
+        >>> deepn4_model = DeepN4()
         >>> fetch_model_weights_path = get_fnames('deepn4_default_weights')
         >>> deepn4_model.load_model_weights(fetch_model_weights_path)
 
