@@ -20,11 +20,6 @@ try:
 except ImportError:
     raise RuntimeError('Cannot import dipy, please investigate')
 
-from packaging.version import Version
-import sphinx
-if Version(sphinx.__version__) < Version('2'):
-    raise RuntimeError('Need sphinx >= 2 for numpydoc to work correctly')
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -407,7 +402,7 @@ html_theme_options = {
           "link_type": "external"
         },
         {
-          "name": "Google supported DIPY through the Google Summer of Code Program during Summer 2015, 2016, 2018",
+          "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",
           "link": "https://summerofcode.withgoogle.com/",
           "link_type": "external"
         },

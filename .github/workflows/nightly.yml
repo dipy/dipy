@@ -95,11 +95,13 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
+            CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
             CIBW_TEST_SKIP: "*_aarch64 *-macosx_arm64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+            CC: clang
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
@@ -156,7 +158,7 @@ jobs:
           path: ./dist
           merge-multiple: true
       - name: Upload wheel
-        uses: scientific-python/upload-nightly-action@66bc1b6beedff9619cdff8f3361a06802c8f5874   # scientific-python/upload-nightly-action@main
+        uses: scientific-python/upload-nightly-action@b67d7fcc0396e1128a474d1ab2b48aa94680f9fc # 0.5.0
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_NIGHTLY_TOKEN}}

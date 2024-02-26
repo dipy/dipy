@@ -69,7 +69,7 @@ if __name__ == '__main__':
                                         r'\.tracking\.gui_tools.*$',
                                         r'.*test.*$',
                                         r'^\.utils.*',
-                                        r'\.boots\.resampling.*$',
+                                        r'\.stats\.resampling.*$',
                                         r'\.info.*$',
                                         r'\.pkg_info.*$',
                                         r'\.__config__.*$',

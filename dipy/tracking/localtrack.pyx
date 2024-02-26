@@ -184,7 +184,7 @@ def pft_tracker(
 cdef _pft_tracker(DirectionGetter dg,
                   AnatomicalStoppingCriterion sc,
                   double* seed,
-                  double* direction,
+                  double[::1] direction,
                   double* voxel_size,
                   cnp.float_t[:, :] streamline,
                   cnp.float_t[:, :] directions,
@@ -210,7 +210,7 @@ cdef _pft_tracker(DirectionGetter dg,
 
     copy_point(seed, point)
     copy_point(seed, &streamline[0,0])
-    copy_point(direction, &directions[0, 0])
+    copy_point(&direction[0], &directions[0, 0])
 
     stream_status[0] = TRACKPOINT
     pft_trial = 0
@@ -227,7 +227,7 @@ cdef _pft_tracker(DirectionGetter dg,
                 point[j] += direction[j] / voxel_size[j] * step_size
 
             copy_point(point, &streamline[i, 0])
-            copy_point(direction, &directions[i, 0])
+            copy_point(&direction[0], &directions[i, 0])
             stream_status[0] = sc.check_point_c(point)
             i += 1
 
@@ -257,7 +257,7 @@ cdef _pft_tracker(DirectionGetter dg,
                 pft_trial += 1
                 # update the current point with the PFT results
                 copy_point(&streamline[i-1, 0], point)
-                copy_point(&directions[i-1, 0], direction)
+                copy_point(&directions[i-1, 0], &direction[0])
 
                 # update max_wm_pve following pft
                 for j in range(i):

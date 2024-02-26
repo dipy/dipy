@@ -9,7 +9,6 @@ Subpackages
 ::
 
  align         -- Registration, streamline alignment, volume resampling
- boots         -- Bootstrapping algorithms
  core          -- Spheres, gradient tables
  core.geometry -- Spherical geometry, coordinate and vector manipulation
  core.meshes   -- Point distributions on the sphere
@@ -38,7 +37,6 @@ Utilities
 import sys
 
 from dipy.version import version as __version__
-from .testing import setup_test
 
 # Plumb in version etc info stuff
 from .pkg_info import get_pkg_info as _get_pkg_info
@@ -53,7 +51,6 @@ del sys
 
 submodules = [
     'align',
-    'boots',
     'core',
     'data',
     'denoise',
