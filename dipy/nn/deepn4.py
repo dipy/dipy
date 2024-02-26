@@ -23,8 +23,13 @@ if have_tf and have_tfa:
     from tensorflow.keras.layers import Concatenate, Layer
     from tensorflow_addons.layers import InstanceNormalization
 else:
-    logging.warning('This model requires Tensorflow.\
-                    Please install these packages using \
+    class Model:
+        pass
+
+    class Layer:
+        pass
+    logging.warning('This model requires Tensorflow and Tensorflow\
+                    -addons. Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos')
@@ -151,12 +156,10 @@ class DeepN4:
     def __init__(self, verbose=False):
         r"""
 
-        To obtain the pre-trained model, use::
-        >>> deepn4_model = DeepN4() # skip if not have_tf
-        >>> fetch_model_weights_path = get_fnames('model_weights')
-        >>> skip fetch_model_weights_path not have_tf
+        To obtain the pre-trained model, use fetch_default_weights() like:
+        >>> deepn4_model = DeepN4() 
+        >>> fetch_model_weights_path = get_fnames('deepn4_default_weights')
         >>> deepn4_model.load_model_weights(fetch_model_weights_path)
-        >>> skip deepn4_model not have_tf
 
         This model is designed to take as input file T1 signal and predict
         bias field. Effectively, this model is mimicking bias correction.
@@ -189,8 +192,6 @@ class DeepN4:
     def fetch_default_weights(self):
         r"""
         Load the model pre-training weights to use for the fitting.
-        Will not work if the declared SH_ORDER does not match the weights
-        expected input.
         """
         fetch_model_weights_path = get_fnames('deepn4_default_weights')
         self.load_model_weights(fetch_model_weights_path)
@@ -198,11 +199,7 @@ class DeepN4:
     def load_model_weights(self, weights_path):
         r"""
         Load the custom pre-training weights to use for the fitting.
-        Will not work if the declared SH_ORDER does not match the weights
-        expected input.
-
-        The weights for a sh_order of 8 can be obtained via the function:
-            get_fnames('deepn4_default_weights').
+        get_fnames('deepn4_default_weights').
 
         Parameters
         ----------
@@ -222,12 +219,12 @@ class DeepN4:
 
         Parameters
         ----------
-        x_test : np.ndarray (1, 1, 128, 128, 128)
+        x_test : np.ndarray (128, 128, 128, 1)
             Image should match the required shape of the model.
 
         Returns
         -------
-        np.ndarray (1, 1, 128, 128, 128)
+        np.ndarray (128, 128, 128)
             Predicted bias field
         """
 
