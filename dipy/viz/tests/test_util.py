@@ -2,6 +2,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from dipy.testing import check_for_warnings
+from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
                                    is_binary_image)
 
@@ -72,14 +73,11 @@ def test_check_img_dtype():
                            + 'numerical format')
 
 
-def test_is_binary_image():
+@set_random_number_generator()
+def test_is_binary_image(rng):
     data = 255 * np.random.rand(197, 233, 189)
     npt.assert_equal(False, is_binary_image(data))
 
-    data = np.random.choice(
-                np.arange(0, 1),
-                replace=True,
-                size=(10, 20, 100, 200)
-            )
+    data = rng.integers(0, 1, size=(10, 20, 100, 200))
 
     npt.assert_equal(True, is_binary_image(data))
