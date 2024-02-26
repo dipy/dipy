@@ -2,7 +2,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from dipy.testing import check_for_warnings
-from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
+from dipy.viz.horizon.util import check_img_dtype, check_img_shapes, is_binary_image
 
 
 def test_check_img_shapes():
@@ -69,3 +69,16 @@ def test_check_img_dtype():
         check_img_dtype(images)
         check_for_warnings(l_warns, 'skipping image 1, passed image is not in '
                            + 'numerical format')
+
+
+def test_is_binary_image():
+    data = 255 * np.random.rand(197, 233, 189)
+    npt.assert_equal(False, is_binary_image(data))
+
+    data = np.random.choice(
+                np.arange(0, 1),
+                replace=True,
+                size=(10, 20, 100, 200)
+            )
+
+    npt.assert_equal(True, is_binary_image(data))
