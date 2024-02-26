@@ -52,6 +52,8 @@ def bingham_fit_odf(odf, sphere, npeaks, max_search_angle=6,
     -------
     fits: list of tuples
         Bingham distribution parameters for each ODF peak.
+    n: float
+        Number of maximum peaks for the input ODF.
 
     References
     ----------
@@ -61,9 +63,9 @@ def bingham_fit_odf(odf, sphere, npeaks, max_search_angle=6,
     """
     
     # extract all maxima on the ODF
-    directions, values, indices = peak_directions(odf, sphere,
-                                                  relative_peak_threshold=rel_th,
-                                                  min_separation_angle=min_sep_angle)
+    directions, values, _ = peak_directions(odf, sphere,
+                                            relative_peak_threshold=rel_th,
+                                            min_separation_angle=min_sep_angle)
     
     # n becomes the new limit of peaks and sets a maximum of peaks in case
     # the voxel has more than npeaks.
@@ -75,13 +77,9 @@ def bingham_fit_odf(odf, sphere, npeaks, max_search_angle=6,
         fits = []
         
         for i in range (n):
-            fit = _bingham_fit_peak(odf, directions[i], sphere, max_search_angle)
+            fit = _bingham_fit_peak(odf, directions[i], sphere,
+                                    max_search_angle)
             fits.append(fit)
-        
-        # This is an array of size: npeaks * 12
-        # 12 = [f0, kappa1, kappa2, mu0*3, mu1*3, mu2*3] 
-        # bingham_fits = np.array(fits)
-        
         
     return fits, n
 
@@ -103,14 +101,18 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
         peak to consider for fitting.
 
     Returns
-    ------
+    -------
     f0: float
         Maximum amplitude of the distribution/peak.
-    concentration: tuple (2,) of floats
-        Concentration parameters of principal axes (kappa 1 and kappa 2).
-    mu_1: ndarray (3,) of floats
+    k1: tuple of floats
+        Concentration parameter of major axis k1.
+    k2: tuple of floats
+        Concentration parameter of minor axis k2.
+    mu0: ndarray (3,) of floats
+        Main axis of ODF peak.
+    mu1: ndarray (3,) of floats
         Major concentration axis.
-    mu_2: ndarray (3,) of floats
+    mu2: ndarray (3,) of floats
         Minor concentration axis.
     """
     
@@ -139,10 +141,10 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     
     T = np.sum(np.squeeze(T), axis=-1) / np.sum(v)
 
-    # eig vs. eigh? T will always be symmetric, eigh is faster.
+    # eigh better than eig. T will always be symmetric, eigh is faster.
     evals, evecs = np.linalg.eigh(T)
 
-    # ordered = np.argsort(evals) # Not ordering the evals, eigh orders by default.
+    # Not ordering the evals, eigh orders by default.
     mu0 = evecs[:, 2].reshape((3, 1))
     mu1 = evecs[:, 1].reshape((3, 1))
     mu2 = evecs[:, 0].reshape((3, 1))
@@ -241,7 +243,7 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     
-    phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi[
+    phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi]
     theta = np.linspace(0, np.pi, n_thetas)  # [0, pi]
     coords = np.array([[p, t] for p in phi for t in theta]).T
     dphi = phi[1] - phi[0]
@@ -361,7 +363,38 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
         as in [1]_.
     
     Returns
-    -----------
+    -------
+    afd: 4D ndarray
+        Maximum amplitude of ODF peaks (f0) or axonal fiber density.
+    kappa1: 4D ndarray
+        First concentration parameter for all ODF peaks.
+    kappa2
+    mu_0: 5D ndarray
+        Main axis direction fort all ODF peaks.
+    mu_1: 5D ndarray
+        Axis direction along major concentration parameter for all ODF peaks.
+    mu_3: 5D ndarray
+        Axis direction along minor concentration parameter for all ODF peaks.
+    f_d: 4D ndarray
+        Fiber density as in equation (6) of [1]_.
+    f_s: 4D ndarray
+        Fiber spread as in equation (7) of [1]_.
+    odi: 5D ndarray
+        Orientation Dispersion Index for k1 and k2 for all ODF peaks
+        as in [2]_ and [3]_.
+        
+    References
+    ----------
+    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+           anisotropy: Extraction of bundle-specific structural metrics from
+           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
+            and their application to the healthy ageing brain.” Apollo - 
+            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+            NODDI: practical in vivo neurite orientation dispersion and
+            density imaging of the human brain. Neuroimage. 2012; 61(4), 
+            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
 
     """
     
@@ -369,11 +402,9 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
     sphe_har = nib.load(sh)
     datash = sphe_har.get_fdata()
     print('datash.shape (%d, %d, %d, %d)' % datash.shape)
-    # datash = datash[:,:,25:26,:]
     
     mask = nib.load(mask)
     datamask = mask.get_fdata()
-    # datamask = datamask[:,:,25:26]
     
     sh_order = int(sh_order)
     npeaks = int(npeaks)
@@ -392,6 +423,7 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
     f_s = np.zeros((shape + (npeaks,)))
     odi = np.zeros((shape + (npeaks, 2)))
     
+    print('Fitting the Bingham distribution for the input brain volume.')
     for idx in ndindex(shape):
         if not datamask[idx]:
             continue
