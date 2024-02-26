@@ -2,7 +2,8 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from dipy.testing import check_for_warnings
-from dipy.viz.horizon.util import check_img_dtype, check_img_shapes, is_binary_image
+from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
+                                   is_binary_image)
 
 
 def test_check_img_shapes():

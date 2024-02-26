@@ -11,7 +11,8 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
-from dipy.viz.horizon.util import check_img_dtype, check_img_shapes, is_binary_image
+from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
+                                   is_binary_image)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
