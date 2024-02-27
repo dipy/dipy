@@ -345,7 +345,7 @@ def bingham_orientation_dispersion(bingham_fits):
 def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
                     min_sep_angle, rel_th):
     r"""
-    Funtion that calls in the 4D Spherical Harmonics file of a brain image
+    Function that calls in the 4D Spherical Harmonics file of a brain image
     and loops through the image to fit the Bingham distribution at each voxel.
 
     Parameters
