@@ -61,10 +61,6 @@ class SlicesTab(HorizonTab):
         self._adjust_slice_x = partial(self._change_slice_value,
                                        selected_slice=self._slice_x,
                                        sync_slice=True)
-        self._visualize_slice_x = partial(
-            self._visualizer.slice_actors[0].display_extent,
-            y1=0, y2=self._visualizer.data_shape[1] - 1,
-            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
         self._slice_x.obj.on_value_changed = self._adjust_slice_x
         self._slice_x.obj.on_moving_slider = self._change_slice_x
@@ -90,10 +86,6 @@ class SlicesTab(HorizonTab):
         self._adjust_slice_y = partial(self._change_slice_value,
                                        selected_slice=self._slice_y,
                                        sync_slice=True)
-        self._visualize_slice_y = partial(
-            self._visualizer.slice_actors[1].display_extent,
-            x1=0, x2=self._visualizer.data_shape[0] - 1,
-            z1=0, z2=self._visualizer.data_shape[2] - 1)
 
         self._slice_y.obj.on_value_changed = self._adjust_slice_y
         self._slice_y.obj.on_moving_slider = self._change_slice_y
@@ -119,10 +111,6 @@ class SlicesTab(HorizonTab):
         self._adjust_slice_z = partial(self._change_slice_value,
                                        selected_slice=self._slice_z,
                                        sync_slice=True)
-        self._visualize_slice_z = partial(
-            self._visualizer.slice_actors[2].display_extent,
-            x1=0, x2=self._visualizer.data_shape[0] - 1,
-            y1=0, y2=self._visualizer.data_shape[1] - 1)
 
         self._slice_z.obj.on_value_changed = self._adjust_slice_z
         self._slice_z.obj.on_moving_slider = self._change_slice_z
@@ -140,6 +128,8 @@ class SlicesTab(HorizonTab):
         self._voxel_data = build_label(text='', is_horizon_label=True)
 
         self._visualizer.register_picker_callback(self._change_picked_voxel)
+
+        self._register_visualize_partials()
 
         self.register_elements(
             self._opacity_toggle,
@@ -206,6 +196,20 @@ class SlicesTab(HorizonTab):
                 )
                 self.register_elements(self._volume_label, self._volume)
 
+    def _register_visualize_partials(self):
+        self._visualize_slice_x = partial(
+            self._visualizer.slice_actors[0].display_extent,
+            y1=0, y2=self._visualizer.data_shape[1] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
+        self._visualize_slice_y = partial(
+            self._visualizer.slice_actors[1].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            z1=0, z2=self._visualizer.data_shape[2] - 1)
+        self._visualize_slice_z = partial(
+            self._visualizer.slice_actors[2].display_extent,
+            x1=0, x2=self._visualizer.data_shape[0] - 1,
+            y1=0, y2=self._visualizer.data_shape[1] - 1)
+
     def _change_color_map(self, _idx, _value):
         self._update_colormap()
         self._force_render(self)
@@ -271,6 +275,7 @@ class SlicesTab(HorizonTab):
                 self._volume.selected_value, value,
                 [self._intensities.selected_value[0],
                  self._intensities.selected_value[1]], visible_slices)
+            self._register_visualize_partials()
             if not valid_vol:
                 warnings.warn(
                     f'Volume N°{value} does not have any contrast. Please, '
