@@ -75,7 +75,7 @@ def test_check_img_dtype():
 
 @set_random_number_generator()
 def test_is_binary_image(rng):
-    data = 255 * np.random.rand(197, 233, 189)
+    data = 255 * rng.random(197, 233, 189)
     npt.assert_equal(False, is_binary_image(data))
 
     data = rng.integers(0, 1, size=(10, 20, 100, 200))
