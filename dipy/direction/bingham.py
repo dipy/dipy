@@ -120,10 +120,10 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     dot_prod = np.abs(sphere.vertices.dot(peak))
     min_dot = cos(radians(max_angle))
 
-    # [p] are the selected vertices (N, 3) around the peak of the lobe
+    # [p] are the selected ODF vertices (N, 3) around the peak of the lobe
     # within max_angle
     p = sphere.vertices[dot_prod > min_dot]
-    # [v] are the selected ODF values (N, 1) around the peak of the lobe 
+    # [v] are the selected ODF amplitudes (N, 1) around the peak of the lobe 
     # within max_angle
     v = sf[dot_prod > min_dot].reshape((-1, 1)) 
 
@@ -219,7 +219,7 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
 
     Fiber density (FD) is given by the integral of the Bingham
     distribution over the sphere and describes the apparent
-    quantity of fibers passing through an ODF lobe.
+    quantity of fibers passing through an ODF lobe. Equation (6) of [1]_.
 
     Parameters
     ----------
@@ -267,7 +267,7 @@ def bingham_fiber_spread(bingham_fits, fd=None):
     Compute fiber spread for each lobe for a given Bingham volume.
 
     Fiber spread (FS) characterizes the spread of the lobe.
-    The higher the FS, the wider the lobe.
+    The higher the FS, the wider the lobe. Equation (7) of [1]_.
 
     Parameters
     ----------
@@ -342,7 +342,8 @@ def bingham_orientation_dispersion(bingham_fits):
     return odi
 
 
-def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
+def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
+                    min_sep_angle, rel_th):
     r"""
     Funtion that calls in the 4D Spherical Harmonics file of a brain image
     and loops through the image to fit the Bingham distribution at each voxel.
@@ -361,6 +362,15 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
         DIPY Sphere on which the ODF is defined.
         'symmetric642' gives 10242 vertices after subdividing by (2)
         as in [1]_.
+        'repulsion724' gives 11554 vertices after subdividing by (2)
+    max_angle: float
+        The maximum angle in degrees of the neighbourhood around
+        peak to consider for fitting.
+    min_sep_angle: float
+        Minimum separation angle between two ODF peaks for peak extraction.
+    rel_th: float
+        Relative threshold used for peak extraction.
+    
     
     Returns
     -------
@@ -430,21 +440,21 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere):
         
         odf = sh_to_sf(datash[idx], sphere, sh_order=sh_order)
 
-        [bingham_fits, npeaks_final] = bingham_fit_odf(odf, sphere, npeaks,
-                                                       max_search_angle=6,
-                                                       min_sep_angle=60,
-                                                       rel_th=0.1)
+        [fits, npeaks_final] = bingham_fit_odf(odf, sphere, npeaks,
+                                               max_search_angle=max_angle,
+                                               min_sep_angle=min_sep_angle,
+                                               rel_th=rel_th)
         
-        f0 = np.array([i[0] for i in bingham_fits])
-        k1 = np.array([i[1] for i in bingham_fits])
-        k2 = np.array([i[2] for i in bingham_fits])
-        mu0 = np.squeeze(np.array([i[3] for i in bingham_fits]))
-        mu1 = np.squeeze(np.array([i[4] for i in bingham_fits]))
-        mu2 = np.squeeze(np.array([i[5] for i in bingham_fits]))
+        f0 = np.array([i[0] for i in fits])
+        k1 = np.array([i[1] for i in fits])
+        k2 = np.array([i[2] for i in fits])
+        mu0 = np.squeeze(np.array([i[3] for i in fits]))
+        mu1 = np.squeeze(np.array([i[4] for i in fits]))
+        mu2 = np.squeeze(np.array([i[5] for i in fits]))
         
-        fd = bingham_fiber_density(bingham_fits)
-        fs = bingham_fiber_spread(bingham_fits)
-        od = bingham_orientation_dispersion(bingham_fits)
+        fd = bingham_fiber_density(fits)
+        fs = bingham_fiber_spread(fits)
+        od = bingham_orientation_dispersion(fits)
            
         afd[idx][:npeaks_final] = f0[:npeaks_final]
         kappa1[idx][:npeaks_final] = k1[:npeaks_final]

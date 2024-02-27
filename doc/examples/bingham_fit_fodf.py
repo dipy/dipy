@@ -26,8 +26,7 @@ Then, we simulate an ODF consisting of two fiber populations using
 dipy.sims.voxel.multi_tensor_odf. The resulting ODF is displayed below. The
 red lobe is elongated while the blue lobe is flat.
 """
-# symmetric642 gives 10242 vertices after subdividing, as in [Riffert2014]_.
-# sphere = get_sphere('symmetric642').subdivide(2)
+# 'repulsion724' gives 11554 vertices after subdividing.
 sphere = get_sphere('repulsion724').subdivide(2)
 mevals = np.array([[0.0015, 0.00050, 0.00010],
                     [0.0015, 0.00015, 0.00015]])
