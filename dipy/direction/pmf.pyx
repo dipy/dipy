@@ -107,16 +107,16 @@ cdef class SHCoeffPmfGen(PmfGen):
                  object basis_type,
                  legacy=True):
         cdef:
-            int sh_order
+            int sh_degree
 
         PmfGen.__init__(self, shcoeff_array, sphere)
 
-        sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
+        sh_degree = shm.degree_from_ncoef(shcoeff_array.shape[3])
         try:
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError("%s is not a known basis type." % basis_type)
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi, legacy=legacy)
+        self.B, _, _ = basis(sh_degree, sphere.theta, sphere.phi, legacy=legacy)
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 

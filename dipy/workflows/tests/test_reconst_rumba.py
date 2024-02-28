@@ -30,8 +30,8 @@ def reconst_flow_core(flow):
         save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         reconst_flow = flow()
-        for sh_order in [8, ]:
+        for sh_degree in [8, ]:
 
             reconst_flow.run(
-                data_path, bval_path, bvec_path, mask_path, sh_order=sh_order,
+                data_path, bval_path, bvec_path, mask_path, sh_degree=sh_degree,
                 out_dir=out_dir, extract_pam_values=True)

@@ -226,7 +226,7 @@ class PeaksAndMetrics(EuDXDirectionGetter):
 @deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
-                               return_sh, gfa_thr, normalize_peaks, sh_order,
+                               return_sh, gfa_thr, normalize_peaks, sh_degree,
                                sh_basis_type, legacy, npeaks, B, invB,
                                num_processes):
 
@@ -261,7 +261,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                repeat(return_sh),
                                repeat(gfa_thr),
                                repeat(normalize_peaks),
-                               repeat(sh_order),
+                               repeat(sh_degree),
                                repeat(sh_basis_type),
                                repeat(legacy),
                                repeat(npeaks),
@@ -294,7 +294,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                            mode='w+',
                            shape=(data.shape[0], npeaks))
         if return_sh:
-            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
+            nbr_shm_coeff = (sh_degree + 2) * (sh_degree + 1) // 2
             pam.shm_coeff = np.memmap(path.join(tmpdir, 'shm.npy'),
                                       dtype=pam_res[0].shm_coeff.dtype,
                                       mode='w+',
@@ -353,7 +353,7 @@ def _peaks_from_model_parallel_sub(args):
     return_sh = args[7]
     gfa_thr = args[8]
     normalize_peaks = args[9]
-    sh_order = args[10]
+    sh_degree = args[10]
     sh_basis_type = args[11]
     legacy = args[12]
     npeaks = args[13]
@@ -369,7 +369,7 @@ def _peaks_from_model_parallel_sub(args):
     return peaks_from_model(model, data, sphere, relative_peak_threshold,
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
-                            sh_order, sh_basis_type, legacy, npeaks, B, invB,
+                            sh_degree, sh_basis_type, legacy, npeaks, B, invB,
                             parallel=False, num_processes=None)
 
 
@@ -377,7 +377,7 @@ def _peaks_from_model_parallel_sub(args):
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, legacy=True, npeaks=5,
+                     sh_degree_max=8, sh_basis_type=None, legacy=True, npeaks=5,
                      B=None, invB=None, parallel=False, num_processes=None):
     """Fit the model to data and computes peaks and metrics
 
@@ -406,9 +406,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For `sh_order`, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
+    sh_degree_max : int, optional
+        Maximum SH degree in the SH fit (l).  For `sh_degree_max`, there will be
+        ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_ basis, and
@@ -454,7 +454,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order, sh_basis_type, return_inv=True, legacy=legacy)
+            sphere, sh_degree_max, sh_basis_type, return_inv=True, legacy=legacy)
 
     num_processes = determine_num_processes(num_processes)
 
@@ -471,7 +471,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           return_sh,
                                           gfa_thr,
                                           normalize_peaks,
-                                          sh_order,
+                                          sh_degree_max,
                                           sh_basis_type,
                                           legacy,
                                           npeaks,
@@ -495,7 +495,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-        n_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
+        n_shm_coeff = (sh_degree_max + 2) * (sh_degree_max + 1) // 2
         shm_coeff = np.zeros((shape + (n_shm_coeff,)))
 
     if return_odf:

@@ -68,7 +68,7 @@ def test_contour_from_roi():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csa_model = CsaOdfModel(gtab, sh_order=6)
+        csa_model = CsaOdfModel(gtab, sh_degree_max=6)
 
         csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                                      relative_peak_threshold=.8,
@@ -293,7 +293,7 @@ def test_odf_slicer(interactive=False):
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        B = sh_to_sf_matrix(sphere, sh_order=4, return_inv=False)
+        B = sh_to_sf_matrix(sphere, sh_degree_max=4, return_inv=False)
     odfs = np.zeros((11, 11, 11, B.shape[0]))
     odfs[..., 0] = 1.0
     odf_actor = actor.odf_slicer(odfs, sphere=sphere, B_matrix=B)
@@ -334,7 +334,7 @@ def test_odf_slicer(interactive=False):
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        new_B = sh_to_sf_matrix(new_sphere, sh_order=4, return_inv=False)
+        new_B = sh_to_sf_matrix(new_sphere, sh_degree_max=4, return_inv=False)
     odf_actor.update_sphere(new_sphere.vertices, new_sphere.faces, new_B)
     if interactive:
         window.show(scene)

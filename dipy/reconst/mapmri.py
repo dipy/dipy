@@ -1385,15 +1385,15 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     return M
 
 
-def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
+def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
     r"""Radial part of the isotropic 1D-SHORE signal basis [1]_ eq. (61).
 
     Parameters
     ----------
     j : unsigned int,
         a positive integer related to the radial order
-    l : unsigned int,
-        the spherical harmonic order
+    l_value : unsigned int,
+        the spherical harmonic degree
     mu : float,
         isotropic scale factor of the basis
     qval : float,
@@ -1407,9 +1407,9 @@ def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
     """
     pi2_mu2_q2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
     const = (
-        (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
-        pi2_mu2_q2 ** (l / 2) * np.exp(-pi2_mu2_q2) *
-        genlaguerre(j - 1, l + 0.5)(2 * pi2_mu2_q2)
+        (-1) ** (l_value / 2) * np.sqrt(4.0 * np.pi) *
+        pi2_mu2_q2 ** (l_value / 2) * np.exp(-pi2_mu2_q2) *
+        genlaguerre(j - 1, l_value + 0.5)(2 * pi2_mu2_q2)
         )
     return const
 
@@ -1504,15 +1504,15 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
     return K
 
 
-def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
+def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
     r"""Radial part of the isotropic 1D-SHORE propagator basis [1]_ eq. (61).
 
     Parameters
     ----------
     j : unsigned int,
         a positive integer related to the radial order
-    l : unsigned int,
-        the spherical harmonic order
+    l_value : unsigned int,
+        the spherical harmonic degree
     mu : float,
         isotropic scale factor of the basis
     r : float,
@@ -1527,7 +1527,7 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
     r2u2 = r ** 2 / (2 * mu ** 2)
     const = (
         (-1) ** (j - 1) / (np.sqrt(2) * np.pi * mu ** 3) *
-        r2u2 ** (l / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l + 0.5)(2 * r2u2)
+        r2u2 ** (l_value / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l_value + 0.5)(2 * r2u2)
         )
     return const
 

@@ -43,18 +43,18 @@ def reconst_flow_core(flow):
         save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         reconst_flow = flow()
-        for sh_order in [4, 6, 8]:
+        for sh_degree in [4, 6, 8]:
             if flow.get_short_name() == 'csd':
 
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                 sh_order=sh_order,
+                                 sh_degree=sh_degree,
                                  out_dir=out_dir, extract_pam_values=True)
 
             elif flow.get_short_name() == 'csa':
 
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                 sh_order=sh_order,
-                                 odf_to_sh_order=sh_order,
+                                 sh_degree=sh_degree,
+                                 odf_to_sh_degree=sh_degree,
                                  out_dir=out_dir, extract_pam_values=True)
 
             gfa_path = reconst_flow.last_generated_outputs['out_gfa']
@@ -84,7 +84,7 @@ def reconst_flow_core(flow):
             # Test that the number of coefficients is what you would expect
             # given the order of the sh basis:
             npt.assert_equal(shm_data.shape[-1],
-                             sph_harm_ind_list(sh_order)[0].shape[0])
+                             sph_harm_ind_list(sh_degree)[0].shape[0])
             npt.assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
             pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])

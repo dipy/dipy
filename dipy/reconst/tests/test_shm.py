@@ -24,55 +24,55 @@ from dipy.reconst import odf
 from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
-                              order_from_ncoef, OpdtModel,
+                              degree_from_ncoef, OpdtModel,
                               normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
                               spherical_harmonics, anisotropic_power,
-                              calculate_max_order, sh_to_sf_matrix, gen_dirac,
+                              calculate_max_degree, sh_to_sf_matrix, gen_dirac,
                               convert_sh_to_full_basis, convert_sh_from_legacy,
                               convert_sh_to_legacy,
                               convert_sh_descoteaux_tournier,
                               descoteaux07_legacy_msg, tournier07_legacy_msg)
 
 
-def test_order_from_ncoeff():
+def test_degree_from_ncoeff():
     # Just try some out:
-    for sh_order in [2, 4, 6, 8, 12, 24]:
-        m, n = sph_harm_ind_list(sh_order)
-        n_coef = m.shape[0]
-        assert_equal(order_from_ncoef(n_coef), sh_order)
+    for sh_degree_max in [2, 4, 6, 8, 12, 24]:
+        m_values, l_values = sph_harm_ind_list(sh_degree_max)
+        n_coef = m_values.shape[0]
+        assert_equal(degree_from_ncoef(n_coef), sh_degree_max)
 
         # Try out full basis
-        m_full, n_full = sph_harm_ind_list(sh_order, True)
+        m_full, l_full = sph_harm_ind_list(sh_degree_max, True)
         n_coef_full = m_full.shape[0]
-        assert_equal(order_from_ncoef(n_coef_full, True), sh_order)
+        assert_equal(degree_from_ncoef(n_coef_full, True), sh_degree_max)
 
 
 def test_sph_harm_ind_list():
-    m_list, n_list = sph_harm_ind_list(8)
-    assert_equal(m_list.shape, n_list.shape)
+    m_list, l_list = sph_harm_ind_list(8)
+    assert_equal(m_list.shape, l_list.shape)
     assert_equal(m_list.shape, (45,))
-    assert_true(np.all(np.abs(m_list) <= n_list))
-    assert_array_equal(n_list % 2, 0)
+    assert_true(np.all(np.abs(m_list) <= l_list))
+    assert_array_equal(l_list % 2, 0)
     assert_raises(ValueError, sph_harm_ind_list, 1)
 
     # Test for a full basis
-    m_list, n_list = sph_harm_ind_list(8, True)
-    assert_equal(m_list.shape, n_list.shape)
+    m_list, l_list = sph_harm_ind_list(8, True)
+    assert_equal(m_list.shape, l_list.shape)
     # There are (sh_order + 1) * (sh_order + 1) coefficients
     assert_equal(m_list.shape, (81,))
-    assert_true(np.all(np.abs(m_list) <= n_list))
+    assert_true(np.all(np.abs(m_list) <= l_list))
 
 
 def test_real_sh_descoteaux_from_index():
     # Tests derived from tables in
     # https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
-    # where real spherical harmonic $Y^m_n$ is defined to be:
-    #    Real($Y^m_n$) * sqrt(2) if m > 0
-    #    $Y^m_n$                 if m == 0
-    #    Imag($Y^m_n$) * sqrt(2) if m < 0
+    # where real spherical harmonic $Y^m_l$ is defined to be:
+    #    Real($Y^m_l$) * sqrt(2) if m > 0
+    #    $Y^m_l$                 if m == 0
+    #    Imag($Y^m_l$) * sqrt(2) if m < 0
 
     rsh = real_sh_descoteaux_from_index
     pi = np.pi
@@ -143,7 +143,7 @@ def test_real_sym_sh_mrtrix():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        basis, m, n = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
 
     npt.assert_equal(len(w), 2)
     npt.assert_(issubclass(w[0].category, DeprecationWarning))
@@ -165,13 +165,13 @@ def test_real_sym_sh_basis():
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
 
-        basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
 
     expected = basis[:, new_order]
-    expected *= np.where(m == 0, 1., np.sqrt(2))
+    expected *= np.where(m_values == 0, 1., np.sqrt(2))
 
     with warnings.catch_warnings(record=True) as w:
-        descoteaux07_basis, m, n = real_sym_sh_basis(
+        descoteaux07_basis, m_values, l_values = real_sym_sh_basis(
             4, sphere.theta, sphere.phi)
 
     npt.assert_equal(len(w), 2)
@@ -194,13 +194,13 @@ def test_real_sh_descoteaux1():
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-        basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
 
     expected = basis[:, new_order]
-    expected *= np.where(m == 0, 1., np.sqrt(2))
+    expected *= np.where(m_values == 0, 1., np.sqrt(2))
 
     with warnings.catch_warnings(record=True) as w:
-        descoteaux07_basis, m, n = real_sh_descoteaux(
+        descoteaux07_basis, m_values, l_values = real_sh_descoteaux(
             4, sphere.theta, sphere.phi)
 
     npt.assert_equal(len(w), 1)
@@ -228,14 +228,14 @@ def test_real_sh_tournier():
     # will use a SH basis of orders up to 10 (121 coefficients)
 
     with warnings.catch_warnings(record=True) as w:
-        B, m, n = real_sh_tournier(
+        B, m_values, l_values = real_sh_tournier(
             10, sphere.theta, sphere.phi, full_basis=True)
 
     npt.assert_equal(len(w), 1)
     npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
     npt.assert_(tournier07_legacy_msg in str(w[0].message))
 
-    invB = smooth_pinv(B, L=np.zeros_like(n))
+    invB = smooth_pinv(B, L=np.zeros_like(l_values))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
@@ -260,14 +260,14 @@ def test_real_sh_descoteaux2():
     # will use a SH basis of orders up to 10 (121 coefficients)
 
     with warnings.catch_warnings(record=True) as w:
-        B, m, n = real_sh_descoteaux(10, sphere.theta, sphere.phi,
+        B, m_values, l_values = real_sh_descoteaux(10, sphere.theta, sphere.phi,
                                      full_basis=True)
 
     npt.assert_equal(len(w), 1)
     npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
     npt.assert_(descoteaux07_legacy_msg in str(w[0].message))
 
-    invB = smooth_pinv(B, L=np.zeros_like(n))
+    invB = smooth_pinv(B, L=np.zeros_like(l_values))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
@@ -284,9 +284,9 @@ def test_sh_to_sf_matrix():
 
         B1, invB1 = sh_to_sf_matrix(sphere)
 
-        B2, m, n = real_sh_descoteaux(4, sphere.theta, sphere.phi)
+        B2, m_values, l_values = real_sh_descoteaux(4, sphere.theta, sphere.phi)
 
-    invB2 = smooth_pinv(B2, L=np.zeros_like(n))
+    invB2 = smooth_pinv(B2, L=np.zeros_like(l_values))
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -303,7 +303,7 @@ def test_sh_to_sf_matrix():
 
 def test_smooth_pinv():
     hemi = hemi_icosahedron.subdivide(2)
-    m, n = sph_harm_ind_list(4)
+    m_values, l_values = sph_harm_ind_list(4)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -311,21 +311,21 @@ def test_smooth_pinv():
             category=PendingDeprecationWarning)
 
         B = real_sh_descoteaux_from_index(
-            m, n, hemi.theta[:, None], hemi.phi[:, None])
+            m_values, l_values, hemi.theta[:, None], hemi.phi[:, None])
 
-    L = np.zeros(len(m))
+    L = np.zeros(len(m_values))
     C = smooth_pinv(B, L)
     D = np.dot(npl.inv(np.dot(B.T, B)), B.T)
     assert_array_almost_equal(C, D)
 
-    L = n * (n + 1) * .05
+    L = l_values * (l_values + 1) * .05
     C = smooth_pinv(B, L)
     L = np.diag(L)
     D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
 
     assert_array_almost_equal(C, D)
 
-    L = np.arange(len(n)) * .05
+    L = np.arange(len(l_values)) * .05
     C = smooth_pinv(B, L)
     L = np.diag(L)
     D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
@@ -396,7 +396,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_order=4, min_signal=1e-5,
+            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
                                assume_normed=True)
 
         fit = model.fit(signal)
@@ -426,7 +426,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_order=4, min_signal=1e-5,
+            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
                                assume_normed=False)
 
         fit = model.fit(signal * 5)
@@ -450,7 +450,7 @@ class TestQballModel:
                 "ignore",  message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_order=4, min_signal=1e-5,
+            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
                                assume_normed=True)
 
         fit = model.fit(nd_signal)
@@ -484,20 +484,20 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_order=4, min_signal=1e-5)
+            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5)
 
         assert_equal(model.B.shape[1], 15)
-        assert_equal(max(model.n), 4)
+        assert_equal(max(model.l_values), 4)
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_order=6, min_signal=1e-5)
+            model = self.model(gtab, sh_degree_max=6, min_signal=1e-5)
 
         assert_equal(model.B.shape[1], 28)
-        assert_equal(max(model.n), 6)
+        assert_equal(max(model.l_values), 6)
 
     def test_gfa(self):
         signal, gtab, expected = make_fake_signal()
@@ -574,7 +574,7 @@ class TestCsaOdfModel(TestQballModel):
 
 def test_hat_and_lcr():
     hemi = hemi_icosahedron.subdivide(3)
-    m, n = sph_harm_ind_list(8)
+    m_values, l_values = sph_harm_ind_list(8)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -582,7 +582,7 @@ def test_hat_and_lcr():
             category=PendingDeprecationWarning)
 
         B = real_sh_descoteaux_from_index(
-            m, n, hemi.theta[:, None], hemi.phi[:, None])
+            m_values, l_values, hemi.theta[:, None], hemi.phi[:, None])
 
     H = hat(B)
     B_hat = np.dot(H, B)
@@ -778,8 +778,8 @@ def test_sf_to_sh():
 
 def test_faster_sph_harm():
 
-    sh_order = 8
-    m, n = sph_harm_ind_list(sh_order)
+    sh_degree_max = 8
+    m_values, l_values = sph_harm_ind_list(sh_degree_max)
     theta = np.array([1.61491146,  0.76661665,  0.11976141,  1.20198246,
                       1.74066314, 1.5925956,  2.13022055,  0.50332859,
                       1.19868988,  0.78440679, 0.50686938,  0.51739718,
@@ -815,11 +815,11 @@ def test_faster_sph_harm():
                     -3.09857384, -1.06955885, -2.83826831,  1.81932195,
                     2.81296654])
 
-    sh = spherical_harmonics(m, n, theta[:, None], phi[:, None])
-    sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
+    sh = spherical_harmonics(m_values, l_values, theta[:, None], phi[:, None])
+    sh2 = sph_harm_sp(m_values, l_values, theta[:, None], phi[:, None])
 
     assert_array_almost_equal(sh, sh2, 8)
-    sh = spherical_harmonics(m, n, theta[:, None], phi[:, None],
+    sh = spherical_harmonics(m_values, l_values, theta[:, None], phi[:, None],
                              use_scipy=False)
     assert_array_almost_equal(sh, sh2, 8)
 
@@ -830,7 +830,7 @@ def test_anisotropic_power():
 
             # Create some really simple cases:
             coeffs = np.ones((3, n_coeffs))
-            max_order = calculate_max_order(coeffs.shape[-1])
+            max_order = calculate_max_degree(coeffs.shape[-1])
             # For the case where all coeffs == 1, the ap is simply log of the
             # number of even orders up to the maximal order:
             analytic = (np.log(len(range(2, max_order + 2, 2))) -
@@ -861,11 +861,11 @@ def test_calculate_max_order():
     # n = (R + 1)^2 for a full basis
     n_coeffs_full = [9, 25, 49, 81, 121, 169]
     for o, n_sym, n_full in zip(orders, n_coeffs_sym, n_coeffs_full):
-        assert_equal(calculate_max_order(n_sym), o)
-        assert_equal(calculate_max_order(n_full, True), o)
+        assert_equal(calculate_max_degree(n_sym), o)
+        assert_equal(calculate_max_degree(n_full, True), o)
 
-    assert_raises(ValueError, calculate_max_order, 29)
-    assert_raises(ValueError, calculate_max_order, 29, True)
+    assert_raises(ValueError, calculate_max_degree, 29)
+    assert_raises(ValueError, calculate_max_degree, 29, True)
 
 
 def test_convert_sh_to_full_basis():

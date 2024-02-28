@@ -69,15 +69,15 @@ def test_predict_shape_and_masking():
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
-def test_wrong_sh_order_weights():
-    resdnn_model = HistoResDNN(sh_order=6)
+def test_wrong_sh_degree_weights():
+    resdnn_model = HistoResDNN(sh_degree_max=6)
     fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     assert_raises(ValueError, resdnn_model.load_model_weights,
                   fetch_model_weights_path)
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
-def test_wrong_sh_order_input():
+def test_wrong_sh_degree_input():
     resdnn_model = HistoResDNN()
     fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     resdnn_model.load_model_weights(fetch_model_weights_path)
