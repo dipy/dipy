@@ -63,3 +63,27 @@ def check_img_dtype(images):
             warnings.warn(msg.format(idx + 1))
 
     return valid_images
+
+
+def is_binary_image(data, unique_points=100):
+    """Check if an image is binary image.
+
+    Parameters
+    ----------
+    data : ndarray
+    unique_points : int, optional
+        number of points to sample the check, by default 100
+
+    Returns
+    -------
+    boolean
+        Whether the image is binary or not
+    """
+    indices = []
+
+    rng = np.random.default_rng()
+
+    for dim in data.shape:
+        indices.append(rng.integers(0, dim - 1, size=unique_points))
+
+    return np.unique(np.take(data, indices)).shape[0] <= 2

@@ -20,7 +20,7 @@ else
         PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
     fi
 
-    $PIPI pytest
+    $PIPI pytest==8.0.0
     $PIPI numpy
     if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
     if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" = true ]; then pip install coverage coveralls; fi

@@ -11,7 +11,8 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
-from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
+from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
+                                   is_binary_image)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -451,8 +452,7 @@ class Horizon:
             for img in self.images:
                 data, affine = img
                 self.vox2ras = affine
-                img_val_range = np.unique(data).shape[0]
-                if img_val_range == 2:
+                if is_binary_image(data):
                     if self.__roi_images:
                         if 'rois' in self.random_colors:
                             roi_color = next(self.color_gen)

@@ -117,6 +117,11 @@ For Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see
 
     sudo apt-get install python-dipy
 
+In Fedora DIPY can be installed from the main repositories courtesy of
+NeuroFedora_::
+
+    sudo dnf install python3-dipy
+
 We hope to get packages for the other Linux distributions, but for now, please
 try :ref:`install-pip` instead.
 
