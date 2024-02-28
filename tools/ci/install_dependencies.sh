@@ -12,7 +12,7 @@ python -m pip install -U pip setuptools>=30.3.0 wheel
 
 echo "Install Dependencies"
 if [ "$INSTALL_TYPE" == "conda" ]; then
-    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest==8.0.0
+    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
 else
     PIPI="pip install --timeout=60 "
 
