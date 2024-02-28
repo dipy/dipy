@@ -12,7 +12,7 @@ python -m pip install -U pip setuptools>=30.3.0 wheel
 
 echo "Install Dependencies"
 if [ "$INSTALL_TYPE" == "conda" ]; then
-    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest==8.0.0
 else
     PIPI="pip install --timeout=60 "
 
@@ -20,7 +20,7 @@ else
         PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
     fi
 
-    $PIPI pytest
+    $PIPI pytest==8.0.0
     $PIPI numpy
     if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
     if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" = true ]; then pip install coverage coveralls; fi
