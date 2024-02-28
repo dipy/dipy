@@ -86,4 +86,4 @@ def is_binary_image(data, unique_points=100):
     for dim in data.shape:
         indices.append(rng.integers(0, dim - 1, size=unique_points))
 
-    return np.unique(data[*indices]).shape[0] <= 2
+    return np.unique(np.take(data, indices)).shape[0] <= 2
