@@ -14,8 +14,8 @@ Spherical harmonics are orthonormal functions defined by:
 
     Y_l^m(\theta, \phi) = \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
 
-where $l$ is the order, $m$ is the degree, $P_l^m$ is an associated
-$l$-th order, $m$-th degree Legendre polynomial, and $(\theta, \phi)$ is the
+where $l$ is the degree, $m$ is the order, $P_l^m$ is an associated
+$l$-th degree, $m$-th order Legendre polynomial, and $(\theta, \phi)$ is the
 representation of the direction vector in spherical coordinates. The relation
 between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
 
@@ -78,8 +78,7 @@ In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
 $\Im$ denotes the imaginary part. The SH bases are both orthogonal and real. Moreover,
 the `descoteaux07` basis is orthonormal.
 
-In both cases, $\Re$ denotes the real part of the SH basis, and $\Im$ denotes
-the imaginary part. By alternately selecting the real or imaginary part of the
+By alternately selecting the real or imaginary part of the
 original SH basis, the modified SH bases have the properties of being both
 orthogonal and real. Moreover, due to the presence of the $\sqrt{2}$ factor,
 the basis proposed by Descoteaux *et al.* is orthonormal.
@@ -151,9 +150,9 @@ for the ``tournier07`` basis. Both bases are very similar, with their only
 difference being the sign of $m$ for which the imaginary and real parts of
 the spherical harmonic $Y_{l}^m$ are used.
 
-In practice, a maximum order $k$ is used to truncate the SH series. By
-only taking into account even order SH functions, the above bases can be used
-to reconstruct symmetric spherical functions. The choice of an even order is
+In practice, a maximum degree $k$ is used to truncate the SH series. By
+only taking into account even degree SH functions, the above bases can be used
+to reconstruct symmetric spherical functions. The choice of an even degree is
 motivated by the symmetry of the diffusion process around the origin.
 
 Both bases are also available as full SH bases, where odd order SH functions
