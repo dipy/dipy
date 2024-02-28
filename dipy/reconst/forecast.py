@@ -484,9 +484,9 @@ def lb_forecast(sh_degree):
     n_c = int((sh_degree + 1)*(sh_degree + 2)/2)
     diag_lb = np.zeros(n_c)
     counter = 0
-    for l in range(0, sh_degree + 1, 2):
-        stop = 2 * l + 1 + counter
-        diag_lb[counter:stop] = (l * (l + 1)) ** 2
+    for j in range(0, sh_degree + 1, 2):
+        stop = 2 * j + 1 + counter
+        diag_lb[counter:stop] = (j * (j + 1)) ** 2
         counter = stop
 
     return np.diag(diag_lb)

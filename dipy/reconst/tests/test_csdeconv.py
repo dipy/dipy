@@ -406,7 +406,7 @@ def test_odf_sh_to_sharp():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        qb = QballModel(gtab, sh_degree_max=8, assume_normed=True)
+        qb = QballModel(gtab, sh_degree=8, assume_normed=True)
 
     qbfit = qb.fit(S)
     with warnings.catch_warnings():
@@ -491,7 +491,8 @@ def test_r2_term_odf_sharp():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                                  sh_degree_max=8, lambda_=1., tau=0.1, r2_term=True)
+                                  sh_degree_max=8, lambda_=1., tau=0.1,
+                                  r2_term=True)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
@@ -684,8 +685,9 @@ def test_default_lambda_csdmodel():
                                           expected_csdmodel_warnings.values()):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=PendingDeprecationWarning)
+            sdm = sh_degree_max
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                         sh_degree_max=sh_degree_max,
+                                                         sh_degree_max=sdm,
                                                          reg_sphere=sphere)
             npt.assert_equal(len(w) - expected_sh_basis_deprecation_warnings,
                              e_warn)

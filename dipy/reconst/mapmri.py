@@ -1527,7 +1527,8 @@ def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
     r2u2 = r ** 2 / (2 * mu ** 2)
     const = (
         (-1) ** (j - 1) / (np.sqrt(2) * np.pi * mu ** 3) *
-        r2u2 ** (l_value / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l_value + 0.5)(2 * r2u2)
+        r2u2 ** (l_value / 2) * np.exp(-r2u2) * 
+        genlaguerre(j - 1, l_value + 0.5)(2 * r2u2)
         )
     return const
 

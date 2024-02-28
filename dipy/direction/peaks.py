@@ -407,8 +407,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
     sh_degree_max : int, optional
-        Maximum SH degree in the SH fit (l).  For `sh_degree_max`, there will be
-        ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` SH coefficients (default 8).
+        Maximum SH degree in the SH fit (l).  For `sh_degree_max`, there
+        will be
+        ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2``
+        SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_ basis, and

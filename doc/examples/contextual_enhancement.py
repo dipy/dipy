@@ -194,7 +194,9 @@ csd_shm_enh = convolve(csd_shm_noisy, k, sh_degree_max=8)
 
 # Sharpen via the Sharpening Deconvolution Transform
 
-csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_degree_max=8,
+csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh,
+                                    default_sphere,
+                                    sh_degree_max=8,
                                     lambda_=0.1)
 
 # Convert raw and enhanced data to discrete form

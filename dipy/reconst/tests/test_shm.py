@@ -143,7 +143,8 @@ def test_real_sym_sh_mrtrix():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        basis, m_values, l_values = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(8, sphere.theta,
+                                                       sphere.phi)
 
     npt.assert_equal(len(w), 2)
     npt.assert_(issubclass(w[0].category, DeprecationWarning))
@@ -165,7 +166,8 @@ def test_real_sym_sh_basis():
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
 
-        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta,
+                                                       sphere.phi)
 
     expected = basis[:, new_order]
     expected *= np.where(m_values == 0, 1., np.sqrt(2))
@@ -194,7 +196,8 @@ def test_real_sh_descoteaux1():
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
+        basis, m_values, l_values = real_sym_sh_mrtrix(4, sphere.theta,
+                                                       sphere.phi)
 
     expected = basis[:, new_order]
     expected *= np.where(m_values == 0, 1., np.sqrt(2))

@@ -87,7 +87,9 @@ def test_bdg_get_direction():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_degree_max=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_degree_max=6)
 
     point = np.array([0., 0., 0.])
     prev_direction = sphere.vertices[5]
@@ -162,7 +164,9 @@ def test_bdg_residual(rng):
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_degree_max=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_degree_max=6)
         boot_dg = BootDirectionGetter.from_data(data, model=csd_model,
                                                 max_angle=60,
                                                 sphere=hsph_updated,
@@ -194,7 +198,9 @@ def test_bdg_residual(rng):
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_degree_max=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_degree_max=6)
     npt.assert_raises(ValueError, BootDirectionGetter, data, csd_model, 60,
                       hsph_updated, 6)
 

@@ -255,7 +255,9 @@ response_mcsd = multi_shell_fiber_response(sh_degree_max=8,
 # depending on the bvalues given to ``multi_shell_fiber_response`` externally.
 
 response = np.array([response_wm, response_gm, response_csf])
-mcsd_model_simple_response = MultiShellDeconvModel(gtab, response, sh_degree_max=8)
+mcsd_model_simple_response = MultiShellDeconvModel(gtab,
+                                                   response,
+                                                   sh_degree_max=8)
 
 ###############################################################################
 # Note that this technique only works for a 3 compartments model (wm, gm, csf).

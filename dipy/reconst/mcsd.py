@@ -48,7 +48,8 @@ def multi_tissue_basis(gtab, sh_degree_max, iso_comp):
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
     m_values, l_values = shm.sph_harm_ind_list(sh_degree_max)
-    B = shm.real_sh_descoteaux_from_index(m_values, l_values, theta[:, None], phi[:, None])
+    B = shm.real_sh_descoteaux_from_index(m_values, l_values,
+                                          theta[:, None], phi[:, None])
     B[np.ix_(gtab.b0s_mask, l_values > 0)] = 0.
 
     iso = np.empty([B.shape[0], iso_comp])
@@ -225,7 +226,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 
         B, m_values, l_values = multi_tissue_basis(gtab, sh_degree_max, iso)
 
-        delta = _basic_delta(response.iso, response.m_values, response.l_values, 0., 0.)
+        delta = _basic_delta(response.iso, response.m_values,
+                             response.l_values, 0., 0.)
         self.delta = delta
         multiplier_matrix = _inflate_response(response, gtab, l_values, delta)
 
@@ -266,8 +268,12 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             X = self._X
         else:
             iso = self.response.iso
-            B, m_values, l_values = multi_tissue_basis(gtab, self.sh_degree_max, iso)
-            multiplier_matrix = _inflate_response(self.response, gtab, l_values,
+            B, m_values, l_values = multi_tissue_basis(gtab,
+                                                       self.sh_degree_max,
+                                                       iso)
+            multiplier_matrix = _inflate_response(self.response,
+                                                  gtab,
+                                                  l_values,
                                                   self.delta)
             X = B * multiplier_matrix
 
@@ -488,7 +494,8 @@ def multi_shell_fiber_response(sh_degree_max, bvals, wm_rf, gm_rf, csf_rf,
     big_sphere = sphere.subdivide()
     theta, phi = big_sphere.theta, big_sphere.phi
 
-    B = shm.real_sh_descoteaux_from_index(m_values, l_values, theta[:, None], phi[:, None])
+    B = shm.real_sh_descoteaux_from_index(m_values, l_values,
+                                          theta[:, None], phi[:, None])
     A = shm.real_sh_descoteaux_from_index(0, 0, 0, 0)
 
     response = np.empty([len(bvals), len(l_values) + 2])

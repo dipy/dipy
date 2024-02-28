@@ -52,9 +52,10 @@ class HistoResDNN:
         Parameters
         ----------
         sh_degree_max : int, optional
-            Maximum SH degree (l) in the SH fit.  For ``sh_degree_max``, there will be
-            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` SH coefficients for a
-            symmetric basis. Default: 8
+            Maximum SH degree (l) in the SH fit.  For ``sh_degree_max``, there
+            will be
+            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` SH coefficients
+            for a symmetric basis. Default: 8
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
         verbose : bool (optional)
@@ -179,7 +180,8 @@ class HistoResDNN:
         -------
         pred_sh_coef : np.ndarray (x, y, z, M)
             Predicted fODF (as SH). The volume has matching shape to the input
-            data, but with ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` as a last
+            data, but with
+            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` as a last
             dimension.
 
         """

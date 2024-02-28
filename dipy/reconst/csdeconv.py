@@ -319,7 +319,9 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             x, y, z = gtab.gradients[~gtab.b0s_mask].T
             r, theta, phi = cart2sphere(x, y, z)
-            SH_basis, m_values, l_values = real_sh_descoteaux(self.sh_degree_max, theta, phi)
+            SH_basis, _, _ = real_sh_descoteaux(self.sh_degree_max,
+                                                theta,
+                                                phi)
 
         # Because R is diagonal, the matrix multiply is written as a multiply
         predict_matrix = SH_basis * self.R.diagonal()
@@ -338,7 +340,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 class ConstrainedSDTModel(SphHarmModel):
 
-    def __init__(self, gtab, ratio, reg_sphere=None, sh_degree_max=8, lambda_=1.,
+    def __init__(self, gtab, ratio, reg_sphere=None,
+                 sh_degree_max=8, lambda_=1.,
                  tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
 
