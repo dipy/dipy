@@ -2,9 +2,6 @@
 cimport numpy as cnp
 from dipy.align.fused_types cimport floating, number
 
-cpdef trilinear_interpolate4d(double[:, :, :, :] data,
-                              double[:] point,
-                              double[:] out=*)
 
 cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
                                    double* point,
