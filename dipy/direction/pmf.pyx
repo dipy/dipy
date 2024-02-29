@@ -78,7 +78,7 @@ cdef class SimplePmfGen(PmfGen):
                              + " number of vertices of sphere.")
 
     cdef double[:] get_pmf_c(self, double[::1] point) noexcept nogil:
-        if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], &self.pmf[0]) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf
 
@@ -94,7 +94,7 @@ cdef class SimplePmfGen(PmfGen):
 
         if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
                                      &point[0],
-                                     self.pmf[0:1]) != 0:
+                                     &self.pmf[0]) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf[0]
 
@@ -127,7 +127,9 @@ cdef class SHCoeffPmfGen(PmfGen):
             cnp.npy_intp len_B = self.B.shape[1]
             double _sum
 
-        if trilinear_interpolate4d_c(self.data, &point[0], self.coeff) != 0:
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.coeff[0]) != 0:
             PmfGen.__clear_pmf(self)
         else:
             for i in range(len_pmf):

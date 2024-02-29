@@ -292,19 +292,18 @@ cdef void _trilinear_interpolation_iso(double *X,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int trilinear_interpolate4d_c(
-        double[:, :, :, :] data,
-        double* point,
-        double[:] result) noexcept nogil:
+cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
+                                   double* point,
+                                   double* result) noexcept nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
     ----------
+    data : 4d array
+        Data to be interpolated.
     point : 1d array (3,)
         3 doubles representing a 3d point in space. If point has integer values
         ``[i, j, k]``, the result will be the same as ``data[i, j, k]``.
-    data : 4d array
-        Data to be interpolated.
     result : 1d array
         The result of interpolation. Should have length equal to the
         ``data.shape[3]``.
@@ -324,9 +323,6 @@ cdef int trilinear_interpolate4d_c(
         cnp.npy_intp index[3][2]
         double weight[3][2]
 
-    if data.shape[3] != result.shape[0]:
-        return -3
-
     for i in range(3):
         if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
             return -1
@@ -339,7 +335,7 @@ cdef int trilinear_interpolate4d_c(
         weight[i][0] = 1 - rem
         weight[i][1] = rem
 
-    N = result.shape[0]
+    N = data.shape[3]
     for i in range(N):
         result[i] = 0
 
@@ -353,17 +349,18 @@ cdef int trilinear_interpolate4d_c(
     return 0
 
 
-cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
-                              cnp.ndarray out=None):
+cpdef trilinear_interpolate4d(double[:, :, :, :] data,
+                              double[:] point,
+                              double[:] out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
     ----------
+    data : 4d array
+        Data to be interpolated.
     point : 1d array (3,)
         3 doubles representing a 3d point in space. If point has integer values
         ``[i, j, k]``, the result will be the same as ``data[i, j, k]``.
-    data : 4d array
-        Data to be interpolated.
     out : 1d array, optional
         The output array for the result of the interpolation.
 
@@ -375,13 +372,14 @@ cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
     """
     cdef:
         int err
-        double[::1] outview
 
     if out is None:
         out = np.empty(data.shape[3])
-    outview = out
+    elif data.shape[3] != out.shape[0]:
+        msg = "out array must have same size as the last dimension of data."
+        raise ValueError(msg)
 
-    err = trilinear_interpolate4d_c(data, &point[0], out)
+    err = trilinear_interpolate4d_c(data, &point[0], &out[0])
 
     if err == 0:
         return out
@@ -389,10 +387,9 @@ cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
         raise IndexError("The point point is outside data")
     elif err == -2:
         raise ValueError("Point must be a 1d array with shape (3,).")
-    elif err == -3:
-        # This should only happen if the user passes an bad out array
-        msg = "out array must have same size as the last dimension of data."
-        raise ValueError(msg)
+
+    return out
+
 
 
 def nearestneighbor_interpolate(data, point):

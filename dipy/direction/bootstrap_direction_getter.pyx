@@ -15,7 +15,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     cdef:
         cnp.ndarray dwi_mask
-        cnp.ndarray vox_data
+        double[:] vox_data
         dict _pf_kwargs
         double cos_similarity
         double min_separation_angle
@@ -129,20 +129,25 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
-        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.vox_data[0]) != 0:
             self.__clear_pmf()
         else:
-            self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
-                self.vox_data[self.dwi_mask], self.H, self.R)
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
+            np.asarray(self.vox_data)[self.dwi_mask] = shm.bootstrap_data_voxel(
+                np.asarray(self.vox_data)[self.dwi_mask], self.H, self.R)
+            self.pmf = self.model.fit(np.asarray(self.vox_data)).odf(self.sphere)
         return self.pmf
 
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
-        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
+
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.vox_data[0]) != 0:
             self.__clear_pmf()
         else:
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
+            self.pmf = self.model.fit(np.asarray(self.vox_data)).odf(self.sphere)
         return self.pmf
 
     cdef void __clear_pmf(self) nogil:
