@@ -29,9 +29,9 @@ parameters are:
 
 .. math::
 
-    \\mathbf{D} = \\begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
-                       D_{yx} & D_{yy} & D_{yz} \\
-                       D_{zx} & D_{zy} & D_{zz} \\ \\end{pmatrix}
+    \\mathbf{D} = \\begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\\\
+                       D_{yx} & D_{yy} & D_{yz} \\\\
+                       D_{zx} & D_{zy} & D_{zz} \\\\ \\end{pmatrix}
 
 This matrix is a variance/covariance matrix of the diffusivity along the three
 spatial dimensions. Note that we can assume that diffusivity has antipodal

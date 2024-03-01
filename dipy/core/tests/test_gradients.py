@@ -318,6 +318,17 @@ def test_gradient_table_from_bvals_bvecs():
     npt.assert_equal(gt.small_delta, 2)
 
 
+def test_gradient_table_special_bvals_bvecs_case():
+    bvals = [0, 1]
+    bvecs = np.array(
+        [[0, 0, 0],
+         [0, 0, 1]]
+    )
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
+    npt.assert_array_equal(gt.bvecs, bvecs)
+    npt.assert_array_equal(gt.bvals, bvals)
+
+
 def test_b0s():
 
     sq2 = np.sqrt(2) / 2.

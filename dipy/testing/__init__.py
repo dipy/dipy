@@ -1,13 +1,12 @@
 """Utilities for testing."""
-import operator
 from functools import partial
+import operator
 from os.path import dirname, abspath, join as pjoin
-from numpy.testing import assert_array_equal
-import numpy as np
-import numpy.testing as npt
-import scipy
-from packaging.version import Version
 import warnings
+
+from numpy.testing import assert_array_equal
+import numpy.testing as npt
+
 
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
@@ -76,6 +75,7 @@ class clear_and_catch_warnings(warnings.catch_warnings):
     Examples
     --------
     >>> import warnings
+    >>> import numpy as np
     >>> with clear_and_catch_warnings(modules=[np.core.fromnumeric]):
     ...     warnings.simplefilter('always')
     ...     # do something that raises a warning in np.core.fromnumeric
@@ -110,32 +110,6 @@ class clear_and_catch_warnings(warnings.catch_warnings):
                 mod.__warningregistry__.clear()
             if mod in self._warnreg_copies:
                 mod.__warningregistry__.update(self._warnreg_copies[mod])
-
-
-def setup_test():
-    """Set numpy print options to "legacy" for new versions of numpy.
-
-    If imported into a file, pytest will run this before any doctests.
-
-    References
-    ----------
-    https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
-    https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495
-    https://github.com/nipy/nibabel/pull/556
-
-    """
-    if Version(np.__version__) >= Version('1.14'):
-        np.set_printoptions(legacy='1.13')
-
-    # Temporary fix until scipy release in October 2018
-    # must be removed after that
-    # print the first occurrence of matching warnings for each location
-    # (module + line number) where the warning is issued
-    if Version(np.__version__) >= Version('1.15') and \
-            Version(scipy.version.short_version) <= '1.1.0':
-        warnings.simplefilter(action="default", category=FutureWarning)
-
-    warnings.simplefilter("always", category=UserWarning)
 
 
 def check_for_warnings(warn_printed, w_msg):

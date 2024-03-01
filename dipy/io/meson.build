@@ -1,6 +1,5 @@
 python_sources = [
   '__init__.py',
-  'bvectxt.py',
   'dpy.py',
   'gradients.py',
   'image.py',

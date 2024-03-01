@@ -198,7 +198,17 @@ If you are already using the Homebrew Python, or the standard python.org Python,
 you will need to use the llvm compiler with OMP. Run::
 
     brew install llvm
-    export CC=/usr/local/bin/clang-omp
+    brew install libomp
+    export CC="/opt/homebrew/opt/llvm/bin/clang"
+
+In case the compiler or OpenMP are not detected , you can specify some environment
+variables. For example, you can add the following lines to your ``~/.bash_profile``::
+
+    export CC="/opt/homebrew/opt/llvm/bin/clang"
+    export CXX="/opt/homebrew/opt/llvm/bin/clang++"
+    export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/opt/llvm/lib"
+    export CPPFLAGS="-I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/llvm/include"
+    export CFLAGS="-I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/llvm/include"
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
