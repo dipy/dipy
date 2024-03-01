@@ -158,8 +158,7 @@ class DeepN4:
 
         To obtain the pre-trained model, use fetch_default_weights() like:
         >>> deepn4_model = DeepN4()
-        >>> fetch_model_weights_path = get_fnames('deepn4_default_weights')
-        >>> deepn4_model.load_model_weights(fetch_model_weights_path)
+        >>> deepn4_model.fetch_default_weights()
 
         This model is designed to take as input file T1 signal and predict
         bias field. Effectively, this model is mimicking bias correction.
