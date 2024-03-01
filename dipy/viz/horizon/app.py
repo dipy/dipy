@@ -441,14 +441,14 @@ class Horizon:
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
 
-        synchronize_slices = False
+        sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors
             roi_actors = []
             img_count = 0
-            synchronize_slices = check_img_shapes(self.images)
+            sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
                 data, affine = img
                 self.vox2ras = affine
@@ -495,7 +495,7 @@ class Horizon:
 
         if len(self.__tabs) > 0:
             self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
-                                        synchronize_slices)
+                                        sync_slices, sync_vol)
 
             def tab_changed(actors):
                 for act in actors:

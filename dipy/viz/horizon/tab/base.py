@@ -80,10 +80,12 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
-    def __init__(self, tabs, win_size, synchronize_slices=False):
+    def __init__(self, tabs, win_size, synchronize_slices=False,
+                 synchronize_volumes=False):
         num_tabs = len(tabs)
         self._tabs = tabs
         self._synchronize_slices = synchronize_slices
+        self._synchronize_volumes = synchronize_volumes
 
         win_width, _win_height = win_size
 
@@ -116,6 +118,7 @@ class TabManager:
             tab.build(tab_id, self._tab_ui)
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
+                tab.on_volume_change = self.synchronize_volumes
                 self._render_tab_elements(tab_id, tab.elements)
 
     def _render_tab_elements(self, tab_id, elements):
@@ -170,15 +173,44 @@ class TabManager:
         if not self._synchronize_slices:
             return
 
-        slices_tabs = list(
+        for slices_tab in self._get_non_active_slice_tabs(active_tab_id):
+            slices_tab.update_slices(x_value, y_value, z_value)
+
+    def synchronize_volumes(self, active_tab_id, value):
+        """Synchronize volumes for all the images with volumes.
+
+        Parameters
+        ----------
+        active_tab_id : int
+            tab_id of the action performing tab
+        value : float
+            volume value of the active volume slider
+
+        """
+
+        if not self._synchronize_volumes:
+            return
+
+        for slices_tab in self._get_non_active_slice_tabs(active_tab_id):
+            slices_tab.update_volume(value)
+
+    def _get_non_active_slice_tabs(self, active_tab_id):
+        """Get tabs which are not active and slice tabs.
+
+        Parameters
+        ----------
+        active_tab_id : int
+
+        Returns
+        -------
+        list
+        """
+        return list(
             filter(
                 lambda x: x.__class__.__name__ == 'SlicesTab'
                 and not x.tab_id == active_tab_id, self._tabs
             )
         )
-
-        for slices_tab in slices_tabs:
-            slices_tab.update_slices(x_value, y_value, z_value)
 
     @property
     def tab_ui(self):
