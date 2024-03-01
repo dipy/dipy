@@ -4,7 +4,7 @@ import numpy.testing as npt
 from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   is_binary_image)
+                                   is_binary_image, show_ellipsis)
 
 
 @set_random_number_generator()
@@ -73,6 +73,19 @@ def test_check_img_dtype(rng):
         check_img_dtype(images)
         check_for_warnings(l_warns, 'skipping image 1, passed image is not in '
                            + 'numerical format')
+
+
+def test_show_ellipsis():
+    text = 'IAmALongFileName'
+    text_size = 10
+    available_size = 5
+    result_text = '...' + text[-5:]
+
+    npt.assert_equal(show_ellipsis(text, text_size, available_size),
+                     result_text)
+
+    available_size = 12
+    npt.assert_equal(show_ellipsis(text, text_size, available_size), text)
 
 
 @set_random_number_generator()

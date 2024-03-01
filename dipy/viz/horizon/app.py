@@ -12,7 +12,7 @@ from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label)
 from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   is_binary_image)
+                                   unpack_image, is_binary_image)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -450,7 +450,8 @@ class Horizon:
             img_count = 0
             synchronize_slices = check_img_shapes(self.images)
             for img in self.images:
-                data, affine = img
+                title = 'Image {}'.format(img_count)
+                data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
                 if is_binary_image(data):
                     if self.__roi_images:
@@ -466,19 +467,17 @@ class Horizon:
                             world_coords=self.world_coords,
                             percentiles=[0, 100], rgb=self.rgb)
                         self.__tabs.append(SlicesTab(
-                            slices_viz, slice_id=img_count + 1,
-                            force_render=self._show_force_render))
+                            slices_viz, title, fname, self._show_force_render))
                         img_count += 1
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
                         world_coords=self.world_coords, rgb=self.rgb)
                     self.__tabs.append(SlicesTab(
-                        slices_viz, slice_id=img_count + 1,
-                        force_render=self._show_force_render))
+                        slices_viz, title, fname, self._show_force_render))
                     img_count += 1
             if len(roi_actors) > 0:
-                    self.__tabs.append(ROIsTab(roi_actors))
+                self.__tabs.append(ROIsTab(roi_actors))
 
         if len(self.pams) > 0:
             pam = self.pams[0]
@@ -491,19 +490,19 @@ class Horizon:
             affine = None
             pam = None
 
-        self.__win_size = scene.GetSize()
-
         if len(self.__tabs) > 0:
-            self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
-                                        synchronize_slices)
 
-            def tab_changed(actors):
+            def on_tab_changed(actors):
                 for act in actors:
                     scene.rm(act)
                     scene.add(act)
 
-            self.__tab_mgr.tab_changed = tab_changed
+            self.__tab_mgr = TabManager(
+                self.__tabs, scene.GetSize(),
+                on_tab_changed, synchronize_slices)
+
             scene.add(self.__tab_mgr.tab_ui)
+            self.__tab_mgr.handle_text_overflows()
 
         self.show_m.initialize()
 

@@ -2,6 +2,7 @@ import warnings
 
 from functools import partial
 import numpy as np
+from pathlib import Path
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
@@ -21,16 +22,13 @@ class SlicesTab(HorizonTab):
     name : str
         Name of the tab.
     """
-    def __init__(self, slices_visualizer, slice_id=0,
+    def __init__(self, slices_visualizer, tab_name, file_name,
                  force_render=lambda _element: None):
         super().__init__()
+
         self._visualizer = slices_visualizer
-
-        if slice_id == 0:
-            self._name = 'Image'
-        else:
-            self._name = f'Image {slice_id}'
-
+        self._name = tab_name
+        self._file_name = Path(file_name or tab_name).name
         self._force_render = force_render
         self._tab_id = 0
 
@@ -131,6 +129,10 @@ class SlicesTab(HorizonTab):
 
         self._register_visualize_partials()
 
+        self._file_label = build_label(text='Filename', is_horizon_label=True)
+        self._file_name_label = build_label(text=self._file_name,
+                                            is_horizon_label=True)
+
         self.register_elements(
             self._opacity_toggle,
             self._slice_opacity_label,
@@ -145,7 +147,9 @@ class SlicesTab(HorizonTab):
             self._slice_z_label,
             self._slice_z,
             self._voxel_label,
-            self._voxel_data
+            self._voxel_data,
+            self._file_label,
+            self._file_name_label
         )
 
         if not self._visualizer.rgb:
@@ -406,10 +410,13 @@ class SlicesTab(HorizonTab):
         self._slice_z.position = (x_pos, .15)
 
         x_pos = .52
-        self._voxel_label.position = (x_pos, .38)
+        self._voxel_label.position = (x_pos, .42)
+        self._file_label.position = (x_pos, .28)
 
         x_pos = .60
-        self._voxel_data.position = (x_pos, .38)
+        self._voxel_data.position = (x_pos, .42)
+        self._file_name_label.position = (x_pos, .28)
+        self._file_name_label.size = (400, 'auto')
 
         if not self._visualizer.rgb:
 
@@ -435,6 +442,12 @@ class SlicesTab(HorizonTab):
         """Name of the tab.
         """
         return self._name
+
+    @property
+    def file_name(self):
+        """Name of the file opened in the tab.
+        """
+        return self._file_name
 
     @property
     def tab_id(self):

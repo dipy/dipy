@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.util import show_ellipsis
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -22,6 +23,7 @@ class HorizonUIElement:
     selected_value: Any
     obj: Any
     position = (0, 0)
+    size = ('auto', 'auto')
 
 
 class HorizonTab(ABC):
@@ -80,7 +82,8 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
-    def __init__(self, tabs, win_size, synchronize_slices=False):
+    def __init__(self, tabs, win_size, on_tab_changed,
+                 synchronize_slices=False):
         num_tabs = len(tabs)
         self._tabs = tabs
         self._synchronize_slices = synchronize_slices
@@ -99,6 +102,8 @@ class TabManager:
 
         self._tab_ui.on_change = self._tab_selected
 
+        self._on_tab_changed = on_tab_changed
+
         self.tab_changed = lambda actors: None
         slices_tabs = list(
             filter(
@@ -111,12 +116,47 @@ class TabManager:
             warnings.warn(msg)
 
         for tab_id, tab in enumerate(tabs):
-            self._tab_ui.tabs[tab_id].title = ' ' + tab.name
             self._tab_ui.tabs[tab_id].title_font_size = 18
             tab.build(tab_id, self._tab_ui)
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
                 self._render_tab_elements(tab_id, tab.elements)
+
+    def handle_text_overflows(self):
+        for tab_id, tab in enumerate(self._tabs):
+            self._handle_title_overflow(
+                tab.name,
+                self._tab_ui.tabs[tab_id].text_block
+            )
+            if tab.__class__.__name__ == 'SlicesTab':
+                self._handle_label_text_overflow(tab.elements)
+
+    def _handle_label_text_overflow(self, elements):
+        for element in elements:
+            if (not element.size[0] == 'auto' and
+                    element.obj.__class__.__name__ == 'TextBlock2D' and
+                    isinstance(element.position, tuple)):
+                element.obj.message = show_ellipsis(
+                    element.selected_value,
+                    element.obj.size[0],
+                    element.size[0])
+
+    def _handle_title_overflow(self, title_text, title_block):
+        """Handle overflow of the tab title and show ellipsis if required.
+
+        Parameters
+        ----------
+        title_text : str
+            Text to be shown on the tab.
+        title_block : TextBlock2D
+            Fury UI element for holding the title of the tab.
+        """
+        tab_text = title_text.split('.', 1)[0]
+        title_block.message = tab_text
+        available_space, _ = self._tab_size
+        text_size = title_block.size[0]
+        max_width = (available_space / len(self._tabs)) - 15
+        title_block.message = show_ellipsis(tab_text, text_size, max_width)
 
     def _render_tab_elements(self, tab_id, elements):
         for element in elements:
@@ -134,8 +174,9 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
+
         if current_tab.__class__.__name__ == 'SlicesTab':
-            self.tab_changed(current_tab.actors)
+            self._on_tab_changed(current_tab.actors)
             current_tab.on_tab_selected()
 
     def reposition(self, win_size):
