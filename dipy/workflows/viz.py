@@ -1,5 +1,6 @@
 import numpy as np
 from os.path import join as pjoin
+from dipy.io.surface import load_gifti
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import load_nifti
 from dipy.viz import horizon
@@ -176,6 +177,9 @@ class HorizonFlow(Workflow):
                     np.set_printoptions(3, suppress=True)
                     print(affine)
                     np.set_printoptions()
+
+            if ends('.gii.gz') or ends('.gii'):
+                data = load_gifti(fname)
 
             if ends(".pam5"):
 
