@@ -441,14 +441,14 @@ class Horizon:
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
 
-        synchronize_slices = False
+        sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors
             roi_actors = []
             img_count = 0
-            synchronize_slices = check_img_shapes(self.images)
+            sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
                 title = 'Image {}'.format(img_count)
                 data, affine, fname = unpack_image(img)
@@ -491,7 +491,6 @@ class Horizon:
             pam = None
 
         if len(self.__tabs) > 0:
-
             def on_tab_changed(actors):
                 for act in actors:
                     scene.rm(act)
@@ -499,7 +498,7 @@ class Horizon:
 
             self.__tab_mgr = TabManager(
                 self.__tabs, scene.GetSize(),
-                on_tab_changed, synchronize_slices)
+                on_tab_changed, sync_slices, sync_vol)
 
             scene.add(self.__tab_mgr.tab_ui)
             self.__tab_mgr.handle_text_overflows()

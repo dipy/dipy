@@ -33,6 +33,7 @@ class SlicesTab(HorizonTab):
         self._tab_id = 0
 
         self.on_slice_change = lambda _tab_id, _x, _y, _z: None
+        self.on_volume_change = lambda _tab_id, v: None
 
         self._opacity_toggle = build_checkbox(
             labels=[''],
@@ -191,10 +192,13 @@ class SlicesTab(HorizonTab):
             )
 
             if len(self._visualizer.data_shape) == 4:
+                self._adjust_volume = partial(self._change_volume,
+                                              sync_vol=True)
                 self._volume_label, self._volume = build_slider(
                     initial_value=0,
                     max_value=self._visualizer.data_shape[-1] - 1,
                     on_moving_slider=self._change_volume,
+                    on_value_changed=self._adjust_volume,
                     text_template='{value:.0f}',
                     label='Volume'
                 )
@@ -269,9 +273,11 @@ class SlicesTab(HorizonTab):
         selected_slice.obj.set_visibility(visibility)
         actor.SetVisibility(visibility)
 
-    def _change_volume(self, slider):
+    def _change_volume(self, slider, sync_vol=False):
         value = int(np.rint(slider.value))
         if value != self._volume.selected_value:
+            if not sync_vol:
+                self.on_volume_change(self._tab_id, value)
             visible_slices = (
                 self._slice_x.selected_value, self._slice_y.selected_value,
                 self._slice_z.selected_value)
@@ -374,6 +380,21 @@ class SlicesTab(HorizonTab):
 
         if not self._slice_z.obj.value == z_slice:
             self._slice_z.obj.value = z_slice
+
+    def update_volume(self, volume):
+        """Updates volume based on passed volume.
+
+        Parameters
+        ----------
+        volume : float
+            value of where the volume slider should be placed
+        """
+
+        if not hasattr(self, '_volume'):
+            return
+
+        if not self._volume.obj.value == volume:
+            self._volume.obj.value = volume
 
     def build(self, tab_id, _tab_ui):
         """Build all the elements under the tab.
