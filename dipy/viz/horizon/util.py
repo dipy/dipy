@@ -3,7 +3,9 @@ import numpy as np
 
 
 def check_img_shapes(images):
-    """Check if the images have same shapes.
+    """Check if the images have same shapes. It also provides details about the
+    volumes are same or not. If the shapes are not equal it will return False
+    for both shape and volume.
 
     Parameters
     ----------
@@ -11,18 +13,29 @@ def check_img_shapes(images):
 
     Returns
     -------
-    boolean
-        True, if shapes are equal.
+    tuple
+        tuple[0] = True, if shapes are equal.
+        tuple[1] = True, if volumes are equal.
     """
 
     if len(images) < 2:
-        return True
+        return (True, False)
     base_shape = images[0][0].shape[:3]
+
+    if len(images[0][0].shape) == 4:
+        base_shape = images[0][0].shape[1:]
+
+    volumed_data_shapes = []
     for img in images:
         data, _ = img
-        if base_shape != data.shape[:3]:
-            return False
-    return True
+        data_shape = data.shape[:3]
+        if len(data.shape) == 4:
+            volumed_data_shapes.append(data.shape[0])
+            data_shape = data.shape[1:]
+        if base_shape != data_shape:
+            return (False, False)
+
+    return (True, len(set(volumed_data_shapes)) == 1)
 
 
 def check_img_dtype(images):

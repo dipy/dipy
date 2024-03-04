@@ -20,14 +20,50 @@ def test_check_img_shapes(rng):
         (data, affine),
         (data1, affine)
     ]
-    npt.assert_equal(check_img_shapes(images), True)
+    npt.assert_equal(check_img_shapes(images), (True, False))
 
     data1 = 255 * rng.random((200, 233, 189))
     images = [
         (data, affine),
         (data1, affine)
     ]
-    npt.assert_equal(check_img_shapes(images), False)
+    npt.assert_equal(check_img_shapes(images), (False, False))
+
+    data = 255 * rng.random((10, 197, 233, 189))
+    data1 = 255 * rng.random((197, 233, 189))
+    images = [
+        (data, affine),
+        (data1, affine)
+    ]
+
+    npt.assert_equal(check_img_shapes(images), (True, True))
+
+    data = 255 * rng.random((197, 233, 189, 15))
+    data1 = 255 * rng.random((197, 233, 189, 15))
+    images = [
+        (data, affine),
+        (data1, affine)
+    ]
+
+    npt.assert_equal(check_img_shapes(images), (True, True))
+
+    data = 255 * rng.random((197, 233, 189, 15))
+    data1 = 255 * rng.random((198, 233, 189, 15))
+    images = [
+        (data, affine),
+        (data1, affine)
+    ]
+
+    npt.assert_equal(check_img_shapes(images), (True, False))
+
+    data = 255 * rng.random((197, 233, 189, 15))
+    data1 = 255 * rng.random((198, 233, 189, 14))
+    images = [
+        (data, affine),
+        (data1, affine)
+    ]
+
+    npt.assert_equal(check_img_shapes(images), (False, False))
 
 
 @set_random_number_generator()
