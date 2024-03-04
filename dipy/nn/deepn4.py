@@ -4,15 +4,12 @@ Class and helper functions for fitting the DeepN4 model.
 """
 import logging
 import numpy as np
-
-import nibabel as nib
 from scipy.ndimage import gaussian_filter
-from dipy.nn.utils import transform_img, recover_img
-
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.nn.utils import set_logger_level
+from dipy.nn.utils import transform_img, recover_img, normalize
 
 tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
@@ -157,8 +154,8 @@ class DeepN4:
         r"""
 
         To obtain the pre-trained model, use fetch_default_weights() like:
-        >>> deepn4_model = DeepN4()
-        >>> deepn4_model.fetch_default_weights()
+        >>> deepn4_model = DeepN4() # skip if not have_tf
+        >>> deepn4_model.fetch_default_weights() # skip if not have_tf
 
         This model is designed to take as input file T1 signal and predict
         bias field. Effectively, this model is mimicking bias correction.
@@ -261,19 +258,12 @@ class DeepN4:
 
         return tmp, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ]
 
-    def normalize_img(self, img, max_img, min_img, a_max, a_min):
-
-        img = (img - min_img) / (max_img - min_img)
-        img = np.clip(img, a_max=a_max, a_min=a_min)
-
-        return img
-
     def load_resample(self, subj):
 
         input_data, [lx, lX, ly, lY, lz, lZ, rx, rX,
                      ry, rY, rz, rZ] = self.pad(subj, 128)
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
-        input_data = self.normalize_img(input_data, in_max, 0, 1, 0)
+        input_data = normalize(input_data, 0, in_max, 0, 1)
         input_data = np.squeeze(input_data)
         input_vols = np.zeros((1, 128, 128, 128, 1))
         input_vols[0, :, :, :, 0] = input_data
