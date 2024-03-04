@@ -437,7 +437,7 @@ class SlicesTab(HorizonTab):
         x_pos = .60
         self._voxel_data.position = (x_pos, .42)
         self._file_name_label.position = (x_pos, .28)
-        self._file_name_label.size = (400, 'auto')
+        self._file_name_label.size = (800, 'auto')
 
         if not self._visualizer.rgb:
 
