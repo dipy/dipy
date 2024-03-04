@@ -8,6 +8,8 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
                                   build_switcher, build_checkbox)
 
+from dipy.testing.decorators import is_macOS
+
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
 if has_fury:
@@ -437,7 +439,11 @@ class SlicesTab(HorizonTab):
         x_pos = .60
         self._voxel_data.position = (x_pos, .42)
         self._file_name_label.position = (x_pos, .28)
-        self._file_name_label.size = (800, 'auto')
+
+        if is_macOS:
+            self._file_name_label.size = (800, 'auto')
+        else:
+            self._file_name_label.size = (400, 'auto')
 
         if not self._visualizer.rgb:
 
