@@ -10,7 +10,7 @@ import importlib
 import inspect
 
 # version comparison
-from packaging.version import Version
+# from packaging.version import Version
 
 # List of workflows to ignore
 SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
@@ -91,15 +91,14 @@ if __name__ == '__main__':
     except ImportError:
         abort("Cannot import " + package)
 
-
     # NOTE: with the new versioning scheme, this check is not needed anymore
     # Also, this might be needed if we do not use spin to generate the docs
     # module = sys.modules[package]
 
-    # # Check that the source version is equal to the installed
-    # # version. If the versions mismatch the API documentation sources
-    # # are not (re)generated. This avoids automatic generation of documentation
-    # # for older or newer versions if such versions are installed on the system.
+    # Check that the source version is equal to the installed
+    # version. If the versions mismatch the API documentation sources
+    # are not (re)generated. This avoids automatic generation of documentation
+    # for older or newer versions if such versions are installed on the system.
 
     # installed_version = Version(module.__version__)
 
@@ -115,7 +114,6 @@ if __name__ == '__main__':
     # if source_version != installed_version:
     #     print('***', installed_version)
     #     abort("Installed version does not match source version")
-
 
     # generate docs
     command_list = []
@@ -149,7 +147,7 @@ if __name__ == '__main__':
 
         print("Generating docs for: {0} ({1})".format(fname, flow_name))
         out_fname = fname + ".rst"
-        with open(pjoin(outdir, out_fname), "w") as fp:
+        with open(pjoin(outdir, out_fname), "w", encoding="utf-8") as fp:
             dashes = "=" * len(fname)
             fp.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
             # Trick to avoid docgen_cmd.py as cmd line
