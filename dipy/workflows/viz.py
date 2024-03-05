@@ -180,8 +180,8 @@ class HorizonFlow(Workflow):
                     np.set_printoptions()
 
             if ends('.pial'):
-                surface = load_pial(fname)
-                surfaces.append(surface)
+                vertices, faces = load_pial(fname)
+                surfaces.append((vertices, faces, fname))
 
             if ends(".pam5"):
 

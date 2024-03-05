@@ -119,13 +119,32 @@ def unpack_image(img):
         If img with (data, affine) it will convert to (data, affine, None).
         Otherwise it will be passed as it is.
     """
+    return _unpack_data(img)
 
-    if len(img) < 3:
-        data, affine = img
-        return data, affine, None
 
-    data, affine, fname = img
-    return data, affine, fname
+def unpack_surface(surface):
+    """Unpack surface data.
+
+    Parameters
+    ----------
+    surface : tuple
+        It either contains (vertices, faces) or (vertices, faces, fname).
+
+    Returns
+    -------
+    tuple
+        If surface with (vertices, faces) it will convert to (vertices, faces,
+        None). Otherwise it will be passed as it is.
+    """
+    return _unpack_data(surface)
+
+
+def _unpack_data(data, return_size=3):
+    result = [*data]
+    if len(data) < return_size:
+        result += (return_size - len(data)) * [None]
+
+    return result
 
 
 def is_binary_image(data, unique_points=100):

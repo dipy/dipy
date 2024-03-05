@@ -13,7 +13,7 @@ from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
 from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
                                          SurfaceVisualizer)
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   unpack_image, is_binary_image)
+                                   unpack_image, is_binary_image, unpack_surface)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -46,7 +46,8 @@ class Horizon:
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
                  order_transparent=True, buan=False, buan_colors=None,
-                 roi_images=False, roi_colors=(1, 0, 0)):
+                 roi_images=False, roi_colors=(1, 0, 0),
+                 surface_colors=[(1, 0, 0)]):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -161,6 +162,7 @@ class Horizon:
         self.buan_colors = buan_colors
         self.__roi_images = roi_images
         self.__roi_colors = roi_colors
+        self._surface_colors = surface_colors
 
         self.color_gen = distinguishable_colormap()
 
@@ -456,7 +458,7 @@ class Horizon:
             img_count = 0
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
-                title = 'Image {}'.format(img_count)
+                title = 'Image {}'.format(img_count+1)
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
                 if is_binary_image(data):
@@ -498,11 +500,11 @@ class Horizon:
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):
+                vertices, faces, fname = unpack_surface(surface)
                 color = next(self.color_gen)
-                if self.random_colors and idx < len(self.random_colors):
-                    color = self.random_colors[idx]
-                surf_viz = SurfaceVisualizer(surface, scene, color)
-                surf_tab = SurfaceTab(surf_viz, idx+1)
+                title = 'Surface {}'.format(idx+1)
+                surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
+                surf_tab = SurfaceTab(surf_viz, title, fname)
                 self.__tabs.append(surf_tab)
 
         self.__win_size = scene.GetSize()

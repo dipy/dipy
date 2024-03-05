@@ -1,8 +1,11 @@
-from dipy.viz.horizon.tab import HorizonTab, build_slider, build_checkbox
+from pathlib import Path
+
+from dipy.viz.horizon.tab import (HorizonTab, build_slider, build_checkbox,
+                                  build_label)
 
 
 class SurfaceTab(HorizonTab):
-    def __init__(self, visualizer, surf_id):
+    def __init__(self, visualizer, tab_name, file_name):
         """Surface Tab.
 
         Parameters
@@ -14,10 +17,8 @@ class SurfaceTab(HorizonTab):
         self._visualizer = visualizer
         self._tab_id = 0
 
-        if surf_id == 0:
-            self._name = 'Surface'
-        else:
-            self._name = f'Surface {surf_id}'
+        self._name = tab_name
+        self._file_name = Path(file_name or tab_name).name
 
         self._opacity_toggle = build_checkbox(
             labels=[''],
@@ -32,20 +33,40 @@ class SurfaceTab(HorizonTab):
             label='Opacity'
         )
 
+        self._file_label = build_label(text='Filename', is_horizon_label=True)
+        self._file_name_label = build_label(text=self._file_name,
+                                            is_horizon_label=True)
+
         self.register_elements(self._opacity_toggle,
                                self._surface_opacity_label,
-                               self._surface_opacity)
+                               self._surface_opacity, self._file_label,
+                               self._file_name_label)
 
     def _change_opacity(self, slider):
+        """Change opacity value according to slider changed.
+
+        Parameters
+        ----------
+        slider : LineSlider2D
+        """
         self._surface_opacity.selected_value = slider.value
         self._update_opacities()
 
     def _update_opacities(self):
+        """Update opacities of visible actors based on selected values.
+        """
         for actor in self.actors:
             actor.GetProperty().SetOpacity(
                 self._surface_opacity.selected_value)
 
     def _toggle_opacity(self, checkbox):
+        """Toggle opacity of the actor to 0% or 100%.
+
+        Parameters
+        ----------
+        checkbox : _type_
+            _description_
+        """
         if '' in checkbox.checked_labels:
             self._surface_opacity.selected_value = 1
             self._surface_opacity.obj.value = 1
@@ -72,10 +93,12 @@ class SurfaceTab(HorizonTab):
 
         y_pos = .85
         self._opacity_toggle.position = (.02, y_pos)
-
         self._surface_opacity_label.position = (.05, y_pos)
-
         self._surface_opacity.position = (.10, y_pos)
+
+        y_pos = 0.65
+        self._file_label.position = (.05, y_pos)
+        self._file_name_label.position = (.13, y_pos)
 
     @property
     def name(self):
