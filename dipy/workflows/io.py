@@ -11,6 +11,7 @@ import numpy as np
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
@@ -426,6 +427,39 @@ class ConvertSHFlow(Workflow):
             data, affine, image = load_nifti(in_file, return_img=True)
             data = convert_sh_descoteaux_tournier(data)
             save_nifti(out_file, data, affine, image.header)
+
+
+class ConvertTensorsFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'convert_tensors'
+
+    def run(self, tensor_files, from_format='dipy', to_format='mrtrix',
+            out_dir='.', out_tensor='converted_tensor'):
+        """Converts tensor representation between different formats.
+
+        Parameters
+        ----------
+        tensor_files : variable string
+            Any number of tensor files
+        from_format : string, optional
+            Format of the input tensor files. Valid options are 'dipy',
+            'mrtrix', 'ants', 'fsl'.
+        to_format : string, optional
+            Format of the output tensor files. Valid options are 'dipy',
+            'mrtrix', 'ants', 'fsl'.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_tensor : string, optional
+            Name of the resulting tensor file
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, otensor in io_it:
+            logging.info('Converting {0}'.format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
+            data = convert_tensors(data, from_format, to_format)
+            save_nifti(otensor, data, affine, image.header)
 
 
 class ConvertTractogramFlow(Workflow):

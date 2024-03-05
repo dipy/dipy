@@ -16,6 +16,7 @@ cli_flows = {
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
+    "dipy_convert_tensors": ("dipy.workflows.io", "ConvertTensorsFlow"),
     "dipy_denoise_nlmeans": ("dipy.workflows.denoise", "NLMeansFlow"),
     "dipy_denoise_lpca": ("dipy.workflows.denoise", "LPCAFlow"),
     "dipy_denoise_mppca": ("dipy.workflows.denoise", "MPPCAFlow"),
