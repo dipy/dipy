@@ -20,6 +20,7 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               lower_triangular, mode as get_mode)
 from dipy.direction.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 from dipy.reconst.ivim import IvimModel
@@ -420,6 +421,116 @@ class ReconstDtiFlow(Workflow):
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
+
+
+class ReconstDsiFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'dsi'
+
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            qgrid_size=17, r_start=2.1, r_end=6., r_step=0.2, filter_width=32,
+            normalize_peaks=False, extract_pam_values=False, parallel=False,
+            num_processes=None, out_dir='',
+            out_pam='peaks.pam5', out_shm='shm.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz'):
+        """ Diffusion Spectrum Imaging (DSI) reconstruction workflow.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        qgrid_size : int, optional
+            has to be an odd number. Sets the size of the q_space grid.
+            For example if qgrid_size is 17 then the shape of the grid will be
+            ``(17, 17, 17)``.
+        r_start : float, optional
+            ODF is sampled radially in the PDF. This parameters shows where the
+            sampling should start.
+        r_end : float, optional
+            Radial endpoint of ODF sampling
+        r_step : float, optional
+            Step size of the ODf sampling from r_start to r_end
+        filter_width : float, optional
+            Strength of the hanning filter
+        normalize_peaks : bool, optional
+            Whether to normalize the peaks
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        """
+        io_it = self.get_io_iterator()
+
+        for (dwi, bval, bvec, mask, opam, oshm, opeaks_dir, opeaks_values,
+             opeaks_indices) in io_it:
+
+            logging.info('Computing DSI Model for {0}'.format(dwi))
+            data, affine = load_nifti(dwi)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(bvals, bvecs)
+            mask = load_nifti_data(mask).astype(bool)
+
+            dsi_model = DiffusionSpectrumModel(
+                gtab, qgrid_size=qgrid_size, r_start=r_start, r_end=r_end,
+                r_step=r_step, filter_width=filter_width,
+                normalize_peaks=normalize_peaks)
+
+            peaks_sphere = default_sphere
+
+            peaks_dsi = peaks_from_model(model=dsi_model,
+                                         data=data,
+                                         sphere=peaks_sphere,
+                                         relative_peak_threshold=.5,
+                                         min_separation_angle=25,
+                                         mask=mask,
+                                         return_sh=True,
+                                         sh_order=8,
+                                         normalize_peaks=normalize_peaks,
+                                         parallel=parallel,
+                                         num_processes=num_processes)
+            peaks_dsi.affine = affine
+
+            save_peaks(opam, peaks_dsi)
+
+            logging.info('DSI computation completed.')
+
+            if extract_pam_values:
+                peaks_to_niftis(peaks_dsi, oshm, opeaks_dir, opeaks_values,
+                                opeaks_indices, reshape_dirs=True)
+
+            logging.info('DSI metrics saved to {0}'.format(out_dir))
 
 
 class ReconstCSDFlow(Workflow):

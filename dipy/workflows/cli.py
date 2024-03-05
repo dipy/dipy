@@ -26,6 +26,7 @@ cli_flows = {
     "dipy_fit_csd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
     "dipy_fit_dki": ("dipy.workflows.reconst", "ReconstDkiFlow"),
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
+    "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
     "dipy_mask": ("dipy.workflows.mask", "MaskFlow"),
