@@ -24,7 +24,6 @@ from dipy.io.streamline import load_trk
 from dipy.utils.optpkg import optional_package, TripWire
 
 
-
 from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
@@ -318,6 +317,26 @@ fetch_synb0_test = _make_fetcher(
     ['987203aa73de2dac8770f39ed506dc0c',
      '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
+
+fetch_deepn4_weights = _make_fetcher(
+    "fetch_deepn4_weights",
+    pjoin(dipy_home, 'deepn4'),
+    'https://ndownloader.figshare.com/files/',
+    ['44673313'],
+    ['model_weights.h5'],
+    ['ef264edd554177a180cf99162dbd2745'],
+    doc="Download DeepN4 model weights for Kanakaraj et. al 2024")
+
+fetch_deepn4_test = _make_fetcher(
+    "fetch_deepn4_test",
+    pjoin(dipy_home, 'deepn4'),
+    'https://ndownloader.figshare.com/files/',
+    ['44672131', '44672134'],
+    ['test_input_deepn4.npz',
+     'test_output_deepn4.npz'],
+    ['69c48ae066cee970087dd84437d5d5ce',
+     'a90d571c935d4b2975715935a22d4bac'],
+    doc="Download DeepN4 test data for Kanakaraj et. al 2024")
 
 fetch_evac_weights = _make_fetcher(
     "fetch_evac_weights",
@@ -902,6 +921,15 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_synb0_test()
         input_array = pjoin(folder, 'test_input_synb0.npz')
         target_array = pjoin(folder, 'test_output_synb0.npz')
+        return input_array, target_array
+    if name == 'deepn4_default_weights':
+        _, folder = fetch_deepn4_weights()
+        w1 = pjoin(folder, 'model_weights.h5')
+        return w1
+    if name == 'deepn4_test_data':
+        files, folder = fetch_deepn4_test()
+        input_array = pjoin(folder, 'test_input_deepn4.npz')
+        target_array = pjoin(folder, 'test_output_deepn4.npz')
         return input_array, target_array
     if name == 'evac_default_weights':
         files, folder = fetch_evac_weights()
