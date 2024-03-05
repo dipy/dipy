@@ -82,7 +82,7 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
-    def __init__(self, tabs, win_size, on_tab_changed,
+    def __init__(self, tabs, win_size, on_tab_changed=lambda actors: None,
                  synchronize_slices=False,
                  synchronize_volumes=False):
         num_tabs = len(tabs)
@@ -104,9 +104,8 @@ class TabManager:
 
         self._tab_ui.on_change = self._tab_selected
 
-        self._on_tab_changed = on_tab_changed
+        self.tab_changed = on_tab_changed
 
-        self.tab_changed = lambda actors: None
         slices_tabs = list(
             filter(
                 lambda x: x.__class__.__name__ == 'SlicesTab', self._tabs
