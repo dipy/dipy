@@ -56,6 +56,8 @@ def doctest_skip_parser(func):
 # .travis.yml for these cases):
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 is_windows = platform.system().lower() == "windows"
+is_macOS = platform.system().lower() == "darwin"
+is_linux = platform.system().lower() == "linux"
 
 
 def xvfb_it(my_test):

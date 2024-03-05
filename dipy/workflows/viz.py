@@ -172,7 +172,7 @@ class HorizonFlow(Workflow):
             if ends('.nii.gz') or ends('.nii'):
 
                 data, affine = load_nifti(fname)
-                images.append((data, affine))
+                images.append((data, affine, fname))
                 if verbose:
                     print('Affine to RAS')
                     np.set_printoptions(3, suppress=True)

@@ -35,8 +35,7 @@ def test_horizon_events(rng):
 
     data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
-
-    images = [(data, affine)]
+    images = [(data, affine, '/test/filename.nii.gz')]
     # images = None
     from dipy.segment.tests.test_bundles import setup_module
     setup_module()
@@ -109,8 +108,7 @@ def test_horizon(rng):
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
-    images = [(data, affine)]
-
+    images = [(data, affine, '/test/filename.nii.gz')]
     # tractograms in native coords (not supported for now)
     with npt.assert_raises(ValueError) as ve:
         horizon(tractograms, images=images, cluster=True, cluster_thr=5,
@@ -158,7 +156,11 @@ def test_roi_images(rng):
     img2[2, 2, 2] = 1
     img3 = np.zeros((5, 5, 5))
     img3[0, :, :] = 1
-    images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
+    images = [
+        (img1, np.eye(4)),
+        (img2, np.eye(4), '/test/filename.nii.gz'),
+        (img3, np.eye(4), '/test/filename.nii.gz')
+    ]
     show_m = horizon(images=images, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 0)

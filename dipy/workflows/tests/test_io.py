@@ -82,7 +82,8 @@ def test_io_fetch_fetcher_datanames():
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
                      'tissue_data', 'qte_lte_pte', 'resdnn_weights',
                      'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste',
-                     'synb0_weights', 'synb0_test', 'bundle_warp_dataset',
+                     'synb0_weights', 'synb0_test', 'deepn4_weights',
+                     'deepn4_test', 'bundle_warp_dataset',
                      'evac_weights', 'evac_test', 'ptt_minimal_dataset',
                      'stanford_tracks', 'cti_rat1']
 
