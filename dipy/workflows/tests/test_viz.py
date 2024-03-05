@@ -78,7 +78,7 @@ def test_horizon_flow(rng):
 
     data = 255 * rng.random((197, 233, 189))
 
-    images = [(data, affine)]
+    images = [(data, affine, 'test/test.nii.gz')]
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
