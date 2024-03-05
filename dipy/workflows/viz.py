@@ -1,6 +1,7 @@
+from warnings import warn
 import numpy as np
 from os.path import join as pjoin
-from dipy.io.surface import load_pial
+from dipy.io.surface import load_gifti, load_pial
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import load_nifti
 from dipy.viz import horizon
@@ -184,6 +185,15 @@ class HorizonFlow(Workflow):
                 if surface:
                     vertices, faces = surface
                     surfaces.append((vertices, faces, fname))
+
+            if ends('.gii.gz') or ends('.gii'):
+                surface = load_gifti(fname)
+                vertices, faces = surface
+                if len(vertices) and len(faces):
+                    vertices, faces = surface
+                    surfaces.append((vertices, faces, fname))
+                else:
+                    warn(f'{fname} does not have any surface geometry.')
 
             if ends(".pam5"):
 

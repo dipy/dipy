@@ -137,6 +137,7 @@ def unpack_surface(surface):
         None). Otherwise it will be passed as it is.
     """
     data = _unpack_data(surface)
+
     if data[0].shape[-1] != 3:
         raise ValueError('Vertices do not have correct shape:' +
                          f' {data[0].shape}')

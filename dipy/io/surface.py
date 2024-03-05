@@ -22,3 +22,20 @@ def load_pial(fname, return_meta=False):
         return nib.freesurfer.read_geometry(fname, read_metadata=return_meta)
     except ValueError:
         warn(f'The file {fname} provided does not have geometry data.')
+
+
+def load_gifti(fname):
+    """Load gifti file.
+
+    Parameters
+    ----------
+    fname : str
+        Absolute path of the file.
+
+    Returns
+    -------
+    tuple
+        (vertices, faces)
+    """
+    surf_img = nib.load(fname)
+    return surf_img.agg_data(('pointset', 'triangle'))
