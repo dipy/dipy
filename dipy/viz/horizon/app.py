@@ -1,3 +1,4 @@
+from warnings import warn
 from packaging.version import Version
 
 import numpy as np
@@ -13,7 +14,8 @@ from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
 from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
                                          SurfaceVisualizer)
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   unpack_image, is_binary_image, unpack_surface)
+                                   unpack_image, is_binary_image,
+                                   unpack_surface)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -500,7 +502,11 @@ class Horizon:
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):
-                vertices, faces, fname = unpack_surface(surface)
+                try:
+                    vertices, faces, fname = unpack_surface(surface)
+                except ValueError as e:
+                    warn(str(e))
+                    continue
                 color = next(self.color_gen)
                 title = 'Surface {}'.format(idx+1)
                 surf_viz = SurfaceVisualizer((vertices, faces), scene, color)

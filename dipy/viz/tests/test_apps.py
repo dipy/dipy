@@ -172,6 +172,51 @@ def test_roi_images(rng):
     npt.assert_equal(analysis.actors, 2)
 
 
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@set_random_number_generator(42)
+def test_surfaces(rng):
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 3))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+    show_m = horizon(surfaces=surfaces, return_showm=True)
+    analysis = window.analyze_scene(show_m.scene)
+    npt.assert_equal(analysis.actors, 3)
+
+    vertices = rng.random((100, 4))
+    faces = rng.integers(0, 100, size=(100, 3))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        show_m = horizon(surfaces=surfaces, return_showm=True)
+        analysis = window.analyze_scene(show_m.scene)
+        npt.assert_equal(analysis.actors, 0)
+        check_for_warnings(l_warns, 'Vertices do not have correct shape: ' +
+                           '(100, 4)')
+
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 4))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        show_m = horizon(surfaces=surfaces, return_showm=True)
+        analysis = window.analyze_scene(show_m.scene)
+        npt.assert_equal(analysis.actors, 0)
+        check_for_warnings(l_warns, 'Faces do not have correct shape: ' +
+                           '(100, 4)')
+
+
 @pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_small_horizon_import():
     from dipy.viz import horizon as Horizon

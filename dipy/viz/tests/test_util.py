@@ -4,7 +4,8 @@ import numpy.testing as npt
 from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   is_binary_image, show_ellipsis)
+                                   is_binary_image, show_ellipsis,
+                                   unpack_surface)
 
 
 @set_random_number_generator()
@@ -132,3 +133,25 @@ def test_is_binary_image(rng):
     data = rng.integers(0, 1, size=(10, 20, 100, 200))
 
     npt.assert_equal(True, is_binary_image(data))
+
+
+@set_random_number_generator()
+def test_unpack_surface(rng):
+    vertices = rng.random((100, 4))
+    faces = rng.integers(0, 100, size=(100, 3))
+
+    with npt.assert_raises(ValueError):
+        unpack_surface((vertices, faces))
+
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 4))
+
+    with npt.assert_raises(ValueError):
+        unpack_surface((vertices, faces, '/test/filename.pial'))
+
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 3))
+    v, f, fname = unpack_surface((vertices, faces, '/test/filename.pial'))
+    npt.assert_equal(vertices, v)
+    npt.assert_equal(faces, f)
+    npt.assert_equal('/test/filename.pial', fname)

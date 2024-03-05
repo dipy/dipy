@@ -136,7 +136,14 @@ def unpack_surface(surface):
         If surface with (vertices, faces) it will convert to (vertices, faces,
         None). Otherwise it will be passed as it is.
     """
-    return _unpack_data(surface)
+    data = _unpack_data(surface)
+    if data[0].shape[-1] != 3:
+        raise ValueError('Vertices do not have correct shape:' +
+                         f' {data[0].shape}')
+    if data[1].shape[-1] != 3:
+        raise ValueError('Faces do not have correct shape:' +
+                         f' {data[1].shape}')
+    return data
 
 
 def _unpack_data(data, return_size=3):
