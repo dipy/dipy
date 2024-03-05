@@ -119,6 +119,7 @@ class TabManager:
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
                 tab.on_volume_change = self.synchronize_volumes
+            if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
                 self._render_tab_elements(tab_id, tab.elements)
 
     def _render_tab_elements(self, tab_id, elements):
@@ -137,8 +138,9 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
-        if current_tab.__class__.__name__ == 'SlicesTab':
+        if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
             self.tab_changed(current_tab.actors)
+        if current_tab.__class__.__name__ == 'SlicesTab':
             current_tab.on_tab_selected()
 
     def reposition(self, win_size):

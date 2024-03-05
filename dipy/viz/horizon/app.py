@@ -9,8 +9,9 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager, build_label)
-from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
+                                  TabManager, build_label, SurfaceTab)
+from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
+                                         SurfaceVisualizer)
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
                                    is_binary_image)
 
@@ -38,9 +39,10 @@ HELP_MESSAGE = """
 
 class Horizon:
 
-    def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 rgb=False, cluster_thr=15.0, random_colors=None, length_gt=0,
-                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
+    def __init__(self, tractograms=None, images=None, pams=None, surfaces=None,
+                 cluster=False, rgb=False, cluster_thr=15.0,
+                 random_colors=None, length_gt=0, length_lt=1000,
+                 clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
                  order_transparent=True, buan=False, buan_colors=None,
@@ -57,6 +59,8 @@ class Horizon:
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
             Contains peak directions and spherical harmonic coefficients
+        surfaces : sequence of tuples
+            Each tuple contains vertices and faces
         cluster : bool
             Enable QuickBundlesX clustering
         rgb : bool, optional
@@ -144,6 +148,7 @@ class Horizon:
         self.out_png = out_png
         self.images = images or []
         self.pams = pams or []
+        self._surfaces = surfaces or []
 
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
@@ -157,8 +162,9 @@ class Horizon:
         self.__roi_images = roi_images
         self.__roi_colors = roi_colors
 
+        self.color_gen = distinguishable_colormap()
+
         if self.random_colors is not None:
-            self.color_gen = distinguishable_colormap()
             if not self.random_colors:
                 self.random_colors = ['tracts', 'rois']
         else:
@@ -491,6 +497,15 @@ class Horizon:
             affine = None
             pam = None
 
+        if len(self._surfaces) > 0:
+            for idx, surface in enumerate(self._surfaces):
+                color = next(self.color_gen)
+                if self.random_colors and idx < len(self.random_colors):
+                    color = self.random_colors[idx]
+                surf_viz = SurfaceVisualizer(surface, scene, color)
+                surf_tab = SurfaceTab(surf_viz, idx+1)
+                self.__tabs.append(surf_tab)
+
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
@@ -624,7 +639,7 @@ class Horizon:
                           reset_camera=False)
 
 
-def horizon(tractograms=None, images=None, pams=None,
+def horizon(tractograms=None, images=None, pams=None, surfaces=None,
             cluster=False, rgb=False, cluster_thr=15.0,
             random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
@@ -643,6 +658,8 @@ def horizon(tractograms=None, images=None, pams=None,
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
         Contains peak directions and spherical harmonic coefficients
+    surfaces : sequence of tuples
+        Each tuple contains vertices and faces
     cluster : bool
         Enable QuickBundlesX clustering
     rgb: bool, optional
@@ -706,10 +723,10 @@ def horizon(tractograms=None, images=None, pams=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, cluster, rgb, cluster_thr,
-                 random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
-                 world_coords, interactive, out_png, recorded_events,
-                 return_showm, bg_color=bg_color,
+    hz = Horizon(tractograms, images, pams, surfaces, cluster, rgb,
+                 cluster_thr, random_colors, length_gt, length_lt, clusters_gt,
+                 clusters_lt, world_coords, interactive, out_png,
+                 recorded_events, return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
                  buan_colors=buan_colors, roi_images=roi_images,
                  roi_colors=roi_colors)
