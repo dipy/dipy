@@ -7,7 +7,7 @@ DIPY Developer Guide
    :maxdepth: 2
 
    intro
-   installing_from_source
+   installation_from_source
    gitwash/index
    make_release
    commit_codes
