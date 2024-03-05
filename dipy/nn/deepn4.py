@@ -12,21 +12,20 @@ from dipy.nn.utils import set_logger_level
 from dipy.nn.utils import transform_img, recover_img, normalize
 
 tf, have_tf, _ = optional_package('tensorflow')
-tfa, have_tfa, _ = optional_package('tensorflow_addons')
-if have_tf and have_tfa:
+if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
     from tensorflow.keras.layers import Conv3D, LeakyReLU
     from tensorflow.keras.layers import Concatenate, Layer
-    from tensorflow_addons.layers import InstanceNormalization
+    from tensorflow.keras.layers import GroupNormalization
 else:
     class Model:
         pass
 
     class Layer:
         pass
-    logging.warning('This model requires Tensorflow and Tensorflow\
-                    -addons. Please install these packages using \
+    logging.warning('This model requires Tensorflow.\
+                    Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos')
@@ -44,8 +43,8 @@ class EncoderBlock(Layer):
                              strides=strides,
                              padding=padding,
                              use_bias=False)
-        self.instnorm = InstanceNormalization(
-            axis=-1, center=False, scale=False)
+        self.instnorm = GroupNormalization(groups=-1, axis=-1,
+                                           center=False, scale=False)
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -64,8 +63,8 @@ class DecoderBlock(Layer):
                                       strides=strides,
                                       padding=padding,
                                       use_bias=False)
-        self.instnorm = InstanceNormalization(
-            axis=-1, center=False, scale=False)
+        self.instnorm = GroupNormalization(groups=-1, axis=-1,
+                                           center=False, scale=False)
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -175,8 +174,6 @@ class DeepN4:
 
         if not have_tf:
             raise tf()
-        if not have_tfa:
-            raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
         set_logger_level(log_level, logger)
