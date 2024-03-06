@@ -25,20 +25,20 @@ answer it yourself and contribute to the documentation!
         save_tractogram(my_trk.streamlines, my_trk_file_path, 'same')
 
 
-.. dropdown:: How do I convert my Spherical Harmonics from DIPY to MRTRIX3?
+.. dropdown:: How do I convert my Spherical Harmonics from MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available only on master branch. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
+   *Available from DIPY 1.9.0+. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
 
    .. code-block:: Python
 
         from dipy.reconst.shm import convert_sh_descoteaux_tournier
         convert_sh_descoteaux_tournier(sh_coeffs)
 
-.. dropdown:: How do I convert my tensors from DIPY to FSL?
+.. dropdown:: How do I convert my tensors from FSL to DIPY  or MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available only on master branch
+   *Available with DIPY 1.9.0+
 
    .. code-block:: Python
 
@@ -46,8 +46,13 @@ answer it yourself and contribute to the documentation!
         from dipy.io.image import load_nifti, save_nifti
 
         data, affine, img = load_nifti('my_data.nii.gz', return_img=True)
-        otensor = convert_tensors(data, 'dipy', 'fsl')
+        # convert from FSL to DIPY
+        otensor = convert_tensors(data, 'fsl', 'dipy')
         save_nifti(otensor, data, affine, image.header)
+        # convert from MRTRIX3 to DIPY
+        otensor = convert_tensors(data, 'mrtrix', 'dipy')
+        save_nifti(otensor, data, affine, image.header)
+
 
 
 .. include:: links_names.inc
