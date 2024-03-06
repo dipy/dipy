@@ -218,7 +218,7 @@ class ReconstMAPMRIFlow(Workflow):
                 save_nifti(out_parng, n.astype(np.float32), affine)
 
             logging.info('MAPMRI saved in {0}'.
-                         format(os.path.dirname(out_dir)))
+                         format(os.path.abspath(out_dir)))
 
 
 class ReconstDtiFlow(Workflow):
@@ -404,7 +404,8 @@ class ReconstDtiFlow(Workflow):
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
             if save_metrics:
-                logging.info('DTI metrics saved to')
+                msg = f'DTI metrics saved to {os.path.abspath(out_dir)}'
+                logging.info(msg)
                 for metric in save_metrics:
                     logging.info(self.last_generated_outputs["out_" + metric])
 
@@ -530,7 +531,8 @@ class ReconstDsiFlow(Workflow):
                 peaks_to_niftis(peaks_dsi, oshm, opeaks_dir, opeaks_values,
                                 opeaks_indices, reshape_dirs=True)
 
-            logging.info('DSI metrics saved to {0}'.format(out_dir))
+            logging.info('DSI metrics saved to {0}'.
+                         format(os.path.abspath(out_dir)))
 
 
 class ReconstCSDFlow(Workflow):

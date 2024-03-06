@@ -434,7 +434,7 @@ class ConvertTensorsFlow(Workflow):
     def get_short_name(cls):
         return 'convert_tensors'
 
-    def run(self, tensor_files, from_format='dipy', to_format='mrtrix',
+    def run(self, tensor_files, from_format='mrtrix', to_format='dipy',
             out_dir='.', out_tensor='converted_tensor'):
         """Converts tensor representation between different formats.
 
