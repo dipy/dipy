@@ -82,7 +82,7 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
-    def __init__(self, tabs, win_size, on_tab_changed,
+    def __init__(self, tabs, win_size, on_tab_changed=lambda actors: None,
                  synchronize_slices=False,
                  synchronize_volumes=False):
         num_tabs = len(tabs)
@@ -104,9 +104,8 @@ class TabManager:
 
         self._tab_ui.on_change = self._tab_selected
 
-        self._on_tab_changed = on_tab_changed
+        self.tab_changed = on_tab_changed
 
-        self.tab_changed = lambda actors: None
         slices_tabs = list(
             filter(
                 lambda x: x.__class__.__name__ == 'SlicesTab', self._tabs
@@ -123,6 +122,7 @@ class TabManager:
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_slice_change = self.synchronize_slices
                 tab.on_volume_change = self.synchronize_volumes
+            if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
                 self._render_tab_elements(tab_id, tab.elements)
 
     def handle_text_overflows(self):
@@ -177,9 +177,9 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
-
+        if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
+            self.tab_changed(current_tab.actors)
         if current_tab.__class__.__name__ == 'SlicesTab':
-            self._on_tab_changed(current_tab.actors)
             current_tab.on_tab_selected()
 
     def reposition(self, win_size):

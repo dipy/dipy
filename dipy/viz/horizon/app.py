@@ -1,3 +1,4 @@
+from warnings import warn
 from packaging.version import Version
 
 import numpy as np
@@ -9,10 +10,12 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager, build_label)
-from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
+                                  TabManager, build_label, SurfaceTab)
+from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
+                                         SurfaceVisualizer)
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   unpack_image, is_binary_image)
+                                   unpack_image, is_binary_image,
+                                   unpack_surface)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -38,13 +41,15 @@ HELP_MESSAGE = """
 
 class Horizon:
 
-    def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 rgb=False, cluster_thr=15.0, random_colors=None, length_gt=0,
-                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
+    def __init__(self, tractograms=None, images=None, pams=None, surfaces=None,
+                 cluster=False, rgb=False, cluster_thr=15.0,
+                 random_colors=None, length_gt=0, length_lt=1000,
+                 clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
                  order_transparent=True, buan=False, buan_colors=None,
-                 roi_images=False, roi_colors=(1, 0, 0)):
+                 roi_images=False, roi_colors=(1, 0, 0),
+                 surface_colors=[(1, 0, 0)]):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -57,6 +62,8 @@ class Horizon:
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
             Contains peak directions and spherical harmonic coefficients
+        surfaces : sequence of tuples
+            Each tuple contains vertices and faces
         cluster : bool
             Enable QuickBundlesX clustering
         rgb : bool, optional
@@ -144,6 +151,7 @@ class Horizon:
         self.out_png = out_png
         self.images = images or []
         self.pams = pams or []
+        self._surfaces = surfaces or []
 
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
@@ -156,9 +164,11 @@ class Horizon:
         self.buan_colors = buan_colors
         self.__roi_images = roi_images
         self.__roi_colors = roi_colors
+        self._surface_colors = surface_colors
+
+        self.color_gen = distinguishable_colormap()
 
         if self.random_colors is not None:
-            self.color_gen = distinguishable_colormap()
             if not self.random_colors:
                 self.random_colors = ['tracts', 'rois']
         else:
@@ -450,7 +460,7 @@ class Horizon:
             img_count = 0
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
-                title = 'Image {}'.format(img_count)
+                title = 'Image {}'.format(img_count+1)
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
                 if is_binary_image(data):
@@ -489,6 +499,21 @@ class Horizon:
             data = None
             affine = None
             pam = None
+
+        if len(self._surfaces) > 0:
+            for idx, surface in enumerate(self._surfaces):
+                try:
+                    vertices, faces, fname = unpack_surface(surface)
+                except ValueError as e:
+                    warn(str(e))
+                    continue
+                color = next(self.color_gen)
+                title = 'Surface {}'.format(idx+1)
+                surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
+                surf_tab = SurfaceTab(surf_viz, title, fname)
+                self.__tabs.append(surf_tab)
+
+        self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
             def on_tab_changed(actors):
@@ -622,7 +647,7 @@ class Horizon:
                           reset_camera=False)
 
 
-def horizon(tractograms=None, images=None, pams=None,
+def horizon(tractograms=None, images=None, pams=None, surfaces=None,
             cluster=False, rgb=False, cluster_thr=15.0,
             random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
@@ -641,6 +666,8 @@ def horizon(tractograms=None, images=None, pams=None,
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
         Contains peak directions and spherical harmonic coefficients
+    surfaces : sequence of tuples
+        Each tuple contains vertices and faces
     cluster : bool
         Enable QuickBundlesX clustering
     rgb: bool, optional
@@ -704,10 +731,10 @@ def horizon(tractograms=None, images=None, pams=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, cluster, rgb, cluster_thr,
-                 random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
-                 world_coords, interactive, out_png, recorded_events,
-                 return_showm, bg_color=bg_color,
+    hz = Horizon(tractograms, images, pams, surfaces, cluster, rgb,
+                 cluster_thr, random_colors, length_gt, length_lt, clusters_gt,
+                 clusters_lt, world_coords, interactive, out_png,
+                 recorded_events, return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
                  buan_colors=buan_colors, roi_images=roi_images,
                  roi_colors=roi_colors)
