@@ -15,7 +15,7 @@ def test_ProbabilisticDirectionGetter():
 
     class SillyModel(SphHarmModel):
 
-        sh_degree = 4
+        sh_order = 4
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))

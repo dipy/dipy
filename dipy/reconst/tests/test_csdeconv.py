@@ -110,7 +110,7 @@ def test_recursive_response_calibration():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = recursive_response(gtab, data, mask=None, sh_degree_max=8,
+        response = recursive_response(gtab, data, mask=None, sh_order_max=8,
                                       peak_thr=0.01, init_fa=0.05,
                                       init_trace=0.0021, iter=8,
                                       convergence=0.001, parallel=False)
@@ -283,7 +283,7 @@ def test_csdeconv():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        _ = ConstrainedSphericalDeconvModel(gtab, response, sh_degree_max=10)
+        _ = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=10)
         assert_greater(len([lw for lw in w if issubclass(lw.category,
                                                          UserWarning)]), 0)
 
@@ -292,7 +292,7 @@ def test_csdeconv():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        ConstrainedSphericalDeconvModel(gtab, response, sh_degree_max=8)
+        ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=8)
         assert_equal(len([lw for lw in w if issubclass(lw.category,
                                                        UserWarning)]), 0)
 
@@ -362,7 +362,7 @@ def test_odfdeconv():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=PendingDeprecationWarning)
 
-        ConstrainedSDTModel(gtab, ratio, sh_degree_max=10)
+        ConstrainedSDTModel(gtab, ratio, sh_order_max=10)
         w_count = len(w)
         # A warning is expected from the ConstrainedSDTModel constructor
         # and additional warnings should be raised where legacy SH bases
@@ -372,7 +372,7 @@ def test_odfdeconv():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=PendingDeprecationWarning)
 
-        ConstrainedSDTModel(gtab, ratio, sh_degree_max=8)
+        ConstrainedSDTModel(gtab, ratio, sh_order_max=8)
         # Test that the warning from ConstrainedSDTModel
         # constructor is no more raised
         assert_equal(len(w) == w_count - 1, True)
@@ -406,7 +406,7 @@ def test_odf_sh_to_sharp():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        qb = QballModel(gtab, sh_degree=8, assume_normed=True)
+        qb = QballModel(gtab, sh_order_max=8, assume_normed=True)
 
     qbfit = qb.fit(S)
     with warnings.catch_warnings():
@@ -424,7 +424,7 @@ def test_odf_sh_to_sharp():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        odfs_sh = sf_to_sh(odfs_gt, sphere, sh_degree_max=8, basis_type=None)
+        odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order_max=8, basis_type=None)
 
     odfs_sh /= Z
 
@@ -433,9 +433,9 @@ def test_odf_sh_to_sharp():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                                  sh_degree_max=8, lambda_=1., tau=0.1)
+                                  sh_order_max=8, lambda_=1., tau=0.1)
 
-        fodf = sh_to_sf(fodf_sh, sphere, sh_degree_max=8, basis_type=None)
+        fodf = sh_to_sf(fodf_sh, sphere, sh_order_max=8, basis_type=None)
 
     directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere)
 
@@ -448,10 +448,10 @@ def test_forward_sdeconv_mat():
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
 
-    sh_degree_max = 8
-    expected_size = (sh_degree_max + 1) * (sh_degree_max + 2) / 2
-    r_rh = np.arange(0, sh_degree_max + 1, 2)
-    m_values, l_values = sph_harm_ind_list(sh_degree_max)
+    sh_order_max = 8
+    expected_size = (sh_order_max + 1) * (sh_order_max + 2) / 2
+    r_rh = np.arange(0, sh_order_max + 1, 2)
+    m_values, l_values = sph_harm_ind_list(sh_order_max)
     mat = forward_sdeconv_mat(r_rh, l_values)
     npt.assert_equal(mat.shape, (expected_size, expected_size))
     npt.assert_array_equal(mat.diagonal(), l_values)
@@ -485,19 +485,19 @@ def test_r2_term_odf_sharp():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        odfs_sh = sf_to_sh(odf_gt, sphere, sh_degree_max=8, basis_type=None)
+        odfs_sh = sf_to_sh(odf_gt, sphere, sh_order_max=8, basis_type=None)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                                  sh_degree_max=8, lambda_=1., tau=0.1,
+                                  sh_order_max=8, lambda_=1., tau=0.1,
                                   r2_term=True)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fodf = sh_to_sf(fodf_sh, sphere, sh_degree_max=8, basis_type=None)
+        fodf = sh_to_sf(fodf_sh, sphere, sh_order_max=8, basis_type=None)
 
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
@@ -511,7 +511,7 @@ def test_r2_term_odf_sharp():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_degree_max=8)
+        sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order_max=8)
     sdt_fit = sdt_model.fit(S)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -680,14 +680,14 @@ def test_default_lambda_csdmodel():
     # Some response function
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
 
-    for sh_degree_max, expected, e_warn in zip(expected_lambda.keys(),
+    for sh_order_max, expected, e_warn in zip(expected_lambda.keys(),
                                           expected_lambda.values(),
                                           expected_csdmodel_warnings.values()):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=PendingDeprecationWarning)
-            sdm = sh_degree_max
+            som = sh_order_max
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                         sh_degree_max=sdm,
+                                                         sh_order_max=som,
                                                          reg_sphere=sphere)
             npt.assert_equal(len(w) - expected_sh_basis_deprecation_warnings,
                              e_warn)
@@ -701,7 +701,7 @@ def test_default_lambda_csdmodel():
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
             B_reg, _, _ = real_sh_descoteaux(
-                sh_degree_max, sphere.theta, sphere.phi)
+                sh_order_max, sphere.theta, sphere.phi)
         npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
@@ -723,7 +723,7 @@ def test_csd_superres():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
-                                                  sh_degree_max=16)
+                                                  sh_order_max=16)
         assert_greater_equal(len(w), 1)
         npt.assert_(issubclass(w[0].category, UserWarning))
 
@@ -763,7 +763,7 @@ def test_csd_convergence():
         model_w_conv = ConstrainedSphericalDeconvModel(
             gtab,
             (evals[0], 3.),
-            sh_degree_max=8,
+            sh_order_max=8,
             convergence=50,
         )
     with warnings.catch_warnings():
@@ -771,6 +771,6 @@ def test_csd_convergence():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         model_wo_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
-                                                        sh_degree_max=8)
+                                                        sh_order_max=8)
 
     assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)

@@ -90,7 +90,7 @@ def test_csd_xval(rng):
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_degree_max=2, rng=rng)
+        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order_max=2, rng=rng)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
@@ -106,7 +106,7 @@ def test_csd_xval(rng):
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_degree_max=2,
+        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order_max=2,
                                   mask=mask, rng=rng)
 
     cod = xval.coeff_of_determination(S, kf_xval)

@@ -544,8 +544,8 @@ class ReconstCSDFlow(Workflow):
                        until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, frf=None, extract_pam_values=False, sh_degree=8,
-            odf_to_sh_degree=8, parallel=False, num_processes=None,
+            fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
+            odf_to_sh_order=8, parallel=False, num_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -585,10 +585,10 @@ class ReconstCSDFlow(Workflow):
             the fiber response function will be computed automatically.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        sh_degree : int, optional
-            Spherical harmonics degree (l) used in the CSA fit.
-        odf_to_sh_degree : int, optional
-            Spherical harmonics degree (l) used for peak_from_model to compress
+        sh_order : int, optional
+            Spherical harmonics order (l) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
@@ -641,7 +641,7 @@ class ReconstCSDFlow(Workflow):
                                   atol=bvecs_tol)
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
-            n_params = ((sh_degree + 1) * (sh_degree + 2)) / 2
+            n_params = ((sh_order + 1) * (sh_order + 2)) / 2
             if data.shape[-1] < n_params:
                 raise ValueError(
                     'You need at least {0} unique DWI volumes to '
@@ -683,7 +683,7 @@ class ReconstCSDFlow(Workflow):
 
             logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                        sh_degree_max=sh_degree)
+                                                        sh_order_max=sh_order)
 
             peaks_csd = peaks_from_model(model=csd_model,
                                          data=data,
@@ -692,7 +692,7 @@ class ReconstCSDFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_degree_max=sh_degree,
+                                         sh_order_max=sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -724,7 +724,7 @@ class ReconstCSAFlow(Workflow):
     @deprecated_params('nbr_processes', 'num_processes', since='1.4',
                        until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            sh_degree=6, odf_to_sh_degree=8, b0_threshold=50.0, bvecs_tol=0.01,
+            sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
             extract_pam_values=False, parallel=False, num_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
@@ -748,10 +748,10 @@ class ReconstCSAFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
-        sh_degree : int, optional
-            Spherical harmonics degree (l) used in the CSA fit.
-        odf_to_sh_degree : int, optional
-            Spherical harmonics degree (l) used for peak_from_model to compress
+        sh_order : int, optional
+            Spherical harmonics order (l) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
@@ -812,7 +812,7 @@ class ReconstCSAFlow(Workflow):
 
             logging.info('Starting CSA computations {0}'.format(dwi))
 
-            csa_model = CsaOdfModel(gtab, sh_degree)
+            csa_model = CsaOdfModel(gtab, sh_order)
 
             peaks_csa = peaks_from_model(model=csa_model,
                                          data=data,
@@ -821,7 +821,7 @@ class ReconstCSAFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_degree_max=odf_to_sh_degree,
+                                         sh_order_max=odf_to_sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -1169,8 +1169,8 @@ class ReconstRUMBAFlow(Workflow):
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, extract_pam_values=False, sh_degree=8,
-            odf_to_sh_degree=8, parallel=True, num_processes=None,
+            fa_thr=0.7, extract_pam_values=False, sh_order=8,
+            odf_to_sh_order=8, parallel=True, num_processes=None,
             gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
             recon_type='smf', n_coils=1, R=1, voxelwise=True, use_tv=False,
             sphere_name='repulsion724', verbose=False,
@@ -1212,10 +1212,10 @@ class ReconstRUMBAFlow(Workflow):
             FA threshold to compute the WM response function.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        sh_degree : int, optional
-            Spherical harmonics degree (l) used in the CSA fit.
-        odf_to_sh_degree : int, optional
-            Spherical harmonics degree (l) used for peak_from_model to compress
+        sh_order : int, optional
+            Spherical harmonics order (l) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
@@ -1337,7 +1337,7 @@ class ReconstRUMBAFlow(Workflow):
                 model=rumba, data=data, sphere=sphere,
                 relative_peak_threshold=relative_peak_threshold,
                 min_separation_angle=min_separation_angle, mask=mask_vol,
-                return_sh=True, sh_degree_max=sh_degree, normalize_peaks=True,
+                return_sh=True, sh_order_max=sh_order, normalize_peaks=True,
                 parallel=parallel, num_processes=num_processes)
 
             logging.info('Peak computation completed.')

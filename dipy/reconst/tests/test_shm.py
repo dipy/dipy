@@ -24,30 +24,30 @@ from dipy.reconst import odf
 from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
-                              degree_from_ncoef, OpdtModel,
+                              order_from_ncoef, OpdtModel,
                               normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
                               spherical_harmonics, anisotropic_power,
-                              calculate_max_degree, sh_to_sf_matrix, gen_dirac,
+                              calculate_max_order, sh_to_sf_matrix, gen_dirac,
                               convert_sh_to_full_basis, convert_sh_from_legacy,
                               convert_sh_to_legacy,
                               convert_sh_descoteaux_tournier,
                               descoteaux07_legacy_msg, tournier07_legacy_msg)
 
 
-def test_degree_from_ncoeff():
+def test_order_from_ncoeff():
     # Just try some out:
-    for sh_degree_max in [2, 4, 6, 8, 12, 24]:
-        m_values, l_values = sph_harm_ind_list(sh_degree_max)
+    for sh_order_max in [2, 4, 6, 8, 12, 24]:
+        m_values, l_values = sph_harm_ind_list(sh_order_max)
         n_coef = m_values.shape[0]
-        assert_equal(degree_from_ncoef(n_coef), sh_degree_max)
+        assert_equal(order_from_ncoef(n_coef), sh_order_max)
 
         # Try out full basis
-        m_full, l_full = sph_harm_ind_list(sh_degree_max, True)
+        m_full, l_full = sph_harm_ind_list(sh_order_max, True)
         n_coef_full = m_full.shape[0]
-        assert_equal(degree_from_ncoef(n_coef_full, True), sh_degree_max)
+        assert_equal(order_from_ncoef(n_coef_full, True), sh_order_max)
 
 
 def test_sph_harm_ind_list():
@@ -399,7 +399,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
+            model = self.model(gtab, sh_order_max=4, min_signal=1e-5,
                                assume_normed=True)
 
         fit = model.fit(signal)
@@ -429,7 +429,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
+            model = self.model(gtab, sh_order_max=4, min_signal=1e-5,
                                assume_normed=False)
 
         fit = model.fit(signal * 5)
@@ -453,7 +453,7 @@ class TestQballModel:
                 "ignore",  message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5,
+            model = self.model(gtab, sh_order_max=4, min_signal=1e-5,
                                assume_normed=True)
 
         fit = model.fit(nd_signal)
@@ -487,7 +487,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_degree_max=4, min_signal=1e-5)
+            model = self.model(gtab, sh_order_max=4, min_signal=1e-5)
 
         assert_equal(model.B.shape[1], 15)
         assert_equal(max(model.l_values), 4)
@@ -497,7 +497,7 @@ class TestQballModel:
                 "ignore", message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning)
 
-            model = self.model(gtab, sh_degree_max=6, min_signal=1e-5)
+            model = self.model(gtab, sh_order_max=6, min_signal=1e-5)
 
         assert_equal(model.B.shape[1], 28)
         assert_equal(max(model.l_values), 6)
@@ -781,8 +781,8 @@ def test_sf_to_sh():
 
 def test_faster_sph_harm():
 
-    sh_degree_max = 8
-    m_values, l_values = sph_harm_ind_list(sh_degree_max)
+    sh_order_max = 8
+    m_values, l_values = sph_harm_ind_list(sh_order_max)
     theta = np.array([1.61491146,  0.76661665,  0.11976141,  1.20198246,
                       1.74066314, 1.5925956,  2.13022055,  0.50332859,
                       1.19868988,  0.78440679, 0.50686938,  0.51739718,
@@ -833,7 +833,7 @@ def test_anisotropic_power():
 
             # Create some really simple cases:
             coeffs = np.ones((3, n_coeffs))
-            max_order = calculate_max_degree(coeffs.shape[-1])
+            max_order = calculate_max_order(coeffs.shape[-1])
             # For the case where all coeffs == 1, the ap is simply log of the
             # number of even orders up to the maximal order:
             analytic = (np.log(len(range(2, max_order + 2, 2))) -
@@ -864,11 +864,11 @@ def test_calculate_max_order():
     # n = (R + 1)^2 for a full basis
     n_coeffs_full = [9, 25, 49, 81, 121, 169]
     for o, n_sym, n_full in zip(orders, n_coeffs_sym, n_coeffs_full):
-        assert_equal(calculate_max_degree(n_sym), o)
-        assert_equal(calculate_max_degree(n_full, True), o)
+        assert_equal(calculate_max_order(n_sym), o)
+        assert_equal(calculate_max_order(n_full, True), o)
 
-    assert_raises(ValueError, calculate_max_degree, 29)
-    assert_raises(ValueError, calculate_max_degree, 29, True)
+    assert_raises(ValueError, calculate_max_order, 29)
+    assert_raises(ValueError, calculate_max_order, 29, True)
 
 
 def test_convert_sh_to_full_basis():

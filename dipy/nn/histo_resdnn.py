@@ -34,7 +34,7 @@ class HistoResDNN:
     """
 
     @doctest_skip_parser
-    def __init__(self, sh_degree_max=8, basis_type='tournier07', verbose=False):
+    def __init__(self, sh_order_max=8, basis_type='tournier07', verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in [1, 2].
@@ -51,10 +51,10 @@ class HistoResDNN:
 
         Parameters
         ----------
-        sh_degree_max : int, optional
-            Maximum SH degree (l) in the SH fit.  For ``sh_degree_max``, there
+        sh_order_max : int, optional
+            Maximum SH order (l) in the SH fit.  For ``sh_order_max``, there
             will be
-            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` SH coefficients
+            ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients
             for a symmetric basis. Default: 8
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
@@ -79,8 +79,8 @@ class HistoResDNN:
         if not have_tf:
             raise tf()
 
-        self.sh_degree_max = sh_degree_max
-        self.sh_size = len(sph_harm_ind_list(sh_degree_max)[0])
+        self.sh_order_max = sh_order_max
+        self.sh_size = len(sph_harm_ind_list(sh_order_max)[0])
         self.basis_type = basis_type
 
         log_level = 'INFO' if verbose else 'CRITICAL'
@@ -119,7 +119,7 @@ class HistoResDNN:
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
 
-        The weights for a sh_degree of 8 can be obtained via the function:
+        The weights for a sh_order of 8 can be obtained via the function:
             get_fnames('histo_resdnn_weights').
 
         Parameters
@@ -142,7 +142,7 @@ class HistoResDNN:
         ----------
         x_test : np.ndarray
             Array of size (N, M) where M is
-            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2``.
+            ``(sh_order_max + 1) * (sh_order_max + 2) / 2``.
             N should not be too big as to limit memory usage.
 
         Returns
@@ -181,7 +181,7 @@ class HistoResDNN:
         pred_sh_coef : np.ndarray (x, y, z, M)
             Predicted fODF (as SH). The volume has matching shape to the input
             data, but with
-            ``(sh_degree_max + 1) * (sh_degree_max + 2) / 2`` as a last
+            ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` as a last
             dimension.
 
         """
@@ -220,7 +220,7 @@ class HistoResDNN:
         h_sphere = HemiSphere(xyz=dw_bvecs)
         dw_sh_coef = sf_to_sh(norm_dw_data, h_sphere, smooth=0.0006,
                               basis_type=self.basis_type,
-                              sh_degree_max=self.sh_degree_max)
+                              sh_order_max=self.sh_order_max)
 
         # Flatten and mask the data (N, SH_SIZE) to facilitate chunks
         ori_shape = dw_sh_coef.shape
@@ -238,11 +238,11 @@ class HistoResDNN:
             sphere = get_sphere('repulsion724')
             tmp_sf = sh_to_sf(sh=tmp_sh, sphere=sphere,
                               basis_type=self.basis_type,
-                              sh_degree_max=self.sh_degree_max)
+                              sh_order_max=self.sh_order_max)
             tmp_sf[tmp_sf < 0] = 0
             tmp_sh = sf_to_sh(tmp_sf, sphere, smooth=0.0006,
                               basis_type=self.basis_type,
-                              sh_degree_max=self.sh_degree_max)
+                              sh_order_max=self.sh_order_max)
             flat_pred_sh_coef[i*chunk_size:(i+1)*chunk_size] = tmp_sh
 
         pred_sh_coef = np.zeros(ori_shape)

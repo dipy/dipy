@@ -48,7 +48,7 @@ class ForecastModel(OdfModel, Cache):
 
     def __init__(self,
                  gtab,
-                 sh_degree=8,
+                 sh_order_max=8,
                  lambda_lb=1e-3,
                  dec_alg='CSD',
                  sphere=None,
@@ -79,8 +79,8 @@ class ForecastModel(OdfModel, Cache):
         ----------
         gtab : GradientTable,
             gradient directions and bvalues container class.
-        sh_degree : unsigned int,
-            an even integer that represent the SH degree (l) of the basis (max 12)
+        sh_order_max : unsigned int,
+            an even integer that represent the SH order (l) of the basis (max 12)
         lambda_lb: float,
             Laplace-Beltrami regularization weight.
         dec_alg : str,
@@ -133,7 +133,7 @@ class ForecastModel(OdfModel, Cache):
         ...     warnings.filterwarnings(
         ...         "ignore", message=descoteaux07_legacy_msg,
         ...         category=PendingDeprecationWarning)
-        ...     fm = ForecastModel(gtab, sh_degree=6)
+        ...     fm = ForecastModel(gtab, sh_order_max=6)
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
@@ -146,13 +146,13 @@ class ForecastModel(OdfModel, Cache):
         OdfModel.__init__(self, gtab)
 
         # round the bvals in order to avoid numerical errors
-        self.bvals = np.round(gtab.bvals/100) * 100
+        self.bvals = np.round(gtab.bvals / 100) * 100
         self.bvecs = gtab.bvecs
 
-        if 0 <= sh_degree <= 12 and not bool(sh_degree % 2):
-            self.sh_degree = sh_degree
+        if 0 <= sh_order_max <= 12 and not bool(sh_order_max % 2):
+            self.sh_order_max = sh_order_max
         else:
-            msg = "sh_degree must be a non-zero even positive number "
+            msg = "sh_order_max must be a non-zero even positive number "
             msg += "between 2 and 12"
             raise ValueError(msg)
 
@@ -169,7 +169,7 @@ class ForecastModel(OdfModel, Cache):
         self.one_0_bvecs = np.r_[np.array([0, 0, 0]).reshape(
             1, 3), self.bvecs[~self.b0s_mask, :]]
 
-        self.rho = rho_matrix(self.sh_degree, self.one_0_bvecs)
+        self.rho = rho_matrix(self.sh_order_max, self.one_0_bvecs)
 
         # signal regularization matrix
         self.srm = rho_matrix(4, self.one_0_bvecs)
@@ -190,10 +190,10 @@ class ForecastModel(OdfModel, Cache):
         if dec_alg.upper() == 'CSD':
             self.csd = True
 
-        self.lb_matrix = lb_forecast(self.sh_degree)
+        self.lb_matrix = lb_forecast(self.sh_order_max)
         self.lambda_lb = lambda_lb
         self.lambda_csd = lambda_csd
-        self.fod = rho_matrix(sh_degree, self.vertices)
+        self.fod = rho_matrix(sh_order_max, self.vertices)
 
     @multi_voxel_fit
     def fit(self, data):
@@ -209,7 +209,7 @@ class ForecastModel(OdfModel, Cache):
                                   self.lb_matrix_signal)
 
         # average diffusivity initialization
-        x = np.array([np.pi/4, np.pi/4])
+        x = np.array([np.pi / 4, np.pi / 4])
 
         x, status = leastsq(forecast_error_func, x,
                             args=(self.b_unique, means))
@@ -228,7 +228,7 @@ class ForecastModel(OdfModel, Cache):
         M_diff = self.cache_get('forecast_matrix', key=diff_key)
         if M_diff is None:
             M_diff = forecast_matrix(
-                self.sh_degree,  d_par, d_perp, self.one_0_bvals)
+                self.sh_order_max, d_par, d_perp, self.one_0_bvals)
             self.cache_set('forecast_matrix', key=diff_key, value=M_diff)
 
         M = M_diff * self.rho
@@ -236,7 +236,7 @@ class ForecastModel(OdfModel, Cache):
         c0 = np.sqrt(1.0/(4*np.pi))
 
         # coefficients vector initialization
-        n_c = int((self.sh_degree + 1)*(self.sh_degree + 2)/2)
+        n_c = int((self.sh_order_max + 1)*(self.sh_order_max + 2)/2)
         coef = np.zeros(n_c)
         coef[0] = c0
         if int(np.round(d_par*1e05)) > int(np.round(d_perp*1e05)):
@@ -298,7 +298,7 @@ class ForecastFit(OdfFit):
         self.model = model
         self._sh_coef = sh_coef
         self.gtab = model.gtab
-        self.sh_degree = model.sh_degree
+        self.sh_order_max = model.sh_order_max
         self.d_par = d_par
         self.d_perp = d_perp
 
@@ -315,7 +315,7 @@ class ForecastFit(OdfFit):
             if True clip the negative odf values to 0, default True
         """
         if self.rho is None:
-            self.rho = rho_matrix(self.sh_degree, sphere.vertices)
+            self.rho = rho_matrix(self.sh_order_max, sphere.vertices)
 
         odf = np.dot(self.rho, self._sh_coef)
 
@@ -351,12 +351,12 @@ class ForecastFit(OdfFit):
         if gtab is None:
             gtab = self.gtab
 
-        M_diff = forecast_matrix(self.sh_degree,
+        M_diff = forecast_matrix(self.sh_order_max,
                                  self.d_par,
                                  self.d_perp,
                                  gtab.bvals)
 
-        rho = rho_matrix(self.sh_degree, gtab.bvecs)
+        rho = rho_matrix(self.sh_order_max, gtab.bvecs)
         M = M_diff * rho
         S = S0 * np.dot(M, self._sh_coef)
 
@@ -446,13 +446,13 @@ def psi_l(l, b):
     return v
 
 
-def forecast_matrix(sh_degree,  d_par, d_perp, bvals):
+def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     r"""Compute the FORECAST radial matrix
     """
-    n_c = int((sh_degree + 1) * (sh_degree + 2) / 2)
+    n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
     M = np.zeros((bvals.shape[0], n_c))
     counter = 0
-    for l in range(0, sh_degree + 1, 2):
+    for l in range(0, sh_order_max + 1, 2):
         for m in range(-l, l + 1):
             M[:, counter] = 2 * np.pi * \
                 np.exp(-bvals * d_perp) * psi_l(l, bvals * (d_par - d_perp))
@@ -460,31 +460,31 @@ def forecast_matrix(sh_degree,  d_par, d_perp, bvals):
     return M
 
 
-def rho_matrix(sh_degree, vecs):
+def rho_matrix(sh_order_max, vecs):
     r"""Compute the SH matrix $\rho$
     """
 
     r, theta, phi = cart2sphere(vecs[:, 0], vecs[:, 1], vecs[:, 2])
     theta[np.isnan(theta)] = 0
 
-    n_c = int((sh_degree + 1) * (sh_degree + 2) / 2)
+    n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
     rho = np.zeros((vecs.shape[0], n_c))
     counter = 0
-    for l in range(0, sh_degree + 1, 2):
-        for m in range(-l, l + 1):
+    for l_values in range(0, sh_order_max + 1, 2):
+        for m_values in range(-l_values, l_values + 1):
             rho[:, counter] = real_sh_descoteaux_from_index(
-                m, l, theta, phi)
+                m_values, l_values, theta, phi)
             counter += 1
     return rho
 
 
-def lb_forecast(sh_degree):
+def lb_forecast(sh_order_max):
     r"""Returns the Laplace-Beltrami regularization matrix for FORECAST
     """
-    n_c = int((sh_degree + 1)*(sh_degree + 2)/2)
+    n_c = int((sh_order_max + 1)*(sh_order_max + 2)/2)
     diag_lb = np.zeros(n_c)
     counter = 0
-    for j in range(0, sh_degree + 1, 2):
+    for j in range(0, sh_order_max + 1, 2):
         stop = 2 * j + 1 + counter
         diag_lb[counter:stop] = (j * (j + 1)) ** 2
         counter = stop

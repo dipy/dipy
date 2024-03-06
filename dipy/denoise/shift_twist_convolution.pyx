@@ -10,7 +10,7 @@ from dipy.reconst.shm import sh_to_sf, sf_to_sh
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
-def convolve(odfs_sh, kernel, sh_degree_max, test_mode=False, num_threads=None, normalize=True):
+def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
@@ -20,8 +20,8 @@ def convolve(odfs_sh, kernel, sh_degree_max, test_mode=False, num_threads=None, 
         The ODF data in spherical harmonics format
     kernel : array of double
         The 5D lookup table
-    sh_degree_max : integer
-        Maximal spherical harmonics degree (l)
+    sh_order_max : integer
+        Maximal spherical harmonics order (l)
     test_mode : boolean
         Reduced convolution in one direction only for testing
     num_threads : int, optional
@@ -62,7 +62,7 @@ def convolve(odfs_sh, kernel, sh_degree_max, test_mode=False, num_threads=None, 
 
     # convert the ODFs from SH basis to DSF
     sphere = kernel.get_sphere()
-    odfs_dsf = sh_to_sf(odfs_sh, sphere, sh_degree_max=sh_degree_max, basis_type=None)
+    odfs_dsf = sh_to_sf(odfs_sh, sphere, sh_order_max=sh_order_max, basis_type=None)
 
     # perform the convolution
     output = perform_convolution(odfs_dsf,
@@ -75,7 +75,7 @@ def convolve(odfs_sh, kernel, sh_degree_max, test_mode=False, num_threads=None, 
         output = np.multiply(output, np.amax(odfs_dsf)/np.amax(output))
 
     # convert back to SH
-    output_sh = sf_to_sh(output, sphere, sh_degree_max=sh_degree_max)
+    output_sh = sf_to_sh(output, sphere, sh_order_max=sh_order_max)
 
     return output_sh
 

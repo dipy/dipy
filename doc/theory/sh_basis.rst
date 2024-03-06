@@ -14,8 +14,8 @@ Spherical harmonics are orthonormal functions defined by:
 
     Y_l^m(\theta, \phi) = \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
 
-where $l$ is the degree, $m$ is the order, $P_l^m$ is an associated
-$l$-th degree, $m$-th order Legendre polynomial, and $(\theta, \phi)$ is the
+where $l$ is the order, $m$ is the phase factor, $P_l^m$ is an associated
+$l$-th order, $m$-th phase factor Legendre polynomial, and $(\theta, \phi)$ is the
 representation of the direction vector in spherical coordinates. The relation
 between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
 
@@ -150,15 +150,24 @@ for the ``tournier07`` basis. Both bases are very similar, with their only
 difference being the sign of $m$ for which the imaginary and real parts of
 the spherical harmonic $Y_{l}^m$ are used.
 
-In practice, a maximum degree $k$ is used to truncate the SH series. By
-only taking into account even degree SH functions, the above bases can be used
-to reconstruct symmetric spherical functions. The choice of an even degree is
+In practice, a maximum order $k$ is used to truncate the SH series. By
+only taking into account even order SH functions, the above bases can be used
+to reconstruct symmetric spherical functions. The choice of an even order is
 motivated by the symmetry of the diffusion process around the origin.
 
 Both bases are also available as full SH bases, where odd order SH functions
 are also taken into account when reconstructing a spherical function. These
 full bases can successfully reconstruct asymmetric signals as well as
 symmetric signals.
+
+NOTE: 
+The definition of spherical harmonics that DIPY utilizes does not match the one
+in Wikipedia and scipy. Instead, DIPY follows the dMRI literature conventions,
+like in ``descoteaux07`` and ``tournier07``.
+The code in DIPY also follows the following convention:
+Let the SH be noted as $Y_{l}^m$. Then, $l$ is referred to as either order or
+l_value(s), and $m$ is referred to as either phase factor or m_value(s).
+This decisions were made as a result of the PR in https://github.com/dipy/dipy/pull/3086
 
 References
 ----------

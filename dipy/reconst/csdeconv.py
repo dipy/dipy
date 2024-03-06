@@ -151,8 +151,8 @@ class AxSymShResponse:
         self.dwi_response = dwi_response
         self.bvalue = bvalue
         self.m_value = np.zeros(len(dwi_response))
-        self.sh_degree_max = 2 * (len(dwi_response) - 1)
-        self.l_value = np.arange(0, self.sh_degree_max + 1, 2)
+        self.sh_order_max = 2 * (len(dwi_response) - 1)
+        self.l_value = np.arange(0, self.sh_order_max + 1, 2)
 
     def basis(self, sphere):
         """A basis that maps the response coefficients onto a sphere."""
@@ -168,7 +168,7 @@ class AxSymShResponse:
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
 
-    def __init__(self, gtab, response, reg_sphere=None, sh_degree_max=8,
+    def __init__(self, gtab, response, reg_sphere=None, sh_order_max=8,
                  lambda_=1, tau=0.1, convergence=50):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
@@ -196,8 +196,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
-        sh_degree_max : int (optional)
-            maximal spherical harmonics degree (l). Default: 8
+        sh_order_max : int (optional)
+            maximal spherical harmonics order (l). Default: 8
         lambda_ : float (optional)
             weight given to the constrained-positivity regularization part of
             the deconvolution equation (see [1]_). Default: 1
@@ -227,12 +227,12 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         """
         # Initialize the parent class:
         SphHarmModel.__init__(self, gtab)
-        m_values, l_values = sph_harm_ind_list(sh_degree_max)
+        m_values, l_values = sph_harm_ind_list(sh_order_max)
         self.m_values, self.l_values = m_values, l_values
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
 
-        no_params = ((sh_degree_max + 1) * (sh_degree_max + 2)) / 2
+        no_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
 
         if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
@@ -260,17 +260,17 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         if isinstance(response, AxSymShResponse):
             r_sh = response.dwi_response
             self.response_scaling = response.S0
-            n_response = response.l_value
+            l_response = response.l_value
             m_response = response.m_value
         else:
             self.S_r = estimate_response(gtab, self.response[0],
                                          self.response[1])
             r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi],
                                    rcond=-1)[0]
-            n_response = l_values
+            l_response = l_values
             m_response = m_values
             self.response_scaling = response[1]
-        r_rh = sh_to_rh(r_sh, m_response, n_response)
+        r_rh = sh_to_rh(r_sh, m_response, l_response)
         self.R = forward_sdeconv_mat(r_rh, l_values)
 
         # scale lambda_ to account for differences in the number of
@@ -279,7 +279,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         lambda_ = (lambda_ * self.R.shape[0] * r_rh[0] /
                    (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
         self.B_reg *= lambda_
-        self.sh_degree_max = sh_degree_max
+        self.sh_order_max = sh_order_max
         self.tau = tau
         self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
@@ -319,7 +319,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             x, y, z = gtab.gradients[~gtab.b0s_mask].T
             r, theta, phi = cart2sphere(x, y, z)
-            SH_basis, _, _ = real_sh_descoteaux(self.sh_degree_max,
+            SH_basis, _, _ = real_sh_descoteaux(self.sh_order_max,
                                                 theta,
                                                 phi)
 
@@ -341,7 +341,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 class ConstrainedSDTModel(SphHarmModel):
 
     def __init__(self, gtab, ratio, reg_sphere=None,
-                 sh_degree_max=8, lambda_=1.,
+                 sh_order_max=8, lambda_=1.,
                  tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
 
@@ -366,8 +366,8 @@ class ConstrainedSDTModel(SphHarmModel):
             prolate tensor response function
         reg_sphere : Sphere
             sphere used to build the regularization B matrix
-        sh_degree_max : int
-            maximal spherical harmonics degree (l)
+        sh_order_max : int
+            maximal spherical harmonics oder (l)
         lambda_ : float
             weight given to the constrained-positivity regularization part of
             the deconvolution equation
@@ -383,12 +383,12 @@ class ConstrainedSDTModel(SphHarmModel):
 
         """
         SphHarmModel.__init__(self, gtab)
-        m_values, l_values = sph_harm_ind_list(sh_degree_max)
+        m_values, l_values = sph_harm_ind_list(sh_order_max)
         self.m_values, self.l_values = m_values, l_values
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
 
-        no_params = ((sh_degree_max + 1) * (sh_degree_max + 2)) / 2
+        no_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
 
         if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
@@ -422,7 +422,7 @@ class ConstrainedSDTModel(SphHarmModel):
         self.lambda_ = (lambda_ * self.R.shape[0] * self.R[0, 0] /
                         self.B_reg.shape[0])
         self.tau = tau
-        self.sh_degree_max = sh_degree_max
+        self.sh_order_max = sh_order_max
 
     @multi_voxel_fit
     def fit(self, data):
@@ -475,8 +475,8 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response
         function
     l_values : ndarray (N,)
-        The degree of spherical harmonic function associated with each row of
-        the deconvolution matrix. Only even degrees are allowed.
+        The order (l) of spherical harmonic function associated with each row
+        of the deconvolution matrix. Only even orders are allowed.
     r2_term : bool
         True if ODF comes from an ODF computed from a model using the $r^2$
         term in the integral. For example, DSI, GQI, SHORE, CSA, Tensor,
@@ -497,12 +497,12 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
 
     """
     if np.any(l_values % 2):
-        raise ValueError("n has odd degrees, expecting only even degrees")
-    n_degrees = l_values.max() // 2 + 1
-    sdt = np.zeros(n_degrees)  # SDT matrix
-    frt = np.zeros(n_degrees)  # FRT (Funk-Radon transform) q-ball matrix
+        raise ValueError("n has odd orders, expecting only even orders")
+    n_orders = l_values.max() // 2 + 1
+    sdt = np.zeros(n_orders)  # SDT matrix
+    frt = np.zeros(n_orders)  # FRT (Funk-Radon transform) q-ball matrix
 
-    for j in np.arange(0, n_degrees * 2, 2):
+    for j in np.arange(0, n_orders * 2, 2):
         if r2_term:
             sharp = quad(lambda z: lpn(j, z)[0][-1] * gamma(1.5) *
                          np.sqrt(ratio / (4 * np.pi ** 3)) /
@@ -573,7 +573,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
     Returns
     -------
-    fodf_sh : ndarray (``(sh_degree_max + 1)*(sh_degree_max + 2)/2``,)
+    fodf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
          ODF.
     num_it : int
@@ -711,14 +711,14 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     Parameters
     ----------
-    odf_sh : ndarray (``(sh_degree_max + 1)*(sh_degree_max + 2)/2``,)
+    odf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
          ndarray of SH coefficients for the ODF spherical function to be
          deconvolved
-    R : ndarray (``(sh_degree_max + 1)(sh_degree_max + 2)/2``,
-         ``(sh_degree_max + 1)(sh_degree_max + 2)/2``)
+    R : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
+         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
          SDT matrix in SH basis
-    B_reg : ndarray (``(sh_degree_max + 1)(sh_degree_max + 2)/2``,
-         ``(sh_degree_max + 1)(sh_degree_max + 2)/2``)
+    B_reg : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
+         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
          SH basis matrix used for deconvolution
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
@@ -739,7 +739,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     Returns
     -------
-    fodf_sh : ndarray (``(sh_degree_max + 1)(sh_degree_max + 2)/2``,)
+    fodf_sh : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
          ODF
     num_it : int
@@ -803,7 +803,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     return fodf_sh, num_it
 
 
-def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_degree_max=8,
+def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order_max=8,
                     lambda_=1., tau=0.1, r2_term=False):
     r""" Sharpen odfs using the sharpening deconvolution transform [2]_
 
@@ -815,7 +815,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_degree_max=8,
 
     Parameters
     ----------
-    odfs_sh : ndarray (``(sh_degree_max + 1)*(sh_degree_max + 2)/2``, )
+    odfs_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``, )
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix
@@ -828,8 +828,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_degree_max=8,
     ratio : float,
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
-    sh_degree_max : int
-        maximal SH degree (l) of the SH representation
+    sh_order_max : int
+        maximal SH order (l) of the SH representation
     lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
@@ -870,7 +870,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_degree_max=8,
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
     real_sym_sh = sph_harm_lookup[basis]
 
-    B_reg, m_values, l_values = real_sym_sh(sh_degree_max, theta, phi)
+    B_reg, m_values, l_values = real_sym_sh(sh_order_max, theta, phi)
     R, P = forward_sdt_deconv_mat(ratio, l_values, r2_term=r2_term)
 
     # scale lambda to account for differences in the number of
@@ -1077,7 +1077,7 @@ def _get_response(S0s, lambdas):
 
 
 @deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
-def recursive_response(gtab, data, mask=None, sh_degree_max=8, peak_thr=0.01,
+def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
                        convergence=0.001, parallel=False, num_processes=None,
                        sphere=default_sphere):
@@ -1092,8 +1092,8 @@ def recursive_response(gtab, data, mask=None, sh_degree_max=8, peak_thr=0.01,
         mask for recursive calibration, for example a white matter mask. It has
         shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
         array.
-    sh_degree_max : int, optional
-        maximal spherical harmonics degree (l). Default: 8
+    sh_order_max : int, optional
+        maximal spherical harmonics order (l). Default: 8
     peak_thr : float, optional
         peak threshold, how large the second peak can be relative to the first
         peak in order to call it a single fiber population [1]. Default: 0.01
@@ -1146,14 +1146,14 @@ def recursive_response(gtab, data, mask=None, sh_degree_max=8, peak_thr=0.01,
     else:
         data = data[mask]
 
-    n = np.arange(0, sh_degree_max + 1, 2)
+    n = np.arange(0, sh_order_max + 1, 2)
     where_dwi = lazy_index(~gtab.b0s_mask)
     response_p = np.ones(len(n))
 
     for _ in range(iter):
         r_sh_all = np.zeros(len(n))
         csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
-                                                    sh_degree_max=sh_degree_max)
+                                                    sh_order_max=sh_order_max)
 
         csd_peaks = peaks_from_model(model=csd_model,
                                      data=data,

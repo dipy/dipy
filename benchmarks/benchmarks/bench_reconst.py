@@ -66,24 +66,24 @@ class BenchVecValSum:
 
     # def time_csdeconv_basic(self):
     #     # TODO: define response and remove None
-    #     sh_degree_max = 8
+    #     sh_order_max = 8
     #     model = ConstrainedSphericalDeconvModel(self.gtab, None,
-    #                                             sh_degree_max=sh_degree_max)
+    #                                             sh_order_max=sh_order_max)
     #     model.fit(self.data_small, self.mask_small)
 
     # def time_csdeconv_small_dataset(self):
     #      # TODO: define response and remove None
     #     # Smaller data set
     #     # data_small = data_small[..., :75].copy()
-    #     sh_degree_max = 8
+    #     sh_order_max = 8
     #     model = ConstrainedSphericalDeconvModel(self.small_gtab, None,
-    #                                             sh_degree_max=sh_degree_max)
+    #                                             sh_order_max=sh_order_max)
     #     model.fit(self.data_small, self.mask_small)
 
     # def time_csdeconv_super_resolution(self):
     #      # TODO: define response and remove None
     #     # Super resolution
-    #     sh_degree_max = 12
+    #     sh_order_max = 12
     #     model = ConstrainedSphericalDeconvModel(self.gtab, None,
-    #                                             sh_degree_max=sh_degree_max)
+    #                                             sh_order_max=sh_order_max)
     #     model.fit(self.data_small, self.mask_small)

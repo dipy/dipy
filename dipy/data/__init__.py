@@ -261,7 +261,7 @@ def mrtrix_spherical_functions():
     -------
     func_coef : array (2, 3, 4, 45)
         Functions represented by the coefficients associated with the
-        mrtrix spherical harmonic basis of order (m) 8.
+        mrtrix spherical harmonic basis of order (l) 8.
     func_discrete : array (2, 3, 4, 81)
         Functions evaluated on `sphere`.
     sphere : Sphere

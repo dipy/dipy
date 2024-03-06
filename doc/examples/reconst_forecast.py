@@ -58,13 +58,13 @@ mask_small = brain_mask[:, :, 50:51]
 ###############################################################################
 # Instantiate the FORECAST Model.
 #
-# "sh_degree" is the spherical harmonics degree used for the fODF.
+# "sh_order_max" is the spherical harmonics order (l) used for the fODF.
 #
 # dec_alg is the spherical deconvolution algorithm used for the FORECAST basis
 # fitting, in this case we used the Constrained Spherical Deconvolution (CSD)
 # algorithm.
 
-fm = ForecastModel(gtab, sh_degree=6, dec_alg='CSD')
+fm = ForecastModel(gtab, sh_order_max=6, dec_alg='CSD')
 
 ###############################################################################
 # Fit the FORECAST to the data

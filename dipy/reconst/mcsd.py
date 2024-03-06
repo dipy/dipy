@@ -21,15 +21,15 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 SH_CONST = .5 / np.sqrt(np.pi)
 
 
-def multi_tissue_basis(gtab, sh_degree_max, iso_comp):
+def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     """
     Builds a basis for multi-shell multi-tissue CSD model.
 
     Parameters
     ----------
     gtab : GradientTable
-    sh_degree_max : int
-        Maximal spherical harmonics degree (l).
+    sh_order_max : int
+        Maximal spherical harmonics order (l).
     iso_comp: int
         Number of tissue compartments for running the MSMT-CSD. Minimum
         number of compartments required is 2.
@@ -39,15 +39,15 @@ def multi_tissue_basis(gtab, sh_degree_max, iso_comp):
     B : ndarray
         Matrix of the spherical harmonics model used to fit the data
     m_values : int ``|m_value| <= l_value``
-        The order of the harmonic.
+        The phase factor (m) of the harmonic.
     l_values : int ``l_value >= 0``
-        The degree of the harmonic.
+        The order (l) of the harmonic.
     """
     if iso_comp < 2:
         msg = "Multi-tissue CSD requires at least 2 tissue compartments"
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
-    m_values, l_values = shm.sph_harm_ind_list(sh_degree_max)
+    m_values, l_values = shm.sph_harm_ind_list(sh_order_max)
     B = shm.real_sh_descoteaux_from_index(m_values, l_values,
                                           theta[:, None], phi[:, None])
     B[np.ix_(gtab.b0s_mask, l_values > 0)] = 0.
@@ -61,7 +61,7 @@ def multi_tissue_basis(gtab, sh_degree_max, iso_comp):
 
 class MultiShellResponse:
 
-    def __init__(self, response, sh_degree_max, shells, S0=None):
+    def __init__(self, response, sh_order_max, shells, S0=None):
         """ Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
@@ -74,8 +74,8 @@ class MultiShellResponse:
         response : ndarray
             Multi-shell fiber response. The ordering of the responses should
             follow the same logic as S0.
-        sh_degree_max : int
-            Maximal spherical harmonics degree (l).
+        sh_order_max : int
+            Maximal spherical harmonics order (l).
         shells : int
             Number of shells in the data
         S0 : array (3,)
@@ -85,36 +85,37 @@ class MultiShellResponse:
         """
         self.S0 = S0
         self.response = response
-        self.sh_degree_max = sh_degree_max
-        self.l_values = np.arange(0, sh_degree_max + 1, 2)
+        self.sh_order_max = sh_order_max
+        self.l_values = np.arange(0, sh_order_max + 1, 2)
         self.m_values = np.zeros_like(self.l_values)
         self.shells = shells
         if self.iso < 1:
-            raise ValueError("sh_degree_max and shape of response do not agree")
+            raise ValueError("sh_order_max and shape of response do not agree")
 
     @property
     def iso(self):
-        return self.response.shape[1] - (self.sh_degree_max // 2) - 1
+        return self.response.shape[1] - (self.sh_order_max // 2) - 1
 
 
-def _inflate_response(response, gtab, n, delta):
+def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
     Parameters
     ----------
     response : MultiShellResponse object
     gtab : GradientTable
-    n : int ``>= 0``
-        The degree of the harmonic.
+    sh_order_max : int ``>= 0``
+        The order (l) of the harmonic.
     delta : Delta generated from `_basic_delta`
     """
-    if any((n % 2) != 0) or (n.max() // 2) >= response.sh_degree:
+    if any((sh_order_max % 2) != 0) or \
+        (sh_order_max.max() // 2) >= response.sh_order_max:
         raise ValueError("Response and n do not match")
 
     iso = response.iso
-    n_idx = np.empty(len(n) + iso, dtype=int)
+    n_idx = np.empty(len(sh_order_max) + iso, dtype=int)
     n_idx[:iso] = np.arange(0, iso)
-    n_idx[iso:] = n // 2 + iso
+    n_idx[iso:] = sh_order_max // 2 + iso
     diff = abs(response.shells[:, None] - gtab.bvals)
     b_idx = np.argmin(diff, axis=0)
     kernel = response.response / delta
@@ -122,7 +123,7 @@ def _inflate_response(response, gtab, n, delta):
     return kernel[np.ix_(b_idx, n_idx)]
 
 
-def _basic_delta(iso, m, n, theta, phi):
+def _basic_delta(iso, m_value, l_value, theta, phi):
     """Simple delta function
     Parameters
     ----------
@@ -130,16 +131,16 @@ def _basic_delta(iso, m, n, theta, phi):
         Number of tissue compartments for running the MSMT-CSD. Minimum
         number of compartments required is 2.
         Default: 2
-    m : int ``|m| <= n``
-        The order of the harmonic.
-    n : int ``>= 0``
-        The degree of the harmonic.
+    m_value : int ``|m| <= l``
+        The phase factor (m) of the harmonic.
+    l_value : int ``>= 0``
+        The order (l) of the harmonic.
     theta : array_like
        inclination or polar angle
     phi : array_like
        azimuth angle
     """
-    wm_d = shm.gen_dirac(m, n, theta, phi)
+    wm_d = shm.gen_dirac(m_value, l_value, theta, phi)
     iso_d = [SH_CONST] * iso
     return np.concatenate([iso_d, wm_d])
 
@@ -147,7 +148,7 @@ def _basic_delta(iso, m, n, theta, phi):
 class MultiShellDeconvModel(shm.SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=default_sphere,
-                 sh_degree_max=8, iso=2, tol=20):
+                 sh_order_max=8, iso=2, tol=20):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -181,8 +182,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
-        sh_degree_max : int (optional)
-            Maximal spherical harmonics degree (l). Default: 8
+        sh_order_max : int (optional)
+            Maximal spherical harmonics order (l). Default: 8
         iso: int (optional)
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
@@ -218,13 +219,13 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                 msg = """Response must be of shape (3, len(bvals)-1, 4) or be a
                 MultiShellResponse object."""
                 raise ValueError(msg)
-            response = multi_shell_fiber_response(sh_degree_max,
+            response = multi_shell_fiber_response(sh_order_max,
                                                   bvals=bvals,
                                                   wm_rf=response[0],
                                                   gm_rf=response[1],
                                                   csf_rf=response[2])
 
-        B, m_values, l_values = multi_tissue_basis(gtab, sh_degree_max, iso)
+        B, m_values, l_values = multi_tissue_basis(gtab, sh_order_max, iso)
 
         delta = _basic_delta(response.iso, response.m_values,
                              response.l_values, 0., 0.)
@@ -232,7 +233,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         multiplier_matrix = _inflate_response(response, gtab, l_values, delta)
 
         r, theta, phi = geo.cart2sphere(*reg_sphere.vertices.T)
-        odf_reg, _, _ = shm.real_sh_descoteaux(sh_degree_max, theta, phi)
+        odf_reg, _, _ = shm.real_sh_descoteaux(sh_order_max, theta, phi)
         reg = np.zeros([i + iso for i in odf_reg.shape])
         reg[:iso, :iso] = np.eye(iso)
         reg[iso:, iso:] = odf_reg
@@ -240,7 +241,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         X = B * multiplier_matrix
 
         self.fitter = QpFitter(X, reg)
-        self.sh_degree_max = sh_degree_max
+        self.sh_order_max = sh_order_max
         self._X = X
         self.sphere = reg_sphere
         self.gtab = gtab
@@ -269,7 +270,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         else:
             iso = self.response.iso
             B, m_values, l_values = multi_tissue_basis(gtab,
-                                                       self.sh_degree_max,
+                                                       self.sh_order_max,
                                                        iso)
             multiplier_matrix = _inflate_response(self.response,
                                                   gtab,
@@ -434,14 +435,14 @@ class QpFitter:
         return fodf_sh
 
 
-def multi_shell_fiber_response(sh_degree_max, bvals, wm_rf, gm_rf, csf_rf,
+def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
                                sphere=None, tol=20, btens=None):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
     ----------
-    sh_degree_max : int
-         Maximum spherical harmonics degree (l).
+    sh_order_max : int
+         Maximum spherical harmonics order (l).
     bvals : ndarray
         Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
@@ -485,7 +486,7 @@ def multi_shell_fiber_response(sh_degree_max, bvals, wm_rf, gm_rf, csf_rf,
     evecs[:, 0] = z
     evecs[:2, 1:] = np.eye(2)
 
-    l_values = np.arange(0, sh_degree_max + 1, 2)
+    l_values = np.arange(0, sh_order_max + 1, 2)
     m_values = np.zeros_like(l_values)
 
     if sphere is None:
@@ -537,7 +538,7 @@ def multi_shell_fiber_response(sh_degree_max, bvals, wm_rf, gm_rf, csf_rf,
 
         S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
-    return MultiShellResponse(response, sh_degree_max, bvals, S0=S0)
+    return MultiShellResponse(response, sh_order_max, bvals, S0=S0)
 
 
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
