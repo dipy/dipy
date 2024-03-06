@@ -590,7 +590,7 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
     Parameters
     ----------
     sh_order_max : int
-        The maximum oder (l) of the spherical harmonic basis.
+        The maximum order (l) of the spherical harmonic basis.
         Even int > 0, max order to return
     full_basis: bool, optional
         True for SH basis with even and odd order terms

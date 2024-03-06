@@ -367,7 +367,7 @@ class ConstrainedSDTModel(SphHarmModel):
         reg_sphere : Sphere
             sphere used to build the regularization B matrix
         sh_order_max : int
-            maximal spherical harmonics oder (l)
+            maximal spherical harmonics order (l)
         lambda_ : float
             weight given to the constrained-positivity regularization part of
             the deconvolution equation
