@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -99,7 +99,7 @@ dev = [
     'setuptools>=67',
     'packaging>=21',
     'ninja',
-    'Cython>=0.29.32',
+    'Cython>=0.29.35',
     'numpy>=1.22',
     # Developer UI
     'spin>=0.5',
