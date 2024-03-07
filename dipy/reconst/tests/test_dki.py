@@ -136,10 +136,16 @@ def test_split_dki_param():
 def test_dki_fits():
     """ DKI fits are tested on noise free crossing fiber simulates """
 
+    mask_signal_cross = np.ones_like(signal_cross)
+    mask_signal_cross[..., ::2] = 0
+    mask_signal_cross[0] = 1
+
     # OLS fitting
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
     dkiF = dkiM.fit(signal_cross)
 
+    assert_array_almost_equal(dkiF.model_params, crossing_ref)
+    dkiF = dkiM.fit(signal_cross, mask=mask_signal_cross)
     assert_array_almost_equal(dkiF.model_params, crossing_ref)
 
     # WLS fitting
@@ -173,6 +179,8 @@ def test_dki_fits():
     dki_nlsF = dki_nlsM.fit(signal_cross)
 
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+    dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
+    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
 
     # Restore fitting
     dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
@@ -181,6 +189,9 @@ def test_dki_fits():
     assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
 
     # testing multi-voxels
+    mask_signal_multi = np.ones_like(DWI[..., 0])
+    mask_signal_multi[1, 1, ...] = 0
+
     dkiF_multi = dkiM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
@@ -189,6 +200,13 @@ def test_dki_fits():
 
     dkiF_multi = dki_rtM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
+    dkiF_multi = dki_nlsM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    dkiF_multi = dki_nlsM.fit(DWI, mask=mask_signal_multi)
+    masked_multi_params = multi_params.copy()
+    masked_multi_params[1, 1, ...] = 0
+    assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
     dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS",
