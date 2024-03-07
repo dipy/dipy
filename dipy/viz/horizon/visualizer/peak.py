@@ -33,6 +33,14 @@ else:
     class Actor:
         pass
 
+    def calldata_type(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+
+    def VTK_OBJECT(*args):
+        pass
+
 
 class PeakActor(Actor):
     """FURY actor for visualizing DWI peaks.
