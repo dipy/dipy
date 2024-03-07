@@ -338,16 +338,6 @@ def peak(
         Actor or LODActor representing the peaks directions and/or
         magnitudes.
 
-    Examples
-    --------
-    >>> from fury import actor, window
-    >>> import numpy as np
-    >>> scene = window.Scene()
-    >>> peak_dirs = np.random.rand(3, 3, 3, 3, 3)
-    >>> c = actor.peak(peak_dirs)
-    >>> scene.add(c)
-    >>> #window.show(scene)
-
     """
     if peaks_dirs.ndim != 5:
         raise ValueError(
