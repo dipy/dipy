@@ -358,6 +358,8 @@ class SlicesTab(HorizonTab):
                 self._slice_opacity.selected_value)
 
     def on_tab_selected(self):
+        """Trigger when tab becomes active.
+        """
         self._slice_x.obj.set_visibility(self._slice_x.visibility)
         self._slice_y.obj.set_visibility(self._slice_y.visibility)
         self._slice_z.obj.set_visibility(self._slice_z.visibility)
