@@ -685,9 +685,9 @@ def test_default_lambda_csdmodel():
                                           expected_csdmodel_warnings.values()):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=PendingDeprecationWarning)
-            som = sh_order_max
+            s_o_m = sh_order_max
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                         sh_order_max=som,
+                                                         sh_order_max=s_o_m,
                                                          reg_sphere=sphere)
             npt.assert_equal(len(w) - expected_sh_basis_deprecation_warnings,
                              e_warn)

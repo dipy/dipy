@@ -167,7 +167,7 @@ like in ``descoteaux07`` and ``tournier07``.
 The code in DIPY also follows the following convention:
 Let the SH be noted as $Y_{l}^m$. Then, $l$ is referred to as either order or
 l_value(s), and $m$ is referred to as either phase factor or m_value(s).
-This decisions were made as a result of the PR in https://github.com/dipy/dipy/pull/3086
+These decisions were made as a result of the PR in https://github.com/dipy/dipy/pull/3086
 
 References
 ----------
