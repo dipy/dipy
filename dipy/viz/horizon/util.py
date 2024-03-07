@@ -198,6 +198,6 @@ def check_peak_size(pams, ref_img_shape=None, sync_imgs=False):
             return False
 
     if not ref_img_shape:
-        return False
+        return True
 
     return base_shape == ref_img_shape and sync_imgs
