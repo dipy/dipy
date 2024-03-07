@@ -8,7 +8,7 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import ui

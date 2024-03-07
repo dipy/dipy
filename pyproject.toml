@@ -89,7 +89,7 @@ dipy_convert_tensors = "dipy.workflows.cli:run"
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
 style = ["flake8", "isort"]
-viz = ["fury>=0.9.0", "matplotlib"]
+viz = ["fury>=0.10.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow"]
 dev = [

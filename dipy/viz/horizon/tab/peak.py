@@ -6,7 +6,7 @@ from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
                                   color_single_slider)
 from dipy.viz.horizon.tab.base import build_checkbox, build_slider
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import ui

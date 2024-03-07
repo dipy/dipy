@@ -47,7 +47,7 @@ where
 
 .. math::
 
-   S = \\begin{pmatrix} \\ln S_1 \\ \\vdots \\ \\ln S_n \\end{pmatrix} ,
+   S = \\begin{pmatrix} \\ln S_1 \\\\ \\vdots \\\\ \\ln S_n \\end{pmatrix} ,
 
 .. math::
 
@@ -59,8 +59,8 @@ where
    X =
    \\begin{pmatrix}
    1 & -\\mathbf{b}_1^\\text{T} & \\frac{1}{2} (\\mathbf{b}_1 \\otimes
-   \\mathbf{b}_1) \\text{T} \\
-   \\vdots & \\vdots & \\vdots \\
+   \\mathbf{b}_1) \\text{T} \\\\
+   \\vdots & \\vdots & \\vdots \\\\
    1 & -\\mathbf{b}_n^\\text{T} & \\frac{1}{2} (\\mathbf{b}_n \\otimes
    \\mathbf{b}_n) ^\\text{T}
    \\end{pmatrix} ,

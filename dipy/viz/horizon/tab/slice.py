@@ -10,7 +10,7 @@ from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
 
 from dipy.testing.decorators import is_macOS
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import colormap
