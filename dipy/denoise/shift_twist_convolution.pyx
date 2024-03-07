@@ -9,7 +9,9 @@ from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
+from dipy.utils.deprecator import deprecated_params
 
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.

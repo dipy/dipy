@@ -167,7 +167,7 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, gtab, response, reg_sphere=None, sh_order_max=8,
                  lambda_=1, tau=0.1, convergence=50):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
@@ -339,7 +339,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
-
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, gtab, ratio, reg_sphere=None,
                  sh_order_max=8, lambda_=1.,
                  tau=0.1):
@@ -802,7 +802,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order_max=8,
                     lambda_=1., tau=0.1, r2_term=False):
     r""" Sharpen odfs using the sharpening deconvolution transform [2]_
@@ -1077,6 +1077,7 @@ def _get_response(S0s, lambdas):
 
 
 @deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
                        convergence=0.001, parallel=False, num_processes=None,

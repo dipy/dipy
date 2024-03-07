@@ -12,6 +12,7 @@ from dipy.data import default_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.optimize import leastsq
 from dipy.utils.optpkg import optional_package
+from dipy.utils.deprecator import deprecated_params
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -45,7 +46,7 @@ class ForecastModel(OdfModel, Cache):
     -----
     The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
-
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self,
                  gtab,
                  sh_order_max=8,
@@ -445,7 +446,7 @@ def psi_l(l, b):
     v *= hyp1f1(n + 1./2, 2*n + 3./2, -b)
     return v
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     r"""Compute the FORECAST radial matrix
     """
@@ -459,7 +460,7 @@ def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
             counter += 1
     return M
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def rho_matrix(sh_order_max, vecs):
     r"""Compute the SH matrix $\rho$
     """
@@ -477,7 +478,7 @@ def rho_matrix(sh_order_max, vecs):
             counter += 1
     return rho
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def lb_forecast(sh_order_max):
     r"""Returns the Laplace-Beltrami regularization matrix for FORECAST
     """

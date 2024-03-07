@@ -1167,6 +1167,7 @@ class ReconstRUMBAFlow(Workflow):
     def get_short_name(cls):
         return 'rumba'
 
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
             fa_thr=0.7, extract_pam_values=False, sh_order_max=8,

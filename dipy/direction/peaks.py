@@ -372,8 +372,8 @@ def _peaks_from_model_parallel_sub(args):
                             sh_order, sh_basis_type, legacy, npeaks, B, invB,
                             parallel=False, num_processes=None)
 
-
 @deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,

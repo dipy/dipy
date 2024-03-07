@@ -14,13 +14,14 @@ from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
+from dipy.utils.deprecator import deprecated_params
 
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     """
     Builds a basis for multi-shell multi-tissue CSD model.
@@ -60,7 +61,7 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
 
 
 class MultiShellResponse:
-
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, response, sh_order_max, shells, S0=None):
         """ Estimate Multi Shell response function for multiple tissues and
         multiple shells.
@@ -96,7 +97,7 @@ class MultiShellResponse:
     def iso(self):
         return self.response.shape[1] - (self.sh_order_max // 2) - 1
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
@@ -146,7 +147,7 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
-
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, gtab, response, reg_sphere=default_sphere,
                  sh_order_max=8, iso=2, tol=20):
         r"""
@@ -434,7 +435,7 @@ class QpFitter:
         fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
                                sphere=None, tol=20, btens=None):
     """Fiber response function estimation for multi-shell data.

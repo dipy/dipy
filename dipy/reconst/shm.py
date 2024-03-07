@@ -36,6 +36,7 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
+from dipy.utils.deprecator import deprecated_params
 
 
 descoteaux07_legacy_msg = \
@@ -360,7 +361,7 @@ def real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=True):
 
     return real_sh
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def real_sh_tournier(sh_order_max, theta, phi,
                      full_basis=False,
                      legacy=True):
@@ -419,7 +420,7 @@ def real_sh_tournier(sh_order_max, theta, phi,
 
     return real_sh, m_value, l_value
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def real_sh_descoteaux(sh_order_max, theta, phi,
                        full_basis=False,
                        legacy=True):
@@ -479,6 +480,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi,
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_tournier instead',
                         since='1.3', until='2.0')
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     """
     Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
@@ -529,6 +531,7 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_basis is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_descoteaux '
                         'instead', since='1.3', until='2.0')
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def real_sym_sh_basis(sh_order_max, theta, phi):
     """Samples a real symmetric spherical harmonic basis at point on the sphere
 
@@ -577,7 +580,7 @@ sph_harm_lookup = {None: real_sh_descoteaux,
                    "tournier07": real_sh_tournier,
                    "descoteaux07": real_sh_descoteaux}
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def sph_harm_ind_list(sh_order_max, full_basis=False):
     """
     Returns the order (``l``) and phase_factor (``m``) of all the symmetric
@@ -763,6 +766,7 @@ class SphHarmModel(OdfModel, Cache):
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
@@ -1121,7 +1125,7 @@ class ResidualBootstrapWrapper:
         signal[self._where_dwi] = boot_signal
         return signal
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
              legacy=True, smooth=0.0):
     """Spherical function to spherical harmonics (SH).
@@ -1186,7 +1190,7 @@ def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
 
     return sh
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def sh_to_sf(sh, sphere, sh_order_max=4, basis_type=None,
              full_basis=False, legacy=True):
     """Spherical harmonics (SH) to spherical function (SF).
@@ -1247,7 +1251,7 @@ def sh_to_sf(sh, sphere, sh_order_max=4, basis_type=None,
 
     return sf
 
-
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def sh_to_sf_matrix(sphere, sh_order_max=4, basis_type=None, full_basis=False,
                     legacy=True, return_inv=True, smooth=0):
     """ Matrix that transforms Spherical harmonics (SH) to spherical

@@ -12,6 +12,7 @@ from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.nn.utils import set_logger_level
+from dipy.utils.deprecator import deprecated_params
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
@@ -34,6 +35,7 @@ class HistoResDNN:
     """
 
     @doctest_skip_parser
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def __init__(self, sh_order_max=8, basis_type='tournier07', verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
