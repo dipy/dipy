@@ -517,7 +517,7 @@ class ReconstDsiFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask,
                                          return_sh=True,
-                                         sh_order=8,
+                                         sh_order_max=8,
                                          normalize_peaks=normalize_peaks,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -1169,7 +1169,7 @@ class ReconstRUMBAFlow(Workflow):
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, extract_pam_values=False, sh_order=8,
+            fa_thr=0.7, extract_pam_values=False, sh_order_max=8,
             odf_to_sh_order=8, parallel=True, num_processes=None,
             gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
             recon_type='smf', n_coils=1, R=1, voxelwise=True, use_tv=False,
@@ -1337,7 +1337,7 @@ class ReconstRUMBAFlow(Workflow):
                 model=rumba, data=data, sphere=sphere,
                 relative_peak_threshold=relative_peak_threshold,
                 min_separation_angle=min_separation_angle, mask=mask_vol,
-                return_sh=True, sh_order_max=sh_order, normalize_peaks=True,
+                return_sh=True, sh_order_max=sh_order_max, normalize_peaks=True,
                 parallel=parallel, num_processes=num_processes)
 
             logging.info('Peak computation completed.')
