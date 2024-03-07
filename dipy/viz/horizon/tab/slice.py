@@ -68,7 +68,7 @@ class SlicesTab(HorizonTab):
 
         self._change_slice_visibility_x = partial(
             self._update_slice_visibility, selected_slice=self._slice_x,
-            actor=self._visualizer.slice_actors[0])
+            actor_idx=0)
 
         self._slice_x_toggle = build_checkbox(
             labels=[''],
@@ -93,7 +93,7 @@ class SlicesTab(HorizonTab):
 
         self._change_slice_visibility_y = partial(
             self._update_slice_visibility, selected_slice=self._slice_y,
-            actor=self._visualizer.slice_actors[1])
+            actor_idx=1)
 
         self._slice_y_toggle = build_checkbox(
             labels=[''],
@@ -118,7 +118,7 @@ class SlicesTab(HorizonTab):
 
         self._change_slice_visibility_z = partial(
             self._update_slice_visibility, selected_slice=self._slice_z,
-            actor=self._visualizer.slice_actors[2])
+            actor_idx=2)
 
         self._slice_z_toggle = build_checkbox(
             labels=[''],
@@ -264,7 +264,7 @@ class SlicesTab(HorizonTab):
                                 z2=self._slice_z.selected_value)
 
     def _update_slice_visibility(
-            self, checkboxes, selected_slice, actor, visibility=None):
+            self, checkboxes, selected_slice, actor_idx, visibility=None):
 
         if checkboxes is not None and '' in checkboxes.checked_labels:
             visibility = True
@@ -273,7 +273,7 @@ class SlicesTab(HorizonTab):
 
         selected_slice.visibility = visibility
         selected_slice.obj.set_visibility(visibility)
-        actor.SetVisibility(visibility)
+        self._visualizer.slice_actors[actor_idx].SetVisibility(visibility)
 
     def _change_volume(self, slider, sync_vol=False):
         value = int(np.rint(slider.value))
@@ -317,12 +317,7 @@ class SlicesTab(HorizonTab):
                 # Updating visibilities
                 slices = [self._slice_x, self._slice_y, self._slice_z]
                 for i, s in enumerate(slices):
-                    self._update_slice_visibility(
-                        None,
-                        s,
-                        self._visualizer.slice_actors[i],
-                        s.visibility
-                    )
+                    self._update_slice_visibility(None, s, i, s.visibility)
 
                 self._volume.selected_value = value
                 self._force_render(self)
