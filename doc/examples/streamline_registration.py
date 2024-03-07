@@ -197,10 +197,11 @@ if has_fury:
 
 ###############################################################################
 # Finally, we save the two registered streamlines:
+#
 # - `mni-lr-sft_in_t2_using_aff_reg.trk` is the streamlines registered using
 #   the affine registration.
 # - `sft_in_t2_using_syn` is the streamlines registered using the
-#     SyN registration and prealigned with the affine registration.
+#   SyN registration and prealigned with the affine registration.
 
 save_tractogram(sft_in_t2_using_aff_reg, 'mni-lr-superiorfrontal_aff_reg.trk',
                 bbox_valid_check=False)
