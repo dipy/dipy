@@ -4,6 +4,7 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
                                   color_single_slider)
+from dipy.viz.horizon.tab.base import build_checkbox, build_slider
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
 
@@ -70,6 +71,19 @@ class PeaksTab(HorizonTab):
         color_single_slider(self._slider_slice_y)
         color_single_slider(self._slider_slice_z)
 
+        self._opacity_toggle = build_checkbox(
+            labels=[''],
+            checked_labels=[''],
+            on_change=self._toggle_opacity)
+
+        self._opacity_label, self._opacity = build_slider(
+            initial_value=1.,
+            max_value=1.,
+            text_template='{ratio:.0%}',
+            on_change=self._change_opacity,
+            label='Opacity'
+        )
+
         self._adjust_slice_x = partial(self._change_slice_x, sync_slice=True)
         self._slider_slice_x.on_moving_slider = self._change_slice_x
         self._slider_slice_x.on_value_changed = self._adjust_slice_x
@@ -111,6 +125,15 @@ class PeaksTab(HorizonTab):
         self._slider_range_x.on_change = self._change_range_x
         self._slider_range_y.on_change = self._change_range_y
         self._slider_range_z.on_change = self._change_range_z
+
+    def _toggle_opacity(self, checkbox):
+        if '' in checkbox.checked_labels:
+            self._opacity.obj.value = 1
+        else:
+            self._opacity.obj.value = 0
+
+    def _change_opacity(self, slider):
+        self._actor.global_opacity = slider.value
 
     def _add_cross_section_sliders(self, x_pos=.12):
         self._tab_ui.add_element(
@@ -272,6 +295,14 @@ class PeaksTab(HorizonTab):
 
         self._tab_ui.add_element(
             self._tab_id, self._view_mode_toggler, (x_pos, .80))
+
+        y_pos = .85
+        self._tab_ui.add_element(
+            self._tab_id, self._opacity_toggle.obj, (.52, y_pos))
+        self._tab_ui.add_element(
+            self._tab_id, self._opacity_label.obj, (.55, y_pos))
+        self._tab_ui.add_element(
+            self._tab_id, self._opacity.obj, (.60, y_pos))
 
         # Default view of Peak Actor is range
         self._add_range_sliders()
