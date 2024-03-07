@@ -1711,15 +1711,22 @@ class DiffusionKurtosisModel(ReconstModel):
         params, extra = self.fit_method(self.design_matrix, data_in_mask,
                                         return_S0_hat=self.return_S0_hat,
                                         *self.args, **self.kwargs)
+
+        if self.return_S0_hat:
+            params, S0_params = params
+
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dki_params = params.reshape(out_shape)
+            if self.return_S0_hat:
+                S0_params = S0_params.reshape(out_shape).squeeze()
         else:
             dki_params = np.zeros(data.shape[:-1] + (27,))
             dki_params[mask, :] = params
-
-        if self.return_S0_hat:
-            dki_params, S0_params = dki_params
+            if self.return_S0_hat:
+                S0_params_in_mask = np.zeros(data.shape[:-1])
+                S0_params_in_mask[mask] = S0_params.squeeze()
+                S0_params = S0_params_in_mask
 
         return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
