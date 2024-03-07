@@ -29,6 +29,9 @@ if has_fury:
         numpy_to_vtk_colors,
         numpy_to_vtk_points
     )
+else:
+    class Actor:
+        pass
 
 
 class PeakActor(Actor):
