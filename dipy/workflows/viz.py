@@ -160,13 +160,13 @@ class HorizonFlow(Workflow):
             fl = fname.lower()
             ends = fl.endswith
 
-            if ends('.trk'):
+            if ends('.trk') or ends('.trx'):
 
                 sft = load_tractogram(fname, 'same',
                                       bbox_valid_check=False)
                 tractograms.append(sft)
 
-            if ends('.dpy') or ends('.tck') or ends('.trx'):
+            if ends('.dpy') or ends('.tck'):
                 sft = load_tractogram(fname, emergency_ref)
                 tractograms.append(sft)
 
