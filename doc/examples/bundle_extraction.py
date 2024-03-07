@@ -103,34 +103,33 @@ if interactive:
 # users can set as per requirements. Here are the key threshold parameters
 # measured in millimeters and their function in Recobundles:
 #
-#     - model_clust_thr : It will use QuickBundles to get the centroids of the
-#     model bundle and work with centroids instead of all streamlines. This
-#     helps to make RecoBundles faster. The larger the value of the threshold,
-#     the fewer centroids will be, the and smaller the threshold value, the
-#     more centroids will be. If you prefer to use all the streamlines of the
-#     model bundle, you can set this threshold to 0.01 mm.
-#     Recommended range of the model_clust_thr is 0.01 - 3.0 mm.
+# - model_clust_thr : It will use QuickBundles to get the centroids of the
+#   model bundle and work with centroids instead of all streamlines. This
+#   helps to make RecoBundles faster. The larger the value of the threshold,
+#   the fewer centroids will be, the and smaller the threshold value, the
+#   more centroids will be. If you prefer to use all the streamlines of the
+#   model bundle, you can set this threshold to 0.01 mm.
+#   Recommended range of the model_clust_thr is 0.01 - 3.0 mm.
 #
-#     - reduction_thr : This threshold will be used to reduce the search space
-#     for finding the streamlines that match model bundle streamlines in shape.
-#     Instead of looking at the entire tractogram, now we will be looking at
-#     neighboring region of a model bundle in the tractogram. Increase the
-#     threshold to increase the search space.
-#     Recommended range of the reduction_thr is 15 - 30 mm.
+# - reduction_thr : This threshold will be used to reduce the search space
+#   for finding the streamlines that match model bundle streamlines in shape.
+#   Instead of looking at the entire tractogram, now we will be looking at
+#   neighboring region of a model bundle in the tractogram. Increase the
+#   threshold to increase the search space.
+#   Recommended range of the reduction_thr is 15 - 30 mm.
 #
-#     - pruning_thr : This threshold will filter the streamlines for which the
-#     distance to the model bundle is greater than the pruning_thr.
-#     This serves to filter the neighborhood area (search space) to get
-#     streamlines that are like the model bundle.
-#     Recommended range of the pruning_thr is 8 - 12 mm.
+# - pruning_thr : This threshold will filter the streamlines for which the
+#   distance to the model bundle is greater than the pruning_thr.
+#   This serves to filter the neighborhood area (search space) to get
+#   streamlines that are like the model bundle.
+#   Recommended range of the pruning_thr is 8 - 12 mm.
 #
-#     - reduction_distance and pruning_distance : Distance method used
-#     internally. Minimum Diferect Flip distance (mdf) or Mean Average Minimum
-#     (mam). Default is set to mdf.
+# - reduction_distance and pruning_distance : Distance method used
+#   internally. Minimum Diferect Flip distance (mdf) or Mean Average Minimum
+#   (mam). Default is set to mdf.
 #
-#     - slr : If slr flag is set to True, local registration of model bundle
-#     with neighbouring area will be performed. Default and recommended is
-#     True.
+# - slr : If slr flag is set to True, local registration of model bundle
+#   with neighbouring area will be performed. Default and recommended is True.
 #
 #
 #
