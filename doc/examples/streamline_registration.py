@@ -14,7 +14,7 @@ approaches on tractography the work by Green et al. [Greene17]_ can be read.
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
 process of tracking and finding these streamlines is fully demonstrated in
-the :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools`
+the :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py`
 example.
 
 
