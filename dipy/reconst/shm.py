@@ -57,6 +57,7 @@ def _copydoc(obj):
     return bandit
 
 
+@deprecated_params('n', 'l_values', since='1.9', until='2.0')
 def forward_sdeconv_mat(r_rh, l_values):
     """ Build forward spherical deconvolution matrix
 
@@ -82,6 +83,7 @@ def forward_sdeconv_mat(r_rh, l_values):
     return np.diag(r_rh[l_values // 2])
 
 
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def sh_to_rh(r_sh, m_values, l_values):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
 
@@ -128,6 +130,7 @@ def sh_to_rh(r_sh, m_values, l_values):
     return r_rh
 
 
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def gen_dirac(m_values, l_values, theta, phi, legacy=True):
     """ Generate Dirac delta function orientated in (theta, phi) on the sphere
 
@@ -167,6 +170,7 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
                                          legacy=legacy)
 
 
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     """Compute spherical harmonics.
 
@@ -221,6 +225,7 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
                         'Please use '
                         'dipy.reconst.shm.real_sh_descoteaux_from_index '
                         'instead', since='1.3', until='2.0')
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def real_sph_harm(m_values, l_values, theta, phi):
     """ Compute real spherical harmonics.
 
@@ -256,6 +261,7 @@ def real_sph_harm(m_values, l_values, theta, phi):
     return real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True)
 
 
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
@@ -311,6 +317,7 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     return real_sh
 
 
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
 def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_l$ is defined to be:
