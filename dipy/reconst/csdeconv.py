@@ -24,7 +24,7 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
-from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 
 @deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
