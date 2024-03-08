@@ -59,7 +59,6 @@ from scipy.spatial.distance import cdist
 from dipy.core.geometry import dist_to_corner
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import metrics
-
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 from dipy.tracking.vox2track import _streamlines_in_mask
