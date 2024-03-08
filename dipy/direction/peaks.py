@@ -16,7 +16,7 @@ from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
-
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 
 
