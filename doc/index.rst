@@ -36,7 +36,7 @@ Quick links
 
     .. grid-item-card:: :octicon:`image` Recipes
         :link: recipes
-        :link-type: any
+        :link-type: ref
 
         How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
 
@@ -74,7 +74,7 @@ Quick links
 
     .. grid-item-card:: :octicon:`history` Release notes
         :link: stateoftheart
-        :link-type: any
+        :link-type: ref
 
         Upgrading from a previous version? See what's new and changed between
         each release of DIPY_.

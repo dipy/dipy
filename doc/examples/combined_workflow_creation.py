@@ -101,15 +101,17 @@ class DenoiseAndSegment(CombinedWorkflow):
 #
 # This is it for the combined workflow class! Now to be able to call it easily
 # via command line, you need to add this workflow in 2 different files:
+#
 # - ``<dipy_root>/pyproject.toml``: open this file and add the following line
 #   to the ``[project.scripts]`` section:
 #   ``dipy_denoise_segment = "dipy.workflows.cli:run"``
+#
 # - ``<dipy_root>/dipy/workflows/cli.py``: open this file and add the workflow
 #   information to the ``cli_flows`` dictionary. The key is the name of the
 #   command line command and the value is a tuple with the module name and the
 #   workflow class name. In this case it would be:
 #   ``"dipy_denoise_segment": ("dipy.workflows.my_combined_workflow",
-#                              "DenoiseAndSegment")``
+#   "DenoiseAndSegment")``
 #
 # That`s it! Now you can call your workflow from anywhere with the command line.
 # Let's just call the script you just made with ``-h`` to see the argparser help

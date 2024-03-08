@@ -17,7 +17,7 @@ from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
                                    unpack_image, is_binary_image,
                                    unpack_surface, check_peak_size)
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import __version__ as fury_version
@@ -132,8 +132,8 @@ class Horizon:
         if not has_fury:
             raise ImportError('Horizon requires FURY. Please install it '
                               'with pip install fury')
-        if Version(fury_version) < Version('0.9.0'):
-            ValueError('Horizon requires FURY version 0.9.0 or higher.'
+        if Version(fury_version) < Version('0.10.0'):
+            ValueError('Horizon requires FURY version 0.10.0 or higher.'
                        ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster

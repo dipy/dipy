@@ -21,7 +21,7 @@ from dipy.tracking.streamline import (center_streamlines,
                                       transform_streamlines)
 from dipy.reconst.dti import color_fa, fractional_anisotropy
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from dipy.viz import actor, window, colormap

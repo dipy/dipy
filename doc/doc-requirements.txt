@@ -7,7 +7,7 @@ cvxpy
 pandas
 tables
 matplotlib
-fury>=0.9.0
+fury>=0.10.0
 scikit-learn
 scikit-image
 statsmodels>=0.14.0

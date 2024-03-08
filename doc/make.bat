@@ -54,7 +54,18 @@ if "%1" == "api" (
 
 if "%1" == "examples-clean" (
     :examples-clean
-	cd examples_built && del /q /s *.py *.rst *.png fig
+	cd examples_built
+@echo off
+for /d %%i in (*) do (
+    if /I not "%%i"=="README" if /I not "%%i"==".gitignore" (
+        rmdir /s /q "%%i"
+    )
+)
+for %%i in (*) do (
+    if /I not "%%i"=="README" if /I not "%%i"==".gitignore" (
+        del /q "%%i"
+    )
+)
 	cd ..
 	exit /B
 	)

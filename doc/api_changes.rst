@@ -12,6 +12,7 @@ DIPY 1.9.0 changes
 
 - The module ``dipy.boots.resampling`` has moved to ``dipy.stats.resampling``.
 - The package ``dipy.boots`` has been removed.
+FURY minimum version is 0.10.0.
 
 **IO**
 
