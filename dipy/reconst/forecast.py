@@ -81,7 +81,8 @@ class ForecastModel(OdfModel, Cache):
         gtab : GradientTable,
             gradient directions and bvalues container class.
         sh_order_max : unsigned int,
-            an even integer that represent the SH order (l) of the basis (max 12)
+            an even integer that represent the maximal SH order (l) of the 
+            basis (max 12)
         lambda_lb: float,
             Laplace-Beltrami regularization weight.
         dec_alg : str,

@@ -167,7 +167,7 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
                                          legacy=legacy)
 
 
-def spherical_harmonics(m_value, l_value, theta, phi, use_scipy=True):
+def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -175,10 +175,10 @@ def spherical_harmonics(m_value, l_value, theta, phi, use_scipy=True):
 
     Parameters
     ----------
-    m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
-    l_value : int ``l >= 0``
-        The order (l) of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -203,17 +203,17 @@ def spherical_harmonics(m_value, l_value, theta, phi, use_scipy=True):
     and `phi` represents the polar coordinate.
 
     Although scipy uses a naming convention where ``m`` is the order and ``n``
-    is the degree of the SH, the opposite of DIPY's, their definition for 
+    is the degree of the SH, the opposite of DIPY's, their definition for
     both parameters is the same as ours, with ``l >= 0`` and ``|m| <= l``.
     """
     if use_scipy:
-        return sps.sph_harm(m_value, l_value, theta, phi, dtype=complex)
+        return sps.sph_harm(m_values, l_values, theta, phi, dtype=complex)
 
     x = np.cos(phi)
-    val = sps.lpmv(m_value, l_value, x).astype(complex)
-    val *= np.sqrt((2 * l_value + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (sps.gammaln(l_value - m_value + 1) - sps.gammaln(l_value + m_value + 1)))
-    val = val * np.exp(1j * m_value * theta)
+    val = sps.lpmv(m_values, l_values, x).astype(complex)
+    val *= np.sqrt((2 * l_values + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (sps.gammaln(l_values - m_values + 1) - sps.gammaln(l_values + m_values + 1)))
+    val = val * np.exp(1j * m_values * theta)
     return val
 
 
@@ -221,7 +221,7 @@ def spherical_harmonics(m_value, l_value, theta, phi, use_scipy=True):
                         'Please use '
                         'dipy.reconst.shm.real_sh_descoteaux_from_index '
                         'instead', since='1.3', until='2.0')
-def real_sph_harm(m_value, l_value, theta, phi):
+def real_sph_harm(m_values, l_values, theta, phi):
     """ Compute real spherical harmonics.
 
     Where the real harmonic $Y^m_l$ is defined to be:
@@ -235,10 +235,10 @@ def real_sph_harm(m_value, l_value, theta, phi):
 
     Parameters
     ----------
-    m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
-    l_value : int ``l >= 0``
-        The order (l) of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -253,10 +253,10 @@ def real_sph_harm(m_value, l_value, theta, phi):
     --------
     scipy.special.sph_harm
     """
-    return real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=True)
+    return real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True)
 
 
-def real_sh_tournier_from_index(m_value, l_value, theta, phi, legacy=True):
+def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
     is defined to be:
@@ -270,10 +270,10 @@ def real_sh_tournier_from_index(m_value, l_value, theta, phi, legacy=True):
 
     Parameters
     ----------
-    m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
-    l_value : int ``l >= 0``
-        The order (l) of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -299,19 +299,19 @@ def real_sh_tournier_from_index(m_value, l_value, theta, phi, legacy=True):
            NeuroImage. 2019 Nov 15;202:116-137.
     """
     # In the m < 0 case, Tournier basis considers |m|
-    sh = spherical_harmonics(np.abs(m_value), l_value, phi, theta)
-    real_sh = np.where(m_value < 0, sh.imag, sh.real)
+    sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
+    real_sh = np.where(m_values < 0, sh.imag, sh.real)
 
     if not legacy:
         # The Tournier basis from MRtrix3 is normalized
-        real_sh *= np.where(m_value == 0, 1., np.sqrt(2))
+        real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
     else:
         warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
 
     return real_sh
 
 
-def real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=True):
+def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_l$ is defined to be:
 
@@ -324,10 +324,10 @@ def real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=True):
 
     Parameters
     ----------
-    m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
-    l_value : int ``l >= 0``
-        The order (l) of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -351,13 +351,13 @@ def real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=True):
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
         warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
-        sh = spherical_harmonics(np.abs(m_value), l_value, phi, theta)
+        sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
-        sh = spherical_harmonics(m_value, l_value, phi, theta)
+        sh = spherical_harmonics(m_values, l_values, phi, theta)
 
-    real_sh = np.where(m_value > 0, sh.imag, sh.real)
-    real_sh *= np.where(m_value == 0, 1., np.sqrt(2))
+    real_sh = np.where(m_values > 0, sh.imag, sh.real)
+    real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
 
     return real_sh
 
@@ -395,9 +395,9 @@ def real_sh_tournier(sh_order_max, theta, phi,
     -------
     real_sh : real float
         The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
-    m_values : array
+    m_values : array of int
         The phase factor (m) of the harmonics.
-    l_values : array
+    l_values : array of int
         The order (l) of the harmonics.
 
     References
@@ -411,14 +411,14 @@ def real_sh_tournier(sh_order_max, theta, phi,
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_tournier_from_index(m_value, l_value, theta, phi, legacy)
+    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy)
 
-    return real_sh, m_value, l_value
+    return real_sh, m_values, l_values
 
 @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def real_sh_descoteaux(sh_order_max, theta, phi,
@@ -455,9 +455,9 @@ def real_sh_descoteaux(sh_order_max, theta, phi,
     -------
     real_sh : real float
         The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
-    m_values : array
+    m_values : array of int
         The phase factor (m) of the harmonics.
-    l_values : array
+    l_values : array of int
         The order (l) of the harmonics.
 
     References
@@ -561,9 +561,9 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     -------
     y_mn : real float
         The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``
-    m_values : array
+    m_values : array of int
         The phase factor (m) of the harmonics.
-    l_values : array
+    l_values : array of int
         The order (l) of the harmonics.
 
     References
@@ -600,9 +600,9 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
 
     Returns
     -------
-    m_list : array
+    m_list : array of int
         phase factors (m) of even spherical harmonics
-    l_list : array
+    l_list : array of int
         orders (l) of even spherical harmonics
 
     See Also
@@ -776,7 +776,7 @@ class QballBaseModel(SphHarmModel):
         gtab : GradientTable
             Diffusion gradients used to acquire data
         sh_order_max : even int >= 0
-            the spherical harmonic order (l) of the model
+            the maximal spherical harmonic order (l) of the model
         smooth : float between 0 and 1, optional
             The regularization parameter of the model
         min_signal : float, > 0, optional

@@ -106,7 +106,7 @@ def _inflate_response(response, gtab, sh_order_max, delta):
     response : MultiShellResponse object
     gtab : GradientTable
     sh_order_max : int ``>= 0``
-        The order (l) of the harmonic.
+        The maximal order (l) of the harmonic.
     delta : Delta generated from `_basic_delta`
     """
     if any((sh_order_max % 2) != 0) or \

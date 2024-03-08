@@ -150,15 +150,15 @@ class AxSymShResponse:
         self.S0 = S0
         self.dwi_response = dwi_response
         self.bvalue = bvalue
-        self.m_value = np.zeros(len(dwi_response))
+        self.m_values = np.zeros(len(dwi_response))
         self.sh_order_max = 2 * (len(dwi_response) - 1)
-        self.l_value = np.arange(0, self.sh_order_max + 1, 2)
+        self.l_values = np.arange(0, self.sh_order_max + 1, 2)
 
     def basis(self, sphere):
         """A basis that maps the response coefficients onto a sphere."""
         theta = sphere.theta[:, None]
         phi = sphere.phi[:, None]
-        return real_sh_descoteaux_from_index(self.m_value, self.l_value, theta, phi)
+        return real_sh_descoteaux_from_index(self.m_values, self.l_values, theta, phi)
 
     def on_sphere(self, sphere):
         """Evaluates the response function on sphere."""
@@ -260,8 +260,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         if isinstance(response, AxSymShResponse):
             r_sh = response.dwi_response
             self.response_scaling = response.S0
-            l_response = response.l_value
-            m_response = response.m_value
+            l_response = response.l_values
+            m_response = response.m_values
         else:
             self.S_r = estimate_response(gtab, self.response[0],
                                          self.response[1])
