@@ -27,6 +27,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 
 from dipy.reconst import mapmri
+from dipy.utils.deprecator import deprecated_params
 
 
 class ReconstMAPMRIFlow(Workflow):
