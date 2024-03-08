@@ -99,7 +99,7 @@ Highlights
 - Pytest for Cython files(*.pyx) added.
 - Large documentation update.
 - Support of Python 3.8 removed.
-- Closed 139 issues and merged 58 pull requests.
+- Closed 142 issues and merged 60 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
