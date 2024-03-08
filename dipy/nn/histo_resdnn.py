@@ -34,8 +34,8 @@ class HistoResDNN:
     This class is intended for the ResDNN Histology Network model.
     """
 
-    @doctest_skip_parser
     @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+    @doctest_skip_parser
     def __init__(self, sh_order_max=8, basis_type='tournier07', verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
