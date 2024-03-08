@@ -12,12 +12,12 @@ from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
                                   TabManager, build_label, SurfaceTab)
 from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
-                                         SurfaceVisualizer)
+                                         SurfaceVisualizer, PeaksVisualizer)
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
                                    unpack_image, is_binary_image,
-                                   unpack_surface)
+                                   unpack_surface, check_peak_size)
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import __version__ as fury_version
@@ -132,8 +132,8 @@ class Horizon:
         if not has_fury:
             raise ImportError('Horizon requires FURY. Please install it '
                               'with pip install fury')
-        if Version(fury_version) < Version('0.9.0'):
-            ValueError('Horizon requires FURY version 0.9.0 or higher.'
+        if Version(fury_version) < Version('0.10.0'):
+            ValueError('Horizon requires FURY version 0.10.0 or higher.'
                        ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster
@@ -489,16 +489,18 @@ class Horizon:
             if len(roi_actors) > 0:
                 self.__tabs.append(ROIsTab(roi_actors))
 
+        sync_peaks = False
         if len(self.pams) > 0:
-            pam = self.pams[0]
-            peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
-            scene.add(peak_actor)
-            self.__tabs.append(PeaksTab(peak_actor))
-
-        else:
-            data = None
-            affine = None
-            pam = None
+            if self.images:
+                sync_peaks = check_peak_size(
+                    self.pams, self.images[0][0].shape[:3], sync_slices)
+            else:
+                sync_peaks = check_peak_size(self.pams)
+            for pam in self.pams:
+                peak_viz = PeaksVisualizer((pam.peak_dirs, pam.affine),
+                                           self.world_coords)
+                scene.add(peak_viz.actors[0])
+                self.__tabs.append(PeaksTab(peak_viz.actors[0]))
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):
@@ -523,7 +525,7 @@ class Horizon:
 
             self.__tab_mgr = TabManager(
                 self.__tabs, scene.GetSize(),
-                on_tab_changed, sync_slices, sync_vol)
+                on_tab_changed, sync_slices, sync_vol, sync_peaks)
 
             scene.add(self.__tab_mgr.tab_ui)
             self.__tab_mgr.handle_text_overflows()

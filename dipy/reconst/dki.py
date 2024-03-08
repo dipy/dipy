@@ -380,8 +380,8 @@ def _F2m(a, b, c):
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r""" Calculate the apparent diffusion coefficient (adc) in each direction of
-    a sphere for a single voxel [1]_
+    r""" Calculate the apparent diffusion coefficient (adc) in each direction
+    of a sphere for a single voxel [1]_
 
     Parameters
     ----------
@@ -1465,41 +1465,41 @@ def kurtosis_fractional_anisotropy(dki_params):
     W = 1.0/5.0 * (Wxxxx + Wyyyy + Wzzzz + 2*Wxxyy + 2*Wxxzz + 2*Wyyzz)
 
     # Compute's equation numerator
-    A = (\
-          (Wxxxx - W) ** 2 + \
-          (Wyyyy - W) ** 2 + \
-          (Wzzzz - W) ** 2 + \
-          4 * (Wxxxy ** 2 +  \
-               Wxxxz ** 2 +  \
-               Wxyyy ** 2 +  \
-               Wyyyz ** 2 +  \
-               Wxzzz ** 2 +  \
-               Wyzzz ** 2) + \
-          6 * ((Wxxyy - W/3) ** 2  + \
-               (Wxxzz - W/3) ** 2  + \
-               (Wyyzz - W/3) ** 2) + \
-          12 * (Wxxyz ** 2 + \
-                Wxyyz ** 2 + \
-                Wxyzz ** 2)  \
+    A = (
+          (Wxxxx - W) ** 2 +
+          (Wyyyy - W) ** 2 +
+          (Wzzzz - W) ** 2 +
+          4 * (Wxxxy ** 2 +
+               Wxxxz ** 2 +
+               Wxyyy ** 2 +
+               Wyyyz ** 2 +
+               Wxzzz ** 2 +
+               Wyzzz ** 2) +
+          6 * ((Wxxyy - W/3) ** 2 +
+               (Wxxzz - W/3) ** 2 +
+               (Wyyzz - W/3) ** 2) +
+          12 * (Wxxyz ** 2 +
+                Wxyyz ** 2 +
+                Wxyzz ** 2)
       )
 
     # Compute's equation denominator
-    B = (\
-          Wxxxx ** 2 + \
-          Wyyyy ** 2 + \
-          Wzzzz ** 2 + \
-          4 * (Wxxxy ** 2 + \
-               Wxxxz ** 2 + \
-               Wxyyy ** 2 + \
-               Wyyyz ** 2 + \
-               Wxzzz ** 2 + \
-               Wyzzz ** 2) + \
-          6 * (Wxxyy ** 2 + \
-               Wxxzz ** 2 + \
-               Wyyzz ** 2) + \
-          12 * (Wxxyz ** 2 + \
-                Wxyyz ** 2 + \
-                Wxyzz ** 2)  \
+    B = (
+          Wxxxx ** 2 +
+          Wyyyy ** 2 +
+          Wzzzz ** 2 +
+          4 * (Wxxxy ** 2 +
+               Wxxxz ** 2 +
+               Wxyyy ** 2 +
+               Wyyyz ** 2 +
+               Wxzzz ** 2 +
+               Wyzzz ** 2) +
+          6 * (Wxxyy ** 2 +
+               Wxxzz ** 2 +
+               Wyyzz ** 2) +
+          12 * (Wxxyz ** 2 +
+                Wxyyz ** 2 +
+                Wxyzz ** 2)
       )
 
     # Compute KFA
@@ -1579,7 +1579,8 @@ class DiffusionKurtosisModel(ReconstModel):
     """ Class for the Diffusion Kurtosis Model
     """
 
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False,
+                 *args, **kwargs):
         """ Diffusion Kurtosis Tensor Model [1]
 
         Parameters
@@ -1597,6 +1598,8 @@ class DiffusionKurtosisModel(ReconstModel):
             callable has to have the signature:
                 fit_method(design_matrix, data, *args, **kwargs).
             Default: "WLS"
+        return_S0_hat : bool
+            Boolean to return (True) or not (False) the S0 values for the fit.
         args, kwargs :
             arguments and key-word arguments passed to the fit_method.
 
@@ -1605,9 +1608,9 @@ class DiffusionKurtosisModel(ReconstModel):
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
                Estimation of tensors and tensor-derived measures in diffusional
                kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Dela Haije et al. "Enforcing necessary non-negativity constraints
-               for common diffusion MRI models using sum of squares
-               programming". NeuroImage 209, 2020, 116405.
+        .. [2] Dela Haije et al. "Enforcing necessary non-negativity
+               constraints for common diffusion MRI models using sum of
+               squares programming". NeuroImage 209, 2020, 116405.
 
         """
         ReconstModel.__init__(self, gtab)
@@ -1623,11 +1626,12 @@ class DiffusionKurtosisModel(ReconstModel):
             try:
                 self.fit_method = common_fit_methods[fit_method]
             except KeyError:
-                msg = '"' + str(fit_method) + '" is not a known fit method. The'
-                msg += ' fit method should either be a function or one of the'
-                msg += ' common fit methods.'
+                msg = '"' + str(fit_method) + '" is not a known fit method. '
+                msg += ' The fit method should either be a function or one of '
+                msg += ' thecommon fit methods.'
                 raise ValueError(msg)
 
+        self.return_S0_hat = return_S0_hat
         self.args = args
         self.kwargs = kwargs
 
@@ -1671,13 +1675,60 @@ class DiffusionKurtosisModel(ReconstModel):
                                               'WLLS', 'OLLS', 'CLS', 'CWLS']
 
     def fit(self, data, mask=None):
+        """ Fit method of the DKI model.
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel.
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[-1]
+
+        """
         data_thres = np.maximum(data, self.min_signal)
         if self.is_multi_method:
             return self.multi_fit(data_thres, mask=mask)
 
-        params, extra = self.fit_method(self.design_matrix, data_thres,
-                                 *self.args, **self.kwargs)
-        return DiffusionKurtosisFit(self, params)
+        S0_params = None
+        if data.ndim == 1:
+            params, extra = self.fit_method(self.design_matrix, data_thres,
+                                            return_S0_hat=self.return_S0_hat,
+                                            *self.args, **self.kwargs)
+            if self.return_S0_hat:
+                params, S0_params = params
+            return DiffusionKurtosisFit(self, params, model_S0=S0_params)
+
+        if mask is not None:
+            # Check for valid shape of the mask
+            if data.ndim == 4 and mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = np.array(mask, dtype=bool, copy=False)
+
+        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+        data_in_mask = np.maximum(data_in_mask, self.min_signal)
+
+        params, extra = self.fit_method(self.design_matrix, data_in_mask,
+                                        return_S0_hat=self.return_S0_hat,
+                                        *self.args, **self.kwargs)
+
+        if self.return_S0_hat:
+            params, S0_params = params
+
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            dki_params = params.reshape(out_shape)
+            if self.return_S0_hat:
+                S0_params = S0_params.reshape(out_shape).squeeze()
+        else:
+            dki_params = np.zeros(data.shape[:-1] + (27,))
+            dki_params[mask, :] = params
+            if self.return_S0_hat:
+                S0_params_in_mask = np.zeros(data.shape[:-1])
+                S0_params_in_mask[mask] = S0_params.squeeze()
+                S0_params = S0_params_in_mask
+
+        return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
     @multi_voxel_fit
     def multi_fit(self, data_thres, mask=None):
@@ -1685,14 +1736,18 @@ class DiffusionKurtosisModel(ReconstModel):
             'cvxpy_solver': self.cvxpy_solver,
             'sdp': self.sdp,
             }
-
         params, extra = self.fit_method(self.design_matrix, data_thres,
-                                 self.inverse_design_matrix,
-                                 weights=self.weights,
-                                 min_diffusivity=self.min_diffusivity,
-                                 **extra_args)
+                                        self.inverse_design_matrix,
+                                        return_S0_hat=self.return_S0_hat,
+                                        weights=self.weights,
+                                        min_diffusivity=self.min_diffusivity,
+                                        **extra_args)
 
-        return DiffusionKurtosisFit(self, params)
+        S0_params = None
+        if self.return_S0_hat:
+            params, S0_params = params
+
+        return DiffusionKurtosisFit(self, params, model_S0=S0_params)
 
     def predict(self, dki_params, S0=1.):
         """ Predict a signal for this DKI model class instance given parameters
@@ -1720,7 +1775,7 @@ class DiffusionKurtosisModel(ReconstModel):
 class DiffusionKurtosisFit(TensorFit):
     """ Class for fitting the Diffusion Kurtosis Model"""
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, model_S0=None):
         """ Initialize a DiffusionKurtosisFit class instance
 
         Since DKI is an extension of DTI, class instance is defined as subclass
@@ -1731,15 +1786,19 @@ class DiffusionKurtosisFit(TensorFit):
         model : DiffusionKurtosisModel Class instance
             Class instance containing the Diffusion Kurtosis Model for the fit
         model_params : ndarray (x, y, z, 27) or (n, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
+            All parameters estimated from the diffusion kurtosis model,
+            not including S0.
+            Parameters are ordered as follows:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                 first, second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
+        model_S0 : ndarray (x, y, z, 1) or (n, 1), optional
+            S0 estimated from the diffusion kurtosis model.
 
         """
-        TensorFit.__init__(self, model, model_params)
+
+        TensorFit.__init__(self, model, model_params, model_S0=model_S0)
 
     @property
     def kt(self):
@@ -2181,15 +2240,17 @@ def params_to_dki_params(result, min_diffusivity=0):
     # Extracting kurtosis tensor parameters from solution
     MD_square = evals.mean(0)**2
     KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
+    S0 = np.exp(-result[[-1]])
 
     # Write output
     dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements), axis=0)
+                                 KT_elements, S0), axis=0)
 
     return dki_params
 
 
-def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
+def ls_fit_dki(design_matrix, data, inverse_design_matrix,
+               return_S0_hat=False, weights=True,
                min_diffusivity=0):
     r""" Compute the diffusion and kurtosis tensors using an ordinary or
     weighted linear least squares approach [1]_
@@ -2203,13 +2264,15 @@ def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
         Data or response variables holding the data.
     inverse_design_matrix : array (22, g)
         Inverse of the design matrix.
+    return_S0_hat : bool, optional
+        Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
         Parameter indicating whether weights are used. Default: True.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
-        are replaced with `min_diffusivity`.
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
 
     Returns
     -------
@@ -2247,10 +2310,14 @@ def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params, None
+    if return_S0_hat:
+        return (dki_params[..., 0:-1], dki_params[..., -1]), None
+    else:
+        return dki_params[..., 0:-1], None
 
 
-def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
+def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp,
+                return_S0_hat=False, weights=True,
                 min_diffusivity=0, cvxpy_solver=None):
     r""" Compute the diffusion and kurtosis tensors using a constrained
     ordinary or weighted linear least squares approach [1]_
@@ -2267,13 +2334,15 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
     sdp : PositiveDefiniteLeastSquares instance
         A CVXPY representation of a regularized least squares optimization
         problem.
+    return_S0_hat : bool, optional
+        Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
         Parameter indicating whether weights are used. Default: True.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
-        are replaced with `min_diffusivity`.
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint with a
         particular cvxpy solver. See https://www.cvxpy.org/ for details.
@@ -2291,8 +2360,8 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
 
     References
     ----------
-    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints for
-           common diffusion MRI models using sum of squares programming".
+    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
+           for common diffusion MRI models using sum of squares programming".
            NeuroImage 209, 2020, 116405.
     """
     # Set up least squares problem
@@ -2312,7 +2381,10 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params, None
+    if return_S0_hat:
+        return (dki_params[..., 0:-1], dki_params[..., -1]), None
+    else:
+        return dki_params[..., 0:-1], None
 
 
 def Wrotate(kt, Basis):
@@ -2501,7 +2573,7 @@ def split_dki_param(dki_params):
     """
     evals = dki_params[..., :3]
     evecs = dki_params[..., 3:12].reshape(dki_params.shape[:-1] + (3, 3))
-    kt = dki_params[..., 12:27] 
+    kt = dki_params[..., 12:27]
 
     return evals, evecs, kt
 

@@ -28,8 +28,6 @@ from dipy.reconst.rumba import RumbaSDModel
 
 from dipy.reconst import mapmri
 
-from dipy.utils.deprecator import deprecated_params
-
 
 class ReconstMAPMRIFlow(Workflow):
     @classmethod
@@ -540,8 +538,6 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return 'csd'
 
-    @deprecated_params('nbr_processes', 'num_processes', since='1.4',
-                       until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
             fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
@@ -721,8 +717,6 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
-    @deprecated_params('nbr_processes', 'num_processes', since='1.4',
-                       until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
             extract_pam_values=False, parallel=False, num_processes=None,

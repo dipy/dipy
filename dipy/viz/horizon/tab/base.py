@@ -8,7 +8,7 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import ui
@@ -59,6 +59,12 @@ class HorizonTab(ABC):
         for element in args:
             self._elements.append(element)
 
+    def on_tab_selected(self):
+        """Implement if require to update something while the tab becomes
+        active.
+        """
+        pass
+
     @property
     @abstractmethod
     def name(self):
@@ -83,12 +89,12 @@ class TabManager:
         Underlying FURY TabUI object.
     """
     def __init__(self, tabs, win_size, on_tab_changed=lambda actors: None,
-                 synchronize_slices=False,
-                 synchronize_volumes=False):
+                 sync_slices=False, sync_volumes=False, sync_peaks=False):
         num_tabs = len(tabs)
         self._tabs = tabs
-        self._synchronize_slices = synchronize_slices
-        self._synchronize_volumes = synchronize_volumes
+        self._synchronize_slices = sync_slices
+        self._synchronize_volumes = sync_volumes
+        self._synchronize_peaks = sync_peaks
 
         win_width, _win_height = win_size
 
@@ -120,8 +126,9 @@ class TabManager:
             self._tab_ui.tabs[tab_id].title_font_size = 18
             tab.build(tab_id, self._tab_ui)
             if tab.__class__.__name__ == 'SlicesTab':
-                tab.on_slice_change = self.synchronize_slices
                 tab.on_volume_change = self.synchronize_volumes
+            if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
+                tab.on_slice_change = self.synchronize_slices
             if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
                 self._render_tab_elements(tab_id, tab.elements)
 
@@ -177,10 +184,10 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
-        if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
+        current_tab.on_tab_selected()
+        if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
+                                              'PeaksTab']:
             self.tab_changed(current_tab.actors)
-        if current_tab.__class__.__name__ == 'SlicesTab':
-            current_tab.on_tab_selected()
 
     def reposition(self, win_size):
         """
@@ -197,7 +204,7 @@ class TabManager:
 
     def synchronize_slices(self, active_tab_id, x_value, y_value, z_value):
         """
-        Synchronize slicers for all the images
+        Synchronize slicers for all the images and peaks.
 
         Parameters
         ----------
@@ -211,11 +218,12 @@ class TabManager:
             z-value of the active slicer
         """
 
-        if not self._synchronize_slices:
+        if not self._synchronize_slices and not self._synchronize_peaks:
             return
 
-        for slices_tab in self._get_non_active_slice_tabs(active_tab_id):
-            slices_tab.update_slices(x_value, y_value, z_value)
+        for tab in self._get_non_active_tabs(active_tab_id,
+                                             ['SlicesTab', 'PeaksTab']):
+            tab.update_slices(x_value, y_value, z_value)
 
     def synchronize_volumes(self, active_tab_id, value):
         """Synchronize volumes for all the images with volumes.
@@ -232,15 +240,16 @@ class TabManager:
         if not self._synchronize_volumes:
             return
 
-        for slices_tab in self._get_non_active_slice_tabs(active_tab_id):
+        for slices_tab in self._get_non_active_tabs(active_tab_id):
             slices_tab.update_volume(value)
 
-    def _get_non_active_slice_tabs(self, active_tab_id):
+    def _get_non_active_tabs(self, active_tab_id, types=['SlicesTab']):
         """Get tabs which are not active and slice tabs.
 
         Parameters
         ----------
         active_tab_id : int
+        types : list(str), optional
 
         Returns
         -------
@@ -248,7 +257,7 @@ class TabManager:
         """
         return list(
             filter(
-                lambda x: x.__class__.__name__ == 'SlicesTab'
+                lambda x: x.__class__.__name__ in types
                 and not x.tab_id == active_tab_id, self._tabs
             )
         )

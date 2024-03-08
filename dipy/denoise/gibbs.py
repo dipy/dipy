@@ -5,10 +5,10 @@ import numpy as np
 import scipy
 
 from dipy.utils.multiproc import determine_num_processes
-from dipy.utils.deprecator import deprecated_params
 
 import scipy.fft
 _fft = scipy.fft
+
 
 def _image_tv(x, axis=0, n_points=3):
     """ Computes total variation (TV) of matrix x across a given axis and
@@ -232,7 +232,6 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-@deprecated_params('num_threads', 'num_processes', since='1.4', until='1.5')
 def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
                   num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.

@@ -14,9 +14,6 @@ from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      BundleMinDistanceAsymmetricMetric)
 
 from dipy.tracking.streamline import Streamlines, length
-
-from dipy.utils.deprecator import deprecated_params
-
 from nibabel.affines import apply_affine
 
 
@@ -318,8 +315,6 @@ class RecoBundles:
             logger.info(f' Streamlines have {self.nb_centroids} centroids')
             logger.info(f' Total duration {time() - t:0.3f} s\n')
 
-    @deprecated_params('slr_num_threads', 'num_threads', since='1.4',
-                       until='1.5')
     def recognize(self, model_bundle, model_clust_thr,
                   reduction_thr=10,
                   reduction_distance='mdf',

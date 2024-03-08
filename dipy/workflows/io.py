@@ -485,7 +485,7 @@ class ConvertTractogramFlow(Workflow):
             Data type of the tractogram offsets, used for vtk files.
         out_dir : string, optional
             Output directory. (default current directory)
-        out_tractogram : variable string, optional
+        out_tractogram : string, optional
             Name of the resulting tractogram
 
         """

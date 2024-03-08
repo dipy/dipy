@@ -18,7 +18,6 @@ from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 
 from dipy.utils.multiproc import determine_num_processes
-from dipy.utils.deprecator import deprecated_params
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -223,7 +222,6 @@ class PeaksAndMetrics(EuDXDirectionGetter):
                                                    self.odf)
 
 
-@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
@@ -372,7 +370,7 @@ def _peaks_from_model_parallel_sub(args):
                             sh_order, sh_basis_type, legacy, npeaks, B, invB,
                             parallel=False, num_processes=None)
 
-@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
+
 @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,

@@ -22,16 +22,12 @@ def check_img_shapes(images):
         return (True, False)
     base_shape = images[0][0].shape[:3]
 
-    if len(images[0][0].shape) == 4:
-        base_shape = images[0][0].shape[1:]
-
     volumed_data_shapes = []
     for img in images:
         data, _, _ = unpack_image(img)
         data_shape = data.shape[:3]
-        if len(data.shape) == 4:
-            volumed_data_shapes.append(data.shape[0])
-            data_shape = data.shape[1:]
+        if data.ndim == 4:
+            volumed_data_shapes.append(data.shape[3])
         if base_shape != data_shape:
             return (False, False)
 
@@ -177,3 +173,31 @@ def is_binary_image(data, unique_points=100):
         indices.append(rng.integers(0, dim - 1, size=unique_points))
 
     return np.unique(np.take(data, indices)).shape[0] <= 2
+
+
+def check_peak_size(pams, ref_img_shape=None, sync_imgs=False):
+    """Check shape of peaks.
+
+    Parameters
+    ----------
+    pams : PeaksAndMetrics
+    ref_img_shape : tuple, optional
+        3D shape of the image, by default None.
+    sync_imgs : bool, optional
+        True if the images are synchronized, by default False.
+
+    Returns
+    -------
+    bool
+        If the peaks are aligned with images and other peaks.
+    """
+    base_shape = pams[0].peak_dirs.shape[:3]
+
+    for pam in pams:
+        if pam.peak_dirs.shape[:3] != base_shape:
+            return False
+
+    if not ref_img_shape:
+        return True
+
+    return base_shape == ref_img_shape and sync_imgs

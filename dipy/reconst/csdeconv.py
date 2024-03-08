@@ -17,14 +17,14 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sh_descoteaux_from_index,
                               sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sh_descoteaux, sh_to_rh, forward_sdeconv_mat,
-                              SphHarmModel)
+                              real_sh_descoteaux, sh_to_rh,
+                              forward_sdeconv_mat, SphHarmModel)
 from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
-from dipy.utils.deprecator import deprecate_with_version, deprecated_params
+from dipy.utils.deprecator import deprecate_with_version
 
 
 @deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
@@ -466,6 +466,7 @@ def estimate_response(gtab, evals, S0):
     return single_tensor(gtab, S0, evals, evecs, snr=None)
 
 
+@deprecated_params('n', 'l_values', since='1.9', until='2.0')
 def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
     r""" Build forward sharpening deconvolution transform (SDT) matrix
 
@@ -1076,7 +1077,7 @@ def _get_response(S0s, lambdas):
     return response, ratio
 
 
-@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
+
 @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,

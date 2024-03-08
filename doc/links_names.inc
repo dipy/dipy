@@ -110,6 +110,9 @@
 .. _statsmodels: https://www.statsmodels.org
 .. _pandas: https://pandas.pydata.org
 .. _pytables: https://www.pytables.org
+.. _tensorflow: https://www.tensorflow.org
+.. _tqdm: https://tqdm.github.io/
+.. _trx-python: https://tee-ar-ex.github.io/trx-python/
 
 .. Python imaging projects
 .. _PyMVPA: https://www.pymvpa.org

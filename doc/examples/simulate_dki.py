@@ -65,7 +65,7 @@ mevals = np.array([[0.00099, 0, 0],
 # principal axis of each compartment tensor. To simulate crossing fibers at
 # 70$^{\circ}$ the compartments of the first fiber are aligned to the X-axis
 # while the compartments of the second fiber are aligned to the X-Z plane with
-# an angular deviation of 70$^{\circ}$ from the first one.
+# an angular deviation of 70$^{\\circ}$ from the first one.
 
 angles = [(90, 0), (90, 0), (20, 0), (20, 0)]
 
@@ -111,7 +111,7 @@ plt.plot(signal_dti, label='noiseless dti')
 plt.plot(signal_dki, label='noiseless dki')
 plt.plot(signal_noisy, label='with noise')
 plt.legend()
-plt.savefig('simulated_dki_signal.png')
+plt.savefig('simulated_dki_signal.png', bbox_inches='tight')
 
 
 ###############################################################################

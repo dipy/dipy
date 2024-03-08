@@ -200,16 +200,16 @@ rpt_density = density_map(rpt_streamlines_vox, np.eye(4), dimensions)
 # Replacing streamlines is possible, but if the state was modified between
 # operations such as this one is not recommended:
 # -> cc_sft.streamlines = cc_streamlines_vox
-
+#
 # It is recommended to re-create a new StatefulTractogram object and
 # explicitly specify in which space the streamlines are. Be careful to follow
 # the order of operations.
-
+#
 # If the tractogram was from a Trk file with metadata, this will be lost.
 # If you wish to keep metadata while manipulating the number or the order
 # look at the function StatefulTractogram.remove_invalid_streamlines() for more
 # details
-
+#
 # It is important to mention that once the object is created in a consistent
 # state the ``save_tractogram`` function will save a valid file. And then the
 # function ``load_tractogram`` will load them in a valid state.

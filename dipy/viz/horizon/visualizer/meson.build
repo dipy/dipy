@@ -3,6 +3,7 @@ python_sources = [
   'cluster.py',
   'slice.py',
   'surface.py',
+  'peak.py',
   ]
 
 

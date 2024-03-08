@@ -1,11 +1,12 @@
 import warnings
 import numpy as np
 import numpy.testing as npt
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   is_binary_image, show_ellipsis,
-                                   unpack_surface)
+                                   check_peak_size, is_binary_image,
+                                   show_ellipsis, unpack_surface)
 
 
 @set_random_number_generator()
@@ -30,7 +31,7 @@ def test_check_img_shapes(rng):
     ]
     npt.assert_equal(check_img_shapes(images), (False, False))
 
-    data = 255 * rng.random((10, 197, 233, 189))
+    data = 255 * rng.random((197, 233, 189, 10))
     data1 = 255 * rng.random((197, 233, 189))
     images = [
         (data, affine),
@@ -48,7 +49,7 @@ def test_check_img_shapes(rng):
 
     npt.assert_equal(check_img_shapes(images), (True, True))
 
-    data = 255 * rng.random((197, 233, 189, 15))
+    data = 255 * rng.random((198, 233, 189, 14))
     data1 = 255 * rng.random((198, 233, 189, 15))
     images = [
         (data, affine),
@@ -59,6 +60,15 @@ def test_check_img_shapes(rng):
 
     data = 255 * rng.random((197, 233, 189, 15))
     data1 = 255 * rng.random((198, 233, 189, 14))
+    images = [
+        (data, affine),
+        (data1, affine)
+    ]
+
+    npt.assert_equal(check_img_shapes(images), (False, False))
+
+    data = 255 * rng.random((197, 233, 189, 15))
+    data1 = 255 * rng.random((198, 233, 189, 15))
     images = [
         (data, affine),
         (data1, affine)
@@ -155,3 +165,26 @@ def test_unpack_surface(rng):
     npt.assert_equal(vertices, v)
     npt.assert_equal(faces, f)
     npt.assert_equal('/test/filename.pial', fname)
+
+
+@set_random_number_generator()
+def test_check_peak_size(rng):
+    peak_dirs = rng.random((100, 100, 100, 10, 6))
+
+    pam = PeaksAndMetrics()
+    pam.peak_dirs = peak_dirs
+
+    npt.assert_equal(True, check_peak_size([pam]))
+    npt.assert_equal(True, check_peak_size([pam, pam]))
+    npt.assert_equal(False, check_peak_size([pam], (100, 100, 1), True))
+    npt.assert_equal(False, check_peak_size([pam], (100, 100, 100), False))
+
+    pam1 = PeaksAndMetrics()
+    peak_dirs_1 = rng.random((100, 100, 50, 10, 6))
+    pam1.peak_dirs = peak_dirs_1
+
+    npt.assert_equal(False, check_peak_size([pam, pam1]))
+    npt.assert_equal(False, check_peak_size([pam, pam1], (100, 100, 100),
+                                            True))
+    npt.assert_equal(False, check_peak_size([pam, pam1], (100, 100, 100),
+                                            False))
