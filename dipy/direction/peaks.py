@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 from itertools import repeat
 import multiprocessing as mp
 from os import path
 import tempfile
+=======
+import tempfile
+from itertools import repeat
+from multiprocessing import Pool
+from os import path
+>>>>>>> NF - direction from seeds
 
 import numpy as np
 import scipy.optimize as opt
