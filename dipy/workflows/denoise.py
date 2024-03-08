@@ -12,7 +12,6 @@ from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
-from dipy.utils.deprecator import deprecated_params
 
 
 class Patch2SelfFlow(Workflow):
@@ -334,8 +333,6 @@ class GibbsRingingFlow(Workflow):
     def get_short_name(cls):
         return 'gibbs_ringing'
 
-    @deprecated_params('num_threads', 'num_processes', since='1.4',
-                       until='1.5')
     def run(self, input_files, slice_axis=2, n_points=3, num_processes=1,
             out_dir='', out_unring='dwi_unring.nii.gz'):
         r"""Workflow for applying Gibbs Ringing method.

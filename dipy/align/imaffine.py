@@ -58,7 +58,6 @@ from dipy.align.parzenhist import (ParzenJointHistogram,
                                    compute_parzen_mi)
 from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
 from dipy.align.scalespace import IsotropicScaleSpace
-from dipy.utils.deprecator import deprecated_params
 
 _interp_options = ['nearest', 'linear']
 _transform_method = dict()
@@ -246,7 +245,6 @@ class AffineMap:
                                           .format(format_spec,
                                                   allowed_formats_print_map))
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
     def _apply_transform(self, image, interpolation='linear',
                          image_grid2world=None, sampling_grid_shape=None,
                          sampling_grid2world=None, resample_only=False,
@@ -364,7 +362,6 @@ class AffineMap:
                                                               comp)
         return transformed
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
     def transform(self, image, interpolation='linear', image_grid2world=None,
                   sampling_grid_shape=None, sampling_grid2world=None,
                   resample_only=False):
@@ -415,7 +412,6 @@ class AffineMap:
                                             apply_inverse=False)
         return np.array(transformed)
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
     def transform_inverse(self, image, interpolation='linear',
                           image_grid2world=None, sampling_grid_shape=None,
                           sampling_grid2world=None, resample_only=False):
