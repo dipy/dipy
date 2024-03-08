@@ -52,13 +52,12 @@ from functools import wraps
 from itertools import combinations, groupby
 from warnings import warn
 
-from nibabel.affines import apply_affine
 import numpy as np
+from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
 from dipy.tracking import metrics
-
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 from dipy.tracking.vox2track import _streamlines_in_mask
@@ -1048,3 +1047,37 @@ def min_radius_curvature_from_angle(max_angle, step_size):
         max_angle = np.pi / 2.0
     min_radius_curvature = step_size / 2 / np.sin(max_angle / 2)
     return min_radius_curvature
+
+
+def seeds_directions_pairs(positions, peaks, max_cross=-1):
+    """
+    Pair each seed to the corresponding peaks. If multiple peaks are available
+    the seed is repeated for each.
+
+    Parameters
+    ----------
+    position : array, (N, 3)
+        Voxel coordinates of the N positions.
+    peaks : array (N, M, 3)
+        Peaks at each position
+    max_cross : int
+        The maximum number of direction to track from each seed in crossing
+        voxels. By default all voxel peaks are used.
+
+    Returns
+    -------
+    seeds : array (K, 3)
+    directions : array (K, 3)
+    """
+    seeds = []
+    directions = []
+
+    for i, s in enumerate(positions):
+        voxel_dirs_norm = np.linalg.norm(peaks[i, :max_cross, :], axis=1)
+        voxel_dirs = peaks[i, voxel_dirs_norm > 0, :] \
+            / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
+        for d in voxel_dirs:
+            seeds.append(s)
+            directions.append(d)
+
+    return np.array(seeds), np.array(directions)

@@ -1,21 +1,19 @@
+import tempfile
 from itertools import repeat
 from multiprocessing import Pool
 from os import path
-import tempfile
 
 import numpy as np
 import scipy.optimize as opt
 
+from dipy.core.interpolation import trilinear_interpolate4d
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 from dipy.reconst.odf import gfa
-from dipy.reconst.recspeed import (
-    local_maxima,
-    remove_similar_vertices,
-    search_descending,
-)
+from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
+                                   search_descending)
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
@@ -573,3 +571,46 @@ def reshape_peaks_for_visualization(peaks):
         peaks = peaks.peak_dirs
 
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
+
+
+def peaks_from_positions(positions, odfs, sphere, relative_peak_threshold=.5,
+                         min_separation_angle=25, is_symmetric=True, npeaks=5):
+    """
+    Extract the peaks at each positions.
+
+    Parameters
+    ----------
+    position : array, (N, 3)
+        Voxel coordinates of the N positions.
+    odfs : array, (X, Y, Z, M)
+        Orientation distribution function (sphericla function) represented
+        on a sphere of M points.
+    sphere : Sphere
+        A discrete Sphere. The M points on the sphere correspond to the points
+        of the odfs.
+    relative_peak_threshold : float in [0., 1.]
+        Only peaks greater than ``min + relative_peak_threshold * scale`` are
+        kept, where ``min = max(0, odf.min())`` and
+        ``scale = odf.max() - min``.
+    min_separation_angle : float in [0, 90]
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
+    is_symmetric : bool, optional
+        If True, v is considered equal to -v.
+    npeaks : int
+        The maximum number of peaks to extract at from each position.
+
+    Returns
+    -------
+    peaks_arr : array (N, npeaks, 3)
+    """
+    peaks_arr = np.zeros((len(positions), npeaks, 3))
+
+    for i, s in enumerate(positions):
+        odf = trilinear_interpolate4d(odfs, s)
+        peaks, _, _ = peak_directions(odf, sphere, relative_peak_threshold,
+                                      min_separation_angle, is_symmetric)
+        n = min(npeaks, peaks.shape[0])
+        peaks_arr[i,:n,:] = peaks[:n, :]
+
+    return peaks_arr
