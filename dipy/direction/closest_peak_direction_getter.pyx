@@ -212,7 +212,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         """
         if sh_to_pmf:
             sh_order = shm.order_from_ncoef(shcoeff.shape[3])
-            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order=sh_order,
+            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order_max=sh_order,
                                basis_type=basis_type, legacy=legacy)
             pmf[pmf<0] = 0
             pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)

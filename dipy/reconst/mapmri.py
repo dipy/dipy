@@ -1376,24 +1376,24 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     counter = 0
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
-            l = n + 2 - 2 * j
-            const = mapmri_isotropic_radial_signal_basis(j, l, mu, qval)
-            for m in range(-l, l+1):
+            l_value = n + 2 - 2 * j
+            const = mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval)
+            for m_value in range(-l_value, l_value+1):
                 M[:, counter] = const * real_sh_descoteaux_from_index(
-                    m, l, theta, phi)
+                    m_value, l_value, theta, phi)
                 counter += 1
     return M
 
 
-def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
+def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
     r"""Radial part of the isotropic 1D-SHORE signal basis [1]_ eq. (61).
 
     Parameters
     ----------
     j : unsigned int,
         a positive integer related to the radial order
-    l : unsigned int,
-        the spherical harmonic order
+    l_value : unsigned int,
+        the spherical harmonic order (l)
     mu : float,
         isotropic scale factor of the basis
     qval : float,
@@ -1407,9 +1407,9 @@ def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
     """
     pi2_mu2_q2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
     const = (
-        (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
-        pi2_mu2_q2 ** (l / 2) * np.exp(-pi2_mu2_q2) *
-        genlaguerre(j - 1, l + 0.5)(2 * pi2_mu2_q2)
+        (-1) ** (l_value / 2) * np.sqrt(4.0 * np.pi) *
+        pi2_mu2_q2 ** (l_value / 2) * np.exp(-pi2_mu2_q2) *
+        genlaguerre(j - 1, l_value + 0.5)(2 * pi2_mu2_q2)
         )
     return const
 
@@ -1429,12 +1429,12 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
     counter = 0
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
-            l = n + 2 - 2 * j
-            const = np.sqrt(4 * np.pi) * (-1) ** (-l / 2) * \
-                (2 * np.pi ** 2 * qval ** 2) ** (l / 2)
-            for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
+            l_value = n + 2 - 2 * j
+            const = np.sqrt(4 * np.pi) * (-1) ** (-l_value / 2) * \
+                (2 * np.pi ** 2 * qval ** 2) ** (l_value / 2)
+            for m_value in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
                 Q_mu_independent[:, counter] = const * \
-                    real_sh_descoteaux_from_index(m, l, theta, phi)
+                    real_sh_descoteaux_from_index(m_value, l_value, theta, phi)
                 counter += 1
     return Q_mu_independent
 
@@ -1452,10 +1452,10 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
     counter = 0
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
-            l = n + 2 - 2 * j
-            const = mu ** l * np.exp(-pi2q2mu2) *\
-                genlaguerre(j - 1, l + 0.5)(2 * pi2q2mu2)
-            for m in range(-l, l + 1):
+            l_value = n + 2 - 2 * j
+            const = mu ** l_value * np.exp(-pi2q2mu2) *\
+                genlaguerre(j - 1, l_value + 0.5)(2 * pi2q2mu2)
+            for m_value in range(-l_value, l_value + 1):
                 Q_u0_dependent[:, counter] = const
                 counter += 1
 
@@ -1495,24 +1495,24 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
     counter = 0
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
-            l = n + 2 - 2 * j
-            const = mapmri_isotropic_radial_pdf_basis(j, l, mu, r)
-            for m in range(-l, l + 1):
+            l_value = n + 2 - 2 * j
+            const = mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r)
+            for m_value in range(-l_value, l_value + 1):
                 K[:, counter] = const * real_sh_descoteaux_from_index(
-                    m, l, theta, phi)
+                    m_value, l_value, theta, phi)
                 counter += 1
     return K
 
 
-def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
+def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
     r"""Radial part of the isotropic 1D-SHORE propagator basis [1]_ eq. (61).
 
     Parameters
     ----------
     j : unsigned int,
         a positive integer related to the radial order
-    l : unsigned int,
-        the spherical harmonic order
+    l_value : unsigned int,
+        the spherical harmonic order (l)
     mu : float,
         isotropic scale factor of the basis
     r : float,
@@ -1527,7 +1527,8 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
     r2u2 = r ** 2 / (2 * mu ** 2)
     const = (
         (-1) ** (j - 1) / (np.sqrt(2) * np.pi * mu ** 3) *
-        r2u2 ** (l / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l + 0.5)(2 * r2u2)
+        r2u2 ** (l_value / 2) * np.exp(-r2u2) * 
+        genlaguerre(j - 1, l_value + 0.5)(2 * r2u2)
         )
     return const
 

@@ -39,7 +39,7 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
-csa_model = CsaOdfModel(gtab, sh_order=6)
+csa_model = CsaOdfModel(gtab, sh_order_max=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              relative_peak_threshold=.8,
                              min_separation_angle=45,

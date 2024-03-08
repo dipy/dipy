@@ -27,6 +27,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 
 from dipy.reconst import mapmri
+from dipy.utils.deprecator import deprecated_params
 
 
 class ReconstMAPMRIFlow(Workflow):
@@ -515,7 +516,7 @@ class ReconstDsiFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask,
                                          return_sh=True,
-                                         sh_order=8,
+                                         sh_order_max=8,
                                          normalize_peaks=normalize_peaks,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -582,9 +583,9 @@ class ReconstCSDFlow(Workflow):
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
-            Spherical harmonics order used in the CSA fit.
+            Spherical harmonics order (l) used in the CSA fit.
         odf_to_sh_order : int, optional
-            Spherical harmonics order used for peak_from_model to compress
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
@@ -679,7 +680,7 @@ class ReconstCSDFlow(Workflow):
 
             logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                        sh_order=sh_order)
+                                                        sh_order_max=sh_order)
 
             peaks_csd = peaks_from_model(model=csd_model,
                                          data=data,
@@ -688,7 +689,7 @@ class ReconstCSDFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_order=sh_order,
+                                         sh_order_max=sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -743,9 +744,9 @@ class ReconstCSAFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         sh_order : int, optional
-            Spherical harmonics order used in the CSA fit.
+            Spherical harmonics order (l) used in the CSA fit.
         odf_to_sh_order : int, optional
-            Spherical harmonics order used for peak_from_model to compress
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
@@ -815,7 +816,7 @@ class ReconstCSAFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_order=odf_to_sh_order,
+                                         sh_order_max=odf_to_sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
                                          num_processes=num_processes)
@@ -1161,9 +1162,10 @@ class ReconstRUMBAFlow(Workflow):
     def get_short_name(cls):
         return 'rumba'
 
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, extract_pam_values=False, sh_order=8,
+            fa_thr=0.7, extract_pam_values=False, sh_order_max=8,
             odf_to_sh_order=8, parallel=True, num_processes=None,
             gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
             recon_type='smf', n_coils=1, R=1, voxelwise=True, use_tv=False,
@@ -1207,9 +1209,9 @@ class ReconstRUMBAFlow(Workflow):
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
-            Spherical harmonics order used in the CSA fit.
+            Spherical harmonics order (l) used in the CSA fit.
         odf_to_sh_order : int, optional
-            Spherical harmonics order used for peak_from_model to compress
+            Spherical harmonics order (l) used for peak_from_model to compress
             the ODF to spherical harmonics coefficients.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
@@ -1331,7 +1333,7 @@ class ReconstRUMBAFlow(Workflow):
                 model=rumba, data=data, sphere=sphere,
                 relative_peak_threshold=relative_peak_threshold,
                 min_separation_angle=min_separation_angle, mask=mask_vol,
-                return_sh=True, sh_order=sh_order, normalize_peaks=True,
+                return_sh=True, sh_order_max=sh_order_max, normalize_peaks=True,
                 parallel=parallel, num_processes=num_processes)
 
             logging.info('Peak computation completed.')

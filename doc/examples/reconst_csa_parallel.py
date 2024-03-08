@@ -30,7 +30,7 @@ maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
                              numpass=1, autocrop=True, dilate=2)
 
 ###############################################################################
-# We instantiate our CSA model with spherical harmonic order of 4
+# We instantiate our CSA model with spherical harmonic order (l) of 4
 
 csamodel = CsaOdfModel(gtab, 4)
 
