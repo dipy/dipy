@@ -57,13 +57,14 @@ def _expand(m, iso, coeff):
 
 @needs_cvxpy
 def test_mcsd_model_delta():
-    sh_order = 8
+    sh_order_max = 8
     gtab = get_3shell_gtab()
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)
@@ -80,12 +81,12 @@ def test_mcsd_model_delta():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         B = shm.real_sh_descoteaux_from_index(
-            response.m, response.n, theta[:, None], phi[:, None])
+            response.m_values, response.l_values, theta[:, None], phi[:, None])
 
     wm_delta = model.delta.copy()
     # set isotropic components to zero
     wm_delta[:iso] = 0.
-    wm_delta = _expand(model.m, iso, wm_delta)
+    wm_delta = _expand(model.m_values, iso, wm_delta)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -103,7 +104,7 @@ def test_mcsd_model_delta():
             category=PendingDeprecationWarning)
         signal = model.predict(wm_delta, gtab)
     fit = model.fit(signal)
-    m = model.m
+    m = model.m_values
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
@@ -111,12 +112,13 @@ def test_mcsd_model_delta():
 def test_MultiShellDeconvModel_response():
     gtab = get_3shell_gtab()
 
-    sh_order = 8
+    sh_order_max = 8
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)
@@ -124,13 +126,15 @@ def test_MultiShellDeconvModel_response():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        model_1 = MultiShellDeconvModel(gtab, response, sh_order=sh_order)
+        model_1 = MultiShellDeconvModel(gtab, response,
+                                        sh_order_max=sh_order_max)
     responses = np.array([wm_response, gm_response, csf_response])
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
+        model_2 = MultiShellDeconvModel(gtab, responses,
+                                        sh_order_max=sh_order_max)
     response_1 = model_1.response.response
     response_2 = model_2.response.response
     npt.assert_array_almost_equal(response_1, response_2, 0)
@@ -153,12 +157,13 @@ def test_MultiShellDeconvModel():
     S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
-    sh_order = 8
+    sh_order_max = 8
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)
@@ -191,12 +196,13 @@ def test_MSDeconvFit():
     S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
-    sh_order = 8
+    sh_order_max = 8
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)
@@ -211,12 +217,13 @@ def test_MSDeconvFit():
 
 def test_multi_shell_fiber_response():
 
-    sh_order = 8
+    sh_order_max = 8
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)
@@ -228,7 +235,8 @@ def test_multi_shell_fiber_response():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max,
+                                              [0, 1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response,
@@ -238,7 +246,7 @@ def test_multi_shell_fiber_response():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=PendingDeprecationWarning)
-        response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
+        response = multi_shell_fiber_response(sh_order_max, [1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
                                               csf_response)

@@ -34,7 +34,7 @@ def setup_module():
     data.S, data.sticks = multi_tensor(data.gtab, data.mevals, S0=100.0,
                                        angles=data.angl, fractions=[50, 50],
                                        snr=None)
-    data.sh_order = 6
+    data.sh_order_max = 6
     data.lambda_lb = 1e-8
     data.lambda_csd = 1.0
     sphere = get_sphere('repulsion100')
@@ -48,7 +48,7 @@ def test_forecast_positive_constrain():
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         fm = ForecastModel(data.gtab,
-                           sh_order=data.sh_order,
+                           sh_order_max=data.sh_order_max,
                            lambda_lb=data.lambda_lb,
                            dec_alg='POS',
                            sphere=data.sphere)
@@ -86,7 +86,7 @@ def test_forecast_csd():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=data.sh_order,
+        fm = ForecastModel(data.gtab, sh_order_max=data.sh_order_max,
                            lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(data.S)
     with warnings.catch_warnings():
@@ -105,7 +105,7 @@ def test_forecast_odf():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=4,
+        fm = ForecastModel(data.gtab, sh_order_max=4,
                            dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     sphere = default_sphere
@@ -123,7 +123,7 @@ def test_forecast_odf():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=6,
+        fm = ForecastModel(data.gtab, sh_order_max=6,
                            dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     with warnings.catch_warnings():
@@ -140,7 +140,7 @@ def test_forecast_odf():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=8,
+        fm = ForecastModel(data.gtab, sh_order_max=8,
                            dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     with warnings.catch_warnings():
@@ -158,7 +158,7 @@ def test_forecast_odf():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=10,
+        fm = ForecastModel(data.gtab, sh_order_max=10,
                            dec_alg='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
     with warnings.catch_warnings():
@@ -175,7 +175,7 @@ def test_forecast_odf():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=12,
+        fm = ForecastModel(data.gtab, sh_order_max=12,
                            dec_alg='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
     with warnings.catch_warnings():
@@ -195,7 +195,7 @@ def test_forecast_indices():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=2,
+        fm = ForecastModel(data.gtab, sh_order_max=2,
                            lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(data.S)
 
@@ -223,7 +223,7 @@ def test_forecast_indices():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=data.sh_order,
+        fm = ForecastModel(data.gtab, sh_order_max=data.sh_order_max,
                            lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(S)
 
@@ -242,7 +242,7 @@ def test_forecast_predict():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(data.gtab, sh_order=8,
+        fm = ForecastModel(data.gtab, sh_order_max=8,
                            dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
 
@@ -278,7 +278,7 @@ def test_multivox_forecast():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        fm = ForecastModel(gtab, sh_order=8,
+        fm = ForecastModel(gtab, sh_order_max=8,
                            dec_alg='CSD')
     f_fit = fm.fit(S)
 

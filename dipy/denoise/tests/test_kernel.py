@@ -95,15 +95,15 @@ def test_normalization():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        spike_sh = sf_to_sh(spike, k.get_sphere(), sh_order=8)
+        spike_sh = sf_to_sh(spike, k.get_sphere(), sh_order_max=8)
 
         # convolve kernel with delta spike and apply normalization
         csd_enh = convolve(
-            spike_sh, k, sh_order=8, test_mode=True, normalize=True)
+            spike_sh, k, sh_order_max=8, test_mode=True, normalize=True)
 
         # convert dataset to DSF
         csd_enh_dsf = sh_to_sf(
-            csd_enh, k.get_sphere(), sh_order=8, basis_type=None)
+            csd_enh, k.get_sphere(), sh_order_max=8, basis_type=None)
 
     # test if the normalization is performed correctly
     npt.assert_almost_equal(np.amax(csd_enh_dsf), np.amax(spike))

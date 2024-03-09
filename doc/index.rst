@@ -90,42 +90,26 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.8.0** is now available. New features include:
+**DIPY 1.9.0** is now available. New features include:
 
-- Python 3.12.0 support.
-- Cython 3.0.0 compatibility.
-- Migrated to Meson build system. Setuptools is no more.
-- EVAC+ novel DL-based brain extraction method added.
-- Parallel Transport Tractography (PTT) 10X faster.
-- Many Horizon updates. Fast overlays of many images.
-- New Correlation Tensor Imaging (CTI) method added.
-- Improved warnings for optional dependencies.
-- Large documentation update. New theme/design integration.
-- Closed 197 issues and merged 130 pull requests.
-
-**DIPY 1.7.0** is now available. New features include:
-
-- NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
-- NF: DKI+ - Diffusion Kurtosis modeling with advanced constraints added.
-- NF: Synb0 - Synthetic b0 creation added using deep learning added.
-- NF: New Parallel Transport Tractography (PTT) added.
-- NF: Fast Streamline Search algorithm added.
-- NF: New denoising methods based on 1D CNN added.
-- Handle Asymmetric Spherical Functions.
+- Numpy 2.0.0 support.
+- DeepN4 novel DL-based N4 Bias Correction method added.
+- Multiple Workflows added.
 - Large update of DIPY Horizon features.
-- Multiple Workflows updated
-- Large codebase cleaning.
-- Large documentation update. Integration of Sphinx-Gallery.
-- Closed 53 issues and merged 34 pull requests.
+- Pytest for Cython files(*.pyx) added.
+- Large documentation update.
+- Support of Python 3.8 removed.
+- Closed 142 issues and merged 60 pull requests.
+
 
 See :ref:`Older Highlights <old_highlights>`.
 
 *************
 Announcements
 *************
+- :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 - :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
 - :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
-- :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
 
 
 See some of our :ref:`Past Announcements <old_news>`

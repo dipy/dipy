@@ -79,9 +79,9 @@ if interactive:
 # Change this value to try out other bases
 sh_basis = 'descoteaux07'
 # Change this value to try other maximum orders
-sh_order = 8
+sh_order_max = 8
 
-sh_coeffs = sf_to_sh(odf, sphere, sh_order, sh_basis)
+sh_coeffs = sf_to_sh(odf, sphere, sh_order_max, sh_basis)
 
 ###############################################################################
 # ``sh_coeffs`` is an array containing the SH coefficients multiplying the SH
@@ -90,7 +90,7 @@ sh_coeffs = sf_to_sh(odf, sphere, sh_order, sh_basis)
 # resolution sphere using ``sh_to_sf``.
 
 high_res_sph = get_sphere('symmetric724').subdivide(2)
-reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
+reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order_max, sh_basis)
 
 scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
@@ -139,8 +139,8 @@ if interactive:
 #
 # Let's try to reconstruct this SF using a symmetric SH basis.
 
-sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order, sh_basis)
-reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
+sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order_max, sh_basis)
+reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order_max, sh_basis)
 
 scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
@@ -164,9 +164,9 @@ if interactive:
 # demonstrate it using the ``descoteaux07`` full SH basis by setting
 # ``full_basis=true``.
 
-sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order,
+sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order_max,
                      sh_basis, full_basis=True)
-reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order,
+reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order_max,
                    sh_basis, full_basis=True)
 
 scene.clear()

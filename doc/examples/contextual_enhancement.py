@@ -162,10 +162,10 @@ scene = window.Scene()
 # convolve kernel with delta spike
 spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
 spike[3, 3, 3, 0] = 1
-spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k,
-                          sh_order=8, test_mode=True)
+spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order_max=8), k,
+                          sh_order_max=8, test_mode=True)
 
-spike_sf_conv = sh_to_sf(spike_shm_conv, default_sphere, sh_order=8)
+spike_sf_conv = sh_to_sf(spike_shm_conv, default_sphere, sh_order_max=8)
 model_kernel = actor.odf_slicer(spike_sf_conv * 6,
                                 sphere=default_sphere,
                                 norm=False,
@@ -187,21 +187,23 @@ if interactive:
 # Shift-twist convolution is applied on the noisy data
 
 # Perform convolution
-csd_shm_enh = convolve(csd_shm_noisy, k, sh_order=8)
+csd_shm_enh = convolve(csd_shm_noisy, k, sh_order_max=8)
 
 ###############################################################################
 # The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 
 # Sharpen via the Sharpening Deconvolution Transform
 
-csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8,
+csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh,
+                                    default_sphere,
+                                    sh_order_max=8,
                                     lambda_=0.1)
 
 # Convert raw and enhanced data to discrete form
-csd_sf_orig = sh_to_sf(csd_shm_orig, default_sphere, sh_order=8)
-csd_sf_noisy = sh_to_sf(csd_shm_noisy, default_sphere, sh_order=8)
-csd_sf_enh = sh_to_sf(csd_shm_enh, default_sphere, sh_order=8)
-csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, default_sphere, sh_order=8)
+csd_sf_orig = sh_to_sf(csd_shm_orig, default_sphere, sh_order_max=8)
+csd_sf_noisy = sh_to_sf(csd_shm_noisy, default_sphere, sh_order_max=8)
+csd_sf_enh = sh_to_sf(csd_shm_enh, default_sphere, sh_order_max=8)
+csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, default_sphere, sh_order_max=8)
 
 # Normalize the sharpened ODFs
 csd_sf_enh_sharp *= np.amax(csd_sf_orig)
