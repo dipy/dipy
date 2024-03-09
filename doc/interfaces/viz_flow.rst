@@ -100,6 +100,14 @@ can skip this step if you already have the dataset downloaded. ::
   dipy_fetch bundle_atlas_hcp842
 
 
+Horizon supports below mentioned tractogram formats.
+
+* .trk
+* .trx
+* .dpy
+* .tck
+
+
 Let's try to load the tractogram.
 
 **For macOS and Linux** ::
