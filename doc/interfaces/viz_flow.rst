@@ -114,6 +114,10 @@ Let's try to load the tractogram.
   
   dipy_horizon $home/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk --cluster
 
+Using the ``--cluster`` option, we visualize the clusters(bundles) of the 
+tractograms. If we do not provide ``--cluster`` it will open up all the 
+streamlines and the interaction panel will not be provided. Opening the 
+streamlines can be computationally expensive, if a large dataset is provided.
 
 -----------------------
 Visualize Brain Surface
