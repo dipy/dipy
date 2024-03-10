@@ -41,7 +41,7 @@ The workflow for the CSD reconstruction method requires the paths to the
 diffusion input file, b-values file, b-vectors file and mask file. The optional
 arguments can also be provided. In this case, we will specify the FA threshold
 for calculating the response function (``fa_thr``), spherical harmonics order
-used in the CSA fit (``sh_order``), whether to use parallelization in
+(l) used in the CSA fit (``sh_order_max``), whether to use parallelization in
 peak-finding during the calibration procedure or not (``parallel``), and the
 output directory (``out_dir``).
 
@@ -53,7 +53,7 @@ calling the ``dipy_median_otsu`` command::
 Then, to perform the CSD reconstruction we will run the ``dipy_fit_csd``
 command as::
 
-    dipy_fit_csd data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval data/stanford_hardi/HARDI150.bvec stanford_hardi_mask/brain_mask.nii.gz --fa_thr 0.7 --sh_order 8 --parallel --out_dir "recons_csd_output"
+    dipy_fit_csd data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval data/stanford_hardi/HARDI150.bvec stanford_hardi_mask/brain_mask.nii.gz --fa_thr 0.7 --sh_order_max 8 --parallel --out_dir "recons_csd_output"
 
 This command will save the CSD metrics to the specified output directory.
 

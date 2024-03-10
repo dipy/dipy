@@ -412,6 +412,10 @@ html_theme_options = {
   "footer_copyright": copyright,
 }
 
+html_theme_options["analytics"] = {
+    "google_analytics_id": "G-D610GKJZRC",
+}
+
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 

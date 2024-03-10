@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -65,6 +65,7 @@ dipy_fit_csa = "dipy.workflows.cli:run"
 dipy_fit_csd = "dipy.workflows.cli:run"
 dipy_fit_dki = "dipy.workflows.cli:run"
 dipy_fit_dti = "dipy.workflows.cli:run"
+dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
@@ -83,13 +84,14 @@ dipy_track_pft = "dipy.workflows.cli:run"
 dipy_slr = "dipy.workflows.cli:run"
 dipy_concatenate_tractograms = "dipy.workflows.cli:run"
 dipy_convert_tractogram = "dipy.workflows.cli:run"
+dipy_convert_tensors = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
 style = ["flake8", "isort"]
-viz = ["fury>=0.9.0", "matplotlib"]
+viz = ["fury>=0.10.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow",  "tensorflow-addons"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
@@ -97,7 +99,7 @@ dev = [
     'setuptools>=67',
     'packaging>=21',
     'ninja',
-    'Cython>=0.29.32',
+    'Cython>=0.29.35',
     'numpy>=1.22',
     # Developer UI
     'spin>=0.5',

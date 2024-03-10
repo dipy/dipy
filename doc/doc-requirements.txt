@@ -7,7 +7,7 @@ cvxpy
 pandas
 tables
 matplotlib
-fury>=0.9.0
+fury>=0.10.0
 scikit-learn
 scikit-image
 statsmodels>=0.14.0
@@ -18,3 +18,5 @@ tomli>=2.0.1
 pydata-sphinx-theme==0.13.3
 Jinja2
 sphinx-design>=0.5.0
+boto3
+tensorflow

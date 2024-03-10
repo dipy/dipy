@@ -59,6 +59,7 @@ plt.imshow(histeq(data[:, :, sli].astype('float')).T,
 plt.subplot(1, 2, 2).set_axis_off()
 plt.imshow(histeq(b0_mask[:, :, sli].astype('float')).T,
            cmap='gray', origin='lower')
+plt.savefig(f'{fname}_median_otsu.png', bbox_inches='tight')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

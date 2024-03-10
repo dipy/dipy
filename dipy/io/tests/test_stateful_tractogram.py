@@ -18,7 +18,7 @@ from dipy.testing.decorators import set_random_number_generator
 import trx.trx_file_memmap as tmm
 
 from dipy.utils.optpkg import optional_package
-fury, have_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 
 FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None

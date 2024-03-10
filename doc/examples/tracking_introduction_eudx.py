@@ -81,7 +81,7 @@ white_matter = (labels == 1) | (labels == 2)
 # the fiber directions in all voxels of the white matter.
 
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
-csa_model = CsaOdfModel(gtab, sh_order=6)
+csa_model = CsaOdfModel(gtab, sh_order_max=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              relative_peak_threshold=.8,
                              min_separation_angle=45,

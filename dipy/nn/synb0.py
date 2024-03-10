@@ -11,21 +11,20 @@ from dipy.utils.optpkg import optional_package
 from dipy.nn.utils import normalize, unnormalize, set_logger_level
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
-tfa, have_tfa, _ = optional_package('tensorflow_addons')
-if have_tf and have_tfa:
+if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
     from tensorflow.keras.layers import Conv3D, LeakyReLU
     from tensorflow.keras.layers import Concatenate, Layer
-    from tensorflow_addons.layers import InstanceNormalization
+    from tensorflow.keras.layers import GroupNormalization
 else:
     class Model:
         pass
 
     class Layer:
         pass
-    logging.warning('This model requires Tensorflow and Tensorflow\
-                    -addons. Please install these packages using \
+    logging.warning('This model requires Tensorflow.\
+                    Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos')
@@ -41,7 +40,7 @@ class EncoderBlock(Layer):
                              strides=strides,
                              padding=padding,
                              use_bias=False)
-        self.instnorm = InstanceNormalization()
+        self.instnorm = GroupNormalization(groups=-1)
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -59,181 +58,7 @@ class DecoderBlock(Layer):
                                       strides=strides,
                                       padding=padding,
                                       use_bias=False)
-        self.instnorm = InstanceNormalization()
-        self.activation = LeakyReLU(0.01)
-
-    def call(self, input):
-        x = self.conv3d(input)
-        x = self.instnorm(x)
-        x = self.activation(x)
-
-        return x
-
-def UNet3D(input_shape):
-    r"""
-    Function to create model for Synb0
-
-    Parameters
-    ----------
-    input_shape : tuple
-        The input shape of the model
-
-    Returns
-    -------
-    tf.keras.Model
-    """
-    inputs = tf.keras.Input(input_shape)
-    # Encode
-    x = EncoderBlock(32, kernel_size=3,
-                     strides=1, padding='same')(inputs)
-    syn0 = EncoderBlock(64, kernel_size=3,
-                        strides=1, padding='same')(x)
-
-    x = MaxPool3D()(syn0)
-    x = EncoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn1 = EncoderBlock(128, kernel_size=3,
-                        strides=1, padding='same')(x)
-
-    x = MaxPool3D()(syn1)
-    x = EncoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn2 = EncoderBlock(256, kernel_size=3,
-                        strides=1, padding='same')(x)
-
-    x = MaxPool3D()(syn2)
-    x = EncoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = EncoderBlock(512, kernel_size=3,
-                     strides=1, padding='same')(x)
-
-    # Last layer without relu
-    x = Conv3D(512, kernel_size=1,
-               strides=1, padding='same')(x)
-
-    x = DecoderBlock(512, kernel_size=2,
-                     strides=2, padding='valid')(x)
-
-    x = Concatenate()([x, syn2])
-
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=2,
-                     strides=2, padding='valid')(x)
-
-    x = Concatenate()([x, syn1])
-
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=2,
-                     strides=2, padding='valid')(x)
-
-    x = Concatenate()([x, syn0])
-
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-
-    x = DecoderBlock(1, kernel_size=1,
-                     strides=1, padding='valid')(x)
-
-    # Last layer without relu
-    out = Conv3DTranspose(1, kernel_size=1,
-                          strides=1, padding='valid')(x)
-
-    return Model(inputs, out)
-
-
-def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
-    r"""
-    normalization function
-
-    Parameters
-    ----------
-    image : np.ndarray
-    min_v : int or float (optional)
-        minimum value range for normalization
-        intensities below min_v will be clipped
-        if None it is set to min value of image
-        Default : None
-    max_v : int or float (optional)
-        maximum value range for normalization
-        intensities above max_v will be clipped
-        if None it is set to max value of image
-        Default : None
-    new_min : int or float (optional)
-        new minimum value after normalization
-        Default : 0
-    new_max : int or float (optional)
-        new maximum value after normalization
-        Default : 1
-
-    Returns
-    -------
-    np.ndarray
-        Normalized image from range new_min to new_max
-    """
-    if min_v is None:
-        min_v = np.min(image)
-    if max_v is None:
-        max_v = np.max(image)
-    return np.interp(image, (min_v, max_v), (new_min, new_max))
-
-def unnormalize(image, norm_min, norm_max, min_v, max_v):
-    r"""
-    unnormalization function
-
-    Parameters
-    ----------
-    image : np.ndarray
-    norm_min : int or float
-        minimum value of normalized image
-    norm_max : int or float
-        maximum value of normalized image
-    min_v : int or float
-        minimum value of unnormalized image
-    max_v : int or float
-        maximum value of unnormalized image
-
-    Returns
-    -------
-    np.ndarray
-        unnormalized image from range min_v to max_v
-    """
-    return (image-norm_min)/(norm_max-norm_min)*(max_v-min_v) + min_v
-
-class EncoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
-        super(EncoderBlock, self).__init__()
-        self.conv3d = Conv3D(out_channels,
-                             kernel_size,
-                             strides=strides,
-                             padding=padding,
-                             use_bias=False)
-        self.instnorm = InstanceNormalization()
-        self.activation = LeakyReLU(0.01)
-
-    def call(self, input):
-        x = self.conv3d(input)
-        x = self.instnorm(x)
-        x = self.activation(x)
-
-        return x
-
-class DecoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
-        super(DecoderBlock, self).__init__()
-        self.conv3d = Conv3DTranspose(out_channels,
-                                      kernel_size,
-                                      strides=strides,
-                                      padding=padding,
-                                      use_bias=False)
-        self.instnorm = InstanceNormalization()
+        self.instnorm = GroupNormalization(groups=-1)
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -352,8 +177,6 @@ class Synb0:
 
         if not have_tf:
             raise tf()
-        if not have_tfa:
-            raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
         set_logger_level(log_level, logger)

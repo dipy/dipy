@@ -2,6 +2,8 @@ python_sources = [
   '__init__.py',
   'cluster.py',
   'slice.py',
+  'surface.py',
+  'peak.py',
   ]
 
 

@@ -24,7 +24,7 @@ def test_ptt_tracking():
     fod_fname, seed_coordinates_fname, _ = get_fnames('ptt_minimal_dataset')
     fod, affine = load_nifti(fod_fname)
     seed_coordinates = np.loadtxt(seed_coordinates_fname)[:10, :]
-    sf = sh_to_sf(fod, default_sphere, basis_type='tournier07', sh_order=8,
+    sf = sh_to_sf(fod, default_sphere, basis_type='tournier07', sh_order_max=8,
                   legacy=False)
     sf[sf < 0] = 0
     sc = BinaryStoppingCriterion(np.ones(fod.shape[:3]))

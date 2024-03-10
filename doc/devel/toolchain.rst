@@ -37,7 +37,7 @@ Python Versions
 ^^^^^^^^^^^^^^^
 
 DIPY is compatible with several versions of Python.  When dropping support for
-older Python versions, DIPY takes guidance from :ref:`Scientific-Python SPECS<https://scientific-python.org/specs>`.
+older Python versions, DIPY takes guidance from :ref:`Scientific-Python SPECS<https://scientific-python.org/specs>`_.
 Python 2.7 support was dropped starting from DIPY 1.0.0
 
 ================  =======================================================================
