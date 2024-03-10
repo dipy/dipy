@@ -166,7 +166,7 @@ class HorizonFlow(Workflow):
                                       bbox_valid_check=False)
                 tractograms.append(sft)
 
-            if ends('.dpy') or ends('.tck'):
+            if ends(('.dpy', '.tck', '.vtk', '.vtp', '.fib')):
                 sft = load_tractogram(fname, emergency_ref)
                 tractograms.append(sft)
 

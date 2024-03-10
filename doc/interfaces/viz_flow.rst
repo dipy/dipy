@@ -1,8 +1,8 @@
 .. _viz_flow:
 
-====================================
-Visualization Command Line Interface
-====================================
+===============================
+dMRI Visualization with Horizon
+===============================
 
 This section talks about Horizon workflows in DIPY and how to use them.
 
@@ -60,9 +60,9 @@ We also support direct visualization of compressed NIFTI files with extension
   dipy_horizon <your_fist_file_name>.nii.gz
 
 
-------------------------------------
-Visualize 3D Brain Image with Volume
-------------------------------------
+------------------------
+Visualize 4D Brain Image
+------------------------
 
 This tutorial shows how visualize a 3D image with Volume.
 
@@ -102,10 +102,13 @@ can skip this step if you already have the dataset downloaded. ::
 
 Horizon supports below mentioned tractogram formats.
 
-* .trk
-* .trx
-* .dpy
-* .tck
+*.trk
+*.trx
+*.dpy
+*.tck
+*.vtk
+*.vtp
+*.fib
 
 
 Let's try to load the tractogram.
