@@ -47,7 +47,7 @@ Let's try to load the image.
 
 **For Windows(powershell)** ::
   
-  dipy_horizon $home/.dipy/mni_template/mni_icbm152_t1_tal_nlin_asym_09a.nii $home/.dipy/mni_template/mni_icbm152_t2_tal_nlin_asym_09a.nii
+  dipy_horizon "\$home/.dipy/mni_template/mni_icbm152_t1_tal_nlin_asym_09a.nii" "\$home/.dipy/mni_template/mni_icbm152_t2_tal_nlin_asym_09a.nii"
 
 You can also use your own data by invoking the command below. ::
 
@@ -84,8 +84,8 @@ Let's try to load the image.
   dipy_horizon %USERPROFILE%/.dipy/stanford_hardi/HARDI150.nii.gz
 
 **For Windows(powershell)** ::
-  
-  dipy_horizon $home/.dipy/stanford_hardi/HARDI150.nii.gz
+
+  dipy_horizon "\$home/.dipy/stanford_hardi/HARDI150.nii.gz"
 
 
 --------------------------
@@ -102,13 +102,13 @@ can skip this step if you already have the dataset downloaded. ::
 
 Horizon supports below mentioned tractogram formats.
 
-*.trk
-*.trx
-*.dpy
-*.tck
-*.vtk
-*.vtp
-*.fib
+* .trk
+* .trx
+* .dpy
+* .tck
+* .vtk
+* .vtp
+* .fib
 
 
 Let's try to load the tractogram.
@@ -122,8 +122,8 @@ Let's try to load the tractogram.
   dipy_horizon %USERPROFILE%/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk --cluster
 
 **For Windows(powershell)** ::
-  
-  dipy_horizon $home/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk --cluster
+
+  dipy_horizon "\$home/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk" --cluster
 
 Using the ``--cluster`` option, we visualize the clusters(bundles) of the 
 tractograms. If we do not provide ``--cluster`` it will open up all the 
