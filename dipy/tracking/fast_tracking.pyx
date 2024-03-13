@@ -8,7 +8,7 @@ from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
-#from dipy.core.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
@@ -48,10 +48,10 @@ def generate_tractogram(double[:,::1] seed_positions,
                           streamlines_arr, length_arr, status_arr)
     streamlines = []
     for i in range(_len):
-        if length_arr[i] > 3:
+        if length_arr[i] > 1:
             s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
             streamlines.append(s.copy().reshape((-1,3)))
-        free(streamlines_arr[i])
+            free(streamlines_arr[i])
 
     free(streamlines_arr)
     free(length_arr)
@@ -75,11 +75,11 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
 
     if nbr_threads<= 0:
         nbr_threads = 0
-#, use_threads_if=nbr_threads>1
+
     for i in prange(_len, nogil=True, num_threads=nbr_threads):
+    #for i in range(_len):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
         stream_idx = <int*> malloc(2 * sizeof(int))
-
         status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
                                               stream,
@@ -91,7 +91,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
 
         # copy the streamlines points from the buffer to a 1d vector of the streamline length
         lengths[i] = stream_idx[1] - stream_idx[0]
-        if lengths[i] > 0:
+        if lengths[i] > 1:
             streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
             memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
         free(stream)
@@ -159,69 +159,6 @@ cdef int generate_local_streamline(double* seed,
     stream_idx[0] = params.max_len - i + 1
     # # need to handle stream status
     return 0 #stream_status
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef int trilinear_interpolate4d_c(
-        double[:, :, :, :] data,
-        double* point,
-        double* result) noexcept nogil:
-    """Tri-linear interpolation along the last dimension of a 4d array
-
-    Parameters
-    ----------
-    point : 1d array (3,)
-        3 doubles representing a 3d point in space. If point has integer values
-        ``[i, j, k]``, the result will be the same as ``data[i, j, k]``.
-    data : 4d array
-        Data to be interpolated.
-    result : 1d array
-        The result of interpolation. Should have length equal to the
-        ``data.shape[3]``.
-    Returns
-    -------
-    err : int
-         0 : successful interpolation.
-        -1 : point is outside the data area, meaning round(point) is not a
-             valid index to data.
-        -2 : point has the wrong shape
-        -3 : shape of data and result do not match
-
-    """
-    cdef:
-        cnp.npy_intp flr, N
-        double w, rem
-        cnp.npy_intp index[3][2]
-        double weight[3][2]
-
-    #if data.shape[3] != result.shape[0]:
-    #    return -3
-
-    for i in range(3):
-        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
-            return -1
-
-        flr = <cnp.npy_intp> floor(point[i])
-        rem = point[i] - flr
-
-        index[i][0] = flr + (flr == -1)
-        index[i][1] = flr + (flr != (data.shape[i] - 1))
-        weight[i][0] = 1 - rem
-        weight[i][1] = rem
-
-    N = data.shape[3]
-    for i in range(N):
-        result[i] = 0
-
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                w = weight[0][i] * weight[1][j] * weight[2][k]
-                for L in range(N):
-                    result[L] += w * data[index[0][i], index[1][j],
-                                          index[2][k], L]
-    return 0
 
 
 cdef int get_pmf(double* pmf,

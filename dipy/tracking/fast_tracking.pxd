@@ -39,9 +39,6 @@ cdef int generate_local_streamline(double* seed,
                                    DeterministicTrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil
 
-cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
-                                   double* point,
-                                   double* result) noexcept nogil
 
 cdef int get_pmf(double* pmf,
                  double* point,
