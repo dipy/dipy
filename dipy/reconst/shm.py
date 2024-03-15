@@ -36,13 +36,14 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
+from dipy.utils.deprecator import deprecated_params
 
 
 descoteaux07_legacy_msg = \
     "The legacy descoteaux07 SH basis uses absolute values for negative " \
-    "harmonic degrees. It is outdated and will be deprecated in a future " \
-    "DIPY release. Consider using the new descoteaux07 basis by setting the " \
-    "`legacy` parameter to `False`."
+    "harmonic phase factors. It is outdated and will be deprecated in a "\
+    "future DIPY release. Consider using the new descoteaux07 basis by setting"\
+    "the `legacy` parameter to `False`."
 tournier07_legacy_msg = \
     "The legacy tournier07 basis is not normalized. It is outdated and will " \
     "be deprecated in a future release of DIPY. Consider using the new " \
@@ -56,7 +57,8 @@ def _copydoc(obj):
     return bandit
 
 
-def forward_sdeconv_mat(r_rh, n):
+@deprecated_params('n', 'l_values', since='1.9', until='2.0')
+def forward_sdeconv_mat(r_rh, l_values):
     """ Build forward spherical deconvolution matrix
 
     Parameters
@@ -64,10 +66,10 @@ def forward_sdeconv_mat(r_rh, n):
     r_rh : ndarray
         Rotational harmonics coefficients for the single fiber response
         function. Each element ``rh[i]`` is associated with spherical harmonics
-        of degree ``2*i``.
-    n : ndarray
-        The order of spherical harmonic function associated with each row of
-        the deconvolution matrix. Only even orders are allowed
+        of order ``2*i``.
+    l_values : ndarray
+        The orders (l) of spherical harmonic function associated with each row
+        of the deconvolution matrix. Only even orders are allowed
 
     Returns
     -------
@@ -76,16 +78,17 @@ def forward_sdeconv_mat(r_rh, n):
 
     """
 
-    if np.any(n % 2):
-        raise ValueError("n has odd orders, expecting only even orders")
-    return np.diag(r_rh[n // 2])
+    if np.any(l_values % 2):
+        raise ValueError("l_values has odd orders, expecting only even orders")
+    return np.diag(r_rh[l_values // 2])
 
 
-def sh_to_rh(r_sh, m, n):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def sh_to_rh(r_sh, m_values, l_values):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
 
     Calculate the rotational harmonic decomposition up to
-    harmonic order ``n``, degree ``m`` for an axially and antipodally
+    harmonic phase factor ``m``, order ``l`` for an axially and antipodally
     symmetric function. Note that all ``m != 0`` coefficients
     will be ignored as axial symmetry is assumed. Hence, there
     will be ``(sh_order/2 + 1)`` non-zero coefficients.
@@ -96,11 +99,11 @@ def sh_to_rh(r_sh, m, n):
         ndarray of SH coefficients for the single fiber response function.
         These coefficients must correspond to the real spherical harmonic
         functions produced by `shm.real_sh_descoteaux_from_index`.
-    m : ndarray (N,)
-        The degree of the spherical harmonic function associated with each
-        coefficient.
-    n : ndarray (N,)
-        The order of the spherical harmonic function associated with each
+    m_values : ndarray (N,)
+        The phase factors (m) of the spherical harmonic function associated with
+        each coefficient.
+    l_values : ndarray (N,)
+        The orders (l) of the spherical harmonic function associated with each
         coefficient.
 
     Returns
@@ -119,15 +122,16 @@ def sh_to_rh(r_sh, m, n):
         constrained super-resolved spherical deconvolution
 
     """
-    mask = m == 0
+    mask = m_values == 0
     # The delta function at theta = phi = 0 is known to have zero coefficients
     # where m != 0, therefore we need only compute the coefficients at m=0.
-    dirac_sh = gen_dirac(0, n[mask], 0, 0)
+    dirac_sh = gen_dirac(0, l_values[mask], 0, 0)
     r_rh = r_sh[mask] / dirac_sh
     return r_rh
 
 
-def gen_dirac(m, n, theta, phi, legacy=True):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def gen_dirac(m_values, l_values, theta, phi, legacy=True):
     """ Generate Dirac delta function orientated in (theta, phi) on the sphere
 
     The spherical harmonics (SH) representation of this Dirac is returned as
@@ -136,11 +140,11 @@ def gen_dirac(m, n, theta, phi, legacy=True):
 
     Parameters
     ----------
-    m : ndarray (N,)
-        The degree of the spherical harmonic function associated with each
-        coefficient.
-    n : ndarray (N,)
-        The order of the spherical harmonic function associated with each
+    m_values : ndarray (N,)
+        The phase factors of the spherical harmonic function associated with
+        each coefficient.
+    l_values : ndarray (N,)
+        The order (l) of the spherical harmonic function associated with each
         coefficient.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
@@ -162,10 +166,12 @@ def gen_dirac(m, n, theta, phi, legacy=True):
         `(m + 2) * (m + 1) / 2`.
 
     """
-    return real_sh_descoteaux_from_index(m, n, theta, phi, legacy=legacy)
+    return real_sh_descoteaux_from_index(m_values, l_values, theta, phi,
+                                         legacy=legacy)
 
 
-def spherical_harmonics(m, n, theta, phi, use_scipy=True):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -173,10 +179,10 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
 
     Parameters
     ----------
-    m : int ``|m| <= n``
-        The degree of the harmonic.
-    n : int ``>= 0``
-        The order of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -187,7 +193,7 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     Returns
     -------
     y_mn : complex float
-        The harmonic $Y^m_n$ sampled at ``theta`` and ``phi``.
+        The harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
 
     Notes
     -----
@@ -201,17 +207,17 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     and `phi` represents the polar coordinate.
 
     Although scipy uses a naming convention where ``m`` is the order and ``n``
-    is the degree of the SH, the opposite of DIPY's, their definition for both
-    parameters is the same as ours, with ``n >= 0`` and ``|m| <= n``.
+    is the degree of the SH, the opposite of DIPY's, their definition for
+    both parameters is the same as ours, with ``l >= 0`` and ``|m| <= l``.
     """
     if use_scipy:
-        return sps.sph_harm(m, n, theta, phi, dtype=complex)
+        return sps.sph_harm(m_values, l_values, theta, phi, dtype=complex)
 
     x = np.cos(phi)
-    val = sps.lpmv(m, n, x).astype(complex)
-    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (sps.gammaln(n - m + 1) - sps.gammaln(n + m + 1)))
-    val = val * np.exp(1j * m * theta)
+    val = sps.lpmv(m_values, l_values, x).astype(complex)
+    val *= np.sqrt((2 * l_values + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (sps.gammaln(l_values - m_values + 1) - sps.gammaln(l_values + m_values + 1)))
+    val = val * np.exp(1j * m_values * theta)
     return val
 
 
@@ -219,24 +225,25 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
                         'Please use '
                         'dipy.reconst.shm.real_sh_descoteaux_from_index '
                         'instead', since='1.3', until='2.0')
-def real_sph_harm(m, n, theta, phi):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def real_sph_harm(m_values, l_values, theta, phi):
     """ Compute real spherical harmonics.
 
-    Where the real harmonic $Y^m_n$ is defined to be:
+    Where the real harmonic $Y^m_l$ is defined to be:
 
-        Imag($Y^m_n$) * sqrt(2)     if m > 0
-        $Y^0_n$                     if m = 0
-        Real($Y^|m|_n$) * sqrt(2)   if m < 0
+        Imag($Y^m_l$) * sqrt(2)     if m > 0
+        $Y^0_l$                     if m = 0
+        Real($Y^|m|_l$) * sqrt(2)   if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    m : int ``|m| <= n``
-        The degree of the harmonic.
-    n : int ``>= 0``
-        The order of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -245,33 +252,34 @@ def real_sph_harm(m, n, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
+        The real harmonic $Y^m_l$ sampled at `theta` and `phi`.
 
     See Also
     --------
     scipy.special.sph_harm
     """
-    return real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True)
+    return real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True)
 
 
-def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_n$
+    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
     is defined to be:
 
-        Real($Y^m_n$) * sqrt(2)      if m > 0
-        $Y^0_n$                      if m = 0
-        Imag($Y^|m|_n$) * sqrt(2)    if m < 0
+        Real($Y^m_l$) * sqrt(2)      if m > 0
+        $Y^0_l$                      if m = 0
+        Imag($Y^|m|_l$) * sqrt(2)    if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    m : int ``|m| <= n``
-        The degree of the harmonic.
-    n : int ``>= 0``
-        The order of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -283,7 +291,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonics $Y^m_n$ sampled at ``theta`` and ``phi``.
+        The real harmonics $Y^m_l$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
@@ -297,35 +305,36 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
            NeuroImage. 2019 Nov 15;202:116-137.
     """
     # In the m < 0 case, Tournier basis considers |m|
-    sh = spherical_harmonics(np.abs(m), n, phi, theta)
-    real_sh = np.where(m < 0, sh.imag, sh.real)
+    sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
+    real_sh = np.where(m_values < 0, sh.imag, sh.real)
 
     if not legacy:
         # The Tournier basis from MRtrix3 is normalized
-        real_sh *= np.where(m == 0, 1., np.sqrt(2))
+        real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
     else:
         warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
 
     return real_sh
 
 
-def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
+@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_n$ is defined to be:
+    where the real harmonic $Y^m_l$ is defined to be:
 
-        Imag($Y^m_n$) * sqrt(2)      if m > 0
-        $Y^0_n$                      if m = 0
-        Real($Y^m_n$) * sqrt(2)      if m < 0
+        Imag($Y^m_l$) * sqrt(2)      if m > 0
+        $Y^0_l$                      if m = 0
+        Real($Y^m_l$) * sqrt(2)      if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    m : int ``|m| <= n``
-        The degree of the harmonic.
-    n : int ``>= 0``
-        The order of the harmonic.
+    m_values : array of int ``|m| <= l``
+        The phase factors (m) of the harmonics.
+    l_values : array of int ``l >= 0``
+        The orders (l) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -338,7 +347,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
@@ -349,35 +358,35 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
         warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
-        sh = spherical_harmonics(np.abs(m), n, phi, theta)
+        sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
-        sh = spherical_harmonics(m, n, phi, theta)
+        sh = spherical_harmonics(m_values, l_values, phi, theta)
 
-    real_sh = np.where(m > 0, sh.imag, sh.real)
-    real_sh *= np.where(m == 0, 1., np.sqrt(2))
+    real_sh = np.where(m_values > 0, sh.imag, sh.real)
+    real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
 
     return real_sh
 
-
-def real_sh_tournier(sh_order, theta, phi,
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def real_sh_tournier(sh_order_max, theta, phi,
                      full_basis=False,
                      legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_n$
+    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
     is defined to be:
 
-        Real($Y^m_n$) * sqrt(2)      if m > 0
-        $Y^0_n$                      if m = 0
-        Imag($Y^|m|_n$) * sqrt(2)    if m < 0
+        Real($Y^m_l$) * sqrt(2)      if m > 0
+        $Y^0_l$                      if m = 0
+        Imag($Y^|m|_l$) * sqrt(2)    if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    sh_order : int
-        The maximum degree or the spherical harmonic basis.
+    sh_order_max : int
+        The maximum order (l) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -392,11 +401,11 @@ def real_sh_tournier(sh_order, theta, phi,
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``.
-    m : array
-        The degree of the harmonics.
-    n : array
-        The order of the harmonics.
+        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+    m_values : array of int
+        The phase factor (m) of the harmonics.
+    l_values : array of int
+        The order (l) of the harmonics.
 
     References
     ----------
@@ -409,33 +418,33 @@ def real_sh_tournier(sh_order, theta, phi,
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    m, n = sph_harm_ind_list(sh_order, full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_tournier_from_index(m, n, theta, phi, legacy)
+    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy)
 
-    return real_sh, m, n
+    return real_sh, m_values, l_values
 
-
-def real_sh_descoteaux(sh_order, theta, phi,
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def real_sh_descoteaux(sh_order_max, theta, phi,
                        full_basis=False,
                        legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_n$ is defined to be:
+    where the real harmonic $Y^m_l$ is defined to be:
 
-        Imag($Y^m_n$) * sqrt(2)      if m > 0
-        $Y^0_n$                      if m = 0
-        Real($Y^m_n$) * sqrt(2)      if m < 0
+        Imag($Y^m_l$) * sqrt(2)      if m > 0
+        $Y^0_l$                      if m = 0
+        Real($Y^m_l$) * sqrt(2)      if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    sh_order : int
-        The maximum degree or the spherical harmonic basis.
+    sh_order_max : int
+        The maximum order (l) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -452,11 +461,11 @@ def real_sh_descoteaux(sh_order, theta, phi,
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``.
-    m : array
-        The degree of the harmonics.
-    n : array
-        The order of the harmonics.
+        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+    m_values : array of int
+        The phase factor (m) of the harmonics.
+    l_values : array of int
+        The order (l) of the harmonics.
 
     References
     ----------
@@ -464,35 +473,37 @@ def real_sh_descoteaux(sh_order, theta, phi,
            Regularized, Fast, and Robust Analytical Q-ball Imaging.
            Magn. Reson. Med. 2007;58:497-510.
     """
-    m, n = sph_harm_ind_list(sh_order, full_basis)
+    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_descoteaux_from_index(m, n, theta, phi, legacy)
+    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi,
+                                            legacy)
 
-    return real_sh, m, n
+    return real_sh, m_value, l_value
 
 
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_tournier instead',
                         since='1.3', until='2.0')
-def real_sym_sh_mrtrix(sh_order, theta, phi):
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     """
     Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
-    the real harmonic $Y^m_n$ is defined to be::
+    the real harmonic $Y^m_l$ is defined to be::
 
-        Real($Y^m_n$)       if m > 0
-        $Y^0_n$             if m = 0
-        Imag($Y^|m|_n$)     if m < 0
+        Real($Y^m_l$)       if m > 0
+        $Y^0_l$             if m = 0
+        Imag($Y^|m|_l$)     if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    sh_order : int
-        The maximum order or the spherical harmonic basis.
+    sh_order_max : int
+        The maximum order (l) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -501,13 +512,13 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi`` as
+        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi`` as
         implemented in mrtrix. Warning: the basis is Tournier et al.
         2007 [2]_; 2004 [1]_ is slightly different.
-    m : array
-        The degree of the harmonics.
-    n : array
-        The order of the harmonics.
+    m_values : array
+        The phase factor (m) of the harmonics.
+    l_values : array
+        The order (l) of the harmonics.
 
     References
     ----------
@@ -521,31 +532,33 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
            NeuroImage. 2007;35(4):1459-1472.
 
     """
-    return real_sh_tournier(sh_order, theta, phi, legacy=True)
+    return real_sh_tournier(sh_order_max, theta, phi, legacy=True)
 
 
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_basis is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_descoteaux '
                         'instead', since='1.3', until='2.0')
-def real_sym_sh_basis(sh_order, theta, phi):
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def real_sym_sh_basis(sh_order_max, theta, phi):
     """Samples a real symmetric spherical harmonic basis at point on the sphere
 
-    Samples the basis functions up to order `sh_order` at points on the sphere
-    given by `theta` and `phi`. The basis functions are defined here the same
-    way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y^m_n$ is
-    defined to be:
+    Samples the basis functions up to order `sh_order_max` at points on the
+    sphere given by `theta` and `phi`. The basis functions are defined here the
+    same way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y^m_l$
+    is defined to be:
 
-        Imag($Y^m_n$) * sqrt(2)     if m > 0
-        $Y^0_n$                     if m = 0
-        Real($Y^|m|_n$) * sqrt(2)   if m < 0
+        Imag($Y^m_l$) * sqrt(2)     if m > 0
+        $Y^0_l$                     if m = 0
+        Real($Y^|m|_l$) * sqrt(2)   if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
     ----------
-    sh_order : int
-        even int > 0, max spherical harmonic order
+    sh_order_max : int
+        The maximum order (l) of the spherical harmonic basis. Even int > 0,
+        max spherical harmonic order
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -554,11 +567,11 @@ def real_sym_sh_basis(sh_order, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``
-    m : array
-        The degree of the harmonics.
-    n : array
-        The order of the harmonics.
+        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``
+    m_values : array of int
+        The phase factor (m) of the harmonics.
+    l_values : array of int
+        The order (l) of the harmonics.
 
     References
     ----------
@@ -567,35 +580,37 @@ def real_sym_sh_basis(sh_order, theta, phi):
            Magn. Reson. Med. 2007;58:497-510.
 
     """
-    return real_sh_descoteaux(sh_order, theta, phi, legacy=True)
+    return real_sh_descoteaux(sh_order_max, theta, phi, legacy=True)
 
 
 sph_harm_lookup = {None: real_sh_descoteaux,
                    "tournier07": real_sh_tournier,
                    "descoteaux07": real_sh_descoteaux}
 
-
-def sph_harm_ind_list(sh_order, full_basis=False):
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def sph_harm_ind_list(sh_order_max, full_basis=False):
     """
-    Returns the degree (``m``) and order (``n``) of all the symmetric spherical
-    harmonics of degree less then or equal to ``sh_order``. The results,
-    ``m_list`` and ``n_list`` are kx1 arrays, where k depends on ``sh_order``.
+    Returns the order (``l``) and phase_factor (``m``) of all the symmetric
+    spherical harmonics of order less then or equal to ``sh_order_max``.
+    The results, ``m_list`` and ``l_list`` are kx1 arrays, where k depends on
+    ``sh_order_max``.
     They can be passed to :func:`real_sh_descoteaux_from_index` and
     :func:``real_sh_tournier_from_index``.
 
     Parameters
     ----------
-    sh_order : int
-        even int > 0, max order to return
+    sh_order_max : int
+        The maximum order (l) of the spherical harmonic basis.
+        Even int > 0, max order to return
     full_basis: bool, optional
         True for SH basis with even and odd order terms
 
     Returns
     -------
-    m_list : array
-        degrees of even spherical harmonics
-    n_list : array
-        orders of even spherical harmonics
+    m_list : array of int
+        phase factors (m) of even spherical harmonics
+    l_list : array of int
+        orders (l) of even spherical harmonics
 
     See Also
     --------
@@ -603,28 +618,28 @@ def sph_harm_ind_list(sh_order, full_basis=False):
 
     """
     if full_basis:
-        n_range = np.arange(0, sh_order + 1, dtype=int)
-        ncoef = int((sh_order + 1) * (sh_order + 1))
+        l_range = np.arange(0, sh_order_max + 1, dtype=int)
+        ncoef = int((sh_order_max + 1) * (sh_order_max + 1))
     else:
-        if sh_order % 2 != 0:
-            raise ValueError('sh_order must be an even integer >= 0')
-        n_range = np.arange(0, sh_order + 1, 2, dtype=int)
-        ncoef = int((sh_order + 2) * (sh_order + 1) // 2)
+        if sh_order_max % 2 != 0:
+            raise ValueError('sh_order_max must be an even integer >= 0')
+        l_range = np.arange(0, sh_order_max + 1, 2, dtype=int)
+        ncoef = int((sh_order_max + 2) * (sh_order_max + 1) // 2)
 
-    n_list = np.repeat(n_range, n_range * 2 + 1)
+    l_list = np.repeat(l_range, l_range * 2 + 1)
     offset = 0
     m_list = np.empty(ncoef, 'int')
-    for ii in n_range:
+    for ii in l_range:
         m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
         offset = offset + 2 * ii + 1
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
-    return m_list, n_list
+    return m_list, l_list
 
 
 def order_from_ncoef(ncoef, full_basis=False):
     """
-    Given a number ``n`` of coefficients, calculate back the ``sh_order``
+    Given a number ``n`` of coefficients, calculate back the ``sh_order_max``
 
     Parameters
     ----------
@@ -635,16 +650,16 @@ def order_from_ncoef(ncoef, full_basis=False):
 
     Returns
     -------
-    sh_order: int
-        maximum order of SH basis
+    sh_order_max: int
+        maximum order (l) of SH basis
     """
     if full_basis:
         # Solve the equation :
-        # ncoef = (sh_order + 1) * (sh_order + 1)
+        # ncoef = (sh_order_max + 1) * (sh_order_max + 1)
         return int(np.sqrt(ncoef) - 1)
 
     # Solve the quadratic equation derived from :
-    # ncoef = (sh_order + 2) * (sh_order + 1) / 2
+    # ncoef = (sh_order_max + 2) * (sh_order_max + 1) / 2
     return -1 + int(np.sqrt(9 - 4 * (2-2*ncoef))//2)
 
 
@@ -747,17 +762,19 @@ class SphHarmModel(OdfModel, Cache):
         """
         sampling_matrix = self.cache_get("sampling_matrix", sphere)
         if sampling_matrix is None:
-            sh_order = self.sh_order
+            sh_order = self.sh_order_max
             theta = sphere.theta
             phi = sphere.phi
-            sampling_matrix, m, n = real_sh_descoteaux(sh_order, theta, phi)
+            sampling_matrix, m_values, l_values = real_sh_descoteaux(sh_order,
+                                                                     theta, phi)
             self.cache_set("sampling_matrix", sphere, sampling_matrix)
         return sampling_matrix
 
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
-    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1e-5,
+    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+    def __init__(self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -765,8 +782,8 @@ class QballBaseModel(SphHarmModel):
         ----------
         gtab : GradientTable
             Diffusion gradients used to acquire data
-        sh_order : even int >= 0
-            the spherical harmonic order of the model
+        sh_order_max : even int >= 0
+            the maximal spherical harmonic order (l) of the model
         smooth : float between 0 and 1, optional
             The regularization parameter of the model
         min_signal : float, > 0, optional
@@ -790,14 +807,15 @@ class QballBaseModel(SphHarmModel):
         self.min_signal = min_signal
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
-        B, m, n = real_sh_descoteaux(sh_order, theta[:, None], phi[:, None])
-        L = -n * (n + 1)
-        legendre0 = sps.lpn(sh_order, 0)[0]
-        F = legendre0[n]
-        self.sh_order = sh_order
+        B, m_values, l_values = real_sh_descoteaux(sh_order_max, theta[:, None],
+                                                   phi[:, None])
+        L = -l_values * (l_values + 1)
+        legendre0 = sps.lpn(sh_order_max, 0)[0]
+        F = legendre0[l_values]
+        self.sh_order_max = sh_order_max
         self.B = B
-        self.m = m
-        self.n = n
+        self.m_values = m_values
+        self.l_values = l_values
         self._set_fit_matrix(B, L, F, smooth)
 
     def _set_fit_matrix(self, *args):
@@ -1114,8 +1132,8 @@ class ResidualBootstrapWrapper:
         signal[self._where_dwi] = boot_signal
         return signal
 
-
-def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, full_basis=False,
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
              legacy=True, smooth=0.0):
     """Spherical function to spherical harmonics (SH).
 
@@ -1125,11 +1143,11 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, full_basis=False,
         Values of a function on the given ``sphere``.
     sphere : Sphere
         The points on which the sf is defined.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For ``sh_order``, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
-        basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis.
+    sh_order_max : int, optional
+        Maximum SH order (l) in the SH fit.  For ``sh_order_max``, there will be
+        ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients for a
+        symmetric basis and ``(sh_order_max + 1) * (sh_order_max + 1)``
+        coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
@@ -1168,18 +1186,19 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, full_basis=False,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi,
-                             full_basis=full_basis,
-                             legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
+                                           sphere.phi,
+                                           full_basis=full_basis,
+                                           legacy=legacy)
 
-    L = -n * (n + 1)
+    L = -l_values * (l_values + 1)
     invB = smooth_pinv(B, np.sqrt(smooth) * L)
     sh = np.dot(sf, invB.T)
 
     return sh
 
-
-def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def sh_to_sf(sh, sphere, sh_order_max=4, basis_type=None,
              full_basis=False, legacy=True):
     """Spherical harmonics (SH) to spherical function (SF).
 
@@ -1189,11 +1208,11 @@ def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
         SH coefficients representing a spherical function.
     sphere : Sphere
         The points on which to sample the spherical function.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For ``sh_order``, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
-        basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis.
+    sh_order_max : int, optional
+        Maximum SH order (l) in the SH fit.  For ``sh_order_max``, there will be
+        ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients for a
+        symmetric basis and ``(sh_order_max + 1) * (sh_order_max + 1)``
+        coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
@@ -1230,16 +1249,17 @@ def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi,
-                             full_basis=full_basis,
-                             legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
+                                           sphere.phi,
+                                           full_basis=full_basis,
+                                           legacy=legacy)
 
     sf = np.dot(sh, B.T)
 
     return sf
 
-
-def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, full_basis=False,
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+def sh_to_sf_matrix(sphere, sh_order_max=4, basis_type=None, full_basis=False,
                     legacy=True, return_inv=True, smooth=0):
     """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
@@ -1248,11 +1268,11 @@ def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, full_basis=False,
     ----------
     sphere : Sphere
         The points on which to sample the spherical function.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For ``sh_order``, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
-        basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis.
+    sh_order_max : int, optional
+        Maximum SH order in the SH fit.  For ``sh_order_max``, there will be
+        ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients for a
+        symmetric basis and ``(sh_order_max + 1) * (sh_order_max + 1)``
+        coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
@@ -1297,11 +1317,13 @@ def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, full_basis=False,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi,
-                             full_basis=full_basis, legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
+                                           sphere.phi,
+                                           full_basis=full_basis,
+                                           legacy=legacy)
 
     if return_inv:
-        L = -n * (n + 1)
+        L = -l_values * (l_values + 1)
         invB = smooth_pinv(B, np.sqrt(smooth) * L)
         return B.T, invB.T
 
@@ -1309,7 +1331,7 @@ def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, full_basis=False,
 
 
 def calculate_max_order(n_coeffs, full_basis=False):
-    r"""Calculate the maximal harmonic order, given that you know the
+    r"""Calculate the maximal harmonic order (l), given that you know the
     number of parameters that were estimated.
 
     Parameters
@@ -1323,7 +1345,7 @@ def calculate_max_order(n_coeffs, full_basis=False):
     Returns
     -------
     L : int
-        The maximal SH order, given the number of coefficients
+        The maximal SH order (l), given the number of coefficients
 
     Notes
     -----
@@ -1464,8 +1486,8 @@ def convert_sh_to_full_basis(sh_coeffs):
         SH coefficients estimates for that voxel in
         a full SH basis.
     """
-    sh_order = calculate_max_order(sh_coeffs.shape[-1])
-    _, n = sph_harm_ind_list(sh_order, full_basis=True)
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1])
+    _, n = sph_harm_ind_list(sh_order_max, full_basis=True)
 
     full_sh_coeffs =\
         np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(int))
@@ -1511,15 +1533,15 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    sh_order = calculate_max_order(sh_coeffs.shape[-1],
-                                   full_basis=full_basis)
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1],
+                                       full_basis=full_basis)
 
-    m, n = sph_harm_ind_list(sh_order, full_basis=full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     if sh_basis == 'descoteaux07':
-        out_sh_coeffs = sh_coeffs * np.where(m < 0, (-1.)**m, 1.)
+        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.)**m_values, 1.)
     elif sh_basis == 'tournier07':
-        out_sh_coeffs = sh_coeffs * np.where(m == 0, 1., 1./np.sqrt(2))
+        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1., 1./np.sqrt(2))
     else:
         raise ValueError("Invalid basis name.")
 
@@ -1562,15 +1584,15 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    sh_order = calculate_max_order(sh_coeffs.shape[-1],
-                                   full_basis=full_basis)
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1],
+                                       full_basis=full_basis)
 
-    m, n = sph_harm_ind_list(sh_order, full_basis=full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     if sh_basis == 'descoteaux07':
-        out_sh_coeffs = sh_coeffs * np.where(m < 0, (-1.)**m, 1.)
+        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.)**m_values, 1.)
     elif sh_basis == 'tournier07':
-        out_sh_coeffs = sh_coeffs * np.where(m == 0, 1., np.sqrt(2))
+        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1., np.sqrt(2))
     else:
         raise ValueError("Invalid basis name.")
 
@@ -1618,10 +1640,10 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
     .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
     """  # noqa: E501
 
-    sh_order = calculate_max_order(sh_coeffs.shape[-1])
-    m, n = sph_harm_ind_list(sh_order)
-    basis_indices = list(zip(n, m))  # dipy basis ordering
-    basis_indices_permuted = list(zip(n, -m))  # mrtrix basis ordering
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1])
+    m_values, l_values = sph_harm_ind_list(sh_order_max)
+    basis_indices = list(zip(l_values, m_values))  # dipy basis ordering
+    basis_indices_permuted = list(zip(l_values, -m_values))  # mrtrix basis ordering
     permutation = [
         basis_indices.index(basis_indices_permuted[i])
         for i in range(len(basis_indices))

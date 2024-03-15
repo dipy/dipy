@@ -56,7 +56,7 @@ mask[mask_labeled != val] = 0
 save_nifti('mask.nii.gz', mask.astype(np.uint8), affine)
 
 ###############################################################################
-# Using a ResDNN for sh_order 8 (default) and load the appropriate weights.
+# Using a ResDNN for sh_order_max 8 (default) and load the appropriate weights.
 # Fit the data and save the resulting fODF.
 
 resdnn_model = HistoResDNN(verbose=True)
@@ -71,7 +71,7 @@ save_nifti('predicted_sh.nii.gz', predicted_sh, affine)
 
 interactive = False
 sphere = get_sphere('repulsion724')
-B, invB = sh_to_sf_matrix(sphere, sh_order=8,
+B, invB = sh_to_sf_matrix(sphere, sh_order_max=8,
                           basis_type=resdnn_model.basis_type, smooth=0.0006)
 fod_spheres = actor.odf_slicer(predicted_sh, sphere=sphere,
                                scale=0.6, norm=True, mask=mask, B_matrix=B)

@@ -16,7 +16,7 @@ from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
-
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 
 
@@ -371,10 +371,11 @@ def _peaks_from_model_parallel_sub(args):
                             parallel=False, num_processes=None)
 
 
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, legacy=True, npeaks=5,
+                     sh_order_max=8, sh_basis_type=None, legacy=True, npeaks=5,
                      B=None, invB=None, parallel=False, num_processes=None):
     """Fit the model to data and computes peaks and metrics
 
@@ -403,9 +404,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For `sh_order`, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
+    sh_order_max : int, optional
+        Maximum SH order (l) in the SH fit.  For `sh_order_max`, there
+        will be
+        ``(sh_order_max + 1) * (sh_order_max + 2) / 2``
+        SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_ basis, and
@@ -451,7 +454,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order, sh_basis_type, return_inv=True, legacy=legacy)
+            sphere, sh_order_max, sh_basis_type, return_inv=True, legacy=legacy)
 
     num_processes = determine_num_processes(num_processes)
 
@@ -468,7 +471,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           return_sh,
                                           gfa_thr,
                                           normalize_peaks,
-                                          sh_order,
+                                          sh_order_max,
                                           sh_basis_type,
                                           legacy,
                                           npeaks,
@@ -492,7 +495,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-        n_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
+        n_shm_coeff = (sh_order_max + 2) * (sh_order_max + 1) // 2
         shm_coeff = np.zeros((shape + (n_shm_coeff,)))
 
     if return_odf:

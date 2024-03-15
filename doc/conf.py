@@ -132,9 +132,10 @@ html_style = 'css/dipy.css'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+doc_version = "development" if "dev" in version else version
 html_theme_options = {
   "switcher": {"json_url": "https://docs.dipy.org/dev/_static/version_switcher.json",
-               "version_match": "1.8.0", },
+               "version_match": doc_version, },
   "check_switcher": False,
   "show_version_warning_banner": True,
   "navbar_end": ["search-field.html", "version-switcher", "navbar-icon-links.html"],

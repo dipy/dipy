@@ -29,12 +29,14 @@ The following 17 authors contributed 175 commits.
 * Étienne Mollier
 
 
-We closed a total of 139 issues, 58 pull requests and 81 regular issues;
+We closed a total of 139 issues, 60 pull requests and 81 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (58):
+Pull Requests (60):
 
+* :ghpull:`3095`: [UPCOMING] Release preparation for 1.9.0
+* :ghpull:`3086`: [RF] Fix spherical harmonic terminology swap
 * :ghpull:`3105`: [doc] improve some tutorials rendering
 * :ghpull:`3109`: [BF] convert_tractogram fix
 * :ghpull:`3108`: enabled trx support with correct header
@@ -96,6 +98,7 @@ Pull Requests (58):
 
 Issues (81):
 
+* :ghissue:`2970`: spherical harmonic degree/order terminology swapped
 * :ghissue:`3105`: [doc] improve some tutorials rendering
 * :ghissue:`3109`: [BF] convert_tractogram fix
 * :ghissue:`3108`: enabled trx support with correct header
