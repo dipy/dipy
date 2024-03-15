@@ -151,7 +151,7 @@ def _unpack_data(data, return_size=3):
     return result
 
 
-def is_binary_image(data, unique_points=100):
+def is_binary_image(data, sample_cube_size=(10, 10, 10)):
     """Check if an image is binary image.
 
     Parameters
@@ -167,12 +167,19 @@ def is_binary_image(data, unique_points=100):
     """
     indices = []
 
-    rng = np.random.default_rng()
+    if data.ndim == 4:
+        sample_cube_size = (10, 10, 10, 10)
 
-    for dim in data.shape:
-        indices.append(rng.integers(0, dim - 1, size=unique_points))
+    for idx, dim in enumerate(data.shape):
+        if dim < sample_cube_size[idx]:
+            indices.append(np.arange(stop=dim))
+        else:
+            start = int(dim/2) - int(sample_cube_size[idx]/2)
+            stop = int(dim/2) + int(sample_cube_size[idx]/2)
+            indices.append(np.arange(start=start, stop=stop))
 
-    return np.unique(np.take(data, indices)).shape[0] <= 2
+    print(np.take(data, indices))
+    return np.unique(np.take(data, indices, axis=-1)).shape[0] <= 2
 
 
 def check_peak_size(pams, ref_img_shape=None, sync_imgs=False):

@@ -463,6 +463,7 @@ class Horizon:
                 title = 'Image {}'.format(img_count+1)
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
+                print(is_binary_image(data))
                 if is_binary_image(data):
                     if self.__roi_images:
                         if 'rois' in self.random_colors:
