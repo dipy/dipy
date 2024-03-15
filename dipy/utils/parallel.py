@@ -1,26 +1,17 @@
-import multiprocessing
-
+import os
+import shutil
 import numpy as np
-from tqdm.auto import tqdm
-
 from dipy.utils.optpkg import optional_package
+import json
 
 joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
 ray, has_ray, _ = optional_package("ray")
 
 
-def paramap(
-    func,
-    in_list,
-    out_shape=None,
-    n_jobs=-1,
-    engine="joblib",
-    backend=None,
-    func_args=None,
-    func_kwargs=None,
-    **kwargs,
-):
+def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="ray",
+            backend=None, func_args=None, func_kwargs=None,
+            **kwargs):
     """
     Maps a function to a list of inputs in parallel.
 
@@ -42,7 +33,7 @@ def paramap(
     engine : str
         {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
-        parallelization. Default: "joblib"
+        parallelization. Default: "ray"
     backend : str, optional
         What joblib or dask backend to use. For joblib, the default is "loky".
         For dask the default is "threading".
@@ -103,15 +94,36 @@ def paramap(
         if not has_ray:
             raise ray()
 
+        if not ray.is_initialized():
+            ray.init(_system_config={
+                "object_spilling_config": json.dumps(
+                    {"type": "filesystem", "params": {"directory_path":
+                     "/tmp/spill"}},
+                )
+            },)
+
         func = ray.remote(func)
-        results = ray.get(
-            [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
-        )
+        results = ray.get([func.remote(ii, *func_args, **func_kwargs)
+                          for ii in in_list])
+
+        clean_spill = kwargs.get('clean_spill', False)
+        if clean_spill:
+            for filename in os.listdir("/tmp/spill"):
+                file_path = os.path.join("/tmp/spill", filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    print('Failed to delete %s. Reason: %s' % (file_path, e))
 
     elif engine == "serial":
         results = []
         for in_element in in_list:
             results.append(func(in_element, *func_args, **func_kwargs))
+    else:
+        raise ValueError("%s is not a valid engine" % engine)
 
     if out_shape is not None:
         return np.array(results).reshape(out_shape)
