@@ -14,7 +14,8 @@ if has_fury:
 
 class SlicesVisualizer:
     def __init__(self, interactor, scene, data, affine=None,
-                 world_coords=False, percentiles=[2, 98], rgb=False):
+                 world_coords=False, percentiles=[2, 98], rgb=False,
+                 is_binary=False):
 
         self._interactor = interactor
         self._scene = scene
@@ -29,19 +30,22 @@ class SlicesVisualizer:
         self._data_ndim = data.ndim
         self._data_shape = data.shape
         self._rgb = False
+        self._percentiles = percentiles
+        if is_binary:
+            self._percentiles = [0, 100]
 
         vol_data = self._data
 
         if ((self._data_ndim == 4 and rgb and self._data_shape[-1] == 3)
                 or self._data_ndim == 3):
             self._rgb = True and not self._data_ndim == 3
-            self._int_range = np.percentile(vol_data, percentiles)
+            self._int_range = np.percentile(vol_data, self._percentiles)
             _evaluate_intensities_range(self._int_range)
         else:
             if self._data_ndim == 4 and rgb and self._data_shape[-1] != 3:
                 warnings.warn('The rgb flag is enabled but the color '
                               + 'channel information is not provided')
-            vol_data = self._volume_calculations(percentiles)
+            vol_data = self._volume_calculations(self._percentiles)
 
         self._vol_max = np.max(vol_data)
         self._vol_min = np.min(vol_data)
