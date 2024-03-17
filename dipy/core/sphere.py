@@ -580,6 +580,9 @@ def fibonacci_hemisphere(n_points, randomize=True):
     z = np.sin(phi) * r
 
     points = np.column_stack((x, y, z))
+    if n_points < 30:
+        points_updated = disperse_charges_alt(points,1000)
+        return points_updated
     return points
 
 def _equality_constraints(vects):
