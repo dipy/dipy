@@ -6,7 +6,7 @@ import warnings
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, disperse_charges,
                               fibonacci_sphere, fibonacci_hemisphere,
-                              disperse_charges_alt, _get_forces, 
+                              disperse_charges_alt, _get_forces,
                               _get_forces_alt, unit_octahedron,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm

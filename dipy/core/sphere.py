@@ -553,7 +553,7 @@ def fibonacci_hemisphere(n_points, randomize=True):
     Returns
     -------
     points : ndarray
-        An array of 3D points representing coordinates on the hemisphere 
+        An array of 3D points representing coordinates on the hemisphere
         surface.
 
     """
