@@ -537,6 +537,7 @@ def fibonacci_sphere(n_points, randomize=True):
     points = np.column_stack((x, y, z))
     return points
 
+
 def fibonacci_hemisphere(n_points, randomize=True):
     """
     Generate points on the surface of a hemisphere using Fibonacci Spiral.
@@ -546,12 +547,14 @@ def fibonacci_hemisphere(n_points, randomize=True):
     n_points : int
         The number of points to generate on the hemisphere surface.
     randomize : bool, optional
-        If True, randomize the starting point on the hemisphere. Default is True.
+        If True, randomize the starting point on the hemisphere.
+        Default is True.
 
     Returns
     -------
     points : ndarray
-        An array of 3D points representing coordinates on the hemisphere surface.
+        An array of 3D points representing coordinates on the hemisphere 
+        surface.
 
     """
     if not isinstance(n_points, int) or n_points <= 4:

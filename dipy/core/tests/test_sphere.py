@@ -5,8 +5,9 @@ import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, disperse_charges,
-                              fibonacci_sphere, fibonacci_hemisphere, disperse_charges_alt,
-                              _get_forces, _get_forces_alt, unit_octahedron,
+                              fibonacci_sphere, fibonacci_hemisphere,
+                              disperse_charges_alt, _get_forces, 
+                              _get_forces_alt, unit_octahedron,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 from dipy.core.sphere_stats import random_uniform_on_sphere
@@ -398,6 +399,7 @@ def test_fibonacci_sphere():
     nt.assert_almost_equal(
         np.mean(np.mean(points, axis=0)), 0, decimal=2)
 
+
 def test_fibonacci_hemisphere():
     # Test that the number of points is correct
     points = fibonacci_hemisphere(n_points=721)
@@ -414,4 +416,3 @@ def test_fibonacci_hemisphere():
         np.mean(points, axis=0)[2], 0, decimal=2)
     nt.assert_almost_equal(
         np.mean(points, axis=0)[0], 0, decimal=2)
-    
