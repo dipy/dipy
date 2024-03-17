@@ -581,7 +581,7 @@ def fibonacci_hemisphere(n_points, randomize=True):
 
     points = np.column_stack((x, y, z))
     if n_points < 30:
-        points_updated = disperse_charges_alt(points,1000)
+        points_updated = disperse_charges_alt(points, 1000)
         return points_updated
     return points
 
