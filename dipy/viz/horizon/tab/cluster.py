@@ -1,151 +1,208 @@
 import numpy as np
 
-from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import (HorizonTab, build_label, color_single_slider)
-
-fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
-
-if has_fury:
-    from fury import ui
+from dipy.viz.horizon.tab import (HorizonTab, build_slider)
 
 
 class ClustersTab(HorizonTab):
     def __init__(self, clusters_visualizer, threshold):
-        self.__visualizer = clusters_visualizer
+        """Initialize Interaction tab for cluster visualization.
 
-        self.__centroid_actors = self.__visualizer.centroid_actors
-        self.__cluster_actors = self.__visualizer.cluster_actors
-        self.__name = 'Clusters'
+        Parameters
+        ----------
+        clusters_visualizer : ClusterVisualizer
+        threshold : float
+        """
 
-        self.__tab_id = 0
-        self.__tab_ui = None
+        super().__init__()
 
-        length = 450
-        lw = 3
-        radius = 8
-        fs = 16
-        tt = '{value:.0f}'
+        self._visualizer = clusters_visualizer
 
-        self.__slider_label_size = build_label(text='Size')
+        self._name = 'Clusters'
 
-        sizes = self.__visualizer.sizes
-        self.__selected_size = np.percentile(sizes, 50)
+        self._tab_id = 0
 
-        self.__slider_size = ui.LineSlider2D(
-            initial_value=self.__selected_size, min_value=np.min(sizes),
-            max_value=np.percentile(sizes, 98), length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        sizes = self._visualizer.sizes
+        self._size_slider_label, self._size_slider = build_slider(
+            initial_value=np.percentile(sizes, 50), min_value=np.min(sizes),
+            max_value=np.percentile(sizes, 98), text_template='{value:.0f}',
+            label='Size', on_change=self._change_size
+        )
 
-        color_single_slider(self.__slider_size)
+        lengths = self._visualizer.lengths
+        self._length_slider_label, self._length_slider = build_slider(
+            initial_value=np.percentile(lengths, 25),
+            min_value=np.min(lengths), max_value=np.percentile(lengths, 98),
+            text_template='{value:.0f}', label='Length',
+            on_change=self._change_length
+        )
 
-        self.__slider_size.handle_events(self.__slider_size.handle.actor)
-        self.__slider_size.on_left_mouse_button_released = self.__change_size
+        self._threshold_slider_label, self._threshold_slider = build_slider(
+            initial_value=threshold, min_value=5, max_value=25,
+            text_template='{value:.0f}', label='Threshold',
+            on_handle_released=self._change_threshold
+        )
 
-        self.__slider_label_length = build_label(text='Length')
+        self.register_elements(
+            self._size_slider_label, self._size_slider,
+            self._length_slider_label, self._length_slider,
+            self._threshold_slider_label, self._threshold_slider
+        )
 
-        lengths = self.__visualizer.lengths
-        self.__selected_length = np.percentile(lengths, 25)
+    def _change_length(self, slider):
+        """Change the length threshold for visibility.
 
-        self.__slider_length = ui.LineSlider2D(
-            initial_value=self.__selected_length, min_value=np.min(lengths),
-            max_value=np.percentile(lengths, 98), length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+        Parameters
+        ----------
+        slider : LineSlider2D
+            FURY object for slider.
+        """
+        self._length_slider.selected_value = int(np.rint(slider.value))
+        self._update_clusters()
 
-        color_single_slider(self.__slider_length)
+    def _change_size(self, slider):
+        """Change the size threshold for visibility.
 
-        self.__slider_length.handle_events(self.__slider_length.handle.actor)
-        self.__slider_length.on_left_mouse_button_released = (
-            self.__change_length)
+        Parameters
+        ----------
+        slider : LineSlider2D
+            FURY object for slider.
+        """
+        self._size_slider.selected_value = int(np.rint(slider.value))
+        self._update_clusters()
 
-        self.__slider_label_threshold = build_label(text='Threshold')
+    def _change_threshold(self, _istyle, _obj, slider):
+        """Re-cluster the tractograms according to the new threshold set. It
+        will also update the size and length slider for corresponding
+        threshold.
 
-        self.__selected_threshold = threshold
-
-        self.__slider_threshold = ui.LineSlider2D(
-            initial_value=self.__selected_threshold, min_value=5, max_value=25,
-            length=length, line_width=lw, outer_radius=radius, font_size=fs,
-            text_template=tt)
-
-        color_single_slider(self.__slider_threshold)
-
-        self.__slider_threshold.handle_events(
-            self.__slider_threshold.handle.actor)
-        self.__slider_threshold.on_left_mouse_button_released = (
-            self.__change_threshold)
-
-    def __change_length(self, istyle, obj, slider):
-        self.__selected_length = int(np.rint(slider.value))
-        self.__update_clusters()
-        istyle.force_render()
-
-    def __change_size(self, istyle, obj, slider):
-        self.__selected_size = int(np.rint(slider.value))
-        self.__update_clusters()
-        istyle.force_render()
-
-    def __change_threshold(self, istyle, obj, slider):
+        Parameters
+        ----------
+        _istyle : vtkInteractor
+            Should not be used.
+        _obj : vtkObject
+            Should not be used.
+        slider : LineSlider2D
+            FURY object for slider.
+        """
         value = int(np.rint(slider.value))
-        if value != self.__selected_threshold:
-            self.__visualizer.recluster_tractograms(value)
+        if value != self._threshold_slider.selected_value:
+            self._visualizer.recluster_tractograms(value)
 
-            sizes = self.__visualizer.sizes
-            self.__selected_size = np.percentile(sizes, 50)
+            sizes = self._visualizer.sizes
+            self._size_slider.selected_value = np.percentile(sizes, 50)
 
-            lengths = self.__visualizer.lengths
-            self.__selected_length = np.percentile(lengths, 25)
+            lengths = self._visualizer.lengths
+            self._length_slider.selected_value = np.percentile(lengths, 25)
 
-            self.__update_clusters()
+            self._update_clusters()
 
-            # Updating size slider
-            self.__slider_size.min_value = np.min(sizes)
-            self.__slider_size.max_value = np.percentile(sizes, 98)
-            self.__slider_size.value = self.__selected_size
-            self.__slider_size.update()
+            self._size_slider.obj.min_value = np.min(sizes)
+            self._size_slider.obj.max_value = np.percentile(sizes, 98)
+            self._size_slider.obj.value = self._size_slider.selected_value
+            self._size_slider.obj.update()
 
-            # Updating length slider
-            self.__slider_length.min_value = np.min(lengths)
-            self.__slider_length.max_value = np.percentile(lengths, 98)
-            self.__slider_length.value = self.__selected_length
-            self.__slider_length.update()
+            self._length_slider.obj.min_value = np.min(lengths)
+            self._length_slider.obj.max_value = np.percentile(lengths, 98)
+            self._length_slider.obj.value = self._length_slider.selected_value
+            self._length_slider.obj.update()
 
-            self.__selected_threshold = value
-            istyle.force_render()
+            self._threshold_slider.selected_value = value
 
-    def __update_clusters(self):
-        for k in self.__cluster_actors:
+    def _update_clusters(self):
+        """Updates the clusters according to set size and length.
+        """
+        for k, cluster in self.cluster_actors.items():
+
             length_validation = (
-                self.__cluster_actors[k]['length'] < self.__selected_length)
+                cluster['length'] < self._length_slider.selected_value)
+
             size_validation = (
-                self.__cluster_actors[k]['size'] < self.__selected_size)
+                cluster['size'] < self._size_slider.selected_value)
+
             if (length_validation or size_validation):
-                self.__cluster_actors[k]['actor'].SetVisibility(False)
+                cluster['actor'].SetVisibility(False)
+
                 if k.GetVisibility():
                     k.SetVisibility(False)
             else:
-                self.__cluster_actors[k]['actor'].SetVisibility(True)
+                cluster['actor'].SetVisibility(True)
 
-    def build(self, tab_id, tab_ui):
-        self.__tab_id = tab_id
-        self.__tab_ui = tab_ui
+    def build(self, tab_id, _tab_ui):
+        """Position the elements in the tab.
+
+        Parameters
+        ----------
+        tab_id : int
+        _tab_ui : TabUI
+            Object for Tab from FURY.
+        """
+        self._tab_id = tab_id
 
         x_pos = .02
 
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_size, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_length, (x_pos, .62))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_threshold, (x_pos, .38))
+        self._size_slider_label.position = (x_pos, .85)
+        self._length_slider_label.position = (x_pos, .62)
+        self._threshold_slider_label.position = (x_pos, .38)
 
-        x_pos=.12
+        x_pos = .12
 
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_size, (x_pos, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_length, (x_pos, .62))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_threshold, (x_pos, .38))
+        self._size_slider.position = (x_pos, .85)
+        self._length_slider.position = (x_pos, .62)
+        self._threshold_slider.position = (x_pos, .38)
 
     @property
     def name(self):
-        return self.__name
+        """Title of the tab.
+
+        Returns
+        -------
+        str
+        """
+        return self._name
+
+    @property
+    def cluster_actors(self):
+        """Cluster actors of the tractograms.
+
+        Returns
+        -------
+        dict
+            various properties of clusters.
+        """
+        return self._visualizer.cluster_actors
+
+    @property
+    def centroid_actors(self):
+        """Centroid actors of the tractograms.
+
+        Returns
+        -------
+        dict
+            various properties of centroids.
+        """
+        return self._visualizer.centroid_actors
+
+    @property
+    def tab_id(self):
+        """Id of the tab. Reference for Tab Manager to identify the tab.
+
+        Returns
+        -------
+        int
+        """
+        return self._tab_id
+
+    @property
+    def actors(self):
+        """All the actors in the visualizer.
+
+        Returns
+        -------
+        list
+        """
+        actors = []
+        for cluster_actor in self.cluster_actors.values():
+            actors.append(cluster_actor['actor'])
+        for centroid_actor in self.centroid_actors.values():
+            actors.append(centroid_actor['actor'])
+        return actors
