@@ -128,7 +128,7 @@ doc = [
 
 [project.urls]
 homepage = "https://dipy.org"
-documentation = "https://dipy.org/documentation/latest/documentation/"
+documentation = "https://docs.dipy.org/stable/"
 source = "https://github.com/dipy/dipy"
 download = "https://pypi.org/project/dipy/#files"
 tracker = "https://github.com/dipy/dipy/issues"
