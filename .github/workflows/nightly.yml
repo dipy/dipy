@@ -168,5 +168,5 @@ jobs:
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_SCIENTIFIC_PYTHON_NIGHTLY_TOKEN}}
-          anaconda_nightly_upload_organization: scientific-python
+          anaconda_nightly_upload_organization: scientific-python-nightly-wheels
           anaconda_nightly_upload_labels: main

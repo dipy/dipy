@@ -59,6 +59,9 @@ jobs:
         python-version: ${{fromJSON(inputs.python-version) }}
         os: ${{fromJSON(inputs.runs-on) }}
         install-type: ${{fromJSON(inputs.install-type) }}
+        exclude:
+          - os: macos-14
+            python-version: 3.9
     env:
       DEPENDS: ${{ inputs.depends }}
       EXTRA_DEPENDS: ${{ inputs.extra-depends }}
