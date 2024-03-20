@@ -3,6 +3,7 @@ from warnings import warn
 import numpy as np
 
 from dipy.reconst.dti import fractional_anisotropy, color_fa
+from dipy.segment.utils import remove_holes_and_islands
 
 from scipy.ndimage import median_filter
 try:
@@ -124,7 +125,7 @@ def crop(vol, mins, maxs):
 
 
 def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
-                autocrop=False, dilate=None):
+                autocrop=False, dilate=None, finalize_mask=True):
     """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an
@@ -151,9 +152,11 @@ def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
         if True, the masked input_volume will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
         upsampled to 1x1x1 resolution. (default: False).
-
     dilate : None or int, optional
         number of iterations for binary dilation
+    finalize_mask : bool, optional
+        Whether to remove potential holes or islands.
+        Useful for solving minor errors.
 
     Returns
     -------
@@ -210,6 +213,9 @@ def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
         cross = generate_binary_structure(3, 1)
         mask = binary_dilation(mask, cross, iterations=dilate)
 
+    # Correct mask by removing islands and holes
+    if finalize_mask:
+        mask = remove_holes_and_islands(mask)
     # Auto crop the volumes using the mask as input_volume for bounding box
     # computing.
     if autocrop:
