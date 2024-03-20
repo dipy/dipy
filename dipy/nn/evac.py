@@ -8,9 +8,11 @@ import numpy as np
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
+from dipy.utils.deprecator import deprecated_params
 from dipy.align.reslice import reslice
 from dipy.nn.utils import normalize, set_logger_level, transform_img
-from dipy.nn.utils import recover_img, correct_minor_errors
+from dipy.nn.utils import recover_img
+from dipy.segment.utils import remove_holes_and_islands
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
@@ -294,10 +296,11 @@ class EVACPlus:
 
         return self.model.predict(x_test)
 
+    @deprecated_params('largest_area', 'correct_mask', since='2.0', until='2.1')
     def predict(self, T1, affine,
                 voxsize=(1, 1, 1), batch_size=None,
                 return_affine=False, return_prob=False,
-                largest_area=True):
+                correct_mask=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
 
@@ -336,10 +339,9 @@ class EVACPlus:
             binary mask. Useful for testing.
             Default is False
 
-        largest_area : bool, optional
-            Whether to exclude only the largest background/foreground.
+        correct_mask : bool, optional
+            Whether to remove potential holes or islands.
             Useful for solving minor errors.
-            Default is True
 
         Returns
         -------
@@ -411,8 +413,8 @@ class EVACPlus:
                                  image_shape=T1_img.shape)
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
-                if largest_area:
-                    output = correct_minor_errors(output)
+                if correct_mask:
+                    output = remove_holes_and_islands(output)
             output_mask.append(output)
 
         if dim == 3:
