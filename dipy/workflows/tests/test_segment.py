@@ -25,6 +25,7 @@ def test_median_otsu_flow():
         autocrop = False
         vol_idx = "0,"
         dilate = 0
+        finalize_mask = False
 
         mo_flow = MedianOtsuFlow()
         mo_flow.run(
@@ -36,6 +37,7 @@ def test_median_otsu_flow():
             autocrop=autocrop,
             vol_idx=vol_idx,
             dilate=dilate,
+            finalize_mask=finalize_mask,
         )
 
         mask_name = mo_flow.last_generated_outputs["out_mask"]

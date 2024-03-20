@@ -25,7 +25,8 @@ select = [
 ignore = [
   "B905",
   "C901",
-  "E203"
+  "E203",
+  "F811"
 ]
 
 [lint.extend-per-file-ignores]
