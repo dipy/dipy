@@ -3,7 +3,7 @@ from dipy.viz.horizon.tab import (HorizonTab, build_slider, build_checkbox)
 
 class ROIsTab(HorizonTab):
     def __init__(self, contour_actors):
-        """Interaction tab for ROIs visualization.
+        """Initialize interaction tab for ROIs visualization.
 
         Parameters
         ----------
