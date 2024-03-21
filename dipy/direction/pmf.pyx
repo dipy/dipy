@@ -16,7 +16,6 @@ cdef class PmfGen:
                  double[:, :, :, :] data,
                  object sphere):
         self.data = np.asarray(data, dtype=float, order='C')
-        self.sphere = sphere
         self.vertices = np.asarray(sphere.vertices, dtype=float)
 
     def get_pmf(self, double[::1] point):
