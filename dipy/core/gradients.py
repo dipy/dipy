@@ -1,10 +1,10 @@
+import importlib
 import logging
 from warnings import warn
 
 import numpy as np
 from scipy.linalg import inv, polar
 
-from dipy.io import gradients as io
 from dipy.core.onetime import auto_attr
 from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
@@ -255,14 +255,11 @@ class GradientTable:
 
     @auto_attr
     def qvals(self):
-        tau = self.big_delta - self.small_delta / 3.0
-        return np.sqrt(self.bvals / tau) / (2 * np.pi)
+        return np.sqrt(self.bvals / self.tau) / (2 * np.pi)
 
     @auto_attr
     def gradient_strength(self):
-        tau = self.big_delta - self.small_delta / 3.0
-        qvals = np.sqrt(self.bvals / tau) / (2 * np.pi)
-        gradient_strength = (qvals * (2 * np.pi) /
+        gradient_strength = (self.qvals * (2 * np.pi) /
                              (self.small_delta * WATER_GYROMAGNETIC_RATIO))
         return gradient_strength
 
@@ -317,9 +314,39 @@ class GradientTable:
         # of GradientTable.
 
     @property
-    def info(self, use_logging=False):
+    def info(self):
+        self.display_info()
+
+    def display_info(self, use_logging=False):
         show = logging.info if use_logging else print
         show(self.__str__())
+
+    @property
+    def header(self):
+        header = ["bvals", "bvecs_x", "bvecs_y", "bvecs_z", "b0s_mask"]
+        btens_header = ["btens_xx", "btens_xy", "btens_xz", "btens_yx",
+                        "btens_yy", "btens_yz", "btens_zx", "btens_zy",
+                        "btens_zz"]
+        qvals_header = ["qvals", "gradient_strength", "big_delta",
+                        "small_delta",]
+
+        if self.btens is not None:
+            header += btens_header
+        if self.big_delta is not None and self.small_delta is not None:
+            header += qvals_header
+
+        return header
+
+    @auto_attr
+    def condensed(self):
+        merged = (self.bvals[:, None], self.bvecs, self.b0s_mask[:, None])
+        if self.btens is not None:
+            merged += (self.btens.reshape(-1, 9),)
+        if self.big_delta is not None and self.small_delta is not None:
+            merged += (self.qvals[:, None], self.gradient_strength[:, None],
+                       self.big_delta*np.ones(self.qvals.shape)[:, None],
+                       self.small_delta*np.ones(self.qvals.shape)[:, None])
+        return np.concatenate(merged, axis=1)
 
     def __str__(self):
         msg = 'B-values shape {}\n'.format(self.bvals.shape)
@@ -328,6 +355,34 @@ class GradientTable:
         msg += 'B-vectors shape {}\n'.format(self.bvecs.shape)
         msg += '          min {:f}\n'.format(self.bvecs.min())
         msg += '          max {:f}\n'.format(self.bvecs.max())
+        if self.big_delta is not None and self.small_delta is not None:
+            msg += 'Big Delta: {:f}\n'.format(self.big_delta)
+            msg += 'Small Delta: {:f}\n'.format(self.small_delta)
+            msg += 'Q-values shape {}\n'.format(self.qvals.shape)
+            msg += '          min {:f}\n'.format(self.qvals.min())
+            msg += '          max {:f}\n'.format(self.qvals.max())
+            msg += 'Gradient Strength shape {}\n'.format(
+                self.gradient_strength.shape)
+            msg += '          min {:f}\n'.format(self.gradient_strength.min())
+            msg += '          max {:f}\n'.format(self.gradient_strength.max())
+        msg += 'Have b-tensors: {}\n'.format(self.btens is not None)
+
+        column_widths = [max(len(col), np.max([len(str(row[i]))
+                                               for row in self.condensed]))
+                         for i, col in enumerate(self.header[:5])]
+
+        msg += "=" * sum(column_widths) + "=" * (len(column_widths) - 1) + "\n"
+        for i, col in enumerate(self.header[:5]):
+            msg += f"{col.center(column_widths[i])}"
+        msg += "\n" + "=" * sum(column_widths) +  \
+            "=" * (len(column_widths) - 1) + "\n"
+
+        for row in self.condensed:
+            msg += f"{row[0]:^{column_widths[0]}.0f}"
+            msg += f"{row[1]:^{column_widths[1]}.4f}"
+            msg += f"{row[2]:^{column_widths[2]}.4f}"
+            msg += f"{row[3]:^{column_widths[3]}.4f}"
+            msg += f"{row[4]:^{column_widths[4]}.0f}\n"
         return msg
 
 
@@ -682,12 +737,15 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     """
 
+    if isinstance(bvals, str) or isinstance(bvecs, str):
+        module = importlib.import_module('dipy.io.gradients')
+        read_bvals_bvecs = getattr(module, 'read_bvals_bvecs')
     # If you provided strings with full paths, we go and load those from
     # the files:
     if isinstance(bvals, str):
-        bvals, _ = io.read_bvals_bvecs(bvals, None)
+        bvals, _ = read_bvals_bvecs(bvals, None)
     if isinstance(bvecs, str):
-        _, bvecs = io.read_bvals_bvecs(None, bvecs)
+        _, bvecs = read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
 

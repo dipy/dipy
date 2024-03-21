@@ -7,8 +7,9 @@ import numpy as np
 import numpy.testing as npt
 from dipy.testing import assert_true
 from dipy.data import get_fnames
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
+from dipy.io.gradients import (read_bvals_bvecs, save_gradient_table,
+                               read_gradient_table)
+from dipy.core.gradients import gradient_table, GradientTable
 
 
 def test_read_bvals_bvecs():
@@ -130,10 +131,71 @@ def test_read_bvals_bvecs():
             f.write("0\n")
 
         with warnings.catch_warnings(record=True) as w:
-            bval_5, bvecs_5 = read_bvals_bvecs(pjoin(tmpdir, bval_single_volume),
-                                               pjoin(tmpdir, bv_single_volume))
+            bval_5, bvecs_5 = read_bvals_bvecs(
+                pjoin(tmpdir, bval_single_volume),
+                pjoin(tmpdir, bv_single_volume))
             npt.assert_array_equal(bvecs_5, np.zeros((1, 3)))
             npt.assert_array_equal(bval_5, np.zeros(1))
             assert_true(len(w) == 1)
             assert_true(issubclass(w[0].category, UserWarning))
             assert_true("Detected only 1 direction on" in str(w[0].message))
+
+
+def read_save_gradient_table(gt):
+    with TemporaryDirectory() as tmpdir:
+        fname = pjoin(tmpdir, 'small_101D.gtab.csv')
+        save_gradient_table(gt, fname)
+        gt2 = read_gradient_table(fname)
+        npt.assert_array_equal(gt.bvals, gt2.bvals)
+        npt.assert_array_equal(gt.bvecs, gt2.bvecs)
+        npt.assert_array_equal(gt.b0s_mask, gt2.b0s_mask)
+        assert_true(isinstance(gt2, GradientTable))
+        assert_true(isinstance(gt, GradientTable))
+
+        arr = np.ones((10, 10))
+        npt.assert_raises(ValueError, save_gradient_table, arr, fname)
+        np.savetxt(pjoin(tmpdir, 'random_arr.gtab.csv'), arr)
+        npt.assert_raises(ValueError, read_gradient_table,
+                          pjoin(tmpdir, 'random_arr.gtab.csv'))
+
+        npt.assert_warns(UserWarning, save_gradient_table, gt,
+                         pjoin(tmpdir, 'small_101D.txt'))
+
+        return gt2
+
+
+def test_basic_gradient_table_file():
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gt_basic = gradient_table(bvals, bvecs)
+    read_save_gradient_table(gt_basic)
+
+
+def test_delta_gradient_table_file():
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    big_delta = .03  # pulse separation of 30ms
+    small_delta = 0.01  # pulse duration of 10ms
+    gt_delta = gradient_table(bvals, bvecs, big_delta=big_delta,
+                              small_delta=small_delta)
+    gt2 = read_save_gradient_table(gt_delta)
+
+    npt.assert_equal(gt_delta.small_delta, gt2.small_delta)
+    npt.assert_equal(gt_delta.big_delta, gt2.big_delta)
+    npt.assert_equal(gt_delta.tau, gt2.tau)
+    npt.assert_array_equal(gt_delta.qvals, gt2.qvals)
+    npt.assert_array_equal(gt_delta.gradient_strength,
+                           gt_delta.gradient_strength)
+
+
+def test_btensor_gradient_table_file():
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    btens = np.random.choice(['LTE', 'PTE', 'STE', 'CTE'], bvals.size)
+    big_delta = .03  # pulse separation of 30ms
+    small_delta = 0.01  # pulse duration of 10ms
+    gt_advanced = gradient_table(bvals, bvecs, big_delta=big_delta,
+                                 small_delta=small_delta, btens=btens)
+    gt2 = read_save_gradient_table(gt_advanced)
+
+    npt.assert_array_equal(gt_advanced.btens, gt2.btens)
