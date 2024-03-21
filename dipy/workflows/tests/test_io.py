@@ -11,8 +11,8 @@ import numpy.testing as npt
 import dipy.core.gradients as grad
 from dipy.data import get_fnames
 from dipy.data.fetcher import dipy_home
-from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_gradient_table
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
@@ -237,18 +237,29 @@ def test_convert_tensors_flow():
 
 def test_gradient_table_flow():
     with TemporaryDirectory() as out_dir:
-        fimg, fbvals, fbvecs = get_fnames('small_101D')
+        fimg, fbvals, fbvecs = get_fnames("small_101D")
         gradient_table_flow = GradientTableFlow()
         gradient_table_flow.run(fbvals, fbvecs, out_dir=out_dir)
 
         gradient_table_flow._force_overwrite = True
-        npt.assert_warns(UserWarning, gradient_table_flow.run,
-                         fbvals, fbvecs, out_dir=out_dir,
-                         out_gtable='gt_converted.csv')
+        npt.assert_warns(
+            UserWarning,
+            gradient_table_flow.run,
+            fbvals,
+            fbvecs,
+            out_dir=out_dir,
+            out_gtable="gt_converted.csv",
+        )
 
-        gradient_table_flow.run(fbvals, fbvecs, btens="LTE", small_delta=0.01,
-                                big_delta=0.03, out_dir=out_dir)
-        gtab_file = gradient_table_flow.last_generated_outputs['out_gtable']
+        gradient_table_flow.run(
+            fbvals,
+            fbvecs,
+            btens="LTE",
+            small_delta=0.01,
+            big_delta=0.03,
+            out_dir=out_dir,
+        )
+        gtab_file = gradient_table_flow.last_generated_outputs["out_gtable"]
         gtab = read_gradient_table(gtab_file)
 
         npt.assert_array_equal(gtab.bvals, np.loadtxt(fbvals))

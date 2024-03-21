@@ -5,10 +5,9 @@ from warnings import warn
 import numpy as np
 from scipy.linalg import inv, polar
 
-from dipy.core.onetime import auto_attr
 from dipy.core.geometry import vec2vec_rotmat, vector_norm
+from dipy.core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, disperse_charges
-from dipy.io import gradients as io
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
 
@@ -346,11 +345,18 @@ class GradientTable:
     @property
     def header(self):
         header = ["bvals", "bvecs_x", "bvecs_y", "bvecs_z", "b0s_mask"]
-        btens_header = ["btens_xx", "btens_xy", "btens_xz", "btens_yx",
-                        "btens_yy", "btens_yz", "btens_zx", "btens_zy",
-                        "btens_zz"]
-        qvals_header = ["qvals", "gradient_strength", "big_delta",
-                        "small_delta",]
+        btens_header = [
+            "btens_xx",
+            "btens_xy",
+            "btens_xz",
+            "btens_yx",
+            "btens_yy",
+            "btens_yz",
+            "btens_zx",
+            "btens_zy",
+            "btens_zz",
+        ]
+        qvals_header = ["qvals", "gradient_strength", "big_delta", "small_delta"]
 
         if self.btens is not None:
             header += btens_header
@@ -365,39 +371,41 @@ class GradientTable:
         if self.btens is not None:
             merged += (self.btens.reshape(-1, 9),)
         if self.big_delta is not None and self.small_delta is not None:
-            merged += (self.qvals[:, None], self.gradient_strength[:, None],
-                       self.big_delta*np.ones(self.qvals.shape)[:, None],
-                       self.small_delta*np.ones(self.qvals.shape)[:, None])
+            merged += (
+                self.qvals[:, None],
+                self.gradient_strength[:, None],
+                self.big_delta * np.ones(self.qvals.shape)[:, None],
+                self.small_delta * np.ones(self.qvals.shape)[:, None],
+            )
         return np.concatenate(merged, axis=1)
 
     def __str__(self):
-        msg = 'B-values shape {}\n'.format(self.bvals.shape)
-        msg += '         min {:f}\n'.format(self.bvals.min())
-        msg += '         max {:f}\n'.format(self.bvals.max())
-        msg += 'B-vectors shape {}\n'.format(self.bvecs.shape)
-        msg += '          min {:f}\n'.format(self.bvecs.min())
-        msg += '          max {:f}\n'.format(self.bvecs.max())
+        msg = "B-values shape {}\n".format(self.bvals.shape)
+        msg += "         min {:f}\n".format(self.bvals.min())
+        msg += "         max {:f}\n".format(self.bvals.max())
+        msg += "B-vectors shape {}\n".format(self.bvecs.shape)
+        msg += "          min {:f}\n".format(self.bvecs.min())
+        msg += "          max {:f}\n".format(self.bvecs.max())
         if self.big_delta is not None and self.small_delta is not None:
-            msg += 'Big Delta: {:f}\n'.format(self.big_delta)
-            msg += 'Small Delta: {:f}\n'.format(self.small_delta)
-            msg += 'Q-values shape {}\n'.format(self.qvals.shape)
-            msg += '          min {:f}\n'.format(self.qvals.min())
-            msg += '          max {:f}\n'.format(self.qvals.max())
-            msg += 'Gradient Strength shape {}\n'.format(
-                self.gradient_strength.shape)
-            msg += '          min {:f}\n'.format(self.gradient_strength.min())
-            msg += '          max {:f}\n'.format(self.gradient_strength.max())
-        msg += 'Have b-tensors: {}\n'.format(self.btens is not None)
+            msg += "Big Delta: {:f}\n".format(self.big_delta)
+            msg += "Small Delta: {:f}\n".format(self.small_delta)
+            msg += "Q-values shape {}\n".format(self.qvals.shape)
+            msg += "          min {:f}\n".format(self.qvals.min())
+            msg += "          max {:f}\n".format(self.qvals.max())
+            msg += "Gradient Strength shape {}\n".format(self.gradient_strength.shape)
+            msg += "          min {:f}\n".format(self.gradient_strength.min())
+            msg += "          max {:f}\n".format(self.gradient_strength.max())
+        msg += "Have b-tensors: {}\n".format(self.btens is not None)
 
-        column_widths = [max(len(col), np.max([len(str(row[i]))
-                                               for row in self.condensed]))
-                         for i, col in enumerate(self.header[:5])]
+        column_widths = [
+            max(len(col), np.max([len(str(row[i])) for row in self.condensed]))
+            for i, col in enumerate(self.header[:5])
+        ]
 
         msg += "=" * sum(column_widths) + "=" * (len(column_widths) - 1) + "\n"
         for i, col in enumerate(self.header[:5]):
             msg += f"{col.center(column_widths[i])}"
-        msg += "\n" + "=" * sum(column_widths) +  \
-            "=" * (len(column_widths) - 1) + "\n"
+        msg += "\n" + "=" * sum(column_widths) + "=" * (len(column_widths) - 1) + "\n"
 
         for row in self.condensed:
             msg += f"{row[0]:^{column_widths[0]}.0f}"
@@ -802,8 +810,8 @@ def gradient_table(
     """
 
     if isinstance(bvals, str) or isinstance(bvecs, str):
-        module = importlib.import_module('dipy.io.gradients')
-        read_bvals_bvecs = getattr(module, 'read_bvals_bvecs')
+        module = importlib.import_module("dipy.io.gradients")
+        read_bvals_bvecs = module.read_bvals_bvecs
     # If you provided strings with full paths, we go and load those from
     # the files:
     if isinstance(bvals, str):
@@ -1130,12 +1138,12 @@ def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
 
 
 def _btens_to_params_2d(btens_2d, ztol):
-    """Compute trace, anisotropy and asymmetry parameters from a single b-tensor
+    """Compute trace, anisotropy and asymmetry params from a single b-tensor.
 
     Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
     (3,3) b-tensor takes place. The main function `btens_to_params` then wraps
-    around this to enable support of input (N, 3, 3) arrays, where N = number of
-    b-tensors
+    around this to enable support of input (N, 3, 3) arrays, where N = number
+    of b-tensors
 
     Parameters
     ----------
@@ -1160,9 +1168,9 @@ def _btens_to_params_2d(btens_2d, ztol):
     References
     ----------
     .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
+    Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
+    Society of Chemistry, Cambridge, UK, 2016.
 
     """
     btens_2d[abs(btens_2d) <= ztol] = 0

@@ -9,8 +9,8 @@ import numpy as np
 import trx.trx_file_memmap as tmm
 
 from dipy.core.gradients import gradient_table
-from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_gradient_table, save_gradient_table
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
@@ -126,7 +126,7 @@ class IoInfoFlow(Workflow):
                 logging.info(f"Total number of unit bvectors {len(res[0])}")
                 logging.info(f"Total number of non-unit bvectors {ncl1}\n")
 
-            if os.path.basename(input_path).lower().find('gtab.csv') > -1:
+            if os.path.basename(input_path).lower().find("gtab.csv") > -1:
                 gtab = read_gradient_table(input_path)
                 gtab.display_info(use_logging=True)
 
@@ -292,11 +292,20 @@ class FetchFlow(Workflow):
 class GradientTableFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'gtable'
+        return "gtable"
 
-    def run(self, bvals, bvecs, small_delta=None, big_delta=None,
-            b0_threshold=50, atol=1e-2, btens=None, out_dir='',
-            out_gtable='gt_condensed.gtab.csv'):
+    def run(
+        self,
+        bvals,
+        bvecs,
+        small_delta=None,
+        big_delta=None,
+        b0_threshold=50,
+        atol=1e-2,
+        btens=None,
+        out_dir="",
+        out_gtable="gt_condensed.gtab.csv",
+    ):
         """Saves bvals and bvecs files to disk.
 
         Parameters
@@ -330,13 +339,19 @@ class GradientTableFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for bval, bvec, ogtable in io_it:
-            logging.info(f'Loading {bval} and {bvec}')
-            gtab = gradient_table(bval, bvecs=bvec, small_delta=small_delta,
-                                  big_delta=big_delta, atol=atol, btens=btens,
-                                  b0_threshold=b0_threshold)
+            logging.info(f"Loading {bval} and {bvec}")
+            gtab = gradient_table(
+                bval,
+                bvecs=bvec,
+                small_delta=small_delta,
+                big_delta=big_delta,
+                atol=atol,
+                btens=btens,
+                b0_threshold=b0_threshold,
+            )
             save_gradient_table(gtab, ogtable)
-            msg = f'Gradient table saved as {ogtable} '
-            msg += f'in {os.path.abspath(out_dir)}'
+            msg = f"Gradient table saved as {ogtable} "
+            msg += f"in {os.path.abspath(out_dir)}"
             logging.info(msg)
 
 
