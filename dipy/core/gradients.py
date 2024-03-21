@@ -197,7 +197,7 @@ class GradientTable:
                 elif btens == 'CTE':
                     b_tensor = cigar_tensor
                 else:
-                    raise ValueError("%s is an invalid value for btens. "%btens
+                    raise ValueError(f"{btens} is an invalid value for btens. "
                                      + "Please provide one of the following: "
                                      + "'LTE', 'PTE', 'STE', 'CTE'.")
                 for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
@@ -229,19 +229,19 @@ class GradientTable:
                         b_tensors[i] = (np.matmul(np.matmul(R, cigar_tensor),
                                         R.T) * bval)
                     else:
-                        raise ValueError(
-                                "%s is an invalid value in btens. "%btens[i]
-                                + "Array element options: 'LTE', 'PTE', 'STE', "
-                                + "'CTE'.")
+                        msg = (f"{btens[i]} is an invalid value in btens. "
+                               "Array element options: 'LTE', 'PTE',  "
+                               "'STE', 'CTE'.")
+                        raise ValueError(msg)
                 self.btens = b_tensors
             elif (isinstance(btens, np.ndarray) and btens.shape ==
                     (gradients.shape[0], 3, 3)):
                 self.btens = btens
             else:
-                raise ValueError("%s is an invalid value for btens. "%btens
-                                 + "Please provide a string, an array of "
-                                 + "strings, or an array of exact b-tensors. "
-                                 + "String options: 'LTE', 'PTE', 'STE', 'CTE'")
+                raise ValueError(f"{btens} is an invalid value for btens. "
+                                 "Please provide a string, an array of "
+                                 "strings, or an array of exact b-tensors. "
+                                 "String options: 'LTE', 'PTE', 'STE', 'CTE'")
         else:
             self.btens = None
 
@@ -328,7 +328,7 @@ class GradientTable:
                         "btens_yy", "btens_yz", "btens_zx", "btens_zy",
                         "btens_zz"]
         qvals_header = ["qvals", "gradient_strength", "big_delta",
-                        "small_delta",]
+                        "small_delta"]
 
         if self.btens is not None:
             header += btens_header
@@ -1045,12 +1045,12 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
 
 
 def _btens_to_params_2d(btens_2d, ztol):
-    """Compute trace, anisotropy and asymmetry parameters from a single b-tensor
+    """Compute trace, anisotropy and asymmetry params from a single b-tensor.
 
     Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
     (3,3) b-tensor takes place. The main function `btens_to_params` then wraps
-    around this to enable support of input (N, 3, 3) arrays, where N = number of
-    b-tensors
+    around this to enable support of input (N, 3, 3) arrays, where N = number
+    of b-tensors
 
     Parameters
     ----------
@@ -1075,9 +1075,9 @@ def _btens_to_params_2d(btens_2d, ztol):
     References
     ----------
     .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
+    Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
+    Society of Chemistry, Cambridge, UK, 2016.
 
     """
     btens_2d[abs(btens_2d) <= ztol] = 0
@@ -1212,9 +1212,9 @@ def params_to_btens(bval, bdelta, b_eta):
     References
     ----------
     .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
+    Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
+    Society of Chemistry, Cambridge, UK, 2016.
 
     """
 
