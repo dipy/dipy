@@ -151,14 +151,12 @@ def _unpack_data(data, return_size=3):
     return result
 
 
-def is_binary_image(data, sample_cube_size=15):
+def is_binary_image(data):
     """Check if an image is binary image.
 
     Parameters
     ----------
     data : ndarray
-    unique_points : int, optional
-        number of points to sample the check, by default 100
 
     Returns
     -------
@@ -166,6 +164,7 @@ def is_binary_image(data, sample_cube_size=15):
         Whether the image is binary or not
     """
 
+    sample_cube_size = int(max(data.shape) / 10.0)
     sample_cube = [sample_cube_size] * data.ndim
 
     for idx, dim in enumerate(data.shape):
