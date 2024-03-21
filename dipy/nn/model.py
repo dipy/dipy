@@ -38,7 +38,8 @@ class SingleLayerPerceptron:
         self.loss = None
 
         model = tf.keras.models.Sequential([
-            tf.keras.layers.Flatten(input_shape=input_shape),
+            tf.keras.layers.Input(shape=input_shape),
+            tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(num_hidden, activation=act_hidden),
             tf.keras.layers.Dropout(dropout),
             tf.keras.layers.Dense(num_out, activation=act_out)
