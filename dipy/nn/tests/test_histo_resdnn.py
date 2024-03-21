@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from dipy.core.gradients import gradient_table
@@ -5,6 +7,7 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.nn.histo_resdnn import HistoResDNN
+from dipy.reconst.shm import tournier07_legacy_msg
 from dipy.utils.optpkg import optional_package
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_raises, assert_equal
@@ -62,7 +65,11 @@ def test_predict_shape_and_masking():
     mask = np.zeros(data.shape[0:3], dtype=bool)
     mask[38:40, 45:50, 35:40] = 1
 
-    results_arr = resdnn_model.predict(data, gtab, mask=mask)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=tournier07_legacy_msg,
+            category=PendingDeprecationWarning)
+        results_arr = resdnn_model.predict(data, gtab, mask=mask)
     results_pos = np.sum(results_arr, axis=-1, dtype=bool)
     assert_equal(mask, results_pos)
     assert_equal(results_arr.shape[-1], 45)
