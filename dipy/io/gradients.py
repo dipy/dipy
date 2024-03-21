@@ -1,3 +1,4 @@
+import importlib
 import io
 from os.path import splitext
 import re
@@ -91,3 +92,85 @@ def read_bvals_bvecs(fbvals, fbvecs):
         raise OSError("b-values and b-vectors shapes do not correspond")
 
     return bvals, bvecs
+
+
+def read_gradient_table(fname):
+    """Read gradient table from disk.
+
+    Parameters
+    ----------
+    fname : str
+       Full path to gradient table file
+
+    Returns
+    -------
+    grad_table : GradientTable
+
+    """
+    data = np.genfromtxt(fname, delimiter=",", names=True)
+
+    standard_header = ['bvals', 'bvecs_x', 'bvecs_y', 'bvecs_z', 'b0s_mask']
+    if not set(standard_header).issubset(data.dtype.names):
+        msg = f'File does not contain the required fields: {standard_header}'
+        raise ValueError(msg)
+
+    bvals = data['bvals']
+    bvecs = np.stack((data['bvecs_x'], data['bvecs_y'], data['bvecs_z'])).T
+    b0_threshold_idx = np.argmax(data['b0s_mask'] == 0)
+    b0_threshold_idx = b0_threshold_idx - 1 if b0_threshold_idx > 0 else 0
+    b0_threshold = bvals[b0_threshold_idx]
+
+    small_delta, big_delta = None, None
+    if set(('small_delta', 'big_delta')).issubset(data.dtype.names):
+        small_delta = data['small_delta'][0]
+        big_delta = data['big_delta'][0]
+
+    btensor = None
+    btensor_header = ["btens_xx", "btens_xy", "btens_xz", "btens_yx",
+                      "btens_yy", "btens_yz", "btens_zx", "btens_zy",
+                      "btens_zz"]
+    if set(btensor_header).issubset(data.dtype.names):
+        btensor = np.stack((
+            data['btens_xx'], data['btens_xy'], data['btens_xz'],
+            data['btens_yx'], data['btens_yy'], data['btens_yz'],
+            data['btens_zx'], data['btens_zy'], data['btens_zz'])).T
+        btensor = np.reshape(btensor, (bvals.size, 3, 3))
+
+    module = importlib.import_module('dipy.core.gradients')
+    gradient_table = getattr(module, 'gradient_table')
+
+    return gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                          small_delta=small_delta, big_delta=big_delta,
+                          btens=btensor)
+
+
+def save_gradient_table(gtab, fname):
+    """Save gradient table to disk.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+       Gradient table to save
+    fname : str
+        Full path to gradient table file
+
+    Returns
+    -------
+    fgtab : str
+       Full path to gradient table file with b-values and b-vectors
+
+    """
+    module = importlib.import_module('dipy.core.gradients')
+    GradientTable = getattr(module, 'GradientTable')
+    if not isinstance(gtab, GradientTable):
+        raise ValueError('gtab should be a GradientTable instance')
+
+    if not fname.lower().endswith('.gtab.csv'):
+        base, ext = splitext(fname)
+        fname = f'{base}.gtab.csv'
+        warnings.warn(f'File extension not recognized. Saving as {fname}')
+
+    header = ",".join(gtab.header)
+    np.savetxt(fname, gtab.condensed, delimiter=",",
+               header=header)
+    return fname
