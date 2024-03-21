@@ -78,7 +78,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         self.b_vector = b_vector.T
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return GeneralizedQSamplingFit(self, data)
 
 

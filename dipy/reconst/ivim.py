@@ -288,7 +288,7 @@ class IvimModelTRR(ReconstModel):
         self.bounds = bounds or BOUNDS
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         """ Fit method of the IvimModelTRR class.
 
         The fitting takes place in the following steps: Linear fitting for D
@@ -562,7 +562,7 @@ class IvimModelVP(ReconstModel):
         self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
-    def fit(self, data, bounds_de=None):
+    def fit(self, data, bounds_de=None, **kwargs):
         r""" Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro)[1]_.

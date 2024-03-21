@@ -264,7 +264,7 @@ class QtdmriModel(Cache):
         self.tenmodel = dti.TensorModel(gtab)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         bval_mask = self.gtab.bvals < self.bval_threshold
         data_norm = data / data[self.gtab.b0s_mask].mean()
         tau = self.gtab.tau

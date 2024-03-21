@@ -347,7 +347,7 @@ class MapmriModel(ReconstModel, Cache):
                     self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         errorcode = 0
         tenfit = self.tenmodel.fit(data[self.cutoff])
         evals = tenfit.evals

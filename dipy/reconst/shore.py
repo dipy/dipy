@@ -211,7 +211,7 @@ class ShoreModel(Cache):
         self.pos_radius = pos_radius
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         Lshore = l_shore(self.radial_order)
         Nshore = n_shore(self.radial_order)
         # Generate the SHORE basis

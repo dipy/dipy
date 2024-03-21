@@ -286,7 +286,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self._P = np.dot(X.T, X)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         dwi_data = data[self._where_dwi]
         shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
                                 convergence=self.convergence, P=self._P)
@@ -425,7 +425,7 @@ class ConstrainedSDTModel(SphHarmModel):
         self.sh_order_max = sh_order_max
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
                                rcond=-1)[0]
         # initial ODF estimation
