@@ -169,7 +169,7 @@ def test_roi_images(rng):
     npt.assert_array_equal(report.colors_found, [True, True])
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
-    npt.assert_equal(analysis.actors, 2)
+    npt.assert_equal(analysis.actors, 3)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
