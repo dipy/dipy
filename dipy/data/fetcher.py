@@ -509,6 +509,17 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     data_size="300MB",
     unzip=True)
 
+fetch_30_bundle_atlas_hcp842 = _make_fetcher(
+    "fetch_30_bundle_atlas_hcp842",
+    pjoin(dipy_home, 'bundle_atlas_hcp842'),
+    'https://ndownloader.figshare.com/files/',
+    ['26842853'],
+    ['Atlas_30_Bundles.zip'],
+    ['f3922cdbea4216823798fade128d6782'],
+    doc="Download atlas tractogram from the hcp842 dataset with 30 bundles",
+    data_size="207.09MB",
+    unzip=True)
+
 fetch_target_tractogram_hcp = _make_fetcher(
     "fetch_target_tractogram_hcp",
     pjoin(dipy_home, 'target_tractogram_hcp'),
@@ -885,6 +896,9 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+    if name == '30_bundle_atlas_hcp842':
+        files, folder = fetch_30_bundle_atlas_hcp842()
+        return get_bundle_atlas_hcp842(size=30)
     if name == 'qte_lte_pte':
         _, folder = fetch_qte_lte_pte()
         fdata = pjoin(folder, 'lte-pte.nii.gz')
@@ -1623,22 +1637,24 @@ def get_file_formats():
     return bundles_list, ref_anat
 
 
-def get_bundle_atlas_hcp842():
+def get_bundle_atlas_hcp842(size=80):
     """
     Returns
     -------
     file1 : string
     file2 : string
     """
+    size = 80 if size not in [80, 30] else size
+
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_80_Bundles',
+                  f'Atlas_{size}_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_80_Bundles',
+                  f'Atlas_{size}_Bundles',
                   'bundles',
                   '*.trk')
 

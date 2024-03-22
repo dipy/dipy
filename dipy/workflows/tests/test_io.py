@@ -74,9 +74,9 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-    dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
-                     'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
-                     'file_formats', 'fury_surface',
+    dataset_names = ['bundle_atlas_hcp842', '30_bundle_atlas_hcp842',
+                     'bundle_fa_hcp', 'bundles_2_subjects', 'cenir_multib',
+                     'cfin_multib', 'file_formats', 'fury_surface',
                      'gold_standard_io', 'isbi2013_2shell',
                      'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
