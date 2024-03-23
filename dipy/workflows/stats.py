@@ -180,7 +180,7 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
     bundle_folder : string
         Path to the input bundle files in common space. This path may
         contain wildcards to process multiple inputs at once.
-    orig_folder : string
+    orig_bundle_folder : string
         Path to the input bundle files in native space. This path may
         contain wildcards to process multiple inputs at once.
     metric_folder : string
