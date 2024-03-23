@@ -207,8 +207,6 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
 
     t = time()
 
-    dt = dict()
-
     mb = glob(os.path.join(model_bundle_folder, "*.trk"))
     print(mb)
 
@@ -221,7 +219,6 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
     org_bd = glob(os.path.join(orig_bundle_folder, "*.trk"))
     org_bd.sort()
     print(org_bd)
-    n = len(org_bd)
     n = len(mb)
 
     for io in range(n):
