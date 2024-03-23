@@ -15,6 +15,6 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.11",]'
+      python-version: '["3.12",]'
       use-pre: true
       extra-depends: scikit_learn scipy statsmodels pandas tables
