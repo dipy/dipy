@@ -174,7 +174,7 @@ jobs:
         run: |
           set -eo pipefail
           ls -al ./dist/*.whl
-          python -m pip install ./dist/*.whl --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0"
+          python -m pip install ./dist/*.whl --only-binary="numpy,scipy,h5py,dipy" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" "h5py"
           python -c "import dipy; print(dipy.__version__)"
           python -c "from dipy.align.imaffine import AffineMap"
 
