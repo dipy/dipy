@@ -29,6 +29,8 @@ concurrency:
 jobs:
   build_linux_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    # TODO: Revert
+    # if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -71,7 +73,7 @@ jobs:
 
   build_osx_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
-    if: false  # TODO: Revert
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -114,7 +116,7 @@ jobs:
 
   build_windows_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
-    if: false  # TODO: Revert
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -149,6 +151,8 @@ jobs:
 
   test_wheels:
     name: Test wheels
+    # TODO: Uncomment
+    # if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     needs: [build_linux_wheels]
     runs-on: ${{ matrix.os }}
     strategy:
