@@ -160,20 +160,23 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.12"]
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: wheels-cp${{ matrix.python-version }}-manylinux2014-x86_64
-        path: ./dist
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Test wheel
-      run: |
-        set -eo pipefail
-        ls -al ./dist/*.whl
-        python -m pip install ./dist/*.whl --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0"
-        python -c "import dipy; print(dipy.__version__)"
-        python -c "from dipy.align.imaffine import AffineMap"
+      - name: Rename Python version
+        shell: bash
+        run: echo "PY_VERSION=$(echo ${{ matrix.python-version }} | tr -d '.')" >> $GITHUB_ENV
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-cp${{ env.PY_VERSION }}-manylinux2014-x86_64
+          path: ./dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test wheel
+        run: |
+          set -eo pipefail
+          ls -al ./dist/*.whl
+          python -m pip install ./dist/*.whl --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0"
+          python -c "import dipy; print(dipy.__version__)"
+          python -c "from dipy.align.imaffine import AffineMap"
 
   upload_anaconda:
       permissions:
