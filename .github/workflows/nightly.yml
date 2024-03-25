@@ -162,7 +162,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: wheels-${{ matrix.python-version }}-manylinux2014-x86_64
+        name: wheels-cp${{ matrix.python-version }}-manylinux2014-x86_64
         path: ./dist
     - uses: actions/setup-python@v5
       with:
