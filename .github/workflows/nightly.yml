@@ -9,6 +9,8 @@ on:
     #        │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #        │ │ │ │ │
     - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
+  pull_request:
+    branches: [master]
 
 env:
   CIBW_BUILD_VERBOSITY: 2
@@ -59,6 +61,7 @@ jobs:
             CIBW_TEST_SKIP: "*"  # "*_aarch64"
             CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
             CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
@@ -101,6 +104,7 @@ jobs:
             CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
             CIBW_TEST_SKIP: "*"  # "*_aarch64 *-macosx_arm64"
             CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
+            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
@@ -134,6 +138,7 @@ jobs:
             CIBW_BUILD: ${{ matrix.cibw_python }}
             CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
+            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         shell: bash
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
@@ -141,6 +146,29 @@ jobs:
         with:
             name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
+
+  test_wheels:
+    name: Test wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: wheels-${{ matrix.python-version }}-manylinux2014-x86_64
+        path: ./dist
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Test wheel
+      run: |
+        set -eo pipefail
+        ls -al ./dist/*.whl
+        python -m pip install ./dist/*.whl --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0"
+        python -c "import dipy; print(dipy.__version__)"
+        python -c "from dipy.align.imaffine import AffineMap"
 
   upload_anaconda:
       permissions:
