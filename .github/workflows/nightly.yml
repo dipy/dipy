@@ -26,10 +26,6 @@ env:
 permissions:
   contents: read
 
-concurrency:
-  group: build-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   build_linux_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
