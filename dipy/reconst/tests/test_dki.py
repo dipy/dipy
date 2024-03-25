@@ -16,7 +16,8 @@ from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
                               axial_kurtosis, radial_kurtosis,
                               mean_kurtosis_tensor,
                               _positive_evals, lower_triangular,
-                              kurtosis_fractional_anisotropy)
+                              kurtosis_fractional_anisotropy,
+                              radial_tensor_kurtosis)
 
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
@@ -508,9 +509,13 @@ def test_spherical_dki_statistics():
     AK_multi = axial_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(AK_multi, MRef)
 
-    # mean kurtosis tensor analytical solution
+    # mean kurtosis tensor
     MSK_multi = mean_kurtosis_tensor(MParam)
     assert_array_almost_equal(MSK_multi, MRef)
+
+    # radial kurtosis tensor
+    RKT_multi = radial_tensor_kurtosis(MParam)
+    assert_array_almost_equal(RKT_multi, MRef)
 
     # kurtosis fractional anisotropy (isotropic case kfa=0)
     KFA_multi = kurtosis_fractional_anisotropy(MParam)
@@ -547,7 +552,7 @@ def test_single_voxel_DKI_stats():
     AK = 3 * fie * (1 - fie) * ((ADi-ADe) / AD) ** 2
     RD = fie * RDi + (1 - fie) * RDe
     RK = 3 * fie * (1 - fie) * ((RDi-RDe) / RD) ** 2
-    ref_vals = np.array([AD, AK, RD, RK])
+    ref_vals = np.array([AD, AK, RD, RK, RK])
 
     # simulate fiber randomly oriented
     theta = random.uniform(0, 180)
@@ -565,13 +570,14 @@ def test_single_voxel_DKI_stats():
     RDe1 = dti.radial_diffusivity(evals)
     AKe1 = axial_kurtosis(dki_par)
     RKe1 = radial_kurtosis(dki_par)
-    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1])
+    RTKe1 = radial_tensor_kurtosis(dki_par)
+    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1, RTKe1])
     assert_array_almost_equal(e1_vals, ref_vals)
 
     # Estimates using the kurtosis class object
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk()])
+    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk(), dkiF.rtk()])
     assert_array_almost_equal(e2_vals, ref_vals)
 
     # test MK (note this test correspond to the MK singularity L2==L3)
