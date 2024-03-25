@@ -13,6 +13,10 @@ on:
   pull_request:
     branches: [master]
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   CIBW_BUILD_VERBOSITY: 2
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"

@@ -3,8 +3,9 @@ name: Optional Deps
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  # TODO: Revert
+  # pull_request:
+  #   branches: [ master ]
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
