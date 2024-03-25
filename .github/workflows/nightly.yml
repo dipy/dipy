@@ -146,6 +146,7 @@ jobs:
 
   test_wheels:
     name: Test wheels
+    needs: [build_linux_wheels]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
