@@ -522,23 +522,6 @@ def test_spherical_dki_statistics():
     assert_array_almost_equal(KFA_multi, 0*MRef)
 
 
-def test_compare_MK_method():
-    # tests if analytical solution of MK is equal to the average of directional
-    # kurtosis sampled from a sphere
-
-    # DKI Model fitting
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
-    dkiF = dkiM.fit(signal_cross)
-
-    # MK analytical solution
-    MK_as = dkiF.mk(None, None, analytical=True)
-
-    # MK numerical method
-    MK_nm = dkiF.mk(None, None, analytical=False)
-
-    assert_array_almost_equal(MK_as, MK_nm, decimal=3)
-
-
 def test_single_voxel_DKI_stats():
     # tests if AK and RK are equal to expected values for a single fiber
     # simulate randomly oriented
@@ -588,21 +571,28 @@ def test_single_voxel_DKI_stats():
     assert_array_almost_equal(MK_as, MK_nm, decimal=1)
 
 
-def test_compare_RK_methods():
-    # tests if analytical solution of RK is equal to the perpendicular kurtosis
-    # relative to the first diffusion axis
+def test_compare_analytical_and_numerical_methods():
+    # tests if analytical solution of MK/RK/AK produces the same results than
+    # their respective numerical methods
 
     # DKI Model fitting
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_cross)
 
-    # RK analytical solution
+    # MK analytical and numerical solution
+    MK_as = dkiF.rk(analytical=True)
+    MK_nm = dkiF.rk(analytical=False)
+    assert_array_almost_equal(MK_as, MK_nm)
+
+    # RK analytical and numerical solution
     RK_as = dkiF.rk(analytical=True)
-
-    # RK numerical method
     RK_nm = dkiF.rk(analytical=False)
-
     assert_array_almost_equal(RK_as, RK_nm)
+
+    # AK analytical and numerical solution
+    AK_as = dkiF.ak(analytical=True)
+    AK_nm = dkiF.ak(analytical=False)
+    assert_array_almost_equal(AK_as, AK_nm)
 
 
 def test_MK_singularities():
