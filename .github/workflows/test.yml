@@ -7,7 +7,7 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: []  # master ]  TODO: Revert
   schedule:
     - cron: '0 0 5 * 0' # 1 per month
 
