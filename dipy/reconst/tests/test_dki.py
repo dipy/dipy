@@ -661,10 +661,13 @@ def test_dki_errors():
     mask_correct = dkiF.fa > 0
     mask_correct[1, 1] = False
     multi_params[1, 1] = np.zeros(27)
-    mask_not_correct = np.array([[True, True, False], [True, False, False]])
     dkiF = dkiM.fit(DWI, mask=mask_correct)
     assert_array_almost_equal(dkiF.model_params, multi_params)
-    # test a incorrect mask
+    # test incorrect mask ("multi-voxel" fit types)
+    mask_not_correct = np.array([[True, True, False], [True, False, False]])
+    assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
+    # test incorrect mask ("single-voxel" fit types)
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method='NLS')
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
     # error if data with only one non zero b-value is given
@@ -819,6 +822,11 @@ def test_multi_voxel_kurtosis_maximum():
     RK[1, 1, 1] = 0
     k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
     assert_almost_equal(k_max, RK, decimal=4)
+
+    # TEST if wrong mask is given
+    mask_not_correct = np.array([[True, True, False], [True, False, False]])
+    assert_raises(ValueError, dki.kurtosis_maximum, dkiF.model_params,
+                  mask=mask_not_correct)
 
 
 def test_kurtosis_fa():

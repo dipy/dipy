@@ -1841,7 +1841,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
         if mask is not None:
             # Check for valid shape of the mask
-            if data.ndim == 4 and mask.shape != data.shape[:-1]:
+            if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
 
