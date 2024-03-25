@@ -178,7 +178,6 @@ def test_dki_fits():
     # NLS fitting
     dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
     dki_nlsF = dki_nlsM.fit(signal_cross)
-
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
     dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
@@ -186,8 +185,13 @@ def test_dki_fits():
     # Restore fitting
     dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
     dki_rtF = dki_rtM.fit(signal_cross)
-
     assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+
+    # Test single voxel return_S0
+    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS",
+                                          return_S0_hat=True)
+    dki_nlsF = dki_nlsM.fit(signal_cross)
+    assert_array_almost_equal(dki_nlsF.model_S0, S0)
 
     # testing multi-voxels
     mask_signal_multi = np.ones_like(DWI[..., 0])
@@ -210,13 +214,23 @@ def test_dki_fits():
     assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
-    dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS",
-                                         return_S0_hat=True)
-    dki_S0F = dki_S0M.fit(signal_cross)
-    dki_S0F_S0 = dki_S0F.model_S0
+    for fit_method in ['NLS', 'WLS']:
+        dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                             return_S0_hat=True)
+        dki_S0F = dki_S0M.fit(DWI)
+        dki_S0F_S0 = dki_S0F.model_S0
 
-    assert_array_almost_equal(dki_S0F_S0,
-                              np.full(dki_S0F.model_params.shape[0:-1], S0))
+        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
+
+    # testing return of S0 when mask is inputed
+    mask_test = dki_S0F.fa > 0
+    for fit_method in ['NLS', 'WLS']:
+        dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                             return_S0_hat=True)
+        dki_S0F = dki_S0M.fit(DWI, mask=mask_test)
+        dki_S0F_S0 = dki_S0F.model_S0
+
+        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
 
 
 def test_apparent_kurtosis_coef():
