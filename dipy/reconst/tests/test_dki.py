@@ -537,19 +537,22 @@ def test_spherical_dki_statistics():
 
 
 def test_single_voxel_DKI_stats():
-    # tests if AK and RK are equal to expected values for a single fiber
+    # tests if DKI metrics are equal to expected values for a single fiber
     # simulate randomly oriented
     fie = 0.49
     ADi = 0.00099
     ADe = 0.00226
     RDi = 0
     RDe = 0.00087
+    MD = fie * (ADi + 2 * RDi) / 3 + (1 - fie) * (ADe + 2 * RDe) / 3
     # Reference values
     AD = fie * ADi + (1 - fie) * ADe
     AK = 3 * fie * (1 - fie) * ((ADi-ADe) / AD) ** 2
     RD = fie * RDi + (1 - fie) * RDe
     RK = 3 * fie * (1 - fie) * ((RDi-RDe) / RD) ** 2
-    ref_vals = np.array([AD, AK, RD, RK, RK])
+    MKT = 3 * fie * (1 - fie) * (RDe**2 + (ADe - ADi - RDe) *
+                                 (7*RDe + 3 * (ADe - ADi))/15) / (MD**2)
+    ref_vals = np.array([AD, AK, RD, RK, RK, MKT])
 
     # simulate fiber randomly oriented
     theta = random.uniform(0, 180)
@@ -568,13 +571,15 @@ def test_single_voxel_DKI_stats():
     AKe1 = axial_kurtosis(dki_par)
     RKe1 = radial_kurtosis(dki_par)
     RTKe1 = radial_tensor_kurtosis(dki_par)
-    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1, RTKe1])
+    MKTe1 = mean_kurtosis_tensor(dki_par)
+    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1, RTKe1, MKTe1])
     assert_array_almost_equal(e1_vals, ref_vals)
 
     # Estimates using the kurtosis class object
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk(), dkiF.rtk()])
+    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd,
+                        dkiF.rk(), dkiF.rtk(), dkiF.mkt()])
     assert_array_almost_equal(e2_vals, ref_vals)
 
     # test MK (note this test correspond to the MK singularity L2==L3)
