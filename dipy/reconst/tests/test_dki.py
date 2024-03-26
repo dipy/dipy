@@ -214,7 +214,10 @@ def test_dki_fits():
     assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
-    for fit_method in ['NLS', 'WLS']:
+    if have_cvxpy:
+        tested_methods = ['NLS', 'WLS', 'CLS']
+
+    for fit_method in tested_methods:
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
                                              return_S0_hat=True)
         dki_S0F = dki_S0M.fit(DWI)
@@ -224,7 +227,7 @@ def test_dki_fits():
 
     # testing return of S0 when mask is inputed
     mask_test = dki_S0F.fa > 0
-    for fit_method in ['NLS', 'WLS']:
+    for fit_method in tested_methods:
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
                                              return_S0_hat=True)
         dki_S0F = dki_S0M.fit(DWI, mask=mask_test)
@@ -692,6 +695,18 @@ def test_dki_errors():
     # error if data with only one non zero b-value is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
 
+    # Extra errors for CLS fitting
+    if have_cvxpy:
+        assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                      fit_method='CLS', convexity_level='all')
+        assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                      fit_method='CLS', convexity_level=3)
+        # Check that maximum convexity levels is set to 4,
+        # when large one is given
+        dkim = dki.DiffusionKurtosisModel(gtab_2s, fit_method='CLS',
+                                          convexity_level=6)
+        assert_almost_equal(dkim.convexity_level, 4)
+
 
 def test_kurtosis_maximum():
     # TEST 1
@@ -764,6 +779,7 @@ def test_kurtosis_maximum():
 
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
+    assert_almost_equal(dkiF.kmax(sphere, gtol=1e-5), RK)
 
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
