@@ -695,7 +695,7 @@ def test_dki_errors():
     # error if data with only one non zero b-value is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
 
-    # Extra errors for CLS fitting
+    # Extra checks for CLS fitting
     if have_cvxpy:
         assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
                       fit_method='CLS', convexity_level='all')

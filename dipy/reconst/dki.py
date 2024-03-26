@@ -412,7 +412,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
            Diffusional kurtosis imaging: The quantification of non-gaussian
            water diffusion by means of magnetic resonance imaging. Magnetic
            Resonance in Medicine 53(6): 1432-1440
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
+    .. [2] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
            Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
            Imaging in the Diffusion Imaging in Python Project. Frontiers in
            Human Neuroscience 15: 675433.

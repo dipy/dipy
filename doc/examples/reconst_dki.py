@@ -3,20 +3,31 @@
 Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
-The diffusion kurtosis model is an expansion of the diffusion tensor model
-(see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
-addition to the diffusion tensor (DT), the diffusion kurtosis model
-quantifies the degree to which water diffusion in biological tissues is
-non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
+The diffusional kurtosis imaging (DKI) is an expansion of the diffusion tensor
+model (see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
+addition to the diffusion tensor (DT), DKI quantifies the degree to which water
+diffusion in biological tissues is non-Gaussian using the kurtosis tensor (KT)
+[Jensen2005]_.
 
-Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
-interest because they can be used to characterize tissue microstructural
-heterogeneity [Jensen2010]_. Moreover, DKI can be used to: 1) derive concrete
-biophysical parameters, such as the density of axonal fibers and diffusion
-tortuosity [Fierem2011]_ (see
-:ref:`sphx_glr_examples_built_reconstruction_reconst_dki_micro.py`); and 2)
-resolve crossing fibers in tractography and to obtain invariant rotational
-measures not limited to well-aligned fiber populations [NetoHe2015]_.
+Measurements of non-Gaussian diffusion from the diffusion kurtosis model are
+of interest because they were shown to provide extra information about
+microstructural alterations in both health and disease (for a review see our
+paper [Henriq2021]_). Moreover, in contrast to DTI, DKI can provide metrics
+of tissue microscopic heterogeneity that are less sensitive to confounding
+effects in the orientation of tissue components, thus providing better
+characterization in general WM configurations (including regions of fibers
+crossing, fanning, and/or dispersing) and GM [NetoHe2015]_. Although DKI aims
+primarily to quantify the degree of non-Gaussian diffusion without establishing
+concrete biophysical assumptions, DKI can also be related to microstructural
+models to infer specific biophysical parameters (e.g., the density of axonal
+fibers) (this aspect will be more closely explored in
+:ref:sphx_glr_examples_built_reconstruction_reconst_dki_micro.py). For
+additional information on DKI and its practical implementation within DIPY,
+refer to [Henriq2021]_. Below, we introduce a concise theoretical background
+of DKI and demonstrate its fitting process using DIPY."
+
+Theory
+======
 
 The diffusion kurtosis model expresses the diffusion-weighted signal as:
 
@@ -53,6 +64,9 @@ characterize the KT:
                     & ... \\\\
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\\end{matrix}
+
+Example Tutotial
+=================
 
 In the following example we show how to fit the diffusion kurtosis model on
 diffusion-weighted multi-shell datasets and how to estimate diffusion kurtosis
@@ -150,7 +164,7 @@ dkifit = dkimodel.fit(data_smooth, mask=mask)
 # and should be analogous; however, theoretically, the diffusion statistics
 # from the kurtosis model are expected to have better accuracy, since DKI's
 # diffusion tensor are decoupled from higher order terms effects
-# [Veraar2011]_, [NetoHe2012]_. Below we compare the FA, MD, AD, and RD,
+# [Veraar2011]_, [Henriques2021]_. Below we compare the FA, MD, AD, and RD,
 # computed from both DTI and DKI.
 
 tenmodel = dti.TensorModel(gtab)
@@ -211,20 +225,49 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # images acquired with different diffusion-weighted and inducing negative
 # biases in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
 #
-# One can try to suppress this issue by using the more advance noise and
-# artefact suppression algorithms, e.g., as mentioned above, the MP-PCA
-# denoising (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`)
+# One can try to suppress this issue by:
+# 1) using more advanced noise and artifact suppression algorithms, e.g.,
+# as mentioned above, the MP-PCA denoising
+# (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`)
 # and Gibbs Unringing
 # (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`)
-# algorithms. Alternatively, one can overcome this artefact by computing the
-# kurtosis values from powder-averaged diffusion-weighted signals. The details
-# on how to compute the kurtosis from powder-average signals in dipy are
-# described in follow the tutorial
-# (:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`). Finally,
-# one can use constrained optimization to ensure that the fitted parameters
-# are physically plausible [DelaHa2020]_, as we will illustrate in the next
-# section. Ideally though, artefacts such as Gibbs ringing should be corrected
-# for as well as possible before using constrained optimization.
+# algorithms.
+# 2) computing the kurtosis values from powder-averaged diffusion-weighted
+# signals. The details on how to compute the kurtosis from powder-averaged
+# signals in DIPY are described in the following tutorial
+# (:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`).
+# 3) computing alternative definitions of mean and radial kurtosis such as
+# the mean kurtosis tensor (MKT) and radial tensor kurtosis (RTK) metrics (see
+# below).
+# 4) constrained optimization to ensure that the fitted parameters
+# are physically plausible [DelaHa2020]_ (see below).
+#
+# Alternative DKI metrics
+# =======================================================
+#
+# In addition to the standard mean, axial, and radial kurtosis metrics shown
+# above, alternative metrics can be computed from DKI, e.g.:
+# 1) the mean kurtosis tensor (MKT) - defined as the trace of the kurtosis
+# tensor - is a quantity that provides a contrast similar to the standard MK
+# but it is more robust to noise artifacts [Hansen2013]_, [Henriq2021]_.
+# 2) the radial tensor kurtosis (RTK) provides an alternative definition to
+# standard radial kurtosis (RK) that, as MKT, is more robust to noise
+# artifacts [Hansen2017]_.
+# 3) the kurtosis fractional anisotropy (KFA) that quantifies the anisotropy of
+# the kurtosis tensor [GlennR2015]_, which provides different information than
+# the FA measures from the diffusion tensor.
+# These measures are computed and illustrated below:
+
+compare_maps([dkifit], ['mkt', 'rtk', 'kfa'], fit_labels=['DKI'],
+             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1.5},
+                         {'vmin': 0, 'vmax': 1}],
+             filename='Alternative DKI metrics.png')
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Alternative DKI measures.
+#
 #
 # Constrained optimization for DKI
 # ================================
@@ -257,6 +300,7 @@ dkifit_plus = dkimodel_plus.fit(data_smooth, mask=mask)
 # this method.
 
 compare_maps([dkifit_plus], ['mk', 'ak', 'rk'], fit_labels=['DKI+'],
+             map_kwargs={'vmin': 0, 'vmax': 1.5},
              filename='Kurtosis_tensor_standard_measures_plus.png')
 
 ###############################################################################
@@ -286,30 +330,6 @@ compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
 # optimization.
 #
 #
-# Mean kurtosis tensor and kurtosis fractional anisotropy
-# =======================================================
-#
-# As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
-# depends on the information of both diffusion and kurtosis tensor. DKI
-# measures that only depend on the kurtosis tensor include the mean of the
-# kurtosis tensor [Hansen2013]_, and the kurtosis fractional anisotropy
-# [GlennR2015]_. These measures are computed and illustrated below:
-
-compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
-             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1}],
-             filename='Measures_from_kurtosis_tensor_only.png')
-
-###############################################################################
-# .. rst-class:: centered small fst-italic fw-semibold
-#
-# DKI measures obtained from the kurtosis tensor only.
-#
-#
-# As reported by [Hansen2013]_, the mean of the kurtosis tensor (MKT) produces
-# similar maps than the standard mean kurtosis (MK). On the other hand,
-# the kurtosis fractional anisotropy (KFA) maps shows that the kurtosis tensor
-# have different degrees of anisotropy than the FA measures from the diffusion
-# tensor.
 #
 # References
 # ----------
@@ -317,6 +337,10 @@ compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
 #                 Diffusional Kurtosis Imaging: The Quantification of
 #                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
 #                 Imaging. Magnetic Resonance in Medicine 53: 1432-1440
+# .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
+#                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
+#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
 #                 non-Gaussian water diffusion by kurtosis analysis. NMR in
 #                 Biomedicine 23(7): 698-710
@@ -335,7 +359,10 @@ compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
 # .. [Hansen2013] Hansen B, Lund TE, Sangill R, and Jespersen SN (2013).
 #                 Experimentally and computationally393fast method for
 #                 estimation of a mean kurtosis. Magnetic Resonance in
-#                 Medicine 69, 1754–1760.394doi:10.1002/mrm.24743
+#                 Medicine 69, 1754–1760.394 doi:10.1002/mrm.24743
+# .. [Hansen2017] Hansen B, Shemesh N, and Jespersen SN (2017). Fast Imaging
+#                 of Mean, Axial, and radial diffusion kurtosis. Neuroimage
+#                 142:381-392 doi:10.1016/j.neuroimage.2016.08.022
 # .. [GlennR2015] Glenn GR, Helpern JA, Tabesh A, Jensen JH (2015).
 #                 Quantitative assessment of diffusional387kurtosis anisotropy.
 #                 NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271

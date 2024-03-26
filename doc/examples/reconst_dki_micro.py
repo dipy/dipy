@@ -8,12 +8,13 @@ microstructural models to DT and KT estimated from DKI. For instance,
 Fieremans et al. [Fierem2011]_ showed that DKI can be used to
 estimate the contribution of hindered and restricted diffusion for well-aligned
 fibers - a model that was later referred to as the white matter tract integrity
-WMTI technique [Fierem2013]_. The two tensors of WMTI can be also
+(WMTI) technique [Fierem2013]_. The two tensors of WMTI can be also
 interpreted as the influences of intra- and extra-cellular compartments and can
 be used to estimate the axonal volume fraction and diffusion extra-cellular
 tortuosity. According to previous studies [Fierem2012]_ [Fierem2013]_,
 these latter measures can be used to distinguish processes of axonal loss from
-processes of myelin degeneration.
+processes of myelin degeneration. Details on the implementation of WMTI in DIPY
+are described in [Henriq2021]_.
 
 In this example, we show how to process a dMRI dataset using
 the WMTI model.
@@ -172,6 +173,10 @@ fig1.savefig('Kurtosis_Microstructural_measures.png')
 #                 white matter tract integrity metrics sensitive to Alzheimer
 #                 disease progression. AJNR Am. J. Neuroradiol. 34(11),
 #                 2105-2112. doi: 10.3174/ajnr.A3553
+# .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
+#                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
+#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
 #                 kurtosis strategies, b-value optimization and exploration of
 #                 diffusion MRI contrast. Scientific Data 3: 160072
