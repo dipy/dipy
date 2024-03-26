@@ -373,9 +373,9 @@ class ReconstDtiFlow(Workflow):
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args['sigma'] = sigma
 
-            tenfit, tenmodel, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                                         b0_threshold, bvecs_tol,
-                                                         fit_method, optional_args)
+            tenfit, tenmodel, _ = self.get_fitted_tensor(
+                data, mask, bval, bvec, b0_threshold, bvecs_tol,
+                fit_method, optional_args)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -1032,9 +1032,9 @@ class ReconstDkiFlow(Workflow):
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args['sigma'] = sigma
 
-            dkfit, dkmodel, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                                       b0_threshold, fit_method,
-                                                       optional_args=optional_args)
+            dkfit, dkmodel, _ = self.get_fitted_tensor(
+                data, mask, bval, bvec, b0_threshold, fit_method,
+                optional_args=optional_args)
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
@@ -1100,7 +1100,7 @@ class ReconstDkiFlow(Workflow):
 
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
-            
+
             # save peaks
             peaks_dki = peaks_from_model(
                 model=dkmodel,
@@ -1122,7 +1122,6 @@ class ReconstDkiFlow(Workflow):
             if extract_pam_values:
                 peaks_to_niftis(peaks_dki, oshm, opeaks_dir, opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
-            
 
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
