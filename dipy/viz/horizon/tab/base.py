@@ -129,7 +129,8 @@ class TabManager:
                 tab.on_volume_change = self.synchronize_volumes
             if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
                 tab.on_slice_change = self.synchronize_slices
-            if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
+            if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
+                                          'ClustersTab']:
                 self._render_tab_elements(tab_id, tab.elements)
 
     def handle_text_overflows(self):
@@ -186,7 +187,7 @@ class TabManager:
         current_tab = self._tabs[self._active_tab_id]
         current_tab.on_tab_selected()
         if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
-                                              'PeaksTab']:
+                                              'PeaksTab', 'ClustersTab']:
             self.tab_changed(current_tab.actors)
 
     def reposition(self, win_size):
@@ -312,6 +313,7 @@ def build_slider(
         on_moving_slider=lambda _slider: None,
         on_value_changed=lambda _slider: None,
         on_change=lambda _slider: None,
+        on_handle_released=lambda _istyle, _obj, _slider: None,
         label='',
         label_font_size=16,
         label_style_bold=False,
@@ -346,6 +348,8 @@ def build_slider(
         When value of the slider changed programmatically.
     on_change : callable, optional
         When value of the slider changed.
+    on_handle_released: callable, optional
+        When handle released.
     label : str, optional
         Label to ui element for slider
     label_font_size : int, optional
@@ -395,6 +399,10 @@ def build_slider(
     slider.on_moving_slider = on_moving_slider
     slider.on_value_changed = on_value_changed
     slider.on_change = on_change
+
+    if not is_double_slider:
+        slider.handle_events(slider.handle.actor)
+        slider.on_left_mouse_button_released = on_handle_released
 
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
