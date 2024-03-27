@@ -538,6 +538,53 @@ def fibonacci_sphere(n_points, randomize=True):
     return points
 
 
+def fibonacci_hemisphere(n_points, randomize=True):
+    """
+    Generate points on the surface of a hemisphere using Fibonacci Spiral.
+
+    Parameters
+    ----------
+    n_points : int
+        The number of points to generate on the hemisphere surface.
+    randomize : bool, optional
+        If True, randomize the starting point on the hemisphere.
+        Default is True.
+
+    Returns
+    -------
+    points : ndarray
+        An array of 3D points representing coordinates on the hemisphere
+        surface.
+
+    """
+    if not isinstance(n_points, int) or n_points <= 4:
+        raise ValueError(
+            "Number of points must be a positive integer greater than 4."
+        )
+
+    random_shift = 0
+    if randomize:
+        random_generator = np.random.default_rng()
+        random_shift = random_generator.integers(0, n_points)
+
+    indices = np.arange(n_points)
+    offset = 1.0 / n_points  # Adjust offset for hemisphere
+    increment = np.pi * (3. - np.sqrt(5.))
+
+    # Adjust y calculation for hemisphere. Y values will be in [0, 1]
+    y = ((indices * offset)) + (offset / 2)
+    r = np.sqrt(1 - y**2)
+    phi = ((indices + random_shift) % n_points) * increment
+
+    x = np.cos(phi) * r
+    z = np.sin(phi) * r
+
+    points = np.column_stack((x, y, z))
+    if n_points < 30:
+        points_updated = disperse_charges_alt(points, 1000)
+        return points_updated
+    return points
+
 def _equality_constraints(vects):
     """Spherical equality constraint. Returns 0 if vects lies on the unit
     sphere. Note that a flattened array is returned because `scipy.optimize`
