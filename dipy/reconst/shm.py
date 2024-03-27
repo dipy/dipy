@@ -37,6 +37,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.utils.deprecator import deprecated_params
+from dipy.reconst.wigner import so3_rfft, so3_rifft, complex_mm, wigner_D_matrix
 
 
 descoteaux07_legacy_msg = \
@@ -1649,3 +1650,98 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
         for i in range(len(basis_indices))
     ]
     return sh_coeffs[..., permutation]
+
+
+def _setup_wigner_rotation(quant_order, alpha, beta, gamma):
+    """Return an array of all possible wigner-D matrices for a range 
+    of quantum numbers (l)
+
+    Parameters
+    ----------
+    quant_order : int
+        The upper limit for the range of quantum numbers. The function generates
+        Wigner-D matrices for each quantum number from 0 to l-1.
+    alpha : float
+        First Euler angle for rotation (range: 0 <= alpha <= 2pi)
+    beta : float
+        Second Euler angle for rotation (range: 0 <= beta <= pi).
+    gamma : float
+        Third Euler angle for rotation (range: 0 <= gamma <= 2pi).
+
+    Returns
+    -------
+    Us : list of ndarray
+        A list of Wigner-D matrices, each corresponding to a different quantum 
+        number 'l'.
+
+    Notes
+    -----
+    - The Wigner-D matrix is a complex unitary matrix.
+    - The 'Condon-Shortley' phase convention is used.
+    """
+    Us = [wigner_D_matrix(l, alpha, beta, gamma,
+                          field='complex', normalization='quantum', 
+                          order='centered', condon_shortley='cs')
+          for l in range(quant_order)]
+    Us = [Us[l].astype(np.complex64)
+          .view(np.float32)
+          .reshape((2 * l + 1, 2 * l + 1, 2)) 
+          for l in range(quant_order)]
+    return Us
+
+
+def wigner_rotation(signal, alpha, beta, gamma):
+    """Rotate spherical harmonics using Wigner-D matrices defined by Euler 
+    angles alpha, beta, and gamma.
+
+    Parameters
+    ----------
+    signal : ndarray
+        Input array with dimensions [..., beta, alpha, gamma] (..., 2b, 2b, 2b),
+        where 'b' is half the size of the last dimension, representing spherical
+        harmonics coefficients.
+    alpha : float
+        The first Euler angle for rotation.
+    beta : float
+        The second Euler angle for rotation.
+    gamma : float
+        The third Euler angle for rotation.
+
+    Returns
+    -------
+    z : ndarray
+       The rotated array, with the same shape as the input signal, representing 
+       the spherical harmonics coefficients after the Wigner rotation
+    
+    References
+    ----------
+     [1] Taco S. Cohen, Mario Geiger, Jonas Köhler, Max Welling, Spherical CNNs. 
+           International Conference on Learning Representations (ICLR), 2018.
+    """
+    b = signal.shape[-1] // 2
+    signal_size = signal.shape
+    Us = _setup_wigner_rotation(b, alpha, beta, gamma)
+    # Fourier Transform
+    signal = so3_rfft(signal, b_out=None)  # [l * m * n, ..., complex]
+    # Rotated Spectrum
+    Fz_list = []
+    begin = 0
+    for l in range(b):
+        L = 2 * l + 1
+        size = L ** 2
+
+        Fx = signal[begin:begin+size]
+        Fx = np.reshape(Fx, (L, -1, 2))  # [m, n * batch, complex]
+
+        U = np.reshape(Us[l], (L, L, 2))  # [m, n, complex]
+
+        Fz = complex_mm(U, Fx, conj_x=True)  # [m, n * batch, complex]
+        Fz = np.reshape(Fz, (size, -1, 2))  # [m * n, batch, complex]
+        
+        Fz_list.append(Fz)
+        begin += size
+    Fz = np.concatenate(Fz_list, axis=0)  # [l * m * n, batch, complex]
+    # Inverse Fourier Transform
+    z = so3_rifft(Fz, b_out=None)
+    z = np.reshape(z, signal_size)
+    return z

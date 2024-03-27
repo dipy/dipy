@@ -15,7 +15,7 @@ from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
 from dipy.sims.voxel import single_tensor
 from dipy.direction.peaks import peak_directions
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, wigner_rotation
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
@@ -1035,3 +1035,18 @@ def test_convert_sh_descoteaux_tournier():
                 shc[5], shc[4], shc[3], shc[2], shc[1],
             ])
             assert_array_equal(converted_coeffs, expected_coeffs)
+
+
+def test_wigner_rotation():
+    # Range of quantum numbers
+    b = 3  
+    # Euler angles for rotation
+    alpha, beta, gamma = np.radians([180, 0, 0])
+
+    initial_sphere = np.zeros((2*b, 2*b, 2*b))
+    initial_sphere[0, 0, 0] = 1
+
+    rotated_sphere = wigner_rotation(initial_sphere, alpha, beta, gamma)
+    
+    assert rotated_sphere[-1, -1, -1] == 1, \
+        "The rotation did not move the top value to the bottom as expected."
