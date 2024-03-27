@@ -8,6 +8,7 @@ class ROIsTab(HorizonTab):
         Parameters
         ----------
         contour_actors : list
+            list of vtkActor.
         """
 
         super().__init__()
@@ -65,6 +66,7 @@ class ROIsTab(HorizonTab):
         Parameters
         ----------
         tab_id : int
+            Identifier for the tab. Index of the tab in TabUI.
         _tab_ui : TabUI
             Object for Tab from FURY.
         """
@@ -88,7 +90,7 @@ class ROIsTab(HorizonTab):
 
     @property
     def actors(self):
-        """Visualization actors controlled by tab.
+        """Actors controlled by tab.
 
         Returns
         -------
