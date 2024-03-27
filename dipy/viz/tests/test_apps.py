@@ -35,7 +35,9 @@ def test_horizon_events(rng):
 
     data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
-    images = [(data, affine, '/test/filename.nii.gz')]
+    img = np.zeros((197, 233, 189))
+    img[0:25, :, :] = 1
+    images = [(data, affine, '/test/filename.nii.gz'), (img, affine)]
     # images = None
     from dipy.segment.tests.test_bundles import setup_module
     setup_module()
@@ -54,7 +56,7 @@ def test_horizon_events(rng):
     fname = os.path.join(DATA_DIR, 'record_horizon.log.gz')
 
     horizon(tractograms=tractograms, images=images, pams=None,
-            cluster=True, cluster_thr=5.0,
+            cluster=True, cluster_thr=5.0, roi_images=True,
             random_colors=False, length_gt=0, length_lt=np.inf,
             clusters_gt=0, clusters_lt=np.inf,
             world_coords=True, interactive=True, out_png='tmp.png',

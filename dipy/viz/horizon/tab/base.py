@@ -130,7 +130,7 @@ class TabManager:
             if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
                 tab.on_slice_change = self.synchronize_slices
             if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
-                                          'ClustersTab']:
+                                          'ROIsTab', 'ClustersTab']:
                 self._render_tab_elements(tab_id, tab.elements)
 
     def handle_text_overflows(self):
@@ -187,7 +187,8 @@ class TabManager:
         current_tab = self._tabs[self._active_tab_id]
         current_tab.on_tab_selected()
         if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
-                                              'PeaksTab', 'ClustersTab']:
+                                              'PeaksTab', 'ROIsTab',
+                                              'ClustersTab']:
             self.tab_changed(current_tab.actors)
 
     def reposition(self, win_size):
