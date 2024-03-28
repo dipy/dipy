@@ -24,7 +24,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                StoppingCriterion sc,
                                DeterministicTrackingParameters params,
                                PmfGen pmf_gen,
-                               func_ptr traker,
+                               func_ptr tracker,
                                double** streamlines,
                                int* length,
                                int* status)

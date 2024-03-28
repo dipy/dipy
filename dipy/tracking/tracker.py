@@ -1,7 +1,6 @@
 from dipy.tracking.fast_tracking import generate_tractogram
 
 
-
 def probabilistic_directions():
     pass
 
