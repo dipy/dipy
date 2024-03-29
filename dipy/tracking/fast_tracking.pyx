@@ -3,6 +3,8 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
+from libc.stdio cimport printf
+
 cimport cython
 from cython.parallel import prange
 import numpy as np
@@ -28,11 +30,41 @@ from libc.string cimport memcpy
 from libc.math cimport floor
 
 
+def generate_tracking_parameters(algo_name, *,
+    int max_len=500, double step_size=0.5, double[:] voxel_size,
+    double max_angle=30, double pmf_threshold=0.1, double probe_length=0.5,
+    double probe_radius=0, int probe_quality=3, int probe_count=1,
+    double data_support_exponent=1):
+
+    algo_name = algo_name.lower()
+
+    if algo_name in ['deterministic', 'det']:
+        return TrackingParameters(max_len=max_len, step_size=step_size,
+                                  voxel_size=voxel_size)
+    elif algo_name in ['probabilistic', 'prob']:
+        return TrackingParameters(max_len=max_len, step_size=step_size,
+                                  voxel_size=voxel_size,
+                                  pmf_threshold=pmf_threshold,
+                                  max_angle=max_angle)
+    elif algo_name == 'pft':
+        return TrackingParameters(max_len=max_len, step_size=step_size,
+                                  voxel_size=voxel_size)
+    elif algo_name == 'ptt':
+            return TrackingParameters(max_len=max_len, step_size=step_size,
+                                      voxel_size=voxel_size, probe_length=probe_length,
+                                      probe_radius=probe_radius, probe_quality=probe_quality,
+                                      probe_count=probe_count, data_support_exponent=data_support_exponent)
+    elif algo_name == 'eudx':
+        return TrackingParameters(max_len=max_len, step_size=step_size,
+                                  voxel_size=voxel_size)
+    else:
+        raise ValueError("Invalid algorithm name")
+
 
 def generate_tractogram(double[:,::1] seed_positions,
                         double[:,::1] seed_directions,
                         StoppingCriterion sc,
-                        DeterministicTrackingParameters params,
+                        TrackingParameters params,
                         PmfGen pmf_gen,
                         int nbr_threads=0):
 
@@ -43,19 +75,28 @@ def generate_tractogram(double[:,::1] seed_positions,
         int* length_arr = <int*> malloc(_len * sizeof(int))
         int* status_arr = <int*> malloc(_len * sizeof(double))
 
+    if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
+        raise MemoryError("Memory allocation failed")
+
+    # Todo: Check if probalistic parameters are set if using probabilistic
+    # tracking. Same for PTT
     generate_tractogram_c(seed_positions, seed_directions, nbr_threads, sc, params,
-                          pmf_gen, &deterministic_maximum_tracker,
+                          pmf_gen, &probabilistic_tracker, #&deterministic_maximum_tracker,
                           streamlines_arr, length_arr, status_arr)
     streamlines = []
-    for i in range(_len):
-        if length_arr[i] > 1:
-            s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-            streamlines.append(s.copy().reshape((-1,3)))
-            free(streamlines_arr[i])
+    try:
+        for i in range(_len):
+            if length_arr[i] > 1:
+                s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
+                streamlines.append(s.copy().reshape((-1,3)))
+                if streamlines_arr[i] == NULL:
+                    continue
+                free(streamlines_arr[i])
+    finally:
+        free(streamlines_arr)
+        free(length_arr)
+        free(status_arr)
 
-    free(streamlines_arr)
-    free(length_arr)
-    free(status_arr)
     return streamlines
 
 
@@ -63,7 +104,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
-                               DeterministicTrackingParameters params,
+                               TrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr tracker,
                                double** streamlines,
@@ -75,7 +116,6 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
 
     if nbr_threads<= 0:
         nbr_threads = 0
-
     for i in prange(_len, nogil=True, num_threads=nbr_threads):
     #for i in range(_len):
         stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
@@ -106,7 +146,7 @@ cdef int generate_local_streamline(double* seed,
                                    int* stream_idx,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
-                                   DeterministicTrackingParameters params,
+                                   TrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j
@@ -188,7 +228,7 @@ cdef int get_pmf(double* pmf,
 
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               ProbabilisticTrackingParameters params,
+                               TrackingParameters params,
                                PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, idx
@@ -198,7 +238,8 @@ cdef int probabilistic_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
+    # printf("len_pmf %f\n", params.probabilistic.pmf_threshold)
+    if get_pmf(pmf, point, pmf_gen, params.probabilistic.pmf_threshold, len_pmf):
         free(pmf)
         return 1
     if norm(direction) == 0:
@@ -212,7 +253,7 @@ cdef int probabilistic_tracker(double* point,
                 + pmf_gen.vertices[i][2] * direction[2]
         if cos_sim < 0:
             cos_sim = cos_sim * -1
-        if cos_sim < params.cos_similarity:
+        if cos_sim < params.probabilistic.cos_similarity:
             pmf[i] = 0
 
     cumsum(pmf, pmf, len_pmf)
@@ -239,7 +280,7 @@ cdef int probabilistic_tracker(double* point,
 
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
-                                       DeterministicTrackingParameters params,
+                                       TrackingParameters params,
                                        PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, max_idx
@@ -250,7 +291,7 @@ cdef int deterministic_maximum_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    if get_pmf(pmf, point, pmf_gen, params.pmf_threshold, len_pmf):
+    if get_pmf(pmf, point, pmf_gen, params.probabilistic.pmf_threshold, len_pmf):
         free(pmf)
         return 1
     if norm(direction) == 0:
@@ -264,7 +305,7 @@ cdef int deterministic_maximum_tracker(double* point,
                 + pmf_gen.vertices[i][2] * direction[2]
         if cos_sim < 0:
             cos_sim = cos_sim * -1
-        if cos_sim > params.cos_similarity and pmf[i] > max_value:
+        if cos_sim > params.probabilistic.cos_similarity and pmf[i] > max_value:
             max_idx = i
             max_value = pmf[i]
 
@@ -289,7 +330,7 @@ cdef int deterministic_maximum_tracker(double* point,
 #get_direction_c of the DG
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
-                                    ParallelTransportTrackingParameters params,
+                                    TrackingParameters params,
                                     PmfGen pmf_gen) noexcept nogil:
     # update point and dir with new position and direction
 
@@ -298,18 +339,43 @@ cdef int parallel_transport_tracker(double* point,
     return 1
 
 
+cdef class TrackingParameters:
 
-cdef class ProbabilisticTrackingParameters(TrackingParameters):
+    def __init__(self, max_len, step_size, voxel_size,
+                 max_angle=None, pmf_threshold=None, probe_length=None,
+                 probe_radius=None, probe_quality=None, probe_count=None,
+                 data_support_exponent=None):
+        cdef cnp.npy_intp i
 
-    def __cinit__(self, int max_len, double step_size, double[:] voxel_size,
-                  double cos_similarity, double pmf_threshold):
-        cdef:
-            cnp.npy_intp i
         self.max_len = max_len
         self.step_size = step_size
-        self.voxel_size = voxel_size
-        self.cos_similarity = cos_similarity
+        for i in range(3):
+            self.voxel_size[i] = voxel_size[i]
+            self.inv_voxel_size[i] = 1. / voxel_size[i]
+
+        self.probabilistic = None
+        self.ptt = None
+
+        if max_angle is not None and pmf_threshold is not None:
+            self.probabilistic = ProbabilisticTrackingParameters(max_angle, pmf_threshold)
+
+        if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
+            self.ptt = PttTrackingParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
+
+cdef class ProbabilisticTrackingParameters:
+
+    def __init__(self, max_angle, pmf_threshold):
+        self.cos_similarity = np.cos(np.deg2rad(max_angle))
         self.pmf_threshold = pmf_threshold
 
-        for i in range(3):
-            self.inv_voxel_size[i] = 1. / voxel_size[i]
+cdef class PttTrackingParameters:
+
+    def __init__(self, double probe_length, double probe_radius,
+                int probe_quality, int probe_count, double data_support_exponent):
+        self.probe_length = probe_length
+        self.probe_radius = probe_radius
+        self.probe_quality = probe_quality
+        self.probe_count = probe_count
+        self.data_support_exponent = data_support_exponent
+
+
