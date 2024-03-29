@@ -44,7 +44,7 @@ def find_qspace_neighbors(gtab):
     dwi_indices = np.flatnonzero(dwi_mask)
 
     # Get a pseudo-qspace value for b>0s
-    qvecs = (np.sqrt(gtab.bvals)[:, np.newaxis] * gtab.bvecs)
+    qvecs = np.sqrt(gtab.bvals)[:, np.newaxis] * gtab.bvecs
 
     for dwi_index in dwi_indices:
         qvec = qvecs[dwi_index]
