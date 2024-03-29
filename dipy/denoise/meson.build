@@ -26,6 +26,7 @@ python_sources = ['__init__.py',
   'noise_estimate.py',
   'non_local_means.py',
   'patch2self.py',
+  'qc.py',
   ]
 
 

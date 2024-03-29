@@ -9,6 +9,7 @@ python_sources = [
   'test_noise_estimate.py',
   'test_non_local_means.py',
   'test_patch2self.py',
+  'test_qc.py',
   ]
 
 
