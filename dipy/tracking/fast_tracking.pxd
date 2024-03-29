@@ -4,25 +4,54 @@ from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.direction.pmf cimport PmfGen
 
 
-cdef class TrackingParameters():
-    cdef:
-        int max_len
-        double step_size
-        double[:] voxel_size
-        double[3] inv_voxel_size
+cdef class ParallelTransportTrackingParameters:
+    cdef public double      angular_separation
+    cdef public double      data_support_exponent
+    cdef public double[3][3] frame
+    cdef public double      k1
+    cdef public double      k2
+    cdef public double      k_small
+    cdef public double      last_val
+    cdef public double      last_val_cand
+    cdef public double      max_angle
+    cdef public double      max_curvature
+    cdef public double[3]   position
+    cdef public int         probe_count
+    cdef public double      probe_length
+    cdef public double      probe_normalizer
+    cdef public int         probe_quality
+    cdef public double      probe_radius
+    cdef public double      probe_step_size
+    cdef public double[9]   propagator
+    cdef public int         rejection_sampling_max_try
+    cdef public int         rejection_sampling_nbr_sample
+
+cdef class ProbabilisticTrackingParameters:
+    cdef public double       cos_similarity
+    cdef public double       pmf_threshold
+
+
+cdef class TrackingParameters:
+    cdef public int max_len
+    cdef public double step_size
+    cdef public double[3] voxel_size
+    cdef public double[3] inv_voxel_size
+
+    cdef public ProbabilisticTrackingParameters probabilistic
+    cdef public ParallelTransportTrackingParameters ptt
 
 
 ctypedef int (*func_ptr)(double* point,
                          double* direction,
-                         DeterministicTrackingParameters,
-                         PmfGen) noexcept nogil
+                         TrackingParameters params,
+                         PmfGen pmf_gen) noexcept nogil
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
-                               DeterministicTrackingParameters params,
+                               TrackingParameters params,
                                PmfGen pmf_gen,
                                func_ptr tracker,
                                double** streamlines,
@@ -36,7 +65,7 @@ cdef int generate_local_streamline(double* seed,
                                    int* stream_idx,
                                    func_ptr tracker,
                                    StoppingCriterion sc,
-                                   DeterministicTrackingParameters params,
+                                   TrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil
 
 
@@ -46,52 +75,17 @@ cdef int get_pmf(double* pmf,
                  double pmf_threshold,
                  int pmf_len) noexcept nogil
 
-
-cdef class ProbabilisticTrackingParameters(TrackingParameters):
-    cdef:
-        double       cos_similarity
-        double       pmf_threshold
-
-
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               ProbabilisticTrackingParameters params,
+                               TrackingParameters params,
                                PmfGen pmf_gen) noexcept nogil
-
-cdef class DeterministicTrackingParameters(ProbabilisticTrackingParameters):
-    pass
-
 
 cdef int deterministic_maximum_tracker(double* point,
                                        double* direction,
-                                       DeterministicTrackingParameters params,
+                                       TrackingParameters params,
                                        PmfGen pmf_gen) noexcept nogil
-
-cdef class ParallelTransportTrackingParameters(ProbabilisticTrackingParameters):
-    cdef:
-        double      angular_separation
-        double      data_support_exponent
-        double[3][3] frame
-        double      k1
-        double      k2
-        double      k_small
-        double      last_val
-        double      last_val_cand
-        double      max_angle
-        double      max_curvature
-        double[3]   position
-        int         probe_count
-        double      probe_length
-        double      probe_normalizer
-        int         probe_quality
-        double      probe_radius
-        double      probe_step_size
-        double[9]   propagator
-        int         rejection_sampling_max_try
-        int         rejection_sampling_nbr_sample
-
 
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
-                                    ParallelTransportTrackingParameters params,
+                                    TrackingParameters params,
                                     PmfGen pmf_gen) noexcept nogil
