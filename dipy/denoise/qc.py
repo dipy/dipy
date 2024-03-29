@@ -65,7 +65,7 @@ def find_qspace_neighbors(gtab):
 
 
 def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
-    r"""Calculate the Neighboring DWI Correlation (NDC) from dMRI data.
+    """Calculate the Neighboring DWI Correlation (NDC) from dMRI data.
 
     Using a mask is highly recommended, otherwise the FOV will influence the
     correlations. According to [Yeh2019], an NDC less than 0.4 indicates a
@@ -77,7 +77,7 @@ def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
         dwi data on which to calculate NDC
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
-    mask : 3D ndarray
+    mask : 3D ndarray, optional
         optional mask of voxels to include in the NDC calculation
 
     Returns
