@@ -55,7 +55,7 @@ def test_incorrect_view():
 
 
 @pytest.mark.skipif(not have_fury or not have_matplotlib,
-                    reason='Requires FURY, and Matplotlib')
+                    reason='Requires FURY and Matplotlib')
 def test_bundlewarp_viz():
 
     with tempfile.TemporaryDirectory() as temp_dir:
