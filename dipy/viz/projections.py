@@ -59,6 +59,9 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     """
     if ax is None:
         fig, ax = plt.subplots(1)
+    else:
+        fig = plt.subplots(1)
+        fig.axes.append(ax)
 
     if cmap is None:
         cmap = matplotlib.cm.hot
