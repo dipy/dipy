@@ -397,3 +397,20 @@ def test_fibonacci_sphere():
     # Check for near closeness to 0
     nt.assert_almost_equal(
         np.mean(np.mean(points, axis=0)), 0, decimal=2)
+
+
+def test_fibonacci_hemisphere():
+    # Test that the number of points is correct
+    points = fibonacci_sphere(n_points=724, hemisphere=True)
+    nt.assert_equal(len(points), 724)
+
+    # Test randomization
+    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True)
+    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True)
+    with nt.assert_raises(AssertionError):
+        nt.assert_array_equal(points1, points2)
+
+    # Check for near closeness to 0
+    nt.assert_almost_equal(
+        np.mean(points, axis=0)[2], 0, decimal=2)
+
