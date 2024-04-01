@@ -125,29 +125,29 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     p = sphere.vertices[dot_prod > min_dot]
     # [v] are the selected ODF amplitudes (N, 1) around the peak of the lobe
     # within max_angle
-    v = sf[dot_prod > min_dot].reshape((-1, 1))
+    v = sf[dot_prod > min_dot]
 
     # Test that the surface along peak direction contains
     # at least 3 non-zero directions
     if np.count_nonzero(v) < 3:
         return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
 
-    x, y, z = (p[:, 0:1], p[:, 1:2], p[:, 2:])
+    x, y, z = (p[:, 0], p[:, 1], p[:, 2])
 
     # Create an orientation matrix (T) to approximate mu0, mu1 and mu2
     T = np.array([[x**2 * v, x * y * v, x * z * v],
                   [x * y * v, y**2 * v, y * z * v],
                   [x * z * v, y * z * v, z**2 * v]])
 
-    T = np.sum(np.squeeze(T), axis=-1) / np.sum(v)
+    T = np.sum(T, axis=-1) / np.sum(v)
 
     # eigh better than eig. T will always be symmetric, eigh is faster.
     evals, evecs = np.linalg.eigh(T)
 
     # Not ordering the evals, eigh orders by default.
-    mu0 = evecs[:, 2].reshape((3, 1))
-    mu1 = evecs[:, 1].reshape((3, 1))
-    mu2 = evecs[:, 0].reshape((3, 1))
+    mu0 = evecs[:, 2]
+    mu1 = evecs[:, 1]
+    mu2 = evecs[:, 0]
     f0 = v.max()  # Maximum amplitude of the ODF
 
     # If no real fit is possible, return null
@@ -156,8 +156,8 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
 
     # Calculating the A matrix
     A = np.zeros((len(v), 2), dtype=float)  # (N, 2)
-    A[:, 0:1] = p.dot(mu1)**2
-    A[:, 1:] = p.dot(mu2)**2
+    A[:, 0] = p.dot(mu1)**2
+    A[:, 1] = p.dot(mu2)**2
 
     # Test that AT.A is invertible for pseudo-inverse
     ATA = A.T.dot(A)
@@ -169,9 +169,9 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     B[v > 0] = np.log(v[v > 0] / f0)  # (N, 1)
 
     # Calculating the Kappas
-    k = np.abs(np.linalg.inv(ATA).dot(A.T).dot(B))
-    k1 = k[0, 0]
-    k2 = k[1, 0]
+    k = np.abs(np.linalg.pinv(ATA).dot(A.T).dot(B))
+    k1 = k[0]
+    k2 = k[1]
     if k1 > k2:
         k1, k2 = k2, k1
         mu1, mu2 = mu2, mu1
