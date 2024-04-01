@@ -23,6 +23,7 @@ from dipy.direction import peak_directions
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
+from dipy.core.onetime import auto_attr
 
 
 def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
@@ -333,7 +334,7 @@ def k2odi(k):
 
     Parameters
     ----------
-    k: float or ndarray
+    k: ndarray
         Watson/Bingham concentration parameter
 
     Returns
@@ -348,7 +349,7 @@ def k2odi(k):
 
     .. math::
 
-        ODI = \frac{2}{\pi} \arctan \left( \frac{1}{k} \right)
+        ODI = \frac{2}{\pi} \arctan{\left( \frac{1}{k} \right)}
 
     References
     ----------
@@ -360,7 +361,9 @@ def k2odi(k):
             and their application to the healthy ageing brain.” Apollo -
             University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
     """
-    return 2/np.pi * np.arctan(1/k)
+    odi = np.zeros(k.shape)
+    odi[k > 0] = 2/np.pi * np.arctan(1 / k[k > 0])
+    return odi
 
 
 def odi2k(odi):
@@ -369,7 +372,7 @@ def odi2k(odi):
 
     Parameters
     ----------
-    ODI: float or ndarray
+    ODI: ndarray
         Orientation Dispersion Index
 
     Returns
@@ -396,13 +399,15 @@ def odi2k(odi):
             and their application to the healthy ageing brain.” Apollo -
             University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
     """
-    return 1/np.tan(np.pi/2 * odi)
+    k = np.zeros(odi.shape)
+    k[odi > 0] = 1/np.tan(np.pi/2 * odi[odi > 0])
+    return k
 
 
-def _convert_bingham_pars(fits):
-    """ Convert tuple output of Bingham fit functions to ndarray"""
+def _convert_bingham_pars(fits, npeaks):
+    """ Convert tuple output of Bingham fit to ndarray"""
     n = len(fits)
-    bpars = np.zeros((n, 12))
+    bpars = np.zeros((npeaks, 12))
     for ln in range(n):
         bpars[ln, 0] = fits[ln][0]
         bpars[ln, 1] = fits[ln][1]
@@ -413,15 +418,163 @@ def _convert_bingham_pars(fits):
     return bpars
 
 
-def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
-                        min_sep_angle=60, rel_th=0.1):
-    """ Documentation missing """
+def global_voxel_metric(bmetric, bfd):
+    """ Compute a global scalar maps for metrics of Bingham functions
+    fitted to multiple ODF lobel
+
+    Parameters
+    ----------
+    bmetric: ndarray(..., nl)
+        An arbitrary metric with values for nl ODF lobes
+    bfd: ndarray(..., nl)
+        Bingham fiber density estimates for the nl ODF lobes
+
+    Returns
+    -------
+    gmetric: ndarray(...)
+        Global weighted averaged Bingham metric
+
+    Notes
+    -----
+    The global metric is computed as the weigthed average of a given metric
+    across the multiple ODF lobes (weights are defined by the Bingham fiber
+    density estimates)
+    """
+    return np.sum(bmetric * bfd, axis=-1) / np.sum(bfd, axis=-1)
+
+
+class BinghamMetrics:
+    """ Class for Bingham Metrics"""
+
+    def __init__(self, model_params):
+        """Initialization of the Bingham Metrics Class
+
+        Parameters
+        ----------
+        model_params : ndarray (..., nl, 12)
+            ndarray containing the model parameters of Binghams fitted to ODFs
+            in the following order:
+            Maximum value of the Bingham function (f0, index 0);
+            concentration parameters k1 and k2 (indexes 1 and 2);
+            elements of Bingham main direction (indexes 3-5);
+            elements of Bingham dispersion major axis (indexes 6-8);
+            and elements of Bingham dispersion minor axis (indexs 9-11).
+        """
+        self.model_params = model_params
+
+        self.peak_dirs = model_params[..., 3:6]
+        self.peak_values = model_params[..., 0]
+
+    @auto_attr
+    def afd(self):
+        """Maximum Bingham Amplitude for each ODF lobe."""
+        return self.peak_values
+
+    @auto_attr
+    def kappa_1(self):
+        """Concentration parameter k1 for each ODF lobe."""
+        return self.model_params[..., 1]
+
+    @auto_attr
+    def kappa_2(self):
+        """Concentration parameter k2 for each ODF lobe."""
+        return self.model_params[..., 2]
+
+    @auto_attr
+    def kappa_total(self):
+        """Comnbined concentration parameters for each ODF lobe.
+
+        Note:
+        ----
+        Combined concentration parameters for each lobe is defined as:
+
+        .. math::
+            k_{total} = \sqrt{(k_1k_2)}
+        """
+        return np.sqrt(self.kappa_1 * self.kappa_2)
+
+    @auto_attr
+    def odi_1(self):
+        """Orientation Dispersion index 1 computed for each ODF lobe from
+        concentration paramenter kappa_1."""
+        return k2odi(self.kappa_1)
+
+    @auto_attr
+    def odi_2(self):
+        """Orientation Dispersion index 1 computed for each ODF lobe from
+        concentration paramenter kappa_2."""
+        return k2odi(self.kappa_2)
+
+    @auto_attr
+    def odi_total(self):
+        """Orientation Dispersion Index computed for each ODF lobe from
+        combined concentration parameter (k_total)."""
+        return k2odi(self.kappa_total)
+
+    @auto_attr
+    def fd(self):
+        """ Fiber Density computed as the integral of the Bingham functions
+        fitted for each ODF lobe"""
+        return bingham_fiber_density(self.model_params)
+
+    @auto_attr
+    def godi_1(self):
+        """Global Orientation Dispersion Index 1 (weighted averaged of odi1
+        across all lobes which weights are the fd estimates)"""
+        return global_voxel_metric(self.odi_1, self.fd)
+
+    @auto_attr
+    def godi_2(self):
+        """Global Orientation Dispersion Index 2 (weighted averaged of odi2
+        across all lobes which weights are the fd estimates)"""
+        return global_voxel_metric(self.odi_2, self.fd)
+
+    @auto_attr
+    def godi_total(self):
+        """Global Total Orientation Dispersion Index (weighted averaged of
+        odf_total across all lobes which weights are the fd estimates)"""
+        return global_voxel_metric(self.odi_total, self.fd)
+
+    @auto_attr
+    def tfd(self):
+        """ Total fiber density (sum of fd estimates of all ODF lobes)"""
+        return np.sum(self.fd, axis=-1)
+
+
+def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
+                     min_sep_angle=60, rel_th=0.1):
+    """ Fit Bingham function from ODF
+
+    Parameters
+    ----------
+    odf: ndarray
+        Orientation Distribution Function sampled on the vertices of a sphere
+    sphere: `Sphere` class instance
+        The Sphere providing the odf's discrete directions
+    mask: ndarray
+        Map marking the coordinates in the data that should be analyzed
+    npeak: int
+        Maximum number of peaks found (default 5 peaks).
+    max_search_angle: float, optional.
+        Maximum angle between a peak and its neighbour directions
+        for fitting the Bingham distribution.
+    min_sep_angle: float, optional
+        Minimum separation angle between two peaks for peak extraction.
+    rel_th: float, optional
+        Relative threshold used for peak extraction.
+
+    Return
+    ------
+    BinghamMetrics: class instance
+        Class instance containing metrics computed from Bingham functions
+        fitted to ODF lobes
+    """
     shape = odf.shape[0:-1]
     if mask is None:
         mask = np.ones(shape)
 
-    # For my later functions I need the Bingham parameters saved in an ndarray
-    # with dimensions (Nx, Ny, Nz, n_max_peak, 12).
+    # Bingham parameters saved in an ndarray with shape:
+    # (Nx, Ny, Nz, n_max_peak, 12).
     bpars = np.zeros(shape + (npeaks,) + (12,))
 
     for idx in ndindex(shape):
@@ -432,8 +585,8 @@ def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
             odf[idx], sphere, npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
-        bpars[idx, :npeaks_final, :] = _convert_bingham_pars(fits)
-    return bpars
+        bpars[idx] = _convert_bingham_pars(fits, npeaks)
+    return BinghamMetrics(bpars)
 
 
 # OLD CODE VERSION

@@ -1,8 +1,9 @@
 import numpy as np
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
+                           assert_array_less)
 from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
                                     _bingham_fit_peak, bingham_fiber_density,
-                                    bingham_from_sh_new, _convert_bingham_pars,
+                                    bingham_from_odf, _convert_bingham_pars,
                                     odi2k, k2odi)
 from dipy.data import get_sphere
 
@@ -73,11 +74,11 @@ def test_bingham_metrics():
     assert_almost_equal(fd[0]/fd[1], 3)
 
     # TEST: k2odi and odi2k conversions
-    assert_almost_equal(odi2k(k2odi(k1)), k1)
-    assert_almost_equal(odi2k(k2odi(k2)), k2)
+    assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
+    assert_almost_equal(odi2k(k2odi(np.array(k2))), k2)
 
 
-def test_bingham_from_sh_new():
+def test_bingham_from_odf():
 
     # First test just to check right parameter conversion
     axis0 = np.array([1, 0, 0])
@@ -98,21 +99,46 @@ def test_bingham_from_sh_new():
     ref_pars[0, 3:6] = ref_pars[1, 3:6] = axis0
     ref_pars[0, 6:9] = ref_pars[1, 6:9] = axis1
     ref_pars[0, 9:12] = ref_pars[1, 9:12] = axis2
-    bpars = _convert_bingham_pars(fits)
+    bpars = _convert_bingham_pars(fits, 2)
     assert_array_almost_equal(bpars, ref_pars)
 
-    # Reconstruct multi voxel ODFs to test bingham_from_sh_new
+    # Reconstruct multi voxel ODFs to test bingham_from_odf
     ma_axis = np.array([0, 1, 0])
     mi_axis = np.array([0, 0, 1])
     k1 = 2
     k2 = 6
     f0 = 3
     odf = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+
+    # Perform Bingham fit in multi-voxel odf
     multi_odfs = np.zeros((2, 2, 1, len(sphere.vertices)))
     multi_odfs[...] = odf
-    bpars = bingham_from_sh_new(multi_odfs, sphere)
+    bim = bingham_from_odf(multi_odfs, sphere, npeaks=2, max_search_angle=45)
 
-    assert_almost_equal(bpars[0, 0, 0, 0, 0], f0, decimal=3)
-    assert_almost_equal(bpars[0, 0, 0, 0, 1], k1, decimal=3)
-    assert_almost_equal(bpars[0, 0, 0, 0, 2], k2, decimal=3)
-    
+    # check model_params
+    assert_almost_equal(bim.model_params[0, 0, 0, 0, 0], f0, decimal=3)
+    assert_almost_equal(bim.model_params[0, 0, 0, 0, 1], k1, decimal=3)
+    assert_almost_equal(bim.model_params[0, 0, 0, 0, 2], k2, decimal=3)
+    # check if estimates for a second lobe are zero (note that a single peak
+    # ODF is assumed here for this test GT)
+    assert_array_almost_equal(bim.model_params[0, 0, 0, 1], np.zeros(12))
+
+    # Check if we have estimates in the right lobe for all voxels
+    peak_v = bim.model_params[0, 0, 0, 0, 0]
+    assert_array_almost_equal(bim.afd[..., 0],
+                              peak_v*np.ones((2, 2, 1)))
+    assert_array_almost_equal(bim.afd[..., 1],
+                              np.zeros((2, 2, 1)))
+
+    # check kappas
+    assert_almost_equal(bim.kappa_1[0, 0, 0, 0], k1, decimal=3)
+    assert_almost_equal(bim.kappa_2[0, 0, 0, 0], k2, decimal=3)
+    assert_almost_equal(bim.kappa_total[0, 0, 0, 0], np.sqrt(k1*k2), decimal=3)
+
+    # check ODI
+    assert_almost_equal(bim.odi_1[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
+    assert_almost_equal(bim.odi_2[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
+    # ODI2 < ODI total < ODI1
+    assert_array_less(bim.odi_2[..., 0], bim.odi_1[..., 0])
+    assert_array_less(bim.odi_2[..., 0], bim.odi_total[..., 0])
+    assert_array_less(bim.odi_total[..., 0], bim.odi_1[..., 0])
