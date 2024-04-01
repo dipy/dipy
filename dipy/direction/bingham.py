@@ -25,21 +25,19 @@ from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 
 
-def bingham_fit_odf(odf, sphere, npeaks, max_search_angle=6,
+def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
                     min_sep_angle=60, rel_th=0.1):
     r"""
-    Fit a Bingham distribution onto each principal ODF lobe. Lobes
-    are first found by performing a peak extraction on the input
-    ODF and Bingham distributions are then fitted around each of
-    the extracted peaks using the method described by Riffert et
-    al [1]_.
+    Fit a Bingham distribution onto each principal ODF lobe.
 
     Parameters
     ----------
-    odf: ndarray
-        ODF evaluated on the sphere `sphere`.
-    sphere: DIPY Sphere
-        Sphere on which the ODF is defined.
+    odf: 1d ndarray
+        The ODF function evaluated on the vertices of `sphere`
+    sphere: `Sphere` class instance
+        The Sphere providing the odf's discrete directions
+    npeak: int
+        Maximum number of peaks found (default 5 peaks).
     max_search_angle: float, optional.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution. 6º according to [1]_.
@@ -55,32 +53,35 @@ def bingham_fit_odf(odf, sphere, npeaks, max_search_angle=6,
     n: float
         Number of maximum peaks for the input ODF.
 
+    Notes
+    -----
+    Lobes are first found by performing a peak extraction on the input ODF and
+    Bingham distributions are then fitted around each of the extracted peaks
+    using the method described by Riffert et al [1]_.
+
     References
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
             anisotropy: Extraction of bundle-specific structural metrics from
             crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    
     # extract all maxima on the ODF
     directions, values, _ = peak_directions(odf, sphere,
                                             relative_peak_threshold=rel_th,
                                             min_separation_angle=min_sep_angle)
-    
+
     # n becomes the new limit of peaks and sets a maximum of peaks in case
     # the voxel has more than npeaks.
-    n = min(npeaks, values.shape[0])  
+    n = min(npeaks, values.shape[0])
 
     # Calculate dispersion on all and each of the peaks up to 'n'
     if values.shape[0] != 0:
-        
         fits = []
-        
-        for i in range (n):
+        for i in range(n):
             fit = _bingham_fit_peak(odf, directions[i], sphere,
                                     max_search_angle)
             fits.append(fit)
-        
+
     return fits, n
 
 
@@ -90,12 +91,12 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
 
     Parameters
     ----------
-    sf: ndarray
-        Spherical function evaluated on sphere (ODF).
+    odf: 1d ndarray
+        The odf function evaluated on the vertices of `sphere`
     peak: ndarray (3, 1)
         The peak direction of the lobe to fit.
-    sphere: DIPY Sphere
-        The sphere used to project SH to the ODF.
+    sphere: `Sphere` class instance
+        The Sphere providing the odf's discrete directions
     max_angle: float
         The maximum angle in degrees of the neighbourhood around
         peak to consider for fitting.
@@ -115,7 +116,6 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     mu2: ndarray (3,) of floats
         Minor concentration axis.
     """
-    
     # abs for twice the number of pts to fit
     dot_prod = np.abs(sphere.vertices.dot(peak))
     min_dot = cos(radians(max_angle))
@@ -123,9 +123,9 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     # [p] are the selected ODF vertices (N, 3) around the peak of the lobe
     # within max_angle
     p = sphere.vertices[dot_prod > min_dot]
-    # [v] are the selected ODF amplitudes (N, 1) around the peak of the lobe 
+    # [v] are the selected ODF amplitudes (N, 1) around the peak of the lobe
     # within max_angle
-    v = sf[dot_prod > min_dot].reshape((-1, 1)) 
+    v = sf[dot_prod > min_dot].reshape((-1, 1))
 
     # Test that the surface along peak direction contains
     # at least 3 non-zero directions
@@ -138,7 +138,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     T = np.array([[x**2 * v, x * y * v, x * z * v],
                   [x * y * v, y**2 * v, y * z * v],
                   [x * z * v, y * z * v, z**2 * v]])
-    
+
     T = np.sum(np.squeeze(T), axis=-1) / np.sum(v)
 
     # eigh better than eig. T will always be symmetric, eigh is faster.
@@ -148,12 +148,12 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     mu0 = evecs[:, 2].reshape((3, 1))
     mu1 = evecs[:, 1].reshape((3, 1))
     mu2 = evecs[:, 0].reshape((3, 1))
-    f0 = v.max() # Maximum amplitude of the ODF
+    f0 = v.max()  # Maximum amplitude of the ODF
 
     # If no real fit is possible, return null
     if np.iscomplex(mu1).any() or np.iscomplex(mu2).any():
         return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
-    
+
     # Calculating the A matrix
     A = np.zeros((len(v), 2), dtype=float)  # (N, 2)
     A[:, 0:1] = p.dot(mu1)**2
@@ -163,11 +163,11 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     ATA = A.T.dot(A)
     if np.linalg.matrix_rank(ATA) != ATA.shape[0]:
         return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
-    
+
     # Calculating the Beta matrix
     B = np.zeros_like(v)
     B[v > 0] = np.log(v[v > 0] / f0)  # (N, 1)
-    
+
     # Calculating the Kappas
     k = np.abs(np.linalg.inv(ATA).dot(A.T).dot(B))
     k1 = k[0, 0]
@@ -175,42 +175,69 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     if k1 > k2:
         k1, k2 = k2, k1
         mu1, mu2 = mu2, mu1
-    
+
     return f0, k1, k2, mu0, mu1, mu2
 
 
 def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     r"""
-    Evaluate Bingham distribution on the sphere
-    described by `vertices`.
+    Sample a Bingham function on the directions described by `vertices`.
 
     Parameters
     ----------
     f0: float
-        Maximum amplitude of the distribution.
+        Maximum value of the Bingham function.
     k1: float
         Concentration along major axis.
     k2: float
         Concentration along minor axis.
+    major_axis: ndarray (3)
+        Direction of major axis
+    minor_axis: ndarray (3)
+        Direction of minor axis
     vertices: ndarray (N, 3)
         Unit sphere directions along which the distribution
         is evaluated.
-    
+
     Returns
     -------
-    sf: Spherical function of Bingham distribution evaluated in sphere.
-        
+    fn : array (N,)
+        Sampled Bingham function values at each point on directions.
+
+    Notes
+    -----
+    The Bingham function is defined as [1]_,[2]_,[3]_:
+
+    .. math::
+
+        f(n) = f_0 \exp[-k_1(\mu_1^Tn)^2-k_2(\mu_2^Tn)^2]
+
+    where $f(n)$ is the Bingham function value at a given direction $n$, $f_0%
+    is the Bingham maximum peak value, $k_1$ and $k_2$ are the concentration
+    constants parameters (large values correspond to lower dispersion values)
+    along the two dispersion axes $\mu_1$ and $\mu_2$-
+
+    References
+    ----------
+    .. [1] Bingham, C., 1974. An antipodally symmetric distribution on the
+           sphere. Anna1 Stat. 2, 1201-1225.
+    .. [2] Riffert, T.W., Schreiber, J., Anwander, A., Knösche, T.R., 2014.
+           Beyond fractional Anisotropy: Extraction of Bundle-specific
+           structural metrics from crossing fiber models.
+           Neuroimage 100: 176-191. doi: 10.1016/j.neuroimage.2014.06.015
+    .. [3] Henriques RN, 2018. Advanced Methods for Diffusion MRI Data Analysis
+           and their Application to the Healthy Ageing Brain (Doctoral thesis).
+           Downing College, University of Cambridge. doi: 10.17863/CAM.29356
     """
-    
     if not (np.linalg.norm(vertices, axis=-1) == 1).any():
         warn("Some sphere directions are not normalized. Normalizing.",
              UserWarning)
         vertices /= np.linalg.norm(vertices, axis=-1, keepdims=True)
 
-    sf = f0*np.exp(-k1*vertices.dot(major_axis)**2
+    fn = f0*np.exp(-k1*vertices.dot(major_axis)**2
                    - k2*vertices.dot(minor_axis)**2)
-    
-    return sf.T
+
+    return fn.T
 
 
 def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
