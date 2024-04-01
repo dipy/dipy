@@ -111,7 +111,7 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="ray",
                     )
                 },)
 
-        func = ray.remote(func, **kwargs)
+        func = ray.remote(func)
         results = ray.get([func.remote(ii, *func_args, **func_kwargs)
                           for ii in in_list])
 
