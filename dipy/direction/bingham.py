@@ -1,8 +1,8 @@
 r"""Tools for fitting Bingham distributions to orientation distribution
-functions (ODF), as described in Riffert et al [1]_. The resulting distributions
-can further be used to compute ODF-lobe-specific measures such as the 
-fiber density (FD) and fiber spread (FS) [1]_ and the orientation dispersion
-index (ODI) [2]_.
+functions (ODF), as described in Riffert et al [1]_. The resulting
+distributions can further be used to compute ODF-lobe-specific measures such as
+the fiber density (FD) and fiber spread (FS) [1]_ and the orientation
+dispersion index (ODI) [2]_.
 
 References
 ----------
@@ -10,7 +10,7 @@ References
         anisotropy: Extraction of bundle-specific structural metrics from
         crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
 .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-        and their application to the healthy ageing brain.” Apollo - 
+        and their application to the healthy ageing brain.” Apollo -
         University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
 """
 
@@ -24,66 +24,6 @@ from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
-
-
-def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
-                    min_sep_angle=60, rel_th=0.1):
-    r"""
-    Fit a Bingham distribution onto each principal ODF lobe.
-
-    Parameters
-    ----------
-    odf: 1d ndarray
-        The ODF function evaluated on the vertices of `sphere`
-    sphere: `Sphere` class instance
-        The Sphere providing the odf's discrete directions
-    npeak: int
-        Maximum number of peaks found (default 5 peaks).
-    max_search_angle: float, optional.
-        Maximum angle between a peak and its neighbour directions
-        for fitting the Bingham distribution. 6º according to [1]_.
-    min_sep_angle: float, optional
-        Minimum separation angle between two peaks for peak extraction.
-    rel_th: float, optional
-        Relative threshold used for peak extraction.
-
-    Returns
-    -------
-    fits: list of tuples
-        Bingham distribution parameters for each ODF peak.
-    n: float
-        Number of maximum peaks for the input ODF.
-
-    Notes
-    -----
-    Lobes are first found by performing a peak extraction on the input ODF and
-    Bingham distributions are then fitted around each of the extracted peaks
-    using the method described by Riffert et al [1]_.
-
-    References
-    ----------
-    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-            anisotropy: Extraction of bundle-specific structural metrics from
-            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
-    """
-    # extract all maxima on the ODF
-    directions, values, _ = peak_directions(odf, sphere,
-                                            relative_peak_threshold=rel_th,
-                                            min_separation_angle=min_sep_angle)
-
-    # n becomes the new limit of peaks and sets a maximum of peaks in case
-    # the voxel has more than npeaks.
-    n = min(npeaks, values.shape[0])
-
-    # Calculate dispersion on all and each of the peaks up to 'n'
-    if values.shape[0] != 0:
-        fits = []
-        for i in range(n):
-            fit = _bingham_fit_peak(odf, directions[i], sphere,
-                                    max_search_angle)
-            fits.append(fit)
-
-    return fits, n
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_angle):
@@ -178,6 +118,66 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
         mu1, mu2 = mu2, mu1
 
     return f0, k1, k2, mu0, mu1, mu2
+
+
+def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
+                    min_sep_angle=60, rel_th=0.1):
+    r"""
+    Fit a Bingham distribution onto each principal ODF lobe.
+
+    Parameters
+    ----------
+    odf: 1d ndarray
+        The ODF function evaluated on the vertices of `sphere`
+    sphere: `Sphere` class instance
+        The Sphere providing the odf's discrete directions
+    npeak: int
+        Maximum number of peaks found (default 5 peaks).
+    max_search_angle: float, optional.
+        Maximum angle between a peak and its neighbour directions
+        for fitting the Bingham distribution. 6º according to [1]_.
+    min_sep_angle: float, optional
+        Minimum separation angle between two peaks for peak extraction.
+    rel_th: float, optional
+        Relative threshold used for peak extraction.
+
+    Returns
+    -------
+    fits: list of tuples
+        Bingham distribution parameters for each ODF peak.
+    n: float
+        Number of maximum peaks for the input ODF.
+
+    Notes
+    -----
+    Lobes are first found by performing a peak extraction on the input ODF and
+    Bingham distributions are then fitted around each of the extracted peaks
+    using the method described by Riffert et al [1]_.
+
+    References
+    ----------
+    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+            anisotropy: Extraction of bundle-specific structural metrics from
+            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+    """
+    # extract all maxima on the ODF
+    directions, values, _ = peak_directions(odf, sphere,
+                                            relative_peak_threshold=rel_th,
+                                            min_separation_angle=min_sep_angle)
+
+    # n becomes the new limit of peaks and sets a maximum of peaks in case
+    # the voxel has more than npeaks.
+    n = min(npeaks, values.shape[0])
+
+    # Calculate dispersion on all and each of the peaks up to 'n'
+    if values.shape[0] != 0:
+        fits = []
+        for i in range(n):
+            fit = _bingham_fit_peak(odf, directions[i], sphere,
+                                    max_search_angle)
+            fits.append(fit)
+
+    return fits, n
 
 
 def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
@@ -349,7 +349,7 @@ def k2odi(k):
 
     .. math::
 
-        ODI = \frac{2}{\pi} \arctan{\left( \frac{1}{k} \right)}
+        ODI = \frac{2}{pi} \arctan{( \frac{1}{k})}
 
     References
     ----------
@@ -387,7 +387,7 @@ def odi2k(odi):
 
     .. math::
 
-        ODI = \frac{2}{\pi} \arctan \left( \frac{1}{k} \right)
+        ODI = \frac{2}{pi} \arctan ( \frac{1}{k} )
 
     References
     ----------
@@ -489,7 +489,7 @@ class BinghamMetrics:
         Combined concentration parameters for each lobe is defined as:
 
         .. math::
-            k_{total} = \sqrt{(k_1k_2)}
+            k_{total} = sqrt{(k_1k_2)}
         """
         return np.sqrt(self.kappa_1 * self.kappa_2)
 
@@ -610,11 +610,11 @@ def bingham_orientation_dispersion(bingham_fits):
     References
     ----------
     .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo - 
+            and their application to the healthy ageing brain.” Apollo -
             University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
     .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
             NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4), 
+            density imaging of the human brain. Neuroimage. 2012; 61(4),
             1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
     """
     odi = []
