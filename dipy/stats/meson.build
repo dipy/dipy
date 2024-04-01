@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'analysis.py',
   'resampling.py',
+  'qc.py',
   ]
 
 
