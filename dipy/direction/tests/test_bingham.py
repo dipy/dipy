@@ -1,8 +1,7 @@
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, assert_equal, assert_)
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
-                                    _bingham_fit_peak)
+                                    _bingham_fit_peak, bingham_fiber_density)
 from dipy.data import get_sphere
 
 sphere = get_sphere('repulsion724')
@@ -49,3 +48,22 @@ def test_bingham_fit():
     # direction is now calculated (before the GT direction was given)
     assert_array_almost_equal(np.abs(np.diag(np.dot(Mus, Mus_ref))),
                               np.ones(3), decimal=5)
+
+
+def test_bingham_fiber_density():
+    axis0 = np.array([1, 0, 0])
+    axis1 = np.array([0, 1, 0])
+    axis2 = np.array([0, 0, 1])
+    k1 = 2
+    k2 = 6
+    f0_lobe1 = 3
+    f0_lobe2 = 1
+
+    # define the parameters of two bingham functions with different amplitudes
+    fits = [(f0_lobe1, k1, k2, axis0, axis1, axis2)]
+    fits.append((f0_lobe2, k1, k2, axis0, axis1, axis2))
+    fd = bingham_fiber_density(fits)
+
+    # As the amplitude of the first bingham function is 3 times higher than the
+    # second, its integral have to be also 3 times larger.
+    assert_almost_equal(fd[0]/fd[1], 3)

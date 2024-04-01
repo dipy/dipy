@@ -244,10 +244,6 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
     r"""
     Compute fiber density for each lobe for a given Bingham ODF.
 
-    Fiber density (FD) is given by the integral of the Bingham
-    distribution over the sphere and describes the apparent
-    quantity of fibers passing through an ODF lobe. Equation (6) of [1]_.
-
     Parameters
     ----------
     bingham_fits: list of tuples
@@ -263,13 +259,16 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
     fd: list of floats
         Fiber density for each Bingham distribution.
 
+    Notes
+    -----
+    Fiber density (FD) is given by the integral of the Bingham function [1]_.
+
     References
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    
     phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi]
     theta = np.linspace(0, np.pi, n_thetas)  # [0, pi]
     coords = np.array([[p, t] for p in phi for t in theta]).T
