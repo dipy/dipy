@@ -376,27 +376,22 @@ def _convert_bingham_pars(fits):
         bpars[ln, 0] = fits[ln][0]
         bpars[ln, 1] = fits[ln][1]
         bpars[ln, 2] = fits[ln][2]
-
-        v1 = fits[ln][3].T
-        v2 = fits[ln][4].T
-        v0 = np.cross(v1, v2)
-        bpars[ln, 3:6] = v0
-        bpars[ln, 6:9] = v1
-        bpars[ln, 9:12] = v2
-
+        bpars[ln, 3:6] = fits[ln][3]
+        bpars[ln, 6:9] = fits[ln][4]
+        bpars[ln, 9:12] = fits[ln][5]
     return bpars
 
 
 def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
                         min_sep_angle=60, rel_th=0.1):
     """ Documentation missing """
-    shape = odf.shape
+    shape = odf.shape[0:-1]
     if mask is None:
-        mask = np.ones(shape[0:-1])
+        mask = np.ones(shape)
 
     # For my later functions I need the Bingham parameters saved in an ndarray
     # with dimensions (Nx, Ny, Nz, n_max_peak, 12).
-    bpars = np.zeros(shape[0:-1] + (npeaks,) + (12,))
+    bpars = np.zeros(shape + (npeaks,) + (12,))
 
     for idx in ndindex(shape):
         if not mask[idx]:
@@ -409,6 +404,8 @@ def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
         bpars[idx, :npeaks_final, :] = _convert_bingham_pars(fits)
     return bpars
 
+
+# OLD CODE VERSION
 
 def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
                     min_sep_angle, rel_th):

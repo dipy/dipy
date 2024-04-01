@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
-                                    _bingham_fit_peak, bingham_fiber_density)
+                                    _bingham_fit_peak, bingham_fiber_density,
+                                    bingham_from_sh_new, _convert_bingham_pars)
 from dipy.data import get_sphere
 
 sphere = get_sphere('repulsion724')
@@ -67,3 +68,44 @@ def test_bingham_fiber_density():
     # As the amplitude of the first bingham function is 3 times higher than the
     # second, its integral have to be also 3 times larger.
     assert_almost_equal(fd[0]/fd[1], 3)
+
+
+def test_bingham_from_sh_new():
+
+    # First test just to check right parameter conversion
+    axis0 = np.array([1, 0, 0])
+    axis1 = np.array([0, 1, 0])
+    axis2 = np.array([0, 0, 1])
+    k1 = 2
+    k2 = 6
+    f0_lobe1 = 3
+    f0_lobe2 = 1
+
+    fits = [(f0_lobe1, k1, k2, axis0, axis1, axis2)]
+    fits.append((f0_lobe2, k1, k2, axis0, axis1, axis2))
+    ref_pars = np.zeros((2, 12))
+    ref_pars[0, 0] = f0_lobe1
+    ref_pars[1, 0] = f0_lobe2
+    ref_pars[0, 1] = ref_pars[1, 1] = k1
+    ref_pars[0, 2] = ref_pars[1, 2] = k2
+    ref_pars[0, 3:6] = ref_pars[1, 3:6] = axis0
+    ref_pars[0, 6:9] = ref_pars[1, 6:9] = axis1
+    ref_pars[0, 9:12] = ref_pars[1, 9:12] = axis2
+    bpars = _convert_bingham_pars(fits)
+    assert_array_almost_equal(bpars, ref_pars)
+
+    # Reconstruct multi voxel ODFs to test bingham_from_sh_new
+    ma_axis = np.array([0, 1, 0])
+    mi_axis = np.array([0, 0, 1])
+    k1 = 2
+    k2 = 6
+    f0 = 3
+    odf = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    multi_odfs = np.zeros((2, 2, 1, len(sphere.vertices)))
+    multi_odfs[...] = odf
+    bpars = bingham_from_sh_new(multi_odfs, sphere)
+
+    assert_almost_equal(bpars[0, 0, 0, 0, 0], f0, decimal=3)
+    assert_almost_equal(bpars[0, 0, 0, 0, 1], k1, decimal=3)
+    assert_almost_equal(bpars[0, 0, 0, 0, 2], k2, decimal=3)
+    
