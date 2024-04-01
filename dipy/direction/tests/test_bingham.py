@@ -2,7 +2,8 @@ import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
                                     _bingham_fit_peak, bingham_fiber_density,
-                                    bingham_from_sh_new, _convert_bingham_pars)
+                                    bingham_from_sh_new, _convert_bingham_pars,
+                                    odi2k, k2odi)
 from dipy.data import get_sphere
 
 sphere = get_sphere('repulsion724')
@@ -51,7 +52,7 @@ def test_bingham_fit():
                               np.ones(3), decimal=5)
 
 
-def test_bingham_fiber_density():
+def test_bingham_metrics():
     axis0 = np.array([1, 0, 0])
     axis1 = np.array([0, 1, 0])
     axis2 = np.array([0, 0, 1])
@@ -63,11 +64,17 @@ def test_bingham_fiber_density():
     # define the parameters of two bingham functions with different amplitudes
     fits = [(f0_lobe1, k1, k2, axis0, axis1, axis2)]
     fits.append((f0_lobe2, k1, k2, axis0, axis1, axis2))
-    fd = bingham_fiber_density(fits)
 
+    # TEST: Bingham Fiber density
     # As the amplitude of the first bingham function is 3 times higher than the
     # second, its integral have to be also 3 times larger.
+    fd = bingham_fiber_density(fits)
+
     assert_almost_equal(fd[0]/fd[1], 3)
+
+    # TEST: k2odi and odi2k conversions
+    assert_almost_equal(odi2k(k2odi(k1)), k1)
+    assert_almost_equal(odi2k(k2odi(k2)), k2)
 
 
 def test_bingham_from_sh_new():

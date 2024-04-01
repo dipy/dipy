@@ -315,7 +315,6 @@ def bingham_fiber_spread(bingham_fits, fd=None):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    
     f0 = np.array([x for x, _, _, _, _, _ in bingham_fits])
 
     if fd is None:
@@ -328,44 +327,76 @@ def bingham_fiber_spread(bingham_fits, fd=None):
     return fs.tolist()
 
 
-def bingham_orientation_dispersion(bingham_fits):
-    r"""
-    Compute the orientation dispersion indexes (ODI) from the
-    concentration parameters (k1, k2) as described in [2]_ and [3]_.
-    
+def k2odi(k):
+    """ Convent Bingham/Watson concentration parameter k to the orientation
+    dispersion index (ODI)
+
     Parameters
     ----------
-    bingham_fits : list of tuples
-        Bingham distributions. Each tuple describes a lobe of the
-        initially fitted function.
+    k: float or ndarray
+        Watson/Bingham concentration parameter
 
     Returns
     -------
-    odi: list of tuples
-        Each tuple contains the ODIs 1 & 2 (for k1 & k2, respectively).
+    ODI: float or ndarray
+        Orientation Dispersion Index
+
+    Notes
+    -----
+    Orientation Dispersion Index for Watson/Bingham functions are defined as
+    [1]_,[2]_:
+
+    .. math::
+
+        ODI = \frac{2}{\pi} \arctan \left( \frac{1}{k} \right)
 
     References
     ----------
-    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo - 
-            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
-    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+    .. [1] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
             NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4), 
+            density imaging of the human brain. Neuroimage. 2012; 61(4),
             1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
-
+    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
+            and their application to the healthy ageing brain.” Apollo -
+            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
     """
-    
-    odi = []
-    
-    for f0, k1, k2, mu0, mu1, mu2 in bingham_fits:
-        
-        odi_1 = (2/np.pi) * np.arctan(1/k1)    
-        odi_2 = (2/np.pi) * np.arctan(1/k2)
-        
-        odi.append([odi_1, odi_2]) # Appending for each lobe both odi's
+    return 2/np.pi * np.arctan(1/k)
 
-    return odi
+
+def odi2k(odi):
+    """ Convent Bingham/Watson concentration parameter k to the orientation
+    dispersion index (ODI)
+
+    Parameters
+    ----------
+    ODI: float or ndarray
+        Orientation Dispersion Index
+
+    Returns
+    -------
+    k: float or ndarray
+        Watson/Bingham concentration parameter
+
+    Notes
+    -----
+    Orientation Dispersion Index for Watson/Bingham functions are defined as
+    [1]_,[2]_:
+
+    .. math::
+
+        ODI = \frac{2}{\pi} \arctan \left( \frac{1}{k} \right)
+
+    References
+    ----------
+    .. [1] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+            NODDI: practical in vivo neurite orientation dispersion and
+            density imaging of the human brain. Neuroimage. 2012; 61(4),
+            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
+    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
+            and their application to the healthy ageing brain.” Apollo -
+            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+    """
+    return 1/np.tan(np.pi/2 * odi)
 
 
 def _convert_bingham_pars(fits):
@@ -406,6 +437,44 @@ def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
 
 
 # OLD CODE VERSION
+
+def bingham_orientation_dispersion(bingham_fits):
+    r"""
+    Compute the orientation dispersion indexes (ODI) from the
+    concentration parameters (k1, k2) as described in [2]_ and [3]_.
+
+    Parameters
+    ----------
+    bingham_fits : list of tuples
+        Bingham distributions. Each tuple describes a lobe of the
+        initially fitted function.
+
+    Returns
+    -------
+    odi: list of tuples
+        Each tuple contains the ODIs 1 & 2 (for k1 & k2, respectively).
+
+    References
+    ----------
+    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
+            and their application to the healthy ageing brain.” Apollo - 
+            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+            NODDI: practical in vivo neurite orientation dispersion and
+            density imaging of the human brain. Neuroimage. 2012; 61(4), 
+            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
+    """
+    odi = []
+
+    for f0, k1, k2, mu0, mu1, mu2 in bingham_fits:
+
+        odi_1 = (2/np.pi) * np.arctan(1/k1)
+        odi_2 = (2/np.pi) * np.arctan(1/k2)
+
+        odi.append([odi_1, odi_2])  # Appending for each lobe both odi's
+
+    return odi
+
 
 def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
                     min_sep_angle, rel_th):
