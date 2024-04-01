@@ -368,6 +368,48 @@ def bingham_orientation_dispersion(bingham_fits):
     return odi
 
 
+def _convert_bingham_pars(fits):
+    """ Convert tuple output of Bingham fit functions to ndarray"""
+    n = len(fits)
+    bpars = np.zeros((n, 12))
+    for ln in range(n):
+        bpars[ln, 0] = fits[ln][0]
+        bpars[ln, 1] = fits[ln][1]
+        bpars[ln, 2] = fits[ln][2]
+
+        v1 = fits[ln][3].T
+        v2 = fits[ln][4].T
+        v0 = np.cross(v1, v2)
+        bpars[ln, 3:6] = v0
+        bpars[ln, 6:9] = v1
+        bpars[ln, 9:12] = v2
+
+    return bpars
+
+
+def bingham_from_sh_new(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
+                        min_sep_angle=60, rel_th=0.1):
+    """ Documentation missing """
+    shape = odf.shape
+    if mask is None:
+        mask = np.ones(shape[0:-1])
+
+    # For my later functions I need the Bingham parameters saved in an ndarray
+    # with dimensions (Nx, Ny, Nz, n_max_peak, 12).
+    bpars = np.zeros(shape[0:-1] + (npeaks,) + (12,))
+
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+
+        [fits, npeaks_final] = bingham_fit_odf(
+            odf[idx], sphere, npeaks, max_search_angle=max_search_angle,
+            min_sep_angle=min_sep_angle, rel_th=rel_th)
+
+        bpars[idx, :npeaks_final, :] = _convert_bingham_pars(fits)
+    return bpars
+
+
 def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
                     min_sep_angle, rel_th):
     r"""
@@ -396,8 +438,7 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
         Minimum separation angle between two ODF peaks for peak extraction.
     rel_th: float
         Relative threshold used for peak extraction.
-    
-    
+
     Returns
     -------
     afd: 4D ndarray
@@ -418,70 +459,69 @@ def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
     odi: 5D ndarray
         Orientation Dispersion Index for k1 and k2 for all ODF peaks
         as in [2]_ and [3]_.
-        
+
     References
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo - 
+            and their application to the healthy ageing brain.” Apollo -
             University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
     .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
             NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4), 
+            density imaging of the human brain. Neuroimage. 2012; 61(4),
             1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
 
     """
-    
     # Reading in the spherical harmonics and mask
     sphe_har = nib.load(sh)
     datash = sphe_har.get_fdata()
     print('datash.shape (%d, %d, %d, %d)' % datash.shape)
-    
+
     mask = nib.load(mask)
     datamask = mask.get_fdata()
-    
+
     sh_order = int(sh_order)
     npeaks = int(npeaks)
-        
+
     sphere = get_sphere(sphere)
     sphere = sphere.subdivide(2)
- 
+
     shape = datash.shape[:3]
     afd = np.zeros((shape + (npeaks,)))
     kappa1 = np.zeros((shape + (npeaks,)))
     kappa2 = np.zeros((shape + (npeaks,)))
-    mu_0 =  np.zeros((shape + (npeaks, 3)))
-    mu_1 =  np.zeros((shape + (npeaks, 3)))
-    mu_2 =  np.zeros((shape + (npeaks, 3)))
+    mu_0 = np.zeros((shape + (npeaks, 3)))
+    mu_1 = np.zeros((shape + (npeaks, 3)))
+    mu_2 = np.zeros((shape + (npeaks, 3)))
     f_d = np.zeros((shape + (npeaks,)))
     f_s = np.zeros((shape + (npeaks,)))
     odi = np.zeros((shape + (npeaks, 2)))
-    
+
     print('Fitting the Bingham distribution for the input brain volume.')
     for idx in ndindex(shape):
         if not datamask[idx]:
             continue
-        
+
         odf = sh_to_sf(datash[idx], sphere, sh_order=sh_order)
 
         [fits, npeaks_final] = bingham_fit_odf(odf, sphere, npeaks,
                                                max_search_angle=max_angle,
                                                min_sep_angle=min_sep_angle,
                                                rel_th=rel_th)
-        
+
         f0 = np.array([i[0] for i in fits])
         k1 = np.array([i[1] for i in fits])
         k2 = np.array([i[2] for i in fits])
         mu0 = np.squeeze(np.array([i[3] for i in fits]))
         mu1 = np.squeeze(np.array([i[4] for i in fits]))
         mu2 = np.squeeze(np.array([i[5] for i in fits]))
-        
+
         fd = bingham_fiber_density(fits)
         fs = bingham_fiber_spread(fits)
         od = bingham_orientation_dispersion(fits)
-           
+
         afd[idx][:npeaks_final] = f0[:npeaks_final]
         kappa1[idx][:npeaks_final] = k1[:npeaks_final]
         kappa2[idx][:npeaks_final] = k2[:npeaks_final]
