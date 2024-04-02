@@ -22,7 +22,6 @@
 .. _nibabel: https://nipy.org/nibabel
 .. _nibabel pypi: https://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: https://nipy.org/nipy/devel/guidelines/index.html
-.. _buildbots: https://nipy.bic.berkeley.edu/builders
 .. _`dipy gitter`: https://gitter.im/dipy/dipy
 .. _neurostars: https://neurostars.org/
 .. _h5py: https://www.h5py.org/
@@ -34,6 +33,7 @@
 .. _pip: https://www.pip-installer.org/en/latest/
 .. _easy_install: https://pypi.python.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
+.. _neurofedora: https://neuro.fedoraproject.org/
 
 .. Documentation tools
 .. _graphviz: https://www.graphviz.org/
@@ -47,7 +47,6 @@
 .. _LGPL: https://www.gnu.org/copyleft/lesser.html
 
 .. Working process
-.. _pynifti: https://niftilib.sourceforge.net/pynifti/
 .. _nifticlibs: https://nifti.nimh.nih.gov
 .. _nifti: https://nifti.nimh.nih.gov
 .. _`nipy launchpad`: https://launchpad.net/nipy
@@ -57,13 +56,13 @@
 .. _`dipy mailing list`: https://mail.python.org/mailman3/lists/dipy.python.org/
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: https://www.python.org/dev/peps/pep-0008/
-.. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+.. _`numpy coding style`: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 .. _`python module path`: https://docs.python.org/tutorial/modules.html#the-module-search-path
 
 .. Code support stuff
 .. _pychecker: https://pychecker.sourceforge.net/
-.. _pylint: https://www.logilab.org/project/pylint
-.. _pyflakes: https://divmod.org/trac/wiki/DivmodPyflakes
+.. _pylint: https://pylint.readthedocs.io/en/latest/
+.. _pyflakes: https://github.com/PyCQA/pyflakes
 .. _virtualenv: https://pypi.python.org/pypi/virtualenv
 .. _git: https://git.or.cz/
 .. _github: https://github.com
@@ -111,6 +110,9 @@
 .. _statsmodels: https://www.statsmodels.org
 .. _pandas: https://pandas.pydata.org
 .. _pytables: https://www.pytables.org
+.. _tensorflow: https://www.tensorflow.org
+.. _tqdm: https://tqdm.github.io/
+.. _trx-python: https://tee-ar-ex.github.io/trx-python/
 
 .. Python imaging projects
 .. _PyMVPA: https://www.pymvpa.org
@@ -160,7 +162,7 @@
 .. _powershell: https://www.microsoft.com/powershell
 .. _msysgit: https://code.google.com/p/msysgit
 .. _putty: https://www.chiark.greenend.org.uk/~sgtatham/putty
-.. _visualstudiobuildtools: https://landinghub.visualstudio.com/visual-cpp-build-tools
+.. _visualstudiobuildtools: https://visualstudio.microsoft.com/downloads/?q=build+tools#build-tools-for-visual-studio-2022
 
 .. Functional imaging labs
 .. _`functional imaging laboratory`: https://www.fil.ion.ucl.ac.uk

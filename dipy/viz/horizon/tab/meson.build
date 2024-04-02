@@ -5,6 +5,7 @@ python_sources = [
   'peak.py',
   'roi.py',
   'slice.py',
+  'surface.py',
   ]
 
 py3.install_sources(

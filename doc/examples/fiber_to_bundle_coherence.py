@@ -89,7 +89,7 @@ selectionmask[xa:xb, ya:yb, za:zb] = True
 # region-of-interest in which the computations are done.
 
 # Perform CSA
-csa_model = CsaOdfModel(gtab, sh_order=6)
+csa_model = CsaOdfModel(gtab, sh_order_max=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              relative_peak_threshold=.6,
                              min_separation_angle=45,

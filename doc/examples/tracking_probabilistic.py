@@ -52,13 +52,13 @@ white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
-csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 ###############################################################################
 # We use the GFA of the CSA model to build a stopping criterion.
 
-csa_model = CsaOdfModel(gtab, sh_order=6)
+csa_model = CsaOdfModel(gtab, sh_order_max=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 

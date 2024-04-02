@@ -71,7 +71,7 @@ or using `conda`::
     conda install -c conda-forge dipy
 
 For detailed installation instructions, including instructions for installing
-from source, please read our `installation documentation <https://dipy.org/documentation/latest/installation/>`_.
+from source, please read our `installation documentation <https://docs.dipy.org/stable/user_guide/installation.html>`_.
 
 Python versions and dependencies
 --------------------------------

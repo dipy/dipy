@@ -62,8 +62,8 @@ where
 
 .. math::
 
-   y = \\begin{pmatrix} \\ S_1 \\ ln S_1 \\ \\vdots \\
-   \\ S_n \\ ln S_n \\end{pmatrix} ,
+   y = \\begin{pmatrix} \\ S_1 \\ln S_1 \\\\ \\vdots \\\\
+   \\ S_n \\ln S_n \\end{pmatrix} ,
 
 .. math::
 
@@ -74,14 +74,14 @@ where
 
    A =
    \\begin{pmatrix}
-   S_1 & 0 & \\ldots & 0 \\ 0 & \\ddots & \\ddots & \\vdots \\ \\vdots &
-   \\ddots & \\ddots & 0 \\ 0 & \\ldots & 0 & S_n
+   S_1 & 0 & \\ldots & 0 \\\\ 0 & \\ddots & \\ddots & \\vdots \\\\ \\vdots &
+   \\ddots & \\ddots & 0 \\\\ 0 & \\ldots & 0 & S_n
    \\end{pmatrix}
    \\begin{pmatrix}
    1 & -\\mathbf{b}_1^\\text{T} & \\frac{1}{2} (\\mathbf{b}_1 \\otimes
-   \\mathbf{b}_1) \\text{T} \\
-   \\vdots & \\vdots & \\vdots \\
-   \\vdots & \\vdots & \\vdots \\
+   \\mathbf{b}_1) \\text{T} \\\\
+   \\vdots & \\vdots & \\vdots \\\\
+   \\vdots & \\vdots & \\vdots \\\\
    1 & -\\mathbf{b}_n^\\text{T} & \\frac{1}{2} (\\mathbf{b}_n \\otimes
    \\mathbf{b}_n) ^\\text{T}
    \\end{pmatrix} ,

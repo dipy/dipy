@@ -15,7 +15,7 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     cdef:
         cnp.ndarray dwi_mask
-        cnp.ndarray vox_data
+        double[:] vox_data
         dict _pf_kwargs
         double cos_similarity
         double min_separation_angle
@@ -129,20 +129,25 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
-        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.vox_data[0]) != 0:
             self.__clear_pmf()
         else:
-            self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
-                self.vox_data[self.dwi_mask], self.H, self.R)
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
+            np.asarray(self.vox_data)[self.dwi_mask] = shm.bootstrap_data_voxel(
+                np.asarray(self.vox_data)[self.dwi_mask], self.H, self.R)
+            self.pmf = self.model.fit(np.asarray(self.vox_data)).odf(self.sphere)
         return self.pmf
 
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
-        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
+
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.vox_data[0]) != 0:
             self.__clear_pmf()
         else:
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
+            self.pmf = self.model.fit(np.asarray(self.vox_data)).odf(self.sphere)
         return self.pmf
 
     cdef void __clear_pmf(self) nogil:
@@ -154,7 +159,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             self.pmf[i] = 0.0
 
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Attempt direction getting on a few bootstrap samples.
 
         Returns
@@ -168,7 +173,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         for _ in range(self.max_attempts):
-            pmf = self.get_pmf(<double[:3]> point)
+            pmf = self.get_pmf(point)
             peaks = peak_directions(pmf, self.sphere, **self._pf_kwargs)[0]
             if len(peaks) > 0:
                 return closest_peak(peaks, direction, self.cos_similarity)

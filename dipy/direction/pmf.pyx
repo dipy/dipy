@@ -19,12 +19,10 @@ cdef class PmfGen:
         self.sphere = sphere
         self.vertices = np.asarray(sphere.vertices, dtype=float)
 
-    cpdef double[:] get_pmf(self, double[::1] point):
-        cdef:
-            cnp.npy_intp len_pmf = self.pmf.shape[0]
-        return <double[:len_pmf]>self.get_pmf_c(&point[0])
+    def get_pmf(self, double[::1] point):
+        return self.get_pmf_c(point)
 
-    cdef double* get_pmf_c(self, double* point) noexcept nogil:
+    cdef double[:] get_pmf_c(self, double[::1] point) noexcept nogil:
         pass
 
     cdef int find_closest(self, double* xyz) noexcept nogil:
@@ -46,15 +44,15 @@ cdef class PmfGen:
                 idx = i
         return idx
 
-    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
-        return self.get_pmf_value_c(&point[0], &xyz[0])
+    def get_pmf_value(self, double[::1] point, double[::1] xyz):
+        return self.get_pmf_value_c(point, xyz)
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
+    cdef double get_pmf_value_c(self, double[::1] point, double[::1] xyz) noexcept nogil:
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
-        cdef int idx = self.find_closest(xyz)
+        cdef int idx = self.find_closest(&xyz[0])
         return self.get_pmf_c(point)[idx]
 
     cdef void __clear_pmf(self) noexcept nogil:
@@ -79,12 +77,12 @@ cdef class SimplePmfGen(PmfGen):
             raise ValueError("pmf should have the same number of values as the"
                              + " number of vertices of sphere.")
 
-    cdef double* get_pmf_c(self, double* point) noexcept nogil:
-        if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
+    cdef double[:] get_pmf_c(self, double[::1] point) noexcept nogil:
+        if trilinear_interpolate4d_c(self.data, &point[0], &self.pmf[0]) != 0:
             PmfGen.__clear_pmf(self)
-        return &self.pmf[0]
+        return self.pmf
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
+    cdef double get_pmf_value_c(self, double[::1] point, double[::1] xyz) noexcept nogil:
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
@@ -92,11 +90,11 @@ cdef class SimplePmfGen(PmfGen):
         cdef:
             int idx
 
-        idx = self.find_closest(xyz)
+        idx = self.find_closest(&xyz[0])
 
         if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
-                                     point,
-                                     self.pmf[0:1]) != 0:
+                                     &point[0],
+                                     &self.pmf[0]) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf[0]
 
@@ -122,14 +120,16 @@ cdef class SHCoeffPmfGen(PmfGen):
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 
-    cdef double* get_pmf_c(self, double* point) noexcept nogil:
+    cdef double[:] get_pmf_c(self, double[::1] point) noexcept nogil:
         cdef:
             cnp.npy_intp i, j
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp len_B = self.B.shape[1]
             double _sum
 
-        if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
+        if trilinear_interpolate4d_c(self.data,
+                                     &point[0],
+                                     &self.coeff[0]) != 0:
             PmfGen.__clear_pmf(self)
         else:
             for i in range(len_pmf):
@@ -137,4 +137,4 @@ cdef class SHCoeffPmfGen(PmfGen):
                 for j in range(len_B):
                     _sum = _sum + (self.B[i, j] * self.coeff[j])
                 self.pmf[i] = _sum
-        return &self.pmf[0]
+        return self.pmf

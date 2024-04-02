@@ -14,7 +14,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import set_random_number_generator
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import window
@@ -35,8 +35,9 @@ def test_horizon_events(rng):
 
     data = 255 * rng.random((197, 233, 189))
     vox_size = (1., 1., 1.)
-
-    images = [(data, affine)]
+    img = np.zeros((197, 233, 189))
+    img[0:25, :, :] = 1
+    images = [(data, affine, '/test/filename.nii.gz'), (img, affine)]
     # images = None
     from dipy.segment.tests.test_bundles import setup_module
     setup_module()
@@ -55,7 +56,7 @@ def test_horizon_events(rng):
     fname = os.path.join(DATA_DIR, 'record_horizon.log.gz')
 
     horizon(tractograms=tractograms, images=images, pams=None,
-            cluster=True, cluster_thr=5.0,
+            cluster=True, cluster_thr=5.0, roi_images=True,
             random_colors=False, length_gt=0, length_lt=np.inf,
             clusters_gt=0, clusters_lt=np.inf,
             world_coords=True, interactive=True, out_png='tmp.png',
@@ -109,8 +110,7 @@ def test_horizon(rng):
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
-    images = [(data, affine)]
-
+    images = [(data, affine, '/test/filename.nii.gz')]
     # tractograms in native coords (not supported for now)
     with npt.assert_raises(ValueError) as ve:
         horizon(tractograms, images=images, cluster=True, cluster_thr=5,
@@ -158,7 +158,11 @@ def test_roi_images(rng):
     img2[2, 2, 2] = 1
     img3 = np.zeros((5, 5, 5))
     img3[0, :, :] = 1
-    images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
+    images = [
+        (img1, np.eye(4)),
+        (img2, np.eye(4), '/test/filename.nii.gz'),
+        (img3, np.eye(4), '/test/filename.nii.gz')
+    ]
     show_m = horizon(images=images, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
     npt.assert_equal(analysis.actors, 0)
@@ -167,7 +171,52 @@ def test_roi_images(rng):
     npt.assert_array_equal(report.colors_found, [True, True])
     show_m = horizon(images=images, roi_images=True, return_showm=True)
     analysis = window.analyze_scene(show_m.scene)
-    npt.assert_equal(analysis.actors, 2)
+    npt.assert_equal(analysis.actors, 3)
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@set_random_number_generator(42)
+def test_surfaces(rng):
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 3))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+    show_m = horizon(surfaces=surfaces, return_showm=True)
+    analysis = window.analyze_scene(show_m.scene)
+    npt.assert_equal(analysis.actors, 3)
+
+    vertices = rng.random((100, 4))
+    faces = rng.integers(0, 100, size=(100, 3))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        show_m = horizon(surfaces=surfaces, return_showm=True)
+        analysis = window.analyze_scene(show_m.scene)
+        npt.assert_equal(analysis.actors, 0)
+        check_for_warnings(l_warns, 'Vertices do not have correct shape: ' +
+                           '(100, 4)')
+
+    vertices = rng.random((100, 3))
+    faces = rng.integers(0, 100, size=(100, 4))
+    surfaces = [
+        (vertices, faces),
+        (vertices, faces, '/test/filename.pial'),
+        (vertices, faces, '/test/filename.pial')
+    ]
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        show_m = horizon(surfaces=surfaces, return_showm=True)
+        analysis = window.analyze_scene(show_m.scene)
+        npt.assert_equal(analysis.actors, 0)
+        check_for_warnings(l_warns, 'Faces do not have correct shape: ' +
+                           '(100, 4)')
 
 
 @pytest.mark.skipif(skip_it, reason="Needs xvfb")

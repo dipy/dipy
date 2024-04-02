@@ -10,6 +10,7 @@ python_sources = [
   'test_reconst_csa_csd.py',
   'test_reconst_dki.py',
   'test_reconst_dti.py',
+  'test_reconst_dsi.py',
   'test_reconst_ivim.py',
   'test_reconst_mapmri.py',
   'test_reconst_rumba.py',

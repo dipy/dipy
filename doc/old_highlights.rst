@@ -4,6 +4,35 @@
 Older Highlights
 ****************
 
+**DIPY 1.8.0** is now available. New features include:
+
+- Python 3.12.0 support.
+- Cython 3.0.0 compatibility.
+- Migrated to Meson build system. Setuptools is no more.
+- EVAC+ novel DL-based brain extraction method added.
+- Parallel Transport Tractography (PTT) 10X faster.
+- Many Horizon updates. Fast overlays of many images.
+- New Correlation Tensor Imaging (CTI) method added.
+- Improved warnings for optional dependencies.
+- Large documentation update. New theme/design integration.
+- Closed 197 issues and merged 130 pull requests.
+
+**DIPY 1.7.0** is now available. New features include:
+
+- NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
+- NF: DKI+ - Diffusion Kurtosis modeling with advanced constraints added.
+- NF: Synb0 - Synthetic b0 creation added using deep learning added.
+- NF: New Parallel Transport Tractography (PTT) added.
+- NF: Fast Streamline Search algorithm added.
+- NF: New denoising methods based on 1D CNN added.
+- Handle Asymmetric Spherical Functions.
+- Large update of DIPY Horizon features.
+- Multiple Workflows updated
+- Large codebase cleaning.
+- Large documentation update. Integration of Sphinx-Gallery.
+- Closed 53 issues and merged 34 pull requests.
+
+
 **DIPY 1.7.0** is now available. New features include:
 
 - NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.

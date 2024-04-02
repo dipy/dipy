@@ -33,6 +33,7 @@ tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Input, Conv1D, Activation
+    from tensorflow.keras.initializers import Orthogonal
 
 sklearn, have_sklearn, _ = optional_package('sklearn.model_selection')
 
@@ -77,7 +78,7 @@ class Cnn1DDenoiser:
             raise ImportError('scikit-learn is not available. Please install '
                               'scikit-learn.')
         input_layer = Input(shape=(sig_length, 1))
-        x = Conv1D(filters=16, kernel_size=16, kernel_initializer='Orthogonal',
+        x = Conv1D(filters=16, kernel_size=16, kernel_initializer=Orthogonal(),
                    padding='same', name='Conv1')(input_layer)
         x = Activation('relu', name='ReLU1')(x)
         max_pool_1d = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2,
@@ -188,8 +189,7 @@ class Cnn1DDenoiser:
             callbacks=None, validation_split=0.0, validation_data=None,
             shuffle=True, initial_epoch=0, steps_per_epoch=None,
             validation_steps=None, validation_batch_size=None,
-            validation_freq=1, max_queue_size=10, workers=1,
-            use_multiprocessing=False):
+            validation_freq=1):
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed number of epochs
@@ -263,13 +263,10 @@ class Cnn1DDenoiser:
                               steps_per_epoch=steps_per_epoch,
                               validation_steps=validation_steps,
                               validation_batch_size=validation_batch_size,
-                              validation_freq=validation_freq,
-                              max_queue_size=max_queue_size, workers=workers,
-                              use_multiprocessing=use_multiprocessing)
+                              validation_freq=validation_freq)
 
     def evaluate(self, x, y, batch_size=None, verbose=1,
-                 steps=None, callbacks=None, max_queue_size=10, workers=1,
-                 use_multiprocessing=False, return_dict=False):
+                 steps=None, callbacks=None, return_dict=False):
         """Evaluate the model on a test dataset.
 
         Parameters
@@ -316,14 +313,10 @@ class Cnn1DDenoiser:
         return self.model.evaluate(x=x, y=y, batch_size=batch_size,
                                    verbose=verbose, steps=steps,
                                    callbacks=callbacks,
-                                   max_queue_size=max_queue_size,
-                                   workers=workers,
-                                   use_multiprocessing=use_multiprocessing,
                                    return_dict=return_dict)
 
     def predict(self, x, batch_size=None, verbose=0,
-                steps=None, callbacks=None, max_queue_size=10, workers=1,
-                use_multiprocessing=False):
+                steps=None, callbacks=None):
         """Generate predictions for input samples.
 
         Parameters
@@ -358,8 +351,7 @@ class Cnn1DDenoiser:
         x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         predicted_output = self.model.predict(
             x=x, batch_size=batch_size, verbose=verbose, steps=steps,
-            callbacks=callbacks, max_queue_size=max_queue_size,
-            workers=workers, use_multiprocessing=use_multiprocessing)
+            callbacks=callbacks)
         predicted_output = np.float32(np.reshape(predicted_output,
                                                  (sz[0], sz[1], sz[2], sz[3])))
         return predicted_output

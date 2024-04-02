@@ -1,3 +1,4 @@
+from warnings import warn
 from packaging.version import Version
 
 import numpy as np
@@ -9,11 +10,14 @@ from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager, build_label)
-from dipy.viz.horizon.visualizer import ClustersVisualizer, SlicesVisualizer
-from dipy.viz.horizon.util import check_img_dtype, check_img_shapes
+                                  TabManager, build_label, SurfaceTab)
+from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
+                                         SurfaceVisualizer, PeaksVisualizer)
+from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
+                                   unpack_image, is_binary_image,
+                                   unpack_surface, check_peak_size)
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from fury import __version__ as fury_version
@@ -37,13 +41,15 @@ HELP_MESSAGE = """
 
 class Horizon:
 
-    def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 rgb=False, cluster_thr=15.0, random_colors=None, length_gt=0,
-                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
+    def __init__(self, tractograms=None, images=None, pams=None, surfaces=None,
+                 cluster=False, rgb=False, cluster_thr=15.0,
+                 random_colors=None, length_gt=0, length_lt=1000,
+                 clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
                  order_transparent=True, buan=False, buan_colors=None,
-                 roi_images=False, roi_colors=(1, 0, 0)):
+                 roi_images=False, roi_colors=(1, 0, 0),
+                 surface_colors=[(1, 0, 0)]):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -56,6 +62,8 @@ class Horizon:
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
             Contains peak directions and spherical harmonic coefficients
+        surfaces : sequence of tuples
+            Each tuple contains vertices and faces
         cluster : bool
             Enable QuickBundlesX clustering
         rgb : bool, optional
@@ -124,8 +132,8 @@ class Horizon:
         if not has_fury:
             raise ImportError('Horizon requires FURY. Please install it '
                               'with pip install fury')
-        if Version(fury_version) < Version('0.9.0'):
-            ValueError('Horizon requires FURY version 0.9.0 or higher.'
+        if Version(fury_version) < Version('0.10.0'):
+            ValueError('Horizon requires FURY version 0.10.0 or higher.'
                        ' Please upgrade FURY with pip install -U fury.')
 
         self.cluster = cluster
@@ -143,6 +151,7 @@ class Horizon:
         self.out_png = out_png
         self.images = images or []
         self.pams = pams or []
+        self._surfaces = surfaces or []
 
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
@@ -155,9 +164,11 @@ class Horizon:
         self.buan_colors = buan_colors
         self.__roi_images = roi_images
         self.__roi_colors = roi_colors
+        self._surface_colors = surface_colors
+
+        self.color_gen = distinguishable_colormap()
 
         if self.random_colors is not None:
-            self.color_gen = distinguishable_colormap()
             if not self.random_colors:
                 self.random_colors = ['tracts', 'rois']
         else:
@@ -440,70 +451,78 @@ class Horizon:
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
 
-        synchronize_slices = False
+        sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
             if self.__roi_images:
                 roi_color = self.__roi_colors
             roi_actors = []
             img_count = 0
-            synchronize_slices = check_img_shapes(self.images)
+            sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
-                data, affine = img
+                title = 'Image {}'.format(img_count+1)
+                data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
-                img_val_range = np.unique(data).shape[0]
-                if img_val_range == 2:
-                    if self.__roi_images:
-                        if 'rois' in self.random_colors:
-                            roi_color = next(self.color_gen)
-                        roi_actor = actor.contour_from_roi(
-                            data, affine=affine, color=roi_color)
-                        scene.add(roi_actor)
-                        roi_actors.append(roi_actor)
-                    else:
-                        slices_viz = SlicesVisualizer(
-                            self.show_m.iren, scene, data, affine=affine,
-                            world_coords=self.world_coords,
-                            percentiles=[0, 100], rgb=self.rgb)
-                        self.__tabs.append(SlicesTab(
-                            slices_viz, slice_id=img_count + 1,
-                            force_render=self._show_force_render))
-                        img_count += 1
+                binary_image = is_binary_image(data)
+                if binary_image and self.__roi_images:
+                    if 'rois' in self.random_colors:
+                        roi_color = next(self.color_gen)
+                    roi_actor = actor.contour_from_roi(
+                        data, affine=affine, color=roi_color)
+                    scene.add(roi_actor)
+                    roi_actors.append(roi_actor)
                 else:
                     slices_viz = SlicesVisualizer(
                         self.show_m.iren, scene, data, affine=affine,
-                        world_coords=self.world_coords, rgb=self.rgb)
+                        world_coords=self.world_coords, rgb=self.rgb,
+                        is_binary=binary_image)
                     self.__tabs.append(SlicesTab(
-                        slices_viz, slice_id=img_count + 1,
-                        force_render=self._show_force_render))
+                        slices_viz, title, fname, self._show_force_render))
                     img_count += 1
+
             if len(roi_actors) > 0:
-                    self.__tabs.append(ROIsTab(roi_actors))
+                self.__tabs.append(ROIsTab(roi_actors))
 
+        sync_peaks = False
         if len(self.pams) > 0:
-            pam = self.pams[0]
-            peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
-            scene.add(peak_actor)
-            self.__tabs.append(PeaksTab(peak_actor))
+            if self.images:
+                sync_peaks = check_peak_size(
+                    self.pams, self.images[0][0].shape[:3], sync_slices)
+            else:
+                sync_peaks = check_peak_size(self.pams)
+            for pam in self.pams:
+                peak_viz = PeaksVisualizer((pam.peak_dirs, pam.affine),
+                                           self.world_coords)
+                scene.add(peak_viz.actors[0])
+                self.__tabs.append(PeaksTab(peak_viz.actors[0]))
 
-        else:
-            data = None
-            affine = None
-            pam = None
+        if len(self._surfaces) > 0:
+            for idx, surface in enumerate(self._surfaces):
+                try:
+                    vertices, faces, fname = unpack_surface(surface)
+                except ValueError as e:
+                    warn(str(e))
+                    continue
+                color = next(self.color_gen)
+                title = 'Surface {}'.format(idx+1)
+                surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
+                surf_tab = SurfaceTab(surf_viz, title, fname)
+                self.__tabs.append(surf_tab)
 
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
-            self.__tab_mgr = TabManager(self.__tabs, self.__win_size,
-                                        synchronize_slices)
-
-            def tab_changed(actors):
+            def on_tab_changed(actors):
                 for act in actors:
                     scene.rm(act)
                     scene.add(act)
 
-            self.__tab_mgr.tab_changed = tab_changed
+            self.__tab_mgr = TabManager(
+                self.__tabs, scene.GetSize(),
+                on_tab_changed, sync_slices, sync_vol, sync_peaks)
+
             scene.add(self.__tab_mgr.tab_ui)
+            self.__tab_mgr.handle_text_overflows()
 
         self.show_m.initialize()
 
@@ -624,7 +643,7 @@ class Horizon:
                           reset_camera=False)
 
 
-def horizon(tractograms=None, images=None, pams=None,
+def horizon(tractograms=None, images=None, pams=None, surfaces=None,
             cluster=False, rgb=False, cluster_thr=15.0,
             random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
@@ -643,6 +662,8 @@ def horizon(tractograms=None, images=None, pams=None,
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
         Contains peak directions and spherical harmonic coefficients
+    surfaces : sequence of tuples
+        Each tuple contains vertices and faces
     cluster : bool
         Enable QuickBundlesX clustering
     rgb: bool, optional
@@ -706,10 +727,10 @@ def horizon(tractograms=None, images=None, pams=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, cluster, rgb, cluster_thr,
-                 random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
-                 world_coords, interactive, out_png, recorded_events,
-                 return_showm, bg_color=bg_color,
+    hz = Horizon(tractograms, images, pams, surfaces, cluster, rgb,
+                 cluster_thr, random_colors, length_gt, length_lt, clusters_gt,
+                 clusters_lt, world_coords, interactive, out_png,
+                 recorded_events, return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
                  buan_colors=buan_colors, roi_images=roi_images,
                  roi_colors=roi_colors)

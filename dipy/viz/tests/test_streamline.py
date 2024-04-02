@@ -11,7 +11,7 @@ from dipy.utils.optpkg import optional_package
 
 
 _, have_matplotlib, _ = optional_package("matplotlib")
-fury, have_fury, _ = optional_package('fury', min_version="0.9.0")
+fury, have_fury, _ = optional_package('fury', min_version="0.10.0")
 if have_fury:
     from dipy.viz.streamline import (show_bundles, viz_two_bundles,
                                      viz_displacement_mag, viz_vector_field)
@@ -55,7 +55,7 @@ def test_incorrect_view():
 
 
 @pytest.mark.skipif(not have_fury or not have_matplotlib,
-                    reason='Requires FURY, and Matplotlib')
+                    reason='Requires FURY and Matplotlib')
 def test_bundlewarp_viz():
 
     with tempfile.TemporaryDirectory() as temp_dir:

@@ -19,9 +19,4 @@ cdef class DirectionGetter:
                                     StreamlineStatus stream_status,
                                     int fixedstep)
 
-    cpdef int get_direction(
-        self,
-        double[::1] point,
-        double[::1] direction) except -1
-
-    cdef int get_direction_c(self, double* point, double* direction)
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction)

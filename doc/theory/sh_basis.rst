@@ -14,8 +14,8 @@ Spherical harmonics are orthonormal functions defined by:
 
     Y_l^m(\theta, \phi) = \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
 
-where $l$ is the order, $m$ is the degree, $P_l^m$ is an associated
-$l$-th order, $m$-th degree Legendre polynomial, and $(\theta, \phi)$ is the
+where $l$ is the order, $m$ is the phase factor, $P_l^m$ is an associated
+$l$-th order, $m$-th phase factor Legendre polynomial, and $(\theta, \phi)$ is the
 representation of the direction vector in spherical coordinates. The relation
 between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
 
@@ -78,8 +78,7 @@ In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
 $\Im$ denotes the imaginary part. The SH bases are both orthogonal and real. Moreover,
 the `descoteaux07` basis is orthonormal.
 
-In both cases, $\Re$ denotes the real part of the SH basis, and $\Im$ denotes
-the imaginary part. By alternately selecting the real or imaginary part of the
+By alternately selecting the real or imaginary part of the
 original SH basis, the modified SH bases have the properties of being both
 orthogonal and real. Moreover, due to the presence of the $\sqrt{2}$ factor,
 the basis proposed by Descoteaux *et al.* is orthonormal.
@@ -160,6 +159,15 @@ Both bases are also available as full SH bases, where odd order SH functions
 are also taken into account when reconstructing a spherical function. These
 full bases can successfully reconstruct asymmetric signals as well as
 symmetric signals.
+
+NOTE: 
+The definition of spherical harmonics that DIPY utilizes does not match the one
+in Wikipedia and scipy. Instead, DIPY follows the dMRI literature conventions,
+like in ``descoteaux07`` and ``tournier07``.
+The code in DIPY also follows the following convention:
+Let the SH be noted as $Y_{l}^m$. Then, $l$ is referred to as either order or
+l_value(s), and $m$ is referred to as either phase factor or m_value(s).
+These decisions were made as a result of the PR in https://github.com/dipy/dipy/pull/3086
 
 References
 ----------

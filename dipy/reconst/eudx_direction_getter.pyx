@@ -1,3 +1,8 @@
+# cython: boundscheck=False
+# cython: initializedcheck=False
+# cython: wraparound=False
+# cython: nonecheck=False
+
 cimport cython
 cimport numpy as cnp
 import numpy as np
@@ -83,7 +88,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Interpolate closest peaks to direction from voxels neighboring point
 
         Update direction and return 0 if successful. If no tracking direction

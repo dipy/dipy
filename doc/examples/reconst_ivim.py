@@ -203,7 +203,7 @@ plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 # The last step is non-linear least-squares fitting on all the parameters.
 # The results of the first and second optimizers are utilized as the initial
 # values for the last step of the algorithm.
-
+#
 # As opposed to the `'trr'` fitting method, this approach does not need to set
 # any thresholds on the bvals to differentiate between the perfusion
 # (pseudo-diffusion) and diffusion portions and fits the parameters

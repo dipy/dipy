@@ -1,6 +1,6 @@
 meson-python>=0.13
 ninja
-Cython>=0.29.21
+Cython>=0.29.35
 packaging>=20.0
 wheel
 build

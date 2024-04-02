@@ -9,7 +9,7 @@ from dipy.testing.decorators import use_xvfb
 from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
                                        build_slider, build_switcher)
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 skip_it = use_xvfb == 'skip'
 
@@ -86,6 +86,30 @@ def test_build_slider():
     npt.assert_equal(double_slider.obj.text[0].font_size, 16)
     npt.assert_equal(double_slider.obj.text[1].font_size, 16)
     npt.assert_equal(double_slider.selected_value, (4, 5))
+
+    def on_handle_released(a, b, c, d): pass
+
+    single_slider_label, single_slider = build_slider(
+        5, 100, on_handle_released=on_handle_released)
+    npt.assert_equal(single_slider_label.obj.message, '')
+    npt.assert_equal(single_slider_label.obj.font_size, 16)
+    npt.assert_equal(single_slider_label.obj.bold, False)
+    npt.assert_equal(single_slider.obj.value, 5)
+    npt.assert_equal(single_slider.obj.max_value, 100)
+    npt.assert_equal(single_slider.obj.min_value, 0)
+    npt.assert_equal(single_slider.obj.track.width, 450)
+    npt.assert_equal(single_slider.obj.track.height, 3)
+    npt.assert_equal(single_slider.obj.track.color, (.8, .3, .0))
+    npt.assert_equal(single_slider.obj.default_color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.active_color, (.9, .4, .0))
+    npt.assert_equal(single_slider.obj.handle.color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.handle.outer_radius, 8)
+    npt.assert_equal(single_slider.obj.text.font_size, 16)
+    npt.assert_equal(single_slider.obj.text_template,
+                     '{value:.1f} ({ratio:.0%})')
+    npt.assert_equal(single_slider.selected_value, 5)
+    npt.assert_equal(
+        single_slider.obj.on_left_mouse_button_released, on_handle_released)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

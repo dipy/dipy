@@ -1,3 +1,8 @@
+# cython: boundscheck=False
+# cython: initializedcheck=False
+# cython: wraparound=False
+# cython: nonecheck=False
+
 import numpy as np
 cimport numpy as cnp
 
@@ -9,7 +14,7 @@ from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 
 cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
-                      double* direction, double cos_similarity):
+                      double[::1] direction, double cos_similarity):
     """Update direction with the closest direction from peak_dirs.
 
     All directions should be unit vectors. Antipodal symmetry is assumed, ie
@@ -48,11 +53,11 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 
     if closest_peak_i >= 0:
         if closest_peak_dot >= cos_similarity:
-            copy_point(&peak_dirs[closest_peak_i, 0], direction)
+            copy_point(&peak_dirs[closest_peak_i, 0], &direction[0])
             return 0
         if closest_peak_dot <= -cos_similarity:
-            copy_point(&peak_dirs[closest_peak_i, 0], direction)
-            scalar_muliplication_point(direction, -1)
+            copy_point(&peak_dirs[closest_peak_i, 0], &direction[0])
+            scalar_muliplication_point(&direction[0], -1)
             return 0
     return 1
 
@@ -93,14 +98,14 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             directions should be unique.
 
         """
-        cdef double* pmf = self._get_pmf(&point[0])
-        return self._get_peak_directions(<double[:self.len_pmf]> pmf)
+        cdef double[:] pmf = self._get_pmf(point)
+        return self._get_peak_directions(pmf)
 
-    cdef double* _get_pmf(self, double* point) nogil:
+    cdef double[:] _get_pmf(self, double[::1] point) nogil:
         cdef:
             cnp.npy_intp i
             cnp.npy_intp _len = self.len_pmf
-            double* pmf
+            double[:] pmf
             double pmf_threshold=self.pmf_threshold
             double absolute_pmf_threshold
             double max_pmf=0
@@ -207,7 +212,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         """
         if sh_to_pmf:
             sh_order = shm.order_from_ncoef(shcoeff.shape[3])
-            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order=sh_order,
+            pmf = shm.sh_to_sf(shcoeff, sphere, sh_order_max=sh_order,
                                basis_type=basis_type, legacy=legacy)
             pmf[pmf<0] = 0
             pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
@@ -222,7 +227,7 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
     direction.
     """
 
-    cdef int get_direction_c(self, double* point, double* direction):
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """
         Returns
         -------
@@ -231,12 +236,12 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             cnp.npy_intp _len = self.len_pmf
-            double* pmf
+            double[:] pmf
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 
-        peaks = self._get_peak_directions(<double[:_len]> pmf)
+        peaks = self._get_peak_directions(pmf)
         if len(peaks) == 0:
             return 1
         return closest_peak(peaks, direction, self.cos_similarity)
