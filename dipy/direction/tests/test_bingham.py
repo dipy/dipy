@@ -66,31 +66,7 @@ def test_bingham_metrics():
     fits = [(f0_lobe1, k1, k2, axis0, axis1, axis2)]
     fits.append((f0_lobe2, k1, k2, axis0, axis1, axis2))
 
-    # TEST: Bingham Fiber density
-    # As the amplitude of the first bingham function is 3 times higher than the
-    # second, its integral have to be also 3 times larger.
-    fd = bingham_fiber_density(fits)
-
-    assert_almost_equal(fd[0]/fd[1], 3)
-
-    # TEST: k2odi and odi2k conversions
-    assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
-    assert_almost_equal(odi2k(k2odi(np.array(k2))), k2)
-
-
-def test_bingham_from_odf():
-
     # First test just to check right parameter conversion
-    axis0 = np.array([1, 0, 0])
-    axis1 = np.array([0, 1, 0])
-    axis2 = np.array([0, 0, 1])
-    k1 = 2
-    k2 = 6
-    f0_lobe1 = 3
-    f0_lobe2 = 1
-
-    fits = [(f0_lobe1, k1, k2, axis0, axis1, axis2)]
-    fits.append((f0_lobe2, k1, k2, axis0, axis1, axis2))
     ref_pars = np.zeros((2, 12))
     ref_pars[0, 0] = f0_lobe1
     ref_pars[1, 0] = f0_lobe2
@@ -101,6 +77,20 @@ def test_bingham_from_odf():
     ref_pars[0, 9:12] = ref_pars[1, 9:12] = axis2
     bpars = _convert_bingham_pars(fits, 2)
     assert_array_almost_equal(bpars, ref_pars)
+
+    # TEST: Bingham Fiber density
+    # As the amplitude of the first bingham function is 3 times higher than the
+    # second, its integral have to be also 3 times larger.
+    fd = bingham_fiber_density(bpars)
+
+    assert_almost_equal(fd[0]/fd[1], 3)
+
+    # TEST: k2odi and odi2k conversions
+    assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
+    assert_almost_equal(odi2k(k2odi(np.array(k2))), k2)
+
+
+def test_bingham_from_odf():
 
     # Reconstruct multi voxel ODFs to test bingham_from_odf
     ma_axis = np.array([0, 1, 0])

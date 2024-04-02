@@ -241,15 +241,22 @@ def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     return fn.T
 
 
-def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
+def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
     r"""
     Compute fiber density for each lobe for a given Bingham ODF.
 
     Parameters
     ----------
-    bingham_fits: list of tuples
-        Bingham distributions. Each tuple describes a lobe of the
-        initially fitted function.
+    bingham_params : ndarray (...., nl, 12)
+        ndarray containing the model parameters of Binghams fitted to ODFs in
+        the following order:
+            Maximum value of the Bingham function (f0, index 0);
+            concentration parameters k1 and k2 (indexes 1 and 2);
+            elements of Bingham main direction (indexes 3-5);
+            elements of Bingham dispersion major axis (indexes 6-8);
+            and elements of Bingham dispersion minor axis (indexs 9-11).
+    mask: ndarray
+        Map marking the coordinates in the data that should be analyzed
     n_thetas: unsigned int, optional
         Number of steps along theta axis for the integration.
     n_phis: unsigned int, optional
@@ -257,8 +264,8 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
 
     Returns
     -------
-    fd: list of floats
-        Fiber density for each Bingham distribution.
+    fd: ndarray (...., nl)
+        Fiber density for each Bingham function.
 
     Notes
     -----
@@ -270,6 +277,7 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
+    # Define directions for the integral
     phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi]
     theta = np.linspace(0, np.pi, n_thetas)  # [0, pi]
     coords = np.array([[p, t] for p in phi for t in theta]).T
@@ -281,10 +289,29 @@ def bingham_fiber_density(bingham_fits, n_thetas=50, n_phis=100):
                   np.sin(coords[0]) * np.sin(coords[1]),
                   np.cos(coords[1])]).T
 
-    fd = []
-    for f0, k1, k2, mu0, mu1, mu2 in bingham_fits:
-        bingham_eval = bingham_odf(f0, k1, k2, mu1, mu2, u)
-        fd.append(np.sum(bingham_eval * sin_theta * dtheta * dphi))
+    shape = bingham_params.shape[0:-2]
+    if mask is None:
+        mask = np.ones(shape)
+
+    # loop integral calculation for each image voxel
+    fd = np.zeros(bingham_params.shape[0:-1])
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+
+        bpars = bingham_params[idx]
+        f0s = bpars[..., 0]
+        npeaks = np.sum(f0s > 0)
+
+        for li in range(npeaks):
+            f0 = f0s[li]
+            k1 = bpars[li, 1]
+            k2 = bpars[li, 2]
+            mu1 = bpars[li, 6:9]
+            mu2 = bpars[li, 9:12]
+
+            bingham_eval = bingham_odf(f0, k1, k2, mu1, mu2, u)
+            fd[idx + (li,)] = np.sum(bingham_eval * sin_theta * dtheta * dphi)
 
     return fd
 
@@ -405,7 +432,32 @@ def odi2k(odi):
 
 
 def _convert_bingham_pars(fits, npeaks):
-    """ Convert tuple output of Bingham fit to ndarray"""
+    """ Convert tuple output of Bingham fit to ndarray
+
+    Parameters
+    ----------
+    fits : tuple
+       tuple of nl elements containting the Bingham function parameters
+       in the following order:
+            Maximum value of the Bingham function (f0);
+            concentration parameters (k1 and k2;
+            elements of Bingham main direction (miu0);
+            elements of Bingham dispersion major axis (miu1);
+            and elements of Bingham dispersion minor axis (miu2).
+    npeaks: int
+        Maximum number of fitted Bingham functions
+
+    Returns
+    -------
+    bingham_params : ndarray (nl, 12)
+        ndarray containing the model parameters of Binghams fitted to ODFs in
+        the following order:
+            Maximum value of the Bingham function (f0, index 0);
+            concentration parameters k1 and k2 (indexes 1 and 2);
+            elements of Bingham main direction (indexes 3-5);
+            elements of Bingham dispersion major axis (indexes 6-8);
+            and elements of Bingham dispersion minor axis (indexs 9-11).
+    """
     n = len(fits)
     bpars = np.zeros((npeaks, 12))
     for ln in range(n):
