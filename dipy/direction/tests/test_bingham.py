@@ -147,3 +147,7 @@ def test_bingham_from_odf():
     # check fiber spread
     fs_v = bim.fd[0, 0, 0, 0]/peak_v
     assert_almost_equal(bim.fs[..., 0], fs_v)
+
+    # check reconstructed odf
+    reconst_odf = bim.odf(sphere)
+    assert_almost_equal(reconst_odf[0, 0, 0], odf, decimal=2)

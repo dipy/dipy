@@ -241,6 +241,58 @@ def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     return fn.T
 
 
+def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
+    """ Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
+
+    Parameters
+    ----------
+    bingham_params : ndarray (...., nl, 12)
+        ndarray containing the model parameters of Binghams fitted to ODFs in
+        the following order:
+            Maximum value of the Bingham function (f0, index 0);
+            concentration parameters k1 and k2 (indexes 1 and 2);
+            elements of Bingham main direction (indexes 3-5);
+            elements of Bingham dispersion major axis (indexes 6-8);
+            and elements of Bingham dispersion minor axis (indexs 9-11).
+    sphere: `Sphere` class instance
+         The Sphere providing the odf's discrete directions
+    mask: ndarray
+        Map marking the coordinates in the data that should be analyzed
+
+    Returns
+    -------
+    ODF : ndarray (..., n_directions)
+            The value of the odf on each point of `sphere`.
+    """
+    n_directions = sphere.vertices.shape[0]
+
+    shape = bingham_params.shape[0:-2]
+    if mask is None:
+        mask = np.ones(shape)
+
+    odf = np.zeros(shape + (n_directions,))
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+        bpars = bingham_params[idx]
+        f0s = bpars[..., 0]
+        npeaks = np.sum(f0s > 0)
+
+        this_odf = 0
+
+        for li in range(npeaks):
+            f0 = f0s[li]
+            k1 = bpars[li, 1]
+            k2 = bpars[li, 2]
+            mu1 = bpars[li, 6:9]
+            mu2 = bpars[li, 9:12]
+
+            this_odf += bingham_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
+        odf[idx] = this_odf
+
+    return odf
+
+
 def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
     r"""
     Compute fiber density for each lobe for a given Bingham ODF.
@@ -603,6 +655,23 @@ class BinghamMetrics:
                100:176-91.
         """
         return bingham_fiber_spread(self.afd, self.fd)
+
+    def odf(self, sphere):
+        """ Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
+
+        Parameters
+        ----------
+        sphere: `Sphere` class instance
+            The Sphere providing the discrete directions for ODF
+            reconstruction.
+
+        Returns
+        -------
+        ODF : ndarray (..., n_directions)
+            The value of the odf on each point of `sphere`.
+        """
+        mask = self.tfd > 0
+        return bingham_multi_voxel_odf(self.model_params, sphere, mask=mask)
 
 
 def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
