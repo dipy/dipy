@@ -316,26 +316,26 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
     return fd
 
 
-def bingham_fiber_spread(bingham_fits, fd=None):
+def bingham_fiber_spread(f0, fd):
     r"""
     Compute fiber spread for each lobe for a given Bingham volume.
 
-    Fiber spread (FS) characterizes the spread of the lobe.
-    The higher the FS, the wider the lobe. Equation (7) of [1]_.
-
     Parameters
     ----------
-    bingham_fits: list of tuples
-        Bingham distributions. Each tuple describes a lobe of the
-        initially fitted function.
-    fd: list of floats or None
-        Fiber density (fd) of each Bingham distribution. If None, fd
-        will be computed by the method.
+    f0: ndarray
+        Peak amplitude (f0) of each Bingham function.
+    fd: ndarray
+        Fiber density (fd) of each Bingham function.
 
     Returns
     -------
     fs: list of floats
-        Fiber spread for each Bingham distribution in the input Bingham fit.
+        Fiber spread (fs) of each each Bingham function.
+
+    Notes
+    -----
+    Fiber spread (fs) is defined as fs = fd/f0 and characterizes the spread of
+    the lobe, i.e. the higher the fs, the wider the lobe [1]_.
 
     References
     ----------
@@ -343,16 +343,10 @@ def bingham_fiber_spread(bingham_fits, fd=None):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    f0 = np.array([x for x, _, _, _, _, _ in bingham_fits])
-
-    if fd is None:
-        fd = bingham_fiber_density(bingham_fits)
-    fd = np.asarray(fd)
-
-    fs = np.zeros((len(f0),))
+    fs = np.zeros(f0.shape)
     fs[f0 > 0] = fd[f0 > 0] / f0[f0 > 0]
 
-    return fs.tolist()
+    return fs
 
 
 def k2odi(k):
@@ -591,6 +585,24 @@ class BinghamMetrics:
     def tfd(self):
         """ Total fiber density (sum of fd estimates of all ODF lobes)"""
         return np.sum(self.fd, axis=-1)
+
+    @auto_attr
+    def fs(self):
+        """ Fiber spread computed for each ODF lobe.
+
+        Notes
+        -----
+        Fiber spread (fs) is defined as fs = fd/f0 and characterizes the
+        spread of the lobe, i.e. the higher the fs, the wider the lobe [1]_.
+
+        References
+        ----------
+        .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond
+               fractional anisotropy: Extraction of bundle-specific structural
+               metrics from crossing fiber models. NeuroImage. 2014 Oct 15;
+               100:176-91.
+        """
+        return bingham_fiber_spread(self.afd, self.fd)
 
 
 def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,

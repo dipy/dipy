@@ -113,7 +113,7 @@ def test_bingham_from_odf():
     # ODF is assumed here for this test GT)
     assert_array_almost_equal(bim.model_params[0, 0, 0, 1], np.zeros(12))
 
-    # Check if we have estimates in the right lobe for all voxels
+    # check if we have estimates in the right lobe for all voxels
     peak_v = bim.model_params[0, 0, 0, 0, 0]
     assert_array_almost_equal(bim.afd[..., 0],
                               peak_v*np.ones((2, 2, 1)))
@@ -132,3 +132,18 @@ def test_bingham_from_odf():
     assert_array_less(bim.odi_2[..., 0], bim.odi_1[..., 0])
     assert_array_less(bim.odi_2[..., 0], bim.odi_total[..., 0])
     assert_array_less(bim.odi_total[..., 0], bim.odi_1[..., 0])
+
+    # check fiber_density estimates (larger than zero for lobe 0)
+    assert_array_less(np.zeros((2, 2, 1)), bim.fd[:, :, :, 0])
+    assert_almost_equal(np.zeros((2, 2, 1)), bim.fd[:, :, :, 1])
+
+    # check global metrics: since this simulations only have one lobe, global
+    # metrics have to give the same values than their conterparts for lobe1
+    assert_almost_equal(bim.godi_1, bim.odi_1[..., 0])
+    assert_almost_equal(bim.godi_2, bim.odi_2[..., 0])
+    assert_almost_equal(bim.godi_total, bim.odi_total[..., 0])
+    assert_almost_equal(bim.tfd, bim.fd[..., 0])
+
+    # check fiber spread
+    fs_v = bim.fd[0, 0, 0, 0]/peak_v
+    assert_almost_equal(bim.fs[..., 0], fs_v)
