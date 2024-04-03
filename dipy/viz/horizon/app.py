@@ -157,6 +157,7 @@ class Horizon:
         self.cla = {}  # holds cluster actors
         self.recorded_events = recorded_events
         self.show_m = None
+        self._scene = None
         self.return_showm = return_showm
         self.bg_color = bg_color
         self.order_transparent = order_transparent
@@ -390,7 +391,42 @@ class Horizon:
         """
         self.show_m.render()
 
+    def _remove_actors(self, actors):
+        """Remove actors from scene.
+
+        Parameters
+        ----------
+        actors : list
+            list of FURY actors.
+        """
+        for act in actors:
+            self._scene.rm(act)
+
+    def _add_actors(self, actors):
+        """Add actors from scene.
+
+        Parameters
+        ----------
+        actors : list
+            list of FURY actors.
+        """
+        for act in actors:
+            self._scene.add(act)
+
+    def _update_actors(self, actors):
+        """Update actors in the scene. It essentially brings them forward in
+        the stack.
+
+        Parameters
+        ----------
+        actors : list
+            list of FURY actors.
+        """
+        self._remove_actors(actors)
+        self._add_actors(actors)
+
     def build_show(self, scene):
+        self._scene = scene
 
         title = 'Horizon ' + horizon_version
         self.show_m = window.ShowManager(
@@ -512,17 +548,19 @@ class Horizon:
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
-            def on_tab_changed(actors):
-                for act in actors:
-                    scene.rm(act)
-                    scene.add(act)
-
             self.__tab_mgr = TabManager(
-                self.__tabs, scene.GetSize(),
-                on_tab_changed, sync_slices, sync_vol, sync_peaks)
+                tabs=self.__tabs,
+                win_size=scene.GetSize(),
+                on_tab_changed=self._update_actors,
+                add_to_scene=self._add_actors,
+                remove_from_scene=self._remove_actors,
+                sync_slices=sync_slices,
+                sync_volumes=sync_vol,
+                sync_peaks=sync_peaks)
 
             scene.add(self.__tab_mgr.tab_ui)
             self.__tab_mgr.handle_text_overflows()
+            self.__tabs[-1].on_tab_selected()
 
         self.show_m.initialize()
 
