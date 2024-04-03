@@ -43,3 +43,7 @@ def test_reconst_dsi():
         peaks_vals_data = load_nifti_data(peaks_vals_path)
         npt.assert_equal(peaks_vals_data.shape[-1], 5)
         npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
+
+        gfa_path = dsi_flow.last_generated_outputs['out_gfa']
+        gfa_data = load_nifti_data(gfa_path)
+        npt.assert_equal(gfa_data.shape, volume.shape[:-1])
