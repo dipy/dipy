@@ -55,7 +55,7 @@ def test_bdg_initial_direction():
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response=response,
-                                                    sh_order=4)
+                                                    sh_order_max=4)
         boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30,
                                                 sphere=sphere,)
         initial_direction = boot_dg.initial_direction(np.zeros(3))
@@ -87,7 +87,9 @@ def test_bdg_get_direction():
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_order_max=6)
 
     point = np.array([0., 0., 0.])
     prev_direction = sphere.vertices[5]
@@ -162,7 +164,9 @@ def test_bdg_residual(rng):
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_order_max=6)
         boot_dg = BootDirectionGetter.from_data(data, model=csd_model,
                                                 max_angle=60,
                                                 sphere=hsph_updated,
@@ -194,7 +198,9 @@ def test_bdg_residual(rng):
         warnings.filterwarnings(
             "ignore", message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab,
+                                                    response,
+                                                    sh_order_max=6)
     npt.assert_raises(ValueError, BootDirectionGetter, data, csd_model, 60,
                       hsph_updated, 6)
 
@@ -231,7 +237,7 @@ def test_boot_pmf():
         warnings.simplefilter("always", category=UserWarning)
         warnings.simplefilter("always", category=PendingDeprecationWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                    sh_order=6)
+                                                    sh_order_max=6)
         # Tests that the first caught warning comes from the CSD model
         # constructor
         npt.assert_(issubclass(w[0].category, UserWarning))

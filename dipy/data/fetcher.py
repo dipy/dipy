@@ -24,7 +24,6 @@ from dipy.io.streamline import load_trk
 from dipy.utils.optpkg import optional_package, TripWire
 
 
-
 from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
@@ -319,6 +318,26 @@ fetch_synb0_test = _make_fetcher(
      '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
+fetch_deepn4_weights = _make_fetcher(
+    "fetch_deepn4_weights",
+    pjoin(dipy_home, 'deepn4'),
+    'https://ndownloader.figshare.com/files/',
+    ['44673313'],
+    ['model_weights.h5'],
+    ['ef264edd554177a180cf99162dbd2745'],
+    doc="Download DeepN4 model weights for Kanakaraj et. al 2024")
+
+fetch_deepn4_test = _make_fetcher(
+    "fetch_deepn4_test",
+    pjoin(dipy_home, 'deepn4'),
+    'https://ndownloader.figshare.com/files/',
+    ['44672131', '44672134'],
+    ['test_input_deepn4.npz',
+     'test_output_deepn4.npz'],
+    ['69c48ae066cee970087dd84437d5d5ce',
+     'a90d571c935d4b2975715935a22d4bac'],
+    doc="Download DeepN4 test data for Kanakaraj et. al 2024")
+
 fetch_evac_weights = _make_fetcher(
     "fetch_evac_weights",
     pjoin(dipy_home, 'evac'),
@@ -488,6 +507,17 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     ['78331d527a10ec000d4f33bac472e099'],
     doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
     data_size="300MB",
+    unzip=True)
+
+fetch_30_bundle_atlas_hcp842 = _make_fetcher(
+    "fetch_30_bundle_atlas_hcp842",
+    pjoin(dipy_home, 'bundle_atlas_hcp842'),
+    'https://ndownloader.figshare.com/files/',
+    ['26842853'],
+    ['Atlas_30_Bundles.zip'],
+    ['f3922cdbea4216823798fade128d6782'],
+    doc="Download atlas tractogram from the hcp842 dataset with 30 bundles",
+    data_size="207.09MB",
     unzip=True)
 
 fetch_target_tractogram_hcp = _make_fetcher(
@@ -866,6 +896,9 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+    if name == '30_bundle_atlas_hcp842':
+        files, folder = fetch_30_bundle_atlas_hcp842()
+        return get_bundle_atlas_hcp842(size=30)
     if name == 'qte_lte_pte':
         _, folder = fetch_qte_lte_pte()
         fdata = pjoin(folder, 'lte-pte.nii.gz')
@@ -902,6 +935,15 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_synb0_test()
         input_array = pjoin(folder, 'test_input_synb0.npz')
         target_array = pjoin(folder, 'test_output_synb0.npz')
+        return input_array, target_array
+    if name == 'deepn4_default_weights':
+        _, folder = fetch_deepn4_weights()
+        w1 = pjoin(folder, 'model_weights.h5')
+        return w1
+    if name == 'deepn4_test_data':
+        files, folder = fetch_deepn4_test()
+        input_array = pjoin(folder, 'test_input_deepn4.npz')
+        target_array = pjoin(folder, 'test_output_deepn4.npz')
         return input_array, target_array
     if name == 'evac_default_weights':
         files, folder = fetch_evac_weights()
@@ -1595,22 +1637,24 @@ def get_file_formats():
     return bundles_list, ref_anat
 
 
-def get_bundle_atlas_hcp842():
+def get_bundle_atlas_hcp842(size=80):
     """
     Returns
     -------
     file1 : string
     file2 : string
     """
+    size = 80 if size not in [80, 30] else size
+
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_80_Bundles',
+                  f'Atlas_{size}_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_80_Bundles',
+                  f'Atlas_{size}_Bundles',
                   'bundles',
                   '*.trk')
 

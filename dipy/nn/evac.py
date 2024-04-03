@@ -139,11 +139,11 @@ def init_model(model_scale=16):
     -------
     model : tf.keras.Model
     """
-    inputs = tf.keras.Input(shape=(128, 128, 128, 1))
-    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
-    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
-    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1))
-    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1))
+    inputs = tf.keras.Input(shape=(128, 128, 128, 1), name='input_1')
+    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1), name='input_2')
+    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1), name='input_3')
+    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1), name='input_4')
+    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1), name='input_5')
     # Encode
     fwd1, x = Block(model_scale, kernel_size=5,
                    strides=1, padding='same',

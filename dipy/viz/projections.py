@@ -13,7 +13,7 @@ from dipy.testing.decorators import doctest_skip_parser
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
-tri, _, _ = optional_package("matplotlib.tri")
+mpl_tri, _, _ = optional_package("matplotlib.tri")
 bm, has_basemap, _ = optional_package("mpl_toolkits.basemap")
 
 
@@ -24,27 +24,24 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     Parameters
     ----------
-
     vertices : (N,3) ndarray
-                unit vector points of the sphere
-
-    val: (N) ndarray
+        Unit vector points of the sphere
+    val : (N) ndarray
         Function values.
-
     ax : mpl axis, optional
         If specified, draw onto this existing axis instead.
-
-    vmin, vmax : floats
-       Values to cut the z
-
-    cmap : mpl colormap
-
-    cbar: Whether to add the color-bar to the figure
-
-    triang : Whether to display the plot triangulated as a pseudo-color plot.
-
-    boundary : Whether to draw the boundary around the projection
-    in a black line
+    vmin : float, optional
+       Minimum value to cut the z.
+    vmax : float, optional
+       Minimum value to cut the z.
+    cmap : matplotlib.colors.Colormap, optional
+        Colormap.
+    cbar : bool, optional
+        Whether to add the color-bar to the figure.
+    tri : bool, optional
+        Whether to display the plot triangulated as a pseudo-color plot.
+    boundary : bool, optional
+        Whether to draw the boundary around the projection in a black line.
 
     Returns
     -------
@@ -55,10 +52,13 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     --------
     >>> from dipy.data import default_sphere
     >>> verts = default_sphere.vertices
-    >>> ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
+    >>> _ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap  # noqa E501
     """
     if ax is None:
         fig, ax = plt.subplots(1)
+    else:
+        fig = plt.subplots(1)
+        fig.axes.append(ax)
 
     if cmap is None:
         cmap = matplotlib.cm.hot

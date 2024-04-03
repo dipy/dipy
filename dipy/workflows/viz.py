@@ -1,5 +1,7 @@
+from warnings import warn
 import numpy as np
 from os.path import join as pjoin
+from dipy.io.surface import load_gifti, load_pial
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import load_nifti
 from dipy.viz import horizon
@@ -10,7 +12,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 
 if has_fury:
@@ -113,6 +115,7 @@ class HorizonFlow(Workflow):
         tractograms = []
         images = []
         pams = []
+        surfaces = []
         numpy_files = []
         interactive = not stealth
         world_coords = not native_coords
@@ -157,25 +160,40 @@ class HorizonFlow(Workflow):
             fl = fname.lower()
             ends = fl.endswith
 
-            if ends('.trk'):
+            if ends('.trk') or ends('.trx'):
 
                 sft = load_tractogram(fname, 'same',
                                       bbox_valid_check=False)
                 tractograms.append(sft)
 
-            if ends('.dpy') or ends('.tck'):
+            if ends(('.dpy', '.tck', '.vtk', '.vtp', '.fib')):
                 sft = load_tractogram(fname, emergency_ref)
                 tractograms.append(sft)
 
             if ends('.nii.gz') or ends('.nii'):
 
                 data, affine = load_nifti(fname)
-                images.append((data, affine))
+                images.append((data, affine, fname))
                 if verbose:
                     print('Affine to RAS')
                     np.set_printoptions(3, suppress=True)
                     print(affine)
                     np.set_printoptions()
+
+            if ends('.pial'):
+                surface = load_pial(fname)
+                if surface:
+                    vertices, faces = surface
+                    surfaces.append((vertices, faces, fname))
+
+            if ends('.gii.gz') or ends('.gii'):
+                surface = load_gifti(fname)
+                vertices, faces = surface
+                if len(vertices) and len(faces):
+                    vertices, faces = surface
+                    surfaces.append((vertices, faces, fname))
+                else:
+                    warn(f'{fname} does not have any surface geometry.')
 
             if ends(".pam5"):
 
@@ -239,9 +257,9 @@ class HorizonFlow(Workflow):
 
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
-                cluster=cluster, rgb=rgb, cluster_thr=cluster_thr,
-                random_colors=random_colors, bg_color=bg_color,
-                order_transparent=order_transparent,
+                surfaces=surfaces, cluster=cluster, rgb=rgb,
+                cluster_thr=cluster_thr, random_colors=random_colors,
+                bg_color=bg_color, order_transparent=order_transparent,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,

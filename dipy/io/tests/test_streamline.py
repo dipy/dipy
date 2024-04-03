@@ -14,7 +14,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.utils.optpkg import optional_package
-fury, have_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
 

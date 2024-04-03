@@ -48,9 +48,9 @@ characterize the KT:
 
 .. math::
    \\begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                    & ... \\
+                    & ... \\\\
                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                    & ... \\
+                    & ... \\\\
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\\end{matrix}
 

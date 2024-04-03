@@ -14,7 +14,7 @@ approaches on tractography the work by Green et al. [Greene17]_ can be read.
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
 process of tracking and finding these streamlines is fully demonstrated in
-the :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools`
+the :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py`
 example.
 
 
@@ -197,10 +197,11 @@ if has_fury:
 
 ###############################################################################
 # Finally, we save the two registered streamlines:
+#
 # - `mni-lr-sft_in_t2_using_aff_reg.trk` is the streamlines registered using
 #   the affine registration.
 # - `sft_in_t2_using_syn` is the streamlines registered using the
-#     SyN registration and prealigned with the affine registration.
+#   SyN registration and prealigned with the affine registration.
 
 save_tractogram(sft_in_t2_using_aff_reg, 'mni-lr-superiorfrontal_aff_reg.trk',
                 bbox_valid_check=False)

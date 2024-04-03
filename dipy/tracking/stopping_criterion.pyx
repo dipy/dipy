@@ -73,10 +73,9 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
             double result
             int err
 
-        err = trilinear_interpolate4d_c(
-            self.metric_map[..., None],
-            point,
-            self.interp_out_view)
+        err = trilinear_interpolate4d_c(self.metric_map[..., None],
+                                        point,
+                                        &self.interp_out_view[0])
         if err == -1:
             return OUTSIDEIMAGE
         elif err != 0:
@@ -144,7 +143,8 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
     cdef get_exclude_c(self, double* point):
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
-                                                point, self.interp_out_view)
+                                                point,
+                                                &self.interp_out_view[0])
         if exclude_err != 0:
             return 0
         return self.interp_out_view[0]
@@ -157,7 +157,8 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
     cdef get_include_c(self, double* point):
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
-                                                point, self.interp_out_view)
+                                                point,
+                                                &self.interp_out_view[0])
         if include_err != 0:
             return 0
         return self.interp_out_view[0]
@@ -194,16 +195,14 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
             double include_result, exclude_result
             int include_err, exclude_err
 
-        include_err = trilinear_interpolate4d_c(
-            self.include_map[..., None],
-            point,
-            self.interp_out_view)
+        include_err = trilinear_interpolate4d_c(self.include_map[..., None],
+                                                point,
+                                                &self.interp_out_view[0])
         include_result = self.interp_out_view[0]
 
-        exclude_err = trilinear_interpolate4d_c(
-            self.exclude_map[..., None],
-            point,
-            self.interp_out_view)
+        exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
+                                                point,
+                                                &self.interp_out_view[0])
         exclude_result = self.interp_out_view[0]
 
         if include_err == -1 or exclude_err == -1:
@@ -257,11 +256,13 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             int include_err, exclude_err
 
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
-                                                point, self.interp_out_view)
+                                                point,
+                                                &self.interp_out_view[0])
         include_result = self.interp_out_view[0]
 
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
-                                                point, self.interp_out_view)
+                                                point,
+                                                &self.interp_out_view[0])
         exclude_result = self.interp_out_view[0]
 
         if include_err == -1 or exclude_err == -1:

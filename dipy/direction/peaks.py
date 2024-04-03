@@ -16,9 +16,8 @@ from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
-
-from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.multiproc import determine_num_processes
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -223,11 +222,11 @@ class PeaksAndMetrics(EuDXDirectionGetter):
                                                    self.odf)
 
 
-@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
-                               sh_basis_type, npeaks, B, invB, num_processes):
+                               sh_basis_type, legacy, npeaks, B, invB,
+                               num_processes):
 
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))
@@ -262,6 +261,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                repeat(normalize_peaks),
                                repeat(sh_order),
                                repeat(sh_basis_type),
+                               repeat(legacy),
                                repeat(npeaks),
                                repeat(B),
                                repeat(invB)))
@@ -353,9 +353,10 @@ def _peaks_from_model_parallel_sub(args):
     normalize_peaks = args[9]
     sh_order = args[10]
     sh_basis_type = args[11]
-    npeaks = args[12]
-    B = args[13]
-    invB = args[14]
+    legacy = args[12]
+    npeaks = args[13]
+    B = args[14]
+    invB = args[15]
 
     data = np.load(data_file_name, mmap_mode='r')[start_pos:end_pos]
     if mask_file_name is not None:
@@ -366,16 +367,16 @@ def _peaks_from_model_parallel_sub(args):
     return peaks_from_model(model, data, sphere, relative_peak_threshold,
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
-                            sh_order, sh_basis_type, npeaks, B, invB,
+                            sh_order, sh_basis_type, legacy, npeaks, B, invB,
                             parallel=False, num_processes=None)
 
 
-@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
+@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, npeaks=5, B=None,
-                     invB=None, parallel=False, num_processes=None):
+                     sh_order_max=8, sh_basis_type=None, legacy=True, npeaks=5,
+                     B=None, invB=None, parallel=False, num_processes=None):
     """Fit the model to data and computes peaks and metrics
 
     Parameters
@@ -403,14 +404,19 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
-    sh_order : int, optional
-        Maximum SH order in the SH fit.  For `sh_order`, there will be
-        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
+    sh_order_max : int, optional
+        Maximum SH order (l) in the SH fit.  For `sh_order_max`, there
+        will be
+        ``(sh_order_max + 1) * (sh_order_max + 2) / 2``
+        SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_ basis, and
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
         (``None`` defaults to ``descoteaux07``).
+    legacy: bool, optional
+        True to use a legacy basis definition for backward compatibility
+        with previous ``tournier07`` and ``descoteaux07`` implementations.
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
     B : ndarray, optional
@@ -448,7 +454,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order, sh_basis_type, return_inv=True)
+            sphere, sh_order_max, sh_basis_type, return_inv=True, legacy=legacy)
 
     num_processes = determine_num_processes(num_processes)
 
@@ -465,8 +471,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           return_sh,
                                           gfa_thr,
                                           normalize_peaks,
-                                          sh_order,
+                                          sh_order_max,
                                           sh_basis_type,
+                                          legacy,
                                           npeaks,
                                           B,
                                           invB,
@@ -488,7 +495,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-        n_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
+        n_shm_coeff = (sh_order_max + 2) * (sh_order_max + 1) // 2
         shm_coeff = np.zeros((shape + (n_shm_coeff,)))
 
     if return_odf:

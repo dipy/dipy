@@ -26,7 +26,7 @@ in a more precise way and decoupled from confounding effects of tissue
 dispersion and crossing.
 
 In the first part of this example, we illustrate the properties of the measures
-obtained from the mean signal diffusion kurtosis imaging (MSDKI)[NetoHe2018]_
+obtained from the mean signal diffusion kurtosis imaging (MSDKI) [NetoHe2018]_
 using synthetic data. Secondly, the mean signal diffusion kurtosis imaging will
 be applied to in-vivo MRI data. Finally, we show how MSDKI provides the same
 information than common microstructural models such as the spherical mean

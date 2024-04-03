@@ -411,7 +411,7 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     return new_header
 
 
-def save_buan_profiles_hdf5(fname, dt):
+def save_buan_profiles_hdf5(fname, dt, key=None):
     """ Saves the given input dataframe to .h5 file
 
     Parameters
@@ -420,14 +420,21 @@ def save_buan_profiles_hdf5(fname, dt):
         file name for saving the hdf5 file
     dt : Pandas DataFrame
         DataFrame to be saved as .h5 file
+    key : str, optional
+        Key to retrieve the contents in the HDF5 file. The file rootname will
+        be used if not provided.
 
     """
 
     df = pd.DataFrame(dt)
     filename_hdf5 = fname + '.h5'
 
+    if key is None:
+        base_name_parts, _ = os.path.splitext(os.path.basename(fname))
+        key = base_name_parts.split('.')[0]
+
     store = pd.HDFStore(filename_hdf5, complevel=9)
-    store.append(fname, df, data_columns=True, complevel=9)
+    store.append(key, df, data_columns=True, complevel=9)
     store.close()
 
 

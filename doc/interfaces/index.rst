@@ -17,3 +17,4 @@ DIPY Workflows Interfaces
     buan_flow.rst
     bundle_segmentation_flow.rst
     bundlewarp_registration_flow.rst
+    viz_flow.rst

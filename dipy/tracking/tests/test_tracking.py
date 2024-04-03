@@ -706,7 +706,7 @@ def test_bootstap_peak_tracker():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
 
     seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
 

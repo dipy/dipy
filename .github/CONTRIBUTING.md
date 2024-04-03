@@ -18,7 +18,7 @@ conversation about the issue, by typing into the text box in the issue page.
 
 ## The development process
 
-Please refer to the [development section](https://dipy.org/documentation/latest/devel/)
+Please refer to the [development section](https://docs.dipy.org/stable/devel/index.html#development)
 of the documentation for the procedures we use in developing the code.
 
 ## When writing code, please pay attention to the following:

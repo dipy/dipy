@@ -34,10 +34,10 @@ def from_3x3_to_6x1(T):
 
         .. math::
 
-            \mathbf{V} = \begin{bmatrix}
+            \\mathbf{V} = \\begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
-            \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
-            \end{bmatrix}^T
+            \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12}
+            \\end{bmatrix}^T
     """
     if T.shape[-2::] != (3, 3):
         raise ValueError('The shape of the input array must be (..., 3, 3).')
@@ -72,10 +72,10 @@ def from_6x1_to_3x3(V):
 
         .. math::
 
-            \mathbf{V} = \begin{bmatrix}
+            \\mathbf{V} = \\begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
-            \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
-            \end{bmatrix}^T
+            \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12}
+            \\end{bmatrix}^T
     """
     if V.shape[-2::] != (6, 1):
         raise ValueError('The shape of the input array must be (..., 6, 1).')
@@ -106,16 +106,16 @@ def from_6x6_to_21x1(T):
 
         .. math::
 
-            \begin{matrix}
-            \mathbf{V} = & \big[
+            \\begin{matrix}
+            \\mathbf{V} = & \\big[
             T_{11} & T_{22} & T_{33} \\
-            & \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12} \\
-            & \sqrt{2} T_{14} & \sqrt{2} T_{15} & \sqrt{2} T_{16} \\
-            & \sqrt{2} T_{24} & \sqrt{2} T_{25} & \sqrt{2} T_{26} \\
-            & \sqrt{2} T_{34} & \sqrt{2} T_{35} & \sqrt{2} T_{36} \\
+            & \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12} \\
+            & \\sqrt{2} T_{14} & \\sqrt{2} T_{15} & \\sqrt{2} T_{16} \\
+            & \\sqrt{2} T_{24} & \\sqrt{2} T_{25} & \\sqrt{2} T_{26} \\
+            & \\sqrt{2} T_{34} & \\sqrt{2} T_{35} & \\sqrt{2} T_{36} \\
             & T_{44} & T_{55} & T_{66} \\
-            & \sqrt{2} T_{45} & \sqrt{2} T_{56} & \sqrt{2} T_{46} \big]^T
-            \end{matrix}
+            & \\sqrt{2} T_{45} & \\sqrt{2} T_{56} & \\sqrt{2} T_{46} \\big]^T
+            \\end{matrix}
     """
     if T.shape[-2::] != (6, 6):
         raise ValueError('The shape of the input array must be (..., 6, 6).')
@@ -152,16 +152,16 @@ def from_21x1_to_6x6(V):
 
         .. math::
 
-            \begin{matrix}
-            \mathbf{V} = & \big[
+            \\begin{matrix}
+            \\mathbf{V} = & \\big[
             T_{11} & T_{22} & T_{33} \\
-            & \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12} \\
-            & \sqrt{2} T_{14} & \sqrt{2} T_{15} & \sqrt{2} T_{16} \\
-            & \sqrt{2} T_{24} & \sqrt{2} T_{25} & \sqrt{2} T_{26} \\
-            & \sqrt{2} T_{34} & \sqrt{2} T_{35} & \sqrt{2} T_{36} \\
+            & \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12} \\
+            & \\sqrt{2} T_{14} & \\sqrt{2} T_{15} & \\sqrt{2} T_{16} \\
+            & \\sqrt{2} T_{24} & \\sqrt{2} T_{25} & \\sqrt{2} T_{26} \\
+            & \\sqrt{2} T_{34} & \\sqrt{2} T_{35} & \\sqrt{2} T_{36} \\
             & T_{44} & T_{55} & T_{66} \\
-            & \sqrt{2} T_{45} & \sqrt{2} T_{56} & \sqrt{2} T_{46} \big]^T
-            \end{matrix}
+            & \\sqrt{2} T_{45} & \\sqrt{2} T_{56} & \\sqrt{2} T_{46} \\big]^T
+            \\end{matrix}
     """
     if V.shape[-2::] != (21, 1):
         raise ValueError('The shape of the input array must be (..., 21, 1).')
@@ -202,10 +202,10 @@ def cvxpy_1x6_to_3x3(V):
 
         .. math::
 
-            \mathbf{V} = \begin{bmatrix}
+            \\mathbf{V} = \\begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
-            \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
-            \end{bmatrix}^T
+            \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12}
+            \\end{bmatrix}^T
     """
     if V.shape[0] == 6:
         V = V.T
@@ -237,16 +237,16 @@ def cvxpy_1x21_to_6x6(V):
 
         .. math::
 
-            \begin{matrix}
-            \mathbf{V} = & \big[
+            \\begin{matrix}
+            \\mathbf{V} = & \\big[
             T_{11} & T_{22} & T_{33} \\
-            & \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12} \\
-            & \sqrt{2} T_{14} & \sqrt{2} T_{15} & \sqrt{2} T_{16} \\
-            & \sqrt{2} T_{24} & \sqrt{2} T_{25} & \sqrt{2} T_{26} \\
-            & \sqrt{2} T_{34} & \sqrt{2} T_{35} & \sqrt{2} T_{36} \\
+            & \\sqrt{2} T_{23} & \\sqrt{2} T_{13} & \\sqrt{2} T_{12} \\
+            & \\sqrt{2} T_{14} & \\sqrt{2} T_{15} & \\sqrt{2} T_{16} \\
+            & \\sqrt{2} T_{24} & \\sqrt{2} T_{25} & \\sqrt{2} T_{26} \\
+            & \\sqrt{2} T_{34} & \\sqrt{2} T_{35} & \\sqrt{2} T_{36} \\
             & T_{44} & T_{55} & T_{66} \\
-            & \sqrt{2} T_{45} & \sqrt{2} T_{56} & \sqrt{2} T_{46} \big]^T
-            \end{matrix}
+            & \\sqrt{2} T_{45} & \\sqrt{2} T_{56} & \\sqrt{2} T_{46} \\big]^T
+            \\end{matrix}
     """
     if V.shape[0] == 21:
         V = V.T
@@ -297,8 +297,9 @@ def dtd_covariance(DTD):
 
         .. math::
 
-            \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle -
-            \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
+            \\mathbb{C} = \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle -
+            \\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
+            \\rangle
 
     References
     ----------
@@ -345,8 +346,9 @@ def qti_signal(gtab, D, C, S0=1):
 
         .. math::
 
-            S = S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle
-            + \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right)
+            S = S_0 \\exp \\left(- \\mathbf{b} : \\langle \\mathbf{D} \\rangle
+            + \\frac{1}{2}(\\mathbf{b} \\otimes \\mathbf{b}) : \\mathbb{C}
+            \\right)
     """
 
     # Validate input and convert to Voigt notation if necessary
@@ -410,10 +412,12 @@ def design_matrix(btens):
 
         .. math::
 
-            X = \begin{pmatrix} 1 & -\mathbf{b}_1^T & \frac{1}{2}(\mathbf{b}_1
-            \otimes\mathbf{b}_1)^T \\ \vdots & \vdots & \vdots \\ 1 &
-            -\mathbf{b}_n^T & \frac{1}{2}(\mathbf{b}_n\otimes\mathbf{b}_n)^T
-            \end{pmatrix}
+            X = \\begin{pmatrix} 1 & -\\mathbf{b}_1^T & \\frac{1}{2}(
+            \\mathbf{b}_1
+            \\otimes\\mathbf{b}_1)^T \\ \\vdots & \\vdots & \\vdots \\ 1 &
+            -\\mathbf{b}_n^T & \\frac{1}{2}(\\mathbf{b}_n\\otimes
+            \\mathbf{b}_n)^T
+            \\end{pmatrix}
     """
     X = np.zeros((btens.shape[0], 28))
     for i, bten in enumerate(btens):
@@ -770,7 +774,8 @@ class QtiFit:
 
             .. math::
 
-                \text{MD} = \langle \mathbf{D} \rangle : \mathbf{E}_\text{iso}
+                \\text{MD} = \\langle \\mathbf{D} \\rangle :
+                \\mathbf{E}_\\text{iso}
         """
         md = np.matmul(
             self.params[..., np.newaxis, 1:7],
@@ -792,7 +797,7 @@ class QtiFit:
 
             .. math::
 
-                V_\text{MD} = \mathbb{C} : \mathbb{E}_\text{bulk}
+                V_\\text{MD} = \\mathbb{C} : \\mathbb{E}_\\text{bulk}
         """
         v_md = np.matmul(
             self.params[..., np.newaxis, 7::],
@@ -814,7 +819,7 @@ class QtiFit:
 
             .. math::
 
-                V_\text{shear} = \mathbb{C} : \mathbb{E}_\text{shear}
+                V_\\text{shear} = \\mathbb{C} : \\mathbb{E}_\\text{shear}
         """
         v_shear = np.matmul(
             self.params[..., np.newaxis, 7::],
@@ -836,7 +841,7 @@ class QtiFit:
 
             .. math::
 
-                V_\text{iso} = \mathbb{C} : \mathbb{E}_\text{iso}
+                V_\\text{iso} = \\mathbb{C} : \\mathbb{E}_\\text{iso}
         """
         v_iso = np.matmul(
             self.params[..., np.newaxis, 7::],
@@ -869,13 +874,15 @@ class QtiFit:
 
         Notes
         -----
-        Average of microscopic diffusion tensors' outer products with themselves
-        is calculated as
+        Average of microscopic diffusion tensors' outer products with
+        themselves is calculated as
 
             .. math::
 
-                \langle \mathbf{D} \otimes \mathbf{D} \rangle = \mathbb{C} +
-                \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
+                \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle =
+                \\mathbb{C} +
+                \\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
+                \\rangle
         """
         mean_d_sq = from_21x1_to_6x6(
             self.params[..., 7::, np.newaxis]) + self.d_sq
@@ -895,9 +902,9 @@ class QtiFit:
 
             .. math::
 
-                C_\text{MD} = \frac{\mathbb{C} : \mathbb{E}_\text{bulk}}
-                {\langle \mathbf{D} \otimes \mathbf{D} \rangle :
-                \mathbb{E}_\text{bulk}}
+                C_\\text{MD} = \\frac{\\mathbb{C} : \\mathbb{E}_\\text{bulk}}
+                {\\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle :
+                \\mathbb{E}_\\text{bulk}}
         """
         c_md = self.v_md / np.matmul(
             np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
@@ -918,9 +925,11 @@ class QtiFit:
 
             .. math::
 
-                C_\mu = \frac{3}{2} \frac{\langle \mathbf{D} \otimes \mathbf{D}
-                \rangle : \mathbb{E}_\text{shear}}{\langle \mathbf{D} \otimes
-                \mathbf{D} \rangle : \mathbb{E}_\text{iso}}
+                C_\\mu = \\frac{3}{2} \\frac{\\langle \\mathbf{D} \\otimes
+                \\mathbf{D}
+                \\rangle : \\mathbb{E}_\\text{shear}}{\\langle \\mathbf{D}
+                \\otimes
+                \\mathbf{D} \\rangle : \\mathbb{E}_\\text{iso}}
         """
         c_mu = (1.5 * np.matmul(
             np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
@@ -943,7 +952,7 @@ class QtiFit:
 
             .. math::
 
-                \mu\text{FA} = \sqrt{C_\mu}
+                \\mu\\text{FA} = \\sqrt{C_\\mu}
         """
         ufa = np.sqrt(self.c_mu)
         return ufa
@@ -962,10 +971,12 @@ class QtiFit:
 
             .. math::
 
-                C_\text{M} = \frac{3}{2} \frac{\langle \mathbf{D} \rangle
-                \otimes \langle \mathbf{D} \rangle : \mathbb{E}_\text{shear}}
-                {\langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle :
-                \mathbb{E}_\text{iso}}
+                C_\\text{M} = \\frac{3}{2} \\frac{\\langle \\mathbf{D} \\rangle
+                \\otimes \\langle \\mathbf{D} \\rangle :
+                \\mathbb{E}_\\text{shear}}
+                {\\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
+                \\rangle :
+                \\mathbb{E}_\\text{iso}}
         """
         c_m = (1.5 * np.matmul(
             np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
@@ -988,7 +999,7 @@ class QtiFit:
 
             .. math::
 
-                \text{FA} = \sqrt{C_\text{M}}
+                \\text{FA} = \\sqrt{C_\\text{M}}
         """
         fa = np.sqrt(self.c_m)
         return fa
@@ -1007,7 +1018,7 @@ class QtiFit:
 
             .. math::
 
-                C_c = \frac{C_\text{M}}{C_\mu}
+                C_c = \\frac{C_\\text{M}}{C_\\mu}
         """
         c_c = self.c_m / self.c_mu
         return c_c
@@ -1026,7 +1037,7 @@ class QtiFit:
 
             .. math::
 
-                \text{MK} = K_\text{bulk} + K_\text{shear}
+                \\text{MK} = K_\\text{bulk} + K_\\text{shear}
         """
         mk = self.k_bulk + self.k_shear
         return mk
@@ -1045,9 +1056,10 @@ class QtiFit:
 
             .. math::
 
-                K_\text{bulk} = 3 \frac{\mathbb{C} : \mathbb{E}_\text{bulk}}
-                {\langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle :
-                \mathbb{E}_\text{bulk}}
+                K_\\text{bulk} = 3 \\frac{\\mathbb{C} :
+                \\mathbb{E}_\\text{bulk}}
+                {\\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
+                \\rangle : \\mathbb{E}_\\text{bulk}}
         """
         k_bulk = (3 * np.matmul(
             self.params[..., np.newaxis, 7::],
@@ -1070,9 +1082,10 @@ class QtiFit:
 
             .. math::
 
-                K_\text{shear} = \frac{6}{5} \frac{\mathbb{C} :
-                \mathbb{E}_\text{shear}}{\langle \mathbf{D} \rangle \otimes
-                \langle \mathbf{D} \rangle : \mathbb{E}_\text{bulk}}
+                K_\\text{shear} = \\frac{6}{5} \\frac{\\mathbb{C} :
+                \\mathbb{E}_\\text{shear}}{\\langle \\mathbf{D} \\rangle
+                \\otimes
+                \\langle \\mathbf{D} \\rangle : \\mathbb{E}_\\text{bulk}}
         """
         k_shear = (6 / 5 * np.matmul(
             self.params[..., np.newaxis, 7::],
@@ -1095,9 +1108,12 @@ class QtiFit:
 
             .. math::
 
-                K_\mu = \frac{6}{5} \frac{\langle \mathbf{D} \otimes \mathbf{D}
-                \rangle : \mathbb{E}_\text{shear}}{\langle \mathbf{D} \rangle
-                \otimes \langle \mathbf{D} \rangle : \mathbb{E}_\text{bulk}}
+                K_\\mu = \\frac{6}{5} \\frac{\\langle \\mathbf{D} \\otimes
+                \\mathbf{D}
+                \\rangle : \\mathbb{E}_\\text{shear}}{\\langle \\mathbf{D}
+                \\rangle
+                \\otimes \\langle \\mathbf{D} \\rangle :
+                \\mathbb{E}_\\text{bulk}}
         """
         k_mu = (6 / 5 * np.matmul(
             np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),

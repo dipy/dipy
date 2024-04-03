@@ -13,7 +13,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import use_xvfb, set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
     from dipy.workflows.viz import HorizonFlow
@@ -78,7 +78,7 @@ def test_horizon_flow(rng):
 
     data = 255 * rng.random((197, 233, 189))
 
-    images = [(data, affine)]
+    images = [(data, affine, 'test/test.nii.gz')]
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,

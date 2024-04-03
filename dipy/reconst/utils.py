@@ -213,3 +213,60 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
     mask[interval_i, interval_j, interval_k] = 1
 
     return mask
+
+
+def convert_tensors(tensor, from_format, to_format):
+    """Convert tensors from one format to another.
+
+    Parameters
+    ----------
+    tensor : ndarray
+        Input tensor.
+    from_format : str
+        Format of the input tensor. Options: 'dipy', 'mrtrix', 'ants', 'fsl'.
+    to_format : str
+        Format of the output tensor. Options: 'dipy', 'mrtrix', 'ants', 'fsl'.
+
+    Notes
+    -----
+    - DIPY order: [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
+      Shape: [i, j , k, 6].
+      See: https://github.com/dipy/dipy/blob/master/dipy/reconst/dti.py#L1639
+    - MRTRIX order: [Dxx, Dyy, Dzz, Dxy, Dxz, Dyz]
+       Shape: [i, j , k, 6].
+       See: https://mrtrix.readthedocs.io/en/dev/reference/commands/dwi2tensor.html  # noqa
+    - ANTS: [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
+       Shape: [i, j , k, 1, 6]  -  Note the extra dimension (5D)
+       See: https://github.com/ANTsX/ANTs/wiki/Importing-diffusion-tensor-data-from-other-software  # noqa
+    - FSL: [Dxx, Dxy, Dxz, Dyy, Dyz, Dzz]
+      Shape: [i, j , k, 6]. (Also used for the Fibernavigator)
+      Ref: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide
+    """
+    tensor_order = {
+        'fsl': [[0, 1, 3, 2, 4, 5], [0, 1, 3, 2, 4, 5]],
+        'mrtrix': [[0, 3, 1, 4, 5, 2], [0, 2, 5, 1, 3, 4]],
+        'dipy': [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
+        'ants': [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+    }
+
+    if from_format.lower() not in tensor_order.keys():
+        raise ValueError("Unknown tensor format: {}".format(from_format))
+    if to_format.lower() not in tensor_order.keys():
+        raise ValueError("Unknown tensor format: {}".format(to_format))
+
+    if from_format.lower() == to_format.lower():
+        return tensor
+
+    if from_format.lower() in ['ants', 'dipy']:
+        tensor = np.squeeze(tensor) if tensor.ndim == 5 else tensor
+
+    tensor_dipy = tensor[..., tensor_order[from_format.lower()][0]]
+
+    if to_format.lower() == 'ants':
+        tensor_dipy = tensor_dipy[:, :, :, np.newaxis, :]
+        return tensor_dipy
+    elif to_format.lower() == 'dipy':
+        return tensor_dipy
+
+    tensor_reordered = tensor_dipy[..., tensor_order[to_format.lower()][1]]
+    return tensor_reordered

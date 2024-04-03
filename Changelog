@@ -24,6 +24,17 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.9.0 (Friday, March 8, 2023)
+
+- Numpy 2.0.0 support.
+- DeepN4 novel DL-based N4 Bias Correction method added.
+- Multiple Workflows added.
+- Large update of DIPY Horizon features.
+- Pytest for Cython files(*.pyx) added.
+- Large documentation update.
+- Support of Python 3.8 removed.
+- Closed 139 issues and merged 58 pull requests.
+
 * 1.8.0 (Wednesday, December 13, 2023)
 
 - Python 3.12.0 support.

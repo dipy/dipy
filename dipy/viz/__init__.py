@@ -9,7 +9,7 @@ fury, has_fury, _ = optional_package(
     'fury',
     trip_msg="You do not have FURY installed. Some visualization functions"
     "might not work for you. For installation instructions, please visit: "
-    "https://fury.gl/", min_version="0.9.0")
+    "https://fury.gl/", min_version="0.10.0")
 
 
 if has_fury:

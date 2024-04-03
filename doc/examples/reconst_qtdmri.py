@@ -6,7 +6,7 @@ Effective representation of the four-dimensional diffusion MRI signal --
 varying over three-dimensional q-space and diffusion time -- is a sought-after
 and still unsolved challenge in diffusion MRI (dMRI). We propose a functional
 basis approach that is specifically designed to represent the dMRI signal in
-this qtau-space [Fick2017]_.  Following recent terminology, we refer to our
+this qtau-space [Fick2017]_. Following recent terminology, we refer to our
 qtau-functional basis as :math:`q\tau`-dMRI. We use GraphNet regularization --
 imposing both signal smoothness and sparsity -- to drastically reduce the
 number of diffusion-weighted images (DWIs) that is needed to represent the dMRI
@@ -410,13 +410,13 @@ plt.savefig('qt_indices_rtpp.png')
 # could be indicative of underlying structural differences that affect the
 # time-dependence of the diffusion process.
 #
+#
 # References
 # ----------
-#
-# .. [Fick2017]_ Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-#             Representation of dMRI in Space and Time", Medical Image
-#             Analysis, 2017.
-# .. [Wassermann2017]_ Wassermann, Demian, et al. "Test-Retest qt-dMRI datasets
-#             for 'Non-Parametric GraphNet-Regularized Representation of dMRI
-#             in Space and Time' [Data set]". Zenodo.
-#             https://doi.org/10.5281/zenodo.996889, 2017.
+# .. [Fick2017] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+#               Representation of dMRI in Space and Time", Medical Image
+#               Analysis, 2017.
+# .. [Wassermann2017] Wassermann, Demian, et al. "Test-Retest qt-dMRI datasets
+#                     for 'Non-Parametric GraphNet-Regularized Representation
+#                     of dMRI in Space and Time' [Data set]". Zenodo.
+#                     https://doi.org/10.5281/zenodo.996889, 2017.

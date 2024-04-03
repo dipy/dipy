@@ -5,16 +5,18 @@ from tempfile import mkstemp, TemporaryDirectory
 import numpy as np
 import numpy.testing as npt
 
+import dipy.core.gradients as grad
 from dipy.data import get_fnames
 from dipy.data.fetcher import dipy_home
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
+from dipy.io.utils import nifti1_symmat
 from dipy.testing import assert_true
+from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
                                ConcatenateTractogramFlow, ConvertSHFlow,
-                               ConvertTractogramFlow)
-
+                               ConvertTractogramFlow, ConvertTensorsFlow)
 
 fname_log = mkstemp()[1]
 
@@ -72,9 +74,9 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-    dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
-                     'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
-                     'file_formats', 'fury_surface',
+    dataset_names = ['bundle_atlas_hcp842', '30_bundle_atlas_hcp842',
+                     'bundle_fa_hcp', 'bundles_2_subjects', 'cenir_multib',
+                     'cfin_multib', 'file_formats', 'fury_surface',
                      'gold_standard_io', 'isbi2013_2shell',
                      'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
@@ -82,7 +84,8 @@ def test_io_fetch_fetcher_datanames():
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
                      'tissue_data', 'qte_lte_pte', 'resdnn_weights',
                      'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste',
-                     'synb0_weights', 'synb0_test', 'bundle_warp_dataset',
+                     'synb0_weights', 'synb0_test', 'deepn4_weights',
+                     'deepn4_test', 'bundle_warp_dataset',
                      'evac_weights', 'evac_test', 'ptt_minimal_dataset',
                      'stanford_tracks', 'cti_rat1']
 
@@ -178,3 +181,39 @@ def test_convert_tractogram_flow():
         npt.assert_warns(UserWarning, convert_tractogram_flow.run,
                          data_path['gs.trx'], out_dir=out_dir,
                          out_tractogram='gs_converted.trx')
+
+
+def test_convert_tensors_flow():
+    with TemporaryDirectory() as out_dir:
+        filepath_in = os.path.join(out_dir, 'tensors_img.nii.gz')
+        filename_out = 'tensors_converted.nii.gz'
+        filepath_out = os.path.join(out_dir, filename_out)
+
+        # Create an input image
+        fdata, fbval, fbvec = get_fnames('small_25')
+        data, affine = load_nifti(fdata)
+        gtab = grad.gradient_table(fbval, fbvec)
+        tenmodel = dti.TensorModel(gtab)
+        tenfit = tenmodel.fit(data)
+
+        tensor_vals = dti.lower_triangular(tenfit.quadratic_form)
+        ten_img = nifti1_symmat(tensor_vals, affine=affine)
+
+        save_nifti(filepath_in, ten_img.get_fdata().squeeze(), affine)
+
+        # Compute expected result to compare against later
+        expected_img_out = reconst_utils.convert_tensors(
+            ten_img.get_fdata(), 'dipy', 'mrtrix')
+
+        # Run the workflow and load the output
+        workflow = ConvertTensorsFlow()
+        workflow.run(
+            filepath_in,
+            from_format='dipy',
+            to_format='mrtrix',
+            out_dir=out_dir,
+            out_tensor=filename_out,
+        )
+
+        img_out, _ = load_nifti(filepath_out)
+        npt.assert_array_almost_equal(img_out, expected_img_out)

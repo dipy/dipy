@@ -185,7 +185,7 @@ rgb.nii.gz, fa.nii.gz, mode.nii.gz, tensors.nii.gz, evals.nii.gz, ga.nii.gz and 
 
 Visualize DEC map::
 
-    dipy_horizon out_work/rgb.nii.gz
+    dipy_horizon out_work/rgb.nii.gz --rgb
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic3.png?raw=true
     :width: 70 %

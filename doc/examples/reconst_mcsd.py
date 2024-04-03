@@ -240,7 +240,7 @@ print(auto_response_csf)
 # is important to note that the bvalues must be unique for this function.
 
 ubvals = unique_bvals_tolerance(gtab.bvals)
-response_mcsd = multi_shell_fiber_response(sh_order=8,
+response_mcsd = multi_shell_fiber_response(sh_order_max=8,
                                            bvals=ubvals,
                                            wm_rf=response_wm,
                                            gm_rf=response_gm,
@@ -255,7 +255,9 @@ response_mcsd = multi_shell_fiber_response(sh_order=8,
 # depending on the bvalues given to ``multi_shell_fiber_response`` externally.
 
 response = np.array([response_wm, response_gm, response_csf])
-mcsd_model_simple_response = MultiShellDeconvModel(gtab, response, sh_order=8)
+mcsd_model_simple_response = MultiShellDeconvModel(gtab,
+                                                   response,
+                                                   sh_order_max=8)
 
 ###############################################################################
 # Note that this technique only works for a 3 compartments model (wm, gm, csf).

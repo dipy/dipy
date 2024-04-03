@@ -45,6 +45,7 @@ from dipy.data.fetcher import (get_fnames,
                                read_cfin_t1,
                                fetch_target_tractogram_hcp,
                                fetch_bundle_atlas_hcp842,
+                               fetch_30_bundle_atlas_hcp842,
                                get_bundle_atlas_hcp842,
                                get_target_tractogram_hcp,
                                get_two_hcp842_bundles,
@@ -261,7 +262,7 @@ def mrtrix_spherical_functions():
     -------
     func_coef : array (2, 3, 4, 45)
         Functions represented by the coefficients associated with the
-        mrtrix spherical harmonic basis of order 8.
+        mrtrix spherical harmonic basis of maximal order (l) 8.
     func_discrete : array (2, 3, 4, 81)
         Functions evaluated on `sphere`.
     sphere : Sphere
