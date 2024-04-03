@@ -496,7 +496,7 @@ def disperse_charges(hemi, iters, const=.2):
     return HemiSphere(xyz=charges), potential
 
 
-def fibonacci_sphere(n_points, hemisphere = False, randomize=True):
+def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
     """
     Generate points on the surface of a sphere using Fibonacci Spiral.
 
@@ -509,6 +509,8 @@ def fibonacci_sphere(n_points, hemisphere = False, randomize=True):
         Default is False.
     randomize : bool, optional
         If True, randomize the starting point on the sphere. Default is True.
+    rng : np.random.Generator, optional
+        If None creates random generator in function.
 
     Returns
     -------
@@ -523,7 +525,7 @@ def fibonacci_sphere(n_points, hemisphere = False, randomize=True):
 
     random_shift = 0
     if randomize:
-        random_generator = np.random.default_rng()
+        random_generator = rng or np.random.default_rng()
         random_shift = random_generator.integers(0, n_points)
 
     indices = np.arange(n_points)
