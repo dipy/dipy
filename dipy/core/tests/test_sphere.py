@@ -383,14 +383,15 @@ def test_disperse_charges_alt():
     nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
 
 
-def test_fibonacci_sphere():
+@set_random_number_generator()
+def test_fibonacci_sphere(rng):
     # Test that the number of points is correct
-    points = fibonacci_sphere(n_points=724)
+    points = fibonacci_sphere(n_points=724, rng=rng)
     nt.assert_equal(len(points), 724)
 
     # Test randomization
-    points1 = fibonacci_sphere(n_points=100, randomize=True)
-    points2 = fibonacci_sphere(n_points=100, randomize=True)
+    points1 = fibonacci_sphere(n_points=100, randomize=True, rng=rng)
+    points2 = fibonacci_sphere(n_points=100, randomize=True, rng=rng)
     with nt.assert_raises(AssertionError):
         nt.assert_array_equal(points1, points2)
 
@@ -399,14 +400,17 @@ def test_fibonacci_sphere():
         np.mean(np.mean(points, axis=0)), 0, decimal=2)
 
 
-def test_fibonacci_hemisphere():
+@set_random_number_generator()
+def test_fibonacci_hemisphere(rng):
     # Test that the number of points is correct
-    points = fibonacci_sphere(n_points=724, hemisphere=True)
+    points = fibonacci_sphere(n_points=724, hemisphere=True, rng=rng)
     nt.assert_equal(len(points), 724)
 
     # Test randomization
-    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True)
-    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True)
+    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
+                               rng=rng)
+    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
+                               rng=rng)
     with nt.assert_raises(AssertionError):
         nt.assert_array_equal(points1, points2)
 
