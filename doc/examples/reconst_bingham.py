@@ -19,7 +19,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.csdeconv import (auto_response_ssst,
                                    ConstrainedSphericalDeconvModel)
-from dipy.direction.bingham import bingham_from_odf
+from dipy.direction.bingham import (bingham_from_odf, bingham_from_sh)
 from dipy.viz import window, actor
 
 
@@ -29,8 +29,16 @@ data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
+# To properly fit Bingham functions, we recommend the use of a larger number of
+# directions to sample the ODFs. For this, we load a `sphere` class instance
+# containing 724 directions sampling a 3D sphere. We further subdivide the
+# faces of this `sphere` representation in 2, to get 11554 direction
+
 sphere = get_sphere('repulsion724')
 sphere = sphere.subdivide(2)
+
+nd = sphere.vertices.shape[0]
+print('The number of directions in the sphere is {}'.format(nd))
 
 ###############################################################################
 # Step 1. ODF estimation
@@ -49,7 +57,7 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 # Let's now compute the ODFs using this response function:
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, response)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=8)
 
 ###############################################################################
 # For efficiency, we will only fit a small part of the data.
@@ -100,6 +108,21 @@ window.record(scene, out_path='Bingham_odfs.png', size=(600, 600))
 if interactive:
     window.show(scene)
 
+# Alternatively to fit Bingham functions to sampled ODFs, DIPY also contains
+# the function `bingham_from_sh` to perform Bingham fitting from the ODF's
+# spherical harmonic representation. Although this process may require longer
+# processing times, this function may be useful to avoid memory issues in
+# handling heavily sampled ODFs. Below we show the lines of code to use
+# function `bingham_from_sh` (feel free to skip these lines if the function
+# `bingham_from_odf` worked fine for you). Note, to use `bingham_from_sh` you
+# need to specify the maximum order of spherical harmonics that you defined in
+# `csd_model` (in this example this was set to 8):
+
+sh_coeff = csd_fit.shm_coeff
+BinghamMetrics = bingham_from_sh(sh_coeff, sphere, 8)
+
+# Step 3. Bingham Metrics
+# =================================================
 # As mentioned above, reconstructed Bingham functions can be useful to
 # quantify properties from ODFs [1]_, [2]_. Below we plot the Bingham metrics
 # expected to be proportional to the fiber density (FD) of specific fiber

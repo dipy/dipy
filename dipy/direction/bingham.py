@@ -17,10 +17,8 @@ References
 from math import cos, radians
 from warnings import warn
 import numpy as np
-import nibabel as nib
 
 from dipy.direction import peak_directions
-from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
@@ -722,168 +720,53 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
     return BinghamMetrics(bpars)
 
 
-# OLD CODE VERSION
-
-def bingham_orientation_dispersion(bingham_fits):
-    r"""
-    Compute the orientation dispersion indexes (ODI) from the
-    concentration parameters (k1, k2) as described in [2]_ and [3]_.
+def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
+                    max_search_angle=6, min_sep_angle=60, rel_th=0.1):
+    """ Fit Bingham function from the ODF's spherical harmonics (SH)
+    representation
 
     Parameters
     ----------
-    bingham_fits : list of tuples
-        Bingham distributions. Each tuple describes a lobe of the
-        initially fitted function.
-
-    Returns
-    -------
-    odi: list of tuples
-        Each tuple contains the ODIs 1 & 2 (for k1 & k2, respectively).
-
-    References
-    ----------
-    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo -
-            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
-    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
-            NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4),
-            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
-    """
-    odi = []
-
-    for f0, k1, k2, mu0, mu1, mu2 in bingham_fits:
-
-        odi_1 = (2/np.pi) * np.arctan(1/k1)
-        odi_2 = (2/np.pi) * np.arctan(1/k2)
-
-        odi.append([odi_1, odi_2])  # Appending for each lobe both odi's
-
-    return odi
-
-
-def bingham_from_sh(sh, mask, sh_order, npeaks, sphere, max_angle,
-                    min_sep_angle, rel_th):
-    r"""
-    Function that calls in the 4D Spherical Harmonics file of a brain image
-    and loops through the image to fit the Bingham distribution at each voxel.
-
-    Parameters
-    ----------
-    sh: 4D nifti image
-        Image holding the spherical harmonics.
-    mask: 3D nifti image
-        binary mask of the brain tissue to fit the Bingham distribution.
-    sh_order: int
-        The order of the spherical harmonics.
-    npeaks: int
-        number of maximum peaks to be estimated per voxel.
-    sphere: string
-        DIPY Sphere on which the ODF is defined.
-        'symmetric642' gives 10242 vertices after subdividing by (2)
-        as in [1]_.
-        'repulsion724' gives 11554 vertices after subdividing by (2)
-    max_angle: float
-        The maximum angle in degrees of the neighbourhood around
-        peak to consider for fitting.
-    min_sep_angle: float
-        Minimum separation angle between two ODF peaks for peak extraction.
-    rel_th: float
+    sh : ndarray
+        SH coefficients representing a spherical function.
+    sphere : Sphere
+        The points on which to sample the spherical function.
+    sh_order_max: int
+        Maximum order used for the SH reconstruction
+    mask: ndarray
+        Map marking the coordinates in the data that should be analyzed
+    npeak: int
+        Maximum number of peaks found (default 5 peaks).
+    max_search_angle: float, optional.
+        Maximum angle between a peak and its neighbour directions
+        for fitting the Bingham distribution.
+    min_sep_angle: float, optional
+        Minimum separation angle between two peaks for peak extraction.
+    rel_th: float, optional
         Relative threshold used for peak extraction.
 
-    Returns
-    -------
-    afd: 4D ndarray
-        Maximum amplitude of ODF peaks (f0) or axonal fiber density.
-    kappa1: 4D ndarray
-        First concentration parameter for all ODF peaks.
-    kappa2
-    mu_0: 5D ndarray
-        Main axis direction fort all ODF peaks.
-    mu_1: 5D ndarray
-        Axis direction along major concentration parameter for all ODF peaks.
-    mu_3: 5D ndarray
-        Axis direction along minor concentration parameter for all ODF peaks.
-    f_d: 4D ndarray
-        Fiber density as in equation (6) of [1]_.
-    f_s: 4D ndarray
-        Fiber spread as in equation (7) of [1]_.
-    odi: 5D ndarray
-        Orientation Dispersion Index for k1 and k2 for all ODF peaks
-        as in [2]_ and [3]_.
-
-    References
-    ----------
-    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-           anisotropy: Extraction of bundle-specific structural metrics from
-           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
-    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo -
-            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
-    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
-            NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4),
-            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
-
+    Return
+    ------
+    BinghamMetrics: class instance
+        Class instance containing metrics computed from Bingham functions
+        fitted to ODF lobes
     """
-    # Reading in the spherical harmonics and mask
-    sphe_har = nib.load(sh)
-    datash = sphe_har.get_fdata()
-    print('datash.shape (%d, %d, %d, %d)' % datash.shape)
+    shape = sh.shape[0:-1]
+    if mask is None:
+        mask = np.ones(shape)
 
-    mask = nib.load(mask)
-    datamask = mask.get_fdata()
+    # Bingham parameters saved in an ndarray with shape:
+    # (Nx, Ny, Nz, n_max_peak, 12).
+    bpars = np.zeros(shape + (npeaks,) + (12,))
 
-    sh_order = int(sh_order)
-    npeaks = int(npeaks)
-
-    sphere = get_sphere(sphere)
-    sphere = sphere.subdivide(2)
-
-    shape = datash.shape[:3]
-    afd = np.zeros((shape + (npeaks,)))
-    kappa1 = np.zeros((shape + (npeaks,)))
-    kappa2 = np.zeros((shape + (npeaks,)))
-    mu_0 = np.zeros((shape + (npeaks, 3)))
-    mu_1 = np.zeros((shape + (npeaks, 3)))
-    mu_2 = np.zeros((shape + (npeaks, 3)))
-    f_d = np.zeros((shape + (npeaks,)))
-    f_s = np.zeros((shape + (npeaks,)))
-    odi = np.zeros((shape + (npeaks, 2)))
-
-    print('Fitting the Bingham distribution for the input brain volume.')
     for idx in ndindex(shape):
-        if not datamask[idx]:
+        if not mask[idx]:
             continue
 
-        odf = sh_to_sf(datash[idx], sphere, sh_order=sh_order)
+        odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
+        [fits, npeaks_final] = bingham_fit_odf(
+            odf, sphere, npeaks, max_search_angle=max_search_angle,
+            min_sep_angle=min_sep_angle, rel_th=rel_th)
 
-        [fits, npeaks_final] = bingham_fit_odf(odf, sphere, npeaks,
-                                               max_search_angle=max_angle,
-                                               min_sep_angle=min_sep_angle,
-                                               rel_th=rel_th)
-
-        f0 = np.array([i[0] for i in fits])
-        k1 = np.array([i[1] for i in fits])
-        k2 = np.array([i[2] for i in fits])
-        mu0 = np.squeeze(np.array([i[3] for i in fits]))
-        mu1 = np.squeeze(np.array([i[4] for i in fits]))
-        mu2 = np.squeeze(np.array([i[5] for i in fits]))
-
-        fd = bingham_fiber_density(fits)
-        fs = bingham_fiber_spread(fits)
-        od = bingham_orientation_dispersion(fits)
-
-        afd[idx][:npeaks_final] = f0[:npeaks_final]
-        kappa1[idx][:npeaks_final] = k1[:npeaks_final]
-        kappa2[idx][:npeaks_final] = k2[:npeaks_final]
-        mu_0[idx][:npeaks_final] = mu0[:npeaks_final]
-        mu_1[idx][:npeaks_final] = mu1[:npeaks_final]
-        mu_2[idx][:npeaks_final] = mu2[:npeaks_final]
-        f_d[idx][:npeaks_final] = fd[:npeaks_final]
-        f_s[idx][:npeaks_final] = fs[:npeaks_final]
-        odi[idx][:npeaks_final] = od[:npeaks_final]
-
-    # Returning f0 (AFD), Kappas, mu's, FD, FS and ODI in 4D/5D volumes.
-    # They include the number of peaks in the ODF.
-    return afd, kappa1, kappa2, mu_0, mu_1, mu_2, f_d, f_s, odi
+        bpars[idx] = _convert_bingham_pars(fits, npeaks)
+    return BinghamMetrics(bpars)

@@ -4,8 +4,9 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
                                     _bingham_fit_peak, bingham_fiber_density,
                                     bingham_from_odf, _convert_bingham_pars,
-                                    odi2k, k2odi)
+                                    odi2k, k2odi,  bingham_from_sh)
 from dipy.data import get_sphere
+from dipy.reconst.shm import sf_to_sh
 
 sphere = get_sphere('repulsion724')
 sphere = sphere.subdivide(2)
@@ -151,3 +152,18 @@ def test_bingham_from_odf():
     # check reconstructed odf
     reconst_odf = bim.odf(sphere)
     assert_almost_equal(reconst_odf[0, 0, 0], odf, decimal=2)
+
+
+def test_bingham_from_sh():
+    ma_axis = np.array([0, 1, 0])
+    mi_axis = np.array([0, 0, 1])
+    k1 = 2
+    k2 = 6
+    f0 = 3
+    odf = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+
+    bim_odf = bingham_from_odf(odf, sphere, npeaks=2, max_search_angle=45)
+    sh = sf_to_sh(odf, sphere, sh_order_max=16)
+    bim_sh = bingham_from_sh(sh, sphere, 16, npeaks=2, max_search_angle=45)
+    assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params,
+                              decimal=3)
