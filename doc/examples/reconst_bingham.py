@@ -257,7 +257,7 @@ fig3.colorbar(im2, ax=ax[2])
 # BinghamMetric can also be used to compute the averaged ODI quantities across
 # all ODF lobes (see below). The averaged quantitaties are computed by
 # weigthing each ODF lobe with their respective FD value. These quantities
-# are ploted in the following figure.
+# are plotted in the following figure.
 
 ODIt = BinghamMetrics.godi_total[:, :, 0]
 ODI1 = BinghamMetrics.godi_1[:, :, 0]

@@ -211,10 +211,10 @@ def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
 
         f(n) = f_0 \exp[-k_1(\mu_1^Tn)^2-k_2(\mu_2^Tn)^2]
 
-    where $f(n)$ is the Bingham function value at a given direction $n$, $f_0%
+    where $f(n)$ is the Bingham function value at a given direction $n$, $f_0$
     is the Bingham maximum peak value, $k_1$ and $k_2$ are the concentration
     constants parameters (large values correspond to lower dispersion values)
-    along the two dispersion axes $\mu_1$ and $\mu_2$-
+    along the two dispersion axes $\mu_1$ and $\mu_2$.
 
     References
     ----------
@@ -251,7 +251,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham main direction (indexes 3-5);
             elements of Bingham dispersion major axis (indexes 6-8);
-            and elements of Bingham dispersion minor axis (indexs 9-11).
+            and elements of Bingham dispersion minor axis (indexes 9-11).
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
     mask: ndarray
@@ -304,7 +304,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham main direction (indexes 3-5);
             elements of Bingham dispersion major axis (indexes 6-8);
-            and elements of Bingham dispersion minor axis (indexs 9-11).
+            and elements of Bingham dispersion minor axis (indexes 9-11).
     mask: ndarray
         Map marking the coordinates in the data that should be analyzed
     n_thetas: unsigned int, optional
@@ -400,7 +400,7 @@ def bingham_fiber_spread(f0, fd):
 
 
 def k2odi(k):
-    """ Convent Bingham/Watson concentration parameter k to the orientation
+    """ Convert Bingham/Watson concentration parameter k to the orientation
     dispersion index (ODI)
 
     Parameters
@@ -438,7 +438,7 @@ def k2odi(k):
 
 
 def odi2k(odi):
-    """ Convent Bingham/Watson concentration parameter k to the orientation
+    """ Convert Bingham/Watson concentration parameter k to the orientation
     dispersion index (ODI)
 
     Parameters
@@ -484,7 +484,7 @@ def _convert_bingham_pars(fits, npeaks):
        tuple of nl elements containting the Bingham function parameters
        in the following order:
             Maximum value of the Bingham function (f0);
-            concentration parameters (k1 and k2;
+            concentration parameters (k1 and k2);
             elements of Bingham main direction (miu0);
             elements of Bingham dispersion major axis (miu1);
             and elements of Bingham dispersion minor axis (miu2).
@@ -500,7 +500,7 @@ def _convert_bingham_pars(fits, npeaks):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham main direction (indexes 3-5);
             elements of Bingham dispersion major axis (indexes 6-8);
-            and elements of Bingham dispersion minor axis (indexs 9-11).
+            and elements of Bingham dispersion minor axis (indexes 9-11).
     """
     n = len(fits)
     bpars = np.zeros((npeaks, 12))
@@ -516,7 +516,7 @@ def _convert_bingham_pars(fits, npeaks):
 
 def global_voxel_metric(bmetric, bfd):
     """ Compute a global scalar maps for metrics of Bingham functions
-    fitted to multiple ODF lobel
+    fitted to multiple ODF lobes
 
     Parameters
     ----------
@@ -554,7 +554,7 @@ class BinghamMetrics:
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham main direction (indexes 3-5);
             elements of Bingham dispersion major axis (indexes 6-8);
-            and elements of Bingham dispersion minor axis (indexs 9-11).
+            and elements of Bingham dispersion minor axis (indexes 9-11).
         """
         self.model_params = model_params
 
@@ -578,7 +578,7 @@ class BinghamMetrics:
 
     @auto_attr
     def kappa_total(self):
-        """Comnbined concentration parameters for each ODF lobe.
+        """Combined concentration parameters for each ODF lobe.
 
         Note:
         ----
@@ -592,13 +592,13 @@ class BinghamMetrics:
     @auto_attr
     def odi_1(self):
         """Orientation Dispersion index 1 computed for each ODF lobe from
-        concentration paramenter kappa_1."""
+        concentration parameter kappa_1."""
         return k2odi(self.kappa_1)
 
     @auto_attr
     def odi_2(self):
         """Orientation Dispersion index 1 computed for each ODF lobe from
-        concentration paramenter kappa_2."""
+        concentration parameter kappa_2."""
         return k2odi(self.kappa_2)
 
     @auto_attr
