@@ -10,6 +10,7 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 from dipy.core.sphere_stats import random_uniform_on_sphere
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 delaunay, have_delaunay, _ = optional_package('scipy.spatial.Delaunay')
