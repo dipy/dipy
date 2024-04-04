@@ -7,6 +7,13 @@ from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
 
 class PeaksTab(HorizonTab):
     def __init__(self, peak_actor):
+        """Initialize Interaction tab for peaks visualization.
+
+        Parameters
+        ----------
+        peak_actor : PeaksActor
+            Horizon PeaksActor visualize peaks.
+        """
         super().__init__()
 
         self._actor = peak_actor
@@ -38,9 +45,11 @@ class PeaksTab(HorizonTab):
             text_template='{value:.0f}',
             label='X Slice'
         )
+        self._change_slice_x = partial(
+            self._change_slice, selected_slice=self._slice_x)
         self._adjust_slice_x = partial(self._change_slice_x, sync_slice=True)
-        self._slice_x.on_moving_slider = self._change_slice_x
-        self._slice_x.on_value_changed = self._adjust_slice_x
+        self._slice_x.obj.on_moving_slider = self._change_slice_x
+        self._slice_x.obj.on_value_changed = self._adjust_slice_x
 
         self._slice_y_label, self._slice_y = build_slider(
             initial_value=cross_section[1],
@@ -49,9 +58,11 @@ class PeaksTab(HorizonTab):
             text_template='{value:.0f}',
             label='Y Slice'
         )
+        self._change_slice_y = partial(
+            self._change_slice, selected_slice=self._slice_y)
         self._adjust_slice_y = partial(self._change_slice_y, sync_slice=True)
-        self._slice_y.on_moving_slider = self._change_slice_y
-        self._slice_y.on_value_changed = self._adjust_slice_y
+        self._slice_y.obj.on_moving_slider = self._change_slice_y
+        self._slice_y.obj.on_value_changed = self._adjust_slice_y
 
         self._slice_z_label, self._slice_z = build_slider(
             initial_value=cross_section[2],
@@ -60,9 +71,11 @@ class PeaksTab(HorizonTab):
             text_template='{value:.0f}',
             label='Z Slice'
         )
+        self._change_slice_z = partial(
+            self._change_slice, selected_slice=self._slice_z)
         self._adjust_slice_z = partial(self._change_slice_z, sync_slice=True)
-        self._slice_z.on_moving_slider = self._change_slice_z
-        self._slice_z.on_value_changed = self._adjust_slice_z
+        self._slice_z.obj.on_moving_slider = self._change_slice_z
+        self._slice_z.obj.on_value_changed = self._adjust_slice_z
 
         low_ranges = self._actor.low_ranges
         high_ranges = self._actor.high_ranges
@@ -120,15 +133,40 @@ class PeaksTab(HorizonTab):
         )
 
     def _toggle_opacity(self, checkbox):
+        """Toggle Opacity of the peaks actor.
+
+        Parameters
+        ----------
+        checkbox : Checkbox
+            FURY checkbox UI element.
+        """
         if '' in checkbox.checked_labels:
             self._opacity.obj.value = 1
         else:
             self._opacity.obj.value = 0
 
     def _change_opacity(self, slider):
+        """Update opacity of the peaks actor by adjusting the slider to
+        suitable value.
+
+        Parameters
+        ----------
+        slider : LineSlider2D
+            FURY slider UI element.
+        """
         self._actor.global_opacity = slider.value
 
     def _change_range(self, slider, selected_range):
+        """Update the range of peaks actor by adjusting the double slider.
+        Only usable in Range view mode.
+
+        Parameters
+        ----------
+        slider : LineDoubleSlider2D
+            FURY two side slider UI element.
+        selected_range : HorizonUIElement
+            Selected horizon ui element intended to change.
+        """
         selected_range.selected_value = (
             slider.left_disk_value, slider.right_disk_value)
         self._actor.display_extent(
@@ -137,43 +175,42 @@ class PeaksTab(HorizonTab):
             self._range_z.selected_value[0], self._range_z.selected_value[1],
         )
 
-    def _change_slice_x(self, slider, sync_slice=False):
-        value = int(np.rint(slider.value))
-        if not sync_slice:
-            self.on_slice_change(
-                self._tab_id,
-                value,
-                int(np.rint(self._slider_slice_y.value)),
-                int(np.rint(self._slider_slice_z.value)),
-            )
-        cs = self._actor.cross_section
-        self._actor.display_cross_section(value, cs[1], cs[2])
+    def _change_slice(
+            self, slider, selected_slice, sync_slice=False):
+        """Update the slice value of peaks actor by adjusting the slider. Only
+        usable in Cross Section view mode.
 
-    def _change_slice_y(self, slider, sync_slice=False):
+        Parameters
+        ----------
+        slider : LineSlider2D
+            FURY slider UI element.
+        selected_slice : HorizonUIElement
+            Selected horizon ui element intended to change.
+        sync_slice : bool, optional
+            Whether the slice is getting synchronized some other change,
+            by default False
+        """
         value = int(np.rint(slider.value))
-        if not sync_slice:
-            self.on_slice_change(
-                self._tab_id,
-                int(np.rint(self._slider_slice_x.value)),
-                value,
-                int(np.rint(self._slider_slice_z.value)),
-            )
-        cs = self._actor.cross_section
-        self._actor.display_cross_section(cs[0], value, cs[2])
+        selected_slice.selected_value = value
 
-    def _change_slice_z(self, slider, sync_slice=False):
-        value = int(np.rint(slider.value))
         if not sync_slice:
             self.on_slice_change(
                 self._tab_id,
-                int(np.rint(self._slider_slice_x.value)),
-                int(np.rint(self._slider_slice_y.value)),
-                value,
+                self._slice_x.selected_value,
+                self._slice_y.selected_value,
+                self._slice_z.selected_value,
             )
-        cs = self._actor.cross_section
-        self._actor.display_cross_section(cs[0], cs[1], value)
+
+        if self._view_mode_toggler.selected_value[0] == self._view_modes[0]:
+            self._actor.display_cross_section(
+                self._slice_x.selected_value,
+                self._slice_y.selected_value,
+                self._slice_z.selected_value,
+            )
 
     def _show_cross_section(self):
+        """Show Cross Section view mode. Hide the Range sliders and labels.
+        """
         self.hide(
             self._range_x_label, self._range_x,
             self._range_y_label, self._range_y,
@@ -184,8 +221,11 @@ class PeaksTab(HorizonTab):
             self._slice_y_label, self._slice_y,
             self._slice_z_label, self._slice_z,
         )
+        self._change_slice(self._slice_x.obj, self._slice_x, sync_slice=True)
 
     def _show_range(self):
+        """Show Range view mode. Hide Cross Section sliders and labels.
+        """
         self.hide(
             self._slice_x_label, self._slice_x,
             self._slice_y_label, self._slice_y,
@@ -198,6 +238,7 @@ class PeaksTab(HorizonTab):
         )
 
     def _toggle_view_mode(self, radio):
+        self._view_mode_toggler.selected_value = radio.checked_labels
         if radio.checked_labels[0] == self._view_modes[0]:
             self._actor.display_cross_section(
                 self._actor.cross_section[0], self._actor.cross_section[1],
@@ -227,18 +268,30 @@ class PeaksTab(HorizonTab):
         z_slice: float
             z-value where the slicer should be placed
         """
-        if not self._slider_slice_x.value == x_slice:
-            self._slider_slice_x.value = x_slice
+        if not self._slice_x.obj.value == x_slice:
+            self._slice_x.obj.value = x_slice
 
-        if not self._slider_slice_y.value == y_slice:
-            self._slider_slice_y.value = y_slice
+        if not self._slice_y.obj.value == y_slice:
+            self._slice_y.obj.value = y_slice
 
-        if not self._slider_slice_z.value == z_slice:
-            self._slider_slice_z.value = z_slice
+        if not self._slice_z.obj.value == z_slice:
+            self._slice_z.obj.value = z_slice
 
     def build(self, tab_id, tab_ui):
+        """Build all the elements under the tab.
+
+        Parameters
+        ----------
+        tab_id : int
+            Id of the tab.
+        tab_ui : TabUI
+            FURY TabUI object for tabs panel.
+
+        Notes
+        -----
+        tab_ui will removed once every all tabs adapt new build architecture.
+        """
         self._tab_id = tab_id
-        # self._tab_ui = tab_ui
 
         x_pos = .02
         self._opacity_toggle.position = (x_pos, .85)
@@ -275,12 +328,31 @@ class PeaksTab(HorizonTab):
 
     @property
     def name(self):
+        """Name of the tab.
+
+        Returns
+        -------
+        str
+        """
         return self._name
 
     @property
     def actors(self):
+        """actors controlled by tab.
+
+        Returns
+        -------
+        list
+            List of actors.
+        """
         return [self._actor]
 
     @property
     def tab_id(self):
+        """Id of the tab. Reference for Tab Manager to identify the tab.
+
+        Returns
+        -------
+        int
+        """
         return self._tab_id
