@@ -57,7 +57,6 @@ def reconst_flow_core(flow):
                     out_dir=out_dir,
                     extract_pam_values=True,
                 )
-
             elif flow.get_short_name() == "csa":
                 reconst_flow.run(
                     data_path,
