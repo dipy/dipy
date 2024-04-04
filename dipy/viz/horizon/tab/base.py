@@ -199,9 +199,7 @@ class TabManager:
         *args : HorizonUIElement or FURY actors
             Elements to be hidden.
         """
-        self._remove_from_scene(
-            self._get_vtkActors(*args)
-        )
+        self._remove_from_scene(*self._get_vtkActors(*args))
 
     def _show_elements(self, *args):
         """Hide elements from the scene.
@@ -211,9 +209,7 @@ class TabManager:
         *args : HorizonUIElement or FURY actors
             Elements to be hidden.
         """
-        self._add_to_scene(
-            self._get_vtkActors(*args)
-        )
+        self._add_to_scene(*self._get_vtkActors(*args))
 
     def _get_vtkActors(self, *args):
         elements = []
