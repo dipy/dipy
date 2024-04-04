@@ -21,10 +21,10 @@ class PeaksTab(HorizonTab):
 
         self._tab_id = 0
 
-        self._opacity_toggle = build_checkbox(
+        self._actor_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
-            on_change=self._toggle_opacity)
+            on_change=self._toggle_actors)
 
         self._opacity_label, self._opacity = build_slider(
             initial_value=1.,
@@ -113,16 +113,15 @@ class PeaksTab(HorizonTab):
             self._change_range, selected_range=self._range_z)
         self._range_z.obj.on_change = self._change_range_z
 
-        self._view_mode_label = build_label(
-            text='View Mode', is_horizon_label=True)
+        self._view_mode_label = build_label(text='View Mode')
 
         self._view_modes = ['Cross section', 'Range']
         self._view_mode_toggler = build_radio_button(
             self._view_modes, [self._view_modes[0]],
             padding=1.5, on_change=self._toggle_view_mode)
 
-        self.register_elements(
-            self._opacity_label, self._opacity_toggle, self._opacity,
+        self._register_elements(
+            self._opacity_label, self._opacity, self._actor_toggle,
             self._slice_x_label, self._slice_x,
             self._slice_y_label, self._slice_y,
             self._slice_z_label, self._slice_z,
@@ -131,19 +130,6 @@ class PeaksTab(HorizonTab):
             self._range_z_label, self._range_z,
             self._view_mode_label, self._view_mode_toggler,
         )
-
-    def _toggle_opacity(self, checkbox):
-        """Toggle Opacity of the peaks actor.
-
-        Parameters
-        ----------
-        checkbox : Checkbox
-            FURY checkbox UI element.
-        """
-        if '' in checkbox.checked_labels:
-            self._opacity.obj.value = 1
-        else:
-            self._opacity.obj.value = 0
 
     def _change_opacity(self, slider):
         """Update opacity of the peaks actor by adjusting the slider to
@@ -254,6 +240,7 @@ class PeaksTab(HorizonTab):
     def on_tab_selected(self):
         """Trigger when tab becomes active.
         """
+        super().on_tab_selected()
         self._toggle_view_mode(self._view_mode_toggler.obj)
 
     def update_slices(self, x_slice, y_slice, z_slice):
@@ -277,24 +264,18 @@ class PeaksTab(HorizonTab):
         if not self._slice_z.obj.value == z_slice:
             self._slice_z.obj.value = z_slice
 
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id):
         """Build all the elements under the tab.
 
         Parameters
         ----------
         tab_id : int
             Id of the tab.
-        tab_ui : TabUI
-            FURY TabUI object for tabs panel.
-
-        Notes
-        -----
-        tab_ui will removed once every all tabs adapt new build architecture.
         """
         self._tab_id = tab_id
 
         x_pos = .02
-        self._opacity_toggle.position = (x_pos, .85)
+        self._actor_toggle.position = (x_pos, .85)
 
         x_pos = .04
         self._opacity_label.position = (x_pos, .85)
@@ -346,13 +327,3 @@ class PeaksTab(HorizonTab):
             List of actors.
         """
         return [self._actor]
-
-    @property
-    def tab_id(self):
-        """Id of the tab. Reference for Tab Manager to identify the tab.
-
-        Returns
-        -------
-        int
-        """
-        return self._tab_id
