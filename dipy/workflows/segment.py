@@ -70,7 +70,6 @@ class MedianOtsuFlow(Workflow):
                          format(fpath))
 
             data, affine, img = load_nifti(fpath, return_img=True)
-
             masked_volume, mask_volume = median_otsu(
                 data,
                 vol_idx=vol_idx,
