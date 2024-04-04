@@ -202,7 +202,7 @@ class TabManager:
         self._remove_from_scene(*self._get_vtkActors(*args))
 
     def _show_elements(self, *args):
-        """Hide elements from the scene.
+        """Show elements in the scene.
 
         Parameters
         ----------
