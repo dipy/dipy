@@ -1,7 +1,7 @@
-from itertools import repeat
 import multiprocessing as mp
-from os import path
 import tempfile
+from itertools import repeat
+from os import path
 
 import numpy as np
 import scipy.optimize as opt
@@ -671,7 +671,7 @@ def reshape_peaks_for_visualization(peaks):
     if isinstance(peaks, PeaksAndMetrics):
         peaks = peaks.peak_dirs
 
-    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype("float32")
+    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
 
 
 def peaks_from_positions(
@@ -741,3 +741,4 @@ def peaks_from_positions(
         peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]
 
     return peaks_arr
+
