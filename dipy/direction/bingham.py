@@ -30,30 +30,31 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
 
     Parameters
     ----------
-    odf: 1d ndarray
-        The odf function evaluated on the vertices of `sphere`
+    sf: 1d ndarray
+        The odf function - surface function (sf) - evaluated on the vertices 
+        of `sphere`.
     peak: ndarray (3, 1)
         The peak direction of the lobe to fit.
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions
     max_angle: float
-        The maximum angle in degrees of the neighbourhood around
+        The maximum angle in degrees of the neighbourhood around the
         peak to consider for fitting.
 
     Returns
     -------
     f0: float
-        Maximum amplitude of the distribution/peak.
+        Maximum amplitude of the ODF peak.
     k1: tuple of floats
-        Concentration parameter of major axis k1.
+        Concentration parameter of Bingham's major axis k1.
     k2: tuple of floats
-        Concentration parameter of minor axis k2.
+        Concentration parameter of Bingham's minor axis k2.
     mu0: ndarray (3,) of floats
-        Main axis of ODF peak.
+        Bingham's main axis.
     mu1: ndarray (3,) of floats
-        Major concentration axis.
+        Bingham's major concentration axis.
     mu2: ndarray (3,) of floats
-        Minor concentration axis.
+        Bingham's minor concentration axis.
     """
     # abs for twice the number of pts to fit
     dot_prod = np.abs(sphere.vertices.dot(peak))
@@ -159,20 +160,22 @@ def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
             crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
     # extract all maxima on the ODF
-    directions, values, _ = peak_directions(odf, sphere,
-                                            relative_peak_threshold=rel_th,
-                                            min_separation_angle=min_sep_angle)
+    dirs, vals, inds = peak_directions(odf, sphere,
+                                       relative_peak_threshold=rel_th,
+                                       min_separation_angle=min_sep_angle)
 
     # n becomes the new limit of peaks and sets a maximum of peaks in case
-    # the voxel has more than npeaks.
-    n = min(npeaks, values.shape[0])
+    # the ODF has more than npeaks.
+    n = min(npeaks, vals.shape[0])
 
     # Calculate dispersion on all and each of the peaks up to 'n'
-    if values.shape[0] != 0:
+    if vals.shape[0] != 0:
         fits = []
         for i in range(n):
-            fit = _bingham_fit_peak(odf, directions[i], sphere,
+            fit = _bingham_fit_peak(odf, dirs[i], sphere,
                                     max_search_angle)
+            
+            fit = tuple(list(fit) + list([dirs[i]]) + list([inds[i]]))
             fits.append(fit)
 
     return fits, n
@@ -245,14 +248,16 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
 
     Parameters
     ----------
-    bingham_params : ndarray (...., nl, 12)
+    bingham_params : ndarray (...., nl, 16)
         ndarray containing the model parameters of Binghams fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
             concentration parameters k1 and k2 (indexes 1 and 2);
-            elements of Bingham main direction (indexes 3-5);
-            elements of Bingham dispersion major axis (indexes 6-8);
-            and elements of Bingham dispersion minor axis (indexes 9-11).
+            elements of Bingham's main direction (indexes 3-5);
+            elements of Bingham's dispersion major axis (indexes 6-8);
+            elements of Bingham's dispersion minor axis (indexes 9-11);
+            peak directions (indexes 12-14);
+            peak indices  (index 15).
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
     mask: ndarray
@@ -298,14 +303,16 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
 
     Parameters
     ----------
-    bingham_params : ndarray (...., nl, 12)
-        ndarray containing the model parameters of Binghams fitted to ODFs in
+    bingham_params : ndarray (...., nl, 16)
+        ndarray containing the model parameters of Bingham's fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            and elements of Bingham's dispersion minor axis (indexes 9-11).
+            elements of Bingham's dispersion minor axis (indexes 9-11);
+            peak directions (indexes 12-14);
+            peak indices  (index 15).
     mask: ndarray
         Map marking the coordinates in the data that should be analyzed
     n_thetas: unsigned int, optional
@@ -320,7 +327,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
 
     Notes
     -----
-    Fiber density (FD) is given by the integral of the Bingham function [1]_.
+    Fiber density (fd) is given by the integral of the Bingham function [1]_.
 
     References
     ----------
@@ -403,7 +410,7 @@ def bingham_fiber_spread(f0, fd):
 def k2odi(k):
     r"""
     Convert the Bingham/Watson concentration parameter k to the orientation
-    dispersion index (ODI)
+    dispersion index (ODI).
 
     Parameters
     ----------
@@ -442,7 +449,7 @@ def k2odi(k):
 def odi2k(odi):
     r"""
     Convert the orientation dispersion index (ODI) to the Bingham/Watson
-    concentration parameter k 
+    concentration parameter k.
 
     Parameters
     ----------
@@ -480,7 +487,7 @@ def odi2k(odi):
 
 def _convert_bingham_pars(fits, npeaks):
     r"""
-    Convert tuple output of Bingham fit to ndarray
+    Convert list of tuples output of the Bingham fit to ndarray.
 
     Parameters
     ----------
@@ -493,21 +500,23 @@ def _convert_bingham_pars(fits, npeaks):
             elements of Bingham's dispersion major axis (miu1);
             and elements of Bingham's dispersion minor axis (miu2).
     npeaks: int
-        Maximum number of fitted Bingham functions
+        Maximum number of fitted Bingham functions, by number of peaks.
 
     Returns
     -------
-    bingham_params : ndarray (nl, 12)
+    bingham_params : ndarray (nl, 16)
         ndarray containing the model parameters of Bingham fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            and elements of Bingham's dispersion minor axis (indexes 9-11).
+            elements of Bingham's dispersion minor axis (indexes 9-11),
+            peak directions (indexes 12-14);
+            peak indices  (index 15).
     """
     n = len(fits)
-    bpars = np.zeros((npeaks, 12))
+    bpars = np.zeros((npeaks, 16))
     for ln in range(n):
         bpars[ln, 0] = fits[ln][0]
         bpars[ln, 1] = fits[ln][1]
@@ -515,20 +524,22 @@ def _convert_bingham_pars(fits, npeaks):
         bpars[ln, 3:6] = fits[ln][3]
         bpars[ln, 6:9] = fits[ln][4]
         bpars[ln, 9:12] = fits[ln][5]
+        bpars[ln, 12:15] = fits[ln][6]
+        bpars[ln, 15] = fits[ln][7]
     return bpars
 
 
 def global_voxel_metric(bmetric, bfd):
     r"""
     Compute global scalar maps for metrics of Bingham functions
-    fitted to multiple ODF lobes
+    fitted to multiple ODF lobes.
 
     Parameters
     ----------
     bmetric: ndarray(..., nl)
-        An arbitrary metric with values for nl ODF lobes
+        An arbitrary metric with values for nl ODF lobes.
     bfd: ndarray(..., nl)
-        Bingham fiber density estimates for the nl ODF lobes
+        Bingham's fiber density estimates for the nl ODF lobes
 
     Returns
     -------
@@ -549,23 +560,28 @@ class BinghamMetrics:
     Class for Bingham Metrics."""
 
     def __init__(self, model_params):
-        """ Initialization of the Bingham Metrics Class
+        """ Initialization of the Bingham Metrics Class.
 
         Parameters
         ----------
-        model_params : ndarray (..., nl, 12)
+        model_params : ndarray (..., nl, 16)
             ndarray containing Bingham's model parameters fitted to ODFs
             in the following order:
             Maximum value of the Bingham function (f0, index 0);
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            and elements of Bingham's dispersion minor axis (indexes 9-11).
+            elements of Bingham's dispersion minor axis (indexes 9-11);
+            peak directions (indexes 12-14);
+            peak indices  (index 15).
         """
         self.model_params = model_params
 
-        self.peak_dirs = model_params[..., 3:6]
+        self.bingham_peak_dirs = model_params[..., 3:6]
+        self.peak_dirs = model_params[..., 12:15]
         self.peak_values = model_params[..., 0]
+        self.peak_indices = model_params[..., 15]
+        
 
     @auto_attr
     def afd(self):
@@ -584,7 +600,7 @@ class BinghamMetrics:
 
     @auto_attr
     def kappa_total(self):
-        """ Overall concentration parameters for each ODF lobe.
+        """ Overall concentration parameters for an ODF peak.
 
         Note:
         ----
@@ -616,8 +632,8 @@ class BinghamMetrics:
 
     @auto_attr
     def odi_total(self):
-        """ Overall Orientation Dispersion Index (ODI) computed for each
-        ODF lobe from the overall concentration parameter (k_total).
+        """ Overall Orientation Dispersion Index (ODI) computed for am
+        ODF peak from the overall concentration parameter (k_total).
         Defined by equation 20 in [4]_.
             
         References
@@ -655,8 +671,8 @@ class BinghamMetrics:
         return global_voxel_metric(self.odi_total, self.fd)
 
     @auto_attr
-    def tfd(self):
-        """ Total fiber density (sum of fd estimates of all ODF lobes)."""
+    def gfd(self):
+        """ Global fiber density (sum of fd estimates of all ODF lobes)."""
         return np.sum(self.fd, axis=-1)
 
     @auto_attr
@@ -691,7 +707,7 @@ class BinghamMetrics:
         ODF : ndarray (..., n_directions)
             The value of the odf on each point of `sphere`.
         """
-        mask = self.tfd > 0
+        mask = self.gfd > 0
         return bingham_multi_voxel_odf(self.model_params, sphere, mask=mask)
 
 
@@ -730,8 +746,8 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
         mask = np.ones(shape)
 
     # Bingham parameters saved in an ndarray with shape:
-    # (Nx, Ny, Nz, n_max_peak, 12).
-    bpars = np.zeros(shape + (npeaks,) + (12,))
+    # (Nx, Ny, Nz, n_max_peak, 16).
+    bpars = np.zeros(shape + (npeaks,) + (16,))
 
     for idx in ndindex(shape):
         if not mask[idx]:
@@ -784,8 +800,8 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
         mask = np.ones(shape)
 
     # Bingham parameters saved in an ndarray with shape:
-    # (Nx, Ny, Nz, n_max_peak, 12).
-    bpars = np.zeros(shape + (npeaks,) + (12,))
+    # (Nx, Ny, Nz, n_max_peak, 16).
+    bpars = np.zeros(shape + (npeaks,) + (16,))
 
     for idx in ndindex(shape):
         if not mask[idx]:
