@@ -489,6 +489,17 @@ class ApplyTransformFlow(Workflow):
 
             # Doing a sanity check for validating the dimensions of the input
             # images.
+            if static_image.ndim > moving_image.ndim:
+                # There is an extra dimension in the static image, e.g. DWI
+                # registered onto using a T1, so use the shape of the
+                # first volume.
+                static_image = static_image[..., 0]
+            if static_image.ndim < moving_image.ndim:
+                # There is an extra dimension in the moving image, e.g. DWI
+                # registered to a T1, so repeat the T1 so as to register
+                # each DWI volume to a copy of the T1.
+                static_image = np.repeat(static_image[..., None],
+                                         moving_image.shape[-1], axis=-1)
             check_dimensions(static_image, moving_image)
 
             if transform_type.lower() == 'affine':
