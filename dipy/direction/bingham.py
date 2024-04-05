@@ -291,7 +291,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            this_odf += bingham_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
+            this_odf += bingham_to_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
         odf[idx] = this_odf
 
     return odf
@@ -368,7 +368,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            bingham_eval = bingham_odf(f0, k1, k2, mu1, mu2, u)
+            bingham_eval = bingham_to_odf(f0, k1, k2, mu1, mu2, u)
             fd[idx + (li,)] = np.sum(bingham_eval * sin_theta * dtheta * dphi)
 
     return fd
@@ -653,21 +653,22 @@ class BinghamMetrics:
     @auto_attr
     def godi_1(self):
         """ Global Orientation Dispersion Index 1 (weighted average of odi1
-        across all lobes where the weights are the corresponding fd estimates).
+        across all lobes where the weights are each lobe's fd estimate).
         """
         return global_voxel_metric(self.odi_1, self.fd)
 
     @auto_attr
     def godi_2(self):
-        """ Global Orientation Dispersion Index 2 (weighted averaged of odi2
-        across all lobes where the weights are the corresponding fd estimates).
+        """ Global Orientation Dispersion Index 2 (weighted average of odi2
+        across all lobes where the weights are each lobe's fd estimate).
         """
         return global_voxel_metric(self.odi_2, self.fd)
 
     @auto_attr
     def godi_total(self):
-        """ Global Total Orientation Dispersion Index (weighted averaged of
-        odf_total across all lobes which weights are the fd estimates)."""
+        """ Global Total Orientation Dispersion Index (weighted average of
+        odf_total across all lobes where the weights are each lobe's
+        fd estimate)."""
         return global_voxel_metric(self.odi_total, self.fd)
 
     @auto_attr
@@ -692,6 +693,13 @@ class BinghamMetrics:
                100:176-91.
         """
         return bingham_fiber_spread(self.afd, self.fd)
+    
+    @auto_attr
+    def gfs(self):
+        """ Global fiber spread (weighted average of
+        odf_total across all lobes where the weights are each lobe's
+        fd estimate)."""
+        return global_voxel_metric(self.fs, self.fd)
 
     def odf(self, sphere):
         """ Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
