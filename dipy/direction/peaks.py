@@ -604,6 +604,9 @@ def peaks_from_positions(positions, odfs, sphere, relative_peak_threshold=.5,
     -------
     peaks_arr : array (N, npeaks, 3)
     """
+    if positions.dtype is not np.float64:
+        positions = positions.astype(np.float64)
+
     peaks_arr = np.zeros((len(positions), npeaks, 3))
 
     for i, s in enumerate(positions):
