@@ -119,8 +119,8 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     return f0, k1, k2, mu0, mu1, mu2
 
 
-def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
-                    min_sep_angle=60, rel_th=0.1):
+def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
+                   min_sep_angle=60, rel_th=0.1):
     r"""
     Fit a Bingham distribution onto each principal ODF lobe.
 
@@ -181,7 +181,7 @@ def bingham_fit_odf(odf, sphere, npeaks=5, max_search_angle=6,
     return fits, n
 
 
-def bingham_odf(f0, k1, k2, major_axis, minor_axis, vertices):
+def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     r"""
     Sample a Bingham function on the directions described by `vertices`.
 
@@ -753,7 +753,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
         if not mask[idx]:
             continue
 
-        [fits, npeaks_final] = bingham_fit_odf(
+        [fits, npeaks_final] = odf_to_bingham(
             odf[idx], sphere, npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
@@ -809,7 +809,7 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
 
         odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
         
-        [fits, npeaks_final] = bingham_fit_odf(
+        [fits, npeaks_final] = odf_to_bingham(
             odf, sphere, npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
