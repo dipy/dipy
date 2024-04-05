@@ -246,7 +246,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
 
     Parameters
     ----------
-    bingham_params : ndarray (...., nl, 16)
+    bingham_params : ndarray (...., nl, 12)
         ndarray containing the model parameters of Binghams fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
@@ -299,7 +299,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
 
     Parameters
     ----------
-    bingham_params : ndarray (...., nl, 16)
+    bingham_params : ndarray (...., nl, 12)
         ndarray containing the model parameters of Bingham's fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
@@ -498,7 +498,7 @@ def _convert_bingham_pars(fits, npeaks):
 
     Returns
     -------
-    bingham_params : ndarray (nl, 16)
+    bingham_params : ndarray (nl, 12)
         ndarray containing the model parameters of Bingham fitted to ODFs in
         the following order:
             Maximum value of the Bingham function (f0, index 0);
@@ -508,7 +508,7 @@ def _convert_bingham_pars(fits, npeaks):
             elements of Bingham's dispersion minor axis (indexes 9-11).
     """
     n = len(fits)
-    bpars = np.zeros((npeaks, 16))
+    bpars = np.zeros((npeaks, 12))
     for ln in range(n):
         bpars[ln, 0] = fits[ln][0]
         bpars[ln, 1] = fits[ln][1]
@@ -554,7 +554,7 @@ class BinghamMetrics:
 
         Parameters
         ----------
-        model_params : ndarray (..., nl, 16)
+        model_params : ndarray (..., nl, 12)
             ndarray containing Bingham's model parameters fitted to ODFs
             in the following order:
             Maximum value of the Bingham function (f0, index 0);
@@ -740,8 +740,8 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
         mask = np.ones(shape)
 
     # Bingham parameters saved in an ndarray with shape:
-    # (Nx, Ny, Nz, n_max_peak, 16).
-    bpars = np.zeros(shape + (npeaks,) + (16,))
+    # (Nx, Ny, Nz, n_max_peak, 12).
+    bpars = np.zeros(shape + (npeaks,) + (12,))
 
     for idx in ndindex(shape):
         if not mask[idx]:
@@ -794,8 +794,8 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
         mask = np.ones(shape)
 
     # Bingham parameters saved in an ndarray with shape:
-    # (Nx, Ny, Nz, n_max_peak, 16).
-    bpars = np.zeros(shape + (npeaks,) + (16,))
+    # (Nx, Ny, Nz, n_max_peak, 12).
+    bpars = np.zeros(shape + (npeaks,) + (12,))
 
     for idx in ndindex(shape):
         if not mask[idx]:
