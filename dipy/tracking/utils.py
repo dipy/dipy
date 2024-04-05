@@ -1070,9 +1070,12 @@ def seeds_directions_pairs(positions, peaks, max_cross=-1):
     directions : array (K, 3)
     """
 
-    if (not positions.shape[0] == peaks.shape[0]
-        or not positions.shape[1] == 3
-        or not peaks.shape[2] == 3):
+    if (not len(positions.shape) == 2
+            or not len(peaks.shape) == 3
+            or not positions.shape[0] == peaks.shape[0]
+            or not positions.shape[1] == 3
+            or not peaks.shape[2] == 3
+            or not peaks.shape[1] > 0):
         raise ValueError("The array shapes of the positions and peaks should"
                          " be (N,3) and (N,M,3), respectively.")
 
