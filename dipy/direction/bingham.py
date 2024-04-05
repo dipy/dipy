@@ -682,8 +682,8 @@ class BinghamMetrics:
     
     @auto_attr
     def gfs(self):
-        """ Global fiber spread (weighted average of
-        odf_total across all lobes where the weights are each lobe's
+        """ Global fiber spread (weighted average of fiber spread across all
+        lobes where the weights are each lobe's
         fd estimate)."""
         return global_voxel_metric(self.fs, self.fd)
 
