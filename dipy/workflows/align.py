@@ -364,6 +364,12 @@ class ImageRegistrationFlow(Workflow):
                 "rigid_isoscaling": ["center_of_mass", "rigid_isoscaling"],
                 "rigid_scaling": ["center_of_mass", "rigid_scaling"],
                 "affine": ["center_of_mass", "affine"]}
+        
+        if static_vol_idx is not None:
+            static_vol_idx = [int(idx) for idx in static_vol_idx]
+            
+        if moving_vol_idx is not None:
+            moving_vol_idx = [int(idx) for idx in moving_vol_idx]
 
         pipeline = pipeline_opt.get(transform)
 
@@ -381,9 +387,9 @@ class ImageRegistrationFlow(Workflow):
             moving, moving_grid2world = load_nifti(mov_img)
 
             if static_vol_idx is not None:
-                static = static[..., [int(idx) for idx in static_vol_idx]].mean(axis=-1)
+                static = static[..., static_vol_idx].mean(axis=-1)
             if moving_vol_idx is not None:
-                moving = moving[..., [int(idx) for idx in moving_vol_idx]].mean(axis=-1)
+                moving = moving[..., moving_vol_idx].mean(axis=-1)
 
             check_dimensions(static, moving)
 
