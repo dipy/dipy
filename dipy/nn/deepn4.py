@@ -174,14 +174,14 @@ class DeepN4:
         self.model = UNet3D(input_shape=(128, 128, 128, 1))
 
     def fetch_default_weights(self):
-        r"""
+        """
         Load the model pre-training weights to use for the fitting.
         """
         fetch_model_weights_path = get_fnames(name="deepn4_default_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        r"""
+        """
         Load the custom pre-training weights to use for the fitting.
         get_fnames('deepn4_default_weights').
 
@@ -199,7 +199,7 @@ class DeepN4:
             ) from e
 
     def __predict(self, x_test):
-        r"""
+        """
         Internal prediction function
         Predict bias field from input T1 signal
 
@@ -274,7 +274,7 @@ class DeepN4:
             in_max,
         )
 
-    def predict(self, img, img_affine):
+    def predict(self, img, img_affine, *, voxsize=(1, 1, 1)):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -292,7 +292,9 @@ class DeepN4:
 
         """
         # Preprocess input data (resample, normalize, and pad)
-        resampled_T1, affine2, ori_shape = transform_img(img, img_affine)
+        resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
+            transform_img(img, img_affine, voxsize=voxsize)
+        )
         (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
             self.load_resample(resampled_T1)
         )
@@ -310,7 +312,15 @@ class DeepN4:
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
         upsample_final_field = recover_img(
-            final_fields, affine2, ori_shape, np.shape(final_fields)
+            final_fields,
+            inv_affine,
+            mid_shape,
+            img.shape,
+            offset_array,
+            voxsize,
+            scale,
+            crop_vs,
+            pad_vs,
         )
 
         # Correct the image
