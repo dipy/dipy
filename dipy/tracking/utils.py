@@ -334,7 +334,7 @@ def subsegment(streamlines, max_segment_length):
             else:
                 # this should never happen because ns should be a positive
                 # int
-                assert(ns >= 0)
+                assert (ns >= 0)
         yield output_sl
 
 
@@ -1056,7 +1056,7 @@ def seeds_directions_pairs(positions, peaks, max_cross=-1):
 
     Parameters
     ----------
-    position : array, (N, 3)
+    positions : array, (N, 3)
         Voxel coordinates of the N positions.
     peaks : array (N, M, 3)
         Peaks at each position
@@ -1069,14 +1069,21 @@ def seeds_directions_pairs(positions, peaks, max_cross=-1):
     seeds : array (K, 3)
     directions : array (K, 3)
     """
+
+    if (not positions.shape[0] == peaks.shape[0]
+        or not positions.shape[1] == 3
+        or not peaks.shape[2] == 3):
+        raise ValueError("The array shapes of the positions and peaks should"
+                         " be (N,3) and (N,M,3), respectively.")
+
     seeds = []
     directions = []
 
     for i, s in enumerate(positions):
-        voxel_dirs_norm = np.linalg.norm(peaks[i, :max_cross, :], axis=1)
+        voxel_dirs_norm = np.linalg.norm(peaks[i, :, :], axis=1)
         voxel_dirs = peaks[i, voxel_dirs_norm > 0, :] \
             / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
-        for d in voxel_dirs:
+        for d in voxel_dirs[:max_cross, :]:
             seeds.append(s)
             directions.append(d)
 
