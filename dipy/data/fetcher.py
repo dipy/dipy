@@ -2398,7 +2398,83 @@ def fetch_hcp(subjects,
     return data_files, pjoin(my_path, study)
 
 
-def fetch_hbn(subjects, path=None):
+def _hbn_downloader(my_path, derivative, subjects, client):
+    base_dir = op.join(my_path, "HBN", 'derivatives', derivative)
+
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir, exist_ok=True)
+
+    data_files = {}
+
+    for subject in subjects:
+        initial_query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/sub-{subject}/")
+        ses = initial_query.get('Contents', None)
+        if ses is None:
+            raise ValueError(f"Could not find data for subject {subject}")
+        else:
+            ses = ses[0]["Key"].split('/')[5]
+
+        query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/{derivative}/sub-{subject}/")  # noqa
+        query_content = query.get('Contents', None)
+        if query_content is None:
+            raise ValueError(
+                f"Could not find derivatives data for subject {subject}")
+        file_list = [kk["Key"] for kk in query["Contents"]]
+        sub_dir = op.join(base_dir, f'sub-{subject}')
+        ses_dir = op.join(sub_dir, ses)
+        if derivative == "qsiprep":
+            if not os.path.exists(sub_dir):
+                os.makedirs(os.path.join(sub_dir, 'anat'), exist_ok=True)
+                os.makedirs(os.path.join(sub_dir, 'figures'), exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
+        if derivative == "afq":
+            if not os.path.exists(sub_dir):
+                os.makedirs(os.path.join(ses_dir, 'bundles'), exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'clean_bundles'),
+                            exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'ROIs'), exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'tract_profile_plots'),
+                            exist_ok=True)
+                os.makedirs(os.path.join(ses_dir, 'viz_bundles'),
+                            exist_ok=True)
+
+        for remote in file_list:
+            full = remote.split(
+                "Projects")[-1][1:].replace("/BIDS_curated", "")
+            local = op.join(my_path, full)
+            data_files[local] = remote
+
+    download_files = {}
+    for k in data_files.keys():
+        if not op.exists(k):
+            download_files[k] = data_files[k]
+
+    if len(download_files.keys()):
+        with tqdm(total=len(download_files.keys())) as pbar:
+            for k in download_files.keys():
+                pbar.set_description_str(f"Downloading {k}")
+                client.download_file("fcp-indi", download_files[k], k)
+                pbar.update()
+
+    # Create the BIDS dataset description file text
+    to_bids_description(op.join(my_path, "HBN"),
+                        **{"Name": "HBN",
+                           "Subjects": subjects})
+
+    # Create the BIDS derivatives description file text
+    to_bids_description(base_dir,
+                        **{"Name": "HBN",
+                           "PipelineDescription": {'Name': 'qsiprep'}})
+
+    return data_files
+
+
+def fetch_hbn(subjects, path=None, include_afq=False):
     """
     Fetch preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
 
@@ -2410,6 +2486,9 @@ def fetch_hbn(subjects, path=None):
 
     path : string, optional
         Path to save files into. Default: '~/.dipy'
+
+    include_afq : bool, optional
+        Whether to include pyAFQ derivatives. Default: False
 
     Returns
     -------
@@ -2446,68 +2525,14 @@ def fetch_hbn(subjects, path=None):
     else:
         my_path = path
 
-    base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir, exist_ok=True)
-
-    data_files = {}
-
     # If user provided incorrect input, these are typical failures that
     # are easy to recover from:
     if isinstance(subjects, (int, str)):
         subjects = [subjects]
 
-    for subject in subjects:
-        initial_query = client.list_objects(
-            Bucket="fcp-indi",
-            Prefix=f"data/Projects/HBN/BIDS_curated/sub-{subject}/")
-        ses = initial_query.get('Contents', None)
-        if ses is None:
-            raise ValueError(f"Could not find data for subject {subject}")
-        else:
-            ses = ses[0]["Key"].split('/')[5]
+    data_files = _hbn_downloader(my_path, "qsiprep", subjects, client)
 
-        query = client.list_objects(
-            Bucket="fcp-indi",
-            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/")  # noqa
-        query_content = query.get('Contents', None)
-        if query_content is None:
-            raise ValueError(
-                f"Could not find derivatives data for subject {subject}")
-        file_list = [kk["Key"] for kk in query["Contents"]]
-        sub_dir = op.join(base_dir, f'sub-{subject}')
-        ses_dir = op.join(sub_dir, ses)
-        if not os.path.exists(sub_dir):
-            os.makedirs(os.path.join(sub_dir, 'anat'), exist_ok=True)
-            os.makedirs(os.path.join(sub_dir, 'figures'), exist_ok=True)
-            os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
-            os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
-        for remote in file_list:
-            full = remote.split(
-                "Projects")[-1][1:].replace("/BIDS_curated", "")
-            local = op.join(my_path, full)
-            data_files[local] = remote
-
-    download_files = {}
-    for k in data_files.keys():
-        if not op.exists(k):
-            download_files[k] = data_files[k]
-
-    if len(download_files.keys()):
-        with tqdm(total=len(download_files.keys())) as pbar:
-            for k in download_files.keys():
-                pbar.set_description_str(f"Downloading {k}")
-                client.download_file("fcp-indi", download_files[k], k)
-                pbar.update()
-
-    # Create the BIDS dataset description file text
-    to_bids_description(op.join(my_path, "HBN"),
-                        **{"Name": "HBN",
-                           "Subjects": subjects})
-
-    # Create the BIDS derivatives description file text
-    to_bids_description(base_dir,
-                        **{"Name": "HBN",
-                           "PipelineDescription": {'Name': 'qsiprep'}})
+    if include_afq:
+        data_files.update(_hbn_downloader(my_path, "afq", subjects, client))
 
     return data_files, pjoin(my_path, "HBN")
