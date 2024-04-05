@@ -7,6 +7,7 @@ from dipy.testing import check_for_warnings
 from dipy.utils.optpkg import optional_package
 from dipy.testing.decorators import use_xvfb
 from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
+                                       build_radio_button,
                                        build_slider, build_switcher)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
@@ -131,6 +132,27 @@ def test_build_checkbox():
         npt.assert_equal(checkbox, None)
         check_for_warnings(l_warns, 'At least one label needs to be to create'
                            + ' checkboxes')
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_build_radio():
+    radio = build_radio_button(['Hello', 'Hi'], ['Hello'])
+
+    npt.assert_equal(len(radio.obj.checked_labels), 1)
+    npt.assert_equal(len(radio.obj.labels), 2)
+    npt.assert_equal(radio.selected_value, ['Hello'])
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        radio = build_radio_button()
+        npt.assert_equal(radio, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' radio buttons')
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        radio = build_radio_button([])
+        npt.assert_equal(radio, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' radio buttons')
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

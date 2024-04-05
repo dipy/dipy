@@ -496,7 +496,7 @@ def disperse_charges(hemi, iters, const=.2):
     return HemiSphere(xyz=charges), potential
 
 
-def fibonacci_sphere(n_points, randomize=True):
+def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
     """
     Generate points on the surface of a sphere using Fibonacci Spiral.
 
@@ -504,8 +504,13 @@ def fibonacci_sphere(n_points, randomize=True):
     ----------
     n_points : int
         The number of points to generate on the sphere surface.
+    hemisphere : bool, optional
+        If True, generate points only on the upper hemisphere.
+        Default is False.
     randomize : bool, optional
         If True, randomize the starting point on the sphere. Default is True.
+    rng : np.random.Generator, optional
+        If None creates random generator in function.
 
     Returns
     -------
@@ -520,14 +525,19 @@ def fibonacci_sphere(n_points, randomize=True):
 
     random_shift = 0
     if randomize:
-        random_generator = np.random.default_rng()
+        random_generator = rng or np.random.default_rng()
         random_shift = random_generator.integers(0, n_points)
 
     indices = np.arange(n_points)
-    offset = 2.0 / n_points
-    increment = np.pi * (3. - np.sqrt(5.))
 
-    y = ((indices * offset) - 1) + (offset / 2)
+    increment = np.pi * (3. - np.sqrt(5.))
+    if not hemisphere:
+        offset = 2.0 / n_points
+        y = ((indices * offset) - 1) + (offset / 2)
+    else:
+        offset = 1.0 / n_points
+        y = ((indices * offset)) + (offset / 2)
+
     r = np.sqrt(1 - y**2)
     phi = ((indices + random_shift) % n_points) * increment
 
@@ -535,6 +545,9 @@ def fibonacci_sphere(n_points, randomize=True):
     z = np.sin(phi) * r
 
     points = np.column_stack((x, y, z))
+    if n_points < 30 and hemisphere:
+        points_updated = disperse_charges_alt(points, 1000)
+        return points_updated
     return points
 
 
