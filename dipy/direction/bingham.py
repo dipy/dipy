@@ -174,8 +174,6 @@ def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
         for i in range(n):
             fit = _bingham_fit_peak(odf, dirs[i], sphere,
                                     max_search_angle)
-            
-            fit = tuple(list(fit) + list([dirs[i]]) + list([inds[i]]))
             fits.append(fit)
 
     return fits, n
@@ -255,9 +253,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11);
-            peak directions (indexes 12-14);
-            peak indices  (index 15).
+            elements of Bingham's dispersion minor axis (indexes 9-11).
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
     mask: ndarray
@@ -310,9 +306,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11);
-            peak directions (indexes 12-14);
-            peak indices  (index 15).
+            elements of Bingham's dispersion minor axis (indexes 9-11).
     mask: ndarray
         Map marking the coordinates in the data that should be analyzed
     n_thetas: unsigned int, optional
@@ -511,9 +505,7 @@ def _convert_bingham_pars(fits, npeaks):
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11),
-            peak directions (indexes 12-14);
-            peak indices  (index 15).
+            elements of Bingham's dispersion minor axis (indexes 9-11).
     """
     n = len(fits)
     bpars = np.zeros((npeaks, 16))
@@ -524,8 +516,6 @@ def _convert_bingham_pars(fits, npeaks):
         bpars[ln, 3:6] = fits[ln][3]
         bpars[ln, 6:9] = fits[ln][4]
         bpars[ln, 9:12] = fits[ln][5]
-        bpars[ln, 12:15] = fits[ln][6]
-        bpars[ln, 15] = fits[ln][7]
     return bpars
 
 
@@ -571,16 +561,12 @@ class BinghamMetrics:
             concentration parameters k1 and k2 (indexes 1 and 2);
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11);
-            peak directions (indexes 12-14);
-            peak indices  (index 15).
+            elements of Bingham's dispersion minor axis (indexes 9-11).
         """
         self.model_params = model_params
 
-        self.bingham_peak_dirs = model_params[..., 3:6]
-        self.peak_dirs = model_params[..., 12:15]
+        self.peak_dirs = model_params[..., 3:6]
         self.peak_values = model_params[..., 0]
-        self.peak_indices = model_params[..., 15]
         
 
     @auto_attr
