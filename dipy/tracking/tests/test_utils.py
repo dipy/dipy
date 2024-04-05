@@ -9,24 +9,13 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import metrics
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.streamline import transform_streamlines
-from dipy.tracking.utils import (
-    _min_at,
-    connectivity_matrix,
-    density_map,
-    length,
-    max_angle_from_curvature,
-    min_radius_curvature_from_angle,
-    ndbincount,
-    near_roi,
-    path_length,
-    random_seeds_from_mask,
-    reduce_labels,
-    reduce_rois,
-    seeds_from_mask,
-    target,
-    target_line_based,
-    unique_rows,
-)
+from dipy.tracking.utils import (_min_at, connectivity_matrix, density_map,
+                                 length, max_angle_from_curvature,
+                                 min_radius_curvature_from_angle, ndbincount,
+                                 near_roi, path_length, random_seeds_from_mask,
+                                 reduce_labels, reduce_rois,
+                                 seeds_directions_pairs, seeds_from_mask,
+                                 target, target_line_based, unique_rows)
 from dipy.tracking.vox2track import streamline_mapping
 
 
@@ -713,3 +702,28 @@ def test_curvature_angle():
     with pytest.warns(UserWarning):
         npt.assert_equal(min_radius_curvature_from_angle(0, 1),
                          min_radius_curvature_from_angle(np.pi/2, 1))
+
+
+def test_seeds_directions_pairs():
+    positions = np.random.random((10, 3))
+    peaks = np.random.random((10, 5, 3))
+
+    # test various max_cross value
+    for i in range(-1, 7):
+        seeds, directions = seeds_directions_pairs(
+            positions, peaks, max_cross=i)
+        npt.assert_equal(seeds.shape, directions.shape)
+
+    # test it raise and error if the input array shapes don't match
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions[:, :2], peaks)
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions[:5, :], peaks)
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions, peaks[:, :, :2])
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions, peaks.flatten())
