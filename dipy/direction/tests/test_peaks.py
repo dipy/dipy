@@ -639,8 +639,6 @@ def test_peaks_shm_coeff():
     data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
                            fractions=[50, 50], snr=SNR)
 
-
-
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
@@ -695,9 +693,9 @@ def test_reshape_peaks_for_visualization(rng):
 
 def test_peaks_from_positions():
 
-    thresh=.5
-    min_angle=25
-    npeaks=5
+    thresh = .5
+    min_angle = 25
+    npeaks = 5
 
     _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -708,10 +706,10 @@ def test_peaks_from_positions():
     voxels = []
     for i in range(27):
         v, _ = multi_tensor(gtab, mevals, S0=100,
-                            angles=[(0, 0), (randint(0,90), randint(0,90))],
+                            angles=[(0, 0), (randint(0, 90), randint(0, 90))],
                             fractions=[50, 50], snr=10)
         voxels.append(v)
-    data = np.array(voxels).reshape((3,3,3,-1))
+    data = np.array(voxels).reshape((3, 3, 3, -1))
 
     pam = peaks_from_model(model, data, default_sphere, return_odf=True,
                            return_sh=False, legacy=False, npeaks=npeaks,
@@ -719,7 +717,7 @@ def test_peaks_from_positions():
                            min_separation_angle=min_angle)
 
     # test the peaks at each voxel
-    positions = np.array(list(product(range(3),range(3),range(3))))
+    positions = np.array(list(product(range(3), range(3), range(3))))
     peaks = peaks_from_positions(positions, pam.odf, default_sphere,
                                  relative_peak_threshold=thresh,
                                  min_separation_angle=min_angle,
@@ -727,10 +725,10 @@ def test_peaks_from_positions():
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
-
     # test the peaks extraction at the mid point between 2 voxels
-    odfs = np.array([pam.odf[0,0,0],pam.odf[0,0,0]]).reshape((2,1,1,-1))
-    positions = np.array([[0.,0,0],[0.5,0,0], [1.,0,0]])
+    odfs = [pam.odf[0, 0, 0], pam.odf[0, 0, 0]]
+    odfs = np.array(odfs).reshape((2, 1, 1, -1))
+    positions = np.array([[0., 0, 0], [0.5, 0, 0], [1., 0, 0]])
     peaks = peaks_from_positions(positions, odfs, default_sphere,
                                  relative_peak_threshold=thresh,
                                  min_separation_angle=min_angle,
