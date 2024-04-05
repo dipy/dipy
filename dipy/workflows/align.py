@@ -263,6 +263,7 @@ class ImageRegistrationFlow(Workflow):
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=(10000, 1000, 100), sigmas=(3.0, 1.0, 0.0),
             factors=(4, 2, 1), progressive=True, save_metric=False,
+            static_vol_idx=None, moving_vol_idx=None,
             out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt'):
         """
@@ -310,6 +311,18 @@ class ImageRegistrationFlow(Workflow):
         save_metric : boolean, optional
             If true, quality assessment metric are saved in
             'quality_metric.txt'.
+
+        static_vol_idx : variable int, optional
+            1D array representing indices of ``axis=-1`` of a 4D
+            `static` input volume. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
+
+        moving_vol_idx : variable int, optional
+            1D array representing indices of ``axis=-1`` of a 4D
+            `moving` input volume. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
@@ -366,6 +379,11 @@ class ImageRegistrationFlow(Workflow):
             # Load the data from the input files and store into objects.
             static, static_grid2world = load_nifti(static_img)
             moving, moving_grid2world = load_nifti(mov_img)
+
+            if static_vol_idx is not None:
+                static = static[..., [int(idx) for idx in static_vol_idx]].mean(axis=-1)
+            if moving_vol_idx is not None:
+                moving = moving[..., [int(idx) for idx in moving_vol_idx]].mean(axis=-1)
 
             check_dimensions(static, moving)
 
