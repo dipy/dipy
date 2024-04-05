@@ -364,10 +364,10 @@ class ImageRegistrationFlow(Workflow):
                 "rigid_isoscaling": ["center_of_mass", "rigid_isoscaling"],
                 "rigid_scaling": ["center_of_mass", "rigid_scaling"],
                 "affine": ["center_of_mass", "affine"]}
-        
+
         if static_vol_idx is not None:
             static_vol_idx = [int(idx) for idx in static_vol_idx]
-            
+
         if moving_vol_idx is not None:
             moving_vol_idx = [int(idx) for idx in moving_vol_idx]
 
