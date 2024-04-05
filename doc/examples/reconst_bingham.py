@@ -45,9 +45,10 @@ print('The number of directions on the sphere is {}'.format(nd))
 # Step 1. ODF estimation
 # =================================================
 #
-# Before fitting Bingham functions, we must reconstruct orientation
-# distribution functions. In this example, ODFs will be reconstructed using
-# the Constrained Spherical Deconvolution (CSD) method [3]_.
+# Before fitting Bingham functions, we must reconstruct ODFs. In this example,
+# fiber ODFs (fODFs) will be reconstructed using the Constrained Spherical
+# Deconvolution (CSD) method [3]_. For simplicity, we will refer to fODFs
+# as ODFs.
 # In the main tutorial of CSD (see
 # :ref:`sphx_glr_examples_built_reconstruction_reconst_csd.py`), several
 # strategies to define the fiber response function are discussed. Here, for
@@ -87,7 +88,8 @@ if interactive:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# ODFs reconstructed using the constrained Spherical Deconvolution (CSD).
+# Fiber ODFs (fODFs) reconstructed using Constrained Spherical
+# Deconvolution (CSD). For simplicity, we will refer to them just as ODFs.
 #
 #
 # Step 2. Bingham fitting and Metrics
@@ -99,8 +101,34 @@ BinghamMetrics = bingham_from_odf(csd_odf, sphere)
 
 ###############################################################################
 # The above function outputs a `BinghamMetrics` class instance, containing the
-# parameters of the fitted Bingham functions. For instance, the fitted Bingham
-# functions can be visualized using the following lines of code:
+# parameters of the fitted Bingham functions. The metrics of interest contained
+# in the `BinghamMetrics` class instance are:
+#
+# - afd (apparent fiber density: the maximum value for each peak. Also known as
+#   Bingham's f_0 parameter.)
+# - fd (fiber densitiy: as defined in [1]_, one for each peak.)
+# - fs (fiber spread: as defined in [1]_, one for each peak.)
+# - gfd (global fiber density: average of fd across all ODF peaks.)
+# - gfs (global fiber spread: average of fs across all ODF peaks.)
+# - odi_1 (orientation dispersion index along Bingham's first dispersion axis,
+#       one for each peak. Defined in [2]_ and [4]_.)
+# - odi_2 (orientation dispersion index along Bingham's second dispersion axis,
+#       one for each peak.)
+# - odi_total (orientation dispersion index averaged across both Bingham's
+#       dispersion axes. Defined in [5]_.)
+# - godi_1 (global dispersion index along Bingham's first dispersion axis,
+#       averaged across all peaks)
+# - godi_2 (global dispersion index along Bingham's second dispersion axis,
+#       averaged across all peaks)
+# - godi_total (global dispersion index averaged across both Bingham's axes,
+#       averaged across all peaks)
+# - peak_dirs (peak directions in cartesian coordinates given by the Bingham
+#       fitting, also known as parameter mu_0. These directions are slightly
+#       different than the peak directions given by the function
+#       `peaks_from_model`.)
+# 
+# For illustration purposes, the fitted Bingham derived metrics can be 
+# visualized using the following lines of code:
 
 bim_odf = BinghamMetrics.odf(sphere)
 
@@ -120,11 +148,11 @@ if interactive:
 #
 # Bingham functions fitted to CSD fiber ODFs.
 #
-# Alternatively to fit Bingham functions to sampled ODFs, DIPY also contains
-# the function `bingham_from_sh` to perform Bingham fitting from the ODF's
-# spherical harmonic representation. Although this process may require longer
-# processing times, this function may be useful to avoid memory issues in
-# handling heavily sampled ODFs. Below we show the lines of code to use
+# Alternatively to fitting Bingham functions to sampled ODFs, DIPY also
+# contains the function `bingham_from_sh` to perform Bingham fitting from the
+# ODF's spherical harmonic representation. Although this process may require
+# longer processing times, this function may be useful to avoid memory issues
+# in handling heavily sampled ODFs. Below we show the lines of code to use
 # function `bingham_from_sh` (feel free to skip these lines if the function
 # `bingham_from_odf` worked fine for you). Note, to use `bingham_from_sh` you
 # need to specify the maximum order of spherical harmonics that you defined in
@@ -163,18 +191,18 @@ fig1.colorbar(im2, ax=ax[2])
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# The figure shows from left to right: 1) the FD estimated from the
+# The figure shows from left to right: 1) the FD estimated for the
 # first ODF peak (showing larger values in white matter); 2) the FD estimated
-# from the second ODF peak (showing non-zero values in regions of crossing
+# for the second ODF peak (showing non-zero values in regions of crossing
 # white matter fibers); and 3) the sum of FD estimates across all ODF lobes
 # (quantity that should be proportional to the density of all fibers within
 # each voxel).
 #
 # Bingham functions can also be used to quantify fiber dispersion from the
-# ODFs [2]_. Additionaly to quantifying a global orientation dispersion
-# index (`ODI_total`) for each ODF lobe, Bingham functions allows  the
-# quantification of dispersion across two main axes (`ODI1` and `ODI2`),
-# offering unique information of fiber orientation variability within brain
+# ODFs [2]_. Additionaly to quantifying a combined orientation dispersion
+# index (`ODI_total`) for each ODF lobe [5]_, Bingham functions allow  the
+# quantification of dispersion across two main axes (`ODI_1` and `ODI_2`),
+# offering unique information of fiber orientation variability within the brain
 # tissue. Below we show how to extract these indexes from the largest ODF peak.
 # Note, for better visualization of ODI estimates, voxels with total FD lower
 # than 0.5 are masked.
@@ -193,10 +221,10 @@ im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
 ax[0].set_title('ODI_1 (lobe 1)')
 
 im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2  (lobe 1)')
+ax[1].set_title('ODI_2 (lobe 1)')
 
 im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total  (lobe 1)')
+ax[2].set_title('ODI_total (lobe 1)')
 
 fig2.colorbar(im0, ax=ax[0])
 fig2.colorbar(im1, ax=ax[1])
@@ -209,8 +237,7 @@ fig2.colorbar(im2, ax=ax[2])
 # the axis with greater dispersion (direction in which fibers exhibit the most
 # variability in orientation); 2) ODI of the largest ODF lobe along the axis
 # with lesser dispersion (directions in which fiber orientations are more
-# uniform); and 3) Average or total ODI of the largest ODF lobe across both
-# axes.
+# uniform); and 3) total ODI of the largest ODF lobe across both axes.
 #
 # Above, we focused on the largest ODF's lobe, representing the most pronounced
 # fiber population within a voxel. However, this methodology is not limited to
@@ -234,10 +261,10 @@ im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
 ax[0].set_title('ODI_1 (lobe 2)')
 
 im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2  (lobe 2)')
+ax[1].set_title('ODI_2 (lobe 2)')
 
 im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total  (lobe 2)')
+ax[2].set_title('ODI_total (lobe 2)')
 
 fig3.colorbar(im0, ax=ax[0])
 fig3.colorbar(im1, ax=ax[1])
@@ -246,17 +273,17 @@ fig3.colorbar(im2, ax=ax[2])
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# The figure shows from left to right: 1) ODI of the second-largest ODF lobe
+# The figure shows from left to right: 1) ODI for the second-largest ODF lobe
 # along the axis with greater dispersion (direction in which fibers exhibit the
-# most variability in orientation); 2) ODI of the second-largest ODF lobe along
-# the axis with lesser dispersion (directions in which fiber orientations are
-# more uniform); and 3) Average ODI of the second-largest ODF lobe across noth
-# axes. In this figure, regions of white matter that contain only a single
-# fiber  population display ODI estimates of zero, corresponding to ODF
-# profiles lacking a second ODF lobe.
+# most variability in orientation); 2) ODI for the second-largest ODF lobe
+# along the axis with lesser dispersion (directions in which fiber
+# orientations are more uniform); and 3) total ODI for the second-largest ODF
+# lobe across both axes. In this figure, regions of the white matter that
+# contain only a single fiber population (one ODF lobe) display ODI estimates
+# of zero, corresponding to ODF profiles lacking a second ODF lobe.
 #
 # BinghamMetrics can also be used to compute the average ODI quantities across
-# all ODF lobes aka. al global ODI (see below). The average quantitaties are
+# all ODF lobes aka. global ODI (see below). The average quantitaties are
 # computed by weigthing each ODF lobe with their respective FD value.
 # These quantities are plotted in the following figure.
 
@@ -274,10 +301,10 @@ im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
 ax[0].set_title('ODI_1 (global)')
 
 im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2  (global)')
+ax[1].set_title('ODI_2 (global)')
 
 im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total  (global)')
+ax[2].set_title('ODI_total (global)')
 
 fig4.colorbar(im0, ax=ax[0])
 fig4.colorbar(im1, ax=ax[1])
@@ -287,7 +314,7 @@ fig4.colorbar(im2, ax=ax[2])
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # The figure shows from left to right: 1) weighted-averaged ODI_1 along all ODF
-# lobes; 2) weighted-averaged ODI_2 along all ODF lobe; 3) weighted-average
+# lobes; 2) weighted-averaged ODI_2 along all ODF lobe; 3) weighted-averaged
 # ODI_total across all ODF lobes.
 #
 # References
@@ -303,3 +330,10 @@ fig4.colorbar(im2, ax=ax[2])
 #        the fibre orientation distribution in diffusion MRI: Non-negativity
 #        constrained super-resolved spherical deconvolution”, Neuroimage, vol.
 #        35, no. 4, pp. 1459-1472, (2007).
+# .. [4] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+#        NODDI: practical in vivo neurite orientation dispersion and
+#        density imaging of the human brain. Neuroimage. 2012; 61(4),
+#        1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
+# .. [5] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
+#        Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
+#        of neurites using diffusion MRI NeuroImage. 2016; 133:207-223.
