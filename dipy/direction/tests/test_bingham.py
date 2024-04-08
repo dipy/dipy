@@ -139,7 +139,7 @@ def test_bingham_from_odf():
     assert_almost_equal(np.zeros((2, 2, 1)), bim.fd[:, :, :, 1])
 
     # check global metrics: since this simulations only have one lobe, global
-    # metrics have to give the same values than their conterparts for lobe1
+    # metrics have to give the same values than their counterparts for lobe 1
     assert_almost_equal(bim.godi_1, bim.odi_1[..., 0])
     assert_almost_equal(bim.godi_2, bim.odi_2[..., 0])
     assert_almost_equal(bim.godi_total, bim.odi_total[..., 0])

@@ -521,13 +521,13 @@ def _convert_bingham_pars(fits, npeaks):
     Parameters
     ----------
     fits : tuple
-        Tuple of nl elements containting the Bingham function parameters
+        Tuple of nl elements containing the Bingham function parameters
         in the following order:
             Maximum value of the Bingham function (f0);
             concentration parameters (k1 and k2);
-            elements of Bingham's main direction (miu0);
-            elements of Bingham's dispersion major axis (miu1);
-            and elements of Bingham's dispersion minor axis (miu2).
+            elements of Bingham's main direction (mu0);
+            elements of Bingham's dispersion major axis (mu1);
+            and elements of Bingham's dispersion minor axis (mu2).
     npeaks: int
         Maximum number of fitted Bingham functions, by number of peaks.
 
@@ -573,7 +573,7 @@ def global_voxel_metric(bmetric, bfd):
 
     Notes
     -----
-    The global metric is computed as the weigthed average of a given metric
+    The global metric is computed as the weighted average of a given metric
     across the multiple ODF lobes (weights are defined by the Bingham fiber
     density estimates)
     """

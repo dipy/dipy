@@ -3,7 +3,7 @@
 Reconstruction of Bingham Functions from ODFs
 ===========================================================================
 
-This example shows how to recontruct Bingham functions from orientation
+This example shows how to reconstruct Bingham functions from orientation
 distribution functions (ODFs). Reconstructed Bingham functions can be useful to
 quantify properties from ODFs such as fiber dispersion [1]_,[2]_.
 
@@ -199,7 +199,7 @@ fig1.colorbar(im2, ax=ax[2])
 # each voxel).
 #
 # Bingham functions can also be used to quantify fiber dispersion from the
-# ODFs [2]_. Additionaly to quantifying a combined orientation dispersion
+# ODFs [2]_. Additionally to quantifying a combined orientation dispersion
 # index (`ODI_total`) for each ODF lobe [5]_, Bingham functions allow  the
 # quantification of dispersion across two main axes (`ODI_1` and `ODI_2`),
 # offering unique information of fiber orientation variability within the brain
