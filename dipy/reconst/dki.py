@@ -1441,7 +1441,8 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     return MKT
 
 
-def radial_tensor_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
+def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3./7,
+                           max_kurtosis=10):
     r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
 
     Parameters
@@ -1456,12 +1457,11 @@ def radial_tensor_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
-        `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_)
+        `min_kurtosis`.
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
 
     Returns
     -------
@@ -1485,10 +1485,6 @@ def radial_tensor_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     .. [1] Hansen, B., Shemesh, N., and Jespersen, S. N. (2017).
            Fast imaging of mean, axial and radial diffusion kurtosis.
            Neuroimage 142,  381–393. doi:10.1016/j.neuroimage.2016.08.022
-    .. [2] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
     """
     outshape = dki_params.shape[:-1]
     dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
@@ -2319,7 +2315,7 @@ class DiffusionKurtosisFit(TensorFit):
         return mean_kurtosis_tensor(self.model_params, min_kurtosis,
                                     max_kurtosis)
 
-    def rtk(self, min_kurtosis=-3./7, max_kurtosis=10):
+    def rtk(self, *, min_kurtosis=-3./7, max_kurtosis=10):
         r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
 
         Parameters
@@ -2327,13 +2323,11 @@ class DiffusionKurtosisFit(TensorFit):
         min_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are smaller than `min_kurtosis` are
-            replaced with `min_kurtosis`. Default = -3./7 (theoretical
-            kurtosis limit for regions that consist of water confined to
-            spherical pores [3]_)
+            replaced with `min_kurtosis`.
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are larger than `max_kurtosis` are
-            replaced with `max_kurtosis`. Default = 10
+            replaced with `max_kurtosis`.
 
         Returns
         -------
@@ -2358,14 +2352,10 @@ class DiffusionKurtosisFit(TensorFit):
                Fast imaging of mean, axial and radial diffusion kurtosis.
                Neuroimage 142,  381–393.
                doi:10.1016/j.neuroimage.2016.08.022
-        .. [2] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of
-               non-gaussian water diffusion by means of magnetic resonance
-               imaging. Magnetic Resonance in Medicine 53(6): 1432-1440
-
         """
-        return radial_tensor_kurtosis(self.model_params, min_kurtosis,
-                                      max_kurtosis)
+        return radial_tensor_kurtosis(self.model_params,
+                                      min_kurtosis=min_kurtosis,
+                                      max_kurtosis=max_kurtosis)
 
     @property
     def kfa(self):
@@ -2455,7 +2445,7 @@ def params_to_dki_params(result, min_diffusivity=0):
     ----------
     results : array (21)
         Unique elements of the diffusion and kurtosis tensors in the following
-        order: 1) six unique lower triangular DT elemenents; and 2) Fifteen
+        order: 1) six unique lower triangular DT elements; and 2) Fifteen
         unique elements of the kurtosis tensor.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
