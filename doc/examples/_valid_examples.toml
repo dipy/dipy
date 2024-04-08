@@ -111,7 +111,6 @@ files = [
     "reconst_qti.py",
     "reconst_qtiplus.py",
     "histology_resdnn.py",
-    "bingham_fit_fodf.py",
     "reconst_bingham.py"
 ]
 
