@@ -215,7 +215,7 @@ def test_dki_fits():
 
     # testing return of S0
     if have_cvxpy:
-        tested_methods = ['NLS', 'WLS', 'CLS']
+        tested_methods = ['NLLS', 'WLLS', 'CLS']
 
     for fit_method in tested_methods:
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
@@ -225,7 +225,7 @@ def test_dki_fits():
 
         assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
 
-    # testing return of S0 when mask is inputed
+    # testing return of S0 when mask is inputted
     mask_test = dki_S0F.fa > 0
     for fit_method in tested_methods:
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
