@@ -1,4 +1,4 @@
-r"""Tools for fitting Bingham distributions to orientation distribution
+"""Tools for fitting Bingham distributions to orientation distribution
 functions (ODF), as described in Riffert et al [1]_. The resulting
 distributions can further be used to compute ODF-lobe-specific measures such as
 the fiber density (FD) and fiber spread (FS) [1]_ and the orientation
@@ -14,7 +14,6 @@ References
         University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
 """
 
-from math import cos, radians
 from warnings import warn
 import numpy as np
 
@@ -25,7 +24,7 @@ from dipy.core.onetime import auto_attr
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_angle):
-    r"""
+    """
     Fit Bingham function on the ODF lobe aligned with peak.
 
     Parameters
@@ -58,7 +57,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     """
     # abs for twice the number of pts to fit
     dot_prod = np.abs(sphere.vertices.dot(peak))
-    min_dot = cos(radians(max_angle))
+    min_dot = np.cos(np.deg2rad(max_angle))
 
     # [p] are the selected ODF vertices (N, 3) around the peak of the lobe
     # within max_angle
@@ -121,7 +120,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
 
 def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
                    min_sep_angle=60, rel_th=0.1):
-    r"""
+    """
     Fit a Bingham distribution onto each principal ODF lobe.
 
     Parameters
@@ -130,7 +129,7 @@ def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
         The ODF function evaluated on the vertices of `sphere`
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions
-    npeak: int
+    npeak: int, optional
         Maximum number of peaks found (default 5 peaks).
     max_search_angle: float, optional.
         Maximum angle between a peak and its neighbour directions
@@ -180,7 +179,7 @@ def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
 
 
 def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
-    r"""
+    """
     Sample a Bingham function on the directions described by `vertices`.
 
     Parameters
@@ -241,7 +240,7 @@ def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
 
 
 def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
-    r"""
+    """
     Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
 
     Parameters
@@ -256,7 +255,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
             elements of Bingham's dispersion minor axis (indexes 9-11).
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
-    mask: ndarray
+    mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed
 
     Returns
@@ -294,7 +293,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
 
 
 def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
-    r"""
+    """
     Compute fiber density for each lobe for a given Bingham ODF.
 
     Parameters
@@ -369,7 +368,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
 
 
 def bingham_fiber_spread(f0, fd):
-    r"""
+    """
     Compute fiber spread for each lobe for a given Bingham volume.
 
     Parameters
@@ -402,7 +401,7 @@ def bingham_fiber_spread(f0, fd):
 
 
 def k2odi(k):
-    r"""
+    """
     Convert the Bingham/Watson concentration parameter k to the orientation
     dispersion index (ODI).
 
@@ -441,7 +440,7 @@ def k2odi(k):
 
 
 def odi2k(odi):
-    r"""
+    """
     Convert the orientation dispersion index (ODI) to the Bingham/Watson
     concentration parameter k.
 
@@ -480,7 +479,7 @@ def odi2k(odi):
 
 
 def _convert_bingham_pars(fits, npeaks):
-    r"""
+    """
     Convert list of tuples output of the Bingham fit to ndarray.
 
     Parameters
@@ -520,7 +519,7 @@ def _convert_bingham_pars(fits, npeaks):
 
 
 def global_voxel_metric(bmetric, bfd):
-    r"""
+    """
     Compute global scalar maps for metrics of Bingham functions
     fitted to multiple ODF lobes.
 
@@ -546,7 +545,7 @@ def global_voxel_metric(bmetric, bfd):
 
 
 class BinghamMetrics:
-    r"""
+    """
     Class for Bingham Metrics."""
 
     def __init__(self, model_params):
@@ -706,7 +705,7 @@ class BinghamMetrics:
 
 def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
                      min_sep_angle=60, rel_th=0.1):
-    r"""
+    """
     Fit the Bingham function from an ODF.
 
     Parameters
@@ -757,7 +756,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
 
 def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
                     max_search_angle=6, min_sep_angle=60, rel_th=0.1):
-    r"""
+    """
     Fit the Bingham function from an ODF's spherical harmonics (SH)
     representation.
 
