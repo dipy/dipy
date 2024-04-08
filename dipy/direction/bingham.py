@@ -178,6 +178,44 @@ def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
     return fits, n
 
 
+def _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
+    """
+    Sample a Bingham function on the directions described by `vertices`.
+    The function assumes that `vertices` are already normalized and no
+    checks are performed to validate that this is the case.
+
+    Parameters
+    ----------
+    f0: float
+        Maximum value of the Bingham function.
+    k1: float
+        Concentration along major axis.
+    k2: float
+        Concentration along minor axis.
+    major_axis: ndarray (3)
+        Direction of major axis
+    minor_axis: ndarray (3)
+        Direction of minor axis
+    vertices: ndarray (N, 3)
+        Unit sphere directions along which the distribution
+        is evaluated.
+
+    Returns
+    -------
+    fn : array (N,)
+        Sampled Bingham function values at each point on directions.
+
+    Notes
+    -----
+    Refer to method `bingham_to_odf` for the definition of
+    the Bingham distribution.
+    """
+    fn = f0*np.exp(-k1*vertices.dot(major_axis)**2
+                   - k2*vertices.dot(minor_axis)**2)
+
+    return fn.T
+
+
 def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     """
     Sample a Bingham function on the directions described by `vertices`.
@@ -233,10 +271,7 @@ def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
              UserWarning)
         vertices /= np.linalg.norm(vertices, axis=-1, keepdims=True)
 
-    fn = f0*np.exp(-k1*vertices.dot(major_axis)**2
-                   - k2*vertices.dot(minor_axis)**2)
-
-    return fn.T
+    return _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices)
 
 
 def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
@@ -286,7 +321,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            this_odf += bingham_to_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
+            this_odf += _bingham_to_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
         odf[idx] = this_odf
 
     return odf
@@ -336,6 +371,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
     dtheta = theta[1] - theta[0]
     sin_theta = np.sin(coords[1])
 
+    # these directions are normalized
     u = np.array([np.cos(coords[0]) * np.sin(coords[1]),
                   np.sin(coords[0]) * np.sin(coords[1]),
                   np.cos(coords[1])]).T
@@ -361,7 +397,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            bingham_eval = bingham_to_odf(f0, k1, k2, mu1, mu2, u)
+            bingham_eval = _bingham_to_odf(f0, k1, k2, mu1, mu2, u)
             fd[idx + (li,)] = np.sum(bingham_eval * sin_theta * dtheta * dphi)
 
     return fd
