@@ -2,10 +2,12 @@ from os.path import join
 from tempfile import TemporaryDirectory
 
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_allclose
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.io.peaks import load_peaks
+from dipy.reconst.shm import sph_harm_ind_list
 from dipy.workflows.reconst import ReconstDtiFlow
 
 
@@ -38,7 +40,7 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
 
         args = [data_path, bval_path, bvec_path, mask_path]
         args.extend(extra_args)
-        kwargs = dict(out_dir=out_dir)
+        kwargs = dict(out_dir=out_dir, extract_pam_values=True)
         kwargs.update(extra_kwargs)
 
         dti_flow.run(*args, **kwargs)
@@ -77,3 +79,39 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
         evals_data = load_nifti_data(evals_path)
         assert_equal(evals_data.shape[-1], 3)
         assert_equal(evals_data.shape[:-1], volume.shape[:-1])
+
+        gfa_path = dti_flow.last_generated_outputs['out_gfa']
+        gfa_data = load_nifti_data(gfa_path)
+        assert_equal(gfa_data.shape, volume.shape[:-1])
+
+        peaks_dir_path = dti_flow.last_generated_outputs['out_peaks_dir']
+        peaks_dir_data = load_nifti_data(peaks_dir_path)
+        assert_equal(peaks_dir_data.shape[-1], 15)
+        assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
+
+        peaks_idx_path = dti_flow.last_generated_outputs['out_peaks_indices']
+        peaks_idx_data = load_nifti_data(peaks_idx_path)
+        assert_equal(peaks_idx_data.shape[-1], 5)
+        assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
+
+        peaks_vals_path = dti_flow.last_generated_outputs['out_peaks_values']
+        peaks_vals_data = load_nifti_data(peaks_vals_path)
+        assert_equal(peaks_vals_data.shape[-1], 5)
+        assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
+
+        shm_path = dti_flow.last_generated_outputs['out_shm']
+        shm_data = load_nifti_data(shm_path)
+        # Test that the number of coefficients is what you would expect
+        # given the order of the sh basis:
+        sh_order = 8
+        assert_equal(shm_data.shape[-1],
+                     sph_harm_ind_list(sh_order)[0].shape[0])
+        assert_equal(shm_data.shape[:-1], volume.shape[:-1])
+
+        pam = load_peaks(dti_flow.last_generated_outputs['out_pam'])
+        assert_allclose(pam.peak_dirs.reshape(peaks_dir_data.shape),
+                        peaks_dir_data)
+        assert_allclose(pam.peak_values, peaks_vals_data)
+        assert_allclose(pam.peak_indices, peaks_idx_data)
+        assert_allclose(pam.shm_coeff, shm_data)
+        assert_allclose(pam.gfa, gfa_data)

@@ -10,6 +10,7 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 from dipy.core.sphere_stats import random_uniform_on_sphere
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 delaunay, have_delaunay, _ = optional_package('scipy.spatial.Delaunay')
@@ -383,17 +384,38 @@ def test_disperse_charges_alt():
     nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
 
 
-def test_fibonacci_sphere():
+@set_random_number_generator()
+def test_fibonacci_sphere(rng):
     # Test that the number of points is correct
-    points = fibonacci_sphere(n_points=724)
+    points = fibonacci_sphere(n_points=724, rng=rng)
     nt.assert_equal(len(points), 724)
 
     # Test randomization
-    points1 = fibonacci_sphere(n_points=100, randomize=True)
-    points2 = fibonacci_sphere(n_points=100, randomize=True)
+    points1 = fibonacci_sphere(n_points=100, randomize=True, rng=rng)
+    points2 = fibonacci_sphere(n_points=100, randomize=True, rng=rng)
     with nt.assert_raises(AssertionError):
         nt.assert_array_equal(points1, points2)
 
     # Check for near closeness to 0
     nt.assert_almost_equal(
         np.mean(np.mean(points, axis=0)), 0, decimal=2)
+
+
+@set_random_number_generator()
+def test_fibonacci_hemisphere(rng):
+    # Test that the number of points is correct
+    points = fibonacci_sphere(n_points=724, hemisphere=True, rng=rng)
+    nt.assert_equal(len(points), 724)
+
+    # Test randomization
+    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
+                               rng=rng)
+    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
+                               rng=rng)
+    with nt.assert_raises(AssertionError):
+        nt.assert_array_equal(points1, points2)
+
+    # Check for near closeness to 0
+    nt.assert_almost_equal(
+        np.mean(points, axis=0)[2], 0, decimal=2)
+
