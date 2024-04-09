@@ -454,13 +454,12 @@ class Horizon:
                 # It will be changed once all the elements wrapped in horizon
                 # elements.
                 text_block = build_label(HELP_MESSAGE, 18)
-                text_block.message = HELP_MESSAGE
 
                 self.help_panel = ui.Panel2D(
                     size=(300, 200), position=(1615, 875), color=(.8, .8, 1.),
                     opacity=.2, align='left')
 
-                self.help_panel.add_element(text_block, coords=(.02, .01))
+                self.help_panel.add_element(text_block.obj, coords=(.02, .01))
                 scene.add(self.help_panel)
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))

@@ -42,7 +42,7 @@ class ClustersTab(HorizonTab):
             on_handle_released=self._change_threshold
         )
 
-        self.register_elements(
+        self._register_elements(
             self._size_slider_label, self._size_slider,
             self._length_slider_label, self._length_slider,
             self._threshold_slider_label, self._threshold_slider
@@ -127,14 +127,13 @@ class ClustersTab(HorizonTab):
             else:
                 cluster['actor'].SetVisibility(True)
 
-    def build(self, tab_id, _tab_ui):
+    def build(self, tab_id):
         """Position the elements in the tab.
 
         Parameters
         ----------
         tab_id : int
-        _tab_ui : TabUI
-            Object for Tab from FURY.
+            Id of the tab.
         """
         self._tab_id = tab_id
 
@@ -181,16 +180,6 @@ class ClustersTab(HorizonTab):
             various properties of centroids.
         """
         return self._visualizer.centroid_actors
-
-    @property
-    def tab_id(self):
-        """Id of the tab. Reference for Tab Manager to identify the tab.
-
-        Returns
-        -------
-        int
-        """
-        return self._tab_id
 
     @property
     def actors(self):
