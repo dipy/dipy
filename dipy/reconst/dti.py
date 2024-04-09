@@ -471,8 +471,8 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing orthotropy. Mode is calculated with the
-    following equation (equation 9 in [1]_):
+    with 0 representing isotropy. Mode is calculated with the following
+    equation (equation 9 in [1]_):
 
     .. math::
 
