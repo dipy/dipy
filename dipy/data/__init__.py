@@ -64,11 +64,14 @@ from dipy.data.fetcher import (
     read_syn_data,
     read_taiwan_ntu_dsi,
     read_tissue_data,
+    fetch_disco1_dataset,
+    fetch_disco2_dataset,
+    fetch_disco3_dataset,
+    fetch_disco_dataset,
 )
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
-
-from ..utils.arrfuncs import as_native_array
+from dipy.utils.arrfuncs import as_native_array
 
 
 def loads_compat(byte_data):
