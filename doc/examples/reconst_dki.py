@@ -16,15 +16,24 @@ paper [Henriq2021]_). Moreover, in contrast to DTI, DKI can provide metrics
 of tissue microscopic heterogeneity that are less sensitive to confounding
 effects in the orientation of tissue components, thus providing better
 characterization in general WM configurations (including regions of fibers
-crossing, fanning, and/or dispersing) and GM [NetoHe2015]_. Although DKI aims
-primarily to quantify the degree of non-Gaussian diffusion without establishing
-concrete biophysical assumptions, DKI can also be related to microstructural
-models to infer specific biophysical parameters (e.g., the density of axonal
-fibers) (this aspect will be more closely explored in
-:ref:sphx_glr_examples_built_reconstruction_reconst_dki_micro.py). For
+crossing, fanning, and/or dispersing) and GM [NetoHe2015]_,[Henriq2021]_.
+Although DKI aims primarily to quantify the degree of non-Gaussian diffusion
+without establishing concrete biophysical assumptions, DKI can also be related
+to microstructural models to infer specific biophysical parameters (e.g., the
+density of axonal fibers) - this aspect will be more closely explored in
+:ref:sphx_glr_examples_built_reconstruction_reconst_dki_micro.py. For
 additional information on DKI and its practical implementation within DIPY,
-refer to [Henriq2021]_. Below, we introduce a concise theoretical background
-of DKI and demonstrate its fitting process using DIPY."
+refer to [Henriq2021]_.
+
+Below, we introduce a concise theoretical background of DKI and demonstrate
+its fitting process using DIPY. We'll also guide you through the fitting
+process of DKI using DIPY, demonstrating how to effectively apply this
+technique. Furthermore, we discuss the various diffusion metrics that can be
+derived from DKI, providing insight into their practical significance and
+applications. Additionally, we address strategies to mitigate common artifacts,
+such as implausible negative kurtosis estimates, which manifest as 'black'
+voxels or holes in DKI maps. These artifacts can compromise the accuracy of
+the DKI analysis, and we'll offer solutions to ensure more reliable results.
 
 Theory
 ======
@@ -210,22 +219,33 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # pronounced perpendicularly to white matter fibers and thus the RK map
 # presents higher amplitudes than the AK map.
 #
-# It is important to note that kurtosis estimates might present negative
-# estimates in deep white matter regions (e.g. the band of dark voxels in the
-# RK map above). These negative kurtosis values are artefactual and might be
-# induced by:
+# Mitigating 'Black' Voxels / Holes in DKI metrics
+# ================================================
+#
+# It is important to note that kurtosis estimates might present implausible
+# negative estimates in deep white matter regions that will manifest as
+# 'Black' voxels or holes in DKI metrics (e.g. see the band of dark voxels in
+# the  RK map above). These negative kurtosis values are artefactual and might
+# be induced by:
 # 1) low radial diffusivities of aligned white matter - since it is very hard
 # to capture non-Gaussian information in radial direction due to it's low
 # diffusion decays, radial kurtosis estimates (and consequently the mean
 # kurtosis estimates) might have low robustness and tendency to exhibit
-# negative values [NetoHe2012]_;
+# negative values [NetoHe2012]_, [Tabesh2011]_;
 # 2) Gibbs artefacts - MRI images might be corrupted by signal oscillation
 # artefact between tissue's edges if an inadequate number of high frequencies
 # of the k-space is sampled. These oscillations might have different signs on
 # images acquired with different diffusion-weighted and inducing negative
 # biases in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
+# 3) Underestimation of b0 signals - due to physiological or noise artefacts,
+# the signals acquired at b-value=0 may be artifactually lower than the
+# diffusion-weighted signals acquired for the different b-values. In this case
+# the log diffusion-weighted signal decay may appear to be concave rather
+# showing to be convex (as one whould typically expect), leading to negative
+# kurtosis value estimates.
 #
-# One can try to suppress this issue by:
+# Given the above, one can try to suppress the 'Black' voxel / holes in DKI
+# metrics by:
 # 1) using more advanced noise and artifact suppression algorithms, e.g.,
 # as mentioned above, the MP-PCA denoising
 # (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`)
@@ -233,7 +253,8 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`)
 # algorithms.
 # 2) computing the kurtosis values from powder-averaged diffusion-weighted
-# signals. The details on how to compute the kurtosis from powder-averaged
+# signals which are known to be less sensitive to implausible negative
+# estimates. The details on how to compute the kurtosis from powder-averaged
 # signals in DIPY are described in the following tutorial
 # (:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`).
 # 3) computing alternative definitions of mean and radial kurtosis such as
@@ -243,7 +264,7 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # are physically plausible [DelaHa2020]_ (see below).
 #
 # Alternative DKI metrics
-# =======================================================
+# =======================
 #
 # In addition to the standard mean, axial, and radial kurtosis metrics shown
 # above, alternative metrics can be computed from DKI, e.g.:
@@ -261,7 +282,7 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 compare_maps([dkifit], ['mkt', 'rtk', 'kfa'], fit_labels=['DKI'],
              map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1.5},
                          {'vmin': 0, 'vmax': 1}],
-             filename='Alternative DKI metrics.png')
+             filename='Alternative_DKI_metrics.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -356,6 +377,9 @@ compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
 #                 Dissertation Bachelor and Master Programin Biomedical
 #                 Engineering and Biophysics, Faculty of Sciences.
 #                 https://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
+# .. [Tabesh2011] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A.,
+#                 (2011). Estimation of tensors and tensor-derived measures in
+#                 diffusional kurtosis imaging. Magn Reson Med. 65(3), 823-836
 # .. [Hansen2013] Hansen B, Lund TE, Sangill R, and Jespersen SN (2013).
 #                 Experimentally and computationally393fast method for
 #                 estimation of a mean kurtosis. Magnetic Resonance in
