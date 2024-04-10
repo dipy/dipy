@@ -3,20 +3,22 @@
 Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
-The diffusional kurtosis imaging (DKI) is an expansion of the diffusion tensor
-model (see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
-addition to the diffusion tensor (DT), DKI quantifies the degree to which water
-diffusion in biological tissues is non-Gaussian using the kurtosis tensor (KT)
+Diffusional Kurtosis Imaging (DKI) is an expansion of the Diffusion Tensor
+Imaging (DTI) model
+(see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
+addition to the Diffusion Tensor (DT), DKI quantifies the degree to which water
+diffusion in biological tissues is non-Gaussian using the Kurtosis Tensor (KT)
 [Jensen2005]_.
 
-Measurements of non-Gaussian diffusion from the diffusion kurtosis model are
+Measurements of non-Gaussian diffusion from DKI are
 of interest because they were shown to provide extra information about
 microstructural alterations in both health and disease (for a review see our
 paper [Henriq2021]_). Moreover, in contrast to DTI, DKI can provide metrics
 of tissue microscopic heterogeneity that are less sensitive to confounding
 effects in the orientation of tissue components, thus providing better
-characterization in general WM configurations (including regions of fibers
-crossing, fanning, and/or dispersing) and GM [NetoHe2015]_,[Henriq2021]_.
+characterization in general white matter configurations (including regions
+of fibers crossing, fanning, and/or dispersing) and gray matter [NetoHe2015]_,
+[Henriq2021]_.
 Although DKI aims primarily to quantify the degree of non-Gaussian diffusion
 without establishing concrete biophysical assumptions, DKI can also be related
 to microstructural models to infer specific biophysical parameters (e.g., the
@@ -38,7 +40,7 @@ the DKI analysis, and we'll offer solutions to ensure more reliable results.
 Theory
 ======
 
-The diffusion kurtosis model expresses the diffusion-weighted signal as:
+The DKI model expresses the diffusion-weighted signal as:
 
 .. math::
 
@@ -74,8 +76,8 @@ characterize the KT:
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\\end{matrix}
 
-Example Tutotial
-=================
+DKI fitting in DIPY
+===================
 
 In the following example we show how to fit the diffusion kurtosis model on
 diffusion-weighted multi-shell datasets and how to estimate diffusion kurtosis
@@ -93,7 +95,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from dipy.viz.plotting import compare_maps
-from scipy.ndimage import gaussian_filter
+from dipy.denoise.localpca import mppca
 
 ###############################################################################
 # DKI requires multi-shell data, i.e. data acquired from more than one
@@ -115,34 +117,44 @@ gtab = gradient_table(bvals, bvecs)
 # b-values and b-vectors. These later arrays are converted to the
 # GradientTable object required for Dipy_'s data reconstruction.
 #
+# The downloaded dataset was acquired with an unusually large number of
+# b-values. To run this example with acquisitions that are more common in
+# practice, we select below data for three non-zero b-values (if you want to
+# run this example with the full data extent, skip the following lines of
+# code)
+
+bval_sel = np.zeros_like(gtab.bvals)
+bval_sel[bvals == 0] = 1
+bval_sel[bvals == 600] = 1
+bval_sel[bvals == 1000] = 1
+bval_sel[bvals == 2000] = 1
+
+data = data[..., bval_sel == 1]
+gtab = gradient_table(bvals[bval_sel == 1], bvecs[bval_sel == 1])
+
+###############################################################################
 # Before fitting the data, we perform some data pre-processing. We first
 # compute a brain mask to avoid unnecessary calculations on the background
 # of the image.
 
-maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+datamask, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
                              autocrop=False, dilate=1)
 
 ###############################################################################
-# Since the diffusion kurtosis models involves the estimation of a large
-# number of parameters [TaxCMW2015]_ and since the non-Gaussian components of
-# the diffusion signal are more sensitive to artefacts [NetoHe2012]_, it might
-# be favorable to suppress the effects of noise and artefacts before diffusion
-# kurtosis fitting. In this example the effects of noise and artefacts are
-# suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
-# fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
-# [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
-# are comparable to these studies, it is important to note that more advanced
-# noise and artifact suppression algorithms are available in DIPY_, e.g. the
-# Marcenko-Pastur PCA denoising algorithm
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`) and
-# the Gibbs artefact suppression algorithm
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`).
+# Since the diffusion kurtosis model involves the estimation of a large number
+# of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
+# diffusion signal are more sensitive to artifacts [NetoHe2012]_,
+# [Tabesh2011]_, it might be favorable to suppress the effects of noise and
+# artifacts before diffusion kurtosis fitting. In this example, the effects of
+# noise are suppressed using the Marcenko-Pastur (MP)-PCA algorithm (for more
+# information, see
+# :ref:sphx_glr_examples_built_preprocessing_denoise_mppca.py). Processing
+# MP-PCA may take a while - for illustration purposes, you can skip this step.
+# However, note that if you don't denoise your data, DKI reconstructions may
+# be corrupted by a large percentage of implausible DKI estimates (see below
+# for more information on this issue)."
 
-fwhm = 1.25
-gauss_std = fwhm / np.sqrt(8 * np.log(2))  # converting fwhm to Gaussian std
-data_smooth = np.zeros(data.shape)
-for v in range(data.shape[-1]):
-    data_smooth[..., v] = gaussian_filter(data[..., v], sigma=gauss_std)
+data = mppca(data, patch_radius=[3, 3, 3])
 
 ###############################################################################
 # Now that we have loaded and pre-processed the data we can go forward
@@ -157,9 +169,7 @@ dkimodel = dki.DiffusionKurtosisModel(gtab)
 # of this object. For the purpose of this example, we will only fit a
 # single slice of the data:
 
-data_smooth = data_smooth[:, :, 9:10]
-mask = mask[:, :, 9:10]
-dkifit = dkimodel.fit(data_smooth, mask=mask)
+dkifit = dkimodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 ###############################################################################
 # The fit method creates a DiffusionKurtosisFit object, which contains all the
@@ -167,20 +177,20 @@ dkifit = dkimodel.fit(data_smooth, mask=mask)
 # instance, since the diffusion kurtosis model estimates the diffusion tensor,
 # all standard diffusion tensor statistics can be computed from the
 # DiffusionKurtosisFit instance. For example, we can extract the fractional
-# anisotropy (FA), the mean diffusivity (MD), the axial diffusivity (AD) and
-# the radial diffusivity (RD) from the DiffusionKurtosisiFit instance. Of
+# anisotropy (FA), the mean diffusivity (MD), the radial diffusivity (RD) and
+# the axial diffusivity (AD) from the DiffusionKurtosisiFit instance. Of
 # course, these measures can also be computed from DIPY's ``TensorModel`` fit,
 # and should be analogous; however, theoretically, the diffusion statistics
 # from the kurtosis model are expected to have better accuracy, since DKI's
 # diffusion tensor are decoupled from higher order terms effects
-# [Veraar2011]_, [Henriques2021]_. Below we compare the FA, MD, AD, and RD,
+# [Veraar2011]_, [Henriq2021]_. Below we compare the FA, MD, AD, and RD,
 # computed from both DTI and DKI.
 
 tenmodel = dti.TensorModel(gtab)
-tenfit = tenmodel.fit(data_smooth, mask=mask)
+tenfit = tenmodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 fits = [tenfit, dkifit]
-maps = ['fa', 'md', 'ad', 'rd']
+maps = ['fa', 'md', 'rd', 'ad']
 fit_labels = ['DTI', 'DKI']
 map_kwargs = [{'vmax': 0.7}, {'vmax': 2e-3}, {'vmax': 2e-3}, {'vmax': 2e-3}]
 compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
@@ -194,17 +204,17 @@ compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
 #
 #
 # DTI's diffusion estimates present lower values than DKI's estimates,
-# showing that DTI's diffusion measurements are underestimated  by higher
-# order effects.
+# showing that DTI's diffusion measurements are underestimated by higher
+# order effects (for detailed discussion on this see [Henriq2021]_.
 #
 # In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 # instance can be used to estimate the non-Gaussian measures of mean kurtosis
-# (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
+# (MK), the radial kurtosis (RK) and the axial kurtosis (AK).
 
-maps = ['mk', 'ak', 'rk']
+maps = ['mk', 'rk', 'ak']
 compare_maps([dkifit], maps, fit_labels=['DKI'],
              map_kwargs={'vmin': 0, 'vmax': 1.5},
-             filename='Kurtosis_tensor_standard_measures.png')
+             filename='DKI_standard_measures.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -225,31 +235,33 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # It is important to note that kurtosis estimates might present implausible
 # negative estimates in deep white matter regions that will manifest as
 # 'Black' voxels or holes in DKI metrics (e.g. see the band of dark voxels in
-# the  RK map above). These negative kurtosis values are artefactual and might
+# the  RK map above). These negative kurtosis values are artifactual and might
 # be induced by:
 # 1) low radial diffusivities of aligned white matter - since it is very hard
 # to capture non-Gaussian information in radial direction due to it's low
 # diffusion decays, radial kurtosis estimates (and consequently the mean
 # kurtosis estimates) might have low robustness and tendency to exhibit
 # negative values [NetoHe2012]_, [Tabesh2011]_;
-# 2) Gibbs artefacts - MRI images might be corrupted by signal oscillation
-# artefact between tissue's edges if an inadequate number of high frequencies
+# 2) Gibbs artifacts - MRI images might be corrupted by signal oscillation
+# artifact between tissue's edges if an inadequate number of high frequencies
 # of the k-space is sampled. These oscillations might have different signs on
 # images acquired with different diffusion-weighted and inducing negative
 # biases in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
-# 3) Underestimation of b0 signals - due to physiological or noise artefacts,
+# 3) Underestimation of b0 signals - Due to physiological or noise artifacts,
 # the signals acquired at b-value=0 may be artifactually lower than the
-# diffusion-weighted signals acquired for the different b-values. In this case
-# the log diffusion-weighted signal decay may appear to be concave rather
-# showing to be convex (as one whould typically expect), leading to negative
-# kurtosis value estimates.
+# diffusion-weighted signals acquired for the different b-values. In this
+# case, the log diffusion-weighted signal decay may appear to be concave
+# rather than showing to be convex (as one would typically expect), leading
+# to negative kurtosis value estimates.
 #
 # Given the above, one can try to suppress the 'Black' voxel / holes in DKI
 # metrics by:
 # 1) using more advanced noise and artifact suppression algorithms, e.g.,
 # as mentioned above, the MP-PCA denoising
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`)
-# and Gibbs Unringing
+# (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`), other
+# denoising alternatives such as Patch2self
+# (:ref:`sphx_glr_examples_built_preprocessing_denoise_patch2self.py`) or
+# incorporating methods for Gibbs Artifact Unringing
 # (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`)
 # algorithms.
 # 2) computing the kurtosis values from powder-averaged diffusion-weighted
@@ -311,46 +323,24 @@ compare_maps([dkifit], ['mkt', 'rtk', 'kfa'], fit_labels=['DKI'],
 #    qualitative differences.
 
 dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
-dkifit_plus = dkimodel_plus.fit(data_smooth, mask=mask)
+dkifit_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 ###############################################################################
 # We can now compare the kurtosis measures obtained with the constrained fit to
-# the measures obtained before, where we see that many of the artefactual
+# the measures obtained before, where we see that many of the artifactual
 # voxels have now been corrected. In particular outliers caused by pure noise
-# -- instead of for example acquisition artefacts -- can be corrected with
+# -- instead of for example acquisition artifacts -- can be corrected with
 # this method.
 
-compare_maps([dkifit_plus], ['mk', 'ak', 'rk'], fit_labels=['DKI+'],
+compare_maps([dkifit, dkifit_plus], ['mkt', 'rtk', 'ak'],
+             fit_labels=['DKI', 'DKI+'],
              map_kwargs={'vmin': 0, 'vmax': 1.5},
-             filename='Kurtosis_tensor_standard_measures_plus.png')
+             filename='Alternative_DKI_measures_comparison_to_DKIplus.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DKI standard kurtosis measures obtained with constrained optimization.
-#
-#
-# When using constrained optimization, the expected range of the kurtosis
-# measures is also naturally constrained, and so does not typically require
-# additional clipping.
-#
-# Finally, constrained optimization obviates the need for smoothing in many
-# cases:
-
-dkifit_noisy = dkimodel.fit(data[:, :, 9:10], mask=mask)
-dkifit_noisy_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask)
-
-compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
-             fit_labels=['DKI', 'DKI+'], map_kwargs={'vmin': 0, 'vmax': 1.5},
-             filename='Kurtosis_tensor_standard_measures_noisy.png')
-
-###############################################################################
-# .. rst-class:: centered small fst-italic fw-semibold
-#
-# DKI standard kurtosis measures obtained on unsmoothed data with constrained
-# optimization.
-#
-#
 #
 # References
 # ----------
