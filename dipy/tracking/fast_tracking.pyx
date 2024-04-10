@@ -66,11 +66,13 @@ def generate_tractogram(double[:,::1] seed_positions,
                         StoppingCriterion sc,
                         TrackingParameters params,
                         PmfGen pmf_gen,
-                        int nbr_threads=0):
+                        int nbr_threads=0,
+                        int buffer_perc=1.0):
 
     cdef:
-        cnp.npy_intp _len=seed_positions.shape[0]
-        cnp.npy_intp i
+        cnp.npy_intp _len = seed_positions.shape[0]
+        cnp.npy_intp _plen = np.ceil(_len * buffer_perc)
+        cnp.npy_intp i, s_idx
         double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
         int* length_arr = <int*> malloc(_len * sizeof(int))
         int* status_arr = <int*> malloc(_len * sizeof(double))
@@ -80,24 +82,35 @@ def generate_tractogram(double[:,::1] seed_positions,
 
     # Todo: Check if probalistic parameters are set if using probabilistic
     # tracking. Same for PTT
-    generate_tractogram_c(seed_positions, seed_directions, nbr_threads, sc, params,
-                          pmf_gen, &probabilistic_tracker, #&deterministic_maximum_tracker,
-                          streamlines_arr, length_arr, status_arr)
-    streamlines = []
-    try:
-        for i in range(_len):
-            if length_arr[i] > 1:
-                s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                streamlines.append(s.copy().reshape((-1,3)))
-                if streamlines_arr[i] == NULL:
-                    continue
-                free(streamlines_arr[i])
-    finally:
-        free(streamlines_arr)
-        free(length_arr)
-        free(status_arr)
+    seed_start = 0
+    seed_end = seed_start + _plen
+    while True:
+        generate_tractogram_c(seed_positions[seed_start:seed_end],
+                              seed_directions[seed_start:seed_end],
+                              nbr_threads, sc, params,
+                              pmf_gen, &probabilistic_tracker,
+                              #&deterministic_maximum_tracker,
+                              streamlines_arr, length_arr, status_arr)
+        seed_start += _plen
+        seed_end += _plen
+        streamlines = []
+        try:
+            for i in range(_len):
+                if length_arr[i] > 1:
+                    s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
+                    streamlines.append(s.copy().reshape((-1,3)))
+                    if streamlines_arr[i] == NULL:
+                        continue
+                    free(streamlines_arr[i])
+        finally:
+            free(streamlines_arr)
+            free(length_arr)
+            free(status_arr)
 
-    return streamlines
+        yield streamlines
+
+        if seed_end >= _len:
+            break
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,

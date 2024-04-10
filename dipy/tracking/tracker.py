@@ -53,10 +53,15 @@ def build_tractogram_algorithm(streamline_generator, tracker_func, pmf_gen_func,
     return generate_tractogram
 
 
-def local_tracking(seed_positons, seed_directions, *, tracking_parameters=None, tractogram_func=None,  postprocess_streamline=None):
+def local_tracking(seed_positons, seed_directions, *,
+                   tracking_parameters=None, tractogram_func=None,
+                   postprocess_streamline=None, buffer_perc=1.0):
     tractogram_func = tractogram_func or generate_tractogram
     if tractogram_func and 'cython' in type(tractogram_func):
-        return tractogram_func(seed_positons, seed_directions, tracking_parameters)
+        for streamlines in tractogram_func(seed_positons, seed_directions,
+                                           tracking_parameters,
+                                           buffer_prec=buffer_perc):
+            yield streamlines
 
     return generate_tractogram_py(seed_positons, seed_directions, tracking_parameters)
 
