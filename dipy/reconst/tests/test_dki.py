@@ -216,6 +216,8 @@ def test_dki_fits():
     # testing return of S0
     if have_cvxpy:
         tested_methods = ['NLLS', 'WLLS', 'CLS']
+    else:
+        tested_methods = ['NLLS', 'WLLS']
 
     for fit_method in tested_methods:
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
