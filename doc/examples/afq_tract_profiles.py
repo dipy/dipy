@@ -39,6 +39,7 @@ subject = "NDARAA948VFH"
 session = "HBNsiteRU"
 
 fdict, path = fetch_hbn([subject], include_afq=True)
+
 afq_path = op.join(
     path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
 

@@ -2474,7 +2474,7 @@ def _hbn_downloader(my_path, derivative, subjects, client):
     return data_files
 
 
-def fetch_hbn(subjects, path=None, include_afq=False):
+def fetch_hbn(subjects, *, path=None, include_afq=False):
     """
     Fetch preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
 
