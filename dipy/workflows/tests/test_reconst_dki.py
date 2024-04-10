@@ -2,8 +2,6 @@ from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
 import numpy as np
-
-import numpy.testing as npt
 from numpy.testing import assert_equal, assert_allclose
 
 from dipy.data import get_fnames
@@ -135,6 +133,5 @@ def test_reconst_dki():
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         dki_flow._force_overwrite = True
-        dki_flow.run(
-            data_path, tmp_bval_path, tmp_bvec_path, mask_path, out_dir=out_dir,
-            b0_threshold=0)
+        dki_flow.run(data_path, tmp_bval_path, tmp_bvec_path, mask_path,
+                     out_dir=out_dir, b0_threshold=0)
