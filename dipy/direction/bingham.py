@@ -612,7 +612,7 @@ class BinghamMetrics:
     
     @auto_attr
     def afd_total(self):
-        """ The sum of all ODF lobe's amplitude."""
+        """ The total sum of all ODF lobes' amplitudes."""
         return np.sum(self.afd, axis=-1)
 
     @auto_attr
