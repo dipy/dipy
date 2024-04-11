@@ -106,6 +106,8 @@ BinghamMetrics = bingham_from_odf(csd_odf, sphere)
 #
 # - afd (apparent fiber density: the maximum value for each peak. Also known as
 #   Bingham's f_0 parameter.)
+# - afd_total (total apparent fiber density: sum of all maximum peak values 
+#   across all lobes of the ODF.)
 # - fd (fiber densitiy: as defined in [1]_, one for each peak.)
 # - fs (fiber spread: as defined in [1]_, one for each peak.)
 # - gfd (global fiber density: average of fd across all ODF peaks.)
