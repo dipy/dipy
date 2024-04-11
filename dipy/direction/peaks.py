@@ -573,7 +573,7 @@ def reshape_peaks_for_visualization(peaks):
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
 
 
-def peaks_from_positions(positions, odfs, sphere, relative_peak_threshold=.5,
+def peaks_from_positions(positions, odfs, sphere, *, relative_peak_threshold=.5,
                          min_separation_angle=25, is_symmetric=True, npeaks=5):
     """
     Extract the peaks at each positions.
@@ -588,16 +588,18 @@ def peaks_from_positions(positions, odfs, sphere, relative_peak_threshold=.5,
     sphere : Sphere
         A discrete Sphere. The M points on the sphere correspond to the points
         of the odfs.
-    relative_peak_threshold : float in [0., 1.]
+    relative_peak_threshold : float, optional
         Only peaks greater than ``min + relative_peak_threshold * scale`` are
         kept, where ``min = max(0, odf.min())`` and
-        ``scale = odf.max() - min``.
-    min_separation_angle : float in [0, 90]
+        ``scale = odf.max() - min``. The ``relative_peak_threshold`` should
+        be in the range [0, 1].
+    min_separation_angle : float, optional
         The minimum distance between directions. If two peaks are too close
-        only the larger of the two is returned.
+        only the larger of the two is returned. The ``min_separation_angle``
+        should be in the range [0, 90].
     is_symmetric : bool, optional
         If True, v is considered equal to -v.
-    npeaks : int
+    npeaks : int, optional
         The maximum number of peaks to extract at from each position.
 
     Returns

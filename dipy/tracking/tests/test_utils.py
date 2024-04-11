@@ -704,9 +704,10 @@ def test_curvature_angle():
                          min_radius_curvature_from_angle(np.pi/2, 1))
 
 
-def test_seeds_directions_pairs():
-    positions = np.random.random((10, 3))
-    peaks = np.random.random((10, 5, 3))
+@set_random_number_generator()
+def test_seeds_directions_pairs(rng):
+    positions = rng.random(size=(10, 3))
+    peaks = rng.random(size=(10, 5, 3))
 
     # test various max_cross value
     for i in range(-1, 7):

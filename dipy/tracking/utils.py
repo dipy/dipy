@@ -1049,7 +1049,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
     return min_radius_curvature
 
 
-def seeds_directions_pairs(positions, peaks, max_cross=-1):
+def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
     """
     Pair each seed to the corresponding peaks. If multiple peaks are available
     the seed is repeated for each.
@@ -1060,7 +1060,7 @@ def seeds_directions_pairs(positions, peaks, max_cross=-1):
         Voxel coordinates of the N positions.
     peaks : array (N, M, 3)
         Peaks at each position
-    max_cross : int
+    max_cross : int, optional
         The maximum number of direction to track from each seed in crossing
         voxels. By default all voxel peaks are used.
 

@@ -700,7 +700,6 @@ def test_peaks_from_positions():
     _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
-    model = CsaOdfModel(gtab, 4)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     voxels = []
@@ -711,10 +710,15 @@ def test_peaks_from_positions():
         voxels.append(v)
     data = np.array(voxels).reshape((3, 3, 3, -1))
 
-    pam = peaks_from_model(model, data, default_sphere, return_odf=True,
-                           return_sh=False, legacy=False, npeaks=npeaks,
-                           relative_peak_threshold=thresh,
-                           min_separation_angle=min_angle)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model = CsaOdfModel(gtab, 4)
+        pam = peaks_from_model(model, data, default_sphere, return_odf=True,
+                               return_sh=False, legacy=True, npeaks=npeaks,
+                               relative_peak_threshold=thresh,
+                               min_separation_angle=min_angle)
 
     # test the peaks at each voxel
     positions = np.array(list(product(range(3), range(3), range(3))))
