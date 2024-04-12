@@ -93,6 +93,7 @@ def test_image_registration(rng):
         dwi_image_file = pjoin(temp_out_dir, 'dwi.nii.gz')
 
         image_registration_flow = ImageRegistrationFlow()
+        apply_trans = ApplyTransformFlow()
 
         def read_distance(qual_fname):
             with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
@@ -254,6 +255,15 @@ def test_image_registration(rng):
             npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
             check_existence(out_moved, out_affine)
 
+            apply_trans.run(static_image_files=dwi_image_file,
+                            moving_image_files=moving_image_file,
+                            out_dir=temp_out_dir,
+                            transform_map_file=out_affine)
+
+            # Checking for the transformed volume shape
+            volume = load_nifti_data(pjoin(temp_out_dir, "transformed.nii.gz"))
+            assert volume.ndim == 3
+
         def test_4D_moving():
             out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "trans_affine.txt")
@@ -277,6 +287,17 @@ def test_image_registration(rng):
             dist = read_distance('trans_q.txt')
             npt.assert_almost_equal(float(dist), -1.0002607616786339, 1)
             check_existence(out_moved, out_affine)
+
+            apply_trans.run(static_image_files=static_image_file,
+                            moving_image_files=dwi_image_file,
+                            out_dir=temp_out_dir,
+                            transform_map_file=out_affine,
+                            out_file='transformed2.nii.gz')
+
+            # Checking for the transformed volume shape
+            volume = load_nifti_data(pjoin(temp_out_dir, "transformed2.nii.gz"))
+            assert volume.ndim == 4
+
 
         test_com()
         test_translation()

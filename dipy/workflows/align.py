@@ -495,10 +495,12 @@ class ApplyTransformFlow(Workflow):
                 static_image = static_image[..., 0]
             if static_image.ndim < moving_image.ndim:
                 # There is an extra dimension in the moving image, e.g. DWI
-                # registered to a T1, so repeat the T1 so as to register
-                # each DWI volume to a copy of the T1.
-                static_image = np.repeat(static_image[..., None],
-                                         moving_image.shape[-1], axis=-1)
+                # registered to a T1, so loop over the DWI volume
+                # for each direction.
+                moving_image_full = moving_image
+                moving_image = moving_image[..., 0]
+            else:
+                moving_image_full = None
             check_dimensions(static_image, moving_image)
 
             if transform_type.lower() == 'affine':
@@ -529,8 +531,15 @@ class ApplyTransformFlow(Workflow):
                 mapping.backward = disp_data[..., 1]
                 mapping.is_inverse = True
 
-            # Transforming the image/
-            transformed = mapping.transform(moving_image)
+            # Transforming the image
+            if moving_image_full is None:
+                transformed = mapping.transform(moving_image)
+            else:
+                transformed = np.concatenate(
+                    [mapping.transform(moving_image)[..., None]
+                     for moving_image in moving_image_full],
+                    axis=-1
+                )
 
             save_nifti(out_file, transformed, affine=static_grid2world)
 
