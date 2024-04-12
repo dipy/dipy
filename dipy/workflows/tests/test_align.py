@@ -85,7 +85,7 @@ def test_image_registration(rng):
                    affine=moving_g2w)
         # simulate three direction DWI by repeating b0 three times
         save_nifti(pjoin(temp_out_dir, 'dwi.nii.gz'),
-                   data=np.repeat(static[..., None], 3, axis=-1), 
+                   data=np.repeat(static[..., None], 3, axis=-1),
                    affine=static_g2w)
 
         static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
@@ -230,7 +230,7 @@ def test_image_registration(rng):
             assert os.path.exists(movedfile)
             assert os.path.exists(affine_mat_file)
             return True
-        
+
         def test_4D_static():
             out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "trans_affine.txt")

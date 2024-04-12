@@ -2,6 +2,7 @@
 
 from .convert import expand_range
 
+
 def handle_vol_idx(vol_idx):
     if vol_idx is not None:
         if isinstance(vol_idx, str):

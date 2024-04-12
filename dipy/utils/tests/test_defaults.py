@@ -13,4 +13,5 @@ def test_handle_vol_idx():
     ]
 
     for input_val, expected_output in test_cases:
-        np.testing.assert_array_equal(handle_vol_idx(input_val), expected_output)
+        np.testing.assert_array_equal(
+            handle_vol_idx(input_val), expected_output)
