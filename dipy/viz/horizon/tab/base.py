@@ -35,22 +35,16 @@ class HorizonTab(ABC):
         self.show = lambda *args: None
 
     @abstractmethod
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id):
         """Build all the elements under the tab.
 
         Parameters
         ----------
         tab_id : int
             Id of the tab.
-        tab_ui : TabUI
-            FURY TabUI object for tabs panel.
-
-        Notes
-        -----
-        tab_ui will removed once every all tabs adapt new build architecture.
         """
 
-    def register_elements(self, *args):
+    def _register_elements(self, *args):
         """Register elements for rendering.
 
         Parameters
@@ -58,20 +52,49 @@ class HorizonTab(ABC):
         *args : HorizonUIElement(s)
             Elements to be register for rendering.
         """
-        for element in args:
-            self._elements.append(element)
+        self._elements += list(args)
+
+    def _toggle_actors(self, checkbox):
+        """Toggle actors in the scene. This helps removing the actor to
+        interact with actors behind this actor.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+        """
+        if '' in checkbox.checked_labels:
+            self.show(*self.actors)
+        else:
+            self.hide(*self.actors)
 
     def on_tab_selected(self):
         """Implement if require to update something while the tab becomes
         active.
         """
-        pass
+        if hasattr(self, '_actor_toggle'):
+            self._toggle_actors(self._actor_toggle.obj)
 
     @property
     @abstractmethod
     def name(self):
         """Name of the tab.
         """
+
+    @property
+    @abstractmethod
+    def actors(self):
+        """Name of the tab.
+        """
+
+    @property
+    def tab_id(self):
+        """Id of the tab. Reference for Tab Manager to identify the tab.
+
+        Returns
+        -------
+        int
+        """
+        return self._tab_id
 
     @property
     def elements(self):
@@ -140,7 +163,7 @@ class TabManager:
             self._tab_ui.tabs[tab_id].title_font_size = 18
             tab.hide = self._hide_elements
             tab.show = self._show_elements
-            tab.build(tab_id, self._tab_ui)
+            tab.build(tab_id)
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_volume_change = self.synchronize_volumes
             if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
@@ -240,8 +263,8 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
-        current_tab.on_tab_selected()
         self.tab_changed(current_tab.actors)
+        current_tab.on_tab_selected()
 
     def reposition(self, win_size):
         """
@@ -323,7 +346,7 @@ class TabManager:
         return self._tab_ui
 
 
-def build_label(text, font_size=16, bold=False, is_horizon_label=False):
+def build_label(text, font_size=16, bold=False):
     """Simple utility function to build labels.
 
     Parameters
@@ -349,9 +372,7 @@ def build_label(text, font_size=16, bold=False, is_horizon_label=False):
     label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
     label.color = (0.7, 0.7, 0.7)
 
-    if is_horizon_label:
-        return HorizonUIElement(True, text, label)
-    return label
+    return HorizonUIElement(True, text, label)
 
 
 def build_slider(
@@ -422,8 +443,7 @@ def build_slider(
     slider_label = build_label(
         label,
         font_size=label_font_size,
-        bold=label_style_bold,
-        is_horizon_label=True
+        bold=label_style_bold
     )
 
     if not is_double_slider:
@@ -610,9 +630,9 @@ def build_switcher(
     if initial_selection >= num_items:
         initial_selection = 0
 
-    switch_label = build_label(text=label, is_horizon_label=True)
+    switch_label = build_label(text=label)
     selection_label = build_label(
-        text=items[initial_selection]['label'])
+        text=items[initial_selection]['label']).obj
 
     left_button = ui.Button2D(
             icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
@@ -653,18 +673,3 @@ def build_switcher(
         switch_label,
         switcher
     )
-
-
-def color_single_slider(slider):
-    slider.default_color = (1., .5, .0)
-    slider.track.color = (.8, .3, .0)
-    slider.active_color = (.9, .4, .0)
-    slider.handle.color = (1., .5, .0)
-
-
-def color_double_slider(slider):
-    slider.default_color = (1., .5, .0)
-    slider.track.color = (.8, .3, .0)
-    slider.active_color = (.9, .4, .0)
-    slider.handles[0].color = (1., .5, .0)
-    slider.handles[1].color = (1., .5, .0)

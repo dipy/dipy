@@ -18,35 +18,20 @@ class ROIsTab(HorizonTab):
 
         self._tab_id = 0
 
-        self._opacity_toggle = build_checkbox(
+        self._actor_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
-            on_change=self._toggle_opacity)
+            on_change=self._toggle_actors)
 
         self._opacity_slider_label, self._opacity_slider = build_slider(
             initial_value=1, max_value=1., text_template='{ratio:.0%}',
             on_change=self._change_opacity, label='Opacity'
         )
 
-        self.register_elements(
-            self._opacity_toggle,
+        self._register_elements(
+            self._actor_toggle,
             self._opacity_slider_label, self._opacity_slider
         )
-
-    def _toggle_opacity(self, checkbox):
-        """Toggle opacity of all ROIs. Changing the slider.obj.value will
-        trigger the _change_opacity function and adjust the opacity.
-
-        Parameters
-        ----------
-        checkbox : CheckBox2D
-        """
-        if '' in checkbox.checked_labels:
-            self._opacity_slider.selected_value = 1
-            self._opacity_slider.obj.value = 1
-        else:
-            self._opacity_slider.selected_value = 0
-            self._opacity_slider.obj.value = 0
 
     def _change_opacity(self, slider):
         """Change opacity of all ROIs.
@@ -60,21 +45,19 @@ class ROIsTab(HorizonTab):
         for contour in self._actors:
             contour.GetProperty().SetOpacity(opacity)
 
-    def build(self, tab_id, _tab_ui):
+    def build(self, tab_id):
         """Position the elements in the tab.
 
         Parameters
         ----------
         tab_id : int
             Identifier for the tab. Index of the tab in TabUI.
-        _tab_ui : TabUI
-            Object for Tab from FURY.
         """
 
         self._tab_id = tab_id
 
         y_pos = .85
-        self._opacity_toggle.position = (.02, y_pos)
+        self._actor_toggle.position = (.02, y_pos)
         self._opacity_slider_label.position = (.05, y_pos)
         self._opacity_slider.position = (.12, y_pos)
 
@@ -97,12 +80,3 @@ class ROIsTab(HorizonTab):
         list
         """
         return self._actors
-
-    @property
-    def tab_id(self):
-        """Id of the tab. Reference for Tab Manager to identify the tab.
-        Returns
-        -------
-        int
-        """
-        return self._tab_id

@@ -28,19 +28,7 @@ def check_label(label):
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_label():
-    regular_label = build_label(text='Hello')
-    npt.assert_equal(regular_label.message, 'Hello')
-    npt.assert_equal(regular_label.font_size, 16)
-    npt.assert_equal(regular_label.bold, False)
-    check_label(regular_label)
-
-    regular_label = build_label(text='Hello', font_size=10, bold=True)
-    npt.assert_equal(regular_label.message, 'Hello')
-    npt.assert_equal(regular_label.font_size, 10)
-    npt.assert_equal(regular_label.bold, True)
-    check_label(regular_label)
-
-    horizon_label = build_label(text='Hello', is_horizon_label=True)
+    horizon_label = build_label(text='Hello')
     npt.assert_equal(horizon_label.obj.message, 'Hello')
     npt.assert_equal(horizon_label.obj.font_size, 16)
     npt.assert_equal(horizon_label.obj.bold, False)
