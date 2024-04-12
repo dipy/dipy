@@ -3,6 +3,7 @@ from warnings import warn
 import numpy as np
 import nibabel as nib
 from os.path import join as pjoin
+from dipy.utils.defaults import handle_vol_idx
 from dipy.utils.optpkg import optional_package
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
@@ -365,11 +366,9 @@ class ImageRegistrationFlow(Workflow):
                 "rigid_scaling": ["center_of_mass", "rigid_scaling"],
                 "affine": ["center_of_mass", "affine"]}
 
-        if static_vol_idx is not None:
-            static_vol_idx = [int(idx) for idx in static_vol_idx]
+        static_vol_idx = handle_vol_idx(static_vol_idx)
 
-        if moving_vol_idx is not None:
-            moving_vol_idx = [int(idx) for idx in moving_vol_idx]
+        moving_vol_idx = handle_vol_idx(moving_vol_idx)
 
         pipeline = pipeline_opt.get(transform)
 

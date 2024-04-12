@@ -27,6 +27,7 @@ python_sources = [
   '__init__.py',
   'arrfuncs.py',
   'convert.py',
+  'defaults.py',
   'deprecator.py',
   'multiproc.py',
   'optpkg.py',
