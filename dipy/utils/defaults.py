@@ -4,6 +4,7 @@ from .convert import expand_range
 
 
 def handle_vol_idx(vol_idx):
+    """Handle user input for volume index."""
     if vol_idx is not None:
         if isinstance(vol_idx, str):
             vol_idx = expand_range(vol_idx)

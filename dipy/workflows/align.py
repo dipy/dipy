@@ -313,13 +313,13 @@ class ImageRegistrationFlow(Workflow):
             If true, quality assessment metric are saved in
             'quality_metric.txt'.
 
-        static_vol_idx : variable int, optional
+        static_vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `static` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
             input is required for 4D volumes.
 
-        moving_vol_idx : variable int, optional
+        moving_vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `moving` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
@@ -489,14 +489,8 @@ class ApplyTransformFlow(Workflow):
             # Doing a sanity check for validating the dimensions of the input
             # images.
             if static_image.ndim > moving_image.ndim:
-                # There is an extra dimension in the static image, e.g. DWI
-                # registered onto using a T1, so use the shape of the
-                # first volume.
                 static_image = static_image[..., 0]
             if static_image.ndim < moving_image.ndim:
-                # There is an extra dimension in the moving image, e.g. DWI
-                # registered to a T1, so loop over the DWI volume
-                # for each direction.
                 moving_image_full = moving_image
                 moving_image = moving_image[..., 0]
             else:
