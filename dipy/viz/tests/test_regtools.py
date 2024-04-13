@@ -1,13 +1,14 @@
 import numpy as np
-from dipy.viz import regtools
 import numpy.testing as npt
 import pytest
-from dipy.align.metrics import SSDMetric
+
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import SSDMetric
 from dipy.testing.decorators import set_random_number_generator
 
 # Conditional import machinery for matplotlib
 from dipy.utils.optpkg import optional_package
+from dipy.viz import regtools
 
 _, have_matplotlib, _ = optional_package('matplotlib')
 

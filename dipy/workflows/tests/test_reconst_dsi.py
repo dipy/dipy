@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti, load_nifti_data
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.workflows.reconst import ReconstDsiFlow
 

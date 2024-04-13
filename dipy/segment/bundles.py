@@ -1,20 +1,25 @@
-from time import time
 from itertools import chain
 import logging
+from time import time
 
-import numpy as np
-from dipy.tracking.streamline import (set_number_of_points, nbytes,
-                                      select_random_set_of_streamlines)
-from dipy.segment.clustering import qbx_and_merge
-from dipy.tracking.distances import (bundles_distances_mdf,
-                                     bundles_distances_mam)
-from dipy.align.streamlinear import (StreamlineLinearRegistration,
-                                     BundleMinDistanceMetric,
-                                     BundleSumDistanceMatrixMetric,
-                                     BundleMinDistanceAsymmetricMetric)
-
-from dipy.tracking.streamline import Streamlines, length
 from nibabel.affines import apply_affine
+import numpy as np
+
+from dipy.align.streamlinear import (
+    BundleMinDistanceAsymmetricMetric,
+    BundleMinDistanceMetric,
+    BundleSumDistanceMatrixMetric,
+    StreamlineLinearRegistration,
+)
+from dipy.segment.clustering import qbx_and_merge
+from dipy.tracking.distances import bundles_distances_mam, bundles_distances_mdf
+from dipy.tracking.streamline import (
+    Streamlines,
+    length,
+    nbytes,
+    select_random_set_of_streamlines,
+    set_number_of_points,
+)
 
 
 def check_range(streamline, gt, lt):

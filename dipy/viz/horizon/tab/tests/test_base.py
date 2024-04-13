@@ -1,14 +1,18 @@
-import pytest
 import warnings
 
 import numpy.testing as npt
-from dipy.testing import check_for_warnings
+import pytest
 
-from dipy.utils.optpkg import optional_package
+from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb
-from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
-                                       build_radio_button,
-                                       build_slider, build_switcher)
+from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.tab.base import (
+    build_checkbox,
+    build_label,
+    build_radio_button,
+    build_slider,
+    build_switcher,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 

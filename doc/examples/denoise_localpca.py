@@ -27,15 +27,17 @@ please see the following example instead:
 Let's load the necessary modules
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 from time import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
 from dipy.denoise.localpca import localpca
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################
 # Load one of the datasets. These data were acquired with 63 gradients and 1

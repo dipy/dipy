@@ -1,22 +1,27 @@
-import numpy as np
-import scipy as sp
 from functools import reduce
 from operator import mul
-from dipy.core.ndindex import ndindex
-from dipy.core.interpolation import (interpolate_scalar_2d,
-                                     interpolate_scalar_3d)
-from dipy.data import get_fnames
+
+import numpy as np
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
+import scipy as sp
+
 from dipy.align import vector_fields as vf
+from dipy.align.parzenhist import (
+    ParzenJointHistogram,
+    cubic_spline,
+    cubic_spline_derivative,
+    sample_domain_regular,
+)
 from dipy.align.transforms import regtransforms
-from dipy.align.parzenhist import (ParzenJointHistogram,
-                                   cubic_spline,
-                                   cubic_spline_derivative,
-                                   sample_domain_regular)
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_almost_equal,
-                           assert_equal,
-                           assert_raises)
+from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
+from dipy.core.ndindex import ndindex
+from dipy.data import get_fnames
 from dipy.testing.decorators import set_random_number_generator
 
 factors = {('TRANSLATION', 2): 2.0,

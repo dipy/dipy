@@ -9,11 +9,10 @@ from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
 import trx.trx_file_memmap as tmm
 
-from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
-from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.io.dpy import Dpy
-from dipy.io.utils import (create_tractogram_header,
-                           is_header_compatible)
+from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
+from dipy.io.utils import create_tractogram_header, is_header_compatible
+from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 
 
 def save_tractogram(sft, filename, bbox_valid_check=True):

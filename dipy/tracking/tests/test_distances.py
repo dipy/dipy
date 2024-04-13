@@ -1,16 +1,19 @@
 import warnings
 
 import numpy as np
-from numpy.testing import (assert_array_almost_equal,
-                           assert_equal, assert_almost_equal,
-                           assert_array_equal)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+)
 
+from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
 from dipy.testing import assert_true
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import distances as pf
 from dipy.tracking.streamline import set_number_of_points
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
 
 
 @set_random_number_generator()

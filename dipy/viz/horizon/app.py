@@ -1,7 +1,7 @@
 from warnings import warn
-from packaging.version import Version
 
 import numpy as np
+from packaging.version import Version
 
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -9,19 +9,34 @@ from dipy.io.streamline import save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager, build_label, SurfaceTab)
-from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
-                                         SurfaceVisualizer, PeaksVisualizer)
-from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   unpack_image, is_binary_image,
-                                   unpack_surface, check_peak_size)
+from dipy.viz.horizon.tab import (
+    ClustersTab,
+    PeaksTab,
+    ROIsTab,
+    SlicesTab,
+    SurfaceTab,
+    TabManager,
+    build_label,
+)
+from dipy.viz.horizon.util import (
+    check_img_dtype,
+    check_img_shapes,
+    check_peak_size,
+    is_binary_image,
+    unpack_image,
+    unpack_surface,
+)
+from dipy.viz.horizon.visualizer import (
+    ClustersVisualizer,
+    PeaksVisualizer,
+    SlicesVisualizer,
+    SurfaceVisualizer,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
-    from fury import __version__ as fury_version
-    from fury import actor, ui, window
+    from fury import __version__ as fury_version, actor, ui, window
     from fury.colormap import distinguishable_colormap
 
 

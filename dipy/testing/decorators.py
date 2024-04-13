@@ -4,10 +4,11 @@
 Decorators for dipy tests
 """
 
-import re
+import inspect
 import os
 import platform
-import inspect
+import re
+
 import numpy as np
 
 SKIP_RE = re.compile(r"(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")

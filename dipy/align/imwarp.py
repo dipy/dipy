@@ -1,17 +1,14 @@
 """  Classes and functions for Symmetric Diffeomorphic Registration """
 
-import logging
 import abc
+import logging
 
-import numpy as np
-import numpy.linalg as npl
 import nibabel as nib
 from nibabel.streamlines import ArraySequence as Streamlines
+import numpy as np
+import numpy.linalg as npl
 
-from dipy.align import vector_fields as vfu
-from dipy.align import floating
-from dipy.align import VerbosityLevels
-from dipy.align import Bunch
+from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
 
 RegistrationStages = Bunch(INIT_START=0,

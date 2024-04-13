@@ -1,15 +1,17 @@
 import warnings
+
 import numpy as np
 import numpy.testing as npt
 import pytest
-import dipy.reconst.sfm as sfm
-import dipy.data as dpd
+
 import dipy.core.gradients as grad
-import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
-import dipy.reconst.cross_validation as xval
+import dipy.data as dpd
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
+import dipy.reconst.cross_validation as xval
+import dipy.reconst.sfm as sfm
+import dipy.sims.voxel as sims
 from dipy.utils.optpkg import optional_package
 
 warnings.filterwarnings('ignore')

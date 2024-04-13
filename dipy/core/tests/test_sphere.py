@@ -1,14 +1,25 @@
+import warnings
+
 import numpy as np
 import numpy.testing as nt
 import pytest
-import warnings
 
-from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
-                              faces_from_sphere_vertices, disperse_charges,
-                              fibonacci_sphere, disperse_charges_alt,
-                              _get_forces, _get_forces_alt, unit_octahedron,
-                              unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
+from dipy.core.sphere import (
+    HemiSphere,
+    Sphere,
+    _get_forces,
+    _get_forces_alt,
+    disperse_charges,
+    disperse_charges_alt,
+    faces_from_sphere_vertices,
+    fibonacci_sphere,
+    hemi_icosahedron,
+    unique_edges,
+    unique_sets,
+    unit_icosahedron,
+    unit_octahedron,
+)
 from dipy.core.sphere_stats import random_uniform_on_sphere
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package

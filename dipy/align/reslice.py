@@ -6,6 +6,7 @@ from scipy.ndimage import affine_transform
 
 from dipy.utils.multiproc import determine_num_processes
 
+
 def _affine_transform(kwargs):
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*scipy.*18.*",

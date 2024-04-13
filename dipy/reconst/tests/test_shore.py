@@ -1,12 +1,11 @@
 # Tests for shore fitting
-import warnings
 from math import factorial
+import warnings
 
 import numpy as np
 import numpy.testing as npt
-
-from scipy.special import genlaguerre, gamma
 import pytest
+from scipy.special import gamma, genlaguerre
 
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shm import descoteaux07_legacy_msg

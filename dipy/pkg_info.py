@@ -1,8 +1,7 @@
-import os
-import sys
-import subprocess
-
 import configparser
+import os
+import subprocess
+import sys
 
 COMMIT_INFO_FNAME = 'COMMIT_INFO.txt'
 
@@ -76,6 +75,7 @@ def get_pkg_info(pkg_path):
     """
     src, hsh = pkg_commit_hash(pkg_path)
     import numpy
+
     import dipy
     return dict(
         pkg_path=pkg_path,

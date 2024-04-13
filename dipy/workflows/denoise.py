@@ -1,16 +1,17 @@
 import logging
 import shutil
+
 import numpy as np
 
 from dipy.core.gradients import gradient_table
+from dipy.denoise.gibbs import gibbs_removal
+from dipy.denoise.localpca import localpca, mppca
+from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.patch2self import patch2self
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
-from dipy.denoise.patch2self import patch2self
-from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.localpca import localpca, mppca
-from dipy.denoise.gibbs import gibbs_removal
-from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
 
 

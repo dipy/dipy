@@ -10,14 +10,14 @@ Import modules, fetch and read data, and compute the mask.
 """
 
 import time
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
+from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
-
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 

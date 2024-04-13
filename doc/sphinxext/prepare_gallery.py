@@ -1,10 +1,10 @@
-import fnmatch
-import sys
-import os
-import shutil
-from os.path import join as pjoin
 from dataclasses import dataclass, field
+import fnmatch
+import os
+from os.path import join as pjoin
 from pathlib import Path
+import shutil
+import sys
 
 from sphinx.util import logging
 

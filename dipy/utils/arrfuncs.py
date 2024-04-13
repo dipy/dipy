@@ -1,7 +1,7 @@
 """ Utilities to manipulate numpy arrays """
 
-import numpy as np
 from nibabel.volumeutils import endian_codes, native_code
+import numpy as np
 
 
 def as_native_array(arr):

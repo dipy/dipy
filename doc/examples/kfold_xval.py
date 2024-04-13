@@ -34,17 +34,17 @@ First, we import that modules needed for this example. In particular, the
 
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-
-import dipy.data as dpd
-import dipy.reconst.cross_validation as xval
-import dipy.reconst.dti as dti
-import dipy.reconst.csdeconv as csd
+import numpy as np
 import scipy.stats as stats
+
 from dipy.core.gradients import gradient_table
-from dipy.io.image import load_nifti
+import dipy.data as dpd
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
+import dipy.reconst.cross_validation as xval
+import dipy.reconst.csdeconv as csd
+import dipy.reconst.dti as dti
 
 np.random.seed(2014)
 

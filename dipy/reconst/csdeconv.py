@@ -1,29 +1,31 @@
+import numbers
 import warnings
 
 import numpy as np
-import numbers
 from scipy.integrate import quad
-from scipy.special import lpn, gamma
 import scipy.linalg as la
 import scipy.linalg.lapack as ll
+from scipy.special import gamma, lpn
 
-from dipy.data import small_sphere, get_sphere, default_sphere
-
-from dipy.core.geometry import cart2sphere
+from dipy.core.geometry import cart2sphere, vec2vec_rotmat
 from dipy.core.ndindex import ndindex
-from dipy.sims.voxel import single_tensor
-
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (sph_harm_ind_list, real_sh_descoteaux_from_index,
-                              sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sh_descoteaux, sh_to_rh,
-                              forward_sdeconv_mat, SphHarmModel)
-from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
-
+from dipy.data import default_sphere, get_sphere, small_sphere
 from dipy.direction.peaks import peaks_from_model
-from dipy.core.geometry import vec2vec_rotmat
-
+from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.shm import (
+    SphHarmFit,
+    SphHarmModel,
+    forward_sdeconv_mat,
+    lazy_index,
+    real_sh_descoteaux,
+    real_sh_descoteaux_from_index,
+    sh_to_rh,
+    sph_harm_ind_list,
+    sph_harm_lookup,
+)
+from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
+from dipy.sims.voxel import single_tensor
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 

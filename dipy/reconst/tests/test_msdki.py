@@ -1,16 +1,21 @@
 """ Testing Mean Signal DKI (MSDKI) """
 
-import numpy as np
 import random
-from numpy.testing import (assert_array_almost_equal, assert_raises,
-                           assert_almost_equal, assert_)
-from dipy.sims.voxel import (single_tensor, multi_tensor_dki)
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
-                                 round_bvals)
+
+import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_raises,
+)
+
+from dipy.core.gradients import gradient_table, round_bvals, unique_bvals_magnitude
 from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
 import dipy.reconst.msdki as msdki
-from dipy.reconst.msdki import (msk_from_awf, awf_from_msk)
+from dipy.reconst.msdki import awf_from_msk, msk_from_awf
+from dipy.sims.voxel import multi_tensor_dki, single_tensor
 
 gtab_3s, signal_sph, msignal_sph, DWI, MDWI = None, None, None, None, None
 gtab, params_single, params_multi, MKgt_multi = None, None, None, None

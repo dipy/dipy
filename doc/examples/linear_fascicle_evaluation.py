@@ -21,22 +21,20 @@ created in that example:
 """
 from os.path import join as pjoin
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
-
-import dipy.core.optimize as opt
-from dipy.data import fetch_stanford_tracks
-from dipy.io.streamline import load_trk
-import dipy.tracking.life as life
-from dipy.viz import window, actor, colormap as cmap
+import numpy as np
 
 # We'll need to know where the corpus callosum is from these variables:
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
+import dipy.core.optimize as opt
+from dipy.data import fetch_stanford_tracks, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data, load_nifti
+from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.streamline import load_trk
+import dipy.tracking.life as life
+from dipy.viz import actor, colormap as cmap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')

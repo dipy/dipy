@@ -1,20 +1,22 @@
 import tempfile
-from urllib.error import URLError, HTTPError
-
-import pytest
+from urllib.error import HTTPError, URLError
 
 import nibabel as nib
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_equal, assert_
+from numpy.testing import assert_, assert_allclose, assert_array_equal
+import pytest
 import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
-from dipy.io.utils import (create_nifti_header,
-                           decfa, decfa_to_float,
-                           get_reference_info,
-                           is_reference_info_valid,
-                           read_img_arr_or_path)
+from dipy.io.utils import (
+    create_nifti_header,
+    decfa,
+    decfa_to_float,
+    get_reference_info,
+    is_reference_info_valid,
+    read_img_arr_or_path,
+)
 from dipy.testing.decorators import set_random_number_generator
 
 FILEPATH_DIX = None

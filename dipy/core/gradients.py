@@ -4,13 +4,11 @@ from warnings import warn
 import numpy as np
 from scipy.linalg import inv, polar
 
-from dipy.io import gradients as io
+from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.core.onetime import auto_attr
-from dipy.core.geometry import vector_norm, vec2vec_rotmat
-from dipy.core.sphere import disperse_charges, HemiSphere
-
+from dipy.core.sphere import HemiSphere, disperse_charges
+from dipy.io import gradients as io
 from dipy.utils.deprecator import deprecate_with_version
-
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
 

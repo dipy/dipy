@@ -1,9 +1,10 @@
 import numpy as np
-from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
-from dipy.reconst.odf import OdfModel, OdfFit
+from scipy.ndimage import map_coordinates
+
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.odf import OdfFit, OdfModel
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
