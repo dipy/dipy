@@ -16,8 +16,8 @@ from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
-from dipy.utils.defaults import handle_vol_idx
 from dipy.utils.optpkg import optional_package
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
