@@ -105,9 +105,9 @@ BinghamMetrics = bingham_from_odf(csd_odf, sphere)
 # in the `BinghamMetrics` class instance are:
 #
 # - afd (apparent fiber density: the maximum value for each peak. Also known as
-#   Bingham's f_0 parameter.)
-# - afd_total (total apparent fiber density: sum of all maximum peak values 
-#   across all lobes of the ODF.)
+#       Bingham's f_0 parameter.)
+# - afd_total (total apparent fiber density: sum of all maximum peak values
+#       across all lobes of the ODF.)
 # - fd (fiber densitiy: as defined in [1]_, one for each peak.)
 # - fs (fiber spread: as defined in [1]_, one for each peak.)
 # - gfd (global fiber density: average of fd across all ODF peaks.)
@@ -128,8 +128,8 @@ BinghamMetrics = bingham_from_odf(csd_odf, sphere)
 #       fitting, also known as parameter mu_0. These directions are slightly
 #       different than the peak directions given by the function
 #       `peaks_from_model`.)
-# 
-# For illustration purposes, the fitted Bingham derived metrics can be 
+#
+# For illustration purposes, the fitted Bingham derived metrics can be
 # visualized using the following lines of code:
 
 bim_odf = BinghamMetrics.odf(sphere)

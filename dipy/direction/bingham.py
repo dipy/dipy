@@ -30,7 +30,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     Parameters
     ----------
     sf: 1d ndarray
-        The odf function - surface function (sf) - evaluated on the vertices 
+        The odf function - surface function (sf) - evaluated on the vertices
         of `sphere`.
     peak: ndarray (3, 1)
         The peak direction of the lobe to fit.
@@ -602,14 +602,13 @@ class BinghamMetrics:
 
         self.peak_dirs = model_params[..., 3:6]
         self.peak_values = model_params[..., 0]
-        
 
     @auto_attr
     def afd(self):
         """ Maximum Bingham Amplitude for each ODF lobe. This is the same as
         peak_values."""
         return self.peak_values
-    
+
     @auto_attr
     def afd_total(self):
         """ The total sum of all ODF lobes' amplitudes."""
@@ -636,7 +635,7 @@ class BinghamMetrics:
 
         .. math::
             k_{total} = sqrt{(k_1 * k_2)}
-            
+
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
@@ -662,7 +661,7 @@ class BinghamMetrics:
         """ Overall Orientation Dispersion Index (ODI) computed for am
         ODF peak from the overall concentration parameter (k_total).
         Defined by equation 20 in [4]_.
-            
+
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
@@ -720,7 +719,7 @@ class BinghamMetrics:
                100:176-91.
         """
         return bingham_fiber_spread(self.afd, self.fd)
-    
+
     @auto_attr
     def gfs(self):
         """ Global fiber spread (weighted average of fiber spread across all
@@ -775,7 +774,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
         fitted to ODF lobes.
     """
     shape = odf.shape[0:-1]
-    
+
     if mask is None:
         mask = np.ones(shape)
 
@@ -792,7 +791,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
-        
+
     return BinghamMetrics(bpars)
 
 
@@ -829,7 +828,7 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
         fitted to ODF lobes.
     """
     shape = sh.shape[0:-1]
-    
+
     if mask is None:
         mask = np.ones(shape)
 
@@ -842,11 +841,11 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
             continue
 
         odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
-        
+
         [fits, npeaks_final] = odf_to_bingham(
             odf, sphere, npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
-        
+
     return BinghamMetrics(bpars)
