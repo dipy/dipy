@@ -1,9 +1,10 @@
 import numpy as np
-from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.data import get_fnames
-from dipy.core.gradients import gradient_table
 from numpy.testing import assert_almost_equal
-from dipy.sims.voxel import sticks_and_ball, multi_tensor
+
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.sims.voxel import multi_tensor, sticks_and_ball
 
 
 def test_dsi_metrics():

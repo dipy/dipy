@@ -1,22 +1,26 @@
-import numpy as np
-
-from dipy.reconst.cache import Cache
-from dipy.core.geometry import cart2sphere
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from scipy.special import genlaguerre, gamma
-from dipy.core.gradients import gradient_table_from_gradient_strength_bvecs
-from scipy import special
 from warnings import warn
+
+import numpy as np
+from scipy import special
+from scipy.special import gamma, genlaguerre
+
+from dipy.core.geometry import cart2sphere
+from dipy.core.gradients import gradient_table_from_gradient_strength_bvecs
 from dipy.reconst import mapmri
+from dipy.reconst.cache import Cache
+from dipy.reconst.multi_voxel import multi_voxel_fit
+
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
     from scipy.special import factorial, factorial2
 except ImportError:
     from scipy.misc import factorial, factorial2
-from scipy.optimize import fmin_l_bfgs_b
-from dipy.reconst.shm import real_sh_descoteaux_from_index
-import dipy.reconst.dti as dti
-from dipy.utils.optpkg import optional_package
 import random
+
+from scipy.optimize import fmin_l_bfgs_b
+
+import dipy.reconst.dti as dti
+from dipy.reconst.shm import real_sh_descoteaux_from_index
+from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 plt, have_plt, _ = optional_package("matplotlib.pyplot")

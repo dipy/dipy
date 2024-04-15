@@ -1,9 +1,9 @@
 # Init file for visualization package
 import warnings
 
+from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.app import horizon
 
-from dipy.utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
     'fury',
@@ -13,10 +13,8 @@ fury, has_fury, _ = optional_package(
 
 
 if has_fury:
-    from fury import actor, window, colormap, lib
-    from fury import interactor, ui, utils, shaders
-    from fury.data import (fetch_viz_icons, read_viz_icons,
-                           DATA_DIR as FURY_DATA_DIR)
+    from fury import actor, colormap, interactor, lib, shaders, ui, utils, window
+    from fury.data import DATA_DIR as FURY_DATA_DIR, fetch_viz_icons, read_viz_icons
 
 else:
     warnings.warn(

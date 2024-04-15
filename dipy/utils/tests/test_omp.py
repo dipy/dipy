@@ -2,13 +2,20 @@
 """
 
 import os
-from dipy.utils.omp import (cpu_count, thread_count, default_threads,
-                            _set_omp_threads, _restore_omp_threads,
-                            have_openmp, determine_num_threads)
 
-import pytest
-from dipy.utils.parallel import has_ray, has_joblib
 from numpy.testing import assert_equal, assert_raises
+import pytest
+
+from dipy.utils.omp import (
+    _restore_omp_threads,
+    _set_omp_threads,
+    cpu_count,
+    default_threads,
+    determine_num_threads,
+    have_openmp,
+    thread_count,
+)
+from dipy.utils.parallel import has_joblib, has_ray
 
 
 def test_set_omp_threads():

@@ -8,9 +8,10 @@ which provides metrics and bundles.
 """
 
 import numpy as np
-from dipy.viz import window, actor
+
 from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-from dipy.tracking.streamline import transform_streamlines, length
+from dipy.tracking.streamline import length, transform_streamlines
+from dipy.viz import actor, window
 
 fetch_bundles_2_subjects()
 dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],

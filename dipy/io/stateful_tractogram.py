@@ -6,15 +6,19 @@ from itertools import product
 import logging
 
 from nibabel.affines import apply_affine
-from nibabel.streamlines.tractogram import (Tractogram,
-                                            PerArraySequenceDict,
-                                            PerArrayDict)
+from nibabel.streamlines.tractogram import (
+    PerArrayDict,
+    PerArraySequenceDict,
+    Tractogram,
+)
 import numpy as np
 
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import (get_reference_info,
-                           is_reference_info_valid,
-                           is_header_compatible)
+from dipy.io.utils import (
+    get_reference_info,
+    is_header_compatible,
+    is_reference_info_valid,
+)
 
 logger = logging.getLogger('StatefulTractogram')
 logger.setLevel(level=logging.INFO)

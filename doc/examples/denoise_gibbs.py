@@ -23,8 +23,8 @@ module of dipy:
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dipy.denoise.gibbs import gibbs_removal
 from dipy.data import get_fnames, read_cenir_multib
+from dipy.denoise.gibbs import gibbs_removal
 from dipy.io.image import load_nifti_data
 import dipy.reconst.msdki as msdki
 from dipy.segment.mask import median_otsu

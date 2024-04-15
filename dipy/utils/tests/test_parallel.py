@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+
 import dipy.utils.parallel as para
 
 

@@ -1,4 +1,4 @@
-from dipy.viz.horizon.tab import (HorizonTab, build_slider, build_checkbox)
+from dipy.viz.horizon.tab import HorizonTab, build_checkbox, build_slider
 
 
 class ROIsTab(HorizonTab):

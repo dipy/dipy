@@ -10,14 +10,16 @@ axially symmetric tensor and the fODF using the FORECAST model from
 First import the necessary modules:
 """
 
-import numpy as np
+import os.path as op
+
 import matplotlib.pyplot as plt
+import nibabel as nib
+import numpy as np
+
+from dipy.core.gradients import gradient_table
+from dipy.data import fetch_hbn, get_sphere
 from dipy.reconst.forecast import ForecastModel
 from dipy.viz import actor, window
-from dipy.data import fetch_hbn, get_sphere
-import nibabel as nib
-import os.path as op
-from dipy.core.gradients import gradient_table
 
 ###############################################################################
 # Download and read the data for this tutorial. Our implementation of FORECAST

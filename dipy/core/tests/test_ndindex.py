@@ -1,7 +1,7 @@
-from dipy.core.ndindex import ndindex
-
 import numpy as np
 from numpy.testing import assert_array_equal
+
+from dipy.core.ndindex import ndindex
 
 
 def test_ndindex():

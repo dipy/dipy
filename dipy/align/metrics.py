@@ -1,14 +1,18 @@
 """  Metrics for Symmetric Diffeomorphic Registration """
 
 import abc
+
 import numpy as np
 from numpy import gradient
 from scipy import ndimage
-from dipy.align import vector_fields as vfu
-from dipy.align import sumsqdiff as ssd
-from dipy.align import crosscorr as cc
-from dipy.align import expectmax as em
-from dipy.align import floating
+
+from dipy.align import (
+    crosscorr as cc,
+    expectmax as em,
+    floating,
+    sumsqdiff as ssd,
+    vector_fields as vfu,
+)
 
 
 class SimilarityMetric(metaclass=abc.ABCMeta):

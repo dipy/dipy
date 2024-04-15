@@ -1,21 +1,28 @@
-import tempfile
 import os
-from numpy.testing import assert_raises, assert_equal
+import tempfile
+
+from numpy.testing import assert_equal, assert_raises
 import pytest
 
 from dipy.align.streamwarp import bundlewarp, bundlewarp_vector_filed
 from dipy.data import read_five_af_bundles, two_cingulum_bundles
-from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
-                                      Streamlines)
+from dipy.tracking.streamline import (
+    Streamlines,
+    set_number_of_points,
+    unlist_streamlines,
+)
 from dipy.utils.optpkg import optional_package
-
 
 _, have_matplotlib, _ = optional_package("matplotlib")
 fury, have_fury, _ = optional_package('fury', min_version="0.10.0")
 if have_fury:
-    from dipy.viz.streamline import (show_bundles, viz_two_bundles,
-                                     viz_displacement_mag, viz_vector_field)
     from dipy.viz import window
+    from dipy.viz.streamline import (
+        show_bundles,
+        viz_displacement_mag,
+        viz_two_bundles,
+        viz_vector_field,
+    )
 
 bundles = read_five_af_bundles()
 

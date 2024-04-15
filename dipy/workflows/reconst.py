@@ -1,33 +1,38 @@
-import logging
-import numpy as np
-import os.path
 from ast import literal_eval
+import logging
+import os.path
 from warnings import warn
 
 import nibabel as nib
+import numpy as np
 
-from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
+from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.data import default_sphere, get_sphere
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.peaks import save_peaks, peaks_to_niftis
-from dipy.io.image import load_nifti, save_nifti, load_nifti_data
-from dipy.io.utils import nifti1_symmat
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response_ssst)
-from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
-                              geodesic_anisotropy, mean_diffusivity,
-                              axial_diffusivity, radial_diffusivity,
-                              lower_triangular, mode as get_mode)
 from dipy.direction.peaks import peaks_from_model
-from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.workflows.workflow import Workflow
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.io.peaks import peaks_to_niftis, save_peaks
+from dipy.io.utils import nifti1_symmat
+from dipy.reconst import mapmri
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
+from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.dti import (
+    TensorModel,
+    axial_diffusivity,
+    color_fa,
+    fractional_anisotropy,
+    geodesic_anisotropy,
+    lower_triangular,
+    mean_diffusivity,
+    mode as get_mode,
+    radial_diffusivity,
+)
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
-
-from dipy.reconst import mapmri
+from dipy.reconst.shm import CsaOdfModel
 from dipy.utils.deprecator import deprecated_params
+from dipy.workflows.workflow import Workflow
 
 
 class ReconstMAPMRIFlow(Workflow):

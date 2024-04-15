@@ -1,12 +1,19 @@
 import warnings
+
 import numpy as np
 import numpy.testing as npt
+
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
-from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   check_peak_size, is_binary_image,
-                                   show_ellipsis, unpack_surface)
+from dipy.viz.horizon.util import (
+    check_img_dtype,
+    check_img_shapes,
+    check_peak_size,
+    is_binary_image,
+    show_ellipsis,
+    unpack_surface,
+)
 
 
 @set_random_number_generator()

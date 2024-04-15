@@ -2,6 +2,7 @@
 
 import itertools
 import math
+
 import numpy as np
 import numpy.linalg as npl
 

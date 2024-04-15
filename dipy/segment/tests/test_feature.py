@@ -1,16 +1,19 @@
 import sys
 
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_equal,)
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
 
 import dipy.segment.featurespeed as dipysfeature
+from dipy.segment.featurespeed import extract
 import dipy.segment.metric as dipymetric
 import dipy.segment.metricspeed as dipysmetric
-from dipy.segment.featurespeed import extract
-from dipy.testing import assert_true, assert_false
+from dipy.testing import assert_false, assert_true
 from dipy.testing.decorators import set_random_number_generator
-
 
 dtype = "float32"
 rng = np.random.default_rng()

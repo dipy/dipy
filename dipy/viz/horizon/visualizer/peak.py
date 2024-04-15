@@ -1,5 +1,5 @@
-import warnings
 from os.path import join as pjoin
+import warnings
 
 import numpy as np
 
@@ -24,11 +24,7 @@ if has_fury:
         import_fury_shader,
         shader_to_actor,
     )
-    from fury.utils import (
-        apply_affine,
-        numpy_to_vtk_colors,
-        numpy_to_vtk_points
-    )
+    from fury.utils import apply_affine, numpy_to_vtk_colors, numpy_to_vtk_points
 else:
     class Actor:
         pass

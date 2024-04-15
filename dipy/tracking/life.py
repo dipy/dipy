@@ -7,15 +7,15 @@ and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
 import numpy as np
-import scipy.sparse as sps
 import scipy.linalg as la
+import scipy.sparse as sps
 
-from dipy.reconst.base import ReconstModel, ReconstFit
-from dipy.tracking.utils import unique_rows
-from dipy.tracking.streamline import transform_streamlines
-from dipy.tracking.vox2track import _voxel2streamline
-import dipy.data as dpd
 import dipy.core.optimize as opt
+import dipy.data as dpd
+from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.utils import unique_rows
+from dipy.tracking.vox2track import _voxel2streamline
 
 
 def gradient(f):

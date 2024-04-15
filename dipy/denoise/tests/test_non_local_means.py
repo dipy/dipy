@@ -1,8 +1,11 @@
 import numpy as np
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from numpy.testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
+
 from dipy.denoise.non_local_means import non_local_means
 from dipy.testing.decorators import set_random_number_generator
 

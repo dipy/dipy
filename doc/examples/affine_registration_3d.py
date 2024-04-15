@@ -14,19 +14,25 @@ interface.
 """
 
 from os.path import join as pjoin
+
 import numpy as np
-from dipy.viz import regtools
+
+from dipy.align import affine_registration, register_dwi_to_template
+from dipy.align.imaffine import (
+    AffineMap,
+    AffineRegistration,
+    MutualInformationMetric,
+    transform_centers_of_mass,
+)
+from dipy.align.transforms import (
+    AffineTransform3D,
+    RigidTransform3D,
+    TranslationTransform3D,
+)
 from dipy.data import fetch_stanford_hardi
 from dipy.data.fetcher import fetch_syn_data
 from dipy.io.image import load_nifti
-from dipy.align.imaffine import (transform_centers_of_mass,
-                                 AffineMap,
-                                 MutualInformationMetric,
-                                 AffineRegistration)
-from dipy.align.transforms import (TranslationTransform3D,
-                                   RigidTransform3D,
-                                   AffineTransform3D)
-from dipy.align import affine_registration, register_dwi_to_template
+from dipy.viz import regtools
 
 ###############################################################################
 # Let's fetch two b0 volumes, the static image will be the b0 from the Stanford

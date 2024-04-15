@@ -1,9 +1,10 @@
 """ Metrics for tracks, where tracks are arrays of points """
 
-from dipy.utils.deprecator import deprecate_with_version
-from dipy.tracking.streamline import set_number_of_points
 import numpy as np
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import splev, splprep
+
+from dipy.tracking.streamline import set_number_of_points
+from dipy.utils.deprecator import deprecate_with_version
 
 
 def winding(xyz):

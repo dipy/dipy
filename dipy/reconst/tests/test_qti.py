@@ -3,11 +3,11 @@
 import numpy as np
 import numpy.testing as npt
 
-import dipy.reconst.qti as qti
 from dipy.core.gradients import gradient_table
-from dipy.sims.voxel import vec2vec_rotmat
-from dipy.core.sphere import disperse_charges, HemiSphere
+from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.reconst.dti import fractional_anisotropy
+import dipy.reconst.qti as qti
+from dipy.sims.voxel import vec2vec_rotmat
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 

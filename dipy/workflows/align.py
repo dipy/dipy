@@ -1,22 +1,22 @@
 import logging
-from warnings import warn
-import numpy as np
-import nibabel as nib
 from os.path import join as pjoin
-from dipy.utils.optpkg import optional_package
-from dipy.align.imaffine import AffineMap
-from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
-                               DiffeomorphicMap)
-from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
-from dipy.align.reslice import reslice
+from warnings import warn
+
+import nibabel as nib
+import numpy as np
+
 from dipy.align import affine_registration, motion_correction
+from dipy.align.imaffine import AffineMap
+from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
-from dipy.tracking.streamline import set_number_of_points
 from dipy.align.streamwarp import bundlewarp
-from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
-from dipy.io.image import save_nifti, load_nifti, save_qa_metric
+from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.tracking.streamline import transform_streamlines
+from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")

@@ -1,11 +1,11 @@
 import itertools
+
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 from scipy import ndimage
+
 from dipy.align import floating
-from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
 from dipy.testing.decorators import set_random_number_generator
 
 

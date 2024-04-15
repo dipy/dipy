@@ -5,17 +5,15 @@ import warnings
 import nibabel as nib
 import numpy as np
 from numpy.testing import assert_equal
-from dipy.testing import assert_false, assert_true
-
 
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti, load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.reconst.shm import descoteaux07_legacy_msg
+from dipy.testing import assert_false, assert_true
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
-from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
-                                     PFTrackingPAMFlow)
+from dipy.workflows.tracking import LocalFiberTrackingPAMFlow, PFTrackingPAMFlow
 
 
 def test_particle_filtering_tracking_workflows():
