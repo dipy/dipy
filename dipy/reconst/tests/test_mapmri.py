@@ -1,27 +1,36 @@
+from math import factorial
 import platform
 import time
-from math import factorial
-
-from scipy.special import gamma
-import scipy.integrate as integrate
 import warnings
+
 import numpy as np
-from numpy.testing import (assert_almost_equal,
-                           assert_array_almost_equal,
-                           assert_equal, assert_,
-                           assert_raises)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
 import pytest
+import scipy.integrate as integrate
+from scipy.special import gamma
+
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.data import get_gtab_taiwan_dsi, default_sphere
+from dipy.data import default_sphere, get_gtab_taiwan_dsi
 from dipy.direction.peaks import peak_directions
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
+from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst.odf import gfa
+from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.reconst.shm import sh_to_sf, descoteaux07_legacy_msg
-from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
-                             single_tensor, cylinders_and_ball_soderman)
+from dipy.sims.voxel import (
+    add_noise,
+    cylinders_and_ball_soderman,
+    multi_tensor,
+    multi_tensor_pdf,
+    single_tensor,
+)
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -754,11 +763,14 @@ def test_positivity_constraint(radial_order=6, rng=None):
     pdf = mapfit_no_constraint.pdf(r_grad)
     pdf_negative_no_constraint = pdf[pdf < 0].sum()
 
+    # Set the cvxpy solver to CLARABEL as the one picked otherwise for this
+    # problem (OSQP) triggers a `Solution may be inaccurate` UserWarning
     mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
                                     laplacian_regularization=False,
                                     positivity_constraint=True,
                                     pos_grid=gridsize,
-                                    pos_radius='adaptive')
+                                    pos_radius='adaptive',
+                                    cvxpy_solver=mapmri.cvxpy.CLARABEL)
     mapfit_constraint = mapmod_constraint.fit(S_noise)
     pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()

@@ -2,6 +2,7 @@
 
 from math import floor
 from platform import architecture
+
 import numpy as np
 
 

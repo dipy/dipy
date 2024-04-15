@@ -9,15 +9,14 @@ Note quotes around the globber first argument to protect it from shell
 globbing.
 
 """
-import os
-from os.path import join as pjoin, isfile, isdir
-import shutil
-from glob import glob
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from functools import partial
+from glob import glob
+import os
+from os.path import isdir, isfile, join as pjoin
+import shutil
 from subprocess import check_call
 import warnings
-
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 my_call = partial(check_call, shell=True)
 

@@ -1,17 +1,20 @@
 import numpy as np
+from numpy.testing import assert_almost_equal, assert_raises
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
-from dipy.segment.fss import (FastStreamlineSearch,
-                              nearest_from_matrix_row,
-                              nearest_from_matrix_col)
+from dipy.segment.fss import (
+    FastStreamlineSearch,
+    nearest_from_matrix_col,
+    nearest_from_matrix_row,
+)
 from dipy.segment.metric import mean_euclidean_distance
-
-from dipy.testing import (assert_arrays_equal,
-                          assert_greater,
-                          assert_greater_equal,
-                          assert_true)
-from numpy.testing import assert_almost_equal, assert_raises
+from dipy.testing import (
+    assert_arrays_equal,
+    assert_greater,
+    assert_greater_equal,
+    assert_true,
+)
 
 
 def setup_module():

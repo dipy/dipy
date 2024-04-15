@@ -2,15 +2,14 @@ from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
 import numpy as np
-
 import numpy.testing as npt
-from numpy.testing import assert_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 
+from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_peaks
-from dipy.core.gradients import generate_bvecs
 from dipy.reconst.shm import sph_harm_ind_list
 from dipy.workflows.reconst import ReconstDkiFlow
 

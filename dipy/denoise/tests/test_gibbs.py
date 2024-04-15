@@ -1,7 +1,12 @@
 import numpy as np
-from dipy.denoise.gibbs import (_gibbs_removal_1d, _gibbs_removal_2d,
-                                gibbs_removal, _image_tv)
-from numpy.testing import (assert_, assert_array_almost_equal, assert_raises)
+from numpy.testing import assert_, assert_array_almost_equal, assert_raises
+
+from dipy.denoise.gibbs import (
+    _gibbs_removal_1d,
+    _gibbs_removal_2d,
+    _image_tv,
+    gibbs_removal,
+)
 
 
 def setup_module():

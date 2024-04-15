@@ -1,8 +1,9 @@
 """ Testing multiproc utilities
 """
 
-from dipy.utils.multiproc import determine_num_processes
 from numpy.testing import assert_equal, assert_raises
+
+from dipy.utils.multiproc import determine_num_processes
 
 
 def test_determine_num_processes():

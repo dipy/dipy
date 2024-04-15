@@ -1,6 +1,7 @@
 """ Routines to support optional packages """
 
 import importlib
+
 from packaging.version import Version
 
 try:

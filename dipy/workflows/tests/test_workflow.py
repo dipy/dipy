@@ -1,7 +1,7 @@
 import os
-import time
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+import time
 
 import numpy.testing as npt
 

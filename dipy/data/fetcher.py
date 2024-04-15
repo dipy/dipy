@@ -1,30 +1,28 @@
-import os
 import contextlib
-import logging
+from hashlib import md5
 import json
-
+import logging
+import os
 import os.path as op
 from os.path import join as pjoin
-from hashlib import md5
 from shutil import copyfileobj
-from tqdm.auto import tqdm
-import numpy as np
-import nibabel as nib
-
 import tarfile
 import tempfile
+from urllib.request import urlopen
 import zipfile
-from dipy.core.gradients import (gradient_table,
-                                 gradient_table_from_gradient_strength_bvecs)
+
+import nibabel as nib
+import numpy as np
+from tqdm.auto import tqdm
+
+from dipy.core.gradients import (
+    gradient_table,
+    gradient_table_from_gradient_strength_bvecs,
+)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-
 from dipy.io.streamline import load_trk
-
-from dipy.utils.optpkg import optional_package, TripWire
-
-
-from urllib.request import urlopen
+from dipy.utils.optpkg import TripWire, optional_package
 
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:

@@ -4,11 +4,14 @@ __all__ = ["MinimumAverageDirectFlipMetric", "Metric", "CosineMetric",
 
 import numpy as np
 
-from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
-                                      MinimumAverageDirectFlipMetric,
-                                      AveragePointwiseEuclideanMetric,
-                                      CosineMetric, Metric,
-                                      dist)
+from dipy.segment.metricspeed import (
+    AveragePointwiseEuclideanMetric,
+    CosineMetric,
+    Metric,
+    MinimumAverageDirectFlipMetric,
+    SumPointwiseEuclideanMetric,
+    dist,
+)
 
 # Creates aliases
 EuclideanMetric = SumPointwiseEuclideanMetric

@@ -47,21 +47,21 @@ And the letters A-D represent the following points in
 
 """
 
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from functools import wraps
 from itertools import combinations, groupby
 from warnings import warn
 
-import numpy as np
 from nibabel.affines import apply_affine
+import numpy as np
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
 from dipy.tracking import metrics
-from dipy.tracking.vox2track import _streamlines_in_mask
 
 # Import helper functions shared with vox2track
-from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
+from dipy.tracking.vox2track import _streamlines_in_mask
 
 
 def density_map(streamlines, affine, vol_dims):

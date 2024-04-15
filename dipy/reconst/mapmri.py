@@ -1,24 +1,24 @@
 import numpy as np
+from scipy.special import gamma, genlaguerre, hermite
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.base import ReconstModel, ReconstFit
+from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.cache import Cache
-from scipy.special import hermite, gamma, genlaguerre
+from dipy.reconst.multi_voxel import multi_voxel_fit
+
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
-    from scipy.special import factorial as sfactorial
-    from scipy.special import factorial2
+    from scipy.special import factorial as sfactorial, factorial2
 except ImportError:
-    from scipy.misc import factorial as sfactorial
-    from scipy.misc import factorial2
+    from scipy.misc import factorial as sfactorial, factorial2
 from math import factorial as mfactorial
-from dipy.core.geometry import cart2sphere
-from dipy.reconst.shm import real_sh_descoteaux_from_index, sph_harm_ind_list
-import dipy.reconst.dti as dti
 from warnings import warn
+
+from dipy.core.geometry import cart2sphere
 from dipy.core.gradients import gradient_table
-from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
 from dipy.data import load_sdp_constraints
+import dipy.reconst.dti as dti
+from dipy.reconst.shm import real_sh_descoteaux_from_index, sph_harm_ind_list
+from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 

@@ -4,8 +4,8 @@ from numpy.lib.stride_tricks import as_strided
 from tqdm import tqdm
 
 from dipy.core.ndindex import ndindex
-from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.reconst.base import ReconstFit
+from dipy.reconst.quick_squash import quick_squash as _squash
 
 
 def multi_voxel_fit(single_voxel_fit):

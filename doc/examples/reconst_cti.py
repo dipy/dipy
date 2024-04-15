@@ -55,11 +55,11 @@ First, we'll import all relevant modules.
 
 import matplotlib.pyplot as plt
 
-import dipy.reconst.cti as cti
-from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from dipy.io.image import load_nifti
 from dipy.data import get_fnames
+from dipy.io import read_bvals_bvecs
+from dipy.io.image import load_nifti
+import dipy.reconst.cti as cti
 
 ###############################################################################
 # For CTI analysis, data must be acquired using double diffusion encoding,

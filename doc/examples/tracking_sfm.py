@@ -11,23 +11,26 @@ signal as a combination of the signals from different fascicles (see also
 :ref:`sphx_glr_examples_built_reconstruction_reconst_sfm.py`).
 """
 
+from numpy.linalg import inv
+
 from dipy.core.gradients import gradient_table
-from dipy.data import get_sphere, get_fnames
+from dipy.data import get_fnames, get_sphere
+from dipy.direction.peaks import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.direction.peaks import peaks_from_model
-from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.reconst.csdeconv import auto_response_ssst
+from dipy.io.streamline import save_trk
 from dipy.reconst import sfm
+from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.tracking.streamline import (select_random_set_of_streamlines,
-                                      transform_streamlines,
-                                      Streamlines)
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
-from dipy.viz import window, actor, colormap, has_fury
-from numpy.linalg import inv
+from dipy.tracking.streamline import (
+    Streamlines,
+    select_random_set_of_streamlines,
+    transform_streamlines,
+)
+from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
 interactive = False

@@ -13,10 +13,9 @@ It remains licensed as the rest of scipy (BSD-3 license as of October 2023).
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 """
+import argparse
 import os
 import subprocess
-import argparse
-
 
 MAJOR = 1
 MINOR = 10

@@ -29,24 +29,27 @@ The reconstruction of the fiber orientation distribution function
 First, we import all the modules we need from dipy as follows:
 """
 
-import numpy as np
-import dipy.reconst.shm as shm
-import dipy.direction.peaks as dp
 import matplotlib.pyplot as plt
+import numpy as np
 
-from dipy.denoise.localpca import mppca
 from dipy.core.gradients import gradient_table, unique_bvals_tolerance
+from dipy.data import get_fnames, get_sphere
+from dipy.denoise.localpca import mppca
+import dipy.direction.peaks as dp
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.reconst.mcsd import (
+    MultiShellDeconvModel,
+    auto_response_msmt,
+    mask_for_response_msmt,
+    multi_shell_fiber_response,
+    response_from_mask_msmt,
+)
+import dipy.reconst.shm as shm
 from dipy.segment.mask import median_otsu
-from dipy.reconst.mcsd import (auto_response_msmt,
-                               mask_for_response_msmt,
-                               response_from_mask_msmt)
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
-from dipy.data import get_sphere, get_fnames
 sphere = get_sphere('symmetric724')
 
 ###############################################################################

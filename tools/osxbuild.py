@@ -11,12 +11,12 @@ user system.  Script will prompt for sudo pwd.
 
 """
 
+from getpass import getuser
+from optparse import OptionParser
 import os
-import sys
 import shutil
 import subprocess
-from optparse import OptionParser
-from getpass import getuser
+import sys
 
 # USER_README = 'docs/README.rst'
 # DEV_README = SRC_DIR + 'README.rst'

@@ -1,25 +1,31 @@
-from os.path import join as pjoin
 import os.path
+from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
-import numpy.testing as npt
-import numpy as np
 import nibabel as nib
+import numpy as np
+import numpy.testing as npt
 import pytest
-from dipy.utils.optpkg import optional_package
+
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti, load_nifti_data
+from dipy.io.image import load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
-                                  ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow, MotionCorrectionFlow,
-                                  BundleWarpFlow)
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.streamline import Streamlines
+from dipy.utils.optpkg import optional_package
+from dipy.workflows.align import (
+    ApplyTransformFlow,
+    BundleWarpFlow,
+    ImageRegistrationFlow,
+    MotionCorrectionFlow,
+    ResliceFlow,
+    SlrWithQbxFlow,
+    SynRegistrationFlow,
+)
 
 _, have_pd, _ = optional_package("pandas")
 

@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from dipy.viz.horizon.tab import (HorizonTab, build_slider, build_checkbox,
-                                  build_label)
+from dipy.viz.horizon.tab import HorizonTab, build_checkbox, build_label, build_slider
 
 
 class SurfaceTab(HorizonTab):

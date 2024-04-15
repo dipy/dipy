@@ -1,17 +1,18 @@
-import numpy as np
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_almost_equal,
-                           assert_equal,
-                           assert_raises)
-from scipy.ndimage import map_coordinates
 from nibabel.affines import apply_affine, from_matvec
-from dipy.core import geometry
-from dipy.align import floating
-from dipy.align import imwarp
-from dipy.align import vector_fields as vfu
-from dipy.align.transforms import regtransforms
+import numpy as np
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
+from scipy.ndimage import map_coordinates
+
+from dipy.align import floating, imwarp, vector_fields as vfu
 from dipy.align.parzenhist import sample_domain_regular
+from dipy.align.transforms import regtransforms
+from dipy.core import geometry
 from dipy.testing.decorators import set_random_number_generator
 
 

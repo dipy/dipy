@@ -3,8 +3,8 @@ from functools import reduce
 import numpy as np
 import numpy.testing as npt
 
-from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, CallableArray
 from dipy.core.sphere import unit_icosahedron
+from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
 from dipy.testing.decorators import set_random_number_generator
 
 
