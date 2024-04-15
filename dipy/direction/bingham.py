@@ -119,7 +119,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     return f0, k1, k2, mu0, mu1, mu2
 
 
-def odf_to_bingham(odf, sphere, npeaks=5, max_search_angle=6,
+def odf_to_bingham(odf, sphere, *, npeaks=5, max_search_angle=6,
                    min_sep_angle=60, rel_th=0.1):
     """
     Fit a Bingham distribution onto each principal ODF lobe.
@@ -581,7 +581,8 @@ def global_voxel_metric(bmetric, bfd):
 
 class BinghamMetrics:
     """
-    Class for Bingham Metrics."""
+    Class for Bingham Metrics.
+    """
 
     def __init__(self, model_params):
         """ Initialization of the Bingham Metrics Class.
@@ -664,7 +665,7 @@ class BinghamMetrics:
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-            Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
+            Zhang H. Bingham-NODDI: Mapping anisotropic orientation dispersion
             of neurites using diffusion MRI NeuroImage. 2016; 133:207-223.
         """
         return k2odi(self.kappa_total)
@@ -743,14 +744,14 @@ class BinghamMetrics:
         return bingham_multi_voxel_odf(self.model_params, sphere, mask=mask)
 
 
-def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
+def bingham_from_odf(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
                      min_sep_angle=60, rel_th=0.1):
     """
-    Fit the Bingham function from an ODF.
+    Fit the Bingham function from a volume of ODF.
 
     Parameters
     ----------
-    odf: ndarray
+    odf: ndarray (Nx, Ny, Nz, Ndirs)
         Orientation Distribution Function sampled on the vertices of a sphere.
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions.
@@ -786,7 +787,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
             continue
 
         [fits, npeaks_final] = odf_to_bingham(
-            odf[idx], sphere, npeaks, max_search_angle=max_search_angle,
+            odf[idx], sphere, npeaks=npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
@@ -794,7 +795,7 @@ def bingham_from_odf(odf, sphere, mask=None, npeaks=5, max_search_angle=6,
     return BinghamMetrics(bpars)
 
 
-def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
+def bingham_from_sh(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
                     max_search_angle=6, min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from an ODF's spherical harmonics (SH)
@@ -842,7 +843,7 @@ def bingham_from_sh(sh, sphere, sh_order_max, mask=None, npeaks=5,
         odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
 
         [fits, npeaks_final] = odf_to_bingham(
-            odf, sphere, npeaks, max_search_angle=max_search_angle,
+            odf, sphere, npeaks=npeaks, max_search_angle=max_search_angle,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
