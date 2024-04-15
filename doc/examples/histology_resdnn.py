@@ -18,13 +18,12 @@ import scipy.ndimage as ndi
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
-from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.histo_resdnn import HistoResDNN
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.segment.mask import median_otsu
-from dipy.viz import window, actor
-
+from dipy.viz import actor, window
 
 # Disable oneDNN warning
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'

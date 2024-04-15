@@ -1,9 +1,8 @@
 import numpy as np
+from numpy.testing import assert_equal, assert_raises
 
 from dipy.data import default_sphere
-from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
-
-from numpy.testing import assert_equal, assert_raises
+from dipy.tracking.propspeed import eudx_both_directions, ndarray_offset
 
 
 def stepped_1d(arr_1d):

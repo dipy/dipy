@@ -1,19 +1,18 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-import warnings
 import functools
+import warnings
 
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.data import get_sphere
-from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
-from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.core.gradients import gradient_table
 from dipy.core.onetime import auto_attr
+from dipy.data import get_sphere
 from dipy.reconst.base import ReconstModel
+from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.utils.volume import adjacency_calc
-
 
 MIN_POSITIVE_SIGNAL = 0.0001
 

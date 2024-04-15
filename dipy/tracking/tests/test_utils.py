@@ -1,23 +1,33 @@
 import warnings
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 
-from dipy.tracking import metrics
-from dipy.tracking.streamline import transform_streamlines
-from dipy.tracking.utils import (connectivity_matrix, density_map, length,
-                                 ndbincount, reduce_labels, seeds_from_mask,
-                                 random_seeds_from_mask, target,
-                                 target_line_based, unique_rows, near_roi,
-                                 reduce_rois, path_length, _min_at,
-                                 max_angle_from_curvature,
-                                 min_radius_curvature_from_angle)
-
-from dipy.tracking._utils import _to_voxel_coordinates
-from dipy.tracking.vox2track import streamline_mapping
-import numpy.testing as npt
 from dipy.testing import assert_true
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking import metrics
+from dipy.tracking._utils import _to_voxel_coordinates
+from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.utils import (
+    _min_at,
+    connectivity_matrix,
+    density_map,
+    length,
+    max_angle_from_curvature,
+    min_radius_curvature_from_angle,
+    ndbincount,
+    near_roi,
+    path_length,
+    random_seeds_from_mask,
+    reduce_labels,
+    reduce_rois,
+    seeds_from_mask,
+    target,
+    target_line_based,
+    unique_rows,
+)
+from dipy.tracking.vox2track import streamline_mapping
 
 
 def make_streamlines(return_seeds=False):

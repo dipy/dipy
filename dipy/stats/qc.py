@@ -1,4 +1,5 @@
 import numpy as np
+
 from dipy.core.geometry import cart_distance
 
 

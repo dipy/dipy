@@ -48,16 +48,17 @@ from warnings import warn
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
-from dipy.core.optimize import Optimizer
-from dipy.core.interpolation import (interpolate_scalar_2d,
-                                     interpolate_scalar_3d)
-from dipy.align import vector_fields as vf
-from dipy.align import VerbosityLevels
-from dipy.align.parzenhist import (ParzenJointHistogram,
-                                   sample_domain_regular,
-                                   compute_parzen_mi)
-from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
+
+from dipy.align import VerbosityLevels, vector_fields as vf
+from dipy.align.imwarp import ScaleSpace, get_direction_and_spacings
+from dipy.align.parzenhist import (
+    ParzenJointHistogram,
+    compute_parzen_mi,
+    sample_domain_regular,
+)
 from dipy.align.scalespace import IsotropicScaleSpace
+from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
+from dipy.core.optimize import Optimizer
 
 _interp_options = ['nearest', 'linear']
 _transform_method = dict()

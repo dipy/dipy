@@ -33,11 +33,12 @@ Example
 We start by importing and creating the necessary functions:
 """
 
+import logging
+
 from dipy.align.streamlinear import groupwise_slr
 from dipy.data import read_five_af_bundles
 from dipy.viz.streamline import show_bundles
 
-import logging
 logging.basicConfig(level=logging.INFO)
 
 ###############################################################################

@@ -17,13 +17,14 @@ performed according to [RNH2015]_.
 We first import all relevant modules.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from dipy.sims.voxel import (multi_tensor_dki, single_tensor)
+import numpy as np
+
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
-from dipy.reconst.dti import (decompose_tensor, from_lower_triangular)
+from dipy.reconst.dti import decompose_tensor, from_lower_triangular
+from dipy.sims.voxel import multi_tensor_dki, single_tensor
 
 ###############################################################################
 # For the simulation we will need a GradientTable with the b-values and

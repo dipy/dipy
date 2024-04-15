@@ -10,14 +10,21 @@ the Nibabel package for the copyright and license terms.
 
 import sys
 import warnings
+
 import numpy.testing as npt
 import pytest
+
 import dipy
-from dipy.testing import clear_and_catch_warnings, assert_true
-from dipy.utils.deprecator import (cmp_pkg_version, _add_dep_doc,
-                                   _ensure_cr, deprecate_with_version,
-                                   deprecated_params, ArgsDeprecationWarning,
-                                   ExpiredDeprecationError)
+from dipy.testing import assert_true, clear_and_catch_warnings
+from dipy.utils.deprecator import (
+    ArgsDeprecationWarning,
+    ExpiredDeprecationError,
+    _add_dep_doc,
+    _ensure_cr,
+    cmp_pkg_version,
+    deprecate_with_version,
+    deprecated_params,
+)
 
 
 def test_cmp_pkg_version():

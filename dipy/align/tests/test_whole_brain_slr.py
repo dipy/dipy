@@ -1,14 +1,17 @@
 import numpy as np
-from numpy.testing import (assert_equal, assert_array_almost_equal,
-                           assert_raises)
+from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises
 
-from dipy.align.streamlinear import (compose_matrix44, decompose_matrix44,
-                                     transform_streamlines, whole_brain_slr,
-                                     slr_with_qbx)
-from dipy.io.streamline import load_tractogram
+from dipy.align.streamlinear import (
+    compose_matrix44,
+    decompose_matrix44,
+    slr_with_qbx,
+    transform_streamlines,
+    whole_brain_slr,
+)
 from dipy.data import get_fnames
-from dipy.tracking.streamline import Streamlines
+from dipy.io.streamline import load_tractogram
 from dipy.tracking.distances import bundles_distances_mam
+from dipy.tracking.streamline import Streamlines
 
 
 def test_whole_brain_slr():

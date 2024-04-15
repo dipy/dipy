@@ -3,14 +3,14 @@ import itertools
 import numpy as np
 from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
-from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
+from dipy.segment.clustering import QuickBundles, QuickBundlesX, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metricspeed import (
-    AveragePointwiseEuclideanMetric, MinimumAverageDirectFlipMetric,
+    AveragePointwiseEuclideanMetric,
+    MinimumAverageDirectFlipMetric,
 )
-from dipy.tracking.streamline import set_number_of_points
-from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.streamline import Streamlines, set_number_of_points
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,

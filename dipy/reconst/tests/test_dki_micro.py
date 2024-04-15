@@ -1,17 +1,22 @@
 """ Testing DKI microstructure """
 
-import numpy as np
 import random
-import dipy.reconst.dki_micro as dki_micro
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_, assert_raises, assert_allclose)
-from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
-from dipy.reconst.dti import (eig_from_lo_tri)
 
-from dipy.data import default_sphere, get_sphere
+import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_raises,
+)
+
+from dipy.core.gradients import gradient_table
+from dipy.data import default_sphere, get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+import dipy.reconst.dki_micro as dki_micro
+from dipy.reconst.dti import eig_from_lo_tri
+from dipy.sims.voxel import _check_directions, multi_tensor, multi_tensor_dki
 
 gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
 FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None

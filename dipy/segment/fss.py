@@ -1,11 +1,12 @@
 import warnings
+
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.spatial import cKDTree
 
-from dipy.tracking.streamline import set_number_of_points
-from dipy.segment.metric import mean_euclidean_distance
 from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.segment.metric import mean_euclidean_distance
+from dipy.tracking.streamline import set_number_of_points
 
 
 class FastStreamlineSearch:

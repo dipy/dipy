@@ -5,16 +5,15 @@ import warnings
 import numpy as np
 
 from dipy.core.geometry import vec2vec_rotmat
-from dipy.core.gradients import gradient_table, unique_bvals_tolerance, \
-    get_bval_indices
+from dipy.core.gradients import get_bval_indices, gradient_table, unique_bvals_tolerance
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
-from dipy.reconst.shm import lazy_index, normalize_data
-from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.csdeconv import AxSymShResponse
+from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
-from dipy.sims.voxel import single_tensor, all_tensor_evecs
+from dipy.sims.voxel import all_tensor_evecs, single_tensor
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps

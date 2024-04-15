@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """ Checkout gitwash repo into directory and do search replace on name """
 
+import fnmatch
+import glob
+from optparse import OptionParser
 import os
 from os.path import join as pjoin
-import shutil
-import sys
 import re
-import glob
-import fnmatch
-import tempfile
+import shutil
 from subprocess import call
-from optparse import OptionParser
+import sys
+import tempfile
 
 verbose = False
 

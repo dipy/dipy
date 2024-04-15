@@ -1,12 +1,12 @@
+from numpy.testing import assert_, assert_equal
 import pytest
-from numpy.testing import assert_equal, assert_
 
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 
 if have_tf:
-    from dipy.nn.model import SingleLayerPerceptron, MultipleLayerPercepton
+    from dipy.nn.model import MultipleLayerPercepton, SingleLayerPerceptron
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')

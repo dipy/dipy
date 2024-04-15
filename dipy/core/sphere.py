@@ -1,6 +1,6 @@
-import numpy as np
 import warnings
 
+import numpy as np
 from scipy import optimize
 
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm

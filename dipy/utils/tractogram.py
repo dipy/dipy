@@ -1,7 +1,7 @@
 
 """This module is dedicated to the handling of tractograms."""
-import os
 import logging
+import os
 
 import numpy as np
 import trx.trx_file_memmap as tmm

@@ -1,12 +1,11 @@
 import numpy as np
-from numpy.testing import assert_equal, assert_almost_equal, assert_
-from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize, gfa)
+from numpy.testing import assert_, assert_almost_equal, assert_equal
 
+from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
-from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
-from dipy.core.gradients import gradient_table, GradientTable
-
+from dipy.reconst.odf import OdfFit, OdfModel, gfa, minmax_normalize
+from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)

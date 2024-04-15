@@ -13,17 +13,22 @@ registration of white matter tracts [Chandio23]_.
 
 """
 from os.path import join as pjoin
+from time import time
 
-from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed,
-                                   bundlewarp_shape_analysis)
+from dipy.align.streamwarp import (
+    bundlewarp,
+    bundlewarp_shape_analysis,
+    bundlewarp_vector_filed,
+)
 from dipy.data import fetch_bundle_warp_dataset
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram, load_trk
-from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
-                                      Streamlines)
-from dipy.viz.streamline import (viz_two_bundles, viz_vector_field,
-                                 viz_displacement_mag)
-from time import time
+from dipy.io.streamline import load_trk, save_tractogram
+from dipy.tracking.streamline import (
+    Streamlines,
+    set_number_of_points,
+    unlist_streamlines,
+)
+from dipy.viz.streamline import viz_displacement_mag, viz_two_bundles, viz_vector_field
 
 ###############################################################################
 # Let's download and load two uncinate fasciculus bundles in the left

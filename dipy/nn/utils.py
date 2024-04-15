@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.ndimage import affine_transform, label
+
 from dipy.align.reslice import reslice
 
 

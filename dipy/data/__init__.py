@@ -1,72 +1,74 @@
 """Read test or example data."""
 
+import gzip
 import json
+from os.path import dirname, exists, join as pjoin
 import pickle
 
-from os.path import join as pjoin, dirname, exists
-
-import gzip
 import numpy as np
 from scipy.sparse import load_npz
-from dipy.core.gradients import GradientTable, gradient_table
-from dipy.core.sphere import Sphere, HemiSphere
-from dipy.data.fetcher import (get_fnames,
-                               fetch_scil_b0,
-                               read_scil_b0,
-                               fetch_stanford_hardi,
-                               read_stanford_hardi,
-                               fetch_stanford_tracks,
-                               fetch_taiwan_ntu_dsi,
-                               read_taiwan_ntu_dsi,
-                               fetch_sherbrooke_3shell,
-                               read_sherbrooke_3shell,
-                               fetch_isbi2013_2shell,
-                               read_isbi2013_2shell,
-                               read_stanford_labels,
-                               fetch_stanford_labels,
-                               fetch_syn_data,
-                               read_syn_data,
-                               fetch_stanford_t1,
-                               read_stanford_t1,
-                               fetch_stanford_pve_maps,
-                               read_stanford_pve_maps,
-                               fetch_bundles_2_subjects,
-                               read_bundles_2_subjects,
-                               fetch_cenir_multib,
-                               read_cenir_multib,
-                               fetch_mni_template,
-                               read_mni_template,
-                               fetch_ivim,
-                               read_ivim,
-                               fetch_tissue_data,
-                               read_tissue_data,
-                               fetch_cfin_multib,
-                               read_cfin_dwi,
-                               read_cfin_t1,
-                               fetch_target_tractogram_hcp,
-                               fetch_bundle_atlas_hcp842,
-                               fetch_30_bundle_atlas_hcp842,
-                               get_bundle_atlas_hcp842,
-                               get_target_tractogram_hcp,
-                               get_two_hcp842_bundles,
-                               fetch_bundle_fa_hcp,
-                               fetch_gold_standard_io,
-                               fetch_resdnn_weights,
-                               fetch_synb0_weights,
-                               fetch_synb0_test,
-                               fetch_evac_weights,
-                               fetch_evac_test,
-                               read_qte_lte_pte,
-                               read_DiB_70_lte_pte_ste,
-                               read_DiB_217_lte_pte_ste,
-                               read_five_af_bundles,
-                               fetch_hbn,
-                               fetch_ptt_minimal_dataset,
-                               fetch_bundle_warp_dataset)
 
-from ..utils.arrfuncs import as_native_array
+from dipy.core.gradients import GradientTable, gradient_table
+from dipy.core.sphere import HemiSphere, Sphere
+from dipy.data.fetcher import (
+    fetch_30_bundle_atlas_hcp842,
+    fetch_bundle_atlas_hcp842,
+    fetch_bundle_fa_hcp,
+    fetch_bundle_warp_dataset,
+    fetch_bundles_2_subjects,
+    fetch_cenir_multib,
+    fetch_cfin_multib,
+    fetch_evac_test,
+    fetch_evac_weights,
+    fetch_gold_standard_io,
+    fetch_hbn,
+    fetch_isbi2013_2shell,
+    fetch_ivim,
+    fetch_mni_template,
+    fetch_ptt_minimal_dataset,
+    fetch_resdnn_weights,
+    fetch_scil_b0,
+    fetch_sherbrooke_3shell,
+    fetch_stanford_hardi,
+    fetch_stanford_labels,
+    fetch_stanford_pve_maps,
+    fetch_stanford_t1,
+    fetch_stanford_tracks,
+    fetch_syn_data,
+    fetch_synb0_test,
+    fetch_synb0_weights,
+    fetch_taiwan_ntu_dsi,
+    fetch_target_tractogram_hcp,
+    fetch_tissue_data,
+    get_bundle_atlas_hcp842,
+    get_fnames,
+    get_target_tractogram_hcp,
+    get_two_hcp842_bundles,
+    read_DiB_70_lte_pte_ste,
+    read_DiB_217_lte_pte_ste,
+    read_bundles_2_subjects,
+    read_cenir_multib,
+    read_cfin_dwi,
+    read_cfin_t1,
+    read_five_af_bundles,
+    read_isbi2013_2shell,
+    read_ivim,
+    read_mni_template,
+    read_qte_lte_pte,
+    read_scil_b0,
+    read_sherbrooke_3shell,
+    read_stanford_hardi,
+    read_stanford_labels,
+    read_stanford_pve_maps,
+    read_stanford_t1,
+    read_syn_data,
+    read_taiwan_ntu_dsi,
+    read_tissue_data,
+)
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
+
+from ..utils.arrfuncs import as_native_array
 
 
 def loads_compat(byte_data):

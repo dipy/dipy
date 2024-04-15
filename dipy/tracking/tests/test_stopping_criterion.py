@@ -3,12 +3,14 @@ import numpy.testing as npt
 import scipy.ndimage
 
 from dipy.core.ndindex import ndindex
-from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
-                                              BinaryStoppingCriterion,
-                                              CmcStoppingCriterion,
-                                              ThresholdStoppingCriterion,
-                                              StreamlineStatus)
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.stopping_criterion import (
+    ActStoppingCriterion,
+    BinaryStoppingCriterion,
+    CmcStoppingCriterion,
+    StreamlineStatus,
+    ThresholdStoppingCriterion,
+)
 
 
 @set_random_number_generator()

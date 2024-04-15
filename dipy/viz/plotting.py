@@ -2,9 +2,12 @@
 plotting functions
 """
 
-import numpy as np
 from warnings import warn
+
+import numpy as np
+
 from dipy.utils.optpkg import optional_package
+
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 

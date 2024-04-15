@@ -1,9 +1,9 @@
 import numpy as np
+import numpy.testing as npt
 import scipy.sparse as sps
 
-import numpy.testing as npt
-from dipy.core.optimize import Optimizer, sparse_nnls, spdot
 import dipy.core.optimize as opt
+from dipy.core.optimize import Optimizer, sparse_nnls, spdot
 from dipy.testing.decorators import set_random_number_generator
 
 

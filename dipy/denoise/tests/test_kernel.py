@@ -1,12 +1,13 @@
 import warnings
 
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
-from dipy.reconst.shm import sh_to_sf, sf_to_sh, descoteaux07_legacy_msg
-from dipy.core.sphere import Sphere
-
 import numpy as np
 import numpy.testing as npt
+
+from dipy.core.sphere import Sphere
+from dipy.denoise.enhancement_kernel import EnhancementKernel
+from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
+from dipy.reconst.shm import descoteaux07_legacy_msg, sf_to_sh, sh_to_sf
+
 
 def test_enhancement_kernel():
     """ Test if the kernel values are correct by comparison against the values

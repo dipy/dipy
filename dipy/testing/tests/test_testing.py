@@ -2,10 +2,11 @@
 
 import sys
 import warnings
+
 import numpy as np
+import numpy.testing as npt
 
 import dipy.testing as dt
-import numpy.testing as npt
 
 
 def test_assert():

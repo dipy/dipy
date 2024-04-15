@@ -1,15 +1,13 @@
-from warnings import warn
 from math import factorial
+from warnings import warn
 
 import numpy as np
+from scipy.special import gamma, genlaguerre, hyp2f1
 
-from scipy.special import genlaguerre, gamma, hyp2f1
-
+from dipy.core.geometry import cart2sphere
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sh_descoteaux_from_index
-from dipy.core.geometry import cart2sphere
-
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
