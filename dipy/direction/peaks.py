@@ -615,7 +615,7 @@ def peaks_from_positions(positions, odfs, sphere, *, relative_peak_threshold=.5,
         odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(odf, sphere, relative_peak_threshold,
                                       min_separation_angle, is_symmetric)
-        n = min(npeaks, peaks.shape[0])
-        peaks_arr[i, :n, :] = peaks[:n, :]
+        nbr_peaks = min(npeaks, peaks.shape[0])
+        peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]
 
     return peaks_arr
