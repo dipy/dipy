@@ -21,6 +21,7 @@ from dipy.direction import peak_directions
 from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
+from dipy.data import get_sphere
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_angle):
@@ -30,7 +31,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_angle):
     Parameters
     ----------
     sf: 1d ndarray
-        The odf function - surface function (sf) - evaluated on the vertices
+        The odf spherical function (sf) evaluated on the vertices
         of `sphere`.
     peak: ndarray (3, 1)
         The peak direction of the lobe to fit.
@@ -274,7 +275,7 @@ def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     return _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices)
 
 
-def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
+def bingham_multi_voxel_odf(bingham_params, sphere, *, mask=None):
     """
     Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
 
@@ -327,7 +328,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, mask=None):
     return odf
 
 
-def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
+def bingham_fiber_density(bingham_params, *, sphere=None, mask=None):
     """
     Compute fiber density for each lobe for a given Bingham ODF.
 
@@ -341,12 +342,12 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
             elements of Bingham's dispersion minor axis (indexes 9-11).
-    mask: ndarray
+    sphere: Sphere, optional
+        Sphere object used for computing surface integral. Defaults to DIPY's
+        `repulsion724` sphere, twice subdivided. For best results, prefer
+        repulsion spheres to symmetric spheres.
+    mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed
-    n_thetas: unsigned int, optional
-        Number of steps along theta axis for the integration.
-    n_phis: unsigned int, optional
-        Number of steps along phi axis for the integration.
 
     Returns
     -------
@@ -355,7 +356,8 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
 
     Notes
     -----
-    Fiber density (fd) is given by the integral of the Bingham function [1]_.
+    Fiber density (fd) is given by the surface integral of the
+    Bingham function [1]_.
 
     References
     ----------
@@ -363,18 +365,15 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    # Define directions for the integral
-    phi = np.linspace(0, 2 * np.pi, n_phis, endpoint=False)  # [0, 2pi]
-    theta = np.linspace(0, np.pi, n_thetas)  # [0, pi]
-    coords = np.array([[p, t] for p in phi for t in theta]).T
-    dphi = phi[1] - phi[0]
-    dtheta = theta[1] - theta[0]
-    sin_theta = np.sin(coords[1])
+    # default sphere consists of 11554 equidistant vertices
+    if sphere is None:
+        sphere = get_sphere('repulsion724').subdivide(2)
 
-    # these directions are normalized
-    u = np.array([np.cos(coords[0]) * np.sin(coords[1]),
-                  np.sin(coords[0]) * np.sin(coords[1]),
-                  np.cos(coords[1])]).T
+    # directions for evaluating the integral
+    u = sphere.vertices
+
+    # area of a single surface element
+    dA = 4.0*np.pi / len(u)
 
     shape = bingham_params.shape[0:-2]
     if mask is None:
@@ -398,7 +397,7 @@ def bingham_fiber_density(bingham_params, mask=None, n_thetas=50, n_phis=100):
             mu2 = bpars[li, 9:12]
 
             bingham_eval = _bingham_to_odf(f0, k1, k2, mu1, mu2, u)
-            fd[idx + (li,)] = np.sum(bingham_eval * sin_theta * dtheta * dphi)
+            fd[idx + (li,)] = np.sum(bingham_eval * dA)
 
     return fd
 
@@ -639,7 +638,7 @@ class BinghamMetrics:
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-            Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
+            Zhang H. Bingham-NODDI: Mapping anisotropic orientation dispersion
             of neurites using diffusion MRI NeuroImage. 2016; 133:207-223.
         """
         return np.sqrt(self.kappa_1 * self.kappa_2)

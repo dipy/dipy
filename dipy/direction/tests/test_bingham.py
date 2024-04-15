@@ -1,10 +1,11 @@
 import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
                            assert_array_less)
-from dipy.direction.bingham import (bingham_odf, bingham_fit_odf,
+from dipy.direction.bingham import (bingham_to_odf, odf_to_bingham,
                                     _bingham_fit_peak, bingham_fiber_density,
-                                    bingham_from_odf, _convert_bingham_pars,
-                                    odi2k, k2odi,  bingham_from_sh)
+                                    bingham_fiber_spread, bingham_from_odf,
+                                    _convert_bingham_pars, odi2k, k2odi, 
+                                    bingham_from_sh)
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh
 
@@ -23,11 +24,11 @@ def test_bingham_fit():
 
     # Test if maximum amplitude is in the expected Bingham main direction
     # which should be perpendicular to both ma_axis and mi_axis
-    odf_test = bingham_odf(f0, k1, k2, ma_axis, mi_axis, peak_dir)
+    odf_test = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, peak_dir)
     assert_almost_equal(odf_test, f0)
 
     # Test Bingham fit on full sampled GT Bingham function
-    odf_gt = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf_gt = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
     a0, c1, c2, mu0, mu1, mu2 = _bingham_fit_peak(odf_gt, peak_dir, sphere, 45)
 
     # check scalar parameters
@@ -43,7 +44,7 @@ def test_bingham_fit():
                               np.ones(3))
 
     # check the same for bingham_fit_odf
-    fits, n = bingham_fit_odf(odf_gt, sphere, max_search_angle=45)
+    fits, n = odf_to_bingham(odf_gt, sphere, max_search_angle=45)
     assert_almost_equal(fits[0][0], f0, decimal=3)
     assert_almost_equal(fits[0][1], k1, decimal=3)
     assert_almost_equal(fits[0][2], k2, decimal=3)
@@ -86,9 +87,35 @@ def test_bingham_metrics():
 
     assert_almost_equal(fd[0]/fd[1], 3)
 
+    # If the Bingham function is a sphere of unit radius, the
+    # fiber density should be 4*np.pi.
+    sphere_pars = np.zeros((1, 12))
+    sphere_pars[0, 0] = 1.0
+    sphere_pars[0, 1] = sphere_pars[0, 2] = 0.0
+    sphere_pars[0, 3:6] = axis0
+    sphere_pars[0, 6:9] = axis1
+    sphere_pars[0, 9:12] = axis2
+
+    fd_sphere = bingham_fiber_density(sphere_pars)
+
+    assert_almost_equal(fd_sphere[0], 4.0*np.pi)
+
+    # Fiber density using the default sphere should be close to the fd obtained
+    # using a high-resolution sphere (739330 vertices)
+    sphere_hires = get_sphere('repulsion724').subdivide(5)
+    fd_hires = bingham_fiber_density(bpars, sphere=sphere_hires)
+
+    assert_array_almost_equal(fd, fd_hires, decimal=5)
+
     # TEST: k2odi and odi2k conversions
     assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
     assert_almost_equal(odi2k(k2odi(np.array(k2))), k2)
+
+    # TEST: Fiber spread
+    f0s = np.array([f0_lobe1, f0_lobe2])
+    fs = bingham_fiber_spread(f0s, fd)
+
+    assert_array_almost_equal(fs, fd/f0s)
 
 
 def test_bingham_from_odf():
@@ -99,7 +126,7 @@ def test_bingham_from_odf():
     k1 = 2
     k2 = 6
     f0 = 3
-    odf = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
     # Perform Bingham fit in multi-voxel odf
     multi_odfs = np.zeros((2, 2, 1, len(sphere.vertices)))
@@ -143,7 +170,7 @@ def test_bingham_from_odf():
     assert_almost_equal(bim.godi_1, bim.odi_1[..., 0])
     assert_almost_equal(bim.godi_2, bim.odi_2[..., 0])
     assert_almost_equal(bim.godi_total, bim.odi_total[..., 0])
-    assert_almost_equal(bim.tfd, bim.fd[..., 0])
+    assert_almost_equal(bim.gfd, bim.fd[..., 0])
 
     # check fiber spread
     fs_v = bim.fd[0, 0, 0, 0]/peak_v
@@ -160,7 +187,7 @@ def test_bingham_from_sh():
     k1 = 2
     k2 = 6
     f0 = 3
-    odf = bingham_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
     bim_odf = bingham_from_odf(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16)
