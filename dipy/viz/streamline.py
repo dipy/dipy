@@ -1,8 +1,9 @@
 from dipy.utils.optpkg import optional_package
+
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 fury, has_fury, _ = optional_package('fury', min_version="0.10.0")
 if has_fury:
-    from dipy.viz import window, actor
+    from dipy.viz import actor, window
 
 
 def show_bundles(bundles, interactive=True, view='sagital', colors=None,

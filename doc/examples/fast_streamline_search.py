@@ -11,8 +11,12 @@ First import the necessary modules.
 
 import numpy as np
 
-from dipy.data import (get_target_tractogram_hcp, get_two_hcp842_bundles,
-                       fetch_bundle_atlas_hcp842, fetch_target_tractogram_hcp)
+from dipy.data import (
+    fetch_bundle_atlas_hcp842,
+    fetch_target_tractogram_hcp,
+    get_target_tractogram_hcp,
+    get_two_hcp842_bundles,
+)
 from dipy.io.streamline import load_trk
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_row
 from dipy.viz import actor, window

@@ -1,9 +1,9 @@
+import numpy as np
+from numpy.testing import assert_almost_equal
 import pytest
 
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
-import numpy as np
-from numpy.testing import assert_almost_equal
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 

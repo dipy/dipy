@@ -1,10 +1,10 @@
 from warnings import warn
 
 import numpy as np
-
-from dipy.reconst.dti import fractional_anisotropy, color_fa
-
 from scipy.ndimage import median_filter
+
+from dipy.reconst.dti import color_fa, fractional_anisotropy
+
 try:
     from skimage.filters import threshold_otsu as otsu
 except Exception:

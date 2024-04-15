@@ -2,33 +2,39 @@
 
 """
 
-import numpy as np
-
+from itertools import permutations
 import random
 
-from dipy.core.geometry import (sphere2cart, cart2sphere,
-                                nearest_pos_semi_def,
-                                sphere_distance,
-                                cart_distance,
-                                vector_cosine,
-                                lambert_equal_area_projection_polar,
-                                circumradius,
-                                vec2vec_rotmat,
-                                vector_norm,
-                                compose_transformations,
-                                compose_matrix,
-                                decompose_matrix,
-                                perpendicular_directions,
-                                dist_to_corner,
-                                is_hemispherical)
+import numpy as np
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises, assert_almost_equal,)
-
-from dipy.testing.spherepoints import sphere_points
-from dipy.testing.decorators import set_random_number_generator
+from dipy.core.geometry import (
+    cart2sphere,
+    cart_distance,
+    circumradius,
+    compose_matrix,
+    compose_transformations,
+    decompose_matrix,
+    dist_to_corner,
+    is_hemispherical,
+    lambert_equal_area_projection_polar,
+    nearest_pos_semi_def,
+    perpendicular_directions,
+    sphere2cart,
+    sphere_distance,
+    vec2vec_rotmat,
+    vector_cosine,
+    vector_norm,
+)
 from dipy.core.sphere_stats import random_uniform_on_sphere
-from itertools import permutations
+from dipy.testing.decorators import set_random_number_generator
+from dipy.testing.spherepoints import sphere_points
 
 
 def test_vector_norm():

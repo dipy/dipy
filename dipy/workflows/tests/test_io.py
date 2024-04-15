@@ -1,6 +1,6 @@
 import logging
 import os
-from tempfile import mkstemp, TemporaryDirectory
+from tempfile import TemporaryDirectory, mkstemp
 
 import numpy as np
 import numpy.testing as npt
@@ -11,12 +11,18 @@ from dipy.data.fetcher import dipy_home
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import nifti1_symmat
-from dipy.testing import assert_true
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
-from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
-                               ConcatenateTractogramFlow, ConvertSHFlow,
-                               ConvertTractogramFlow, ConvertTensorsFlow)
+from dipy.testing import assert_true
+from dipy.workflows.io import (
+    ConcatenateTractogramFlow,
+    ConvertSHFlow,
+    ConvertTensorsFlow,
+    ConvertTractogramFlow,
+    FetchFlow,
+    IoInfoFlow,
+    SplitFlow,
+)
 
 fname_log = mkstemp()[1]
 
@@ -74,9 +80,9 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-    dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
-                     'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
-                     'file_formats', 'fury_surface',
+    dataset_names = ['bundle_atlas_hcp842', '30_bundle_atlas_hcp842',
+                     'bundle_fa_hcp', 'bundles_2_subjects', 'cenir_multib',
+                     'cfin_multib', 'file_formats', 'fury_surface',
                      'gold_standard_io', 'isbi2013_2shell',
                      'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',

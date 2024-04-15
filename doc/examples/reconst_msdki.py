@@ -35,23 +35,24 @@ the spherical mean technique [NetoHe2019]_, [Kaden2016b]_.
 Let's import all relevant modules:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Reconstruction modules
-import dipy.reconst.dki as dki
-import dipy.reconst.msdki as msdki
-
-# For simulations
-from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table
-from dipy.core.sphere import disperse_charges, HemiSphere
+from dipy.core.sphere import HemiSphere, disperse_charges
 
 # For in-vivo data
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+
+# Reconstruction modules
+import dipy.reconst.dki as dki
+import dipy.reconst.msdki as msdki
 from dipy.segment.mask import median_otsu
+
+# For simulations
+from dipy.sims.voxel import multi_tensor
 
 ###############################################################################
 # Testing MSDKI in synthetic data

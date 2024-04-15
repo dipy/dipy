@@ -1,18 +1,16 @@
-import numpy as np
 import itertools
 
+import numpy as np
 from numpy.testing import assert_array_equal, assert_equal, assert_raises
-from dipy.testing.memory import get_type_refcount
-from dipy.testing import assert_arrays_equal
 
 from dipy.segment.clustering import QuickBundles
-
+from dipy.segment.clustering_algorithms import quickbundles
 import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metricspeed as dipysmetric
-from dipy.segment.clustering_algorithms import quickbundles
-import dipy.tracking.streamline as streamline_utils
+from dipy.testing import assert_arrays_equal
 from dipy.testing.decorators import set_random_number_generator
-
+from dipy.testing.memory import get_type_refcount
+import dipy.tracking.streamline as streamline_utils
 
 dtype = "float32"
 threshold = 7

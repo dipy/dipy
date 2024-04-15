@@ -1,27 +1,35 @@
 """ Testing DKI """
 
-import numpy as np
 import random
 
-import dipy.reconst.dki as dki
-import dipy.reconst.dti as dti
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal, assert_raises)
-from dipy.sims.voxel import multi_tensor_dki
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
-from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis,
-                              mean_kurtosis_tensor,
-                              _positive_evals, lower_triangular,
-                              kurtosis_fractional_anisotropy,
-                              radial_tensor_kurtosis)
+import numpy as np
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 
-from dipy.core.sphere import Sphere
-from dipy.data import default_sphere
 from dipy.core.geometry import sphere2cart
+from dipy.core.gradients import gradient_table
+from dipy.core.sphere import Sphere
+from dipy.data import default_sphere, get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+import dipy.reconst.dki as dki
+from dipy.reconst.dki import (
+    _positive_evals,
+    axial_kurtosis,
+    carlson_rd,
+    carlson_rf,
+    kurtosis_fractional_anisotropy,
+    lower_triangular,
+    mean_kurtosis,
+    mean_kurtosis_tensor,
+    radial_kurtosis,
+)
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import decompose_tensor, from_lower_triangular
+from dipy.sims.voxel import multi_tensor_dki
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 

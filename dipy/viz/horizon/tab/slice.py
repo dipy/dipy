@@ -1,14 +1,18 @@
+from functools import partial
+from pathlib import Path
 import warnings
 
-from functools import partial
 import numpy as np
-from pathlib import Path
-
-from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
-                                  build_switcher, build_checkbox)
 
 from dipy.testing.decorators import is_macOS
+from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.tab import (
+    HorizonTab,
+    build_checkbox,
+    build_label,
+    build_slider,
+    build_switcher,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
@@ -37,10 +41,10 @@ class SlicesTab(HorizonTab):
         self.on_slice_change = lambda _tab_id, _x, _y, _z: None
         self.on_volume_change = lambda _tab_id, v: None
 
-        self._opacity_toggle = build_checkbox(
+        self._actor_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
-            on_change=self._toggle_opacity)
+            on_change=self._toggle_actors)
 
         self._slice_opacity_label, self._slice_opacity = build_slider(
             initial_value=1.,
@@ -125,19 +129,18 @@ class SlicesTab(HorizonTab):
             checked_labels=[''],
             on_change=self._change_slice_visibility_z)
 
-        self._voxel_label = build_label(text='Voxel', is_horizon_label=True)
-        self._voxel_data = build_label(text='', is_horizon_label=True)
+        self._voxel_label = build_label(text='Voxel')
+        self._voxel_data = build_label(text='')
 
         self._visualizer.register_picker_callback(self._change_picked_voxel)
 
         self._register_visualize_partials()
 
-        self._file_label = build_label(text='Filename', is_horizon_label=True)
-        self._file_name_label = build_label(text=self._file_name,
-                                            is_horizon_label=True)
+        self._file_label = build_label(text='Filename')
+        self._file_name_label = build_label(text=self._file_name)
 
-        self.register_elements(
-            self._opacity_toggle,
+        self._register_elements(
+            self._actor_toggle,
             self._slice_opacity_label,
             self._slice_opacity,
             self._slice_x_toggle,
@@ -186,7 +189,7 @@ class SlicesTab(HorizonTab):
                     on_value_changed=self._change_color_map
                 )
 
-            self.register_elements(
+            self._register_elements(
                 self._intensities_label,
                 self._intensities,
                 self._colormap_switcher_label,
@@ -204,7 +207,7 @@ class SlicesTab(HorizonTab):
                     text_template='{value:.0f}',
                     label='Volume'
                 )
-                self.register_elements(self._volume_label, self._volume)
+                self._register_elements(self._volume_label, self._volume)
 
     def _register_visualize_partials(self):
         self._visualize_slice_x = partial(
@@ -231,15 +234,6 @@ class SlicesTab(HorizonTab):
 
     def _change_opacity(self, slider):
         self._slice_opacity.selected_value = slider.value
-        self._update_opacities()
-
-    def _toggle_opacity(self, checkbox):
-        if '' in checkbox.checked_labels:
-            self._slice_opacity.selected_value = 1
-            self._slice_opacity.obj.value = 1
-        else:
-            self._slice_opacity.selected_value = 0
-            self._slice_opacity.obj.value = 0
         self._update_opacities()
 
     def _change_picked_voxel(self, message):
@@ -355,6 +349,7 @@ class SlicesTab(HorizonTab):
     def on_tab_selected(self):
         """Trigger when tab becomes active.
         """
+        super().on_tab_selected()
         self._slice_x.obj.set_visibility(self._slice_x.visibility)
         self._slice_y.obj.set_visibility(self._slice_y.visibility)
         self._slice_z.obj.set_visibility(self._slice_z.visibility)
@@ -395,24 +390,18 @@ class SlicesTab(HorizonTab):
         if not self._volume.obj.value == volume:
             self._volume.obj.value = volume
 
-    def build(self, tab_id, _tab_ui):
+    def build(self, tab_id):
         """Build all the elements under the tab.
 
         Parameters
         ----------
         tab_id : int
             Id of the tab.
-        tab_ui : TabUI
-            FURY TabUI object for tabs panel.
-
-        Notes
-        -----
-        tab_ui will removed once every all tabs adapt new build architecture.
         """
         self._tab_id = tab_id
 
         x_pos = .02
-        self._opacity_toggle.position = (x_pos, .85)
+        self._actor_toggle.position = (x_pos, .85)
         self._slice_x_toggle.position = (x_pos, .62)
         self._slice_y_toggle.position = (x_pos, .38)
         self._slice_z_toggle.position = (x_pos, .15)
@@ -472,12 +461,6 @@ class SlicesTab(HorizonTab):
         """Name of the file opened in the tab.
         """
         return self._file_name
-
-    @property
-    def tab_id(self):
-        """Id of the tab.
-        """
-        return self._tab_id
 
     @property
     def actors(self):

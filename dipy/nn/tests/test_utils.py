@@ -1,7 +1,8 @@
 import warnings
 
 import numpy as np
-from dipy.nn.utils import normalize, unnormalize, transform_img, recover_img
+
+from dipy.nn.utils import normalize, recover_img, transform_img, unnormalize
 from dipy.testing.decorators import set_random_number_generator
 
 

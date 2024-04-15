@@ -1,18 +1,17 @@
 from copy import deepcopy
-from warnings import warn
 import types
+from warnings import warn
 
-from scipy.spatial.distance import cdist
-
-import numpy as np
 from nibabel.affines import apply_affine
 from nibabel.streamlines import ArraySequence as Streamlines
-from dipy.tracking.streamlinespeed import length, set_number_of_points
-from dipy.tracking.distances import bundles_distances_mdf
-import dipy.tracking.utils as ut
+import numpy as np
+from scipy.spatial.distance import cdist
+
 from dipy.core.geometry import dist_to_corner
-from dipy.core.interpolation import (interpolate_vector_3d,
-                                     interpolate_scalar_3d)
+from dipy.core.interpolation import interpolate_scalar_3d, interpolate_vector_3d
+from dipy.tracking.distances import bundles_distances_mdf
+from dipy.tracking.streamlinespeed import length, set_number_of_points
+import dipy.tracking.utils as ut
 
 
 def unlist_streamlines(streamlines):

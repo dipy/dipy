@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti, load_nifti_data
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.workflows.reconst import ReconstDsiFlow
 
@@ -43,3 +43,7 @@ def test_reconst_dsi():
         peaks_vals_data = load_nifti_data(peaks_vals_path)
         npt.assert_equal(peaks_vals_data.shape[-1], 5)
         npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
+
+        gfa_path = dsi_flow.last_generated_outputs['out_gfa']
+        gfa_data = load_nifti_data(gfa_path)
+        npt.assert_equal(gfa_data.shape, volume.shape[:-1])

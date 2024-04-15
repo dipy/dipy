@@ -3,15 +3,16 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+
 from dipy.core.sphere import unit_octahedron
-from dipy.data import get_fnames, default_sphere
+from dipy.data import default_sphere, get_fnames
 from dipy.direction import PTTDirectionGetter
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import (
     SphHarmFit,
     SphHarmModel,
-    sh_to_sf,
     descoteaux07_legacy_msg,
+    sh_to_sf,
     tournier07_legacy_msg,
 )
 from dipy.tracking.local_tracking import LocalTracking

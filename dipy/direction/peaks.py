@@ -1,21 +1,22 @@
-import tempfile
-
-from multiprocessing import Pool
 from itertools import repeat
+from multiprocessing import Pool
 from os import path
-
+import tempfile
 
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.reconst.odf import gfa
-from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
-                                   search_descending)
+from dipy.core.ndindex import ndindex
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
-from dipy.core.ndindex import ndindex
-from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
+from dipy.reconst.odf import gfa
+from dipy.reconst.recspeed import (
+    local_maxima,
+    remove_similar_vertices,
+    search_descending,
+)
+from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 

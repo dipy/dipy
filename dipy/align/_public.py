@@ -5,37 +5,38 @@ streamlines.
 
 
 """
-from warnings import warn
-import re
 import collections.abc
 from functools import partial
 import numbers
-import numpy as np
+import re
+from warnings import warn
+
 import nibabel as nib
+import numpy as np
+
+from dipy.align.imaffine import (
+    AffineMap,
+    AffineRegistration,
+    MutualInformationMetric,
+    transform_centers_of_mass,
+)
+from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
-from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
-                               DiffeomorphicMap)
-
-from dipy.align.imaffine import (transform_centers_of_mass,
-                                 AffineMap,
-                                 MutualInformationMetric,
-                                 AffineRegistration)
-
-from dipy.align.transforms import (TranslationTransform3D,
-                                   RigidTransform3D,
-                                   RigidScalingTransform3D,
-                                   RigidIsoScalingTransform3D,
-                                   AffineTransform3D)
-
-
+from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.transforms import (
+    AffineTransform3D,
+    RigidIsoScalingTransform3D,
+    RigidScalingTransform3D,
+    RigidTransform3D,
+    TranslationTransform3D,
+)
 import dipy.core.gradients as dpg
 import dipy.data as dpd
-from dipy.align.streamlinear import StreamlineLinearRegistration
-from dipy.tracking.streamline import set_number_of_points
-from dipy.tracking.utils import transform_tracking_output
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
-from dipy.io.image import load_nifti, save_nifti
+from dipy.tracking.streamline import set_number_of_points
+from dipy.tracking.utils import transform_tracking_output
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",

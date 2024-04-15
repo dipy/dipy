@@ -8,9 +8,10 @@ This could be seen as aligning a fuzzy (sensed) image to a binary
 (e.g., template) image.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from skimage import draw, filters
+
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric
 from dipy.viz import regtools

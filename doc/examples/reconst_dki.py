@@ -87,12 +87,14 @@ First, we import all relevant modules:
 """
 
 import numpy as np
-import dipy.reconst.dki as dki
-import dipy.reconst.dti as dti
+from scipy.ndimage import gaussian_filter
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+import dipy.reconst.dki as dki
+import dipy.reconst.dti as dti
 from dipy.segment.mask import median_otsu
 from dipy.viz.plotting import compare_maps
 from dipy.denoise.localpca import mppca

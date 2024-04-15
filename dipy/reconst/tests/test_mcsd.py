@@ -1,19 +1,21 @@
 import warnings
 
-from dipy.reconst.mcsd import (mask_for_response_msmt,
-                               response_from_mask_msmt,
-                               auto_response_msmt)
-from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
 import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
-from dipy.reconst import shm
-from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
+from dipy.data import default_sphere, get_3shell_gtab
+from dipy.reconst import shm
+from dipy.reconst.mcsd import (
+    MultiShellDeconvModel,
+    auto_response_msmt,
+    mask_for_response_msmt,
+    multi_shell_fiber_response,
+    response_from_mask_msmt,
+)
+from dipy.sims.voxel import add_noise, multi_tensor, single_tensor
 from dipy.testing.decorators import set_random_number_generator
-
 from dipy.utils.optpkg import optional_package
 
 cvx, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

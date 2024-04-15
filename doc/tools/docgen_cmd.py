@@ -2,12 +2,12 @@
 """
 Script to generate documentation for command line utilities
 """
-import os
-from os.path import join as pjoin
-from subprocess import Popen, PIPE, CalledProcessError
-import sys
 import importlib
 import inspect
+import os
+from os.path import join as pjoin
+from subprocess import PIPE, CalledProcessError, Popen
+import sys
 
 # version comparison
 # from packaging.version import Version

@@ -10,11 +10,12 @@ First import the necessary modules.
 """
 
 import numpy as np
+
+from dipy.data import get_fnames
+from dipy.io.pickles import save_pickle
 from dipy.io.streamline import load_tractogram
 from dipy.segment.clustering import QuickBundles
-from dipy.io.pickles import save_pickle
-from dipy.data import get_fnames
-from dipy.viz import window, actor, colormap
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # For educational purposes we will try to cluster a small streamline bundle

@@ -1,5 +1,5 @@
-import warnings
 from os.path import join as pjoin
+import warnings
 
 import numpy as np
 
@@ -24,11 +24,7 @@ if has_fury:
         import_fury_shader,
         shader_to_actor,
     )
-    from fury.utils import (
-        apply_affine,
-        numpy_to_vtk_colors,
-        numpy_to_vtk_points
-    )
+    from fury.utils import apply_affine, numpy_to_vtk_colors, numpy_to_vtk_points
 else:
     class Actor:
         pass
@@ -99,7 +95,7 @@ class PeakActor(Actor):
 
         valid_dirs = directions[indices]
 
-        num_dirs = len(np.where(valid_dirs >= 0)[0])
+        num_dirs = len(np.nonzero(np.abs(valid_dirs).max(axis=-1) > 0)[0])
 
         pnts_per_line = 2
 
@@ -112,7 +108,8 @@ class PeakActor(Actor):
                 xyz = np.asarray(center)
             else:
                 xyz = w_pos[idx, :]
-            valid_peaks = np.where(valid_dirs[idx, :, :] >= 0)[0]
+            valid_peaks = np.nonzero(np.abs(valid_dirs[idx, :, :])
+                                     .max(axis=-1) > 0.0)[0]
             for direction in valid_peaks:
                 if values is not None:
                     pv = values[center][direction]
@@ -223,8 +220,8 @@ class PeakActor(Actor):
         if self.__global_opacity >= 0:
             self.GetProperty().SetOpacity(self.__global_opacity)
 
-        self.__min_centers = np.min(indices, axis=1)
-        self.__max_centers = np.max(indices, axis=1)
+        self.__min_centers = np.zeros(shape=(3, ))
+        self.__max_centers = np.array(directions.shape[:3])
 
         self.__is_range = True
         self.__low_ranges = self.__min_centers
@@ -386,7 +383,7 @@ def peak(
             )
         else:
             valid_mask = np.logical_and(valid_mask, mask)
-    indices = np.where(valid_mask >= 0)
+    indices = np.where(valid_mask)
 
     return PeakActor(
         peaks_dirs,

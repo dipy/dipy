@@ -1,15 +1,17 @@
 import os.path as op
-import dipy.core.gradients as grad
-import dipy.core.optimize as opt
-import dipy.data as dpd
-from dipy.io.image import load_nifti_data
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-import dipy.tracking.life as life
+
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import scipy.linalg as la
+
+import dipy.core.gradients as grad
+import dipy.core.optimize as opt
+import dipy.data as dpd
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+import dipy.tracking.life as life
 
 THIS_DIR = op.dirname(__file__)
 

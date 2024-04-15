@@ -1,24 +1,25 @@
 import warnings
 
 import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
 
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           assert_array_equal,
-                           assert_allclose,
-                           assert_raises,)
-from numpy.testing import assert_
-
-from dipy.reconst.rumba import RumbaSDModel, generate_kernel
-from dipy.reconst.csdeconv import AxSymShResponse
-from dipy.data import get_fnames, dsi_voxels, default_sphere, get_sphere
-from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.core.geometry import cart2sphere
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.sims.voxel import sticks_and_ball, multi_tensor, single_tensor
+from dipy.data import default_sphere, dsi_voxels, get_fnames, get_sphere
 from dipy.direction.peaks import peak_directions
+from dipy.reconst.csdeconv import AxSymShResponse
+from dipy.reconst.rumba import RumbaSDModel, generate_kernel
 from dipy.reconst.shm import descoteaux07_legacy_msg
+from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.sims.voxel import multi_tensor, single_tensor, sticks_and_ball
 
 
 def test_rumba():

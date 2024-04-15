@@ -15,9 +15,10 @@ It remains licensed as the rest of PyCPD (MIT license as of October 2010).
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 """
 
-import numpy as np
 import numbers
 from warnings import warn
+
+import numpy as np
 
 
 def gaussian_kernel(X, beta, Y=None):

@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from dipy.viz.horizon.tab import (HorizonTab, build_slider, build_checkbox,
-                                  build_label)
+from dipy.viz.horizon.tab import HorizonTab, build_checkbox, build_label, build_slider
 
 
 class SurfaceTab(HorizonTab):
@@ -20,10 +19,10 @@ class SurfaceTab(HorizonTab):
         self._name = tab_name
         self._file_name = Path(file_name or tab_name).name
 
-        self._opacity_toggle = build_checkbox(
+        self._actor_toggle = build_checkbox(
             labels=[''],
             checked_labels=[''],
-            on_change=self._toggle_opacity)
+            on_change=self._toggle_actors)
 
         self._surface_opacity_label, self._surface_opacity = build_slider(
             initial_value=1.,
@@ -33,14 +32,13 @@ class SurfaceTab(HorizonTab):
             label='Opacity'
         )
 
-        self._file_label = build_label(text='Filename', is_horizon_label=True)
-        self._file_name_label = build_label(text=self._file_name,
-                                            is_horizon_label=True)
+        self._file_label = build_label(text='Filename',)
+        self._file_name_label = build_label(text=self._file_name)
 
-        self.register_elements(self._opacity_toggle,
-                               self._surface_opacity_label,
-                               self._surface_opacity, self._file_label,
-                               self._file_name_label)
+        self._register_elements(self._actor_toggle,
+                                self._surface_opacity_label,
+                                self._surface_opacity, self._file_label,
+                                self._file_name_label)
 
     def _change_opacity(self, slider):
         """Change opacity value according to slider changed.
@@ -59,40 +57,18 @@ class SurfaceTab(HorizonTab):
             actor.GetProperty().SetOpacity(
                 self._surface_opacity.selected_value)
 
-    def _toggle_opacity(self, checkbox):
-        """Toggle opacity of the actor to 0% or 100%.
-
-        Parameters
-        ----------
-        checkbox : _type_
-            _description_
-        """
-        if '' in checkbox.checked_labels:
-            self._surface_opacity.selected_value = 1
-            self._surface_opacity.obj.value = 1
-        else:
-            self._surface_opacity.selected_value = 0
-            self._surface_opacity.obj.value = 0
-        self._update_opacities()
-
-    def build(self, tab_id, _tab_ui):
+    def build(self, tab_id):
         """Build all the elements under the tab.
 
         Parameters
         ----------
         tab_id : int
             Id of the tab.
-        tab_ui : TabUI
-            FURY TabUI object for tabs panel.
-
-        Notes
-        -----
-        tab_ui will removed once every all tabs adapt new build architecture.
         """
         self._tab_id = tab_id
 
         y_pos = .85
-        self._opacity_toggle.position = (.02, y_pos)
+        self._actor_toggle.position = (.02, y_pos)
         self._surface_opacity_label.position = (.05, y_pos)
         self._surface_opacity.position = (.10, y_pos)
 
@@ -109,12 +85,6 @@ class SurfaceTab(HorizonTab):
         str
         """
         return self._name
-
-    @property
-    def tab_id(self):
-        """Id of the tab.
-        """
-        return self._tab_id
 
     @property
     def actors(self):
