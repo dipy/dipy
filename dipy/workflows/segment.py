@@ -9,8 +9,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking import Streamlines
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
-from dipy.utils.convert import expand_range
-from dipy.utils.defaults import handle_vol_idx
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 

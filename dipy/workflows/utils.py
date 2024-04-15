@@ -1,6 +1,6 @@
-"""Module for default handing functions."""
+"""Module for utility functions."""
 
-from .convert import expand_range
+from ..utils.convert import expand_range
 
 
 def handle_vol_idx(vol_idx):

@@ -1,8 +1,8 @@
-"""Testing defaults utilities."""
+"""Testing utilities."""
 
 import numpy as np
 
-from dipy.utils.defaults import handle_vol_idx
+from dipy.workflows.utils import handle_vol_idx
 
 
 def test_handle_vol_idx():
