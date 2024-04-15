@@ -606,8 +606,14 @@ class BinghamMetrics:
 
     @auto_attr
     def afd(self):
-        """ Maximum Bingham Amplitude for each ODF lobe."""
+        """ Maximum Bingham Amplitude for each ODF lobe. This is the same as
+        peak_values."""
         return self.peak_values
+    
+    @auto_attr
+    def afd_total(self):
+        """ The total sum of all ODF lobes' amplitudes."""
+        return np.sum(self.afd, axis=-1)
 
     @auto_attr
     def kappa_1(self):

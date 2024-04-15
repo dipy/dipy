@@ -5,6 +5,13 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.10.0 changes
+------------------
+
+**Workflows**
+- The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
+  this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.
+
 DIPY 1.9.0 changes
 ------------------
 

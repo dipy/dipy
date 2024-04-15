@@ -15,7 +15,7 @@ from dipy.reconst.dti import (ols_resort_msg, axial_diffusivity, color_fa,
                               mean_diffusivity, radial_diffusivity,
                               TensorModel, trace, linearity, planarity,
                               sphericity, decompose_tensor,
-                              _decompose_tensor_nan)
+                              _decompose_tensor_nan, mode)
 
 from dipy.io.image import load_nifti_data
 from dipy.data import get_fnames, dsi_voxels, get_sphere
@@ -56,6 +56,24 @@ def test_odf_with_zeros():
     sphere = create_unit_sphere(4)
     odf = df.odf(sphere)
     npt.assert_equal(odf[0, 0, 0], np.zeros(sphere.vertices.shape[0]))
+
+
+def test_mode_with_isotropic():
+    # mode involves a division by norm, so may be problematic for isotropic
+    # voxels. In the above test, 4 voxels are produced with isotropic tensors
+    # in indexes [0, 0] and [0, 1] in which norm should give mode 0. Voxels
+    # with indexes [1, 0] and [1, 1] should give mode of 1 and -1 respectively.
+    q_form = np.zeros((2, 2, 3, 3))
+    q_form[0, 1, 0, 0] = 1
+    q_form[0, 1, 1, 1] = 1
+    q_form[0, 1, 2, 2] = 1
+    q_form[1, 0, 0, 0] = 1
+    q_form[1, 0, 1, 1] = 1
+    q_form[1, 0, 2, 2] = 2
+    q_form[1, 1, 0, 0] = 1
+    q_form[1, 1, 1, 1] = 2
+    q_form[1, 1, 2, 2] = 2
+    npt.assert_array_almost_equal(mode(q_form), np.array([[0, 0], [1, -1]]))
 
 
 def test_tensor_model():

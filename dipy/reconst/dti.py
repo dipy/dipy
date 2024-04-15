@@ -471,8 +471,8 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing orthotropy. Mode is calculated with the
-    following equation (equation 9 in [1]_):
+    with 0 representing isotropy. Mode is calculated with the following
+    equation (equation 9 in [1]_):
 
     .. math::
 
@@ -488,13 +488,20 @@ def mode(q_form):
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
         2006.
     """
-
     A_squiggle = deviatoric(q_form)
     A_s_norm = norm(A_squiggle)
-    # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
-    A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
 
-    return 3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
+    mode = np.zeros_like(A_s_norm)
+    nonzero = A_s_norm != 0
+    A_squiggle_nonzero = A_squiggle[nonzero]
+    # Add two dims for the (3,3), so that it can broadcast on A_squiggle
+    A_s_norm_nonzero = A_s_norm[nonzero].reshape(-1, 1, 1)
+
+    mode_nonzero = 3 * np.sqrt(6) * determinant(A_squiggle_nonzero /
+                                                A_s_norm_nonzero)
+    mode[nonzero] = mode_nonzero
+
+    return mode
 
 
 def linearity(evals, axis=-1):
