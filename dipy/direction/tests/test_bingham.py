@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 from dipy.direction.bingham import (bingham_to_odf, odf_to_bingham,
                                     _bingham_fit_peak, bingham_fiber_density,
                                     bingham_fiber_spread, bingham_from_odf,
-                                    _convert_bingham_pars, odi2k, k2odi, 
+                                    _convert_bingham_pars, odi2k, k2odi,
                                     bingham_from_sh)
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh
