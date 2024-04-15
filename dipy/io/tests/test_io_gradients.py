@@ -1,14 +1,15 @@
-import warnings
 import os.path as osp
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+import warnings
 
 import numpy as np
 import numpy.testing as npt
-from dipy.testing import assert_true
+
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
+from dipy.testing import assert_true
 
 
 def test_read_bvals_bvecs():

@@ -1,26 +1,32 @@
 #!/usr/bin/python
 """ Classes and functions for fitting the diffusion kurtosis model """
 
-import numpy as np
 import warnings
+
+import numpy as np
 import scipy.optimize as opt
-import dipy.core.sphere as dps
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import (TensorFit, mean_diffusivity,
-                              from_lower_triangular,
-                              lower_triangular, decompose_tensor,
-                              MIN_POSITIVE_SIGNAL, nlls_fit_tensor,
-                              restore_fit_tensor)
-from dipy.reconst.utils import dki_design_matrix as design_matrix
-from dipy.reconst.recspeed import local_maxima
-from dipy.reconst.base import ReconstModel
-from dipy.core.ndindex import ndindex
-from dipy.core.geometry import (sphere2cart, cart2sphere,
-                                perpendicular_directions)
-from dipy.core.optimize import PositiveDefiniteLeastSquares
-from dipy.data import get_sphere, get_fnames, load_sdp_constraints
-from dipy.reconst.vec_val_sum import vec_val_vect
+
+from dipy.core.geometry import cart2sphere, perpendicular_directions, sphere2cart
 from dipy.core.gradients import check_multi_b
+from dipy.core.ndindex import ndindex
+from dipy.core.optimize import PositiveDefiniteLeastSquares
+import dipy.core.sphere as dps
+from dipy.data import get_fnames, get_sphere, load_sdp_constraints
+from dipy.reconst.base import ReconstModel
+from dipy.reconst.dti import (
+    MIN_POSITIVE_SIGNAL,
+    TensorFit,
+    decompose_tensor,
+    from_lower_triangular,
+    lower_triangular,
+    mean_diffusivity,
+    nlls_fit_tensor,
+    restore_fit_tensor,
+)
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.recspeed import local_maxima
+from dipy.reconst.utils import dki_design_matrix as design_matrix
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):

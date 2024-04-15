@@ -4,28 +4,35 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
-
 import scipy.optimize as opt
 
-import dipy.reconst.dti as dti
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.reconst.dti import (ols_resort_msg, axial_diffusivity, color_fa,
-                              fractional_anisotropy, from_lower_triangular,
-                              geodesic_anisotropy, lower_triangular,
-                              mean_diffusivity, radial_diffusivity,
-                              TensorModel, trace, linearity, planarity,
-                              sphericity, decompose_tensor,
-                              _decompose_tensor_nan, mode)
-
-from dipy.io.image import load_nifti_data
-from dipy.data import get_fnames, dsi_voxels, get_sphere
-
-from dipy.core.subdivide_octahedron import create_unit_sphere
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
-
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import dsi_voxels, get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import (
+    TensorModel,
+    _decompose_tensor_nan,
+    axial_diffusivity,
+    color_fa,
+    decompose_tensor,
+    fractional_anisotropy,
+    from_lower_triangular,
+    geodesic_anisotropy,
+    linearity,
+    lower_triangular,
+    mean_diffusivity,
+    mode,
+    ols_resort_msg,
+    planarity,
+    radial_diffusivity,
+    sphericity,
+    trace,
+)
 from dipy.sims.voxel import single_tensor
-
 from dipy.testing.decorators import set_random_number_generator
 
 

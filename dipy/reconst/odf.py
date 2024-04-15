@@ -1,5 +1,6 @@
-from dipy.reconst.base import ReconstModel, ReconstFit
 import numpy as np
+
+from dipy.reconst.base import ReconstFit, ReconstModel
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base

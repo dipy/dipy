@@ -1,15 +1,17 @@
-import operator
-import numpy as np
-from time import time
 from abc import ABCMeta, abstractmethod
 import logging
+import operator
+from time import time
+
+import numpy as np
 
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metricspeed import (
-    AveragePointwiseEuclideanMetric, Metric, MinimumAverageDirectFlipMetric,
+    AveragePointwiseEuclideanMetric,
+    Metric,
+    MinimumAverageDirectFlipMetric,
 )
-from dipy.tracking.streamline import set_number_of_points, nbytes
-
+from dipy.tracking.streamline import nbytes, set_number_of_points
 
 logger = logging.getLogger(__name__)
 

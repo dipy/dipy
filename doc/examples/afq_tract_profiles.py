@@ -16,18 +16,20 @@ trajectory of the bundle at that location.
 
 """
 
-import dipy.stats.analysis as dsa
-import dipy.tracking.streamline as dts
-from dipy.segment.clustering import QuickBundles
-from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
-from dipy.segment.featurespeed import ResampleFeature
-from dipy.data.fetcher import get_two_hcp842_bundles
-import dipy.data as dpd
-from dipy.io.streamline import load_trk
-from dipy.io.image import load_nifti
+import os.path as op
+
 import matplotlib.pyplot as plt
 import numpy as np
-import os.path as op
+
+import dipy.data as dpd
+from dipy.data.fetcher import get_two_hcp842_bundles
+from dipy.io.image import load_nifti
+from dipy.io.streamline import load_trk
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.featurespeed import ResampleFeature
+from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+import dipy.stats.analysis as dsa
+import dipy.tracking.streamline as dts
 
 ###############################################################################
 # To get started, we will grab the bundles.

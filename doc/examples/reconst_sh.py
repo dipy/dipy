@@ -11,11 +11,12 @@ Let's import some standard packages.
 """
 
 import numpy as np
-from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+
+from dipy.core.sphere import HemiSphere, Sphere, disperse_charges
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.sims.voxel import multi_tensor_odf
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 ###############################################################################
 # We can first create some random points on a ``HemiSphere`` using spherical

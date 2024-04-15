@@ -3,21 +3,22 @@
 Class and helper functions for fitting the Histological ResDNN model.
 """
 import logging
+
 import numpy as np
 
-from dipy.core.gradients import unique_bvals_magnitude, get_bval_indices
+from dipy.core.gradients import get_bval_indices, unique_bvals_magnitude
 from dipy.core.sphere import HemiSphere
-from dipy.data import get_sphere, get_fnames
+from dipy.data import get_fnames, get_sphere
+from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.optpkg import optional_package
-from dipy.nn.utils import set_logger_level
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
+    from tensorflow.keras.layers import Add, Dense, Input
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Input, Dense, Add
 else:
     logging.warning('This model requires Tensorflow.\
                     Please install these packages using \

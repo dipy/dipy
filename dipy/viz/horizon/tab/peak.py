@@ -1,8 +1,14 @@
 from functools import partial
+
 import numpy as np
 
-from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
-                                  build_radio_button, build_checkbox)
+from dipy.viz.horizon.tab import (
+    HorizonTab,
+    build_checkbox,
+    build_label,
+    build_radio_button,
+    build_slider,
+)
 
 
 class PeaksTab(HorizonTab):

@@ -1,8 +1,9 @@
+from glob import glob
 import inspect
 import itertools
-import numpy as np
 import os
-from glob import glob
+
+import numpy as np
 
 from dipy.workflows.base import get_args_default
 

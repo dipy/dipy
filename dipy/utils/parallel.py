@@ -1,6 +1,8 @@
-import numpy as np
 import multiprocessing
+
+import numpy as np
 from tqdm.auto import tqdm
+
 from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package('joblib')

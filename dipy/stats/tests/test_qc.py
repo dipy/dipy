@@ -1,7 +1,8 @@
 import numpy as np
-from dipy.stats.qc import neighboring_dwi_correlation
-from dipy.core.gradients import gradient_table
+
 from dipy.core.geometry import normalized_vector
+from dipy.core.gradients import gradient_table
+from dipy.stats.qc import neighboring_dwi_correlation
 
 rng = np.random.default_rng()
 

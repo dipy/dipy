@@ -1,7 +1,7 @@
-from typing import Any
-from dataclasses import dataclass
-import warnings
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
+import warnings
 
 import numpy as np
 

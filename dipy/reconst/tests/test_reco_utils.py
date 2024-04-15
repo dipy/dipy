@@ -1,11 +1,9 @@
 """Testing reconstruction utilities."""
 
 import numpy as np
-
-from dipy.reconst.recspeed import (adj_to_countarrs,
-                                   argmax_from_countarrs)
-
 from numpy.testing import assert_array_equal, assert_equal
+
+from dipy.reconst.recspeed import adj_to_countarrs, argmax_from_countarrs
 
 
 def test_adj_countarrs():

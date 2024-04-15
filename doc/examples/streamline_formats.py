@@ -20,15 +20,13 @@ import os
 
 import nibabel as nib
 import numpy as np
+
+from dipy.data.fetcher import fetch_file_formats, get_file_formats
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.utils import (create_nifti_header, get_reference_info,
-                           is_header_compatible)
+from dipy.io.utils import create_nifti_header, get_reference_info, is_header_compatible
 from dipy.tracking.streamline import select_random_set_of_streamlines
 from dipy.tracking.utils import density_map
-
-from dipy.data.fetcher import (fetch_file_formats,
-                               get_file_formats)
 
 ###############################################################################
 # First fetch the dataset that contains 5 tractography file of 5 file formats:

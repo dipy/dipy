@@ -1,24 +1,25 @@
-from warnings import warn
-import numpy as np
 from os.path import join as pjoin
-from dipy.io.surface import load_gifti, load_pial
-from dipy.workflows.workflow import Workflow
+from warnings import warn
+
+import numpy as np
+
 from dipy.io.image import load_nifti
-from dipy.viz import horizon
 from dipy.io.peaks import load_peaks
 from dipy.io.streamline import load_tractogram
+from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
-
+from dipy.viz import horizon
+from dipy.workflows.workflow import Workflow
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 
 if has_fury:
     from fury.colormap import line_colors
-    from fury.utils import numpy_to_vtk_colors
     from fury.lib import numpy_support
+    from fury.utils import numpy_to_vtk_colors
 
 
 class HorizonFlow(Workflow):

@@ -12,11 +12,10 @@ Then, in the tests, something like::
     assert_equal(code, 0)
     assert_equal(stdout, b'This script ran OK')
 """
-import sys
 import os
-from os.path import (dirname, join as pjoin, isfile, isdir, realpath, pathsep)
-
-from subprocess import Popen, PIPE
+from os.path import dirname, isdir, isfile, join as pjoin, pathsep, realpath
+from subprocess import PIPE, Popen
+import sys
 
 try:  # Python 2
     string_types = basestring,

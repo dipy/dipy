@@ -1,27 +1,31 @@
+from io import BytesIO
+import pickle
 import warnings
 
 import numpy as np
-import pickle
-from io import BytesIO
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+)
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, assert_equal, assert_)
-from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
-
-from dipy.direction.peaks import (peaks_from_model,
-                                  peak_directions,
-                                  peak_directions_nl,
-                                  reshape_peaks_for_visualization)
-
-from dipy.core.subdivide_octahedron import create_unit_hemisphere
-from dipy.core.sphere import unit_icosahedron
-from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_fnames, get_sphere, default_sphere
-from dipy.core.gradients import gradient_table, GradientTable
+from dipy.core.gradients import GradientTable, gradient_table
+from dipy.core.sphere import HemiSphere, unit_icosahedron
 from dipy.core.sphere_stats import angular_similarity
-from dipy.core.sphere import HemiSphere
+from dipy.core.subdivide_octahedron import create_unit_hemisphere
+from dipy.data import default_sphere, get_fnames, get_sphere
+from dipy.direction.peaks import (
+    peak_directions,
+    peak_directions_nl,
+    peaks_from_model,
+    reshape_peaks_for_visualization,
+)
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.odf import OdfFit, OdfModel, gfa
 from dipy.reconst.shm import descoteaux07_legacy_msg, tournier07_legacy_msg
+from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.testing.decorators import set_random_number_generator
 
 

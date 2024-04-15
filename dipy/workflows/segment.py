@@ -3,12 +3,12 @@ from time import time
 
 import numpy as np
 
-from dipy.io.image import save_nifti, load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.tracking import Streamlines
-from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
+from dipy.segment.mask import median_otsu
+from dipy.tracking import Streamlines
 from dipy.utils.convert import expand_range
 from dipy.utils.defaults import handle_vol_idx
 from dipy.workflows.workflow import Workflow

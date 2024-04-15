@@ -3,16 +3,14 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 
-
 from dipy.core.geometry import cart2sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_icosahedron
-from dipy.data import get_sphere, get_fnames
+from dipy.data import get_fnames, get_sphere
 from dipy.direction.bootstrap_direction_getter import BootDirectionGetter
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst import dti, shm
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   TensorModel)
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, TensorModel
 from dipy.sims.voxel import multi_tensor, single_tensor
 from dipy.testing.decorators import set_random_number_generator
 

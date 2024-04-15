@@ -1,14 +1,18 @@
+from functools import partial
+from pathlib import Path
 import warnings
 
-from functools import partial
 import numpy as np
-from pathlib import Path
-
-from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import (HorizonTab, build_label, build_slider,
-                                  build_switcher, build_checkbox)
 
 from dipy.testing.decorators import is_macOS
+from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.tab import (
+    HorizonTab,
+    build_checkbox,
+    build_label,
+    build_slider,
+    build_switcher,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 

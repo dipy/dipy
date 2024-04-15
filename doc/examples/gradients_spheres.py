@@ -25,9 +25,10 @@ Let's start by importing the necessary modules.
 """
 
 import numpy as np
+
 from dipy.core.gradients import gradient_table
-from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
-from dipy.viz import window, actor
+from dipy.core.sphere import HemiSphere, Sphere, disperse_charges
+from dipy.viz import actor, window
 
 ###############################################################################
 # We can first create some random points on a ``HemiSphere`` using spherical

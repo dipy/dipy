@@ -19,20 +19,16 @@ with respect to the heart.
 """
 
 from os.path import join as pjoin
-import numpy as np
+
 import matplotlib.pyplot as plt
-from dipy.viz import regtools
+import numpy as np
+
+from dipy.align import affine_registration, register_series, rigid, translation
+from dipy.align.imaffine import AffineMap, AffineRegistration, MutualInformationMetric
+from dipy.align.transforms import RigidTransform3D, TranslationTransform3D
 from dipy.data import fetch_stanford_hardi
 from dipy.io.image import load_nifti
-from dipy.align.imaffine import (AffineMap,
-                                 MutualInformationMetric,
-                                 AffineRegistration)
-from dipy.align.transforms import (TranslationTransform3D,
-                                   RigidTransform3D)
-
-from dipy.align import (affine_registration, translation,
-                        rigid, register_series)
-
+from dipy.viz import regtools
 
 ###############################################################################
 # Let's fetch a single b0 volume from the Stanford HARDI dataset.

@@ -3,16 +3,15 @@
 import warnings
 
 import numpy as np
+from numpy.testing import assert_almost_equal, assert_equal
+import pytest
 
-from dipy.data import get_sphere, default_sphere, get_3shell_gtab
+from dipy.core.sphere_stats import angular_similarity
+from dipy.data import default_sphere, get_3shell_gtab, get_sphere
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.forecast import ForecastModel
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor
-
-from numpy.testing import assert_almost_equal, assert_equal
-import pytest
-from dipy.direction.peaks import peak_directions
-from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

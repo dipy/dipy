@@ -1,10 +1,10 @@
 from tempfile import TemporaryDirectory
 
 import numpy.testing as npt
-from dipy.testing import assert_false
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti
+from dipy.testing import assert_false
 from dipy.workflows.mask import MaskFlow
 
 

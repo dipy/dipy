@@ -1,10 +1,10 @@
 """ Testing tripwire module.
 """
 
-from dipy.utils.tripwire import TripWire, is_tripwire, TripWireError
-
-from dipy.testing import assert_true, assert_false
 from numpy.testing import assert_raises
+
+from dipy.testing import assert_false, assert_true
+from dipy.utils.tripwire import TripWire, TripWireError, is_tripwire
 
 
 def test_is_tripwire():
