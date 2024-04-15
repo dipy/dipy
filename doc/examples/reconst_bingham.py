@@ -21,6 +21,7 @@ from dipy.reconst.csdeconv import (auto_response_ssst,
                                    ConstrainedSphericalDeconvModel)
 from dipy.direction.bingham import (bingham_from_odf, bingham_from_sh)
 from dipy.viz import window, actor
+from dipy.viz.plotting import image_mosaic
 
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -175,20 +176,17 @@ FD_ODF_l1 = BinghamMetrics.fd[:, :, 0, 0]
 FD_ODF_l2 = BinghamMetrics.fd[:, :, 0, 1]
 FD_total = BinghamMetrics.gfd[:, :, 0]
 
-fig1, ax = plt.subplots(1, 3, figsize=(16, 4))
+FD_images = [FD_ODF_l1[:, -1:1:-1].T,
+             FD_ODF_l2[:, -1:1:-1].T,
+             FD_total[:, -1:1:-1].T]
+FD_labels = ['FD ODF lobe 1', 'FD ODF lobe 2', 'FD ODF global']
+kwargs = [{'vmin': 0, 'vmax': 2},
+          {'vmin': 0, 'vmax': 2},
+          {'vmin': 0, 'vmax': 2}]
 
-im0 = ax[0].imshow(FD_ODF_l1[:, -1:1:-1].T, vmin=0, vmax=2)
-ax[0].set_title('FD ODF lobe 1')
-
-im1 = ax[1].imshow(FD_ODF_l2[:, -1:1:-1].T, vmin=0, vmax=2)
-ax[1].set_title('FD ODF lobe 2')
-
-im2 = ax[2].imshow(FD_total[:, -1:1:-1].T, vmin=0, vmax=2)
-ax[2].set_title('FD ODF global')
-
-fig1.colorbar(im0, ax=ax[0])
-fig1.colorbar(im1, ax=ax[1])
-fig1.colorbar(im2, ax=ax[2])
+print('Saving the illustration as Bingham_fd.png')
+image_mosaic(FD_images, ax_labels=FD_labels, ax_kwargs=kwargs,
+             figsize=(16, 4), filename='Bingham_fd.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -217,20 +215,14 @@ ODIt[FD_total < 0.5] = 0
 ODI1[FD_total < 0.5] = 0
 ODI2[FD_total < 0.5] = 0
 
-fig2, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[0].set_title('ODI_1 (lobe 1)')
-
-im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2 (lobe 1)')
-
-im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total (lobe 1)')
-
-fig2.colorbar(im0, ax=ax[0])
-fig2.colorbar(im1, ax=ax[1])
-fig2.colorbar(im2, ax=ax[2])
+ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
+ODI_labels = ['ODI_1 (lobe 1)', 'ODI_2 (lobe 1)', 'ODI_total (lobe 1)']
+kwargs = [{'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2}]
+print('Saving the illustration as Bingham_ODI_lobe1.png')
+image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
+             figsize=(15, 5), filename='Bingham_ODI_lobe1.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -257,20 +249,14 @@ ODIt[FD_total < 0.5] = 0
 ODI1[FD_total < 0.5] = 0
 ODI2[FD_total < 0.5] = 0
 
-fig3, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[0].set_title('ODI_1 (lobe 2)')
-
-im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2 (lobe 2)')
-
-im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total (lobe 2)')
-
-fig3.colorbar(im0, ax=ax[0])
-fig3.colorbar(im1, ax=ax[1])
-fig3.colorbar(im2, ax=ax[2])
+ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
+ODI_labels = ['ODI_1 (lobe 2)', 'ODI_2 (lobe 2)', 'ODI_total (lobe 2)']
+kwargs = [{'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2}]
+print('Saving the illustration as Bingham_ODI_lobe2.png')
+image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
+             figsize=(15, 5), filename='Bingham_ODI_lobe2.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -297,20 +283,14 @@ ODIt[FD_total < 0.5] = 0
 ODI1[FD_total < 0.5] = 0
 ODI2[FD_total < 0.5] = 0
 
-fig4, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-im0 = ax[0].imshow(ODI1[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[0].set_title('ODI_1 (global)')
-
-im1 = ax[1].imshow(ODI2[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[1].set_title('ODI_2 (global)')
-
-im2 = ax[2].imshow(ODIt[:, -1:1:-1].T, vmin=0, vmax=0.2)
-ax[2].set_title('ODI_total (global)')
-
-fig4.colorbar(im0, ax=ax[0])
-fig4.colorbar(im1, ax=ax[1])
-fig4.colorbar(im2, ax=ax[2])
+ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
+ODI_labels = ['ODI_1 (global)', 'ODI_2 (global)', 'ODI_total (global)']
+kwargs = [{'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2},
+          {'vmin': 0, 'vmax': 0.2}]
+print('Saving the illustration as Bingham_ODI.png')
+image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
+             figsize=(15, 5), filename='Bingham_ODI_global.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
