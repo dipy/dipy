@@ -26,6 +26,7 @@ from dipy.reconst.dki import (
     mean_kurtosis,
     mean_kurtosis_tensor,
     radial_kurtosis,
+    radial_tensor_kurtosis,
 )
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import decompose_tensor, from_lower_triangular
