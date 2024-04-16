@@ -513,10 +513,10 @@ def affine_registration(moving, static,
                                   static_mask=static_mask,
                                   moving_mask=moving_mask)
             starting_affine = xform.affine
-            
+    
     # Copy the final affine into a final variable
     final_affine = starting_affine.copy()
-                            
+    
     # After doing all that, resample once at the end:
     affine_map = AffineMap(final_affine,
                            static.shape, static_affine,
