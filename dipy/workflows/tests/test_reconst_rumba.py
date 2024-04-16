@@ -7,8 +7,8 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
-from dipy.workflows.reconst import ReconstRUMBAFlow
 from dipy.reconst.shm import descoteaux07_legacy_msg
+from dipy.workflows.reconst import ReconstRUMBAFlow
 
 logging.getLogger().setLevel(logging.INFO)
 

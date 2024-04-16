@@ -1,8 +1,8 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
 import os.path as op
-from threading import Thread
 import tempfile
+from threading import Thread
 from urllib.request import pathname2url
 
 import numpy.testing as npt

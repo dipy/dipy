@@ -4,19 +4,22 @@ import warnings
 import numpy as np
 
 from dipy.core import geometry as geo
-from dipy.core.gradients import (GradientTable, gradient_table,
-                                 unique_bvals_tolerance, get_bval_indices)
+from dipy.core.gradients import (
+    GradientTable,
+    get_bval_indices,
+    gradient_table,
+    unique_bvals_tolerance,
+)
 from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst.csdeconv import response_from_mask_ssst
-from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
-                              mean_diffusivity)
+from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivity
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
+from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
 from dipy.utils.deprecator import deprecated_params
-
 from dipy.utils.optpkg import optional_package
+
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 SH_CONST = .5 / np.sqrt(np.pi)

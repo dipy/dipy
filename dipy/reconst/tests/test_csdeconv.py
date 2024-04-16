@@ -1,42 +1,54 @@
 import warnings
+
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import (assert_, assert_equal, assert_almost_equal,
-                           assert_array_almost_equal, assert_array_equal)
-from dipy.testing import assert_greater, assert_greater_equal
-from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
-from dipy.sims.voxel import (multi_tensor,
-                             single_tensor,
-                             multi_tensor_odf,
-                             all_tensor_evecs, single_tensor_odf)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+)
+
 from dipy.core.gradients import gradient_table
-from dipy.core.sphere import Sphere, HemiSphere
+from dipy.core.sphere import HemiSphere, Sphere
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   ConstrainedSDTModel,
-                                   forward_sdeconv_mat,
-                                   odf_deconv,
-                                   odf_sh_to_sharp,
-                                   mask_for_response_ssst,
-                                   response_from_mask_ssst,
-                                   response_from_mask,
-                                   auto_response_ssst,
-                                   auto_response,
-                                   recursive_response)
+from dipy.data import default_sphere, get_fnames, get_sphere, small_sphere
 from dipy.direction.peaks import peak_directions
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.csdeconv import (
+    ConstrainedSDTModel,
+    ConstrainedSphericalDeconvModel,
+    auto_response,
+    auto_response_ssst,
+    forward_sdeconv_mat,
+    mask_for_response_ssst,
+    odf_deconv,
+    odf_sh_to_sharp,
+    recursive_response,
+    response_from_mask,
+    response_from_mask_ssst,
+)
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (
-    descoteaux07_legacy_msg,
     QballModel,
+    descoteaux07_legacy_msg,
+    lazy_index,
+    real_sh_descoteaux,
     sf_to_sh,
     sh_to_sf,
-    real_sh_descoteaux,
-    sph_harm_ind_list
+    sph_harm_ind_list,
 )
-from dipy.reconst.shm import lazy_index
-from dipy.utils.deprecator import ExpiredDeprecationError
-from dipy.io.gradients import read_bvals_bvecs
+from dipy.sims.voxel import (
+    all_tensor_evecs,
+    multi_tensor,
+    multi_tensor_odf,
+    single_tensor,
+    single_tensor_odf,
+)
+from dipy.testing import assert_greater, assert_greater_equal
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def get_test_data():

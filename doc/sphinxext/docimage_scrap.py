@@ -1,7 +1,8 @@
-import os
 import glob
+import os
 import shutil
 import time
+
 from sphinx_gallery.scrapers import figure_rst
 
 

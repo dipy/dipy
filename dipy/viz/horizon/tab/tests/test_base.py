@@ -1,13 +1,18 @@
-import pytest
 import warnings
 
 import numpy.testing as npt
-from dipy.testing import check_for_warnings
+import pytest
 
-from dipy.utils.optpkg import optional_package
+from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb
-from dipy.viz.horizon.tab.base import (build_checkbox, build_label,
-                                       build_slider, build_switcher)
+from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.tab.base import (
+    build_checkbox,
+    build_label,
+    build_radio_button,
+    build_slider,
+    build_switcher,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
@@ -27,19 +32,7 @@ def check_label(label):
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_label():
-    regular_label = build_label(text='Hello')
-    npt.assert_equal(regular_label.message, 'Hello')
-    npt.assert_equal(regular_label.font_size, 16)
-    npt.assert_equal(regular_label.bold, False)
-    check_label(regular_label)
-
-    regular_label = build_label(text='Hello', font_size=10, bold=True)
-    npt.assert_equal(regular_label.message, 'Hello')
-    npt.assert_equal(regular_label.font_size, 10)
-    npt.assert_equal(regular_label.bold, True)
-    check_label(regular_label)
-
-    horizon_label = build_label(text='Hello', is_horizon_label=True)
+    horizon_label = build_label(text='Hello')
     npt.assert_equal(horizon_label.obj.message, 'Hello')
     npt.assert_equal(horizon_label.obj.font_size, 16)
     npt.assert_equal(horizon_label.obj.bold, False)
@@ -87,6 +80,30 @@ def test_build_slider():
     npt.assert_equal(double_slider.obj.text[1].font_size, 16)
     npt.assert_equal(double_slider.selected_value, (4, 5))
 
+    def on_handle_released(a, b, c, d): pass
+
+    single_slider_label, single_slider = build_slider(
+        5, 100, on_handle_released=on_handle_released)
+    npt.assert_equal(single_slider_label.obj.message, '')
+    npt.assert_equal(single_slider_label.obj.font_size, 16)
+    npt.assert_equal(single_slider_label.obj.bold, False)
+    npt.assert_equal(single_slider.obj.value, 5)
+    npt.assert_equal(single_slider.obj.max_value, 100)
+    npt.assert_equal(single_slider.obj.min_value, 0)
+    npt.assert_equal(single_slider.obj.track.width, 450)
+    npt.assert_equal(single_slider.obj.track.height, 3)
+    npt.assert_equal(single_slider.obj.track.color, (.8, .3, .0))
+    npt.assert_equal(single_slider.obj.default_color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.active_color, (.9, .4, .0))
+    npt.assert_equal(single_slider.obj.handle.color, (1., .5, .0))
+    npt.assert_equal(single_slider.obj.handle.outer_radius, 8)
+    npt.assert_equal(single_slider.obj.text.font_size, 16)
+    npt.assert_equal(single_slider.obj.text_template,
+                     '{value:.1f} ({ratio:.0%})')
+    npt.assert_equal(single_slider.selected_value, 5)
+    npt.assert_equal(
+        single_slider.obj.on_left_mouse_button_released, on_handle_released)
+
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_checkbox():
@@ -107,6 +124,27 @@ def test_build_checkbox():
         npt.assert_equal(checkbox, None)
         check_for_warnings(l_warns, 'At least one label needs to be to create'
                            + ' checkboxes')
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_build_radio():
+    radio = build_radio_button(['Hello', 'Hi'], ['Hello'])
+
+    npt.assert_equal(len(radio.obj.checked_labels), 1)
+    npt.assert_equal(len(radio.obj.labels), 2)
+    npt.assert_equal(radio.selected_value, ['Hello'])
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        radio = build_radio_button()
+        npt.assert_equal(radio, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' radio buttons')
+
+    with warnings.catch_warnings(record=True) as l_warns:
+        radio = build_radio_button([])
+        npt.assert_equal(radio, None)
+        check_for_warnings(l_warns, 'At least one label needs to be to create'
+                           + ' radio buttons')
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

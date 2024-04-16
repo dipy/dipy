@@ -1,40 +1,59 @@
 """Test spherical harmonic models and the tools associated with those models.
 """
 import warnings
+
 import numpy as np
 import numpy.linalg as npl
 import numpy.testing as npt
-
-from dipy.testing import assert_true
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises,)
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
 from scipy.special import sph_harm as sph_harm_sp
 
-from dipy.core.sphere import hemi_icosahedron, Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
-from dipy.sims.voxel import single_tensor
-from dipy.direction.peaks import peak_directions
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
-from dipy.sims.voxel import multi_tensor_odf
+from dipy.core.sphere import Sphere, hemi_icosahedron
 from dipy.data import mrtrix_spherical_functions
+from dipy.direction.peaks import peak_directions
 from dipy.reconst import odf
-
-
-from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
-                              real_sym_sh_mrtrix, real_sh_descoteaux,
-                              real_sh_tournier, sph_harm_ind_list,
-                              order_from_ncoef, OpdtModel,
-                              normalize_data, hat, lcr_matrix,
-                              smooth_pinv, bootstrap_data_array,
-                              bootstrap_data_voxel, ResidualBootstrapWrapper,
-                              CsaOdfModel, QballModel, SphHarmFit,
-                              spherical_harmonics, anisotropic_power,
-                              calculate_max_order, sh_to_sf_matrix, gen_dirac,
-                              convert_sh_to_full_basis, convert_sh_from_legacy,
-                              convert_sh_to_legacy,
-                              convert_sh_descoteaux_tournier,
-                              descoteaux07_legacy_msg, tournier07_legacy_msg)
+from dipy.reconst.shm import (
+    CsaOdfModel,
+    OpdtModel,
+    QballModel,
+    ResidualBootstrapWrapper,
+    SphHarmFit,
+    anisotropic_power,
+    bootstrap_data_array,
+    bootstrap_data_voxel,
+    calculate_max_order,
+    convert_sh_descoteaux_tournier,
+    convert_sh_from_legacy,
+    convert_sh_to_full_basis,
+    convert_sh_to_legacy,
+    descoteaux07_legacy_msg,
+    gen_dirac,
+    hat,
+    lcr_matrix,
+    normalize_data,
+    order_from_ncoef,
+    real_sh_descoteaux,
+    real_sh_descoteaux_from_index,
+    real_sh_tournier,
+    real_sym_sh_basis,
+    real_sym_sh_mrtrix,
+    sf_to_sh,
+    sh_to_sf,
+    sh_to_sf_matrix,
+    smooth_pinv,
+    sph_harm_ind_list,
+    spherical_harmonics,
+    tournier07_legacy_msg,
+)
+from dipy.sims.voxel import multi_tensor_odf, single_tensor
+from dipy.testing import assert_true
 
 
 def test_order_from_ncoeff():

@@ -1,7 +1,6 @@
-from packaging.version import Version
-
 import nibabel as nib
 import numpy as np
+from packaging.version import Version
 
 
 def load_nifti_data(fname, as_ndarray=True):

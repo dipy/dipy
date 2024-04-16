@@ -1,5 +1,5 @@
-import gc
 from collections import defaultdict
+import gc
 
 
 def get_type_refcount(pattern=None):

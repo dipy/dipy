@@ -6,12 +6,13 @@ from scipy.special import genlaguerre
 
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
 from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.reconst.shore import (ShoreModel,
-                                shore_matrix,
-                                shore_indices,
-                                shore_order)
-from dipy.sims.voxel import (multi_tensor, multi_tensor_rtop,
-                             multi_tensor_msd, multi_tensor_pdf)
+from dipy.reconst.shore import ShoreModel, shore_indices, shore_matrix, shore_order
+from dipy.sims.voxel import (
+    multi_tensor,
+    multi_tensor_msd,
+    multi_tensor_pdf,
+    multi_tensor_rtop,
+)
 
 
 def test_shore_metrics():

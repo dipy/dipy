@@ -8,10 +8,9 @@
     .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
 """
 
-import numpy as np
 import h5py
-
 from nibabel.streamlines import ArraySequence as Streamlines
+import numpy as np
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']

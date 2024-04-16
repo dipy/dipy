@@ -3,9 +3,9 @@
 """
 
 # stdlib imports
-import sys
-import re
 from os.path import join as pjoin
+import re
+import sys
 
 # local imports
 from apigen import ApiDocWriter

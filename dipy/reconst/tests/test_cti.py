@@ -1,21 +1,28 @@
-import numpy as np
 import math
 
-from dipy.core.sphere import disperse_charges, HemiSphere
-from dipy.reconst.utils import cti_design_matrix as design_matrix
-from numpy.testing import (assert_array_almost_equal, assert_raises)
-from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
+import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_raises
+
 from dipy.core.gradients import gradient_table
-import dipy.reconst.qti as qti
+from dipy.core.sphere import HemiSphere, disperse_charges
 import dipy.reconst.cti as cti
-from dipy.reconst.dti import (
-    decompose_tensor, mean_diffusivity)
-from dipy.reconst.cti import (split_cti_params, ls_fit_cti,
-                              multi_gaussian_k_from_c, from_qte_to_cti)
-from dipy.reconst.dki import (mean_kurtosis,
-                              axial_kurtosis, radial_kurtosis,
-                              mean_kurtosis_tensor,
-                              kurtosis_fractional_anisotropy)
+from dipy.reconst.cti import (
+    from_qte_to_cti,
+    ls_fit_cti,
+    multi_gaussian_k_from_c,
+    split_cti_params,
+)
+from dipy.reconst.dki import (
+    axial_kurtosis,
+    kurtosis_fractional_anisotropy,
+    mean_kurtosis,
+    mean_kurtosis_tensor,
+    radial_kurtosis,
+)
+from dipy.reconst.dti import decompose_tensor, mean_diffusivity
+import dipy.reconst.qti as qti
+from dipy.reconst.tests.test_qti import _anisotropic_DTD, _isotropic_DTD
+from dipy.reconst.utils import cti_design_matrix as design_matrix
 
 gtab1, gtab2, gtab, DTDs, S0 = None, None, None, None, None
 

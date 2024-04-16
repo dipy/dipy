@@ -15,7 +15,6 @@ from dipy.workflows.combined_workflow import CombinedWorkflow
 ###############################################################################
 # ``CombinedWorkflow`` is the base class that will be extended to create our
 # combined workflow.
-
 from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.segment import MedianOtsuFlow
 

@@ -10,14 +10,12 @@ Examples
     %prog dipy
 """
 
-import sys
-import os
-from os.path import dirname, relpath, sep, join as pjoin, abspath
-
 from distutils.sysconfig import get_config_vars
-
 import doctest
 from optparse import OptionParser
+import os
+from os.path import abspath, dirname, join as pjoin, relpath, sep
+import sys
 
 EXT_EXT = get_config_vars('SO')[0]
 

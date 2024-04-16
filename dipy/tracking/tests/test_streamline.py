@@ -1,34 +1,40 @@
-import warnings
 import types
+import warnings
 
 import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
-from dipy.testing.memory import get_type_refcount
-from dipy.testing import assert_arrays_equal
-from dipy.testing.decorators import set_random_number_generator
-
-from dipy.testing import assert_true
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_allclose,
-                           assert_almost_equal, assert_equal)
-
-from dipy.tracking.streamlinespeed import (
-    compress_streamlines, length, set_number_of_points,
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
 )
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking.streamline import (relist_streamlines,
-                                      unlist_streamlines,
-                                      center_streamlines,
-                                      transform_streamlines,
-                                      select_random_set_of_streamlines,
-                                      select_by_rois,
-                                      orient_by_rois,
-                                      orient_by_streamline,
-                                      values_from_volume,
-                                      deform_streamlines,
-                                      cluster_confidence)
 
+from dipy.testing import assert_arrays_equal, assert_true
+from dipy.testing.decorators import set_random_number_generator
+from dipy.testing.memory import get_type_refcount
+from dipy.tracking.streamline import (
+    Streamlines,
+    center_streamlines,
+    cluster_confidence,
+    deform_streamlines,
+    orient_by_rois,
+    orient_by_streamline,
+    relist_streamlines,
+    select_by_rois,
+    select_random_set_of_streamlines,
+    transform_streamlines,
+    unlist_streamlines,
+    values_from_volume,
+)
+from dipy.tracking.streamlinespeed import (
+    compress_streamlines,
+    length,
+    set_number_of_points,
+)
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
                        [82.38442230,  91.79336548,  43.87036514],

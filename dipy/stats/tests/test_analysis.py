@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.stats.analysis import (gaussian_weights, afq_profile)
+from dipy.stats.analysis import afq_profile, gaussian_weights
 from dipy.tracking.streamline import Streamlines
 
 

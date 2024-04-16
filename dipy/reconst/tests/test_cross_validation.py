@@ -4,17 +4,17 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
-import dipy.reconst.cross_validation as xval
-import dipy.data as dpd
-import dipy.reconst.dti as dti
-import dipy.core.gradients as gt
-import dipy.sims.voxel as sims
-import dipy.reconst.csdeconv as csd
-import dipy.reconst.base as base
-from dipy.io.image import load_nifti_data
-from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.testing.decorators import set_random_number_generator
 
+import dipy.core.gradients as gt
+import dipy.data as dpd
+from dipy.io.image import load_nifti_data
+import dipy.reconst.base as base
+import dipy.reconst.cross_validation as xval
+import dipy.reconst.csdeconv as csd
+import dipy.reconst.dti as dti
+from dipy.reconst.shm import descoteaux07_legacy_msg
+import dipy.sims.voxel as sims
+from dipy.testing.decorators import set_random_number_generator
 
 # We'll set these globally:
 fdata, fbval, fbvec = dpd.get_fnames('small_64D')

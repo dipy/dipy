@@ -6,8 +6,9 @@ Depends on some guessed filepaths
 Filepaths guessed by importing
 """
 
+from os.path import abspath, dirname, join as pjoin
 import sys
-from os.path import join as pjoin, dirname, abspath
+
 ROOT_DIR = abspath(pjoin(dirname(__file__), '..'))
 DOC_SDIR = pjoin(ROOT_DIR, 'doc', 'reference')
 

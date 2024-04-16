@@ -1,19 +1,21 @@
 import warnings
 
 import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
+import pytest
 import scipy.integrate as integrate
 
-from numpy.testing import (assert_,
-                           assert_almost_equal,
-                           assert_array_almost_equal,
-                           assert_equal,
-                           assert_raises,)
-import pytest
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
-from dipy.reconst import qtdmri, mapmri
+from dipy.reconst import mapmri, qtdmri
 from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.sims.voxel import multi_tensor, add_noise
+from dipy.sims.voxel import add_noise, multi_tensor
 from dipy.testing.decorators import set_random_number_generator
 
 needs_cvxpy = pytest.mark.skipif(not qtdmri.have_cvxpy,

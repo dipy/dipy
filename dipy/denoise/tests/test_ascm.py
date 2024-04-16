@@ -1,12 +1,11 @@
-import numpy as np
-import dipy.data as dpd
 import nibabel as nib
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_array_almost_equal)
-from dipy.denoise.non_local_means import non_local_means
-from dipy.denoise.noise_estimate import estimate_sigma
+import numpy as np
+from numpy.testing import assert_, assert_array_almost_equal, assert_equal
+
+import dipy.data as dpd
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.non_local_means import non_local_means
 from dipy.testing.decorators import set_random_number_generator
 
 

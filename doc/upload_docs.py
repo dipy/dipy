@@ -2,10 +2,10 @@
 # Script to upload docs to gh-pages branch of dipy_web that will be
 # automatically detected by the dipy website.
 import os
-import re
-import sys
 from os import chdir as cd
+import re
 from subprocess import check_call
+import sys
 
 
 def sh(cmd):

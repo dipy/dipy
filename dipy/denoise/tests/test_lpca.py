@@ -1,18 +1,28 @@
 import warnings
 
 import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+    assert_warns,
+)
 import scipy.special as sps
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_raises,
-                           assert_array_almost_equal,
-                           assert_warns)
+
+from dipy.core.gradients import generate_bvecs, gradient_table
 from dipy.denoise.localpca import (
-    dimensionality_problem_message, create_patch_radius_arr, compute_patch_size,
-    compute_num_samples, compute_suggested_patch_radius, localpca, mppca,
-    genpca, _pca_classifier)
+    _pca_classifier,
+    compute_num_samples,
+    compute_patch_size,
+    compute_suggested_patch_radius,
+    create_patch_radius_arr,
+    dimensionality_problem_message,
+    genpca,
+    localpca,
+    mppca,
+)
 from dipy.sims.voxel import multi_tensor
-from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.testing.decorators import set_random_number_generator
 
 

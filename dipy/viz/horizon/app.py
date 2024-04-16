@@ -1,7 +1,7 @@
 from warnings import warn
-from packaging.version import Version
 
 import numpy as np
+from packaging.version import Version
 
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -9,19 +9,34 @@ from dipy.io.streamline import save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
-                                  TabManager, build_label, SurfaceTab)
-from dipy.viz.horizon.visualizer import (ClustersVisualizer, SlicesVisualizer,
-                                         SurfaceVisualizer, PeaksVisualizer)
-from dipy.viz.horizon.util import (check_img_dtype, check_img_shapes,
-                                   unpack_image, is_binary_image,
-                                   unpack_surface, check_peak_size)
+from dipy.viz.horizon.tab import (
+    ClustersTab,
+    PeaksTab,
+    ROIsTab,
+    SlicesTab,
+    SurfaceTab,
+    TabManager,
+    build_label,
+)
+from dipy.viz.horizon.util import (
+    check_img_dtype,
+    check_img_shapes,
+    check_peak_size,
+    is_binary_image,
+    unpack_image,
+    unpack_surface,
+)
+from dipy.viz.horizon.visualizer import (
+    ClustersVisualizer,
+    PeaksVisualizer,
+    SlicesVisualizer,
+    SurfaceVisualizer,
+)
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
-    from fury import __version__ as fury_version
-    from fury import actor, ui, window
+    from fury import __version__ as fury_version, actor, ui, window
     from fury.colormap import distinguishable_colormap
 
 
@@ -157,6 +172,7 @@ class Horizon:
         self.cla = {}  # holds cluster actors
         self.recorded_events = recorded_events
         self.show_m = None
+        self._scene = None
         self.return_showm = return_showm
         self.bg_color = bg_color
         self.order_transparent = order_transparent
@@ -390,7 +406,20 @@ class Horizon:
         """
         self.show_m.render()
 
+    def _update_actors(self, actors):
+        """Update actors in the scene. It essentially brings them forward in
+        the stack.
+
+        Parameters
+        ----------
+        actors : list
+            list of FURY actors.
+        """
+        self._scene.rm(*actors)
+        self._scene.add(*actors)
+
     def build_show(self, scene):
+        self._scene = scene
 
         title = 'Horizon ' + horizon_version
         self.show_m = window.ShowManager(
@@ -440,13 +469,12 @@ class Horizon:
                 # It will be changed once all the elements wrapped in horizon
                 # elements.
                 text_block = build_label(HELP_MESSAGE, 18)
-                text_block.message = HELP_MESSAGE
 
                 self.help_panel = ui.Panel2D(
                     size=(300, 200), position=(1615, 875), color=(.8, .8, 1.),
                     opacity=.2, align='left')
 
-                self.help_panel.add_element(text_block, coords=(.02, .01))
+                self.help_panel.add_element(text_block.obj, coords=(.02, .01))
                 scene.add(self.help_panel)
                 self.__tabs.append(ClustersTab(
                     self.__clusters_visualizer, self.cluster_thr))
@@ -512,17 +540,19 @@ class Horizon:
         self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
-            def on_tab_changed(actors):
-                for act in actors:
-                    scene.rm(act)
-                    scene.add(act)
-
             self.__tab_mgr = TabManager(
-                self.__tabs, scene.GetSize(),
-                on_tab_changed, sync_slices, sync_vol, sync_peaks)
+                tabs=self.__tabs,
+                win_size=scene.GetSize(),
+                on_tab_changed=self._update_actors,
+                add_to_scene=self._scene.add,
+                remove_from_scene=self._scene.rm,
+                sync_slices=sync_slices,
+                sync_volumes=sync_vol,
+                sync_peaks=sync_peaks)
 
             scene.add(self.__tab_mgr.tab_ui)
             self.__tab_mgr.handle_text_overflows()
+            self.__tabs[-1].on_tab_selected()
 
         self.show_m.initialize()
 

@@ -1,33 +1,38 @@
-import logging
-import numpy as np
-import os.path
 from ast import literal_eval
+import logging
+import os.path
 from warnings import warn
 
 import nibabel as nib
+import numpy as np
 
-from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
+from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.data import default_sphere, get_sphere
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.peaks import save_peaks, peaks_to_niftis
-from dipy.io.image import load_nifti, save_nifti, load_nifti_data
-from dipy.io.utils import nifti1_symmat
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response_ssst)
-from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
-                              geodesic_anisotropy, mean_diffusivity,
-                              axial_diffusivity, radial_diffusivity,
-                              lower_triangular, mode as get_mode)
 from dipy.direction.peaks import peaks_from_model
-from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.workflows.workflow import Workflow
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.io.peaks import peaks_to_niftis, save_peaks
+from dipy.io.utils import nifti1_symmat
+from dipy.reconst import mapmri
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
+from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.dti import (
+    TensorModel,
+    axial_diffusivity,
+    color_fa,
+    fractional_anisotropy,
+    geodesic_anisotropy,
+    lower_triangular,
+    mean_diffusivity,
+    mode as get_mode,
+    radial_diffusivity,
+)
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
-
-from dipy.reconst import mapmri
+from dipy.reconst.shm import CsaOdfModel
 from dipy.utils.deprecator import deprecated_params
+from dipy.workflows.workflow import Workflow
 
 
 class ReconstMAPMRIFlow(Workflow):
@@ -231,7 +236,13 @@ class ReconstDtiFlow(Workflow):
             out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
             out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
             out_mode='mode.nii.gz', out_evec='evecs.nii.gz',
-            out_eval='evals.nii.gz', nifti_tensor=True):
+            out_eval='evals.nii.gz', nifti_tensor=True,
+            extract_pam_values=False,
+            parallel=False, num_processes=None,
+            out_pam='peaks.pam5', out_shm='shm.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
@@ -305,6 +316,28 @@ class ReconstDtiFlow(Workflow):
             that is used by other software (e.g., FSL): a
             4-dimensional volume (shape (i, j, k, 6)) with
             Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
 
         References
         ----------
@@ -332,7 +365,8 @@ class ReconstDtiFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
-                omode, oevecs, oevals in io_it:
+                omode, oevecs, oevals, opam, oshm, opeaks_dir, opeaks_values, \
+                opeaks_indices, ogfa in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             data, affine = load_nifti(dwi)
@@ -344,9 +378,9 @@ class ReconstDtiFlow(Workflow):
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args['sigma'] = sigma
 
-            tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                               b0_threshold, bvecs_tol,
-                                               fit_method, optional_args)
+            tenfit, tenmodel, _ = self.get_fitted_tensor(
+                data, mask, bval, bvec, b0_threshold, bvecs_tol,
+                fit_method, optional_args)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -408,6 +442,28 @@ class ReconstDtiFlow(Workflow):
                 for metric in save_metrics:
                     logging.info(self.last_generated_outputs["out_" + metric])
 
+            # save peaks
+            peaks_dti = peaks_from_model(
+                model=tenmodel,
+                data=data,
+                sphere=default_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+                mask=mask,
+                return_sh=True,
+                sh_order_max=8,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes
+            )
+            peaks_dti.affine = affine
+
+            save_peaks(opam, peaks_dti)
+
+            if extract_pam_values:
+                peaks_to_niftis(peaks_dti, oshm, opeaks_dir, opeaks_values,
+                                opeaks_indices, ogfa, reshape_dirs=True)
+
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
                           bvecs_tol=0.01, fit_method='WLS',
                           optional_args=None):
@@ -420,7 +476,7 @@ class ReconstDtiFlow(Workflow):
         tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
         tenfit = tenmodel.fit(data, mask)
 
-        return tenfit, gtab
+        return tenfit, tenmodel, gtab
 
 
 class ReconstDsiFlow(Workflow):
@@ -435,7 +491,7 @@ class ReconstDsiFlow(Workflow):
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz'):
+            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
         """ Diffusion Spectrum Imaging (DSI) reconstruction workflow.
 
         Parameters
@@ -489,11 +545,13 @@ class ReconstDsiFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
         """
         io_it = self.get_io_iterator()
 
         for (dwi, bval, bvec, mask, opam, oshm, opeaks_dir, opeaks_values,
-             opeaks_indices) in io_it:
+             opeaks_indices, ogfa) in io_it:
 
             logging.info('Computing DSI Model for {0}'.format(dwi))
             data, affine = load_nifti(dwi)
@@ -512,7 +570,7 @@ class ReconstDsiFlow(Workflow):
             peaks_dsi = peaks_from_model(model=dsi_model,
                                          data=data,
                                          sphere=peaks_sphere,
-                                         relative_peak_threshold=.5,
+                                         relative_peak_threshold=0.5,
                                          min_separation_angle=25,
                                          mask=mask,
                                          return_sh=True,
@@ -528,7 +586,7 @@ class ReconstDsiFlow(Workflow):
 
             if extract_pam_values:
                 peaks_to_niftis(peaks_dsi, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, reshape_dirs=True)
+                                opeaks_indices, ogfa, reshape_dirs=True)
 
             logging.info('DSI metrics saved to {0}'.
                          format(os.path.abspath(out_dir)))
@@ -685,7 +743,7 @@ class ReconstCSDFlow(Workflow):
             peaks_csd = peaks_from_model(model=csd_model,
                                          data=data,
                                          sphere=peaks_sphere,
-                                         relative_peak_threshold=.5,
+                                         relative_peak_threshold=0.5,
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
@@ -812,7 +870,7 @@ class ReconstCSAFlow(Workflow):
             peaks_csa = peaks_from_model(model=csa_model,
                                          data=data,
                                          sphere=peaks_sphere,
-                                         relative_peak_threshold=.5,
+                                         relative_peak_threshold=0.5,
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
@@ -853,7 +911,14 @@ class ReconstDkiFlow(Workflow):
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
             out_dk_tensor="dki_tensors.nii.gz",
-            out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz"):
+            out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz",
+            extract_pam_values=False,
+            parallel=False, num_processes=None,
+            out_pam='peaks.pam5', out_shm='shm.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'
+            ):
         """ Workflow for Diffusion Kurtosis reconstruction and for computing
         DKI metrics. Performs a DKI reconstruction on the files by 'globing'
         ``input_files`` and saves the DKI metrics in a directory specified by
@@ -916,6 +981,28 @@ class ReconstDkiFlow(Workflow):
             Name of the axial kurtosis to be saved.
         out_rk : string, optional
             Name of the radial kurtosis to be saved.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
 
         References
         ----------
@@ -937,7 +1024,8 @@ class ReconstDkiFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
-             omode, oevecs, oevals, odk_tensor, omk, oak, ork) in io_it:
+             omode, oevecs, oevals, odk_tensor, omk, oak, ork, opam, oshm,
+             opeaks_dir, opeaks_values, opeaks_indices, ogfa) in io_it:
 
             logging.info('Computing DKI metrics for {0}'.format(dwi))
             data, affine = load_nifti(dwi)
@@ -949,9 +1037,9 @@ class ReconstDkiFlow(Workflow):
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args['sigma'] = sigma
 
-            dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                              b0_threshold, fit_method,
-                                              optional_args=optional_args)
+            dkfit, dkmodel, _ = self.get_fitted_tensor(
+                data, mask, bval, bvec, b0_threshold, fit_method,
+                optional_args=optional_args)
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
@@ -1018,6 +1106,29 @@ class ReconstDkiFlow(Workflow):
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
 
+            # save peaks
+            peaks_dki = peaks_from_model(
+                model=dkmodel,
+                data=data,
+                sphere=default_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+                mask=mask,
+                return_sh=True,
+                sh_order_max=8,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes
+            )
+            peaks_dki.affine = affine
+
+            save_peaks(opam, peaks_dki)
+
+            if extract_pam_values:
+                peaks_to_niftis(peaks_dki, oshm, opeaks_dir, opeaks_values,
+                                opeaks_indices, ogfa, reshape_dirs=True)
+
+
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
                           fit_method="WLS", optional_args=None):
         logging.info('Diffusion kurtosis estimation...')
@@ -1035,7 +1146,7 @@ class ReconstDkiFlow(Workflow):
                                          **optional_args)
         dkfit = dkmodel.fit(data, mask)
 
-        return dkfit, gtab
+        return dkfit, dkmodel, gtab
 
 
 class ReconstIvimFlow(Workflow):

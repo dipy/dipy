@@ -12,17 +12,22 @@ References
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
 import warnings
+
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_array_less, assert_,
-                           assert_equal)
-from dipy.testing import assert_greater_equal
+from numpy.testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_array_less,
+    assert_equal,
+    assert_raises,
+)
 import pytest
 
-from dipy.reconst.ivim import ivim_prediction, IvimModel
-from dipy.core.gradients import gradient_table, generate_bvecs
+from dipy.core.gradients import generate_bvecs, gradient_table
+from dipy.reconst.ivim import IvimModel, ivim_prediction
 from dipy.sims.voxel import multi_tensor
-
+from dipy.testing import assert_greater_equal
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

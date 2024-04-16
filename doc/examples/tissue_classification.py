@@ -16,12 +16,14 @@ Here we will use a T1-weighted image, that has been previously skull-stripped
 and bias field corrected.
 """
 
-import numpy as np
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data
 from dipy.segment.tissue import TissueClassifierHMRF
-import time
 
 ###############################################################################
 # First we fetch the T1 volume from the Syn dataset and determine its shape.

@@ -2,18 +2,20 @@
 """ Classes and functions for fitting the correlation tensor model """
 
 import numpy as np
-from dipy.reconst.multi_voxel import multi_voxel_fit
+
+from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.utils import cti_design_matrix as design_matrix
 from dipy.reconst.dki import (
     DiffusionKurtosisFit,
 )
 from dipy.reconst.dti import (
+    MIN_POSITIVE_SIGNAL,
     decompose_tensor,
     from_lower_triangular,
     lower_triangular,
-    MIN_POSITIVE_SIGNAL)
-from dipy.core.onetime import auto_attr
+)
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.utils import cti_design_matrix as design_matrix
 
 
 def from_qte_to_cti(C):

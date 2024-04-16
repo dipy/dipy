@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.testing as npt
-from dipy.reconst.utils import _roi_in_volume, _mask_from_roi, convert_tensors
+
+from dipy.reconst.utils import _mask_from_roi, _roi_in_volume, convert_tensors
 
 
 def test_roi_in_volume():

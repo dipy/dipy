@@ -1,4 +1,5 @@
 import numpy as np
+
 from dipy.denoise import nlmeans_block
 
 """

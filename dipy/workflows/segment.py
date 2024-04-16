@@ -3,12 +3,13 @@ from time import time
 
 import numpy as np
 
-from dipy.io.image import save_nifti, load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.tracking import Streamlines
-from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
+from dipy.segment.mask import median_otsu
+from dipy.tracking import Streamlines
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 
@@ -42,11 +43,10 @@ class MedianOtsuFlow(Workflow):
             bounding box defined by the masked data. For example, if diffusion
             images are of 1x1x1 (mm^3) or higher resolution auto-cropping could
             reduce their size in memory and speed up some of the analysis.
-        vol_idx : variable int, optional
+        vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `input_volume`. From the command line use something like
-            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
-            input is required for 4D volumes.
+            '1,2,3-5,7'. This input is required for 4D volumes.
         dilate : int, optional
             number of iterations for binary dilation.
         out_dir : string, optional
@@ -57,15 +57,13 @@ class MedianOtsuFlow(Workflow):
             Name of the masked volume to be saved.
         """
         io_it = self.get_io_iterator()
-        if vol_idx is not None:
-            vol_idx = [int(idx) for idx in vol_idx]
+        vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
                          format(fpath))
 
             data, affine, img = load_nifti(fpath, return_img=True)
-
             masked_volume, mask_volume = median_otsu(
                 data,
                 vol_idx=vol_idx,

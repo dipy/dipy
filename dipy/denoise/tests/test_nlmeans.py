@@ -1,17 +1,19 @@
 from time import time
 
 import numpy as np
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from numpy.testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
 import pytest
 
+from dipy.denoise.denspeed import add_padding_reflection, remove_padding
 from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.denspeed import (add_padding_reflection, remove_padding)
-from dipy.utils.omp import cpu_count, have_openmp
 from dipy.testing import assert_greater
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.omp import cpu_count, have_openmp
 
 
 @set_random_number_generator()

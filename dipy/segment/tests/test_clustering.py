@@ -2,15 +2,17 @@ import copy
 import itertools
 
 import numpy as np
-from numpy.testing import assert_array_equal, assert_raises, assert_equal
+from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
-from dipy.segment.clustering import Cluster, ClusterCentroid
-from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
-from dipy.segment.clustering import Clustering
-
-from dipy.testing import assert_true, assert_false, assert_arrays_equal
+from dipy.segment.clustering import (
+    Cluster,
+    ClusterCentroid,
+    ClusterMap,
+    ClusterMapCentroid,
+    Clustering,
+)
+from dipy.testing import assert_arrays_equal, assert_false, assert_true
 from dipy.testing.decorators import set_random_number_generator
-
 
 features_shape = (1, 10)
 dtype = "float32"

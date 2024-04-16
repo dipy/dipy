@@ -4,28 +4,35 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
-
 import scipy.optimize as opt
 
-import dipy.reconst.dti as dti
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.reconst.dti import (ols_resort_msg, axial_diffusivity, color_fa,
-                              fractional_anisotropy, from_lower_triangular,
-                              geodesic_anisotropy, lower_triangular,
-                              mean_diffusivity, radial_diffusivity,
-                              TensorModel, trace, linearity, planarity,
-                              sphericity, decompose_tensor,
-                              _decompose_tensor_nan)
-
-from dipy.io.image import load_nifti_data
-from dipy.data import get_fnames, dsi_voxels, get_sphere
-
-from dipy.core.subdivide_octahedron import create_unit_sphere
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
-
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import dsi_voxels, get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import (
+    TensorModel,
+    _decompose_tensor_nan,
+    axial_diffusivity,
+    color_fa,
+    decompose_tensor,
+    fractional_anisotropy,
+    from_lower_triangular,
+    geodesic_anisotropy,
+    linearity,
+    lower_triangular,
+    mean_diffusivity,
+    mode,
+    ols_resort_msg,
+    planarity,
+    radial_diffusivity,
+    sphericity,
+    trace,
+)
 from dipy.sims.voxel import single_tensor
-
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -56,6 +63,24 @@ def test_odf_with_zeros():
     sphere = create_unit_sphere(4)
     odf = df.odf(sphere)
     npt.assert_equal(odf[0, 0, 0], np.zeros(sphere.vertices.shape[0]))
+
+
+def test_mode_with_isotropic():
+    # mode involves a division by norm, so may be problematic for isotropic
+    # voxels. In the above test, 4 voxels are produced with isotropic tensors
+    # in indexes [0, 0] and [0, 1] in which norm should give mode 0. Voxels
+    # with indexes [1, 0] and [1, 1] should give mode of 1 and -1 respectively.
+    q_form = np.zeros((2, 2, 3, 3))
+    q_form[0, 1, 0, 0] = 1
+    q_form[0, 1, 1, 1] = 1
+    q_form[0, 1, 2, 2] = 1
+    q_form[1, 0, 0, 0] = 1
+    q_form[1, 0, 1, 1] = 1
+    q_form[1, 0, 2, 2] = 2
+    q_form[1, 1, 0, 0] = 1
+    q_form[1, 1, 1, 1] = 2
+    q_form[1, 1, 2, 2] = 2
+    npt.assert_array_almost_equal(mode(q_form), np.array([[0, 0], [1, -1]]))
 
 
 def test_tensor_model():

@@ -18,11 +18,14 @@ Let's start by importing the necessary modules.
 import numpy as np
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import (
-    AveragePointwiseEuclideanMetric, SumPointwiseEuclideanMetric, CosineMetric)
 from dipy.segment.featurespeed import VectorOfEndpointsFeature
+from dipy.segment.metric import (
+    AveragePointwiseEuclideanMetric,
+    CosineMetric,
+    SumPointwiseEuclideanMetric,
+)
 from dipy.tracking.streamline import set_number_of_points
-from dipy.viz import window, actor, colormap
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # .. note::

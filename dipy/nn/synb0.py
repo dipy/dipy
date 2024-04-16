@@ -3,20 +3,26 @@
 Class and helper functions for fitting the Synb0 model.
 """
 import logging
+
 import numpy as np
 
 from dipy.data import get_fnames
+from dipy.nn.utils import normalize, set_logger_level, unnormalize
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.nn.utils import normalize, unnormalize, set_logger_level
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
+    from tensorflow.keras.layers import (
+        Concatenate,
+        Conv3D,
+        Conv3DTranspose,
+        GroupNormalization,
+        Layer,
+        LeakyReLU,
+        MaxPool3D,
+    )
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LeakyReLU
-    from tensorflow.keras.layers import Concatenate, Layer
-    from tensorflow.keras.layers import GroupNormalization
 else:
     class Model:
         pass

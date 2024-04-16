@@ -1,7 +1,7 @@
 import numpy as np
+
+from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
 from dipy.sims.voxel import add_noise
-from dipy.segment.mrf import (ConstantObservationModel,
-                              IteratedConditionalModes)
 
 
 class TissueClassifierHMRF:

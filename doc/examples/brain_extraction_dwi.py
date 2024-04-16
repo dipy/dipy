@@ -8,8 +8,8 @@ We show how to extract brain information and mask from a b0 image using DIPY_'s
 
 First import the necessary modules:
 """
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from dipy.core.histeq import histeq
 from dipy.data import get_fnames

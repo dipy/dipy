@@ -3,10 +3,10 @@ from multiprocessing import Pool
 
 import numpy as np
 import scipy
+import scipy.fft
 
 from dipy.utils.multiproc import determine_num_processes
 
-import scipy.fft
 _fft = scipy.fft
 
 

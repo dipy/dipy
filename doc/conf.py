@@ -9,10 +9,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from datetime import datetime
 import os
 import re
 import sys
-from datetime import datetime
 
 # Doc generation depends on being able to import dipy
 try:
@@ -518,8 +518,8 @@ latex_preamble = r"""
 
 # -- Options for sphinx gallery -------------------------------------------
 from docimage_scrap import ImageFileScraper
-from sphinx_gallery.sorting import ExplicitOrder
 from prepare_gallery import folder_explicit_order
+from sphinx_gallery.sorting import ExplicitOrder
 
 sc = ImageFileScraper()
 ordered_folders = [f'examples_revamped/{f}' for f in folder_explicit_order()]

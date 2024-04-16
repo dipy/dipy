@@ -1,26 +1,25 @@
-import logging
-import numpy as np
-import os
+from glob import glob
 import json
-import warnings
+import logging
+import os
 from time import time
+import warnings
+
+import numpy as np
 from scipy.ndimage import binary_dilation
-from dipy.utils.optpkg import optional_package
+
+from dipy.core.gradients import gradient_table
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
-from dipy.core.gradients import gradient_table
-from dipy.reconst.dti import TensorModel
 from dipy.io.peaks import load_peaks
 from dipy.io.streamline import load_tractogram
-from dipy.segment.mask import segment_from_cfa
-from dipy.segment.mask import bounding_box
-from dipy.tracking.streamline import transform_streamlines
-from glob import glob
-from dipy.workflows.workflow import Workflow
+from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
-from dipy.stats.analysis import assignment_map
-from dipy.stats.analysis import anatomical_measures
-from dipy.stats.analysis import peak_values
+from dipy.segment.mask import bounding_box, segment_from_cfa
+from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
+from dipy.tracking.streamline import transform_streamlines
+from dipy.utils.optpkg import optional_package
+from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels.formula.api")

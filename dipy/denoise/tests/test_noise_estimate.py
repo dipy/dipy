@@ -1,12 +1,21 @@
 import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_warns,
+)
 
-from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_array_almost_equal, assert_warns)
-from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
-from dipy.denoise.noise_estimate import _piesno_3D
-from dipy.denoise.pca_noise_estimate import pca_noise_estimate
-import dipy.data as dpd
 import dipy.core.gradients as dpg
+import dipy.data as dpd
+from dipy.denoise.noise_estimate import (
+    _inv_nchi_cdf,
+    _piesno_3D,
+    estimate_sigma,
+    piesno,
+)
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.image import load_nifti_data
 from dipy.testing.decorators import set_random_number_generator
 

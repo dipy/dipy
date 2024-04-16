@@ -2,8 +2,8 @@ import copy
 from warnings import warn
 
 import numpy as np
-from scipy.linalg.lapack import dgesvd as svd
 from scipy.linalg import eigh
+from scipy.linalg.lapack import dgesvd as svd
 
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 

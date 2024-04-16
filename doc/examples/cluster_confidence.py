@@ -9,21 +9,20 @@ have similar pathways. The details can be found in [Jordan_2018_plm]_.
 
 """
 
+import matplotlib.pyplot as plt
+
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
-from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.shm import CsaOdfModel
-from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines, cluster_confidence
 from dipy.tracking.utils import length
 from dipy.viz import actor, window
-
-import matplotlib.pyplot as plt
-
 
 ###############################################################################
 # First, we need to generate some streamlines. For a more complete

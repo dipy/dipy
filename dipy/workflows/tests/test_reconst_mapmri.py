@@ -6,10 +6,10 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
-from dipy.core.gradients import generate_bvecs
 from dipy.reconst import mapmri
 from dipy.workflows.reconst import ReconstMAPMRIFlow
 

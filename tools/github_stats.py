@@ -8,14 +8,12 @@ Taken from ipython
 # Imports
 # -----------------------------------------------------------------------------
 
+from datetime import datetime, timedelta
 import json
 import re
-import sys
-
-from datetime import datetime, timedelta
 from subprocess import check_output
+import sys
 from urllib.request import urlopen
-
 
 # -----------------------------------------------------------------------------
 # Globals

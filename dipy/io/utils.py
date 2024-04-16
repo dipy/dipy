@@ -2,13 +2,15 @@
 import logging
 import numbers
 import os
-from dipy.utils.optpkg import optional_package
-import dipy
+
 import nibabel as nib
-from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
+from nibabel.streamlines import detect_format
 import numpy as np
 from trx import trx_file_memmap
+
+import dipy
+from dipy.utils.optpkg import optional_package
 
 pd, have_pd, _ = optional_package("pandas")
 

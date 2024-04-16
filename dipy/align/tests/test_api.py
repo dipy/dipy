@@ -1,29 +1,37 @@
 import os.path as op
-import pytest
 from tempfile import TemporaryDirectory
 
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
+import pytest
 
-import nibabel as nib
-
-import dipy.data as dpd
-import dipy.core.gradients as dpg
-
-from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        center_of_mass, translation, rigid_isoscaling,
-                        rigid_scaling, rigid, affine, motion_correction,
-                        affine_registration, streamline_registration,
-                        write_mapping, read_mapping, register_dwi_to_template)
-
+from dipy.align import (
+    affine,
+    affine_registration,
+    center_of_mass,
+    motion_correction,
+    read_mapping,
+    register_dwi_series,
+    register_dwi_to_template,
+    register_series,
+    rigid,
+    rigid_isoscaling,
+    rigid_scaling,
+    streamline_registration,
+    syn_registration,
+    translation,
+    write_mapping,
+)
 from dipy.align.imwarp import DiffeomorphicMap
-
-from dipy.tracking.utils import transform_tracking_output
-from dipy.io.streamline import save_trk
-from dipy.io.stateful_tractogram import StatefulTractogram, Space
+import dipy.core.gradients as dpg
+import dipy.data as dpd
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_trk
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.utils import transform_tracking_output
 
 
 def setup_module():

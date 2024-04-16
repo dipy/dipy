@@ -1,19 +1,19 @@
 import os
 from tempfile import TemporaryDirectory
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 
-from dipy.data import get_fnames
-from dipy.io.streamline import (load_tractogram, save_tractogram,
-                                load_trk, save_trk)
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.utils import create_nifti_header
-from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
-from dipy.tracking.streamline import Streamlines
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.data import get_fnames
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, load_trk, save_tractogram, save_trk
+from dipy.io.utils import create_nifti_header
+from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
+from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
+
 fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None

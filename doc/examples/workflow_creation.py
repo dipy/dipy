@@ -19,7 +19,6 @@ import shutil
 
 ###############################################################################
 # ``shutil`` Will be used for sample file manipulation.
-
 from dipy.workflows.workflow import Workflow
 
 ###############################################################################

@@ -1,17 +1,23 @@
 import numpy as np
 import numpy.linalg as npl
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_equal,
-                           assert_raises,
-                           assert_warns)
-from dipy.core import geometry as geometry
-from dipy.align import vector_fields as vf
-from dipy.align import imaffine
-from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError, \
-    AffineMap, _number_dim_affine_matrix
-from dipy.align.transforms import regtransforms
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+    assert_warns,
+)
+
+from dipy.align import imaffine, vector_fields as vf
+from dipy.align.imaffine import (
+    AffineInvalidValuesError,
+    AffineInversionError,
+    AffineMap,
+    _number_dim_affine_matrix,
+)
 from dipy.align.tests.test_parzenhist import setup_random_transform
+from dipy.align.transforms import regtransforms
+from dipy.core import geometry as geometry
 from dipy.testing.decorators import set_random_number_generator
 
 # For each transform type, select a transform factor (indicating how large the

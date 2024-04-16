@@ -1,6 +1,6 @@
-from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.denoise.nlmeans import nlmeans
 import dipy.data as dpd
+from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.io.image import load_nifti
 
 

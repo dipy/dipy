@@ -11,12 +11,13 @@ First import the necessary modules:
 """
 
 import numpy as np
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
+from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.direction import peaks_from_model
 
 ###############################################################################
 # Download and get the data filenames for this tutorial.

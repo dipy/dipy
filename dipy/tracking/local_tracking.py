@@ -1,12 +1,15 @@
-import random
 from collections.abc import Iterable
+import random
 from warnings import warn
+
 import numpy as np
 
-from dipy.tracking.localtrack import local_tracker, pft_tracker
-from dipy.tracking.stopping_criterion import (AnatomicalStoppingCriterion,
-                                              StreamlineStatus)
 from dipy.tracking import utils
+from dipy.tracking.localtrack import local_tracker, pft_tracker
+from dipy.tracking.stopping_criterion import (
+    AnatomicalStoppingCriterion,
+    StreamlineStatus,
+)
 from dipy.utils import fast_numpy
 
 

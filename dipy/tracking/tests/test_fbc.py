@@ -1,11 +1,9 @@
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.tracking.fbcmeasures import FBCMeasures
-
-
-from dipy.core.sphere import Sphere
-
 import numpy as np
 import numpy.testing as npt
+
+from dipy.core.sphere import Sphere
+from dipy.denoise.enhancement_kernel import EnhancementKernel
+from dipy.tracking.fbcmeasures import FBCMeasures
 
 
 def test_fbc():

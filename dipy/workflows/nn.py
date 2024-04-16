@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from dipy.io.image import save_nifti, load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.evac import EVACPlus
 from dipy.workflows.workflow import Workflow
 

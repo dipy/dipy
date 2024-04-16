@@ -6,7 +6,6 @@ import warnings
 import numpy as np
 import pytest
 
-
 """ Set numpy print options to "legacy" for new versions of numpy
  If imported into a file, pytest will run this before any doctests.
 

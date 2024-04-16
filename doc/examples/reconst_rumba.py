@@ -33,20 +33,19 @@ To begin, we will load the data, consisting of 10 b0s and 150 non-b0s with a
 b-value of 2000.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
-from dipy.direction import peaks_from_model, peak_directions
+from dipy.direction import peak_directions, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.csdeconv import auto_response_ssst, recursive_response
+from dipy.reconst.rumba import RumbaSDModel
 from dipy.segment.mask import median_otsu
 from dipy.sims.voxel import single_tensor_odf
-from dipy.viz import window, actor
-
+from dipy.viz import actor, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)

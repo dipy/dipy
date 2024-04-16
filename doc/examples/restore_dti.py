@@ -36,16 +36,16 @@ We start by importing a few of the libraries we will use.
   visualizations:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from dipy.core.gradients import gradient_table
 import dipy.data as dpd
 import dipy.denoise.noise_estimate as ne
-from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 import dipy.reconst.dti as dti
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 # Enables/disables interactive visualization
 interactive = False

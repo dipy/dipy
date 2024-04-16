@@ -4,10 +4,16 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
+from dipy.direction import (
+    DeterministicMaximumDirectionGetter,
+    ProbabilisticDirectionGetter,
+)
 from dipy.reconst.shm import (
-    descoteaux07_legacy_msg, tournier07_legacy_msg, SphHarmFit, SphHarmModel)
-from dipy.direction import (DeterministicMaximumDirectionGetter,
-                            ProbabilisticDirectionGetter)
+    SphHarmFit,
+    SphHarmModel,
+    descoteaux07_legacy_msg,
+    tournier07_legacy_msg,
+)
 
 
 def test_ProbabilisticDirectionGetter():

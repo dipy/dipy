@@ -1,10 +1,12 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.tracking.mesh import (triangles_area,
-                                random_coordinates_from_surface,
-                                seeds_from_surface_coordinates,
-                                vertices_to_triangles_values)
+from dipy.tracking.mesh import (
+    random_coordinates_from_surface,
+    seeds_from_surface_coordinates,
+    triangles_area,
+    vertices_to_triangles_values,
+)
 
 
 def create_cube():

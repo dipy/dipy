@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from dipy.core.sphere import unique_edges
 from dipy.core.gradients import GradientTable
+from dipy.core.sphere import unique_edges
 from dipy.data import default_sphere, read_stanford_labels
 from dipy.io.image import load_nifti_data
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel

@@ -1,12 +1,11 @@
 """Utilities for testing."""
 from functools import partial
 import operator
-from os.path import dirname, abspath, join as pjoin
+from os.path import abspath, dirname, join as pjoin
 import warnings
 
-from numpy.testing import assert_array_equal
 import numpy.testing as npt
-
+from numpy.testing import assert_array_equal
 
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),

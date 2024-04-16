@@ -3,7 +3,8 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.utils.volume import (adjacency_calc)
+from dipy.utils.volume import adjacency_calc
+
 
 def test_adjacency_calc():
     """

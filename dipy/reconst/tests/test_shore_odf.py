@@ -3,15 +3,15 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 
-from dipy.data import default_sphere, get_isbi2013_2shell_gtab, get_3shell_gtab
-from dipy.reconst.shore import ShoreModel, shore_matrix
-from dipy.reconst.shm import sh_to_sf, descoteaux07_legacy_msg
+from dipy.core.sphere_stats import angular_similarity
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import default_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
-from dipy.sims.voxel import sticks_and_ball
-from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.sphere_stats import angular_similarity
+from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
+from dipy.reconst.shore import ShoreModel, shore_matrix
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.sims.voxel import sticks_and_ball
 from dipy.testing.decorators import set_random_number_generator
 
 

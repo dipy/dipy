@@ -1,12 +1,11 @@
 """ Testing track_metrics module """
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_equal, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_equal
 
-from dipy.tracking import metrics as tm
-from dipy.tracking import distances as pf
-from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking import distances as pf, metrics as tm
+from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def test_downsample_deprecated():

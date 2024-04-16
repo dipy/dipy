@@ -10,11 +10,11 @@ single voxel using a MultiTensor.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.data import get_sphere
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 ###############################################################################
 # For the simulation we will need a GradientTable with the b-values and

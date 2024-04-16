@@ -15,26 +15,26 @@ This is an implementation of the sparse fascicle model described in
    Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
    models at multiple b-values with cross-validation. ISMRM 2014.
 """
+from collections import OrderedDict
+import gc
 import warnings
 
 import numpy as np
-import gc
-from collections import OrderedDict
 
 try:
     from numpy import nanmean
 except ImportError:
     from scipy.stats import nanmean
 
-from dipy.utils.optpkg import optional_package
-from dipy.utils.multiproc import determine_num_processes
 import dipy.core.gradients as grad
-import dipy.core.optimize as opt
-import dipy.sims.voxel as sims
-import dipy.data as dpd
-from dipy.reconst.base import ReconstModel, ReconstFit
-from dipy.reconst.cache import Cache
 from dipy.core.onetime import auto_attr
+import dipy.core.optimize as opt
+import dipy.data as dpd
+from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.reconst.cache import Cache
+import dipy.sims.voxel as sims
+from dipy.utils.multiproc import determine_num_processes
+from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package('joblib')
 sklearn, has_sklearn, _ = optional_package('sklearn')

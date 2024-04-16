@@ -3,21 +3,27 @@
 Class and helper functions for fitting the DeepN4 model.
 """
 import logging
+
 import numpy as np
 from scipy.ndimage import gaussian_filter
+
 from dipy.data import get_fnames
+from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.nn.utils import set_logger_level
-from dipy.nn.utils import transform_img, recover_img, normalize
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
+    from tensorflow.keras.layers import (
+        Concatenate,
+        Conv3D,
+        Conv3DTranspose,
+        GroupNormalization,
+        Layer,
+        LeakyReLU,
+        MaxPool3D,
+    )
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LeakyReLU
-    from tensorflow.keras.layers import Concatenate, Layer
-    from tensorflow.keras.layers import GroupNormalization
 else:
     class Model:
         pass

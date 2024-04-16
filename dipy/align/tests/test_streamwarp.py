@@ -1,10 +1,12 @@
 from numpy.testing import assert_equal
-from dipy.align.streamwarp import (bundlewarp,
-                                   bundlewarp_shape_analysis,
-                                   bundlewarp_vector_filed)
 
+from dipy.align.streamwarp import (
+    bundlewarp,
+    bundlewarp_shape_analysis,
+    bundlewarp_vector_filed,
+)
 from dipy.data import two_cingulum_bundles
-from dipy.tracking.streamline import set_number_of_points, Streamlines
+from dipy.tracking.streamline import Streamlines, set_number_of_points
 
 
 def test_bundlewarp():

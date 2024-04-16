@@ -8,7 +8,9 @@ set -ex
 PIPI="pip install --timeout=60 -Csetup-args=--vsenv -Ccompile-args=-v"
 
 if [ "$USE_PRE" == "1" ] || [ "$USE_PRE" == true ]; then
-    PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
+    # --index-url takes priority over --extra-index-url, so that packages, and
+    # their dependencies, with versions available in the nightly channel will be installed before falling back to the Python Package Index.
+    PIPI="$PIPI --pre --index-url $PRE_WHEELS --extra-index-url https://pypi.org/simple";
 fi
 
 #---------- DIPY Installation -----------------

@@ -1,10 +1,10 @@
 import numpy as np
 import numpy.testing as npt
+
 from dipy.data import get_fnames
+from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
+from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.sims.voxel import add_noise
-from dipy.segment.mrf import (ConstantObservationModel,
-                              IteratedConditionalModes)
-from dipy.segment.tissue import (TissueClassifierHMRF)
 from dipy.testing.decorators import set_random_number_generator
 
 

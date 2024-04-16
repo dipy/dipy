@@ -1,5 +1,5 @@
-import sys
 from os.path import join as pjoin
+import sys
 from tempfile import TemporaryDirectory
 
 import numpy.testing as npt
@@ -7,8 +7,13 @@ import numpy.testing as npt
 from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
-    DummyFlow, DummyCombinedWorkflow, DummyWorkflow1, DummyWorkflowOptionalStr,
-    DummyVariableTypeWorkflow, DummyVariableTypeErrorWorkflow)
+    DummyCombinedWorkflow,
+    DummyFlow,
+    DummyVariableTypeErrorWorkflow,
+    DummyVariableTypeWorkflow,
+    DummyWorkflow1,
+    DummyWorkflowOptionalStr,
+)
 
 
 def test_none_or_dtype():

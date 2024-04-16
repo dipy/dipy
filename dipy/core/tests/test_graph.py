@@ -1,6 +1,6 @@
-from dipy.core.graph import Graph
-
 from numpy.testing import assert_equal
+
+from dipy.core.graph import Graph
 
 
 def test_graph():

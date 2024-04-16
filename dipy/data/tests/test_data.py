@@ -1,6 +1,7 @@
-import numpy.testing as npt
-from dipy.data import SPHERE_FILES
 import numpy as np
+import numpy.testing as npt
+
+from dipy.data import SPHERE_FILES
 
 
 def test_sphere_dtypes():

@@ -1,23 +1,27 @@
-import logging
 import abc
 from itertools import combinations
-import numpy as np
-from dipy.core.optimize import Optimizer
-from dipy.align.bundlemin import (_bundle_minimum_distance,
-                                  _bundle_minimum_distance_asymmetric,
-                                  distance_matrix_mdf)
-from dipy.tracking.streamline import (transform_streamlines,
-                                      unlist_streamlines,
-                                      center_streamlines,
-                                      set_number_of_points,
-                                      select_random_set_of_streamlines,
-                                      length,
-                                      Streamlines)
-from dipy.segment.clustering import qbx_and_merge
-from dipy.core.geometry import (compose_transformations,
-                                compose_matrix,
-                                decompose_matrix)
+import logging
 from time import time
+
+import numpy as np
+
+from dipy.align.bundlemin import (
+    _bundle_minimum_distance,
+    _bundle_minimum_distance_asymmetric,
+    distance_matrix_mdf,
+)
+from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
+from dipy.core.optimize import Optimizer
+from dipy.segment.clustering import qbx_and_merge
+from dipy.tracking.streamline import (
+    Streamlines,
+    center_streamlines,
+    length,
+    select_random_set_of_streamlines,
+    set_number_of_points,
+    transform_streamlines,
+    unlist_streamlines,
+)
 
 DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-45, 45), (-45, 45), (-45, 45),

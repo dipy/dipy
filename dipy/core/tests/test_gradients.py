@@ -4,27 +4,36 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.data import get_fnames
-from dipy.core.gradients import (b0_threshold_empty_gradient_message,
-                                 b0_threshold_update_slicing_message,
-                                 gradient_table, GradientTable,
-                                 gradient_table_from_bvals_bvecs,
-                                 gradient_table_from_qvals_bvecs,
-                                 gradient_table_from_gradient_strength_bvecs,
-                                 WATER_GYROMAGNETIC_RATIO,
-                                 mask_non_weighted_bvals,
-                                 orientation_to_string,
-                                 reorient_bvecs, generate_bvecs,
-                                 check_multi_b, round_bvals, get_bval_indices,
-                                 unique_bvals_magnitude,
-                                 unique_bvals_tolerance, unique_bvals,
-                                 params_to_btens, btens_to_params,
-                                 orientation_from_string, reorient_vectors)
 from dipy.core.geometry import vec2vec_rotmat, vector_norm
+from dipy.core.gradients import (
+    WATER_GYROMAGNETIC_RATIO,
+    GradientTable,
+    b0_threshold_empty_gradient_message,
+    b0_threshold_update_slicing_message,
+    btens_to_params,
+    check_multi_b,
+    generate_bvecs,
+    get_bval_indices,
+    gradient_table,
+    gradient_table_from_bvals_bvecs,
+    gradient_table_from_gradient_strength_bvecs,
+    gradient_table_from_qvals_bvecs,
+    mask_non_weighted_bvals,
+    orientation_from_string,
+    orientation_to_string,
+    params_to_btens,
+    reorient_bvecs,
+    reorient_vectors,
+    round_bvals,
+    unique_bvals,
+    unique_bvals_magnitude,
+    unique_bvals_tolerance,
+)
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.testing import clear_and_catch_warnings
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def test_unique_bvals_deprecated():

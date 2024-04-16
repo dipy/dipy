@@ -1,11 +1,10 @@
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 import scipy as sp
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+
 from dipy.align import floating
 from dipy.align.imwarp import get_direction_and_spacings
-from dipy.align.scalespace import ScaleSpace, IsotropicScaleSpace
+from dipy.align.scalespace import IsotropicScaleSpace, ScaleSpace
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.testing.decorators import set_random_number_generator
 

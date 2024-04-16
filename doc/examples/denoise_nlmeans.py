@@ -10,12 +10,14 @@ modeling the noise as Gaussian or Rician (default).
 We start by loading the necessary modules
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 from time import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from dipy.data import get_fnames
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################

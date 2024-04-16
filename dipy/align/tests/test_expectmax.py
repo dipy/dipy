@@ -1,10 +1,12 @@
 import numpy as np
-from numpy.testing import (assert_equal,
-                           assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
-from dipy.align import floating
-from dipy.align import expectmax as em
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
+
+from dipy.align import expectmax as em, floating
 from dipy.testing.decorators import set_random_number_generator
 
 

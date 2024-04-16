@@ -1,15 +1,19 @@
 import warnings
 
 import numpy as np
-from scipy.ndimage import generate_binary_structure, binary_dilation
-from scipy.ndimage import median_filter
+from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+from scipy.ndimage import binary_dilation, generate_binary_structure, median_filter
 
-from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
-                               multi_median, median_otsu)
-
-from numpy.testing import assert_equal, assert_almost_equal, assert_raises
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data
+from dipy.segment.mask import (
+    applymask,
+    bounding_box,
+    crop,
+    median_otsu,
+    multi_median,
+    otsu,
+)
 
 
 def test_mask():

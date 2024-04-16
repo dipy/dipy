@@ -17,12 +17,11 @@ is an MIT-licensed project.
 """
 
 import ast
+from importlib import import_module
+from inspect import getmodule, ismethod
 import os
 import re
-from importlib import import_module
-
 from types import BuiltinFunctionType, FunctionType
-from inspect import ismethod, getmodule
 
 # suppress print statements (warnings for empty files)
 DEBUG = True

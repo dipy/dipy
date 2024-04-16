@@ -56,12 +56,12 @@ denoised output in (B).
 Let's load the necessary modules:
 """
 
-import numpy as np
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
 import matplotlib.pyplot as plt
+import numpy as np
 
+from dipy.data import get_fnames
 from dipy.denoise.patch2self import patch2self
+from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################
 # Now let's load an example dataset and denoise it with Patch2Self. Patch2Self

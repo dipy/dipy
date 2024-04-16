@@ -12,8 +12,10 @@ To reproduce a standard test run::
 """
 
 import sys
+
 import nose
 from nose.plugins import doctests
+
 
 # We were getting errors for the extension modules.  See:
 # https://github.com/nose-devs/nose/pull/661

@@ -1,10 +1,12 @@
 import numpy as np
-from dipy.align import floating
-from dipy.align import sumsqdiff as ssd
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           assert_array_almost_equal,
-                           assert_allclose)
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_equal,
+)
+
+from dipy.align import floating, sumsqdiff as ssd
 from dipy.testing.decorators import set_random_number_generator
 
 

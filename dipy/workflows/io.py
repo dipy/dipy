@@ -1,12 +1,12 @@
 import importlib
+from inspect import getmembers, isfunction
+import logging
 import os
 import sys
-import logging
-from inspect import getmembers, isfunction
 import warnings
 
-import trx.trx_file_memmap as tmm
 import numpy as np
+import trx.trx_file_memmap as tmm
 
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram

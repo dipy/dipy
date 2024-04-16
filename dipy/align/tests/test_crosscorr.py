@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from dipy.align import floating
-from dipy.align import crosscorr as cc
+
+from dipy.align import crosscorr as cc, floating
 from dipy.testing.decorators import set_random_number_generator
 
 

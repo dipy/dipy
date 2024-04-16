@@ -1,12 +1,13 @@
 """Extract reference documentation from the NumPy source tree."""
 
-import inspect
-import textwrap
-import re
-import pydoc
-from warnings import warn
 import collections
+import inspect
+import pydoc
+import re
 import sys
+import textwrap
+from warnings import warn
+
 from packaging.version import Version
 
 python_version = '.'.join(str(x) for x in sys.version_info[:2])

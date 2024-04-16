@@ -1,16 +1,16 @@
 import warnings
 
+import numpy as np
+from numpy.testing import assert_almost_equal, assert_equal, assert_raises
 import pytest
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.nn.histo_resdnn import HistoResDNN
 from dipy.reconst.shm import tournier07_legacy_msg
 from dipy.utils.optpkg import optional_package
-import numpy as np
-from numpy.testing import assert_almost_equal, assert_raises, assert_equal
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 

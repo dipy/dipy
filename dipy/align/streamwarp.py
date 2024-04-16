@@ -3,16 +3,14 @@ import warnings
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from dipy.align.streamlinear import slr_with_qbx
-from dipy.align.cpd import DeformableRegistration
-from dipy.tracking.streamline import (unlist_streamlines,
-                                      Streamlines)
-from dipy.stats.analysis import assignment_map
-from dipy.tracking.streamline import length
 from dipy.align.bundlemin import distance_matrix_mdf
-from dipy.viz.plotting import bundle_shape_profile
+from dipy.align.cpd import DeformableRegistration
+from dipy.align.streamlinear import slr_with_qbx
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+from dipy.stats.analysis import assignment_map
+from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
+from dipy.viz.plotting import bundle_shape_profile
 
 
 def average_bundle_length(bundle):

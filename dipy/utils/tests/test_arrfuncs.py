@@ -3,13 +3,11 @@
 import sys
 
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_equal
 
-from dipy.utils.arrfuncs import as_native_array, pinv
-
-from numpy.testing import (assert_array_almost_equal, assert_equal,
-                           assert_array_equal)
-from dipy.testing import assert_true, assert_false
+from dipy.testing import assert_false, assert_true
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.arrfuncs import as_native_array, pinv
 
 NATIVE_ORDER = '<' if sys.byteorder == 'little' else '>'
 SWAPPED_ORDER = '>' if sys.byteorder == 'little' else '<'

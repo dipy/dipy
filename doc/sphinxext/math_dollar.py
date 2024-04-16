@@ -1,5 +1,6 @@
 import re
 
+
 def dollars_to_math(source):
     r"""
     Replace dollar signs with backticks.

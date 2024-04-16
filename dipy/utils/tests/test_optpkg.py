@@ -1,8 +1,8 @@
 import pytest
 
+from dipy.testing import assert_false, assert_true
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
-from dipy.testing import assert_true, assert_false
 
 
 def test_optional_package():

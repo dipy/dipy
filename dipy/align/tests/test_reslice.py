@@ -1,13 +1,11 @@
-import numpy as np
 import nibabel as nib
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_almost_equal,
-                           assert_raises)
-from dipy.io.image import load_nifti
-from dipy.data import get_fnames
+import numpy as np
+from numpy.testing import assert_, assert_almost_equal, assert_equal, assert_raises
+
 from dipy.align.reslice import reslice
+from dipy.data import get_fnames
 from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.io.image import load_nifti
 
 
 def test_resample():

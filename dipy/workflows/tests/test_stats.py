@@ -9,18 +9,20 @@ import numpy.testing as npt
 import pytest
 
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti, load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.testing import assert_true
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
-from dipy.workflows.stats import SNRinCCFlow
-from dipy.workflows.stats import BundleAnalysisTractometryFlow
-from dipy.workflows.stats import LinearMixedModelsFlow
-from dipy.workflows.stats import BundleShapeAnalysis
-from dipy.workflows.stats import buan_bundle_profiles
+from dipy.workflows.stats import (
+    BundleAnalysisTractometryFlow,
+    BundleShapeAnalysis,
+    LinearMixedModelsFlow,
+    SNRinCCFlow,
+    buan_bundle_profiles,
+)
 
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels", min_version="0.14.0")

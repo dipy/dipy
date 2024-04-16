@@ -55,9 +55,9 @@ import numpy as np
 ``dipy.io.gradients`` is for loading / saving our bvals and bvecs
 """
 
-from dipy.io.image import load_nifti, save_nifti
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 
 """
 ``dipy.reconst`` is for the reconstruction algorithms which we use to create
@@ -156,7 +156,7 @@ or where more than one population of white matter fibers crosses.
 """
 
 print('Computing anisotropy measures (FA, MD, RGB)')
-from dipy.reconst.dti import fractional_anisotropy, color_fa
+from dipy.reconst.dti import color_fa, fractional_anisotropy
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -222,9 +222,10 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 print('Computing tensor ellipsoids in a part of the splenium of the CC')
 
 from dipy.data import get_sphere
+
 sphere = get_sphere('repulsion724')
 
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 # Enables/disables interactive visualization
 interactive = False

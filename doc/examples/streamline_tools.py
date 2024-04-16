@@ -20,23 +20,23 @@ modules and download the data we'll be using.
 Let's load the necessary modules:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.ndimage import binary_dilation
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
+from dipy.direction import peaks
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
-from dipy.direction import peaks
 from dipy.reconst import shm
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor, colormap as cmap
+from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
 # We'll be using the Stanford HARDI dataset which consists of a single

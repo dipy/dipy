@@ -1,7 +1,7 @@
-from typing import Any
-from dataclasses import dataclass
-import warnings
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
+import warnings
 
 import numpy as np
 
@@ -31,24 +31,20 @@ class HorizonTab(ABC):
     """
     def __init__(self):
         self._elements = []
+        self.hide = lambda *args: None
+        self.show = lambda *args: None
 
     @abstractmethod
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id):
         """Build all the elements under the tab.
 
         Parameters
         ----------
         tab_id : int
             Id of the tab.
-        tab_ui : TabUI
-            FURY TabUI object for tabs panel.
-
-        Notes
-        -----
-        tab_ui will removed once every all tabs adapt new build architecture.
         """
 
-    def register_elements(self, *args):
+    def _register_elements(self, *args):
         """Register elements for rendering.
 
         Parameters
@@ -56,20 +52,49 @@ class HorizonTab(ABC):
         *args : HorizonUIElement(s)
             Elements to be register for rendering.
         """
-        for element in args:
-            self._elements.append(element)
+        self._elements += list(args)
+
+    def _toggle_actors(self, checkbox):
+        """Toggle actors in the scene. This helps removing the actor to
+        interact with actors behind this actor.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+        """
+        if '' in checkbox.checked_labels:
+            self.show(*self.actors)
+        else:
+            self.hide(*self.actors)
 
     def on_tab_selected(self):
         """Implement if require to update something while the tab becomes
         active.
         """
-        pass
+        if hasattr(self, '_actor_toggle'):
+            self._toggle_actors(self._actor_toggle.obj)
 
     @property
     @abstractmethod
     def name(self):
         """Name of the tab.
         """
+
+    @property
+    @abstractmethod
+    def actors(self):
+        """Name of the tab.
+        """
+
+    @property
+    def tab_id(self):
+        """Id of the tab. Reference for Tab Manager to identify the tab.
+
+        Returns
+        -------
+        int
+        """
+        return self._tab_id
 
     @property
     def elements(self):
@@ -88,10 +113,22 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
-    def __init__(self, tabs, win_size, on_tab_changed=lambda actors: None,
-                 sync_slices=False, sync_volumes=False, sync_peaks=False):
+    def __init__(
+        self,
+        tabs,
+        win_size,
+        on_tab_changed,
+        add_to_scene,
+        remove_from_scene,
+        sync_slices=False,
+        sync_volumes=False,
+        sync_peaks=False
+    ):
+
         num_tabs = len(tabs)
         self._tabs = tabs
+        self._add_to_scene = add_to_scene
+        self._remove_from_scene = remove_from_scene
         self._synchronize_slices = sync_slices
         self._synchronize_volumes = sync_volumes
         self._synchronize_peaks = sync_peaks
@@ -124,13 +161,14 @@ class TabManager:
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title_font_size = 18
-            tab.build(tab_id, self._tab_ui)
+            tab.hide = self._hide_elements
+            tab.show = self._show_elements
+            tab.build(tab_id)
             if tab.__class__.__name__ == 'SlicesTab':
                 tab.on_volume_change = self.synchronize_volumes
             if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
                 tab.on_slice_change = self.synchronize_slices
-            if tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab']:
-                self._render_tab_elements(tab_id, tab.elements)
+            self._render_tab_elements(tab.tab_id, tab.elements)
 
     def handle_text_overflows(self):
         for tab_id, tab in enumerate(self._tabs):
@@ -176,6 +214,47 @@ class TabManager:
             else:
                 self._tab_ui.add_element(tab_id, element.obj, element.position)
 
+    def _hide_elements(self, *args):
+        """Hide elements from the scene.
+
+        Parameters
+        ----------
+        *args : HorizonUIElement or FURY actors
+            Elements to be hidden.
+        """
+        self._remove_from_scene(*self._get_vtkActors(*args))
+
+    def _show_elements(self, *args):
+        """Show elements in the scene.
+
+        Parameters
+        ----------
+        *args : HorizonUIElement or FURY actors
+            Elements to be hidden.
+        """
+        self._add_to_scene(*self._get_vtkActors(*args))
+
+    def _get_vtkActors(self, *args):
+        elements = []
+        vtk_actors = []
+        for element in args:
+            if (element.__class__.__name__ == 'HorizonUIElement'):
+                if isinstance(element.obj, list):
+                    for obj in element.obj:
+                        elements.append(obj)
+                else:
+                    elements.append(element.obj)
+            else:
+                elements.append(element)
+
+        for element in elements:
+            if (hasattr(element, '_get_actors') and
+                    callable(element._get_actors)):
+                vtk_actors += element.actors
+            else:
+                vtk_actors.append(element)
+        return vtk_actors
+
     def _tab_selected(self, tab_ui):
         if self._active_tab_id == tab_ui.active_tab_idx:
             self._active_tab_id = -1
@@ -184,10 +263,8 @@ class TabManager:
         self._active_tab_id = tab_ui.active_tab_idx
 
         current_tab = self._tabs[self._active_tab_id]
+        self.tab_changed(current_tab.actors)
         current_tab.on_tab_selected()
-        if current_tab.__class__.__name__ in ['SlicesTab', 'SurfaceTab',
-                                              'PeaksTab']:
-            self.tab_changed(current_tab.actors)
 
     def reposition(self, win_size):
         """
@@ -269,7 +346,7 @@ class TabManager:
         return self._tab_ui
 
 
-def build_label(text, font_size=16, bold=False, is_horizon_label=False):
+def build_label(text, font_size=16, bold=False):
     """Simple utility function to build labels.
 
     Parameters
@@ -295,9 +372,7 @@ def build_label(text, font_size=16, bold=False, is_horizon_label=False):
     label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
     label.color = (0.7, 0.7, 0.7)
 
-    if is_horizon_label:
-        return HorizonUIElement(True, text, label)
-    return label
+    return HorizonUIElement(True, text, label)
 
 
 def build_slider(
@@ -312,6 +387,7 @@ def build_slider(
         on_moving_slider=lambda _slider: None,
         on_value_changed=lambda _slider: None,
         on_change=lambda _slider: None,
+        on_handle_released=lambda _istyle, _obj, _slider: None,
         label='',
         label_font_size=16,
         label_style_bold=False,
@@ -346,6 +422,8 @@ def build_slider(
         When value of the slider changed programmatically.
     on_change : callable, optional
         When value of the slider changed.
+    on_handle_released: callable, optional
+        When handle released.
     label : str, optional
         Label to ui element for slider
     label_font_size : int, optional
@@ -365,8 +443,7 @@ def build_slider(
     slider_label = build_label(
         label,
         font_size=label_font_size,
-        bold=label_style_bold,
-        is_horizon_label=True
+        bold=label_style_bold
     )
 
     if not is_double_slider:
@@ -395,6 +472,10 @@ def build_slider(
     slider.on_moving_slider = on_moving_slider
     slider.on_value_changed = on_value_changed
     slider.on_change = on_change
+
+    if not is_double_slider:
+        slider.handle_events(slider.handle.actor)
+        slider.on_left_mouse_button_released = on_handle_released
 
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
@@ -457,6 +538,52 @@ def build_checkbox(
     return HorizonUIElement(True, checked_labels, checkboxes)
 
 
+def build_radio_button(
+        labels=None,
+        checked_labels=None,
+        padding=1,
+        font_size=16,
+        on_change=lambda _checkbox: None
+):
+    """Create horizon theme radio buttons.
+
+    Parameters
+    ----------
+    labels : list(str), optional
+        List of labels of each option.
+    checked_labels: list(str), optional
+        List of labels that are checked on setting up.
+    padding : float, optional
+        The distance between two adjacent options element
+    font_size : int, optional
+        Size of the text font.
+    on_change : callback, optional
+        When radio button value changed
+
+    Returns
+    -------
+    radio : HorizonUIElement
+    """
+
+    if labels is None or not labels:
+        warnings.warn('At least one label needs to be to create radio buttons')
+        return
+
+    if checked_labels is None:
+        checked_labels = ()
+
+    radio = ui.RadioButton(
+        labels=labels,
+        checked_labels=checked_labels,
+        padding=padding,
+        font_size=font_size
+    )
+
+    radio.on_change = on_change
+
+    return HorizonUIElement(True, checked_labels, radio)
+
+
 def build_switcher(
         items=None,
         label='',
@@ -503,9 +630,9 @@ def build_switcher(
     if initial_selection >= num_items:
         initial_selection = 0
 
-    switch_label = build_label(text=label, is_horizon_label=True)
+    switch_label = build_label(text=label)
     selection_label = build_label(
-        text=items[initial_selection]['label'])
+        text=items[initial_selection]['label']).obj
 
     left_button = ui.Button2D(
             icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
@@ -546,18 +673,3 @@ def build_switcher(
         switch_label,
         switcher
     )
-
-
-def color_single_slider(slider):
-    slider.default_color = (1., .5, .0)
-    slider.track.color = (.8, .3, .0)
-    slider.active_color = (.9, .4, .0)
-    slider.handle.color = (1., .5, .0)
-
-
-def color_double_slider(slider):
-    slider.default_color = (1., .5, .0)
-    slider.track.color = (.8, .3, .0)
-    slider.active_color = (.9, .4, .0)
-    slider.handles[0].color = (1., .5, .0)
-    slider.handles[1].color = (1., .5, .0)

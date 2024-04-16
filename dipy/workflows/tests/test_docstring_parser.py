@@ -32,9 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 import textwrap
 
-from dipy.workflows.docstring_parser import NumpyDocString
 import numpy.testing as npt
 
+from dipy.workflows.docstring_parser import NumpyDocString
 
 doc_txt = """\
   numpy.multivariate_normal(mean, cov, shape=None, spam=None)

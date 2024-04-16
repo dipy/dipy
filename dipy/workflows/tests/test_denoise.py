@@ -1,19 +1,22 @@
 import os
 from tempfile import TemporaryDirectory
 
-import pytest
 import numpy as np
 import numpy.testing as npt
-from dipy.utils.optpkg import optional_package
+import pytest
 
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti, load_nifti, load_nifti_data
-
-from dipy.testing import (assert_true, assert_false, assert_greater,
-                          assert_less)
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.testing import assert_false, assert_greater, assert_less, assert_true
 from dipy.testing.decorators import set_random_number_generator
-from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
-                                    GibbsRingingFlow, Patch2SelfFlow)
+from dipy.utils.optpkg import optional_package
+from dipy.workflows.denoise import (
+    GibbsRingingFlow,
+    LPCAFlow,
+    MPPCAFlow,
+    NLMeansFlow,
+    Patch2SelfFlow,
+)
 
 sklearn, has_sklearn, _ = optional_package('sklearn')
 needs_sklearn = pytest.mark.skipif(

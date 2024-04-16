@@ -1,33 +1,40 @@
 import numpy as np
-from numpy.testing import (assert_,
-                           assert_equal,
-                           assert_almost_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
-from dipy.align.streamlinear import (compose_matrix44,
-                                     decompose_matrix44,
-                                     BundleSumDistanceMatrixMetric,
-                                     BundleMinDistanceMatrixMetric,
-                                     BundleMinDistanceMetric,
-                                     StreamlineLinearRegistration,
-                                     StreamlineDistanceMetric,
-                                     groupwise_slr,
-                                     get_unique_pairs)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
 
-from dipy.tracking.streamline import (center_streamlines,
-                                      unlist_streamlines,
-                                      relist_streamlines,
-                                      transform_streamlines,
-                                      set_number_of_points,
-                                      Streamlines)
-from dipy.io.streamline import load_tractogram
+from dipy.align.bundlemin import (
+    _bundle_minimum_distance,
+    _bundle_minimum_distance_matrix,
+    distance_matrix_mdf,
+)
+from dipy.align.streamlinear import (
+    BundleMinDistanceMatrixMetric,
+    BundleMinDistanceMetric,
+    BundleSumDistanceMatrixMetric,
+    StreamlineDistanceMetric,
+    StreamlineLinearRegistration,
+    compose_matrix44,
+    decompose_matrix44,
+    get_unique_pairs,
+    groupwise_slr,
+)
 from dipy.core.geometry import compose_matrix
-
-from dipy.data import get_fnames, two_cingulum_bundles, read_five_af_bundles
-from dipy.align.bundlemin import (_bundle_minimum_distance_matrix,
-                                  _bundle_minimum_distance,
-                                  distance_matrix_mdf)
+from dipy.data import get_fnames, read_five_af_bundles, two_cingulum_bundles
+from dipy.io.streamline import load_tractogram
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.streamline import (
+    Streamlines,
+    center_streamlines,
+    relist_streamlines,
+    set_number_of_points,
+    transform_streamlines,
+    unlist_streamlines,
+)
 
 
 def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):

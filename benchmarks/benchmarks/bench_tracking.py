@@ -5,11 +5,9 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
-
-from dipy.tracking.streamline import set_number_of_points, length
-from dipy.tracking.streamlinespeed import compress_streamlines
-
 from dipy.tracking import Streamlines
+from dipy.tracking.streamline import length, set_number_of_points
+from dipy.tracking.streamlinespeed import compress_streamlines
 
 
 class BenchStreamlines:

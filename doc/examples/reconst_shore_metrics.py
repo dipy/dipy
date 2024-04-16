@@ -11,8 +11,9 @@ dataset like multi-shell or DSI.
 First import the necessary modules:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs

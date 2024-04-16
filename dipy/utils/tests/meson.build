@@ -19,6 +19,7 @@ endforeach
 python_sources = [
   '__init__.py',
   'test_arrfuncs.py',
+  'test_convert.py',
   'test_deprecator.py',
   'test_multiproc.py',
   'test_omp.py',

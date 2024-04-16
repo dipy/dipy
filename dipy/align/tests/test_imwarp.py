@@ -1,20 +1,24 @@
-import numpy as np
 import nibabel.eulerangles as eulerangles
-from numpy.testing import (assert_equal,
-                           assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
-from dipy.core.interpolation import (interpolate_scalar_2d,
-                                     interpolate_scalar_3d)
-from dipy.data import get_fnames
-from dipy.align import floating
-from dipy.align import imwarp as imwarp
-from dipy.align import metrics as metrics
-from dipy.align import vector_fields as vfu
-from dipy.align import VerbosityLevels
+import numpy as np
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
+
+from dipy.align import (
+    VerbosityLevels,
+    floating,
+    imwarp as imwarp,
+    metrics as metrics,
+    vector_fields as vfu,
+)
 from dipy.align.imwarp import DiffeomorphicMap
-from dipy.tracking.streamline import deform_streamlines
+from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
+from dipy.data import get_fnames
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.streamline import deform_streamlines
 
 
 def test_mult_aff():

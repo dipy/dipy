@@ -16,7 +16,7 @@ from time import sleep
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import set_number_of_points
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 ###############################################################################
 # Let's download and load the two bundles.

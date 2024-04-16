@@ -1,16 +1,15 @@
 import numpy as np
+from numpy.testing import assert_almost_equal, assert_equal
 
-from dipy.data import get_fnames, dsi_voxels, get_sphere, default_sphere
 from dipy.core.gradients import gradient_table
-from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import default_sphere, dsi_voxels, get_fnames, get_sphere
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.gqi import GeneralizedQSamplingModel
+from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.sims.voxel import sticks_and_ball
-from dipy.reconst.odf import gfa
-from dipy.direction.peaks import peak_directions
-
-from numpy.testing import assert_equal, assert_almost_equal
 
 
 def test_gqi():

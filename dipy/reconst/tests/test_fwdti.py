@@ -1,21 +1,31 @@
 """ Testing Free Water Elimination Model """
 
 import numpy as np
-import dipy.reconst.dti as dti
-import dipy.reconst.fwdti as fwdti
-from dipy.reconst.fwdti import fwdti_prediction
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_raises)
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor,
-                              fractional_anisotropy)
-from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
-                                cholesky_to_lower_triangular,
-                                nls_fit_tensor, wls_fit_tensor)
-from dipy.sims.voxel import (multi_tensor, single_tensor,
-                             all_tensor_evecs, multi_tensor_dki)
-from dipy.io.gradients import read_bvals_bvecs
+from numpy.testing import assert_almost_equal, assert_array_almost_equal, assert_raises
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import (
+    decompose_tensor,
+    fractional_anisotropy,
+    from_lower_triangular,
+)
+import dipy.reconst.fwdti as fwdti
+from dipy.reconst.fwdti import (
+    cholesky_to_lower_triangular,
+    fwdti_prediction,
+    lower_triangular_to_cholesky,
+    nls_fit_tensor,
+    wls_fit_tensor,
+)
+from dipy.sims.voxel import (
+    all_tensor_evecs,
+    multi_tensor,
+    multi_tensor_dki,
+    single_tensor,
+)
 
 
 def setup_module():

@@ -1,11 +1,11 @@
 from warnings import warn
 
 import numpy as np
+from scipy.ndimage import median_filter
 
-from dipy.reconst.dti import fractional_anisotropy, color_fa
+from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.segment.utils import remove_holes_and_islands
 
-from scipy.ndimage import median_filter
 try:
     from skimage.filters import threshold_otsu as otsu
 except Exception:

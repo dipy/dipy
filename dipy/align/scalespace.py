@@ -1,8 +1,10 @@
 import logging
-from dipy.align import floating
+
 import numpy as np
 import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
+
+from dipy.align import floating
 
 logger = logging.getLogger(__name__)
 

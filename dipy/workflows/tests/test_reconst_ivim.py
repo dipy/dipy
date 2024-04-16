@@ -3,12 +3,11 @@ from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
-
 from numpy.testing import assert_equal
 
-from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import generate_bvecs, gradient_table
 from dipy.io.image import load_nifti_data, save_nifti
+from dipy.sims.voxel import multi_tensor
 from dipy.workflows.reconst import ReconstIvimFlow
 
 

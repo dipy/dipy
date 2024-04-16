@@ -1,20 +1,18 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
-import numpy.testing as npt
-import numpy as np
 import nibabel as nib
+import numpy as np
+import numpy.testing as npt
 
 from dipy.align.streamlinear import BundleMinDistanceMetric
 from dipy.data import get_fnames
-from dipy.segment.mask import median_otsu
-from dipy.tracking.streamline import Streamlines
+from dipy.io.image import load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.image import load_nifti_data, save_nifti
-from dipy.tracking.streamline import set_number_of_points
-from dipy.workflows.segment import MedianOtsuFlow
-from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
+from dipy.segment.mask import median_otsu
+from dipy.tracking.streamline import Streamlines, set_number_of_points
+from dipy.workflows.segment import LabelsBundlesFlow, MedianOtsuFlow, RecoBundlesFlow
 
 
 def test_median_otsu_flow():
@@ -25,7 +23,7 @@ def test_median_otsu_flow():
         median_radius = 3
         numpass = 3
         autocrop = False
-        vol_idx = [0]
+        vol_idx = '0,'
         dilate = 0
 
         mo_flow = MedianOtsuFlow()
@@ -36,6 +34,7 @@ def test_median_otsu_flow():
         mask_name = mo_flow.last_generated_outputs['out_mask']
         masked_name = mo_flow.last_generated_outputs['out_masked']
 
+        vol_idx = [0, ]
         masked, mask = median_otsu(volume,
                                    vol_idx=vol_idx,
                                    median_radius=median_radius,

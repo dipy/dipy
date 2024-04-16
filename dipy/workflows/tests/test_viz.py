@@ -9,15 +9,15 @@ from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.io.utils import create_nifti_header
+from dipy.testing.decorators import set_random_number_generator, use_xvfb
 from dipy.tracking.streamline import Streamlines
-from dipy.testing.decorators import use_xvfb, set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
-    from dipy.workflows.viz import HorizonFlow
     from dipy.viz.horizon.app import horizon
+    from dipy.workflows.viz import HorizonFlow
 
 
 skip_it = use_xvfb == 'skip'

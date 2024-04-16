@@ -1,30 +1,26 @@
 import warnings
 
-import pytest
 import numpy as np
 import numpy.testing as npt
-from dipy.testing.decorators import use_xvfb, set_random_number_generator
-from dipy.utils.optpkg import optional_package
-from dipy.data import get_sphere
+import pytest
+
 from dipy.align.reslice import reslice
-from dipy.data import read_stanford_labels
-from dipy.reconst.shm import CsaOdfModel
-from dipy.data import default_sphere
-from dipy.direction import peaks_from_model
-from dipy.tracking import utils
-from dipy.tracking.stopping_criterion import \
-    ThresholdStoppingCriterion
-from dipy.tracking.local_tracking import LocalTracking
-from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf_matrix
 from dipy.align.tests.test_streamlinear import fornix_streamlines
-from dipy.tracking.streamline import (center_streamlines,
-                                      transform_streamlines)
+from dipy.data import default_sphere, get_sphere, read_stanford_labels
+from dipy.direction import peaks_from_model
 from dipy.reconst.dti import color_fa, fractional_anisotropy
+from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, sh_to_sf_matrix
+from dipy.testing.decorators import set_random_number_generator, use_xvfb
+from dipy.tracking import utils
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
+from dipy.tracking.streamline import center_streamlines, transform_streamlines
+from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if has_fury:
-    from dipy.viz import actor, window, colormap
+    from dipy.viz import actor, colormap, window
 
 skip_it = use_xvfb == 'skip'
 

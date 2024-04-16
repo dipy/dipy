@@ -21,20 +21,19 @@ data and fitting a Constrained Spherical Deconvolution (CSD) model.
 """
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, small_sphere, default_sphere
+from dipy.data import default_sphere, get_fnames, small_sphere
 from dipy.direction import ProbabilisticDirectionGetter, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response_ssst)
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.tracking.streamline import Streamlines
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
-from dipy.viz import window, actor, colormap, has_fury
+from dipy.tracking.streamline import Streamlines
+from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
 interactive = False

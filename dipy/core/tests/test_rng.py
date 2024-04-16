@@ -1,8 +1,9 @@
 """File dedicated to test ``dipy.core.rng`` module."""
 
-from scipy.stats import chisquare
-from dipy.core import rng
 import numpy.testing as npt
+from scipy.stats import chisquare
+
+from dipy.core import rng
 
 
 def test_wichmann_hill2006():

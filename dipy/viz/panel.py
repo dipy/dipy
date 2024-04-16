@@ -1,13 +1,15 @@
-import warnings
-import numpy as np
-from dipy.utils.optpkg import optional_package
 import itertools
+import warnings
+
+import numpy as np
+
+from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
 fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 if have_fury:
-    from dipy.viz import actor, ui, colormap
+    from dipy.viz import actor, colormap, ui
 
 
 def build_label(text, font_size=18, bold=False):

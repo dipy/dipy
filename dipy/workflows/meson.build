@@ -15,6 +15,7 @@ python_sources = [
     'segment.py',
     'stats.py',
     'tracking.py',
+    'utils.py',
     'viz.py',
     'workflow.py',
 ]

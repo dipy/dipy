@@ -162,7 +162,7 @@ We can visualize the data using ``dipy_horizon`` ::
 
 We can use ``dipy_median_otsu`` to build a brain mask for the diffusion data::
 
-    dipy_median_otsu dwi.nii --median_radius 2 --numpass 1 --vol_idx 0 --out_dir out_work
+    dipy_median_otsu dwi.nii --median_radius 2 --numpass 1 --vol_idx 10-50 --out_dir out_work
 
 Visualize the mask using ``dipy_horizon``::
 

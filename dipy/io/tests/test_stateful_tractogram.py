@@ -1,23 +1,22 @@
+from copy import deepcopy
 import os
 from os.path import join as pjoin
-from copy import deepcopy
 from tempfile import TemporaryDirectory
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_allclose, assert_array_equal, assert_
+from numpy.testing import assert_, assert_allclose, assert_array_equal
 import pytest
+import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import is_header_compatible
 from dipy.testing.decorators import set_random_number_generator
-
-import trx.trx_file_memmap as tmm
-
 from dipy.utils.optpkg import optional_package
+
 fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
 
 

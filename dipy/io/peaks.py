@@ -1,11 +1,11 @@
 import os
+
+import h5py
 import numpy as np
 
-from dipy.direction.peaks import (PeaksAndMetrics,
-                                  reshape_peaks_for_visualization)
 from dipy.core.sphere import Sphere
+from dipy.direction.peaks import PeaksAndMetrics, reshape_peaks_for_visualization
 from dipy.io.image import save_nifti
-import h5py
 
 
 def _safe_save(group, array, name):

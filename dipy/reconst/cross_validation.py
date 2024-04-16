@@ -1,6 +1,7 @@
 """Cross-validation analysis of diffusion models."""
 
 import numpy as np
+
 import dipy.core.gradients as gt
 
 

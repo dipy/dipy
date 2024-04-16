@@ -5,12 +5,11 @@ model """
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.core.gradients import (check_multi_b, unique_bvals_magnitude,
-                                 round_bvals)
-from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
+from dipy.core.gradients import check_multi_b, round_bvals, unique_bvals_magnitude
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
+from dipy.reconst.base import ReconstModel
+from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
 
 
 def mean_signal_bvalue(data, gtab, bmag=None):

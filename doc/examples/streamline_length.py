@@ -14,12 +14,13 @@ numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
 number of streamlines in the set.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
+
 from dipy.tracking.distances import approx_polygon_track
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import length
-import matplotlib.pyplot as plt
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 ###############################################################################
 # Let's first create a simple simulation of a bundle of streamlines using

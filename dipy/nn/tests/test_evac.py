@@ -1,7 +1,6 @@
-import pytest
-
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package

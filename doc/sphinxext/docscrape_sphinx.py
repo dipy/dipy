@@ -1,6 +1,11 @@
-import re, inspect, textwrap, pydoc
+import inspect
+import pydoc
+import re
+import textwrap
+
+from docscrape import ClassDoc, FunctionDoc, NumpyDocString
 import sphinx
-from docscrape import NumpyDocString, FunctionDoc, ClassDoc
+
 
 class SphinxDocString(NumpyDocString):
     def __init__(self, docstring, config={}):

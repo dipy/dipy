@@ -4,20 +4,22 @@ contamination """
 import warnings
 
 import numpy as np
-
 import scipy.optimize as opt
 
-from dipy.reconst.base import ReconstModel
-
-from dipy.reconst.dti import (TensorFit, design_matrix, decompose_tensor,
-                              _decompose_tensor_nan, from_lower_triangular,
-                              lower_triangular)
-from dipy.reconst.dki import _positive_evals
-
-from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.core.ndindex import ndindex
 from dipy.core.gradients import check_multi_b
+from dipy.core.ndindex import ndindex
+from dipy.reconst.base import ReconstModel
+from dipy.reconst.dki import _positive_evals
+from dipy.reconst.dti import (
+    TensorFit,
+    _decompose_tensor_nan,
+    decompose_tensor,
+    design_matrix,
+    from_lower_triangular,
+    lower_triangular,
+)
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):

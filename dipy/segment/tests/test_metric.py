@@ -1,14 +1,22 @@
 import itertools
 
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_raises,
-                           assert_almost_equal, assert_equal)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_equal,
+    assert_equal,
+    assert_raises,
+)
 
 import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metric as dipymetric
 import dipy.segment.metricspeed as dipysmetric
-from dipy.testing import (assert_true, assert_false,
-                          assert_greater_equal, assert_less_equal)
+from dipy.testing import (
+    assert_false,
+    assert_greater_equal,
+    assert_less_equal,
+    assert_true,
+)
 from dipy.testing.decorators import set_random_number_generator
 
 

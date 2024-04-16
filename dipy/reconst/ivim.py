@@ -2,7 +2,7 @@
 import warnings
 
 import numpy as np
-from scipy.optimize import least_squares, differential_evolution
+from scipy.optimize import differential_evolution, least_squares
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit

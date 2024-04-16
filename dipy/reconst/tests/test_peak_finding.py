@@ -1,10 +1,14 @@
 
 import numpy as np
 import numpy.testing as npt
-from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
-                                   search_descending)
+
+from dipy.core.sphere import HemiSphere, unique_edges
 from dipy.data import default_sphere
-from dipy.core.sphere import unique_edges, HemiSphere
+from dipy.reconst.recspeed import (
+    local_maxima,
+    remove_similar_vertices,
+    search_descending,
+)
 
 
 def test_local_maxima():

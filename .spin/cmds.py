@@ -11,6 +11,7 @@ from spin.cmds import meson
 def _set_mem_rlimit(max_mem=None):
     """Set address space rlimit."""
     import resource
+
     import psutil
 
     mem = psutil.virtual_memory()

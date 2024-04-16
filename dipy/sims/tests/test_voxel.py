@@ -1,15 +1,27 @@
 import numpy as np
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+)
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_, assert_almost_equal)
+from dipy.core.gradients import gradient_table
 
-from dipy.sims.voxel import (_check_directions, all_tensor_evecs, add_noise,
-                             single_tensor, sticks_and_ball, multi_tensor_dki,
-                             kurtosis_element, dki_signal, multi_tensor)
 # from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_fnames
-from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.sims.voxel import (
+    _check_directions,
+    add_noise,
+    all_tensor_evecs,
+    dki_signal,
+    kurtosis_element,
+    multi_tensor,
+    multi_tensor_dki,
+    single_tensor,
+    sticks_and_ball,
+)
 from dipy.testing.decorators import set_random_number_generator
 
 

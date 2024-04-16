@@ -2,20 +2,31 @@
 """ Classes and functions for fitting the DKI-based microstructural model """
 
 import numpy as np
-from dipy.reconst.dti import (lower_triangular, from_lower_triangular,
-                              decompose_tensor, trace, mean_diffusivity,
-                              radial_diffusivity, axial_diffusivity,
-                              MIN_POSITIVE_SIGNAL)
 
-from dipy.reconst.dki import (split_dki_param, _positive_evals,
-                              directional_kurtosis,
-                              directional_diffusion, kurtosis_maximum,
-                              DiffusionKurtosisModel, DiffusionKurtosisFit)
-from dipy.reconst.dti import design_matrix as dti_design_matrix
 from dipy.core.ndindex import ndindex
-from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.data import get_sphere
 import dipy.core.sphere as dps
+from dipy.data import get_sphere
+from dipy.reconst.dki import (
+    DiffusionKurtosisFit,
+    DiffusionKurtosisModel,
+    _positive_evals,
+    directional_diffusion,
+    directional_kurtosis,
+    kurtosis_maximum,
+    split_dki_param,
+)
+from dipy.reconst.dti import (
+    MIN_POSITIVE_SIGNAL,
+    axial_diffusivity,
+    decompose_tensor,
+    design_matrix as dti_design_matrix,
+    from_lower_triangular,
+    lower_triangular,
+    mean_diffusivity,
+    radial_diffusivity,
+    trace,
+)
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,

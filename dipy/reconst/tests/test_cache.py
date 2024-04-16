@@ -1,7 +1,7 @@
-from dipy.reconst.cache import Cache
-from dipy.core.sphere import Sphere
-
 from numpy.testing import assert_, assert_equal
+
+from dipy.core.sphere import Sphere
+from dipy.reconst.cache import Cache
 
 
 class DummyModel(Cache):
