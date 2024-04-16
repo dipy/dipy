@@ -98,7 +98,7 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="ray",
         else:
             raise ValueError(f"{backend} is not a backend for dask")
 
-    if engine == "ray":
+    elif engine == "ray":
         if not has_ray:
             raise ray()
 
