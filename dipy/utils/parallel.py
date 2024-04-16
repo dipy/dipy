@@ -1,10 +1,13 @@
-import os
 import shutil
 import numpy as np
+import multiprocessing
+
+from tqdm.auto import tqdm
+
 from dipy.utils.optpkg import optional_package
 import json
 import tempfile
-import multiprocessing
+
 
 ray, has_ray, _ = optional_package('ray')
 joblib, has_joblib, _ = optional_package('joblib')
