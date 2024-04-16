@@ -17,6 +17,7 @@ python_sources = [
   'test_segment.py',
   'test_stats.py',
   'test_tracking.py',
+  'test_utils.py',
   'test_viz.py',
   'test_workflow.py',
   'workflow_tests_utils.py',

@@ -9,7 +9,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
 from dipy.tracking import Streamlines
-from dipy.utils.convert import expand_range
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 
@@ -57,13 +57,7 @@ class MedianOtsuFlow(Workflow):
             Name of the masked volume to be saved.
         """
         io_it = self.get_io_iterator()
-        if vol_idx is not None:
-            if isinstance(vol_idx, str):
-                vol_idx = expand_range(vol_idx)
-            elif isinstance(vol_idx, int):
-                vol_idx = [vol_idx]
-            elif isinstance(vol_idx, (list, tuple)):
-                vol_idx = [int(idx) for idx in vol_idx]
+        vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
