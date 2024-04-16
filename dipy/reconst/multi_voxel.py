@@ -1,15 +1,16 @@
 """Tools to easily make multi voxel models"""
+from functools import partial
+import multiprocessing
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from tqdm import tqdm
 
 from dipy.core.ndindex import ndindex
+from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.utils.parallel import paramap
-from dipy.reconst.base import ReconstFit
-from functools import partial
-import multiprocessing
+
 
 def _parallel_fit_worker(vox_data, single_voxel_fit):
     """
