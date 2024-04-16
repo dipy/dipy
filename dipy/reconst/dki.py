@@ -21,6 +21,7 @@ from dipy.reconst.dti import (
     lower_triangular,
     mean_diffusivity,
     nlls_fit_tensor,
+    radial_diffusivity,
     restore_fit_tensor,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
