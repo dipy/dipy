@@ -46,7 +46,7 @@ def test_trilinear_interpolate(rng):
 
     # Pass in out ourselves
     out[:] = -1
-    trilinear_interpolate4d(data, point, out)
+    trilinear_interpolate4d(data.astype(float), point.astype(float), out)
     npt.assert_array_almost_equal(out, expected)
 
     # use a point close to an edge

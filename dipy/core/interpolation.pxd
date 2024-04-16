@@ -3,9 +3,9 @@ cimport numpy as cnp
 from dipy.align.fused_types cimport floating, number
 
 
-cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
-                                   double* point,
-                                   double* result) noexcept nogil
+cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
+                                   floating* point,
+                                   floating* result) noexcept nogil
 
 cdef int _interpolate_vector_2d(floating[:, :, :] field, double dii,
                                 double djj, floating* out) noexcept nogil
