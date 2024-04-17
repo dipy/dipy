@@ -20,12 +20,12 @@ import os.path as op
 import matplotlib.pyplot as plt
 import numpy as np
 
+from dipy.io.image import load_nifti
+from dipy.io.streamline import load_trk
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.data.fetcher import fetch_hbn, get_two_hcp842_bundles
-from dipy.io.streamline import load_trk
-from dipy.io.image import load_nifti
 import dipy.stats.analysis as dsa
 import dipy.tracking.streamline as dts
 
