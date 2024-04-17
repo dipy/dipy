@@ -18,8 +18,8 @@ standard kurtosis measures (e.g. radial, axial and standard mean kurtosis)
 do not only depend on microstructural properties but also on mesoscopic
 properties such as fiber dispersion or the intersection angle of crossing
 fibers. In contrary, the kurtosis from powder-average signals has the advantage
-of not depending on the fiber distribution functions [NetoHe2018]_,
-[NetoHe2019]_.
+of not depending on the fiber distribution functions [NetoHe2019]_,
+[Henriq2021]_
 
 In short, in this tutorial we show how to characterize non-Gaussian diffusion
 in a more precise way and decoupled from confounding effects of tissue
@@ -27,10 +27,10 @@ dispersion and crossing.
 
 In the first part of this example, we illustrate the properties of the measures
 obtained from the mean signal diffusion kurtosis imaging (MSDKI) [NetoHe2018]_
-using synthetic data. Secondly, the mean signal diffusion kurtosis imaging will
-be applied to in-vivo MRI data. Finally, we show how MSDKI provides the same
-information than common microstructural models such as the spherical mean
-technique [NetoHe2019]_, [Kaden2016b]_.
+[Henriq2021]_ using synthetic data. Secondly, the mean signal diffusion
+kurtosis imaging will be applied to in-vivo MRI data. Finally, we show how
+MSDKI provides the same information than common microstructural models such as
+the spherical mean technique [NetoHe2019]_, [Kaden2016b]_.
 
 Let's import all relevant modules:
 """
@@ -397,6 +397,10 @@ fig3.savefig('MSDKI_SMT2_invivo.png')
 #                 anisotropy misestimation in spherical‐mean single diffusion
 #                 encoding MRI. Magnetic Resonance in Medicine (In press).
 #                 doi: 10.1002/mrm.27606
+# .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
+#                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
+#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Kaden2016b] Kaden E, Kelm ND, Carson RP, Does MD, Alexander DC (2016)
 #                 Multi-compartment microscopic diffusion imaging. NeuroImage
 #                 139: 346-359.
