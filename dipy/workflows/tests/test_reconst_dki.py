@@ -1,5 +1,6 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -10,7 +11,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_peaks
-from dipy.reconst.shm import sph_harm_ind_list
+from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.workflows.reconst import ReconstDkiFlow
 
 
@@ -26,7 +27,11 @@ def test_reconst_dki():
 
         args = [data_path, bval_path, bvec_path, mask_path]
 
-        dki_flow.run(*args, out_dir=out_dir, extract_pam_values=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            dki_flow.run(*args, out_dir=out_dir, extract_pam_values=True)
 
         fa_path = dki_flow.last_generated_outputs['out_fa']
         fa_data = load_nifti_data(fa_path)
@@ -134,6 +139,10 @@ def test_reconst_dki():
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         dki_flow._force_overwrite = True
-        dki_flow.run(
-            data_path, tmp_bval_path, tmp_bvec_path, mask_path, out_dir=out_dir,
-            b0_threshold=0)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            dki_flow.run(
+                data_path, tmp_bval_path, tmp_bvec_path,
+                mask_path, out_dir=out_dir, b0_threshold=0)
