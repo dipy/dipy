@@ -156,9 +156,23 @@ def check_md5(filename, stored_md5=None):
             raise FetcherError(msg)
 
 
-def _get_file_data(fname, url):
-    hdr = random.choice(HEADER_LIST)
-    req = Request(url, headers=hdr)
+def _get_file_data(fname, url, *, use_headers=False):
+    """Get data from url and write it to file.
+
+    Parameters
+    ----------
+    fname : str
+        The filename to write the data to.
+    url : str
+        The URL to get the data from.
+    use_headers : bool, optional
+        Whether to use headers when downloading files.
+
+    """
+    req = url
+    if use_headers:
+        hdr = random.choice(HEADER_LIST)
+        req = Request(url, headers=hdr)
     with contextlib.closing(urlopen(req)) as opener:
         try:
             response_size = opener.headers['content-length']
@@ -172,7 +186,7 @@ def _get_file_data(fname, url):
                 copyfileobj_withprogress(opener, data, response_size)
 
 
-def fetch_data(files, folder, data_size=None):
+def fetch_data(files, folder, data_size=None, use_headers=False):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -187,6 +201,9 @@ def fetch_data(files, folder, data_size=None):
     data_size : str, optional
         A string describing the size of the data (e.g. "91 MB") to be logged to
         the screen. Default does not produce any information about data size.
+    use_headers : bool, optional
+        Whether to use headers when downloading files.
+
     Raises
     ------
     FetcherError
@@ -194,7 +211,6 @@ def fetch_data(files, folder, data_size=None):
         value. The downloaded file is not deleted when this error is raised.
 
     """
-
     if not op.exists(folder):
         _log("Creating new folder %s" % folder)
         os.makedirs(folder)
@@ -211,7 +227,7 @@ def fetch_data(files, folder, data_size=None):
         all_skip = False
         _log('Downloading "%s" to %s' % (f, folder))
         _log('From: %s' % url)
-        _get_file_data(fullpath, url)
+        _get_file_data(fullpath, url, use_headers=use_headers)
         check_md5(fullpath, md5)
     if all_skip:
         _already_there_msg(folder)
@@ -221,7 +237,7 @@ def fetch_data(files, folder, data_size=None):
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
                   md5_list=None, doc="", data_size=None, msg=None,
-                  unzip=False):
+                  unzip=False, use_headers=False):
     """ Create a new fetcher
 
     Parameters
@@ -251,6 +267,9 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
     unzip : bool, optional
         Whether to unzip the file(s) after downloading them. Supports zip, gz,
         and tar.gz files.
+    use_headers : bool, optional
+        Whether to use headers when downloading files.
+
     returns
     -------
     fetcher : function
@@ -262,7 +281,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
             files[n] = (baseurl + f, md5_list[i] if
                         md5_list is not None else None)
-        fetch_data(files, folder, data_size)
+        fetch_data(files, folder, data_size, use_headers=use_headers)
 
         if msg is not None:
             _log(msg)
@@ -881,7 +900,8 @@ fetch_disco1_dataset = _make_fetcher(
      'e475641a08ebafeecb79a21e618d7081', '8c2a338606c0cb7de6e34b8317f59cd6'],
     doc=('Download DISCO 1 dataset: The Diffusion-Simulated Connectivity '
          'Dataset. DOI: 10.17632/fgf86jdfg6.3'),
-    data_size='1.05 GB')
+    data_size='1.05 GB',
+    use_headers=True,)
 
 
 fetch_disco2_dataset = _make_fetcher(
@@ -985,7 +1005,8 @@ fetch_disco2_dataset = _make_fetcher(
      '7f276c0276561df13c86008776faf6b2'],
     doc=('Download DISCO 2 dataset: The Diffusion-Simulated Connectivity '
          'Dataset. DOI: 10.17632/fgf86jdfg6.3'),
-    data_size='1.05 GB')
+    data_size='1.05 GB',
+    use_headers=True,)
 
 
 fetch_disco3_dataset = _make_fetcher(
@@ -1092,7 +1113,8 @@ fetch_disco3_dataset = _make_fetcher(
      '9e47185ae517f6f35daa1aa16c51ba45'],
     doc=('Download DISCO 3 dataset: The Diffusion-Simulated Connectivity '
          'Dataset. DOI: 10.17632/fgf86jdfg6.3'),
-    data_size='1.05 GB')
+    data_size='1.05 GB',
+    use_headers=True,)
 
 
 def fetch_disco_dataset():

@@ -18,6 +18,10 @@ from dipy.data.fetcher import (
     fetch_bundles_2_subjects,
     fetch_cenir_multib,
     fetch_cfin_multib,
+    fetch_disco1_dataset,
+    fetch_disco2_dataset,
+    fetch_disco3_dataset,
+    fetch_disco_dataset,
     fetch_evac_test,
     fetch_evac_weights,
     fetch_gold_standard_io,
@@ -64,10 +68,6 @@ from dipy.data.fetcher import (
     read_syn_data,
     read_taiwan_ntu_dsi,
     read_tissue_data,
-    fetch_disco1_dataset,
-    fetch_disco2_dataset,
-    fetch_disco3_dataset,
-    fetch_disco_dataset,
 )
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
