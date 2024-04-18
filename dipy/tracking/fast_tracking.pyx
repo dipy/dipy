@@ -22,8 +22,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
-from dipy.tracking.utils import min_radius_curvature_from_angle
 from dipy.tracking.tracking_parameters cimport TrackingParameters
+from dipy.tracking.tracker_probabilistic cimport probabilistic_tracker
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
@@ -37,12 +37,12 @@ def generate_tractogram(double[:,::1] seed_positions,
                         TrackingParameters params,
                         PmfGen pmf_gen,
                         int nbr_threads=0,
-                        int buffer_perc=1.0):
+                        float buffer_frac=1.0):
 
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
-        cnp.npy_intp _plen = np.ceil(_len * buffer_perc)
-        cnp.npy_intp i, s_idx
+        cnp.npy_intp _plen = np.ceil(_len * buffer_frac)
+        cnp.npy_intp i,
         double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
         int* length_arr = <int*> malloc(_len * sizeof(int))
         int* status_arr = <int*> malloc(_len * sizeof(double))
@@ -76,8 +76,8 @@ def generate_tractogram(double[:,::1] seed_positions,
             free(length_arr)
             free(status_arr)
 
-        yield streamlines
-
+        for s in streamlines:
+            yield s
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,
@@ -86,7 +86,6 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                StoppingCriterion sc,
                                TrackingParameters params,
                                PmfGen pmf_gen,
-                               func_ptr tracker,
                                double** streamlines,
                                int* lengths,
                                int* status):
@@ -103,7 +102,6 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                               &seed_directions[i][0],
                                               stream,
                                               stream_idx,
-                                              tracker,
                                               sc,
                                               params,
                                               pmf_gen)
@@ -123,7 +121,6 @@ cdef int generate_local_streamline(double* seed,
                                    double* direction,
                                    double* stream,
                                    int* stream_idx,
-                                   func_ptr tracker,
                                    StoppingCriterion sc,
                                    TrackingParameters params,
                                    PmfGen pmf_gen) noexcept nogil:
@@ -141,7 +138,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if params.tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -163,7 +160,7 @@ cdef int generate_local_streamline(double* seed,
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
         ##### VOXDIR should be the real first direction #####
-        if params.tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
             break
         # update position
         for j in range(3):
