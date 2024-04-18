@@ -1,4 +1,9 @@
-from dipy.tracking.fast_tracking cimport func_ptr
+from dipy.direction.pmf cimport PmfGen
+
+ctypedef int (*func_ptr)(double* point,
+                         double* direction,
+                         TrackingParameters params,
+                         PmfGen pmf_gen) noexcept nogil
 
 cdef class ParallelTransportTrackingParameters:
     cdef public double angular_separation
@@ -9,7 +14,6 @@ cdef class ParallelTransportTrackingParameters:
     cdef public double k_small
     cdef public double last_val
     cdef public double last_val_cand
-    cdef public double max_curvature
     cdef public double[3] position
     cdef public int probe_count
     cdef public double probe_length
@@ -29,6 +33,7 @@ cdef class TrackingParameters:
 
     cdef public double cos_similarity
     cdef public double max_angle
+    cdef public double max_curvature
     cdef public int max_len
     cdef public double step_size
     cdef public double average_voxel_size
