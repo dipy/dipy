@@ -16,6 +16,7 @@ from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
 from dipy.tracking.fast_tracking cimport get_pmf, TrackingParameters
+from libc.stdlib cimport malloc, free
 
 
 cdef int probabilistic_tracker(double* point,
@@ -30,8 +31,8 @@ cdef int probabilistic_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    # printf("len_pmf %f\n", params.probabilistic.pmf_threshold)
-    if get_pmf(pmf, point, pmf_gen, params.probabilistic.pmf_threshold, len_pmf):
+    if get_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf):
+    #if get_pmf(pmf, point, pmf_gen, 0, len_pmf):
         free(pmf)
         return 1
     if norm(direction) == 0:
@@ -45,7 +46,7 @@ cdef int probabilistic_tracker(double* point,
                 + pmf_gen.vertices[i][2] * direction[2]
         if cos_sim < 0:
             cos_sim = cos_sim * -1
-        if cos_sim < params.probabilistic.cos_similarity:
+        if cos_sim < params.cos_similarity:
             pmf[i] = 0
 
     cumsum(pmf, pmf, len_pmf)

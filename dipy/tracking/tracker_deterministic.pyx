@@ -1,3 +1,8 @@
+# cython: boundscheck=False
+# cython: initializedcheck=False
+# cython: wraparound=False
+# cython: Nonecheck=False
+
 cimport cython
 from cython.parallel import prange
 import numpy as np
@@ -9,6 +14,8 @@ from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
 from dipy.tracking.fast_tracking cimport get_pmf, TrackingParameters
+from libc.stdlib cimport malloc, free
+
 
 cdef int deterministic_tracker(double* point,
                                        double* direction,
@@ -23,7 +30,7 @@ cdef int deterministic_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    if get_pmf(pmf, point, pmf_gen, params.probabilistic.pmf_threshold, len_pmf):
+    if get_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf):
         free(pmf)
         return 1
     if norm(direction) == 0:
@@ -37,7 +44,7 @@ cdef int deterministic_tracker(double* point,
                 + pmf_gen.vertices[i][2] * direction[2]
         if cos_sim < 0:
             cos_sim = cos_sim * -1
-        if cos_sim > params.probabilistic.cos_similarity and pmf[i] > max_value:
+        if cos_sim > params.cos_similarity and pmf[i] > max_value:
             max_idx = i
             max_value = pmf[i]
 
