@@ -52,15 +52,13 @@ def generate_tractogram(double[:,::1] seed_positions,
 
     # Todo: Check if probalistic parameters are set if using probabilistic
     # tracking. Same for PTT
-<<<<<<< HEAD
     seed_start = 0
     seed_end = seed_start + _plen
-    while True:
+    while seed_start < _len:
         generate_tractogram_c(seed_positions[seed_start:seed_end],
                               seed_directions[seed_start:seed_end],
                               nbr_threads, sc, params,
-                              pmf_gen, &probabilistic_tracker,
-                              #&deterministic_maximum_tracker,
+                              pmf_gen,
                               streamlines_arr, length_arr, status_arr)
         seed_start += _plen
         seed_end += _plen
@@ -80,29 +78,6 @@ def generate_tractogram(double[:,::1] seed_positions,
 
         yield streamlines
 
-        if seed_end >= _len:
-            break
-=======
-    generate_tractogram_c(seed_positions, seed_directions, nbr_threads, sc,
-                          params,
-                          pmf_gen, &probabilistic_tracker,
-                          streamlines_arr, length_arr, status_arr)
-    streamlines = []
-    try:
-        for i in range(_len):
-            if length_arr[i] > 1:
-                s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                streamlines.append(s.copy().reshape((-1,3)))
-                if streamlines_arr[i] == NULL:
-                    continue
-                free(streamlines_arr[i])
-    finally:
-        free(streamlines_arr)
-        free(length_arr)
-        free(status_arr)
-
-    return streamlines
->>>>>>> WIP/RF - split fast tracking into multiple files
 
 
 cdef int generate_tractogram_c(double[:,::1] seed_positions,
