@@ -292,9 +292,9 @@ cdef void _trilinear_interpolation_iso(double *X,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
-                                   double* point,
-                                   double* result) noexcept nogil:
+cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
+                                   floating* point,
+                                   floating* result) noexcept nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
@@ -349,9 +349,9 @@ cdef int trilinear_interpolate4d_c(double[:, :, :, :] data,
     return 0
 
 
-def trilinear_interpolate4d(double[:, :, :, :] data,
-                            double[:] point,
-                            double[:] out=None):
+def trilinear_interpolate4d(floating[:, :, :, :] data,
+                            floating[:] point,
+                            floating[:] out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
