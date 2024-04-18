@@ -7,6 +7,10 @@ cython_sources = [
   'propspeed',
   'stopping_criterion',
   'streamlinespeed',
+  'tracker_deterministic',
+  'tracker_probabilistic',
+  'tracker_ptt',
+  'tracking_parameters',
   'vox2track',
   ]
 
@@ -17,6 +21,10 @@ cython_headers = [
   'propspeed.pxd',
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
+  'tracker_deterministic.pxd',
+  'tracker_probabilistic.pxd',
+  'tracker_ptt.pxd',
+  'tracking_parameters.pxd'
 ]
 
 foreach ext: cython_sources
