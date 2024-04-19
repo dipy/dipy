@@ -3,21 +3,35 @@
 Class and helper functions for fitting the EVAC+ model.
 """
 import logging
+
 import numpy as np
 
+from dipy.align.reslice import reslice
 from dipy.data import get_fnames
+from dipy.nn.utils import (
+    correct_minor_errors,
+    normalize,
+    recover_img,
+    set_logger_level,
+    transform_img,
+)
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
-from dipy.align.reslice import reslice
-from dipy.nn.utils import normalize, set_logger_level, transform_img
-from dipy.nn.utils import recover_img, correct_minor_errors
 
 tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
 if have_tf:
+    from tensorflow.keras.layers import (
+        Add,
+        Concatenate,
+        Conv3D,
+        Conv3DTranspose,
+        Dropout,
+        Layer,
+        LayerNormalization,
+        ReLU,
+        Softmax,
+    )
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Softmax, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
-    from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
 else:
     class Model:
         pass

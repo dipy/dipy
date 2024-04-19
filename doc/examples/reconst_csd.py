@@ -28,19 +28,20 @@ with b-value 2000.
 import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, default_sphere
+from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.reconst.dti import (
-    TensorModel, fractional_anisotropy, mean_diffusivity)
-from dipy.reconst.csdeconv import (auto_response_ssst,
-                                   mask_for_response_ssst,
-                                   response_from_mask_ssst,
-                                   recursive_response,
-                                   ConstrainedSphericalDeconvModel)
+from dipy.reconst.csdeconv import (
+    ConstrainedSphericalDeconvModel,
+    auto_response_ssst,
+    mask_for_response_ssst,
+    recursive_response,
+    response_from_mask_ssst,
+)
+from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivity
 from dipy.sims.voxel import single_tensor_odf
-from dipy.viz import window, actor
+from dipy.viz import actor, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 

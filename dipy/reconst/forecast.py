@@ -1,18 +1,18 @@
 from warnings import warn
 
 import numpy as np
-
-from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.csdeconv import csdeconv
-from dipy.reconst.shm import real_sh_descoteaux_from_index
+from scipy.optimize import leastsq
 from scipy.special import gamma, hyp1f1
+
 from dipy.core.geometry import cart2sphere
 from dipy.data import default_sphere
-from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.optimize import leastsq
-from dipy.utils.optpkg import optional_package
+from dipy.reconst.cache import Cache
+from dipy.reconst.csdeconv import csdeconv
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 

@@ -1,6 +1,6 @@
 import logging
 import os
-from tempfile import mkstemp, TemporaryDirectory
+from tempfile import TemporaryDirectory, mkstemp
 
 import numpy as np
 import numpy.testing as npt
@@ -11,12 +11,18 @@ from dipy.data.fetcher import dipy_home
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import nifti1_symmat
-from dipy.testing import assert_true
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
-from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
-                               ConcatenateTractogramFlow, ConvertSHFlow,
-                               ConvertTractogramFlow, ConvertTensorsFlow)
+from dipy.testing import assert_true
+from dipy.workflows.io import (
+    ConcatenateTractogramFlow,
+    ConvertSHFlow,
+    ConvertTensorsFlow,
+    ConvertTractogramFlow,
+    FetchFlow,
+    IoInfoFlow,
+    SplitFlow,
+)
 
 fname_log = mkstemp()[1]
 

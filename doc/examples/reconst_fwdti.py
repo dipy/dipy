@@ -40,14 +40,16 @@ The full details of Dipy's free water DTI implementation was published in
 Let's start by importing the relevant modules:
 """
 
-import numpy as np
-import dipy.reconst.fwdti as fwdti
-import dipy.reconst.dti as dti
-import matplotlib.pyplot as plt
-from dipy.data import fetch_hbn
 import os.path as op
+
+import matplotlib.pyplot as plt
 import nibabel as nib
+import numpy as np
+
 from dipy.core.gradients import gradient_table
+from dipy.data import fetch_hbn
+import dipy.reconst.dti as dti
+import dipy.reconst.fwdti as fwdti
 
 ###############################################################################
 # Without spatial constrains the free water elimination model cannot be solved

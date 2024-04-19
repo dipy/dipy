@@ -19,8 +19,8 @@ Let's import some essential functions.
 from dipy.align import motion_correction
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################
 # We choose one of the data from the datasets in dipy_. However, you can

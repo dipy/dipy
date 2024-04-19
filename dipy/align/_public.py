@@ -5,37 +5,38 @@ streamlines.
 
 
 """
-from warnings import warn
-import re
 import collections.abc
 from functools import partial
 import numbers
-import numpy as np
+import re
+from warnings import warn
+
 import nibabel as nib
+import numpy as np
+
+from dipy.align.imaffine import (
+    AffineMap,
+    AffineRegistration,
+    MutualInformationMetric,
+    transform_centers_of_mass,
+)
+from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
-from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
-                               DiffeomorphicMap)
-
-from dipy.align.imaffine import (transform_centers_of_mass,
-                                 AffineMap,
-                                 MutualInformationMetric,
-                                 AffineRegistration)
-
-from dipy.align.transforms import (TranslationTransform3D,
-                                   RigidTransform3D,
-                                   RigidScalingTransform3D,
-                                   RigidIsoScalingTransform3D,
-                                   AffineTransform3D)
-
-
+from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.transforms import (
+    AffineTransform3D,
+    RigidIsoScalingTransform3D,
+    RigidScalingTransform3D,
+    RigidTransform3D,
+    TranslationTransform3D,
+)
 import dipy.core.gradients as dpg
 import dipy.data as dpd
-from dipy.align.streamlinear import StreamlineLinearRegistration
-from dipy.tracking.streamline import set_number_of_points
-from dipy.tracking.utils import transform_tracking_output
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
-from dipy.io.image import load_nifti, save_nifti
+from dipy.tracking.streamline import set_number_of_points
+from dipy.tracking.utils import transform_tracking_output
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
@@ -432,9 +433,9 @@ def affine_registration(moving, static,
 
     Returns
     -------
-    transformed : array with moving data resampled to the static space
-    after computing the affine transformation
-    affine : the affine 4x4 associated with the transformation.
+    resampled : array with moving data resampled to the static space
+    after computing the affine transformation.
+    final_affine : the affine 4x4 associated with the transformation.
     xopt : the value of the optimized coefficients.
     fopt : the value of the optimization quality metric.
 
@@ -512,9 +513,12 @@ def affine_registration(moving, static,
                                   static_mask=static_mask,
                                   moving_mask=moving_mask)
             starting_affine = xform.affine
-
+    
+    # Copy the final affine into a final variable
+    final_affine = starting_affine.copy()
+    
     # After doing all that, resample once at the end:
-    affine_map = AffineMap(starting_affine,
+    affine_map = AffineMap(final_affine,
                            static.shape, static_affine,
                            moving.shape, moving_affine)
 
@@ -522,8 +526,8 @@ def affine_registration(moving, static,
 
     # Return the optimization metric only if requested
     if ret_metric:
-        return resampled, starting_affine, xopt, fopt
-    return resampled, starting_affine
+        return resampled, final_affine, xopt, fopt
+    return resampled, final_affine
 
 
 center_of_mass = partial(affine_registration, pipeline=['center_of_mass'])

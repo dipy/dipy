@@ -26,22 +26,23 @@ Let's load the necessary modules
 """
 
 # load general modules
-import numpy as np
-import matplotlib.pyplot as plt
 from time import time
 
-# load main pca function using Marcenko-Pastur distribution
-from dipy.denoise.localpca import mppca
+import matplotlib.pyplot as plt
+import numpy as np
+
+# load other dipy's functions that will be used for auxiliary analysis
+from dipy.core.gradients import gradient_table
 
 # load functions to fetch data for this example
 from dipy.data import get_fnames
 
-# load other dipy's functions that will be used for auxiliary analysis
-from dipy.core.gradients import gradient_table
-from dipy.io.image import load_nifti, save_nifti
+# load main pca function using Marcenko-Pastur distribution
+from dipy.denoise.localpca import mppca
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.segment.mask import median_otsu
+from dipy.io.image import load_nifti, save_nifti
 import dipy.reconst.dki as dki
+from dipy.segment.mask import median_otsu
 
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was

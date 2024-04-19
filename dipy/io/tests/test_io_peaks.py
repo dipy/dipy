@@ -5,9 +5,9 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import numpy.testing as npt
 
-from dipy.direction.peaks import PeaksAndMetrics
 from dipy.data import default_sphere
-from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
+from dipy.direction.peaks import PeaksAndMetrics
+from dipy.io.peaks import load_peaks, peaks_to_niftis, save_peaks
 from dipy.testing.decorators import set_random_number_generator
 
 

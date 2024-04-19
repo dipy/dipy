@@ -11,16 +11,16 @@ Let's start by importing the relevant modules.
 """
 
 from dipy.core.gradients import gradient_table
-from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
+from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import actor, window, colormap as cmap
+from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
 # First, we need to generate some streamlines. For a more complete

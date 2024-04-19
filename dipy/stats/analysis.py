@@ -1,16 +1,19 @@
 import os
+
 import numpy as np
-from scipy.spatial import cKDTree
 from scipy.ndimage import map_coordinates
+from scipy.spatial import cKDTree
 from scipy.spatial.distance import mahalanobis
 
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
-from dipy.tracking.streamline import (set_number_of_points,
-                                      values_from_volume,
-                                      orient_by_streamline,
-                                      Streamlines)
+from dipy.tracking.streamline import (
+    Streamlines,
+    orient_by_streamline,
+    set_number_of_points,
+    values_from_volume,
+)
 
 
 def peak_values(

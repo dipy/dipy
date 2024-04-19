@@ -1,17 +1,17 @@
 import sys
-import pytest
 import warnings
 
 import numpy as np
-from numpy.testing import assert_equal, assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_equal
+import pytest
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.segment.bundles import RecoBundles
-from dipy.tracking.distances import bundles_distances_mam
-from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.distances import bundles_distances_mam
+from dipy.tracking.streamline import Streamlines
 
 is_big_endian = 'big' in sys.byteorder.lower()
 

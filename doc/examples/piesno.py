@@ -34,11 +34,11 @@ In this example, we will demonstrate the use of PIESNO with a 3-shell data-set.
 We start by importing necessary modules and functions:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from dipy.denoise.noise_estimate import piesno
 from dipy.data import get_fnames
+from dipy.denoise.noise_estimate import piesno
 from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################

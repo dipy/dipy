@@ -1,22 +1,25 @@
-import numpy as np
-import numpy.testing as npt
 import warnings
 
+import numpy as np
+import numpy.testing as npt
 from scipy.ndimage import map_coordinates
-from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.interpolation import (trilinear_interpolate4d,
-                                     interpolate_scalar_2d,
-                                     interpolate_scalar_3d,
-                                     interpolate_vector_2d,
-                                     interpolate_vector_3d,
-                                     interpolate_scalar_nn_2d,
-                                     interpolate_scalar_nn_3d,
-                                     NearestNeighborInterpolator,
-                                     TriLinearInterpolator,
-                                     OutsideImage,
-                                     map_coordinates_trilinear_iso,
-                                     interp_rbf)
+
 from dipy.align import floating
+from dipy.core.interpolation import (
+    NearestNeighborInterpolator,
+    OutsideImage,
+    TriLinearInterpolator,
+    interp_rbf,
+    interpolate_scalar_2d,
+    interpolate_scalar_3d,
+    interpolate_scalar_nn_2d,
+    interpolate_scalar_nn_3d,
+    interpolate_vector_2d,
+    interpolate_vector_3d,
+    map_coordinates_trilinear_iso,
+    trilinear_interpolate4d,
+)
+from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -43,7 +46,7 @@ def test_trilinear_interpolate(rng):
 
     # Pass in out ourselves
     out[:] = -1
-    trilinear_interpolate4d(data, point, out)
+    trilinear_interpolate4d(data.astype(float), point.astype(float), out)
     npt.assert_array_almost_equal(out, expected)
 
     # use a point close to an edge

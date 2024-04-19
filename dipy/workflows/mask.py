@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+
 import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti

@@ -2,10 +2,12 @@
 
 import abc
 import warnings
+
 import numpy as np
-import scipy.sparse as sps
 import scipy.optimize as opt
 from scipy.optimize import minimize
+import scipy.sparse as sps
+
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

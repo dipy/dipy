@@ -26,18 +26,16 @@ where data is Y.T and sh_coef is x.T.
 """
 
 from warnings import warn
+
 import numpy as np
+from numpy.random import randint
 import scipy.special as sps
 
-from numpy.random import randint
-
-from dipy.utils.deprecator import deprecate_with_version
-from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
-from dipy.utils.deprecator import deprecated_params
-
+from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 descoteaux07_legacy_msg = \
     "The legacy descoteaux07 SH basis uses absolute values for negative " \

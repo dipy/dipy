@@ -2,10 +2,10 @@ from os.path import join
 from tempfile import TemporaryDirectory
 
 import numpy as np
-from numpy.testing import assert_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_peaks
 from dipy.reconst.shm import sph_harm_ind_list
 from dipy.workflows.reconst import ReconstDtiFlow

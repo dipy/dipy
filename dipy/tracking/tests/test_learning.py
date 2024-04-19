@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy.testing import assert_array_equal
+
 from dipy.tracking import learning as tl
 
 

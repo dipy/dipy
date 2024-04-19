@@ -9,11 +9,13 @@ the Nibabel package for the copyright and license terms.
 """
 
 import functools
-import warnings
-import re
 from inspect import signature
-from dipy import __version__
+import re
+import warnings
+
 from packaging.version import parse as version_cmp
+
+from dipy import __version__
 
 _LEADING_WHITE = re.compile(r'^(\s*)')
 

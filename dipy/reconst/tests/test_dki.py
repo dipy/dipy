@@ -1,26 +1,36 @@
 """ Testing DKI """
 
-import numpy as np
 import random
 
-import dipy.reconst.dki as dki
-import dipy.reconst.dti as dti
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal, assert_raises)
-from dipy.sims.voxel import multi_tensor_dki
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
-from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis,
-                              mean_kurtosis_tensor,
-                              _positive_evals, lower_triangular,
-                              kurtosis_fractional_anisotropy)
+import numpy as np
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 
-from dipy.core.sphere import Sphere
-from dipy.data import default_sphere
 from dipy.core.geometry import sphere2cart
+from dipy.core.gradients import gradient_table
+from dipy.core.sphere import Sphere
+from dipy.data import default_sphere, get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+import dipy.reconst.dki as dki
+from dipy.reconst.dki import (
+    _positive_evals,
+    axial_kurtosis,
+    carlson_rd,
+    carlson_rf,
+    kurtosis_fractional_anisotropy,
+    lower_triangular,
+    mean_kurtosis,
+    mean_kurtosis_tensor,
+    radial_kurtosis,
+    radial_tensor_kurtosis,
+)
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import decompose_tensor, from_lower_triangular
+from dipy.sims.voxel import multi_tensor_dki
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 
@@ -177,7 +187,6 @@ def test_dki_fits():
     # NLS fitting
     dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
     dki_nlsF = dki_nlsM.fit(signal_cross)
-
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
     dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
@@ -185,8 +194,13 @@ def test_dki_fits():
     # Restore fitting
     dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
     dki_rtF = dki_rtM.fit(signal_cross)
-
     assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+
+    # Test single voxel return_S0
+    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS",
+                                          return_S0_hat=True)
+    dki_nlsF = dki_nlsM.fit(signal_cross)
+    assert_array_almost_equal(dki_nlsF.model_S0, S0)
 
     # testing multi-voxels
     mask_signal_multi = np.ones_like(DWI[..., 0])
@@ -209,13 +223,28 @@ def test_dki_fits():
     assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
-    dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS",
-                                         return_S0_hat=True)
-    dki_S0F = dki_S0M.fit(signal_cross)
-    dki_S0F_S0 = dki_S0F.model_S0
+    if have_cvxpy:
+        tested_methods = ['NLLS', 'WLLS', 'CLS']
+    else:
+        tested_methods = ['NLLS', 'WLLS']
 
-    assert_array_almost_equal(dki_S0F_S0,
-                              np.full(dki_S0F.model_params.shape[0:-1], S0))
+    for fit_method in tested_methods:
+        dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                             return_S0_hat=True)
+        dki_S0F = dki_S0M.fit(DWI)
+        dki_S0F_S0 = dki_S0F.model_S0
+
+        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
+
+    # testing return of S0 when mask is inputted
+    mask_test = dki_S0F.fa > 0
+    for fit_method in tested_methods:
+        dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                             return_S0_hat=True)
+        dki_S0F = dki_S0M.fit(DWI, mask=mask_test)
+        dki_S0F_S0 = dki_S0F.model_S0
+
+        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
 
 
 def test_apparent_kurtosis_coef():
@@ -508,46 +537,36 @@ def test_spherical_dki_statistics():
     AK_multi = axial_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(AK_multi, MRef)
 
-    # mean kurtosis tensor analytical solution
+    # mean kurtosis tensor
     MSK_multi = mean_kurtosis_tensor(MParam)
     assert_array_almost_equal(MSK_multi, MRef)
+
+    # radial kurtosis tensor
+    RKT_multi = radial_tensor_kurtosis(MParam)
+    assert_array_almost_equal(RKT_multi, MRef)
 
     # kurtosis fractional anisotropy (isotropic case kfa=0)
     KFA_multi = kurtosis_fractional_anisotropy(MParam)
     assert_array_almost_equal(KFA_multi, 0*MRef)
 
 
-def test_compare_MK_method():
-    # tests if analytical solution of MK is equal to the average of directional
-    # kurtosis sampled from a sphere
-
-    # DKI Model fitting
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
-    dkiF = dkiM.fit(signal_cross)
-
-    # MK analytical solution
-    MK_as = dkiF.mk(None, None, analytical=True)
-
-    # MK numerical method
-    MK_nm = dkiF.mk(None, None, analytical=False)
-
-    assert_array_almost_equal(MK_as, MK_nm, decimal=3)
-
-
 def test_single_voxel_DKI_stats():
-    # tests if AK and RK are equal to expected values for a single fiber
+    # tests if DKI metrics are equal to expected values for a single fiber
     # simulate randomly oriented
     fie = 0.49
     ADi = 0.00099
     ADe = 0.00226
     RDi = 0
     RDe = 0.00087
+    MD = fie * (ADi + 2 * RDi) / 3 + (1 - fie) * (ADe + 2 * RDe) / 3
     # Reference values
     AD = fie * ADi + (1 - fie) * ADe
     AK = 3 * fie * (1 - fie) * ((ADi-ADe) / AD) ** 2
     RD = fie * RDi + (1 - fie) * RDe
     RK = 3 * fie * (1 - fie) * ((RDi-RDe) / RD) ** 2
-    ref_vals = np.array([AD, AK, RD, RK])
+    MKT = 3 * fie * (1 - fie) * (RDe**2 + (ADe - ADi - RDe) *
+                                 (7*RDe + 3 * (ADe - ADi))/15) / (MD**2)
+    ref_vals = np.array([AD, AK, RD, RK, RK, MKT])
 
     # simulate fiber randomly oriented
     theta = random.uniform(0, 180)
@@ -565,13 +584,16 @@ def test_single_voxel_DKI_stats():
     RDe1 = dti.radial_diffusivity(evals)
     AKe1 = axial_kurtosis(dki_par)
     RKe1 = radial_kurtosis(dki_par)
-    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1])
+    RTKe1 = radial_tensor_kurtosis(dki_par)
+    MKTe1 = mean_kurtosis_tensor(dki_par)
+    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1, RTKe1, MKTe1])
     assert_array_almost_equal(e1_vals, ref_vals)
 
     # Estimates using the kurtosis class object
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk()])
+    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd,
+                        dkiF.rk(), dkiF.rtk(), dkiF.mkt()])
     assert_array_almost_equal(e2_vals, ref_vals)
 
     # test MK (note this test correspond to the MK singularity L2==L3)
@@ -582,21 +604,28 @@ def test_single_voxel_DKI_stats():
     assert_array_almost_equal(MK_as, MK_nm, decimal=1)
 
 
-def test_compare_RK_methods():
-    # tests if analytical solution of RK is equal to the perpendicular kurtosis
-    # relative to the first diffusion axis
+def test_compare_analytical_and_numerical_methods():
+    # tests if analytical solution of MK/RK/AK produces the same results than
+    # their respective numerical methods
 
     # DKI Model fitting
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_cross)
 
-    # RK analytical solution
+    # MK analytical and numerical solution
+    MK_as = dkiF.rk(analytical=True)
+    MK_nm = dkiF.rk(analytical=False)
+    assert_array_almost_equal(MK_as, MK_nm)
+
+    # RK analytical and numerical solution
     RK_as = dkiF.rk(analytical=True)
-
-    # RK numerical method
     RK_nm = dkiF.rk(analytical=False)
-
     assert_array_almost_equal(RK_as, RK_nm)
+
+    # AK analytical and numerical solution
+    AK_as = dkiF.ak(analytical=True)
+    AK_nm = dkiF.ak(analytical=False)
+    assert_array_almost_equal(AK_as, AK_nm)
 
 
 def test_MK_singularities():
@@ -665,14 +694,29 @@ def test_dki_errors():
     mask_correct = dkiF.fa > 0
     mask_correct[1, 1] = False
     multi_params[1, 1] = np.zeros(27)
-    mask_not_correct = np.array([[True, True, False], [True, False, False]])
     dkiF = dkiM.fit(DWI, mask=mask_correct)
     assert_array_almost_equal(dkiF.model_params, multi_params)
-    # test a incorrect mask
+    # test incorrect mask ("multi-voxel" fit types)
+    mask_not_correct = np.array([[True, True, False], [True, False, False]])
+    assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
+    # test incorrect mask ("single-voxel" fit types)
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method='NLS')
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
     # error if data with only one non zero b-value is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+
+    # Extra checks for CLS fitting
+    if have_cvxpy:
+        assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                      fit_method='CLS', convexity_level='all')
+        assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                      fit_method='CLS', convexity_level=3)
+        # Check that maximum convexity levels is set to 4,
+        # when large one is given
+        dkim = dki.DiffusionKurtosisModel(gtab_2s, fit_method='CLS',
+                                          convexity_level=6)
+        assert_almost_equal(dkim.convexity_level, 4)
 
 
 def test_kurtosis_maximum():
@@ -746,6 +790,7 @@ def test_kurtosis_maximum():
 
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
+    assert_almost_equal(dkiF.kmax(sphere, gtol=1e-5), RK)
 
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
@@ -823,6 +868,11 @@ def test_multi_voxel_kurtosis_maximum():
     RK[1, 1, 1] = 0
     k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
     assert_almost_equal(k_max, RK, decimal=4)
+
+    # TEST if wrong mask is given
+    mask_not_correct = np.array([[True, True, False], [True, False, False]])
+    assert_raises(ValueError, dki.kurtosis_maximum, dkiF.model_params,
+                  mask=mask_not_correct)
 
 
 def test_kurtosis_fa():

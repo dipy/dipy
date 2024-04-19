@@ -13,11 +13,12 @@
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 """Helper to automagically generate ReST versions of examples"""
-import os
-import sys
-import re
+
 import glob
 from optparse import OptionParser
+import os
+import re
+import sys
 
 __docformat__ = 'restructuredtext'
 

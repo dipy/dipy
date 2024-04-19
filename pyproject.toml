@@ -104,6 +104,8 @@ dev = [
     # Developer UI
     'spin>=0.5',
     'build',
+    'pre-commit',
+    'ruff',
 ]
 
 extra = ["dipy[viz, ml]",

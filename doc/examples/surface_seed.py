@@ -7,16 +7,21 @@ Surface seeding is a way to generate initial position for tractography
 from cortical surfaces position [Stonge2018]_.
 """
 
+from fury.io import load_polydata
+from fury.utils import (
+    get_actor_from_polydata,
+    get_polydata_triangles,
+    get_polydata_vertices,
+    normals_from_v_f,
+)
 import numpy as np
 
-from dipy.viz import window, actor
 from dipy.data import get_fnames
-from dipy.tracking.mesh import (random_coordinates_from_surface,
-                                seeds_from_surface_coordinates)
-
-from fury.io import load_polydata
-from fury.utils import (get_polydata_triangles, get_polydata_vertices,
-                        get_actor_from_polydata, normals_from_v_f)
+from dipy.tracking.mesh import (
+    random_coordinates_from_surface,
+    seeds_from_surface_coordinates,
+)
+from dipy.viz import actor, window
 
 ###############################################################################
 # Fetch and load a surface

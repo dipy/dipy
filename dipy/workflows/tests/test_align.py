@@ -1,25 +1,31 @@
-from os.path import join as pjoin
 import os.path
+from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
-import numpy.testing as npt
-import numpy as np
 import nibabel as nib
+import numpy as np
+import numpy.testing as npt
 import pytest
-from dipy.utils.optpkg import optional_package
+
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti, load_nifti_data
+from dipy.io.image import load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
-                                  ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow, MotionCorrectionFlow,
-                                  BundleWarpFlow)
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.streamline import Streamlines
+from dipy.utils.optpkg import optional_package
+from dipy.workflows.align import (
+    ApplyTransformFlow,
+    BundleWarpFlow,
+    ImageRegistrationFlow,
+    MotionCorrectionFlow,
+    ResliceFlow,
+    SlrWithQbxFlow,
+    SynRegistrationFlow,
+)
 
 _, have_pd, _ = optional_package("pandas")
 
@@ -83,11 +89,17 @@ def test_image_registration(rng):
                    affine=static_g2w)
         save_nifti(pjoin(temp_out_dir, 't1.nii.gz'), data=moving,
                    affine=moving_g2w)
+        # simulate three direction DWI by repeating b0 three times
+        save_nifti(pjoin(temp_out_dir, 'dwi.nii.gz'),
+                   data=np.repeat(static[..., None], 3, axis=-1),
+                   affine=static_g2w)
 
         static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
         moving_image_file = pjoin(temp_out_dir, 't1.nii.gz')
+        dwi_image_file = pjoin(temp_out_dir, 'dwi.nii.gz')
 
         image_registration_flow = ImageRegistrationFlow()
+        apply_trans = ApplyTransformFlow()
 
         def read_distance(qual_fname):
             with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
@@ -226,6 +238,73 @@ def test_image_registration(rng):
             assert os.path.exists(affine_mat_file)
             return True
 
+        def test_4D_static():
+            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+
+            image_registration_flow._force_overwrite = True
+            kwargs = dict(static_image_files=dwi_image_file,
+                          moving_image_files=moving_image_file,
+                          transform='trans',
+                          out_dir=temp_out_dir,
+                          out_moved=out_moved,
+                          out_affine=out_affine,
+                          save_metric=True,
+                          level_iters=[100, 10, 1],
+                          out_quality='trans_q.txt')
+            with pytest.raises(ValueError, match='Dimension mismatch'):
+                image_registration_flow.run(**kwargs)
+
+            image_registration_flow.run(static_vol_idx=0, **kwargs)
+
+            dist = read_distance('trans_q.txt')
+            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
+            check_existence(out_moved, out_affine)
+
+            apply_trans.run(static_image_files=dwi_image_file,
+                            moving_image_files=moving_image_file,
+                            out_dir=temp_out_dir,
+                            transform_map_file=out_affine)
+
+            # Checking for the transformed volume shape
+            volume = load_nifti_data(pjoin(temp_out_dir, "transformed.nii.gz"))
+            assert volume.ndim == 3
+
+        def test_4D_moving():
+            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+
+            image_registration_flow._force_overwrite = True
+
+            kwargs = dict(static_image_files=static_image_file,
+                          moving_image_files=dwi_image_file,
+                          transform='trans',
+                          out_dir=temp_out_dir,
+                          out_moved=out_moved,
+                          out_affine=out_affine,
+                          save_metric=True,
+                          level_iters=[100, 10, 1],
+                          out_quality='trans_q.txt')
+            with pytest.raises(ValueError, match='Dimension mismatch'):
+                image_registration_flow.run(**kwargs)
+
+            image_registration_flow.run(moving_vol_idx=0, **kwargs)
+
+            dist = read_distance('trans_q.txt')
+            npt.assert_almost_equal(float(dist), -1.0002607616786339, 1)
+            check_existence(out_moved, out_affine)
+
+            apply_trans.run(static_image_files=static_image_file,
+                            moving_image_files=dwi_image_file,
+                            out_dir=temp_out_dir,
+                            transform_map_file=out_affine,
+                            out_file='transformed2.nii.gz')
+
+            # Checking for the transformed volume shape
+            volume = load_nifti_data(pjoin(temp_out_dir, "transformed2.nii.gz"))
+            assert volume.ndim == 4
+
+
         test_com()
         test_translation()
         test_rigid()
@@ -233,6 +312,8 @@ def test_image_registration(rng):
         test_rigid_scaling()
         test_affine()
         test_err()
+        test_4D_static()
+        test_4D_moving()
 
 
 def test_apply_transform_error():

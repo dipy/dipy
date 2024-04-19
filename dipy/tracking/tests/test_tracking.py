@@ -8,24 +8,27 @@ import numpy.testing as npt
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
-from dipy.direction import (BootDirectionGetter,
-                            ClosestPeakDirectionGetter,
-                            DeterministicMaximumDirectionGetter,
-                            PeaksAndMetrics,
-                            ProbabilisticDirectionGetter,
-                            PTTDirectionGetter)
+from dipy.direction import (
+    BootDirectionGetter,
+    ClosestPeakDirectionGetter,
+    DeterministicMaximumDirectionGetter,
+    PTTDirectionGetter,
+    PeaksAndMetrics,
+    ProbabilisticDirectionGetter,
+)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.tracking.local_tracking import (LocalTracking,
-                                          ParticleFilteringTracking)
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
-                                              BinaryStoppingCriterion,
-                                              ThresholdStoppingCriterion,
-                                              StreamlineStatus)
-from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
-from dipy.sims.voxel import single_tensor, multi_tensor
+from dipy.sims.voxel import multi_tensor, single_tensor
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
+from dipy.tracking.stopping_criterion import (
+    ActStoppingCriterion,
+    BinaryStoppingCriterion,
+    StreamlineStatus,
+    ThresholdStoppingCriterion,
+)
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.utils import random_seeds_from_mask, seeds_from_mask
 
 
 def allclose(x, y, atol=None):

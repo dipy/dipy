@@ -1,22 +1,23 @@
 import logging
-from warnings import warn
-import numpy as np
-import nibabel as nib
 from os.path import join as pjoin
-from dipy.utils.optpkg import optional_package
-from dipy.align.imaffine import AffineMap
-from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
-                               DiffeomorphicMap)
-from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
-from dipy.align.reslice import reslice
+from warnings import warn
+
+import nibabel as nib
+import numpy as np
+
 from dipy.align import affine_registration, motion_correction
+from dipy.align.imaffine import AffineMap
+from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
-from dipy.tracking.streamline import set_number_of_points
 from dipy.align.streamwarp import bundlewarp
-from dipy.core.gradients import mask_non_weighted_bvals, gradient_table
-from dipy.io.image import save_nifti, load_nifti, save_qa_metric
+from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.tracking.streamline import transform_streamlines
+from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.optpkg import optional_package
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
@@ -263,6 +264,7 @@ class ImageRegistrationFlow(Workflow):
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=(10000, 1000, 100), sigmas=(3.0, 1.0, 0.0),
             factors=(4, 2, 1), progressive=True, save_metric=False,
+            static_vol_idx=None, moving_vol_idx=None,
             out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt'):
         """
@@ -311,6 +313,18 @@ class ImageRegistrationFlow(Workflow):
             If true, quality assessment metric are saved in
             'quality_metric.txt'.
 
+        static_vol_idx : str, optional
+            1D array representing indices of ``axis=-1`` of a 4D
+            `static` input volume. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
+
+        moving_vol_idx : str, optional
+            1D array representing indices of ``axis=-1`` of a 4D
+            `moving` input volume. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
+
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
              (default current directory).
@@ -352,6 +366,10 @@ class ImageRegistrationFlow(Workflow):
                 "rigid_scaling": ["center_of_mass", "rigid_scaling"],
                 "affine": ["center_of_mass", "affine"]}
 
+        static_vol_idx = handle_vol_idx(static_vol_idx)
+
+        moving_vol_idx = handle_vol_idx(moving_vol_idx)
+
         pipeline = pipeline_opt.get(transform)
 
         if pipeline is None:
@@ -366,6 +384,11 @@ class ImageRegistrationFlow(Workflow):
             # Load the data from the input files and store into objects.
             static, static_grid2world = load_nifti(static_img)
             moving, moving_grid2world = load_nifti(mov_img)
+
+            if static_vol_idx is not None:
+                static = static[..., static_vol_idx].mean(axis=-1)
+            if moving_vol_idx is not None:
+                moving = moving[..., moving_vol_idx].mean(axis=-1)
 
             check_dimensions(static, moving)
 
@@ -465,6 +488,13 @@ class ApplyTransformFlow(Workflow):
 
             # Doing a sanity check for validating the dimensions of the input
             # images.
+            if static_image.ndim > moving_image.ndim:
+                static_image = static_image[..., 0]
+            if static_image.ndim < moving_image.ndim:
+                moving_image_full = moving_image
+                moving_image = moving_image[..., 0]
+            else:
+                moving_image_full = None
             check_dimensions(static_image, moving_image)
 
             if transform_type.lower() == 'affine':
@@ -495,8 +525,15 @@ class ApplyTransformFlow(Workflow):
                 mapping.backward = disp_data[..., 1]
                 mapping.is_inverse = True
 
-            # Transforming the image/
-            transformed = mapping.transform(moving_image)
+            # Transforming the image
+            if moving_image_full is None:
+                transformed = mapping.transform(moving_image)
+            else:
+                transformed = np.concatenate(
+                    [mapping.transform(moving_image)[..., None]
+                     for moving_image in moving_image_full],
+                    axis=-1
+                )
 
             save_nifti(out_file, transformed, affine=static_grid2world)
 

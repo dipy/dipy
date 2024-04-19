@@ -1,11 +1,12 @@
 import numpy as np
-# import scipy.stats as stats
 
-from dipy.sims.voxel import single_tensor, diffusion_evals
-import dipy.sims.voxel as vox
 from dipy.core.geometry import vec2vec_rotmat
-from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+import dipy.sims.voxel as vox
+
+# import scipy.stats as stats
+from dipy.sims.voxel import diffusion_evals, single_tensor
 
 
 def add_noise(vol, snr=1.0, S0=None, noise_type='rician', rng=None):

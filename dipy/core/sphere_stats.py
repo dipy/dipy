@@ -1,9 +1,11 @@
 """ Statistics on spheres
 """
 
-import numpy as np
-import dipy.core.geometry as geometry
 from itertools import permutations
+
+import numpy as np
+
+import dipy.core.geometry as geometry
 
 
 def random_uniform_on_sphere(n=1, coords='xyz'):

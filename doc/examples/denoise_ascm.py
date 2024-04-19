@@ -26,16 +26,18 @@ of the image features.
 Let us load the necessary modules
 """
 
-import numpy as np
+from time import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.io.image import load_nifti, save_nifti
-from dipy.io.gradients import read_bvals_bvecs
-from time import time
-from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.non_local_means import non_local_means
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 
 ###############################################################################
 # Choose one of the data from the datasets in dipy_

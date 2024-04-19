@@ -1,6 +1,6 @@
 import numpy as np
 
-from dipy.viz.horizon.tab import (HorizonTab, build_slider)
+from dipy.viz.horizon.tab import HorizonTab, build_slider
 
 
 class ClustersTab(HorizonTab):

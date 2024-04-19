@@ -1,5 +1,6 @@
 """ Learning algorithms for tractography"""
 import numpy as np
+
 import dipy.tracking.distances as pf
 
 
