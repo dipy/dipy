@@ -6,6 +6,8 @@ import numpy as np
 import numpy.testing as npt
 
 import scipy.optimize as opt
+import autograd.numpy as npa  
+from autograd import grad as grd  
 
 import dipy.reconst.dti as dti
 from dipy.io.gradients import read_bvals_bvecs
@@ -541,32 +543,32 @@ def test_nnls_jacobian_func(rng):
     gtab = grad.gradient_table(bval, bvecs)
     B = bval[1]
 
-    # Scale the eigenvalues and tensor by the B value so the units match
-    D_orig = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    # Ground truth D
+    D_orig = npa.array([1., 1., 1., 0., 0., 1., -npa.log(b0) * B]) / B
+
+    # Perturbed D for numerical approximation away from the minimum
+    D_perturbed = D_orig + 0.01  # You can adjust the perturbation as needed
 
     # Design Matrix
     X = dti.design_matrix(gtab)
 
     # Signals
-    Y = np.exp(np.dot(X, D_orig))
+    Y = npa.exp(np.dot(X, D_orig))
     scale = 10
     error = rng.normal(scale=scale, size=Y.shape)
     Y = Y + error
 
-    # although sigma and gmm gradients seem correct from inspection,
-    # they are not accurate enough to pass the tests, leaving out
-    # for weighting in [None, "sigma", "gmm"]:
     for weighting in [None]:
         nlls = dti._NllsHelper()
 
-        for D in [D_orig, np.zeros_like(D_orig)]:
+        for D in [D_perturbed, npa.zeros_like(D_orig)]:
 
             if weighting is None:
                 sigma = None
             if weighting == "sigma":
-                sigma = 1.0 / np.abs(error)  # use residuals as estimate
+                sigma = 1.0 / npa.abs(error)  # use residuals as estimate
             if weighting == "gmm":
-                sigma = 1.4826 * np.median(np.abs(error - np.median(error)))
+                sigma = 1.4826 * npa.median(npa.abs(error - npa.median(error)))
 
             # Test Jacobian at D
             args = [D, X, Y, weighting, sigma]
@@ -574,6 +576,7 @@ def test_nnls_jacobian_func(rng):
             nlls.err_func(*args)
             # NOTE: cal 'jabobian_func' with D (ensure cached vars are for D)
             analytical = nlls.jacobian_func(*args)
+
             for i in range(len(X)):
                 if weighting is None:
                     args = [X[i], Y[i], weighting, sigma]
@@ -581,9 +584,10 @@ def test_nnls_jacobian_func(rng):
                     args = [X[i], Y[i], weighting, sigma[i]]
                 if weighting == "gmm":
                     args = [X[i], Y[i], weighting, sigma]
-                approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
+                grad_err_func = grd(nlls.err_func) 
+                approx = grad_err_func(D, *args)
 
-                assert np.allclose(approx, analytical[i])
+                assert npa.allclose(approx, analytical[i])
 
 
 def test_nlls_fit_tensor():
