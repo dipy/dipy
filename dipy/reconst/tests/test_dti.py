@@ -5,8 +5,8 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 import scipy.optimize as opt
-import autograd.numpy as npa  
-from autograd import grad as grd  
+import autograd.numpy as npa
+from autograd import grad as grd
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
@@ -591,7 +591,7 @@ def test_nnls_jacobian_func(rng):
                     args = [X[i], Y[i], weighting, sigma[i]]
                 if weighting == "gmm":
                     args = [X[i], Y[i], weighting, sigma]
-                grad_err_func = grd(nlls.err_func) 
+                grad_err_func = grd(nlls.err_func)
                 approx = grad_err_func(D, *args)
 
                 assert npa.allclose(approx, analytical[i])
