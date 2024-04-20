@@ -1,6 +1,7 @@
 """ Testing DKI """
 
 import random
+import warnings
 
 import numpy as np
 from numpy.testing import (
@@ -31,6 +32,7 @@ from dipy.reconst.dki import (
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import decompose_tensor, from_lower_triangular
 from dipy.sims.voxel import multi_tensor_dki
+from dipy.testing import check_for_warnings
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 
@@ -185,11 +187,15 @@ def test_dki_fits():
                       gtab_2s, fit_method="CWLS")
 
     # NLS fitting
-    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
-    dki_nlsF = dki_nlsM.fit(signal_cross)
-    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
-    dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
-    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+    if have_cvxpy:
+        dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
+        dki_nlsF = dki_nlsM.fit(signal_cross)
+        assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+        dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
+        assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+    else:
+        assert_raises(TripWireError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="NLS")
 
     # Restore fitting
     dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
@@ -197,10 +203,15 @@ def test_dki_fits():
     assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
 
     # Test single voxel return_S0
-    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS",
-                                          return_S0_hat=True)
-    dki_nlsF = dki_nlsM.fit(signal_cross)
-    assert_array_almost_equal(dki_nlsF.model_S0, S0)
+    if have_cvxpy:
+        dki_nlsM = dki.DiffusionKurtosisModel(
+            gtab_2s, fit_method="NLS", return_S0_hat=True,
+            cvxpy_solver=cvxpy.CLARABEL)
+        dki_nlsF = dki_nlsM.fit(signal_cross)
+        assert_array_almost_equal(dki_nlsF.model_S0, S0)
+    else:
+        assert_raises(TripWireError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="NLS")
 
     # testing multi-voxels
     mask_signal_multi = np.ones_like(DWI[..., 0])
@@ -215,12 +226,13 @@ def test_dki_fits():
     dkiF_multi = dki_rtM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
-    dkiF_multi = dki_nlsM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
-    dkiF_multi = dki_nlsM.fit(DWI, mask=mask_signal_multi)
-    masked_multi_params = multi_params.copy()
-    masked_multi_params[1, 1, ...] = 0
-    assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
+    if have_cvxpy:
+        dkiF_multi = dki_nlsM.fit(DWI)
+        assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+        dkiF_multi = dki_nlsM.fit(DWI, mask=mask_signal_multi)
+        masked_multi_params = multi_params.copy()
+        masked_multi_params[1, 1, ...] = 0
+        assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
     if have_cvxpy:
@@ -229,8 +241,11 @@ def test_dki_fits():
         tested_methods = ['NLLS', 'WLLS']
 
     for fit_method in tested_methods:
+        kwargs = {}
+        if fit_method == "CLS":
+            kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
-                                             return_S0_hat=True)
+                                             return_S0_hat=True, **kwargs)
         dki_S0F = dki_S0M.fit(DWI)
         dki_S0F_S0 = dki_S0F.model_S0
 
@@ -239,8 +254,11 @@ def test_dki_fits():
     # testing return of S0 when mask is inputted
     mask_test = dki_S0F.fa > 0
     for fit_method in tested_methods:
+        kwargs = {}
+        if fit_method == "CLS":
+            kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
         dki_S0M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
-                                             return_S0_hat=True)
+                                             return_S0_hat=True, **kwargs)
         dki_S0F = dki_S0M.fit(DWI, mask=mask_test)
         dki_S0F_S0 = dki_S0F.model_S0
 
@@ -700,11 +718,15 @@ def test_dki_errors():
     mask_not_correct = np.array([[True, True, False], [True, False, False]])
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
     # test incorrect mask ("single-voxel" fit types)
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method='NLS')
-    assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
+    if have_cvxpy:
+        dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method='NLS')
+        assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
-    # error if data with only one non zero b-value is given
-    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+        # error if data with only one non zero b-value is given
+        assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+    else:
+        assert_raises(TripWireError, dki.DiffusionKurtosisModel,
+                      gtab_2s, fit_method="NLS")
 
     # Extra checks for CLS fitting
     if have_cvxpy:
@@ -714,9 +736,13 @@ def test_dki_errors():
                       fit_method='CLS', convexity_level=3)
         # Check that maximum convexity levels is set to 4,
         # when large one is given
-        dkim = dki.DiffusionKurtosisModel(gtab_2s, fit_method='CLS',
-                                          convexity_level=6)
-        assert_almost_equal(dkim.convexity_level, 4)
+
+        with warnings.catch_warnings(record=True) as l_warns:
+            dkim = dki.DiffusionKurtosisModel(gtab_2s, fit_method='CLS',
+                                              convexity_level=6)
+            check_for_warnings(
+                l_warns, "Maximum convexity_level supported is 4.")
+            assert_almost_equal(dkim.convexity_level, 4)
 
 
 def test_kurtosis_maximum():
