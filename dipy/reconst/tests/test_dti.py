@@ -554,7 +554,7 @@ def test_nnls_jacobian_func(rng):
     D_orig = npa.array([1., 1., 1., 0., 0., 1., -npa.log(b0) * B]) / B
 
     # Perturbed D for numerical approximation away from the minimum
-    D_perturbed = D_orig + 0.01  # You can adjust the perturbation as needed
+    D_perturbed = D_orig + 0.01  # perturbation can be adjusted as needed
 
     # Design Matrix
     X = dti.design_matrix(gtab)
@@ -577,7 +577,7 @@ def test_nnls_jacobian_func(rng):
             if weighting == "gmm":
                 sigma = 1.4826 * npa.median(npa.abs(error - npa.median(error)))
 
-            # Test Jacobian at D
+            # Testing Jacobian at D
             args = [D, X, Y, weighting, sigma]
             # NOTE: call 'err_func' first, to set internal stuff in the class
             nlls.err_func(*args)
