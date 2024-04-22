@@ -26,4 +26,4 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install and run pre-commit hooks
-      uses: pre-commit/action@v3.0.0
+      uses: pre-commit/action@v3.0.1
