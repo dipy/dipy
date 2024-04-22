@@ -1,5 +1,8 @@
+import importlib
+from inspect import getmembers, isfunction
 import logging
 import os
+import sys
 from tempfile import TemporaryDirectory, mkstemp
 
 import numpy as np
@@ -80,25 +83,24 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-    dataset_names = ['bundle_atlas_hcp842', '30_bundle_atlas_hcp842',
-                     'bundle_fa_hcp', 'bundles_2_subjects', 'cenir_multib',
-                     'cfin_multib', 'file_formats', 'fury_surface',
-                     'gold_standard_io', 'isbi2013_2shell',
-                     'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
-                     'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
-                     'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
-                     'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
-                     'tissue_data', 'qte_lte_pte', 'resdnn_weights',
-                     'DiB_217_lte_pte_ste', 'DiB_70_lte_pte_ste',
-                     'synb0_weights', 'synb0_test', 'deepn4_weights',
-                     'deepn4_test', 'bundle_warp_dataset',
-                     'evac_weights', 'evac_test', 'ptt_minimal_dataset',
-                     'stanford_tracks', 'cti_rat1']
 
-    num_expected_fetch_methods = len(dataset_names)
+    module_path = 'dipy.data.fetcher'
+    if module_path in sys.modules:
+        fetcher_module = importlib.reload(sys.modules[module_path])
+    else:
+        fetcher_module = importlib.import_module(module_path)
+
+    ignored_fetchers = ['fetch_hbn', 'fetch_hcp', 'fetch_data']
+    fetcher_list = dict([(name.replace('fetch_', ''), func)
+                         for name, func in getmembers(fetcher_module,
+                                                      isfunction)
+                         if name.lower().startswith("fetch_") and
+                         name.lower() not in ignored_fetchers])
+
+    num_expected_fetch_methods = len(fetcher_list)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)
     npt.assert_equal(all(dataset_name in available_data.keys()
-                         for dataset_name in dataset_names), True)
+                         for dataset_name in fetcher_list), True)
 
 
 def test_split_flow():

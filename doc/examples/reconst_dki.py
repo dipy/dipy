@@ -87,7 +87,6 @@ First, we import all relevant modules:
 """
 
 import numpy as np
-from scipy.ndimage import gaussian_filter
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames

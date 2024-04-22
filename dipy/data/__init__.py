@@ -18,6 +18,10 @@ from dipy.data.fetcher import (
     fetch_bundles_2_subjects,
     fetch_cenir_multib,
     fetch_cfin_multib,
+    fetch_disco1_dataset,
+    fetch_disco2_dataset,
+    fetch_disco3_dataset,
+    fetch_disco_dataset,
     fetch_evac_test,
     fetch_evac_weights,
     fetch_gold_standard_io,
@@ -67,8 +71,7 @@ from dipy.data.fetcher import (
 )
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
-
-from ..utils.arrfuncs import as_native_array
+from dipy.utils.arrfuncs import as_native_array
 
 
 def loads_compat(byte_data):
