@@ -1198,7 +1198,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         dt = lower_triangular(vec_val_vect(evecs, evals))
         for vox in range(len(kt)):
             AKi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox],
-                                            np.array([evecs[vox, :, 0]]))
+                                            np.array([evecs[vox, :, 0]])).item()
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -1792,7 +1792,7 @@ class DiffusionKurtosisModel(ReconstModel):
         tol = 1e-6
         self.min_diffusivity = tol / -self.design_matrix.min()
 
-        self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
+        self.convexity_constraint = fit_method in {'CLS', 'CWLS', 'NLS'}
         if self.convexity_constraint:
             self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
             self.convexity_level = self.kwargs.pop('convexity_level', 'full')
