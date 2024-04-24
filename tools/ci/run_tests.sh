@@ -18,11 +18,11 @@ if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" == true ]; then
     cp ../.coveragerc .;
     cp ../.codecov.yml .;
     # Run the tests and check for test coverage.
-    coverage run -m pytest -c pyproject.toml -svv --doctest-modules --verbose --durations=10 --pyargs dipy
+    coverage run -m pytest -c pyproject.toml -svv --doctest-modules --verbose --durations=10 --pyargs dipy -W error
     coverage report -m  # Generate test coverage report.
     coverage xml  # Generate coverage report in xml format for codecov upload.
 else
-    pytest -c pyproject.toml -svv --doctest-modules --verbose --durations=10 --pyargs dipy
+    pytest -c pyproject.toml -svv --doctest-modules --verbose --durations=10 --pyargs dipy -W error
 fi
 cd ..
 set +ex
