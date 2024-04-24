@@ -18,7 +18,6 @@ https://github.com/nipy/nibabel/pull/556
 np.set_printoptions(legacy='1.13')
 
 warnings.simplefilter(action="default", category=FutureWarning)
-warnings.simplefilter("always", category=UserWarning)
 # List of files that pytest should ignore
 collect_ignore = ["testing/decorators.py", "bench*.py", "**/benchmarks/*"]
 
