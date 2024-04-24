@@ -467,12 +467,9 @@ def test_peaksFromModel():
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
         odf_argmax = _odf.argmax()
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
-            pam = peaks_from_model(model, data, sphere, .5, 45,
-                                   normalize_peaks=True)
+
+        pam = peaks_from_model(model, data, sphere, .5, 45,
+                               normalize_peaks=True)
 
         assert_array_equal(pam.gfa, gfa(_odf))
         assert_array_equal(pam.peak_values[:, 0], 1.)
