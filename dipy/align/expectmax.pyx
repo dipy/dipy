@@ -2,6 +2,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: cdivision=True
+#cython: nonecheck=False
 
 
 import numpy as np
@@ -92,13 +93,13 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
                         out[i, j] = 0
                         hist[0] += 1
             levels[0] = 0
-            levels[1] = 0.5 * (min_val + max_val)
-            hist[1] = npix - hist[0]
+            levels[1] = <floating>(0.5 * (min_val + max_val))
+            hist[1] = <cnp.npy_int32>npix - hist[0]
             with gil:
                 return out, levels, hist
 
         levels[0] = 0
-        levels[1] = min_val + delta * 0.5
+        levels[1] = <floating>(min_val + delta * 0.5)
         for i in range(2, 1 + num_levels):
             levels[i] = levels[i - 1] + delta
         for i in range(nrows):

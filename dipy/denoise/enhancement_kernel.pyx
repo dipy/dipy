@@ -1,3 +1,8 @@
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: cdivision=True
+#cython: nonecheck=False
+
 import numpy as np
 cimport numpy as cnp
 cimport cython
@@ -174,7 +179,7 @@ cdef class EnhancementKernel:
             cnp.npy_intp OR1 = orientations.shape[0]
             cnp.npy_intp OR2 = orientations.shape[0]
             cnp.npy_intp N = self.kernelsize
-            cnp.npy_intp hn = (N-1)/2
+            cnp.npy_intp hn = <cnp.npy_intp>((N-1)/2)
             cnp.npy_intp angv, angr, xp, yp, zp
             double [:] x
             double [:] y
@@ -195,9 +200,9 @@ cdef class EnhancementKernel:
                         for yp in range(-hn, hn + 1):
                             for zp in range(-hn, hn + 1):
 
-                                x[0] = xp
-                                x[1] = yp
-                                x[2] = zp
+                                x[0] = <double>xp
+                                x[1] = <double>yp
+                                x[2] = <double>zp
 
                                 lookuptablelocal[angv,
                                                  angr,

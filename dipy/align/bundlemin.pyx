@@ -46,8 +46,9 @@ cdef double min_direct_flip_dist(double *a,double *b,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0
-        double sub=0, subf=0, distf=0, dist=0, tmprow=0, tmprowf=0
+        cnp.npy_intp i, j
+        double sub, subf, tmprow, tmprowf
+        double distf=0, dist=0
 
 
     for i in range(rows):
@@ -108,8 +109,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
-        int threads_to_use = -1
+        cnp.npy_intp i, j
+        int threads_to_use=-1
 
     threads_to_use = determine_num_threads(num_threads)
     set_num_threads(threads_to_use)
@@ -170,10 +171,10 @@ def _bundle_minimum_distance(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
+        cnp.npy_intp i, j
+        double sum_i=0, sum_j=0
         double inf = np.finfo('f8').max
-        double dist=0
+        double tmp, dist
         double * min_j
         double * min_i
         openmp.omp_lock_t lock
@@ -282,10 +283,10 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
+        cnp.npy_intp i, j
+        double sum_i=0
         double inf = np.finfo('f8').max
-        double dist=0
+        double dist, tmp
         double * min_j
         openmp.omp_lock_t lock
 

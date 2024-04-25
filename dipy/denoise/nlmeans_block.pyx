@@ -13,11 +13,11 @@ cdef inline int _int_min(int a, int b):
 
 
 def _firdn_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = len(f)
-    cdef int klen = len(h)
-    cdef int outLen = (n + klen) // 2
+    cdef cnp.npy_intp n = len(f)
+    cdef cnp.npy_intp klen = len(h)
+    cdef cnp.npy_intp outLen = (n + klen) // 2
     cdef double ss
-    cdef int i, k, limInf, limSup, x = 0, ox = 0, ks = 0
+    cdef cnp.npy_intp i, k, limInf, limSup, x = 0, ox = 0, ks = 0
     for i in range(outLen):
         ss = 0
         limInf = _int_max(0, x - klen + 1)
@@ -32,10 +32,10 @@ def _firdn_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _upfir_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = f.shape[0]
-    cdef int klen = h.shape[0]
-    cdef int outLen = 2 * n + klen - 2
-    cdef int x, limInf, limSup, k, ks
+    cdef cnp.npy_intp n = f.shape[0]
+    cdef cnp.npy_intp klen = h.shape[0]
+    cdef cnp.npy_intp outLen = 2 * n + klen - 2
+    cdef cnp.npy_intp x, limInf, limSup, k, ks
     cdef double ss
     for x in range(outLen):
         limInf = _int_max(0, x - klen + 1)
@@ -55,16 +55,16 @@ def _upfir_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _firdn_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
-    cdef int j
+    cdef cnp.npy_intp n = F.shape[0]
+    cdef cnp.npy_intp m = F.shape[1]
+    cdef cnp.npy_intp j
     for j in range(m):
         _firdn_vector(F[:, j], h, out[:, j])
 
 
 def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
+    cdef cnp.npy_intp n = F.shape[0]
+    cdef cnp.npy_intp m = F.shape[1]
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
 
@@ -93,9 +93,9 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
         weight for the weighted averaging
     """
 
-    cdef int a, b, c, x_pos, y_pos, z_pos
-    cdef int is_outside
-    cdef int neighborhoodsize = average.shape[0] // 2
+    cdef cnp.npy_intp a, b, c, x_pos, y_pos, z_pos
+    cdef cnp.npy_intp is_outside
+    cdef cnp.npy_intp neighborhoodsize = average.shape[0] // 2
     for a in range(average.shape[0]):
         for b in range(average.shape[1]):
             for c in range(average.shape[2]):

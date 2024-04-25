@@ -177,8 +177,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
         cnp.npy_intp nc = static.shape[2]
         cnp.npy_intp side = 2 * radius + 1
         cnp.npy_intp firstc, lastc, firstr, lastr, firsts, lasts
-        cnp.npy_intp s, r, c, it, sides, sider, sidec
-        double cnt
+        cnp.npy_intp s, r, c, it, sides, sider, sidec, cnt
         cnp.npy_intp ssss, sss, ss, rr, cc, prev_ss, prev_rr, prev_cc
         double Imean, Jmean, IJprods, Isq, Jsq
         double[:, :, :, :] temp = np.zeros((2, nr, nc, 5), dtype=np.float64)

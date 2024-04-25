@@ -9,6 +9,7 @@ project(
     'c_std=c99',
     'cpp_std=c++14',
     'optimization=2',
+    'warning_level=2',
   ],
 )
 

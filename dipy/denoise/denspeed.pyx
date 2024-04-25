@@ -1,4 +1,9 @@
 
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: wraparound=False
+
 import numpy as np
 cimport numpy as cnp
 
@@ -69,8 +74,6 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     return remove_padding(arrnlm, block_radius)
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
 def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
                 double[:, :, ::1] sigma, patch_radius=1, block_radius=5,
                 rician=True, num_threads=None):
@@ -83,7 +86,6 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     cdef:
         cnp.npy_intp i, j, k, I, J, K
         double[:, :, ::1] out = np.zeros_like(arr)
-        double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
         int threads_to_use = -1
@@ -119,9 +121,6 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     return np.sqrt(new)
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
-@cython.cdivision(True)
 cdef double process_block(double[:, :, ::1] arr,
                           cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
                           cnp.npy_intp B, cnp.npy_intp P, double[:, :, ::1] sigma) nogil:
@@ -261,8 +260,6 @@ def remove_padding(arr, padding):
                padding:shape[2] - padding]
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
 cdef cnp.npy_intp copy_block_3d(double * dest,
                                 cnp.npy_intp I,
                                 cnp.npy_intp J,

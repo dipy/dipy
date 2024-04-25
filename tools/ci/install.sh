@@ -5,7 +5,7 @@ source tools/ci/activate_env.sh
 
 set -ex
 
-PIPI="pip install --timeout=60 -Csetup-args=--vsenv -Ccompile-args=-v"
+PIPI="pip install --timeout=60 -Csetup-args=--vsenv -Csetup-args=--werror -Ccompile-args=-v "
 
 if [ "$USE_PRE" == "1" ] || [ "$USE_PRE" == true ]; then
     # --index-url takes priority over --extra-index-url, so that packages, and

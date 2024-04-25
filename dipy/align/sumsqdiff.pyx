@@ -247,8 +247,8 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                 if dpy_isinf(sigmasq) != 0:
                     xx = displacement_field[r, c, 0]
                     yy = displacement_field[r, c, 1]
-                    displacement_field[r, c, 0] = y[0] / nn
-                    displacement_field[r, c, 1] = y[1] / nn
+                    displacement_field[r, c, 0] = <floating>(y[0] / nn)
+                    displacement_field[r, c, 1] = <floating>(y[1] / nn)
                     xx -= displacement_field[r, c, 0]
                     yy -= displacement_field[r, c, 1]
                     opt = xx * xx + yy * yy
@@ -266,16 +266,16 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                             displacement_field[r, c, 0] = 0
                             displacement_field[r, c, 1] = 0
                         else:
-                            displacement_field[r, c, 0] = (b[0]) / nrm2
-                            displacement_field[r, c, 1] = (b[1]) / nrm2
+                            displacement_field[r, c, 0] = <floating>(b[0] / nrm2)
+                            displacement_field[r, c, 1] = <floating>(b[1] / nrm2)
                     else:
                         y[0] = b[0] + sigmasq * lambda_param * y[0]
                         y[1] = b[1] + sigmasq * lambda_param * y[1]
                         _solve_2d_symmetric_positive_definite(A, y, det, d)
                         xx = displacement_field[r, c, 0] - d[0]
                         yy = displacement_field[r, c, 1] - d[1]
-                        displacement_field[r, c, 0] = d[0]
-                        displacement_field[r, c, 1] = d[1]
+                        displacement_field[r, c, 0] = <floating>d[0]
+                        displacement_field[r, c, 1] = <floating>d[1]
                         opt = xx * xx + yy * yy
                         if max_displacement < opt:
                             max_displacement = opt
