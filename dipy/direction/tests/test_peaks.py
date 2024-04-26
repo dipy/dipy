@@ -726,9 +726,29 @@ def test_peaks_from_positions():
                                relative_peak_threshold=thresh,
                                min_separation_angle=min_angle)
 
-    # test the peaks at each voxel
+    # test the peaks at each voxel using int coordinates
     positions = np.array(list(product(range(3), range(3), range(3))))
     peaks = peaks_from_positions(positions, pam.odf, default_sphere,
+                                 relative_peak_threshold=thresh,
+                                 min_separation_angle=min_angle,
+                                 npeaks=npeaks)
+    peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
+    assert_array_almost_equal(pam.peak_dirs, peaks)
+
+    # test the peaks at each voxel using float coordinates
+    positions = np.array(list(product(range(3), range(3), range(3))))
+    peaks = peaks_from_positions(positions.astype(float), pam.odf,
+                                 default_sphere,
+                                 relative_peak_threshold=thresh,
+                                 min_separation_angle=min_angle,
+                                 npeaks=npeaks)
+    peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
+    assert_array_almost_equal(pam.peak_dirs, peaks)
+
+    # test the peaks at each voxel using double coordinates
+    positions = np.array(list(product(range(3), range(3), range(3))))
+    peaks = peaks_from_positions(positions.astype(np.float64), pam.odf,
+                                 default_sphere,
                                  relative_peak_threshold=thresh,
                                  min_separation_angle=min_angle,
                                  npeaks=npeaks)

@@ -612,6 +612,9 @@ def peaks_from_positions(positions, odfs, sphere, *, relative_peak_threshold=.5,
 
     peaks_arr = np.zeros((len(positions), npeaks, 3))
 
+    if (positions.dtype not in [np.float64, float]):
+        positions = positions.astype(float)
+
     for i, s in enumerate(positions):
         odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(odf, sphere, relative_peak_threshold,
