@@ -1,7 +1,7 @@
-import tempfile
 from itertools import repeat
 from multiprocessing import Pool
 from os import path
+import tempfile
 
 import numpy as np
 import scipy.optimize as opt
