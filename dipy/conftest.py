@@ -1,5 +1,6 @@
 """pytest initialization."""
 import importlib
+import os
 import re
 import warnings
 
@@ -20,6 +21,37 @@ np.set_printoptions(legacy='1.13')
 warnings.simplefilter(action="default", category=FutureWarning)
 # List of files that pytest should ignore
 collect_ignore = ["testing/decorators.py", "bench*.py", "**/benchmarks/*"]
+
+
+def pytest_addoption(parser):
+    parser.addoption("--warnings-as-errors", action="store_true",
+                     help="Make all uncaught warnings into errors.")
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus):
+    have_werrors = os.getenv('DIPY_WERRORS', False)
+    have_werrors = session.config.getoption('--warnings-as-errors', False)  \
+        or have_werrors
+    if have_werrors:
+        # Check if there were any warnings during the test session
+        reporter = session.config.pluginmanager.get_plugin('terminalreporter')
+        if reporter.stats.get("warnings", None):
+            session.exitstatus = 2
+
+
+@pytest.hookimpl
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    have_werrors = os.getenv('DIPY_WERRORS', False)
+    have_werrors = config.getoption('--warnings-as-errors', False) or  \
+        have_werrors
+    have_warnings = terminalreporter.stats.get("warnings", None)
+    if have_warnings and have_werrors:
+        terminalreporter.ensure_newline()
+        terminalreporter.section('Werrors', sep='=', red=True, bold=True)
+        terminalreporter.line('Warnings as errors: Activated. \n'
+                              f'{len(have_warnings)} warnings were raised and '
+                              'treated as errors. \n')
 
 
 def pytest_collect_file(parent, file_path):
