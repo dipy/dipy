@@ -3,7 +3,6 @@ from functools import partial
 import multiprocessing
 
 import numpy as np
-from numpy.lib.stride_tricks import as_strided
 from tqdm import tqdm
 
 from dipy.core.ndindex import ndindex
@@ -50,9 +49,10 @@ def multi_voxel_fit(single_voxel_fit):
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
         if engine == "serial":
-            bar = tqdm(total=np.sum(mask), position=0)
-            bar.set_description(f"Fitting reconstruction model",
-                                 "using serial execution")
+            bar = tqdm(total=np.sum(mask), position=0,
+                       disable=kwargs.get("verbose", True))
+            bar.set_description("Fitting reconstruction model",
+                                "using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
                     fit_array[ijk] = single_voxel_fit(self, data[ijk])
@@ -66,7 +66,7 @@ def multi_voxel_fit(single_voxel_fit):
                 "vox_per_chunk",
                 np.max([data_to_fit.shape[0] // n_jobs, 1]))
             chunks = [data_to_fit[ii:ii + vox_per_chunk]
-                    for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
+                      for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
             fit_array[np.where(mask)] = np.concatenate((
                 paramap(
                     _parallel_fit_worker,
