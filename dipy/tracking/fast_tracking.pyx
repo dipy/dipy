@@ -22,13 +22,13 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
-from dipy.tracking.tracking_parameters cimport TrackingParameters
+from dipy.tracking.tracking_parameters cimport TrackingParameters, func_ptr
 from dipy.tracking.tracker_probabilistic cimport probabilistic_tracker
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
-from libc.math cimport floor
+from libc.math cimport floor, ceil
 
 
 def generate_tractogram(double[:,::1] seed_positions,
@@ -41,7 +41,7 @@ def generate_tractogram(double[:,::1] seed_positions,
 
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
-        cnp.npy_intp _plen = np.ceil(_len * buffer_frac)
+        cnp.npy_intp _plen = int(ceil(_len * buffer_frac))
         cnp.npy_intp i,
         double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
         int* length_arr = <int*> malloc(_len * sizeof(int))
@@ -138,7 +138,7 @@ cdef int generate_local_streamline(double* seed,
     # forward tracking
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, pmf_gen):  # probabilistic_tracker
             break
         # update position
         for j in range(3):
@@ -160,7 +160,7 @@ cdef int generate_local_streamline(double* seed,
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
         ##### VOXDIR should be the real first direction #####
-        if probabilistic_tracker(&point[0], &voxdir[0], params, pmf_gen):
+        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, pmf_gen):  # probabilistic_tracker
             break
         # update position
         for j in range(3):

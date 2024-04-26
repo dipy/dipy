@@ -594,7 +594,7 @@ def reshape_peaks_for_visualization(peaks):
     if isinstance(peaks, PeaksAndMetrics):
         peaks = peaks.peak_dirs
 
-    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
+    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype("float32")
 
 
 def peaks_from_positions(
@@ -681,4 +681,3 @@ def peaks_from_positions(
         peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]
 
     return peaks_arr
-
