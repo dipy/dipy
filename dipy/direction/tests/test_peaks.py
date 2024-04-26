@@ -1,27 +1,33 @@
-
-import pickle
-import warnings
 from io import BytesIO
 from itertools import product
+import pickle
 from random import randint
+import warnings
 
 import numpy as np
-from numpy.testing import (assert_, assert_almost_equal,
-                           assert_array_almost_equal, assert_array_equal,
-                           assert_equal)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+)
 
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import HemiSphere, unit_icosahedron
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.data import default_sphere, get_fnames, get_sphere
-from dipy.direction.peaks import (peak_directions, peak_directions_nl,
-                                  peaks_from_model, peaks_from_positions,
-                                  reshape_peaks_for_visualization)
+from dipy.direction.peaks import (
+    peak_directions,
+    peak_directions_nl,
+    peaks_from_model,
+    peaks_from_positions,
+    reshape_peaks_for_visualization,
+)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.odf import OdfFit, OdfModel, gfa
-from dipy.reconst.shm import (CsaOdfModel, descoteaux07_legacy_msg,
-                              tournier07_legacy_msg)
+from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, tournier07_legacy_msg
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.testing.decorators import set_random_number_generator
 

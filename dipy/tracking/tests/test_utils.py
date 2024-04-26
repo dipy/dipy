@@ -9,13 +9,25 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import metrics
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.streamline import transform_streamlines
-from dipy.tracking.utils import (_min_at, connectivity_matrix, density_map,
-                                 length, max_angle_from_curvature,
-                                 min_radius_curvature_from_angle, ndbincount,
-                                 near_roi, path_length, random_seeds_from_mask,
-                                 reduce_labels, reduce_rois,
-                                 seeds_directions_pairs, seeds_from_mask,
-                                 target, target_line_based, unique_rows)
+from dipy.tracking.utils import (
+    _min_at,
+    connectivity_matrix,
+    density_map,
+    length,
+    max_angle_from_curvature,
+    min_radius_curvature_from_angle,
+    ndbincount,
+    near_roi,
+    path_length,
+    random_seeds_from_mask,
+    reduce_labels,
+    reduce_rois,
+    seeds_directions_pairs,
+    seeds_from_mask,
+    target,
+    target_line_based,
+    unique_rows,
+)
 from dipy.tracking.vox2track import streamline_mapping
 
 

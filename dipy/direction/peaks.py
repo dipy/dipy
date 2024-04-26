@@ -12,8 +12,11 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 from dipy.reconst.odf import gfa
-from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
-                                   search_descending)
+from dipy.reconst.recspeed import (
+    local_maxima,
+    remove_similar_vertices,
+    search_descending,
+)
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
@@ -606,8 +609,6 @@ def peaks_from_positions(positions, odfs, sphere, *, relative_peak_threshold=.5,
     -------
     peaks_arr : array (N, npeaks, 3)
     """
-    if positions.dtype is not np.float64:
-        positions = positions.astype(np.float64)
 
     peaks_arr = np.zeros((len(positions), npeaks, 3))
 

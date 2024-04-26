@@ -52,8 +52,8 @@ from functools import wraps
 from itertools import combinations, groupby
 from warnings import warn
 
-import numpy as np
 from nibabel.affines import apply_affine
+import numpy as np
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
