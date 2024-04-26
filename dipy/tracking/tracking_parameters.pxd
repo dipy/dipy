@@ -42,3 +42,5 @@ cdef class TrackingParameters:
 
     cdef public ShTrackingParameters sh
     cdef public ParallelTransportTrackingParameters ptt
+
+    cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil
