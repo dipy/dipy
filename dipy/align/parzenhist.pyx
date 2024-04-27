@@ -476,7 +476,7 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
 
     Parameters
     ----------
-    normalized : float
+    normalized : double
         normalized intensity
     nbins : int
         number of histogram bins
