@@ -264,7 +264,7 @@ cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
         cnp.npy_intp nclasses = mu.shape[0]
-        int i
+        cnp.npy_intp i
         double min_val
         double max_val
     min_val = image[0, 0, 0]

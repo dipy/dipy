@@ -147,7 +147,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double[3] position
         cdef int count
-        cdef int i
+        cdef cnp.npy_intp i
 
         # Initialize Frame
         self.frame[0][0] = init_dir[0]
@@ -364,7 +364,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double data_support = 0
         cdef double[3] tangent
         cdef int tries
-        cdef int i
+        cdef cnp.npy_intp i
 
         self.prepare_propagator(self.step_size)
 

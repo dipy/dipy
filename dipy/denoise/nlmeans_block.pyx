@@ -2,6 +2,7 @@ cimport cython
 from cython.view cimport array as cvarray
 from libc.math cimport sqrt, exp
 import numpy as np
+cimport numpy as cnp
 
 __all__ = ['firdn', 'upfir', 'nlmeans_block']
 
@@ -401,7 +402,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
     cdef double[:, :, :] variances = np.zeros_like(image)
     cdef double[:, :, :] Estimate = np.zeros_like(image)
     cdef double[:, :, :] Label = np.zeros_like(image)
-    cdef int i, j, k, ni, nj, nk
+    cdef cnp.npy_intp i, j, k, ni, nj, nk
     cdef double t1, t2
     cdef double epsilon = 0.00001
     cdef double mu1 = 0.95
