@@ -335,7 +335,7 @@ def subsegment(streamlines, max_segment_length):
             else:
                 # this should never happen because ns should be a positive
                 # int
-                assert(ns >= 0)
+                assert (ns >= 0)
         yield output_sl
 
 
@@ -1048,3 +1048,47 @@ def min_radius_curvature_from_angle(max_angle, step_size):
         max_angle = np.pi / 2.0
     min_radius_curvature = step_size / 2 / np.sin(max_angle / 2)
     return min_radius_curvature
+
+
+def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
+    """
+    Pair each seed to the corresponding peaks. If multiple peaks are available
+    the seed is repeated for each.
+
+    Parameters
+    ----------
+    positions : array, (N, 3)
+        Voxel coordinates of the N positions.
+    peaks : array (N, M, 3)
+        Peaks at each position
+    max_cross : int, optional
+        The maximum number of direction to track from each seed in crossing
+        voxels. By default all voxel peaks are used.
+
+    Returns
+    -------
+    seeds : array (K, 3)
+    directions : array (K, 3)
+    """
+
+    if (not len(positions.shape) == 2
+            or not len(peaks.shape) == 3
+            or not positions.shape[0] == peaks.shape[0]
+            or not positions.shape[1] == 3
+            or not peaks.shape[2] == 3
+            or not peaks.shape[1] > 0):
+        raise ValueError("The array shapes of the positions and peaks should"
+                         " be (N,3) and (N,M,3), respectively.")
+
+    seeds = []
+    directions = []
+
+    for i, s in enumerate(positions):
+        voxel_dirs_norm = np.linalg.norm(peaks[i, :, :], axis=1)
+        voxel_dirs = peaks[i, voxel_dirs_norm > 0, :] \
+            / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
+        for d in voxel_dirs[:max_cross, :]:
+            seeds.append(s)
+            directions.append(d)
+
+    return np.array(seeds), np.array(directions)
