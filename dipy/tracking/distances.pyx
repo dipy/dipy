@@ -105,7 +105,7 @@ cdef inline void cnormalized_3vec(float *vec_in, float *vec_out):
 
     """
     cdef float norm = cnorm_3vec(vec_in)
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(3):
         vec_out[i] = vec_in[i] / norm
 
@@ -117,7 +117,7 @@ def inner_3vecs(vec1, vec2):
 
 
 cdef inline float cinner_3vecs(float *vec1, float *vec2) noexcept nogil:
-    cdef int i
+    cdef cnp.npy_intp i
     cdef float ip = 0
     for i from 0<=i<3:
         ip += vec1[i]*vec2[i]
@@ -135,7 +135,7 @@ def sub_3vecs(vec1, vec2):
 
 
 cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
-    cdef int i
+    cdef cnp.npy_intp i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]-vec2[i]
 
@@ -151,7 +151,7 @@ def add_3vecs(vec1, vec2):
 
 
 cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
-    cdef int i
+    cdef cnp.npy_intp i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]+vec2[i]
 
@@ -165,7 +165,7 @@ def mul_3vecs(vec1, vec2):
     return vec_out
 
 cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
-    cdef int i
+    cdef cnp.npy_intp i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]*vec2[i]
 
@@ -177,7 +177,7 @@ def mul_3vec(a, vec):
     return vec_out
 
 cdef inline void cmul_3vec(float a, float *vec, float *vec_out) noexcept nogil:
-    cdef int i
+    cdef cnp.npy_intp i
     for i from 0<=i<3:
         vec_out[i] = a*vec[i]
 
@@ -1517,7 +1517,7 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     """
 
     cdef:
-        int i
+        cnp.npy_intp i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
 
     #for i in range(3):
@@ -1852,7 +1852,7 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     """
 
     cdef:
-        int i
+        cnp.npy_intp i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
     #for i in range(3):
     for i from 0<=i<3:
@@ -2071,7 +2071,7 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track,
         int tlen = len(track)
         int curr = 0
         float dist = 0
-        int i
+        cnp.npy_intp i
         int intersects = 0
 
     with nogil:
@@ -2127,7 +2127,7 @@ def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[fl
         int curr = 0
         int currp = 0
         float dist = 0
-        int i,j
+        cnp.npy_intp i,j
         int intersects=0
 
     with nogil:

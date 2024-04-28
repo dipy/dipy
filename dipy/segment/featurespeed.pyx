@@ -235,7 +235,7 @@ cdef class CenterOfMassFeature(CythonFeature):
 
     cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef int N = datum.shape[0], D = datum.shape[1]
-        cdef int i, d
+        cdef cnp.npy_intp i, d
 
         for d in range(D):
             out[0, d] = 0
@@ -356,7 +356,7 @@ cpdef infer_shape(Feature feature, data):
         return []
 
     shapes = []
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(0, len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         shapes.append(shape2tuple(feature.c_infer_shape(datum)))
@@ -393,7 +393,7 @@ cpdef extract(Feature feature, data):
     shapes = infer_shape(feature, data)
     features = [np.empty(shape, dtype=np.float32) for shape in shapes]
 
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         feature.c_extract(datum, features[i])

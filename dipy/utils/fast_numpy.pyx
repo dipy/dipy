@@ -16,7 +16,7 @@ cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) noexcep
 
 cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) noexcept nogil:
     cdef:
-        int i = 0
+        cnp.npy_intp i = 0
         cnp.float_t csum = 0
     for i in range(N):
         csum += arr_in[i]
@@ -25,14 +25,14 @@ cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) noexcept nogi
 
 cdef void copy_point(double * a, double * b) noexcept nogil:
     cdef:
-        int i = 0
+        cnp.npy_intp i = 0
     for i in range(3):
         b[i] = a[i]
 
 
 cdef void scalar_muliplication_point(double * a, double scalar) noexcept nogil:
     cdef:
-        int i = 0
+        cnp.npy_intp i = 0
     for i in range(3):
         a[i] *= scalar
 

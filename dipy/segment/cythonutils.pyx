@@ -25,7 +25,7 @@ cdef Shape shape_from_memview(Data data) noexcept nogil:
         structure containing information about the shape of `data`
     """
     cdef Shape shape
-    cdef int i
+    cdef cnp.npy_intp i
     shape.ndim = 0
     shape.size = 1
     for i in range(MAX_NDIM):
@@ -52,7 +52,7 @@ cdef Shape tuple2shape(dims) except *:
     """
     assert len(dims) < MAX_NDIM
     cdef Shape shape
-    cdef int i
+    cdef cnp.npy_intp i
     shape.ndim = len(dims)
     shape.size = np.prod(dims)
     for i in range(shape.ndim):
@@ -74,7 +74,7 @@ cdef shape2tuple(Shape shape):
     dims : tuple of int
         size of each dimension
     """
-    cdef int i
+    cdef cnp.npy_intp i
     dims = []
     for i in range(shape.ndim):
         dims.append(shape.dims[i])
@@ -101,7 +101,7 @@ cdef int same_shape(Shape shape1, Shape shape2) noexcept nogil:
         tells if the shape are equals
     """
 
-    cdef int i
+    cdef cnp.npy_intp i
     cdef int same_shape = True
 
     same_shape &= shape1.ndim == shape2.ndim
