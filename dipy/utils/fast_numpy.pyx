@@ -1,6 +1,8 @@
 # cython: boundscheck=False
 # cython: initializedcheck=False
 # cython: wraparound=False
+from libc.stdio cimport printf
+
 
 cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) noexcept nogil:
     cdef:
@@ -194,3 +196,10 @@ cpdef void seed(cnp.npy_uint32 s) noexcept nogil:
         random seed.
     """
     srand(s)
+
+
+cdef void print_c_array_pointer(double* arr, int size) noexcept nogil:
+    cdef int i
+    for i in range(size):
+        printf("%f, ", arr[i])
+    printf("\n\n\n")
