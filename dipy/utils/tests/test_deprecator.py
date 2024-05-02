@@ -120,8 +120,13 @@ def test_deprecate_with_version():
         warnings.simplefilter('always')
         npt.assert_equal(func(1, 2), None)
         npt.assert_equal(len(w), 1)
-    npt.assert_equal(func.__doc__,
-                     'Fake docstring.\n   \n   foo\n   \n   Some text.\n')
+    # Python 3.13 strips indents from docstrings
+    if sys.version_info < (3, 13):
+        npt.assert_equal(func.__doc__,
+                         'Fake docstring.\n   \n   foo\n   \n   Some text.\n')
+    else:
+        npt.assert_equal(func.__doc__,
+                         'Fake docstring.\n\nfoo\n\nSome text.\n')
 
     # Try some since and until versions
     func = dec('foo', '0.2')(func_no_doc)
@@ -150,13 +155,23 @@ def test_deprecate_with_version():
                      '* Raises {} as of version: 0.3\n'
                      .format(ExpiredDeprecationError))
     func = dec('foo', '0.2', '0.3')(func_doc_long)
-    npt.assert_equal(func.__doc__,
-                     'Fake docstring.\n   \n   foo\n   \n'
-                     '   * deprecated from version: 0.2\n'
-                     '   * Raises {} as of version: 0.3\n   \n'
-                     '   Some text.\n'
-                     .format(ExpiredDeprecationError))
-    npt.assert_raises(ExpiredDeprecationError, func)
+    # Python 3.13 strips indents from docstrings
+    if sys.version_info < (3, 13):
+        npt.assert_equal(func.__doc__,
+                         'Fake docstring.\n   \n   foo\n   \n'
+                         '   * deprecated from version: 0.2\n'
+                         '   * Raises {} as of version: 0.3\n   \n'
+                         '   Some text.\n'
+                         .format(ExpiredDeprecationError))
+        npt.assert_raises(ExpiredDeprecationError, func)
+    else:
+        npt.assert_equal(func.__doc__,
+                         'Fake docstring.\n\nfoo\n\n'
+                         '* deprecated from version: 0.2\n'
+                         '* Raises {} as of version: 0.3\n\n'
+                         'Some text.\n'
+                         .format(ExpiredDeprecationError))
+        npt.assert_raises(ExpiredDeprecationError, func)
 
     # Check different warnings and errors
     func = dec('foo', warn_class=UserWarning)(func_no_doc)
