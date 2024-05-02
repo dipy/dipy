@@ -1,4 +1,4 @@
-from logging import warn
+from logging import warning
 import warnings
 
 import nibabel as nib
