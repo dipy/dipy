@@ -10,11 +10,12 @@ This recursive method will avoid the common problem of the polar singularity,
 produced by 2d (lon-lat) parameterization methods.
 
 """
+
 from dipy.core.sphere import HemiSphere, unit_octahedron
 
 
 def create_unit_sphere(recursion_level=2):
-    """ Creates a unit sphere by subdividing a unit octahedron.
+    """Creates a unit sphere by subdividing a unit octahedron.
 
     Starts with a unit octahedron and subdivides the faces, projecting the
     resulting points onto the surface of a unit sphere.

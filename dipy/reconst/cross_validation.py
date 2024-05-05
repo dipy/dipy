@@ -39,16 +39,16 @@ def coeff_of_determination(data, model, axis=-1):
 
     """
     residuals = data - model
-    ss_err = np.sum(residuals ** 2, axis=axis)
+    ss_err = np.sum(residuals**2, axis=axis)
 
     demeaned_data = data - np.mean(data, axis=axis)[..., np.newaxis]
-    ss_tot = np.sum(demeaned_data ** 2, axis=axis)
+    ss_tot = np.sum(demeaned_data**2, axis=axis)
 
     # Don't divide by 0:
     if np.all(ss_tot == 0.0):
         return np.nan
 
-    return 100 * (1 - (ss_err/ss_tot))
+    return 100 * (1 - (ss_err / ss_tot))
 
 
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
@@ -95,7 +95,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
        multiple b-values with cross-validation. ISMRM 2014.
 
     """
-    rng = model_kwargs.pop('rng', np.random.default_rng())
+    _ = model_kwargs.pop("rng", np.random.default_rng())
 
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:
@@ -120,25 +120,25 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]
 
     # Pop the mask, if there is one, out here for use in every fold:
-    mask = model_kwargs.pop('mask', None)
+    mask = model_kwargs.pop("mask", None)
     gtgt = gt.gradient_table  # Shorthand
     for k in range(folds):
         fold_mask = np.ones(data_b.shape[-1], dtype=bool)
-        fold_idx = order[int(k * n_in_fold): int((k + 1) * n_in_fold)]
+        fold_idx = order[int(k * n_in_fold) : int((k + 1) * n_in_fold)]
         fold_mask[fold_idx] = False
         this_data = np.concatenate([data_0, data_b[..., fold_mask]], -1)
 
-        this_gtab = gtgt(np.hstack([gtab.bvals[gtab.b0s_mask],
-                                    nz_bval[fold_mask]]),
-                         np.concatenate([gtab.bvecs[gtab.b0s_mask],
-                                         nz_bvec[fold_mask]]))
-        left_out_gtab = gtgt(np.hstack([gtab.bvals[gtab.b0s_mask],
-                                        nz_bval[~fold_mask]]),
-                             np.concatenate([gtab.bvecs[gtab.b0s_mask],
-                                             nz_bvec[~fold_mask]]))
+        this_gtab = gtgt(
+            np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[fold_mask]]),
+            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[fold_mask]]),
+        )
+        left_out_gtab = gtgt(
+            np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[~fold_mask]]),
+            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[~fold_mask]]),
+        )
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data, mask=mask)
-        if not hasattr(this_fit, 'predict'):
+        if not hasattr(this_fit, "predict"):
             err_str = "Models of type: %s " % this_model.__class__
             err_str += "do not have an implementation of model prediction"
             err_str += " and do not support cross-validation"
@@ -146,8 +146,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
         this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)
 
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
-        prediction[..., idx_to_assign] =\
-            this_predict[..., np.sum(gtab.b0s_mask):]
+        prediction[..., idx_to_assign] = this_predict[..., np.sum(gtab.b0s_mask) :]
 
     # For the b0 measurements
     prediction[..., gtab.b0s_mask] = S0[..., None]

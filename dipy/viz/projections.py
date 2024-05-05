@@ -19,8 +19,18 @@ bm, has_basemap, _ = optional_package("mpl_toolkits.basemap")
 
 
 @doctest_skip_parser
-def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
-                cbar=True, tri=False, boundary=False, **basemap_args):
+def sph_project(
+    vertices,
+    val,
+    ax=None,
+    vmin=None,
+    vmax=None,
+    cmap=None,
+    cbar=True,
+    tri=False,
+    boundary=False,
+    **basemap_args,
+):
     """Draw a signal on a 2D projection of the sphere.
 
     Parameters
@@ -53,8 +63,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     --------
     >>> from dipy.data import default_sphere
     >>> verts = default_sphere.vertices
-    >>> _ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap  # noqa E501
-    """
+    >>> _ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
+    """  # noqa: E501
     if ax is None:
         fig, ax = plt.subplots(1)
     else:
@@ -64,10 +74,10 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     if cmap is None:
         cmap = matplotlib.cm.hot
 
-    basemap_args.setdefault('projection', 'ortho')
-    basemap_args.setdefault('lat_0', 0)
-    basemap_args.setdefault('lon_0', 0)
-    basemap_args.setdefault('resolution', 'c')
+    basemap_args.setdefault("projection", "ortho")
+    basemap_args.setdefault("lat_0", 0)
+    basemap_args.setdefault("lon_0", 0)
+    basemap_args.setdefault("resolution", "c")
 
     from mpl_toolkits.basemap import Basemap
 
@@ -76,8 +86,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
         m.drawmapboundary()
 
     # Rotate the coordinate system so that you are looking from the north pole:
-    verts_rot = np.array(
-        np.dot(np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
+    verts_rot = np.array(np.dot(np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
 
     # To get the orthographic projection, when the first coordinate is
     # positive:
@@ -104,9 +113,11 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     else:
         cmap_data = cmap._segmentdata
         red_interp, blue_interp, green_interp = (
-            interp.interp1d(np.array(cmap_data[gun])[:, 0],
-                            np.array(cmap_data[gun])[:, 1]) for gun in
-            ['red', 'blue', 'green'])
+            interp.interp1d(
+                np.array(cmap_data[gun])[:, 0], np.array(cmap_data[gun])[:, 1]
+            )
+            for gun in ["red", "blue", "green"]
+        )
 
         r = (val - my_min) / float(my_max - my_min)
 
@@ -119,17 +130,16 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
             red = red_interp(this_r)
             blue = blue_interp(this_r)
             green = green_interp(this_r)
-            m.plot(this_x, this_y, 'o',
-                   c=[red.item(), green.item(), blue.item()])
+            m.plot(this_x, this_y, "o", c=[red.item(), green.item(), blue.item()])
 
     if cbar:
         mappable = matplotlib.cm.ScalarMappable(cmap=cmap)
         mappable.set_array([my_min, my_max])
         # setup colorbar axes instance.
         pos = ax.get_position()
-        l, b, w, h = pos.bounds
+        ell, b, w, h = pos.bounds
         # setup colorbar axes
-        cax = fig.add_axes([l + w + 0.075, b, 0.05, h], frameon=False)
+        cax = fig.add_axes([ell + w + 0.075, b, 0.05, h], frameon=False)
         fig.colorbar(mappable, cax=cax)  # draw colorbar
 
     return ax

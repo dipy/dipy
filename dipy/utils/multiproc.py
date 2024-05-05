@@ -36,7 +36,7 @@ def determine_num_processes(num_processes):
         if num_processes < 0:
             return max(1, cpu_count() + num_processes + 1)
     except NotImplementedError:
-        warn("Cannot determine number of cores. Using only 1.")
+        warn("Cannot determine number of cores. Using only 1.", stacklevel=2)
         return 1
 
     return num_processes

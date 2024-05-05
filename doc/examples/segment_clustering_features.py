@@ -16,6 +16,7 @@ familiar with the tractography clustering framework, read the
 
 Let's import the necessary modules.
 """
+
 import numpy as np
 
 from dipy.segment.clustering import QuickBundles
@@ -48,12 +49,12 @@ def get_streamlines():
     from dipy.io.streamline import load_tractogram
     from dipy.tracking.streamline import Streamlines
 
-    fname = get_fnames('fornix')
-    fornix = load_tractogram(fname, 'same',
-                             bbox_valid_check=False).streamlines
+    fname = get_fnames("fornix")
+    fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
     streamlines = Streamlines(fornix)
     return streamlines
+
 
 ###############################################################################
 # .. _clustering-examples-IdentityFeature:
@@ -85,7 +86,7 @@ streamlines = set_number_of_points(streamlines, nb_points=12)
 # Create an instance of `IdentityFeature` and tell metric to use it.
 feature = IdentityFeature()
 metric = AveragePointwiseEuclideanMetric(feature=feature)
-qb = QuickBundles(threshold=10., metric=metric)
+qb = QuickBundles(threshold=10.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
@@ -117,7 +118,7 @@ streamlines = get_streamlines()  # Previously defined.
 # Streamlines will be resampled to 24 points on the fly.
 feature = ResampleFeature(nb_points=24)
 metric = AveragePointwiseEuclideanMetric(feature=feature)  # a.k.a. MDF
-qb = QuickBundles(threshold=10., metric=metric)
+qb = QuickBundles(threshold=10.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
@@ -149,7 +150,7 @@ streamlines = get_streamlines()  # Previously defined.
 feature = CenterOfMassFeature()
 metric = EuclideanMetric(feature)
 
-qb = QuickBundles(threshold=5., metric=metric)
+qb = QuickBundles(threshold=5.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Extract feature of every streamline.
@@ -167,8 +168,7 @@ scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
 scene.add(actor.point(centers[:, 0, :], colormap_full, point_radius=0.2))
-window.record(scene, n_frames=1, out_path='center_of_mass_feature.png',
-              size=(600, 600))
+window.record(scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -197,7 +197,7 @@ streamlines = get_streamlines()  # Previously defined.
 feature = MidpointFeature()
 metric = EuclideanMetric(feature)
 
-qb = QuickBundles(threshold=5., metric=metric)
+qb = QuickBundles(threshold=5.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Extract feature of every streamline.
@@ -215,8 +215,7 @@ scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
 scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
-window.record(scene, n_frames=1, out_path='midpoint_feature.png',
-              size=(600, 600))
+window.record(scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -243,7 +242,7 @@ streamlines = get_streamlines()  # Previously defined.
 
 feature = ArcLengthFeature()
 metric = EuclideanMetric(feature)
-qb = QuickBundles(threshold=2., metric=metric)
+qb = QuickBundles(threshold=2.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
@@ -257,7 +256,7 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='arclength_feature.png', size=(600, 600))
+window.record(scene, out_path="arclength_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -302,8 +301,7 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='vector_of_endpoints_feature.png',
-              size=(600, 600))
+window.record(scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

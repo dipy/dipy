@@ -7,12 +7,12 @@ from dipy.reconst.base import ReconstFit, ReconstModel
 
 
 class OdfModel(ReconstModel):
-
     """An abstract class to be sub-classed by specific odf models
 
     All odf models should provide a fit method which may take data as it's
     first and only argument.
     """
+
     def __init__(self, gtab):
         ReconstModel.__init__(self, gtab)
 
@@ -59,8 +59,8 @@ def gfa(samples):
     """
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
-    numer = np.array([n * (diff ** 2).sum(-1)])
-    denom = np.array([(n - 1) * (samples ** 2).sum(-1)])
+    numer = np.array([n * (diff**2).sum(-1)])
+    denom = np.array([(n - 1) * (samples**2).sum(-1)])
     result = np.ones_like(denom) * np.nan
     idx = np.where(denom > 0)
     result[idx] = np.sqrt(numer[idx] / denom[idx])
@@ -88,7 +88,7 @@ def minmax_normalize(samples, out=None):
 
     """
     if out is None:
-        dtype = np.common_type(np.empty(0, 'float32'), samples)
+        dtype = np.common_type(np.empty(0, "float32"), samples)
         out = np.array(samples, dtype=dtype, copy=True)
     else:
         out[:] = samples
@@ -96,5 +96,5 @@ def minmax_normalize(samples, out=None):
     sample_mins = np.min(samples, -1)[..., None]
     sample_maxes = np.max(samples, -1)[..., None]
     out -= sample_mins
-    out /= (sample_maxes - sample_mins)
+    out /= sample_maxes - sample_mins
     return out

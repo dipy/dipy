@@ -23,7 +23,7 @@ defined as
    \\mathbb{C} = \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle - \\langle
    \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D} \\rangle ,
 
-where $\otimes$ denotes a tensor outer product. $\mathbb{C}$ has 21 unique
+where $\\otimes$ denotes a tensor outer product. $\\mathbb{C}$ has 21 unique
 elements and enables the calculation of several microstructural parameters.
 
 Using the cumulant expansion, the diffusion-weighted signal can be approximated
@@ -33,7 +33,7 @@ as
    S \\approx S_0 \\exp \\left(- \\mathbf{b} : \\langle \\mathbf{D} \\rangle +
    \\frac{1}{2}(\\mathbf{b} \\otimes \\mathbf{b}) : \\mathbb{C} \\right) ,
 
-where $S_0$ is the signal without diffusion-weighting, $\mathbf{b}$ is the
+where $S_0$ is the signal without diffusion-weighting, $\\mathbf{b}$ is the
 b-tensor used in the acquisition, and $:$ denotes a tensor inner product.
 
 The model parameters $S_0$, $\\langle\\mathbf{D}\\rangle$, and $\\mathbb{C}$
@@ -95,11 +95,11 @@ import dipy.reconst.qti as qti
 # As QTI requires data with tensor-valued encoding, let's load an example
 # dataset acquired with q-space trajectory encoding (QTE):
 
-fdata, fbvals, fbvecs, fmask = get_fnames('qte_lte_pte')
+fdata, fbvals, fbvecs, fmask = get_fnames("qte_lte_pte")
 data, affine = load_nifti(fdata)
 mask, _ = load_nifti(fmask)
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+btens = np.array(["LTE" for i in range(61)] + ["PTE" for i in range(61)])
 gtab = gradient_table(bvals, bvecs, btens=btens)
 
 ###############################################################################
@@ -109,8 +109,8 @@ gtab = gradient_table(bvals, bvecs, btens=btens)
 # gradient table.
 
 ranks = np.array([np.linalg.matrix_rank(b) for b in gtab.btens])
-for i, l in enumerate(['b = 0', 'LTE', 'PTE']):
-    print('%s volumes with %s' % (np.sum(ranks == i), l))
+for i, ell in enumerate(["b = 0", "LTE", "PTE"]):
+    print("%s volumes with %s" % (np.sum(ranks == i), ell))
 
 ###############################################################################
 # Now that we have data acquired with tensor-valued diffusion encoding and the
@@ -139,41 +139,36 @@ fig, ax = plt.subplots(3, 4, figsize=(12, 9))
 background = np.zeros(data.shape[0:2])  # Black background for figures
 for i in range(3):
     for j in range(4):
-        ax[i, j].imshow(background, cmap='gray')
+        ax[i, j].imshow(background, cmap="gray")
         ax[i, j].set_xticks([])
         ax[i, j].set_yticks([])
 
-ax[0, 0].imshow(np.rot90(qtifit.md[:, :, z]), cmap='gray', vmin=0, vmax=3e-3)
-ax[0, 0].set_title('MD')
-ax[0, 1].imshow(np.rot90(qtifit.v_md[:, :, z]),
-                cmap='gray', vmin=0, vmax=.5e-6)
-ax[0, 1].set_title('V$_{MD}$')
-ax[0, 2].imshow(np.rot90(qtifit.v_shear[:, :, z]), cmap='gray', vmin=0,
-                vmax=.5e-6)
-ax[0, 2].set_title('V$_{shear}$')
-ax[0, 3].imshow(np.rot90(qtifit.v_iso[:, :, z]),
-                cmap='gray', vmin=0, vmax=1e-6)
-ax[0, 3].set_title('V$_{iso}$')
+ax[0, 0].imshow(np.rot90(qtifit.md[:, :, z]), cmap="gray", vmin=0, vmax=3e-3)
+ax[0, 0].set_title("MD")
+ax[0, 1].imshow(np.rot90(qtifit.v_md[:, :, z]), cmap="gray", vmin=0, vmax=0.5e-6)
+ax[0, 1].set_title("V$_{MD}$")
+ax[0, 2].imshow(np.rot90(qtifit.v_shear[:, :, z]), cmap="gray", vmin=0, vmax=0.5e-6)
+ax[0, 2].set_title("V$_{shear}$")
+ax[0, 3].imshow(np.rot90(qtifit.v_iso[:, :, z]), cmap="gray", vmin=0, vmax=1e-6)
+ax[0, 3].set_title("V$_{iso}$")
 
-ax[1, 0].imshow(np.rot90(qtifit.c_md[:, :, z]), cmap='gray', vmin=0, vmax=.25)
-ax[1, 0].set_title('C$_{MD}$')
-ax[1, 1].imshow(np.rot90(qtifit.c_mu[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[1, 1].set_title('C$_{μ}$ = μFA$^2$')
-ax[1, 2].imshow(np.rot90(qtifit.c_m[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[1, 2].set_title('C$_{M}$ = FA$^2$')
-ax[1, 3].imshow(np.rot90(qtifit.c_c[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[1, 3].set_title('C$_{c}$')
+ax[1, 0].imshow(np.rot90(qtifit.c_md[:, :, z]), cmap="gray", vmin=0, vmax=0.25)
+ax[1, 0].set_title("C$_{MD}$")
+ax[1, 1].imshow(np.rot90(qtifit.c_mu[:, :, z]), cmap="gray", vmin=0, vmax=1)
+ax[1, 1].set_title("C$_{μ}$ = μFA$^2$")
+ax[1, 2].imshow(np.rot90(qtifit.c_m[:, :, z]), cmap="gray", vmin=0, vmax=1)
+ax[1, 2].set_title("C$_{M}$ = FA$^2$")
+ax[1, 3].imshow(np.rot90(qtifit.c_c[:, :, z]), cmap="gray", vmin=0, vmax=1)
+ax[1, 3].set_title("C$_{c}$")
 
-ax[2, 0].imshow(np.rot90(qtifit.mk[:, :, z]), cmap='gray', vmin=0, vmax=1.5)
-ax[2, 0].set_title('MK')
-ax[2, 1].imshow(np.rot90(qtifit.k_bulk[:, :, z]),
-                cmap='gray', vmin=0, vmax=1.5)
-ax[2, 1].set_title('K$_{bulk}$')
-ax[2, 2].imshow(np.rot90(qtifit.k_shear[:, :, z]), cmap='gray', vmin=0,
-                vmax=1.5)
-ax[2, 2].set_title('K$_{shear}$')
-ax[2, 3].imshow(np.rot90(qtifit.k_mu[:, :, z]), cmap='gray', vmin=0, vmax=1.5)
-ax[2, 3].set_title('K$_{μ}$')
+ax[2, 0].imshow(np.rot90(qtifit.mk[:, :, z]), cmap="gray", vmin=0, vmax=1.5)
+ax[2, 0].set_title("MK")
+ax[2, 1].imshow(np.rot90(qtifit.k_bulk[:, :, z]), cmap="gray", vmin=0, vmax=1.5)
+ax[2, 1].set_title("K$_{bulk}$")
+ax[2, 2].imshow(np.rot90(qtifit.k_shear[:, :, z]), cmap="gray", vmin=0, vmax=1.5)
+ax[2, 2].set_title("K$_{shear}$")
+ax[2, 3].imshow(np.rot90(qtifit.k_mu[:, :, z]), cmap="gray", vmin=0, vmax=1.5)
+ax[2, 3].set_title("K$_{μ}$")
 
 fig.tight_layout()
 plt.show()

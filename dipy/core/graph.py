@@ -1,12 +1,11 @@
-""" A simple graph class """
+"""A simple graph class"""
+
 
 class Graph:
-    """ A simple graph class
-
-    """
+    """A simple graph class"""
 
     def __init__(self):
-        """ A graph class with nodes and edges :-)
+        """A graph class with nodes and edges :-)
 
         This class allows us to:
 
@@ -97,8 +96,8 @@ class Graph:
     def del_node_and_edges(self, n):
         try:
             del self.node[n]
-        except KeyError:
-            raise KeyError('node not in the graph')
+        except KeyError as e:
+            raise KeyError("node not in the graph") from e
 
         for s in self.succ[n]:
             del self.pred[s][n]
@@ -111,8 +110,8 @@ class Graph:
     def del_node(self, n):
         try:
             del self.node[n]
-        except KeyError:
-            raise KeyError('node not in the graph')
+        except KeyError as e:
+            raise KeyError("node not in the graph") from e
 
         for s in self.succ[n]:
             for p in self.pred[n]:

@@ -34,7 +34,7 @@ def ndindex(shape):
     else:
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
         try:
-            ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
+            ndi = np.nditer(x, flags=["multi_index", "zerosize_ok"], order="C")
         except AttributeError:
             # nditer only available in numpy >= 1.6
             yield from np.ndindex(*shape)

@@ -41,8 +41,7 @@ session = "HBNsiteRU"
 
 fdict, path = fetch_hbn([subject], include_afq=True)
 
-afq_path = op.join(
-    path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
+afq_path = op.join(path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
 
 ###############################################################################
 # We can use the `dipy.io` API to read in the bundles from file.
@@ -51,14 +50,18 @@ afq_path = op.join(
 # that contain the streamline coordinates.
 
 cst_l_file = op.join(
-    afq_path, "clean_bundles",
+    afq_path,
+    "clean_bundles",
     f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
-    "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk")
+    "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk",
+)
 
 arc_l_file = op.join(
-    afq_path, "clean_bundles",
+    afq_path,
+    "clean_bundles",
     f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
-    "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk")
+    "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
+)
 
 cst_l = load_trk(cst_l_file, "same", bbox_valid_check=False).streamlines
 arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
@@ -79,10 +82,8 @@ arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 
 model_arc_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_arc_l = load_trk(model_arc_l_file, "same",
-                       bbox_valid_check=False).streamlines
-model_cst_l = load_trk(model_cst_l_file, "same",
-                       bbox_valid_check=False).streamlines
+model_arc_l = load_trk(model_arc_l_file, "same", bbox_valid_check=False).streamlines
+model_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False).streamlines
 
 
 feature = ResampleFeature(nb_points=100)
@@ -117,8 +118,12 @@ oriented_arc_l = dts.orient_by_streamline(arc_l, standard_af_l)
 # this subject with the diffusion tensor imaging (DTI) model.
 
 fa, fa_affine = load_nifti(
-    op.join(afq_path, f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
-            "-preproc_dwi_model-DTI_FA.nii.gz"))
+    op.join(
+        afq_path,
+        f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
+        "-preproc_dwi_model-DTI_FA.nii.gz",
+    )
+)
 
 ###############################################################################
 # As mentioned at the outset, we would like to downweight the streamlines that
@@ -131,11 +136,9 @@ w_arc_l = dsa.gaussian_weights(oriented_arc_l)
 ###############################################################################
 # And then use the weights to calculate the tract profiles for each bundle
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine,
-                                weights=w_cst_l)
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine, weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_arc_l, fa_affine,
-                               weights=w_arc_l)
+profile_af_l = dsa.afq_profile(fa, oriented_arc_l, fa_affine, weights=w_arc_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 

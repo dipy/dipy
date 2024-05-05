@@ -29,8 +29,8 @@ from dipy.viz import actor, window
 # description of these steps, please refer to the CSA Probabilistic Tracking
 # and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
 
 data, affine = load_nifti(hardi_fname)
 labels = load_nifti_data(label_fname)
@@ -39,11 +39,15 @@ gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
-csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                             relative_peak_threshold=.8,
-                             min_separation_angle=45,
-                             mask=white_matter)
-stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
+csa_peaks = peaks_from_model(
+    csa_model,
+    data,
+    default_sphere,
+    relative_peak_threshold=0.8,
+    min_separation_angle=45,
+    mask=white_matter,
+)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 
 ###############################################################################
 # We will use a slice of the anatomically-based corpus callosum ROI as our
@@ -54,8 +58,7 @@ stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 # Make a streamline bundle model of the corpus callosum ROI connectivity
-streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
-                            step_size=2)
+streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine, step_size=2)
 streamlines = Streamlines(streamlines)
 
 ###############################################################################
@@ -80,15 +83,16 @@ scene = window.Scene()
 hue = [0.5, 1]
 saturation = [0.0, 1.0]
 
-lut_cmap = actor.colormap_lookup_table(scale_range=(cci.min(), cci.max()/4),
-                                       hue_range=hue,
-                                       saturation_range=saturation)
+lut_cmap = actor.colormap_lookup_table(
+    scale_range=(cci.min(), cci.max() / 4), hue_range=hue, saturation_range=saturation
+)
 
 bar3 = actor.scalar_bar(lut_cmap)
 scene.add(bar3)
 
-stream_actor = actor.line(long_streamlines, cci, linewidth=0.1,
-                          lookup_colormap=lut_cmap)
+stream_actor = actor.line(
+    long_streamlines, cci, linewidth=0.1, lookup_colormap=lut_cmap
+)
 scene.add(stream_actor)
 
 ###############################################################################
@@ -98,8 +102,7 @@ scene.add(stream_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path='cci_streamlines.png',
-              size=(800, 800))
+window.record(scene, out_path="cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -120,10 +123,10 @@ window.record(scene, out_path='cci_streamlines.png',
 # for them. These outliers can be removed by thresholding on the CCI metric.
 
 fig, ax = plt.subplots(1)
-ax.hist(cci, bins=100, histtype='step')
-ax.set_xlabel('CCI')
-ax.set_ylabel('# streamlines')
-fig.savefig('cci_histogram.png')
+ax.hist(cci, bins=100, histtype="step")
+ax.set_xlabel("CCI")
+ax.set_ylabel("# streamlines")
+fig.savefig("cci_histogram.png")
 
 
 ###############################################################################
@@ -150,8 +153,7 @@ scene.add(keep_streamlines_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path='filtered_cci_streamlines.png',
-              size=(800, 800))
+window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

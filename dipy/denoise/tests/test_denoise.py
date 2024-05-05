@@ -5,9 +5,7 @@ from dipy.io.image import load_nifti
 
 
 def test_denoise():
-    """
-
-    """
+    """ """
     fdata, fbval, fbvec = dpd.get_fnames()
     # Test on 4D image:
     data, _ = load_nifti(fdata)

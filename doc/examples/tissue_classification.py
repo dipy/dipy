@@ -28,9 +28,9 @@ from dipy.segment.tissue import TissueClassifierHMRF
 ###############################################################################
 # First we fetch the T1 volume from the Syn dataset and determine its shape.
 
-t1_fname, _, _ = get_fnames('tissue_data')
+t1_fname, _, _ = get_fnames("tissue_data")
 t1 = load_nifti_data(t1_fname)
-print('t1.shape (%d, %d, %d)' % t1.shape)
+print("t1.shape (%d, %d, %d)" % t1.shape)
 
 ###############################################################################
 # We have fetched the T1 volume. Now we will look at the axial and coronal
@@ -40,14 +40,14 @@ fig = plt.figure()
 a = fig.add_subplot(1, 2, 1)
 img_ax = np.rot90(t1[..., 89])
 imgplot = plt.imshow(img_ax, cmap="gray")
-a.axis('off')
-a.set_title('Axial')
+a.axis("off")
+a.set_title("Axial")
 a = fig.add_subplot(1, 2, 2)
 img_cor = np.rot90(t1[:, 128, :])
 imgplot = plt.imshow(img_cor, cmap="gray")
-a.axis('off')
-a.set_title('Coronal')
-plt.savefig('t1_image.png', bbox_inches='tight', pad_inches=0)
+a.axis("off")
+a.set_title("Coronal")
+plt.savefig("t1_image.png", bbox_inches="tight", pad_inches=0)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -83,21 +83,21 @@ hmrf = TissueClassifierHMRF()
 initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta)
 
 t1 = time.time()
-total_time = t1-t0
-print('Total time:' + str(total_time))
+total_time = t1 - t0
+print("Total time:" + str(total_time))
 
 fig = plt.figure()
 a = fig.add_subplot(1, 2, 1)
 img_ax = np.rot90(final_segmentation[..., 89])
 imgplot = plt.imshow(img_ax)
-a.axis('off')
-a.set_title('Axial')
+a.axis("off")
+a.set_title("Axial")
 a = fig.add_subplot(1, 2, 2)
 img_cor = np.rot90(final_segmentation[:, 128, :])
 imgplot = plt.imshow(img_cor)
-a.axis('off')
-a.set_title('Coronal')
-plt.savefig('final_seg.png', bbox_inches='tight', pad_inches=0)
+a.axis("off")
+a.set_title("Coronal")
+plt.savefig("final_seg.png", bbox_inches="tight", pad_inches=0)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -112,19 +112,19 @@ fig = plt.figure()
 a = fig.add_subplot(1, 3, 1)
 img_ax = np.rot90(PVE[..., 89, 0])
 imgplot = plt.imshow(img_ax, cmap="gray")
-a.axis('off')
-a.set_title('CSF')
+a.axis("off")
+a.set_title("CSF")
 a = fig.add_subplot(1, 3, 2)
 img_cor = np.rot90(PVE[:, :, 89, 1])
 imgplot = plt.imshow(img_cor, cmap="gray")
-a.axis('off')
-a.set_title('Gray Matter')
+a.axis("off")
+a.set_title("Gray Matter")
 a = fig.add_subplot(1, 3, 3)
 img_cor = np.rot90(PVE[:, :, 89, 2])
 imgplot = plt.imshow(img_cor, cmap="gray")
-a.axis('off')
-a.set_title('White Matter')
-plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
+a.axis("off")
+a.set_title("White Matter")
+plt.savefig("probabilities.png", bbox_inches="tight", pad_inches=0)
 plt.show()
 
 ###############################################################################

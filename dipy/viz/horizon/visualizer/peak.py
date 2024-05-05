@@ -5,7 +5,7 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.9.0")
+fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
 if has_fury:
     from fury.colormap import colormap_lookup_table
     from fury.lib import (
@@ -26,12 +26,14 @@ if has_fury:
     )
     from fury.utils import apply_affine, numpy_to_vtk_colors, numpy_to_vtk_points
 else:
+
     class Actor:
         pass
 
     def calldata_type(func):
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
 
     def VTK_OBJECT(*args):
@@ -89,7 +91,6 @@ class PeakActor(Actor):
         linewidth=1,
         symmetric=True,
     ):
-
         if affine is not None:
             w_pos = apply_affine(affine, np.asarray(indices).T)
 
@@ -108,8 +109,9 @@ class PeakActor(Actor):
                 xyz = np.asarray(center)
             else:
                 xyz = w_pos[idx, :]
-            valid_peaks = np.nonzero(np.abs(valid_dirs[idx, :, :])
-                                     .max(axis=-1) > 0.0)[0]
+            valid_peaks = np.nonzero(np.abs(valid_dirs[idx, :, :]).max(axis=-1) > 0.0)[
+                0
+            ]
             for direction in valid_peaks:
                 if values is not None:
                     pv = values[center][direction]
@@ -148,13 +150,13 @@ class PeakActor(Actor):
         self.__mapper.SetInputData(poly_data)
         self.__mapper.ScalarVisibilityOn()
         self.__mapper.SetScalarModeToUsePointFieldData()
-        self.__mapper.SelectColorArray('colors')
+        self.__mapper.SelectColorArray("colors")
         self.__mapper.Update()
 
         self.SetMapper(self.__mapper)
 
-        attribute_to_actor(self, centers_array, 'center')
-        attribute_to_actor(self, diffs_array, 'diff')
+        attribute_to_actor(self, centers_array, "center")
+        attribute_to_actor(self, diffs_array, "diff")
 
         vs_var_dec = """
             in vec3 center;
@@ -168,17 +170,14 @@ class PeakActor(Actor):
             uniform vec3 lowRanges;
             uniform vec3 highRanges;
             """
-        orient_to_rgb = import_fury_shader(pjoin('utils',
-                                                 'orient_to_rgb.glsl'))
+        orient_to_rgb = import_fury_shader(pjoin("utils", "orient_to_rgb.glsl"))
         visible_cross_section = import_fury_shader(
-            pjoin('interaction', 'visible_cross_section.glsl')
+            pjoin("interaction", "visible_cross_section.glsl")
         )
-        visible_range = import_fury_shader(pjoin('interaction',
-                                                 'visible_range.glsl'))
+        visible_range = import_fury_shader(pjoin("interaction", "visible_range.glsl"))
 
         vs_dec = compose_shader([vs_var_dec, orient_to_rgb])
-        fs_dec = compose_shader([fs_var_dec, visible_cross_section,
-                                 visible_range])
+        fs_dec = compose_shader([fs_var_dec, visible_cross_section, visible_range])
 
         vs_impl = """
             centerVertexMCVSOutput = center;
@@ -201,9 +200,9 @@ class PeakActor(Actor):
             }
             """
 
-        shader_to_actor(self, 'vertex', decl_code=vs_dec, impl_code=vs_impl)
-        shader_to_actor(self, 'fragment', decl_code=fs_dec)
-        shader_to_actor(self, 'fragment', impl_code=fs_impl, block='light')
+        shader_to_actor(self, "vertex", decl_code=vs_dec, impl_code=vs_impl)
+        shader_to_actor(self, "fragment", decl_code=fs_dec)
+        shader_to_actor(self, "fragment", impl_code=fs_impl, block="light")
 
         # Color scale with a lookup table
         if colors_are_scalars:
@@ -220,7 +219,7 @@ class PeakActor(Actor):
         if self.__global_opacity >= 0:
             self.GetProperty().SetOpacity(self.__global_opacity)
 
-        self.__min_centers = np.zeros(shape=(3, ))
+        self.__min_centers = np.zeros(shape=(3,))
         self.__max_centers = np.array(directions.shape[:3])
 
         self.__is_range = True
@@ -235,10 +234,10 @@ class PeakActor(Actor):
     @calldata_type(VTK_OBJECT)
     def __display_peaks_vtk_callback(self, caller, event, calldata=None):
         if calldata is not None:
-            calldata.SetUniformi('isRange', self.__is_range)
-            calldata.SetUniform3f('highRanges', self.__high_ranges)
-            calldata.SetUniform3f('lowRanges', self.__low_ranges)
-            calldata.SetUniform3f('crossSection', self.__cross_section)
+            calldata.SetUniformi("isRange", self.__is_range)
+            calldata.SetUniform3f("highRanges", self.__high_ranges)
+            calldata.SetUniform3f("lowRanges", self.__low_ranges)
+            calldata.SetUniform3f("crossSection", self.__cross_section)
 
     def display_cross_section(self, x, y, z):
         if self.__is_range:
@@ -338,15 +337,15 @@ def peak(
     """
     if peaks_dirs.ndim != 5:
         raise ValueError(
-            'Invalid peak directions. The shape of the structure '
-            'must be (XxYxZxDx3). Your data has {} dimensions.'
-            ''.format(peaks_dirs.ndim)
+            "Invalid peak directions. The shape of the structure "
+            "must be (XxYxZxDx3). Your data has {} dimensions."
+            "".format(peaks_dirs.ndim)
         )
     if peaks_dirs.shape[4] != 3:
         raise ValueError(
-            'Invalid peak directions. The shape of the last '
-            'dimension must be 3. Your data has a last dimension '
-            'of {}.'.format(peaks_dirs.shape[4])
+            "Invalid peak directions. The shape of the last "
+            "dimension must be 3. Your data has a last dimension "
+            "of {}.".format(peaks_dirs.shape[4])
         )
 
     dirs_shape = peaks_dirs.shape
@@ -354,32 +353,34 @@ def peak(
     if peaks_values is not None:
         if peaks_values.ndim != 4:
             raise ValueError(
-                'Invalid peak values. The shape of the structure '
-                'must be (XxYxZxD). Your data has {} dimensions.'
-                ''.format(peaks_values.ndim)
+                "Invalid peak values. The shape of the structure "
+                "must be (XxYxZxD). Your data has {} dimensions."
+                "".format(peaks_values.ndim)
             )
         vals_shape = peaks_values.shape
         if vals_shape != dirs_shape[:4]:
             raise ValueError(
-                'Invalid peak values. The shape of the values '
-                'must coincide with the shape of the directions.'
+                "Invalid peak values. The shape of the values "
+                "must coincide with the shape of the directions."
             )
 
     valid_mask = np.abs(peaks_dirs).max(axis=(-2, -1)) > 0
     if mask is not None:
         if mask.ndim != 3:
             warnings.warn(
-                'Invalid mask. The mask must be a 3D array. The '
-                'passed mask has {} dimensions. Ignoring passed '
-                'mask.'.format(mask.ndim),
+                "Invalid mask. The mask must be a 3D array. The "
+                "passed mask has {} dimensions. Ignoring passed "
+                "mask.".format(mask.ndim),
                 UserWarning,
+                stacklevel=2,
             )
         elif mask.shape != dirs_shape[:3]:
             warnings.warn(
-                'Invalid mask. The shape of the mask must coincide '
-                'with the shape of the directions. Ignoring passed '
-                'mask.',
+                "Invalid mask. The shape of the mask must coincide "
+                "with the shape of the directions. Ignoring passed "
+                "mask.",
                 UserWarning,
+                stacklevel=2,
             )
         else:
             valid_mask = np.logical_and(valid_mask, mask)
@@ -437,7 +438,7 @@ def _peaks_colors_from_points(points, colors=None, points_per_line=2):
     num_lines = num_pnts // points_per_line
     colors_are_scalars = False
     global_opacity = 1
-    if colors is None or colors == 'rgb_standard':
+    if colors is None or colors == "rgb_standard":
         # Automatic RGB colors
         colors = np.asarray((0, 0, 0))
         color_array = numpy_to_vtk_colors(np.tile(255 * colors, (num_pnts, 1)))
@@ -450,8 +451,7 @@ def _peaks_colors_from_points(points, colors=None, points_per_line=2):
         if len(colors) == num_lines:
             pnts_colors = np.repeat(colors, points_per_line, axis=0)
             if colors.ndim == 1:  # Scalar per line
-                color_array = numpy_support.numpy_to_vtk(pnts_colors,
-                                                         deep=True)
+                color_array = numpy_support.numpy_to_vtk(pnts_colors, deep=True)
                 colors_are_scalars = True
             elif colors.ndim == 2:  # RGB(A) color per line
                 global_opacity = 1 if colors.shape[1] == 3 else -1
@@ -464,7 +464,7 @@ def _peaks_colors_from_points(points, colors=None, points_per_line=2):
                 global_opacity = 1 if colors.shape[1] == 3 else -1
                 color_array = numpy_to_vtk_colors(255 * colors)
 
-    color_array.SetName('colors')
+    color_array.SetName("colors")
     return color_array, colors_are_scalars, global_opacity
 
 
@@ -501,15 +501,12 @@ def _points_to_vtk_cells(points, points_per_line=2):
     this actor the creation of this array requires a 2 points padding
     between indices.
     """
-    offset = np.asarray(list(range(0, num_pnts + 1, points_per_line)),
-                        dtype=int)
+    offset = np.asarray(list(range(0, num_pnts + 1, points_per_line)), dtype=int)
 
     vtk_array_type = numpy_support.get_vtk_array_type(connectivity.dtype)
     cell_array.SetData(
-        numpy_support.numpy_to_vtk(offset, deep=True,
-                                   array_type=vtk_array_type),
-        numpy_support.numpy_to_vtk(connectivity, deep=True,
-                                   array_type=vtk_array_type),
+        numpy_support.numpy_to_vtk(offset, deep=True, array_type=vtk_array_type),
+        numpy_support.numpy_to_vtk(connectivity, deep=True, array_type=vtk_array_type),
     )
 
     cell_array.SetNumberOfCells(num_cells)

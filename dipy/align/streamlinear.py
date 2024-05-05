@@ -23,18 +23,27 @@ from dipy.tracking.streamline import (
     unlist_streamlines,
 )
 
-DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
-                  (-45, 45), (-45, 45), (-45, 45),
-                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
-                  (-10, 10), (-10, 10), (-10, 10)]
+DEFAULT_BOUNDS = [
+    (-35, 35),
+    (-35, 35),
+    (-35, 35),
+    (-45, 45),
+    (-45, 45),
+    (-45, 45),
+    (0.6, 1.4),
+    (0.6, 1.4),
+    (0.6, 1.4),
+    (-10, 10),
+    (-10, 10),
+    (-10, 10),
+]
 
 logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
-
     def __init__(self, num_threads=None):
-        """ An abstract class for the metric used for streamline registration.
+        """An abstract class for the metric used for streamline registration.
 
         If the two sets of streamlines match exactly then method ``distance``
         of this object should be minimum.
@@ -60,13 +69,12 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def distance(self, xopt):
-        """ calculate distance for current set of parameters.
-        """
+        """calculate distance for current set of parameters."""
         pass
 
 
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
-    """ Bundle-based Minimum Distance aka BMD
+    """Bundle-based Minimum Distance aka BMD
 
     This is the cost function used by the StreamlineLinearRegistration.
 
@@ -83,7 +91,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
     """
 
     def setup(self, static, moving):
-        """ Setup static and moving sets of streamlines.
+        """Setup static and moving sets of streamlines.
 
         Parameters
         ----------
@@ -102,15 +110,16 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
     def _set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
-        self.static_centered_pts = np.ascontiguousarray(static_centered_pts,
-                                                        dtype=np.float64)
+        self.static_centered_pts = np.ascontiguousarray(
+            static_centered_pts, dtype=np.float64
+        )
         self.block_size = st_idx[0]
 
     def _set_moving(self, moving):
         self.moving_centered_pts, _ = unlist_streamlines(moving)
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric.
+        """Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -118,15 +127,17 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             List of affine parameters as an 1D vector,
 
         """
-        return bundle_min_distance_fast(xopt,
-                                        self.static_centered_pts,
-                                        self.moving_centered_pts,
-                                        self.block_size,
-                                        self.num_threads)
+        return bundle_min_distance_fast(
+            xopt,
+            self.static_centered_pts,
+            self.moving_centered_pts,
+            self.block_size,
+            self.num_threads,
+        )
 
 
 class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
-    """ Bundle-based Minimum Distance aka BMD
+    """Bundle-based Minimum Distance aka BMD
 
     This is the cost function used by the StreamlineLinearRegistration
 
@@ -143,7 +154,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
     """
 
     def setup(self, static, moving):
-        """ Setup static and moving sets of streamlines.
+        """Setup static and moving sets of streamlines.
 
         Parameters
         ----------
@@ -164,7 +175,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
         self.moving = moving
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric.
+        """Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -175,7 +186,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
 
 class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
-    """ Asymmetric Bundle-based Minimum distance.
+    """Asymmetric Bundle-based Minimum distance.
 
     This is a cost function that can be used by the
     StreamlineLinearRegistration class.
@@ -183,7 +194,7 @@ class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
     """
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric.
+        """Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -191,14 +202,13 @@ class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
             List of affine parameters as an 1D vector
 
         """
-        return bundle_min_distance_asymmetric_fast(xopt,
-                                                   self.static_centered_pts,
-                                                   self.moving_centered_pts,
-                                                   self.block_size)
+        return bundle_min_distance_asymmetric_fast(
+            xopt, self.static_centered_pts, self.moving_centered_pts, self.block_size
+        )
 
 
 class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
-    """ Bundle-based Sum Distance aka BMD
+    """Bundle-based Sum Distance aka BMD
 
     This is a cost function that can be used by the
     StreamlineLinearRegistration class.
@@ -215,7 +225,7 @@ class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
     """
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric
+        """Distance calculated from this Metric
 
         Parameters
         ----------
@@ -226,7 +236,7 @@ class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
 
 
 class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
-    """ Bundle-based Minimum Distance for joint optimization.
+    """Bundle-based Minimum Distance for joint optimization.
 
     This cost function is used by the StreamlineLinearRegistration class when
     running halfway streamline linear registration for unbiased groupwise
@@ -248,7 +258,7 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
     """
 
     def setup(self, static, moving):
-        """ Setup static and moving sets of streamlines.
+        """Setup static and moving sets of streamlines.
 
         Parameters
         ----------
@@ -266,7 +276,7 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
         self.moving = moving
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric.
+        """Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -276,9 +286,10 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
             parameters for each bundle.
         """
         # Define halfway space transformations
-        x_static = np.concatenate((xopt[0:6]/2, (1+xopt[6:9])/2, xopt[9:12]/2))
-        x_moving = np.concatenate((-xopt[0:6]/2, 2/(1+xopt[6:9]),
-                                   -xopt[9:12]/2))
+        x_static = np.concatenate((xopt[0:6] / 2, (1 + xopt[6:9]) / 2, xopt[9:12] / 2))
+        x_moving = np.concatenate(
+            (-xopt[0:6] / 2, 2 / (1 + xopt[6:9]), -xopt[9:12] / 2)
+        )
 
         # Move static bundle to the halfway space
         aff_static = compose_matrix44(x_static)
@@ -289,11 +300,18 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
 
 
 class StreamlineLinearRegistration:
-
-    def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
-                 bounds=None, verbose=False, options=None, evolution=False,
-                 num_threads=None):
-        r""" Linear registration of 2 sets of streamlines [Garyfallidis15]_.
+    def __init__(
+        self,
+        metric=None,
+        x0="rigid",
+        method="L-BFGS-B",
+        bounds=None,
+        verbose=False,
+        options=None,
+        evolution=False,
+        num_threads=None,
+    ):
+        r"""Linear registration of 2 sets of streamlines [Garyfallidis15]_.
 
         Parameters
         ----------
@@ -387,14 +405,14 @@ class StreamlineLinearRegistration:
 
         self.verbose = verbose
         self.method = method
-        if self.method not in ['Powell', 'L-BFGS-B']:
-            raise ValueError('Only Powell and L-BFGS-B can be used')
+        if self.method not in ["Powell", "L-BFGS-B"]:
+            raise ValueError("Only Powell and L-BFGS-B can be used")
         self.bounds = bounds
         self.options = options
         self.evolution = evolution
 
     def optimize(self, static, moving, mat=None):
-        """ Find the minimum of the provided metric.
+        """Find the minimum of the provided metric.
 
         Parameters
         ----------
@@ -413,26 +431,28 @@ class StreamlineLinearRegistration:
         map : StreamlineRegistrationMap
 
         """
-        msg = 'need to have the same number of points. Use '
-        msg += 'set_number_of_points from dipy.tracking.streamline'
+        msg = "need to have the same number of points. Use "
+        msg += "set_number_of_points from dipy.tracking.streamline"
 
         if not np.all(np.array(list(map(len, static))) == static[0].shape[0]):
-            raise ValueError('Static streamlines ' + msg)
+            raise ValueError("Static streamlines " + msg)
 
         if not np.all(np.array(list(map(len, moving))) == moving[0].shape[0]):
-            raise ValueError('Moving streamlines ' + msg)
+            raise ValueError("Moving streamlines " + msg)
 
         if not np.all(np.array(list(map(len, moving))) == static[0].shape[0]):
-            raise ValueError('Static and moving streamlines ' + msg)
+            raise ValueError("Static and moving streamlines " + msg)
 
         if mat is None:
             static_centered, static_shift = center_streamlines(static)
             moving_centered, moving_shift = center_streamlines(moving)
-            static_mat = compose_matrix44([static_shift[0], static_shift[1],
-                                           static_shift[2], 0, 0, 0])
+            static_mat = compose_matrix44(
+                [static_shift[0], static_shift[1], static_shift[2], 0, 0, 0]
+            )
 
-            moving_mat = compose_matrix44([-moving_shift[0], -moving_shift[1],
-                                           -moving_shift[2], 0, 0, 0])
+            moving_mat = compose_matrix44(
+                [-moving_shift[0], -moving_shift[1], -moving_shift[2], 0, 0, 0]
+            )
         else:
             static_centered = static
             moving_centered = transform_streamlines(moving, mat)
@@ -443,26 +463,36 @@ class StreamlineLinearRegistration:
 
         distance = self.metric.distance
 
-        if self.method == 'Powell':
-
+        if self.method == "Powell":
             if self.options is None:
-                self.options = {'xtol': 1e-6, 'ftol': 1e-6, 'maxiter': 1e6}
+                self.options = {"xtol": 1e-6, "ftol": 1e-6, "maxiter": 1e6}
 
-            opt = Optimizer(distance, self.x0.tolist(),
-                            method=self.method, options=self.options,
-                            evolution=self.evolution)
+            opt = Optimizer(
+                distance,
+                self.x0.tolist(),
+                method=self.method,
+                options=self.options,
+                evolution=self.evolution,
+            )
 
-        if self.method == 'L-BFGS-B':
-
+        if self.method == "L-BFGS-B":
             if self.options is None:
-                self.options = {'maxcor': 10, 'ftol': 1e-7,
-                                'gtol': 1e-5, 'eps': 1e-8,
-                                'maxiter': 100}
+                self.options = {
+                    "maxcor": 10,
+                    "ftol": 1e-7,
+                    "gtol": 1e-5,
+                    "eps": 1e-8,
+                    "maxiter": 100,
+                }
 
-            opt = Optimizer(distance, self.x0.tolist(),
-                            method=self.method,
-                            bounds=self.bounds, options=self.options,
-                            evolution=self.evolution)
+            opt = Optimizer(
+                distance,
+                self.x0.tolist(),
+                method=self.method,
+                bounds=self.bounds,
+                options=self.options,
+                evolution=self.evolution,
+            )
         if self.verbose:
             opt.print_summary()
 
@@ -475,55 +505,55 @@ class StreamlineLinearRegistration:
         if opt.evolution is not None:
             for vecs in opt.evolution:
                 mat_history.append(
-                    compose_transformations(moving_mat,
-                                            compose_matrix44(vecs),
-                                            static_mat))
+                    compose_transformations(
+                        moving_mat, compose_matrix44(vecs), static_mat
+                    )
+                )
 
         # If we are running halfway streamline linear registration (for
         # groupwise registration or atlasing) the registration map is different
         if isinstance(self.metric, JointBundleMinDistanceMetric):
-            srm = JointStreamlineRegistrationMap(opt.xopt, opt.fopt,
-                                                 mat_history, opt.nfev,
-                                                 opt.nit)
+            srm = JointStreamlineRegistrationMap(
+                opt.xopt, opt.fopt, mat_history, opt.nfev, opt.nit
+            )
         else:
-            srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
-                                            mat_history, opt.nfev, opt.nit)
+            srm = StreamlineRegistrationMap(
+                mat, opt.xopt, opt.fopt, mat_history, opt.nfev, opt.nit
+            )
 
         del opt
         return srm
 
     def _set_x0(self, x0):
-        """ check if input is of correct type."""
+        """check if input is of correct type."""
 
-        if hasattr(x0, 'ndim'):
-
+        if hasattr(x0, "ndim"):
             if len(x0) not in [3, 6, 7, 9, 12]:
-                m_ = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
+                m_ = "Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed"
                 raise ValueError(m_)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
             return x0
 
         if isinstance(x0, str):
-
-            if x0.lower() == 'translation':
+            if x0.lower() == "translation":
                 return np.zeros(3)
 
-            if x0.lower() == 'rigid':
+            if x0.lower() == "rigid":
                 return np.zeros(6)
 
-            if x0.lower() == 'similarity':
-                return np.array([0, 0, 0, 0, 0, 0, 1.])
+            if x0.lower() == "similarity":
+                return np.array([0, 0, 0, 0, 0, 0, 1.0])
 
-            if x0.lower() == 'scaling':
-                return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
+            if x0.lower() == "scaling":
+                return np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0])
 
-            if x0.lower() == 'affine':
-                return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+            if x0.lower() == "affine":
+                return np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 0, 0, 0])
 
         if isinstance(x0, int):
             if x0 not in [3, 6, 7, 9, 12]:
-                msg = 'Only 3, 6, 7, 9 and 12 are accepted as integers'
+                msg = "Only 3, 6, 7, 9 and 12 are accepted as integers"
                 raise ValueError(msg)
             else:
                 if x0 == 3:
@@ -531,19 +561,18 @@ class StreamlineLinearRegistration:
                 if x0 == 6:
                     return np.zeros(6)
                 if x0 == 7:
-                    return np.array([0, 0, 0, 0, 0, 0, 1.])
+                    return np.array([0, 0, 0, 0, 0, 0, 1.0])
                 if x0 == 9:
-                    return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
+                    return np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0])
                 if x0 == 12:
-                    return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+                    return np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 0, 0, 0])
 
-        raise ValueError('Wrong input')
+        raise ValueError("Wrong input")
 
 
 class StreamlineRegistrationMap:
-
     def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
-        r""" A map holding the optimum affine matrix and some other parameters
+        r"""A map holding the optimum affine matrix and some other parameters
         of the optimization
 
         Parameters
@@ -576,7 +605,7 @@ class StreamlineRegistrationMap:
         self.iterations = iterations
 
     def transform(self, moving):
-        """ Transform moving streamlines to the static.
+        """Transform moving streamlines to the static.
 
         Parameters
         ----------
@@ -594,10 +623,9 @@ class StreamlineRegistrationMap:
         return transform_streamlines(moving, self.matrix)
 
 
-class JointStreamlineRegistrationMap():
-
+class JointStreamlineRegistrationMap:
     def __init__(self, xopt, fopt, matopt_history, funcs, iterations):
-        """ A map holding the optimum affine matrices for halfway streamline
+        """A map holding the optimum affine matrices for halfway streamline
         linear registration and some other parameters of the optimization.
 
         xopt is optimized by StreamlineLinearRegistration using the
@@ -628,8 +656,8 @@ class JointStreamlineRegistrationMap():
 
         trans, angles, scale, shear = xopt[:3], xopt[3:6], xopt[6:9], xopt[9:]
 
-        self.x1 = np.concatenate((trans/2, angles/2, (1+scale)/2, shear/2))
-        self.x2 = np.concatenate((-trans/2, -angles/2, 2/(1+scale), -shear/2))
+        self.x1 = np.concatenate((trans / 2, angles / 2, (1 + scale) / 2, shear / 2))
+        self.x2 = np.concatenate((-trans / 2, -angles / 2, 2 / (1 + scale), -shear / 2))
         self.matrix1 = compose_matrix44(self.x1)
         self.matrix2 = compose_matrix44(self.x2)
         self.fopt = fopt
@@ -638,7 +666,7 @@ class JointStreamlineRegistrationMap():
         self.iterations = iterations
 
     def transform(self, static, moving):
-        """ Transform both static and moving bundles to the halfway space.
+        """Transform both static and moving bundles to the halfway space.
 
         All this does is apply ``self.matrix1`` and `self.matrix2`` to the
         static and moving bundles, respectively.
@@ -664,7 +692,7 @@ class JointStreamlineRegistrationMap():
 
 
 def bundle_sum_distance(t, static, moving, num_threads=None):
-    """ MDF distance optimization function (SUM).
+    """MDF distance optimization function (SUM).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -703,7 +731,7 @@ def bundle_sum_distance(t, static, moving, num_threads=None):
 
 
 def bundle_min_distance(t, static, moving):
-    """ MDF-based pairwise distance optimization function (MIN).
+    """MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -735,12 +763,18 @@ def bundle_min_distance(t, static, moving):
     d01 = distance_matrix_mdf(static, moving)
 
     rows, cols = d01.shape
-    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
-                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
+    return (
+        0.25
+        * (
+            np.sum(np.min(d01, axis=0)) / float(cols)
+            + np.sum(np.min(d01, axis=1)) / float(rows)
+        )
+        ** 2
+    )
 
 
 def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
-    """ MDF-based pairwise distance optimization function (MIN).
+    """MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -798,15 +832,11 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
     rows = static.shape[0] // block_size
     cols = moving.shape[0] // block_size
 
-    return _bundle_minimum_distance(static, moving,
-                                    rows,
-                                    cols,
-                                    block_size,
-                                    num_threads)
+    return _bundle_minimum_distance(static, moving, rows, cols, block_size, num_threads)
 
 
 def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
-    """ MDF-based pairwise distance optimization function (MIN).
+    """MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -848,10 +878,7 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     rows = static.shape[0] // block_size
     cols = moving.shape[0] // block_size
 
-    return _bundle_minimum_distance_asymmetric(static, moving,
-                                               rows,
-                                               cols,
-                                               block_size)
+    return _bundle_minimum_distance_asymmetric(static, moving, rows, cols, block_size)
 
 
 def remove_clusters_by_size(clusters, min_size=0):
@@ -864,9 +891,17 @@ def remove_clusters_by_size(clusters, min_size=0):
     return centroids
 
 
-def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
-                    verbose=False, num_threads=None):
-    """ Progressive SLR.
+def progressive_slr(
+    static,
+    moving,
+    metric,
+    x0,
+    bounds,
+    method="L-BFGS-B",
+    verbose=False,
+    num_threads=None,
+):
+    """Progressive SLR.
 
     This is an utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
@@ -908,103 +943,99 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
 
     """
     if verbose:
-        logger.info('Progressive Registration is Enabled')
+        logger.info("Progressive Registration is Enabled")
 
-    if x0 in ('translation', 'rigid', 'similarity', 'scaling', 'affine'):
+    if x0 in ("translation", "rigid", "similarity", "scaling", "affine"):
         if verbose:
-            logger.info(' Translation  (3 parameters)...')
-        slr_t = StreamlineLinearRegistration(metric=metric,
-                                             x0='translation',
-                                             bounds=bounds[:3],
-                                             method=method)
+            logger.info(" Translation  (3 parameters)...")
+        slr_t = StreamlineLinearRegistration(
+            metric=metric, x0="translation", bounds=bounds[:3], method=method
+        )
 
         slm_t = slr_t.optimize(static, moving)
 
-    if x0 in ('rigid', 'similarity', 'scaling', 'affine'):
-
+    if x0 in ("rigid", "similarity", "scaling", "affine"):
         x_translation = slm_t.xopt
         x = np.zeros(6)
         x[:3] = x_translation
         if verbose:
-            logger.info(' Rigid  (6 parameters) ...')
-        slr_r = StreamlineLinearRegistration(metric=metric,
-                                             x0=x,
-                                             bounds=bounds[:6],
-                                             method=method)
+            logger.info(" Rigid  (6 parameters) ...")
+        slr_r = StreamlineLinearRegistration(
+            metric=metric, x0=x, bounds=bounds[:6], method=method
+        )
         slm_r = slr_r.optimize(static, moving)
 
-    if x0 in ('similarity', 'scaling', 'affine'):
-
+    if x0 in ("similarity", "scaling", "affine"):
         x_rigid = slm_r.xopt
         x = np.zeros(7)
         x[:6] = x_rigid
-        x[6] = 1.
+        x[6] = 1.0
         if verbose:
-            logger.info(' Similarity (7 parameters) ...')
-        slr_s = StreamlineLinearRegistration(metric=metric,
-                                             x0=x,
-                                             bounds=bounds[:7],
-                                             method=method)
+            logger.info(" Similarity (7 parameters) ...")
+        slr_s = StreamlineLinearRegistration(
+            metric=metric, x0=x, bounds=bounds[:7], method=method
+        )
         slm_s = slr_s.optimize(static, moving)
 
-    if x0 in ('scaling', 'affine'):
-
+    if x0 in ("scaling", "affine"):
         x_similarity = slm_s.xopt
         x = np.zeros(9)
         x[:6] = x_similarity[:6]
         x[6:] = np.array((x_similarity[6],) * 3)
         if verbose:
-            logger.info(' Scaling (9 parameters) ...')
+            logger.info(" Scaling (9 parameters) ...")
 
-        slr_c = StreamlineLinearRegistration(metric=metric,
-                                             x0=x,
-                                             bounds=bounds[:9],
-                                             method=method)
+        slr_c = StreamlineLinearRegistration(
+            metric=metric, x0=x, bounds=bounds[:9], method=method
+        )
         slm_c = slr_c.optimize(static, moving)
 
-    if x0 == 'affine':
-
+    if x0 == "affine":
         x_scaling = slm_c.xopt
         x = np.zeros(12)
         x[:9] = x_scaling[:9]
         x[9:] = np.zeros(3)
         if verbose:
-            logger.info(' Affine (12 parameters) ...')
+            logger.info(" Affine (12 parameters) ...")
 
-        slr_a = StreamlineLinearRegistration(metric=metric,
-                                             x0=x,
-                                             bounds=bounds[:12],
-                                             method=method)
+        slr_a = StreamlineLinearRegistration(
+            metric=metric, x0=x, bounds=bounds[:12], method=method
+        )
         slm_a = slr_a.optimize(static, moving)
 
-    if x0 == 'translation':
+    if x0 == "translation":
         slm = slm_t
-    elif x0 == 'rigid':
+    elif x0 == "rigid":
         slm = slm_r
-    elif x0 == 'similarity':
+    elif x0 == "similarity":
         slm = slm_s
-    elif x0 == 'scaling':
+    elif x0 == "scaling":
         slm = slm_c
-    elif x0 == 'affine':
+    elif x0 == "affine":
         slm = slm_a
     else:
-        raise ValueError('Incorrect SLR transform')
+        raise ValueError("Incorrect SLR transform")
 
     return slm
 
 
-def slr_with_qbx(static, moving,
-                 x0='affine',
-                 rm_small_clusters=50,
-                 maxiter=100,
-                 select_random=None,
-                 verbose=False,
-                 greater_than=50,
-                 less_than=250,
-                 qbx_thr=(40, 30, 20, 15),
-                 nb_pts=20,
-                 progressive=True, rng=None, num_threads=None):
-    """ Utility function for registering large tractograms.
+def slr_with_qbx(
+    static,
+    moving,
+    x0="affine",
+    rm_small_clusters=50,
+    maxiter=100,
+    select_random=None,
+    verbose=False,
+    greater_than=50,
+    less_than=250,
+    qbx_thr=(40, 30, 20, 15),
+    nb_pts=20,
+    progressive=True,
+    rng=None,
+    num_threads=None,
+):
+    """Utility function for registering large tractograms.
 
     For efficiency, we apply the registration on cluster centroids and remove
     small clusters.
@@ -1079,49 +1110,48 @@ def slr_with_qbx(static, moving,
         rng = np.random.default_rng()
 
     if verbose:
-        logger.info('Static streamlines size {}'.format(len(static)))
-        logger.info('Moving streamlines size {}'.format(len(moving)))
+        logger.info("Static streamlines size {}".format(len(static)))
+        logger.info("Moving streamlines size {}".format(len(moving)))
 
     def check_range(streamline, gt=greater_than, lt=less_than):
-
         if (length(streamline) > gt) & (length(streamline) < lt):
             return True
         else:
             return False
 
-    streamlines1 = Streamlines(static[np.array([check_range(s)
-                                                for s in static])])
-    streamlines2 = Streamlines(moving[np.array([check_range(s)
-                                                for s in moving])])
+    streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
+    streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
     if verbose:
-        logger.info('Static streamlines after length reduction {}'
-                    .format(len(streamlines1)))
-        logger.info('Moving streamlines after length reduction {}'
-                    .format(len(streamlines2)))
+        logger.info(
+            "Static streamlines after length reduction {}".format(len(streamlines1))
+        )
+        logger.info(
+            "Moving streamlines after length reduction {}".format(len(streamlines2))
+        )
 
     if select_random is not None:
-        rstreamlines1 = select_random_set_of_streamlines(streamlines1,
-                                                         select_random,
-                                                         rng=rng)
+        rstreamlines1 = select_random_set_of_streamlines(
+            streamlines1, select_random, rng=rng
+        )
     else:
         rstreamlines1 = streamlines1
 
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
 
-    rstreamlines1._data.astype('f4')
+    rstreamlines1._data.astype("f4")
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
     qb_centroids1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
 
     if select_random is not None:
-        rstreamlines2 = select_random_set_of_streamlines(streamlines2,
-                                                         select_random,
-                                                         rng=rng)
+        rstreamlines2 = select_random_set_of_streamlines(
+            streamlines2, select_random, rng=rng
+        )
     else:
         rstreamlines2 = streamlines2
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
-    rstreamlines2._data.astype('f4')
+    rstreamlines2._data.astype("f4")
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
@@ -1140,24 +1170,39 @@ def slr_with_qbx(static, moving,
         raise ValueError(msg)
 
     if not progressive:
-        slr = StreamlineLinearRegistration(x0=x0,
-                                           options={'maxiter': maxiter},
-                                           num_threads=num_threads)
+        slr = StreamlineLinearRegistration(
+            x0=x0, options={"maxiter": maxiter}, num_threads=num_threads
+        )
         slm = slr.optimize(qb_centroids1, qb_centroids2)
     else:
         bounds = DEFAULT_BOUNDS
 
-        slm = progressive_slr(qb_centroids1, qb_centroids2,
-                              x0=x0, metric=None,
-                              bounds=bounds, num_threads=num_threads)
+        slm = progressive_slr(
+            qb_centroids1,
+            qb_centroids2,
+            x0=x0,
+            metric=None,
+            bounds=bounds,
+            num_threads=num_threads,
+        )
 
     if verbose:
-        logger.info('QB static centroids size %d' % len(qb_centroids1,))
-        logger.info('QB moving centroids size %d' % len(qb_centroids2,))
+        logger.info(
+            "QB static centroids size %d"
+            % len(
+                qb_centroids1,
+            )
+        )
+        logger.info(
+            "QB moving centroids size %d"
+            % len(
+                qb_centroids2,
+            )
+        )
         duration = time() - t
-        logger.info('SLR finished in  %0.3f seconds.' % (duration,))
+        logger.info("SLR finished in  %0.3f seconds." % (duration,))
         if slm.iterations is not None:
-            logger.info('SLR iterations: %d ' % (slm.iterations,))
+            logger.info("SLR iterations: %d " % (slm.iterations,))
 
     moved = slm.transform(moving)
 
@@ -1172,9 +1217,18 @@ def slr_with_qbx(static, moving,
 whole_brain_slr = slr_with_qbx
 
 
-def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
-                  nb_pts=20, select_random=10000, verbose=False, rng=None):
-    """ Function to perform unbiased groupwise bundle registration.
+def groupwise_slr(
+    bundles,
+    x0="affine",
+    tol=0,
+    max_iter=20,
+    qbx_thr=(4,),
+    nb_pts=20,
+    select_random=10000,
+    verbose=False,
+    rng=None,
+):
+    """Function to perform unbiased groupwise bundle registration.
 
     All bundles are moved to the same space by iteratively applying halfway
     streamline linear registration in pairs. With each iteration, bundles get
@@ -1226,14 +1280,21 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
     clustering, Neuroimage, 2017.
 
     """
+
     def group_distance(bundles, n_bundle):
         all_pairs = list(combinations(np.arange(n_bundle), 2))
         d = np.zeros(len(all_pairs))
         for i, ind in enumerate(all_pairs):
             mdf = distance_matrix_mdf(bundles[ind[0]], bundles[ind[1]])
             rows, cols = mdf.shape
-            d[i] = 0.25 * (np.sum(np.min(mdf, axis=0)) / float(cols) +
-                           np.sum(np.min(mdf, axis=1)) / float(rows)) ** 2
+            d[i] = (
+                0.25
+                * (
+                    np.sum(np.min(mdf, axis=0)) / float(cols)
+                    + np.sum(np.min(mdf, axis=1)) / float(rows)
+                )
+                ** 2
+            )
         return d
 
     if rng is None:
@@ -1253,12 +1314,15 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
     aff_list = []
     for i in range(n_bundle):
         if verbose:
-            logging.info(f"Preprocessing: bundle {i}/{n_bundle}: " +
-                         f"{len(bundles[i])} streamlines found.")
+            logging.info(
+                f"Preprocessing: bundle {i}/{n_bundle}: "
+                + f"{len(bundles[i])} streamlines found."
+            )
 
         if select_random is not None:
-            bundles[i] = select_random_set_of_streamlines(bundles[i],
-                                                          select_random, rng)
+            bundles[i] = select_random_set_of_streamlines(
+                bundles[i], select_random, rng
+            )
 
         bundles[i] = set_number_of_points(bundles[i], nb_pts)
 
@@ -1279,9 +1343,9 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
 
     # Make pairs and start iterating
     pairs, excluded = get_unique_pairs(n_bundle)
-    n_pair = n_bundle//2
+    n_pair = n_bundle // 2
 
-    for i_iter in range(1, max_iter+1):
+    for i_iter in range(1, max_iter + 1):
         for i_pair, pair in enumerate(pairs):
             ind1 = pair[0]
             ind2 = pair[1]
@@ -1290,8 +1354,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
             centroids2 = centroids[ind2]
 
             hslr = StreamlineLinearRegistration(x0=x0, metric=metric)
-            hsrm = hslr.optimize(static=centroids1, moving=centroids2,
-                                 mat=np.eye(4))
+            hsrm = hslr.optimize(static=centroids1, moving=centroids2, mat=np.eye(4))
 
             # Update transformation matrices
             aff_list[ind1] = np.dot(hsrm.matrix1, aff_list[ind1])
@@ -1308,19 +1371,20 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
         d = np.vstack((d, group_distance(centroids, n_bundle)))
 
         # Use as reference the distance 3 iterations ago
-        prev_iter = np.max([0, i_iter-3])
+        prev_iter = np.max([0, i_iter - 3])
         d_improve = np.mean(d[prev_iter, :]) - np.mean(d[i_iter, :])
 
         if verbose:
-            logging.info(f"Iteration {i_iter} group distance: " +
-                         f"{np.mean(d[i_iter, :])}")
-            logging.info(f"Iteration {i_iter} improvement previous 3: " +
-                         f"{d_improve}")
+            logging.info(
+                f"Iteration {i_iter} group distance: " + f"{np.mean(d[i_iter, :])}"
+            )
+            logging.info(
+                f"Iteration {i_iter} improvement previous 3: " + f"{d_improve}"
+            )
 
         if d_improve < tol:
             if verbose:
-                logging.info("Registration converged " +
-                             f"{d_improve} < {tol}")
+                logging.info("Registration converged " + f"{d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs)
@@ -1333,7 +1397,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
 
 
 def get_unique_pairs(n_bundle, pairs=None):
-    """ Make unique pairs from n_bundle bundles.
+    """Make unique pairs from n_bundle bundles.
 
     The function allows to input a previous pairs assignment so that the new
     pairs are different.
@@ -1374,14 +1438,12 @@ def get_unique_pairs(n_bundle, pairs=None):
         return new_pairs, excluded
 
     # Repeat the shuffle process until we find new unique pairs
-    all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1],
-                           pairs, pairs[:, ::-1]))
+    all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1], pairs, pairs[:, ::-1]))
 
-    while len(np.unique(all_pairs, axis=0)) < 4*n_pair:
+    while len(np.unique(all_pairs, axis=0)) < 4 * n_pair:
         index = np.random.permutation(index)
         new_pairs = index.reshape((n_pair, 2))
-        all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1],
-                               pairs, pairs[:, ::-1]))
+        all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1], pairs, pairs[:, ::-1]))
 
     return new_pairs, excluded
 
@@ -1391,7 +1453,7 @@ def _threshold(x, th):
 
 
 def compose_matrix44(t, dtype=np.double):
-    """ Compose a 4x4 transformation matrix.
+    """Compose a 4x4 transformation matrix.
 
     Parameters
     ----------
@@ -1418,26 +1480,24 @@ def compose_matrix44(t, dtype=np.double):
     size = t.size
 
     if size not in [3, 6, 7, 9, 12]:
-        raise ValueError('Accepted number of parameters is 3, 6, 7, 9 and 12')
+        raise ValueError("Accepted number of parameters is 3, 6, 7, 9 and 12")
 
     MAX_DIST = 1e10
-    scale, shear, angles, translate = (None, ) * 4
+    scale, shear, angles, translate = (None,) * 4
     translate = _threshold(t[0:3], MAX_DIST)
     if size in [6, 7, 9, 12]:
         angles = np.deg2rad(t[3:6])
     if size == 7:
         scale = np.array((t[6],) * 3)
     if size in [9, 12]:
-        scale = t[6: 9]
+        scale = t[6:9]
     if size == 12:
-        shear = t[9: 12]
-    return compose_matrix(scale=scale, shear=shear,
-                          angles=angles,
-                          translate=translate)
+        shear = t[9:12]
+    return compose_matrix(scale=scale, shear=shear, angles=angles, translate=translate)
 
 
 def decompose_matrix44(mat, size=12):
-    """ Given a 4x4 homogeneous matrix return the parameter vector.
+    """Given a 4x4 homogeneous matrix return the parameter vector.
 
     Parameters
     ----------
@@ -1459,7 +1519,7 @@ def decompose_matrix44(mat, size=12):
     t[:3] = translate
     if size == 3:
         return t[:3]
-    t[3: 6] = np.rad2deg(angles)
+    t[3:6] = np.rad2deg(angles)
     if size == 6:
         return t[:6]
     if size == 7:
@@ -1469,8 +1529,8 @@ def decompose_matrix44(mat, size=12):
         t[6:9] = scale
         return t[:9]
     if size == 12:
-        t[6: 9] = scale
-        t[9: 12] = shear
+        t[6:9] = scale
+        t[9:12] = shear
         return t
 
-    raise ValueError('Size can be 3, 6, 7, 9 or 12')
+    raise ValueError("Size can be 3, 6, 7, 9 or 12")

@@ -56,12 +56,10 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 
-scene.add(actor.point(hsph_initial.vertices, window.colors.red,
-                      point_radius=0.05))
-scene.add(actor.point(hsph_updated.vertices, window.colors.green,
-                      point_radius=0.05))
+scene.add(actor.point(hsph_initial.vertices, window.colors.red, point_radius=0.05))
+scene.add(actor.point(hsph_updated.vertices, window.colors.green, point_radius=0.05))
 
-window.record(scene, out_path='initial_vs_updated.png', size=(300, 300))
+window.record(scene, out_path="initial_vs_updated.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -80,7 +78,7 @@ sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 scene.clear()
 scene.add(actor.point(sph.vertices, window.colors.green, point_radius=0.05))
 
-window.record(scene, out_path='full_sphere.png', size=(300, 300))
+window.record(scene, out_path="full_sphere.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -134,7 +132,7 @@ colors = np.ascontiguousarray(colors)
 
 scene.add(actor.point(gtab.gradients, colors, point_radius=100))
 
-window.record(scene, out_path='gradients.png', size=(300, 300))
+window.record(scene, out_path="gradients.png", size=(300, 300))
 if interactive:
     window.show(scene)
 

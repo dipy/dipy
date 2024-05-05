@@ -1,6 +1,14 @@
-__all__ = ["MinimumAverageDirectFlipMetric", "Metric", "CosineMetric",
-           "AveragePointwiseEuclideanMetric", "EuclideanMetric", "dist",
-            "mdf", "mean_manhattan_distance", "mean_euclidean_distance"]
+__all__ = [
+    "MinimumAverageDirectFlipMetric",
+    "Metric",
+    "CosineMetric",
+    "AveragePointwiseEuclideanMetric",
+    "EuclideanMetric",
+    "dist",
+    "mdf",
+    "mean_manhattan_distance",
+    "mean_euclidean_distance",
+]
 
 import numpy as np
 
@@ -18,7 +26,7 @@ EuclideanMetric = SumPointwiseEuclideanMetric
 
 
 def mdf(s1, s2):
-    """ Computes the MDF (Minimum average Direct-Flip) distance
+    """Computes the MDF (Minimum average Direct-Flip) distance
     [Garyfallidis12]_ between two streamlines.
 
     Streamlines must have the same number of points.
@@ -45,7 +53,7 @@ def mdf(s1, s2):
 
 
 def mean_manhattan_distance(a, b):
-    """ Compute the average Manhattan-L1 distance (MDF without flip)
+    """Compute the average Manhattan-L1 distance (MDF without flip)
 
     Arrays are representing a single streamline or a list of streamlines
     that have the same number of N-dimensional points (two last axis).
@@ -68,7 +76,7 @@ def mean_manhattan_distance(a, b):
 
 
 def mean_euclidean_distance(a, b):
-    """ Compute the average Euclidean-L2 distance (MDF without flip)
+    """Compute the average Euclidean-L2 distance (MDF without flip)
 
     Arrays are representing a single streamline or a list of streamlines
     that have the same number of N-dimensional points (two last axis).

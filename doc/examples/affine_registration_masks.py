@@ -35,14 +35,18 @@ from dipy.viz import regtools
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
-                                            pjoin(folder, 'HARDI150.nii.gz'),
-                                            return_img=True)
+    pjoin(folder, "HARDI150.nii.gz"), return_img=True
+)
 static = np.squeeze(static_data)[..., 0]
 
 # pad array to help with this example
 pad_by = 10
-static = np.pad(static, [(pad_by, pad_by), (pad_by, pad_by), (0, 0)],
-                mode='constant', constant_values=0)
+static = np.pad(
+    static,
+    [(pad_by, pad_by), (pad_by, pad_by), (0, 0)],
+    mode="constant",
+    constant_values=0,
+)
 
 static_grid2world = static_affine
 
@@ -55,15 +59,14 @@ affmat[1, -1] = 12
 theta = 0.1
 c, s = np.cos(theta), np.sin(theta)
 affmat[0:2, 0:2] = np.array([[c, -s], [s, c]])
-affine_map = AffineMap(affmat,
-                       static.shape, static_grid2world,
-                       static.shape, static_grid2world)
+affine_map = AffineMap(
+    affmat, static.shape, static_grid2world, static.shape, static_grid2world
+)
 moving = affine_map.transform(static)
 moving_affine = static_affine.copy()
 moving_grid2world = static_grid2world.copy()
 
-regtools.overlay_slices(static, moving, None, 2,
-                        "Static", "Moving", "deregistered.png")
+regtools.overlay_slices(static, moving, None, 2, "Static", "Moving", "deregistered.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -82,10 +85,9 @@ level_iters = [100, 10]
 sigmas = [1.0, 0.0]
 factors = [2, 1]
 
-affreg = AffineRegistration(metric=metric,
-                            level_iters=level_iters,
-                            sigmas=sigmas,
-                            factors=factors)
+affreg = AffineRegistration(
+    metric=metric, level_iters=level_iters, sigmas=sigmas, factors=factors
+)
 
 ###############################################################################
 # Now let's register these volumes together without any masking. For the
@@ -95,20 +97,35 @@ affreg = AffineRegistration(metric=metric,
 # Note that use of masks is not currently implemented for sparse sampling.
 
 transform = TranslationTransform3D()
-transl = affreg.optimize(static, moving, transform, None,
-                         static_grid2world, moving_grid2world,
-                         starting_affine=None,
-                         static_mask=None, moving_mask=None)
+transl = affreg.optimize(
+    static,
+    moving,
+    transform,
+    None,
+    static_grid2world,
+    moving_grid2world,
+    starting_affine=None,
+    static_mask=None,
+    moving_mask=None,
+)
 transform = RigidTransform3D()
-transl = affreg.optimize(static, moving, transform, None,
-                         static_grid2world, moving_grid2world,
-                         starting_affine=transl.affine,
-                         static_mask=None, moving_mask=None)
+transl = affreg.optimize(
+    static,
+    moving,
+    transform,
+    None,
+    static_grid2world,
+    moving_grid2world,
+    starting_affine=transl.affine,
+    static_mask=None,
+    moving_mask=None,
+)
 transformed = transl.transform(moving)
 
 transformed = transl.transform(moving)
-regtools.overlay_slices(static, transformed, None, 2,
-                        "Static", "Transformed", "transformed.png")
+regtools.overlay_slices(
+    static, transformed, None, 2, "Static", "Transformed", "transformed.png"
+)
 
 
 ###############################################################################
@@ -124,7 +141,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 
 def reg_func(figname, static_mask=None, moving_mask=None):
     """Convenience function for registration using a pipeline.
-       Uses variables in global scope, except for static_mask and moving_mask.
+    Uses variables in global scope, except for static_mask and moving_mask.
     """
 
     pipeline = [translation, rigid]
@@ -135,16 +152,18 @@ def reg_func(figname, static_mask=None, moving_mask=None):
         moving_affine=moving_affine,
         static_affine=static_affine,
         nbins=32,
-        metric='MI',
+        metric="MI",
         pipeline=pipeline,
         level_iters=level_iters,
         sigmas=sigmas,
         factors=factors,
         static_mask=static_mask,
-        moving_mask=moving_mask)
+        moving_mask=moving_mask,
+    )
 
-    regtools.overlay_slices(static, xformed_img, None, 2,
-                            "Static", "Transformed", figname)
+    regtools.overlay_slices(
+        static, xformed_img, None, 2, "Static", "Transformed", figname
+    )
 
 
 ###############################################################################
@@ -170,31 +189,32 @@ sz = 15
 pd = 10
 
 # modify images
-val = static.max()/2.0
+val = static.max() / 2.0
 
-static[-sz-pd:-pd, -sz-pd:-pd, :] = val
-static[pd:sz+pd, -sz-pd:-pd, :] = val
-static[-sz-pd:-pd, pd:sz+pd, :] = val
+static[-sz - pd : -pd, -sz - pd : -pd, :] = val
+static[pd : sz + pd, -sz - pd : -pd, :] = val
+static[-sz - pd : -pd, pd : sz + pd, :] = val
 
-moving[pd:sz+pd, pd:sz+pd, :] = val
-moving[pd:sz+pd, -sz-pd:-pd, :] = val
-moving[-sz-pd:-pd, pd:sz+pd, :] = val
+moving[pd : sz + pd, pd : sz + pd, :] = val
+moving[pd : sz + pd, -sz - pd : -pd, :] = val
+moving[-sz - pd : -pd, pd : sz + pd, :] = val
 
 # create masks
 squares_st = np.zeros_like(static).astype(np.int32)
 squares_mv = np.zeros_like(static).astype(np.int32)
 
-squares_st[-sz-1-pd:-pd, -sz-1-pd:-pd, :] = 1
-squares_st[pd:sz+1+pd, -sz-1-pd:-pd, :] = 1
-squares_st[-sz-1-pd:-pd, pd:sz+1+pd, :] = 1
+squares_st[-sz - 1 - pd : -pd, -sz - 1 - pd : -pd, :] = 1
+squares_st[pd : sz + 1 + pd, -sz - 1 - pd : -pd, :] = 1
+squares_st[-sz - 1 - pd : -pd, pd : sz + 1 + pd, :] = 1
 
-squares_mv[pd:sz+1+pd, pd:sz+1+pd, :] = 1
-squares_mv[pd:sz+1+pd, -sz-1-pd:-pd, :] = 1
-squares_mv[-sz-1-pd:-pd, pd:sz+1+pd, :] = 1
+squares_mv[pd : sz + 1 + pd, pd : sz + 1 + pd, :] = 1
+squares_mv[pd : sz + 1 + pd, -sz - 1 - pd : -pd, :] = 1
+squares_mv[-sz - 1 - pd : -pd, pd : sz + 1 + pd, :] = 1
 
 
-regtools.overlay_slices(static, moving, None, 2,
-                        "Static", "Moving", "deregistered_squares.png")
+regtools.overlay_slices(
+    static, moving, None, 2, "Static", "Moving", "deregistered_squares.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -209,7 +229,7 @@ ax[0].imshow(static_mask[:, :, 1].T, cmap="gray", origin="lower")
 ax[0].set_title("static image mask")
 ax[1].imshow(moving_mask[:, :, 1].T, cmap="gray", origin="lower")
 ax[1].set_title("moving image mask")
-plt.savefig("masked_static.png", bbox_inches='tight')
+plt.savefig("masked_static.png", bbox_inches="tight")
 
 
 ###############################################################################
@@ -255,8 +275,9 @@ reg_func("transformed_squares_mask_2.png", moving_mask=moving_mask)
 #
 # And finally, we can use both masks at the same time.
 
-reg_func("transformed_squares_mask_3.png",
-         static_mask=static_mask, moving_mask=moving_mask)
+reg_func(
+    "transformed_squares_mask_3.png", static_mask=static_mask, moving_mask=moving_mask
+)
 
 
 ###############################################################################
@@ -275,17 +296,29 @@ reg_func("transformed_squares_mask_3.png",
 series = np.stack([static, moving, moving], axis=-1)
 
 pipeline = [translation, rigid]
-xformed, _ = register_series(series, 0, pipeline,
-                             series_affine=moving_affine,
-                             static_mask=static_mask)
+xformed, _ = register_series(
+    series, 0, pipeline, series_affine=moving_affine, static_mask=static_mask
+)
 
-regtools.overlay_slices(np.squeeze(xformed[..., 0]),
-                        np.squeeze(xformed[..., -2]),
-                        None, 2, "Static", "Moving 1", "series_mask_1.png")
+regtools.overlay_slices(
+    np.squeeze(xformed[..., 0]),
+    np.squeeze(xformed[..., -2]),
+    None,
+    2,
+    "Static",
+    "Moving 1",
+    "series_mask_1.png",
+)
 
-regtools.overlay_slices(np.squeeze(xformed[..., 0]),
-                        np.squeeze(xformed[..., -1]),
-                        None, 2, "Static", "Moving 2", "series_mask_2.png")
+regtools.overlay_slices(
+    np.squeeze(xformed[..., 0]),
+    np.squeeze(xformed[..., -1]),
+    None,
+    2,
+    "Static",
+    "Moving 2",
+    "series_mask_2.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

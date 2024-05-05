@@ -2,6 +2,7 @@
 """
 Class and helper functions for fitting the EVAC+ model.
 """
+
 import logging
 
 import numpy as np
@@ -18,7 +19,7 @@ from dipy.nn.utils import (
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
     from tensorflow.keras.layers import (
         Add,
@@ -33,19 +34,24 @@ if have_tf:
     )
     from tensorflow.keras.models import Model
 else:
+
     class Model:
         pass
 
     class Layer:
         pass
-    logging.warning('This model requires Tensorflow.\
+
+    logging.warning(
+        "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
-                    https://github.com/apple/tensorflow_macos')
+                    https://github.com/apple/tensorflow_macos"
+    )
 
 logging.basicConfig()
-logger = logging.getLogger('EVAC+')
+logger = logging.getLogger("EVAC+")
+
 
 def prepare_img(image):
     r"""
@@ -64,54 +70,60 @@ def prepare_img(image):
     input1 = np.moveaxis(image, -1, 0)
     input1 = np.expand_dims(input1, -1)
 
-    input2, _ = reslice(image, np.eye(4),
-                        (1, 1, 1), (2, 2, 2))
+    input2, _ = reslice(image, np.eye(4), (1, 1, 1), (2, 2, 2))
     input2 = np.moveaxis(input2, -1, 0)
     input2 = np.expand_dims(input2, -1)
 
-    input3, _ = reslice(image, np.eye(4),
-                        (1, 1, 1), (4, 4, 4))
+    input3, _ = reslice(image, np.eye(4), (1, 1, 1), (4, 4, 4))
     input3 = np.moveaxis(input3, -1, 0)
     input3 = np.expand_dims(input3, -1)
 
-    input4, _ = reslice(image, np.eye(4),
-                        (1, 1, 1), (8, 8, 8))
+    input4, _ = reslice(image, np.eye(4), (1, 1, 1), (8, 8, 8))
     input4 = np.moveaxis(input4, -1, 0)
     input4 = np.expand_dims(input4, -1)
 
-    input5, _ = reslice(image, np.eye(4),
-                        (1, 1, 1), (16, 16, 16))
+    input5, _ = reslice(image, np.eye(4), (1, 1, 1), (16, 16, 16))
     input5 = np.moveaxis(input5, -1, 0)
     input5 = np.expand_dims(input5, -1)
 
-    input_data = {"input_1":input1,
-                  "input_2":input2,
-                  "input_3":input3,
-                  "input_4":input4,
-                  "input_5":input5}
+    input_data = {
+        "input_1": input1,
+        "input_2": input2,
+        "input_3": input3,
+        "input_4": input4,
+        "input_5": input5,
+    }
 
     return input_data
 
+
 class Block(Layer):
-    def __init__(self, out_channels, kernel_size, strides,
-                 padding, drop_r, n_layers, layer_type='down'):
+    def __init__(
+        self,
+        out_channels,
+        kernel_size,
+        strides,
+        padding,
+        drop_r,
+        n_layers,
+        layer_type="down",
+    ):
         super(Block, self).__init__()
         self.layer_list = []
         self.layer_list2 = []
         self.n_layers = n_layers
         for _ in range(n_layers):
-            self.layer_list.append(Conv3D(out_channels,
-                                          kernel_size,
-                                          strides=strides,
-                                          padding=padding))
+            self.layer_list.append(
+                Conv3D(out_channels, kernel_size, strides=strides, padding=padding)
+            )
             self.layer_list.append(Dropout(drop_r))
             self.layer_list.append(LayerNormalization())
             self.layer_list.append(ReLU())
-        if layer_type=='down':
-            self.layer_list2.append(Conv3D(1, 2, strides=2, padding='same'))
+        if layer_type == "down":
+            self.layer_list2.append(Conv3D(1, 2, strides=2, padding="same"))
             self.layer_list2.append(ReLU())
-        elif layer_type=='up':
-            self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding='same'))
+        elif layer_type == "up":
+            self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding="same"))
             self.layer_list2.append(ReLU())
 
         self.channel_sum = ChannelSum()
@@ -131,12 +143,14 @@ class Block(Layer):
 
         return fwd, x
 
+
 class ChannelSum(Layer):
     def __init__(self):
         super(ChannelSum, self).__init__()
 
     def call(self, inputs):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
+
 
 def init_model(model_scale=16):
     r"""
@@ -153,78 +167,122 @@ def init_model(model_scale=16):
     -------
     model : tf.keras.Model
     """
-    inputs = tf.keras.Input(shape=(128, 128, 128, 1), name='input_1')
-    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1), name='input_2')
-    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1), name='input_3')
-    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1), name='input_4')
-    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1), name='input_5')
+    inputs = tf.keras.Input(shape=(128, 128, 128, 1), name="input_1")
+    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1), name="input_2")
+    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1), name="input_3")
+    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1), name="input_4")
+    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1), name="input_5")
     # Encode
-    fwd1, x = Block(model_scale, kernel_size=5,
-                   strides=1, padding='same',
-                   drop_r=0.2, n_layers=1)(inputs, inputs)
+    fwd1, x = Block(
+        model_scale, kernel_size=5, strides=1, padding="same", drop_r=0.2, n_layers=1
+    )(inputs, inputs)
 
     x = Concatenate()([x, raw_input_2])
 
-    fwd2, x = Block(model_scale*2, kernel_size=5,
-                    strides=1, padding='same',
-                    drop_r=0.5, n_layers=2)(x, x)
+    fwd2, x = Block(
+        model_scale * 2,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=2,
+    )(x, x)
 
     x = Concatenate()([x, raw_input_3])
 
-    fwd3, x = Block(model_scale*4, kernel_size=5,
-                    strides=1, padding='same',
-                    drop_r=0.5, n_layers=3)(x, x)
+    fwd3, x = Block(
+        model_scale * 4,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=3,
+    )(x, x)
 
     x = Concatenate()([x, raw_input_4])
 
-    fwd4, x = Block(model_scale*8, kernel_size=5,
-                    strides=1, padding='same',
-                    drop_r=0.5, n_layers=3)(x, x)
+    fwd4, x = Block(
+        model_scale * 8,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=3,
+    )(x, x)
 
     x = Concatenate()([x, raw_input_5])
 
-    _, up = Block(model_scale*16, kernel_size=5,
-                  strides=1, padding='same',
-                  drop_r=0.5, n_layers=3,
-                  layer_type='up')(x, x)
+    _, up = Block(
+        model_scale * 16,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=3,
+        layer_type="up",
+    )(x, x)
 
     x = Concatenate()([fwd4, up])
 
-    _, up = Block(model_scale*8, kernel_size=5,
-                  strides=1, padding='same',
-                  drop_r=0.5, n_layers=3,
-                  layer_type='up')(x, up)
+    _, up = Block(
+        model_scale * 8,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=3,
+        layer_type="up",
+    )(x, up)
 
     x = Concatenate()([fwd3, up])
 
-    _, up = Block(model_scale*4, kernel_size=5,
-                  strides=1, padding='same',
-                  drop_r=0.5, n_layers=3,
-                  layer_type='up')(x, up)
+    _, up = Block(
+        model_scale * 4,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=3,
+        layer_type="up",
+    )(x, up)
 
     x = Concatenate()([fwd2, up])
 
-    _, up = Block(model_scale*2, kernel_size=5,
-                  strides=1, padding='same',
-                  drop_r=0.5, n_layers=2,
-                  layer_type='up')(x, up)
+    _, up = Block(
+        model_scale * 2,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=2,
+        layer_type="up",
+    )(x, up)
 
     x = Concatenate()([fwd1, up])
 
-    _, pred = Block(model_scale, kernel_size=5,
-                    strides=1, padding='same',
-                    drop_r=0.5, n_layers=1,
-                    layer_type='none')(x, up)
+    _, pred = Block(
+        model_scale,
+        kernel_size=5,
+        strides=1,
+        padding="same",
+        drop_r=0.5,
+        n_layers=1,
+        layer_type="none",
+    )(x, up)
 
-    pred = Conv3D(2, 1, padding='same')(pred)
+    pred = Conv3D(2, 1, padding="same")(pred)
     output = Softmax(axis=-1)(pred)
 
-    model = Model({"input_1":inputs,
-                   "input_2":raw_input_2,
-                   "input_3":raw_input_3,
-                   "input_4":raw_input_4,
-                   "input_5":raw_input_5},
-                  output[..., 0])
+    model = Model(
+        {
+            "input_1": inputs,
+            "input_2": raw_input_2,
+            "input_3": raw_input_3,
+            "input_4": raw_input_4,
+            "input_5": raw_input_5,
+        },
+        output[..., 0],
+    )
     return model
 
 
@@ -258,7 +316,7 @@ class EVACPlus:
         if not have_tf:
             raise tf()
 
-        log_level = 'INFO' if verbose else 'CRITICAL'
+        log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
         # EVAC+ network load
@@ -272,8 +330,8 @@ class EVACPlus:
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
         """
-        fetch_model_weights_path = get_fnames('evac_default_weights')
-        print('fetched ' + fetch_model_weights_path)
+        fetch_model_weights_path = get_fnames("evac_default_weights")
+        print("fetched " + fetch_model_weights_path)
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -287,9 +345,11 @@ class EVACPlus:
         """
         try:
             self.model.load_weights(weights_path)
-        except ValueError:
-            raise ValueError('Expected input for the provided model weights \
-                             do not match the declared model')
+        except ValueError as e:
+            raise ValueError(
+                "Expected input for the provided model weights \
+                             do not match the declared model"
+            ) from e
 
     def __predict(self, x_test):
         r"""
@@ -308,10 +368,16 @@ class EVACPlus:
 
         return self.model.predict(x_test)
 
-    def predict(self, T1, affine,
-                voxsize=(1, 1, 1), batch_size=None,
-                return_affine=False, return_prob=False,
-                largest_area=True):
+    def predict(
+        self,
+        T1,
+        affine,
+        voxsize=(1, 1, 1),
+        batch_size=None,
+        return_affine=False,
+        return_prob=False,
+        largest_area=True,
+    ):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
 
@@ -375,17 +441,20 @@ class EVACPlus:
         elif len(T1.shape) == 3:
             dim = 3
             if batch_size is not None:
-                logger.warning('Batch size specified, but not used',
-                               'due to the input not having \
-                                a batch dimension')
+                logger.warning(
+                    "Batch size specified, but not used",
+                    "due to the input not having \
+                                a batch dimension",
+                )
             batch_size = 1
 
             T1 = np.expand_dims(T1, 0)
             affine = np.expand_dims(affine, 0)
             voxsize = np.expand_dims(voxsize, 0)
         else:
-            raise ValueError("T1 data should be a np.ndarray of dimension 3 "
-                             "or a list/tuple of it")
+            raise ValueError(
+                "T1 data should be a np.ndarray of dimension 3 " "or a list/tuple of it"
+            )
 
         input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))
@@ -395,18 +464,15 @@ class EVACPlus:
         n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
             n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine, ori_shape = transform_img(n_T1[i],
-                                                       affine[i],
-                                                       voxsize[i])
+            t_img, t_affine, ori_shape = transform_img(n_T1[i], affine[i], voxsize[i])
             input_data[..., i] = t_img
             rev_affine[i] = t_affine
             ori_shapes[i] = ori_shape
 
         # Prediction stage
-        prediction = np.zeros((len(T1), 128, 128, 128),
-                              dtype=np.float32)
-        for batch_idx in range(batch_size, len(T1)+1, batch_size):
-            batch = input_data[..., batch_idx-batch_size:batch_idx]
+        prediction = np.zeros((len(T1), 128, 128, 128), dtype=np.float32)
+        for batch_idx in range(batch_size, len(T1) + 1, batch_size):
+            batch = input_data[..., batch_idx - batch_size : batch_idx]
             temp_input = prepare_img(batch)
             temp_pred = self.__predict(temp_input)
             prediction[:batch_idx] = temp_pred
@@ -418,11 +484,13 @@ class EVACPlus:
 
         output_mask = []
         for i, T1_img in enumerate(T1):
-            output = recover_img(prediction[i],
-                                 rev_affine[i],
-                                 voxsize=voxsize[i],
-                                 ori_shape=ori_shapes[i],
-                                 image_shape=T1_img.shape)
+            output = recover_img(
+                prediction[i],
+                rev_affine[i],
+                voxsize=voxsize[i],
+                ori_shape=ori_shapes[i],
+                image_shape=T1_img.shape,
+            )
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
                 if largest_area:

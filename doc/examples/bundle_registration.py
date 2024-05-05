@@ -11,6 +11,7 @@ To show the concept we will use two pre-saved cingulum bundles. The algorithm
 used here is called Streamline-based Linear Registration (SLR)
 [Garyfallidis15]_.
 """
+
 from time import sleep
 
 from dipy.align.streamlinear import StreamlineLinearRegistration
@@ -49,10 +50,9 @@ cb_subj2_aligned = srm.transform(cb_subj2)
 
 
 def show_both_bundles(bundles, colors=None, show=True, fname=None):
-
     scene = window.Scene()
-    scene.SetBackground(1., 1, 1)
-    for (i, bundle) in enumerate(bundles):
+    scene.SetBackground(1.0, 1, 1)
+    for i, bundle in enumerate(bundles):
         color = colors[i]
         lines_actor = actor.streamtube(bundle, color, linewidth=0.3)
         lines_actor.RotateX(-90)
@@ -65,20 +65,24 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
         window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
-show_both_bundles([cb_subj1, cb_subj2],
-                  colors=[window.colors.orange, window.colors.red],
-                  show=False,
-                  fname='before_registration.png')
+show_both_bundles(
+    [cb_subj1, cb_subj2],
+    colors=[window.colors.orange, window.colors.red],
+    show=False,
+    fname="before_registration.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Before bundle registration.
 
-show_both_bundles([cb_subj1, cb_subj2_aligned],
-                  colors=[window.colors.orange, window.colors.red],
-                  show=False,
-                  fname='after_registration.png')
+show_both_bundles(
+    [cb_subj1, cb_subj2_aligned],
+    colors=[window.colors.orange, window.colors.red],
+    show=False,
+    fname="after_registration.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

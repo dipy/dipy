@@ -30,24 +30,35 @@ from dipy.viz import actor, window
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
 dwi_path = op.join(
-       data_path, "derivatives", "qsiprep", "sub-NDARAA948VFH",
-       "ses-HBNsiteRU", "dwi")
+    data_path, "derivatives", "qsiprep", "sub-NDARAA948VFH", "ses-HBNsiteRU", "dwi"
+)
 
-img = nib.load(op.join(
-       dwi_path,
-       "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz"))
+img = nib.load(
+    op.join(
+        dwi_path,
+        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
+    )
+)
 
 gtab = gradient_table(
-       op.join(dwi_path,
-"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval"),
-       op.join(dwi_path,
-"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec"))
+    op.join(
+        dwi_path,
+        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
+    ),
+    op.join(
+        dwi_path,
+        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
+    ),
+)
 
 data = np.asarray(img.dataobj)
 
 mask_img = nib.load(
-       op.join(dwi_path,
-"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz"))
+    op.join(
+        dwi_path,
+        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz",
+    )
+)
 
 brain_mask = mask_img.get_fdata()
 
@@ -66,7 +77,7 @@ mask_small = brain_mask[:, :, 50:51]
 # fitting, in this case we used the Constrained Spherical Deconvolution (CSD)
 # algorithm.
 
-fm = ForecastModel(gtab, sh_order_max=6, dec_alg='CSD')
+fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 
 ###############################################################################
 # Fit the FORECAST to the data
@@ -87,27 +98,31 @@ md = f_fit.mean_diffusivity()
 # Show the indices and save them in FORECAST_indices.png.
 
 fig = plt.figure(figsize=(6, 6))
-ax1 = fig.add_subplot(2, 2, 1, title='parallel diffusivity')
+ax1 = fig.add_subplot(2, 2, 1, title="parallel diffusivity")
 ax1.set_axis_off()
-ind = ax1.imshow(d_par[:, :, 0].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax1.imshow(
+    d_par[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax2 = fig.add_subplot(2, 2, 2, title='perpendicular diffusivity')
+ax2 = fig.add_subplot(2, 2, 2, title="perpendicular diffusivity")
 ax2.set_axis_off()
-ind = ax2.imshow(d_perp[:, :, 0].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax2.imshow(
+    d_perp[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax3 = fig.add_subplot(2, 2, 3, title='fractional anisotropy')
+ax3 = fig.add_subplot(2, 2, 3, title="fractional anisotropy")
 ax3.set_axis_off()
-ind = ax3.imshow(fa[:, :, 0].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax3.imshow(
+    fa[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax4 = fig.add_subplot(2, 2, 4, title='mean diffusivity')
+ax4 = fig.add_subplot(2, 2, 4, title="mean diffusivity")
 ax4.set_axis_off()
-ind = ax4.imshow(md[:, :, 0].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax4.imshow(
+    md[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
+plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -117,22 +132,23 @@ plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 #
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 ###############################################################################
 # Compute the fODFs.
 
 odf = f_fit.odf(sphere)
-print('fODF.shape (%d, %d, %d, %d)' % odf.shape)
+print("fODF.shape (%d, %d, %d, %d)" % odf.shape)
 
 ###############################################################################
 # Display a part of the fODFs
 
-odf_actor = actor.odf_slicer(odf[30:60, 30:60, :], sphere=sphere,
-                             colormap='plasma', scale=0.6)
+odf_actor = actor.odf_slicer(
+    odf[30:60, 30:60, :], sphere=sphere, colormap="plasma", scale=0.6
+)
 scene = window.Scene()
 scene.add(odf_actor)
-window.record(scene, out_path='fODFs.png', size=(600, 600), magnification=4)
+window.record(scene, out_path="fODFs.png", size=(600, 600), magnification=4)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

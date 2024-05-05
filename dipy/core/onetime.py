@@ -146,6 +146,7 @@ class OneTimeProperty:
 
     This is meant to be used mostly by the auto_attr decorator in this module.
     """
+
     def __init__(self, func):
         """Create a OneTimeProperty instance.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Classes and functions for fitting the DKI-based microstructural model """
+"""Classes and functions for fitting the DKI-based microstructural model"""
 
 import numpy as np
 
@@ -29,9 +29,8 @@ from dipy.reconst.dti import (
 from dipy.reconst.vec_val_sum import vec_val_vect
 
 
-def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
-                          mask=None):
-    """ Computes the axonal water fraction from DKI [1]_.
+def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
+    """Computes the axonal water fraction from DKI [1]_.
 
     Parameters
     ----------
@@ -73,9 +72,8 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
     return awf
 
 
-def diffusion_components(dki_params, sphere='repulsion100', awf=None,
-                         mask=None):
-    """ Extracts the restricted and hindered diffusion tensors of well aligned
+def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None):
+    """Extracts the restricted and hindered diffusion tensors of well aligned
     fibers from diffusion kurtosis imaging parameters [1]_.
 
     Parameters
@@ -126,7 +124,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
 
     # select voxels where to apply the single fiber model
     if mask is None:
-        mask = np.ones(shape, dtype='bool')
+        mask = np.ones(shape, dtype="bool")
     else:
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
@@ -147,10 +145,10 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     # Generate matrix that converts apparent diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
     B[:, 0] = sphere.x * sphere.x  # Bxx
-    B[:, 1] = sphere.x * sphere.y * 2.  # Bxy
-    B[:, 2] = sphere.y * sphere.y   # Byy
-    B[:, 3] = sphere.x * sphere.z * 2.  # Bxz
-    B[:, 4] = sphere.y * sphere.z * 2.  # Byz
+    B[:, 1] = sphere.x * sphere.y * 2.0  # Bxy
+    B[:, 2] = sphere.y * sphere.y  # Byy
+    B[:, 3] = sphere.x * sphere.z * 2.0  # Bxz
+    B[:, 4] = sphere.y * sphere.z * 2.0  # Byz
     B[:, 5] = sphere.z * sphere.z  # Bzz
     pinvB = np.linalg.pinv(B)
 
@@ -165,8 +163,9 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
             continue
         # sample apparent diffusion and kurtosis values
         di = directional_diffusion(dt[idx], sphere.vertices)
-        ki = directional_kurtosis(dt[idx], md[idx], kt[idx], sphere.vertices,
-                                  adc=di, min_kurtosis=0)
+        ki = directional_kurtosis(
+            dt[idx], md[idx], kt[idx], sphere.vertices, adc=di, min_kurtosis=0
+        )
         edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
         edt = np.dot(pinvB, edi)
         edt_all[idx] = edt
@@ -186,7 +185,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
 
 
 def dkimicro_prediction(params, gtab, S0=1):
-    r""" Signal prediction given the DKI microstructure model parameters.
+    r"""Signal prediction given the DKI microstructure model parameters.
 
     Parameters
     ----------
@@ -248,14 +247,15 @@ def dkimicro_prediction(params, gtab, S0=1):
     index = ndindex(evals.shape[:-1])
     for v in index:
         if mask[v]:
-            pred_sig[v] = (1. - f[v]) * np.exp(np.dot(D[:, :6], adce[v])) + \
-                f[v] * np.exp(np.dot(D[:, :6], adci[v]))
+            pred_sig[v] = (1.0 - f[v]) * np.exp(np.dot(D[:, :6], adce[v])) + f[
+                v
+            ] * np.exp(np.dot(D[:, :6], adci[v]))
 
     return pred_sig * S0_vol
 
 
 def tortuosity(hindered_ad, hindered_rd):
-    """ Computes the tortuosity of the hindered diffusion compartment given
+    """Computes the tortuosity of the hindered diffusion compartment given
     its axial and radial diffusivities
 
     Parameters
@@ -284,7 +284,7 @@ def tortuosity(hindered_ad, hindered_rd):
     # processed using the same line of code of multi-voxel
     if hindered_rd.size == 1:
         if mask:
-                tortuosity = hindered_ad / hindered_rd
+            tortuosity = hindered_ad / hindered_rd
     else:
         tortuosity[mask] = hindered_ad[mask] / hindered_rd[mask]
 
@@ -292,7 +292,7 @@ def tortuosity(hindered_ad, hindered_rd):
 
 
 def _compartments_eigenvalues(cdt):
-    """ Helper function that computes the eigenvalues of a tissue sub
+    """Helper function that computes the eigenvalues of a tissue sub
     compartment given its individual diffusion tensor
 
     Parameters
@@ -311,11 +311,10 @@ def _compartments_eigenvalues(cdt):
 
 
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
-    """ Class for the Diffusion Kurtosis Microstructural Model
-    """
+    """Class for the Diffusion Kurtosis Microstructural Model"""
 
-    def __init__(self,  gtab, fit_method="WLS", *args, **kwargs):
-        """ Initialize a KurtosisMicrostrutureModel class instance [1]_.
+    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+        """Initialize a KurtosisMicrostrutureModel class instance [1]_.
 
         Parameters
         ----------
@@ -342,12 +341,10 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
-        DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args,
-                                        **kwargs)
+        DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args, **kwargs)
 
-    def fit(self, data, mask=None, sphere='repulsion100', gtol=1e-2,
-            awf_only=False):
-        """ Fit method of the Diffusion Kurtosis Microstructural Model
+    def fit(self, data, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
+        """Fit method of the Diffusion Kurtosis Microstructural Model
 
         Parameters
         ----------
@@ -392,31 +389,30 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=gtol)
 
         if awf_only:
-            params_all_mask = np.concatenate((dki_params, np.array([awf]).T),
-                                             axis=-1)
+            params_all_mask = np.concatenate((dki_params, np.array([awf]).T), axis=-1)
         else:
             # Computing the hindered and restricted diffusion tensors
-            hdt, rdt = diffusion_components(dki_params, sphere=sphere,
-                                            awf=awf)
-            params_all_mask = np.concatenate((dki_params, np.array([awf]).T,
-                                              hdt, rdt), axis=-1)
+            hdt, rdt = diffusion_components(dki_params, sphere=sphere, awf=awf)
+            params_all_mask = np.concatenate(
+                (dki_params, np.array([awf]).T, hdt, rdt), axis=-1
+            )
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1,)
             params = params_all_mask.reshape(out_shape)
-            #if extra is not None:
+            # if extra is not None:
             #    self.extra = extra.reshape(data.shape)
         else:
             params = np.zeros(data.shape[:-1] + (params_all_mask.shape[-1],))
             params[mask, :] = params_all_mask
-            #if extra is not None:
+            # if extra is not None:
             #    self.extra = np.zeros(data.shape)
             #    self.extra[mask, :] = extra
 
         return KurtosisMicrostructuralFit(self, params)
 
-    def predict(self, params, S0=1.):
-        """ Predict a signal for the DKI microstructural model class instance
+    def predict(self, params, S0=1.0):
+        """Predict a signal for the DKI microstructural model class instance
         given parameters.
 
         Parameters
@@ -452,10 +448,10 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
 
 
 class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
-    """ Class for fitting the Diffusion Kurtosis Microstructural Model """
+    """Class for fitting the Diffusion Kurtosis Microstructural Model"""
 
     def __init__(self, model, model_params):
-        """ Initialize a KurtosisMicrostructural Fit class instance.
+        """Initialize a KurtosisMicrostructural Fit class instance.
 
         Parameters
         ----------
@@ -489,7 +485,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def awf(self):
-        """ Returns the volume fraction of the restricted diffusion compartment
+        """Returns the volume fraction of the restricted diffusion compartment
         also known as axonal water fraction.
 
         Notes
@@ -507,7 +503,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def restricted_evals(self):
-        """ Returns the eigenvalues of the restricted diffusion compartment.
+        """Returns the eigenvalues of the restricted diffusion compartment.
 
         Notes
         -----
@@ -525,7 +521,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def hindered_evals(self):
-        """ Returns the eigenvalues of the hindered diffusion compartment.
+        """Returns the eigenvalues of the hindered diffusion compartment.
 
         Notes
         -----
@@ -543,7 +539,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def axonal_diffusivity(self):
-        """ Returns the axonal diffusivity defined as the restricted diffusion
+        """Returns the axonal diffusivity defined as the restricted diffusion
         tensor trace [1]_.
 
         References
@@ -556,7 +552,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def hindered_ad(self):
-        """ Returns the axial diffusivity of the hindered compartment.
+        """Returns the axial diffusivity of the hindered compartment.
 
         Notes
         -----
@@ -573,7 +569,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def hindered_rd(self):
-        """ Returns the radial diffusivity of the hindered compartment.
+        """Returns the radial diffusivity of the hindered compartment.
 
         Notes
         -----
@@ -590,7 +586,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def tortuosity(self):
-        """ Returns the tortuosity of the hindered diffusion which is defined
+        """Returns the tortuosity of the hindered diffusion which is defined
         by ADe / RDe, where ADe and RDe are the axial and radial diffusivities
         of the hindered compartment [1]_.
 
@@ -608,13 +604,15 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         return tortuosity(self.hindered_ad, self.hindered_rd)
 
     def _is_awfonly(self):
-        """ To raise error if only the axonal water fraction was computed """
+        """To raise error if only the axonal water fraction was computed"""
         if self.model_params.shape[-1] < 39:
-            raise ValueError('Only the awf was processed! Rerun model fit '
-                             'with input parameter awf_only set to False')
+            raise ValueError(
+                "Only the awf was processed! Rerun model fit "
+                "with input parameter awf_only set to False"
+            )
 
-    def predict(self, gtab, S0=1.):
-        r""" Given a DKI microstructural model fit, predict the signal on the
+    def predict(self, gtab, S0=1.0):
+        r"""Given a DKI microstructural model fit, predict the signal on the
         vertices of a gradient table
 
         gtab : a GradientTable class instance

@@ -1,6 +1,4 @@
-""" Testing utility functions
-
-"""
+"""Testing utility functions"""
 
 from itertools import permutations
 import random
@@ -38,16 +36,12 @@ from dipy.testing.spherepoints import sphere_points
 
 
 def test_vector_norm():
-    A = np.array([[1, 0, 0],
-                  [3, 4, 0],
-                  [0, 5, 12],
-                  [1, 2, 3]])
+    A = np.array([[1, 0, 0], [3, 4, 0], [0, 5, 12], [1, 2, 3]])
     expected = np.array([1, 5, 13, np.sqrt(14)])
     assert_array_almost_equal(vector_norm(A), expected)
     expected.shape = (4, 1)
     assert_array_almost_equal(vector_norm(A, keepdims=True), expected)
-    assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True),
-                              expected.T)
+    assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True), expected.T)
 
 
 def test_sphere_cart():
@@ -81,9 +75,9 @@ def test_sphere_cart():
 
 
 def test_invert_transform():
-    n = 100.
-    theta = np.arange(n)/n * np.pi  # Limited to 0,pi
-    phi = (np.arange(n)/n - .5) * 2 * np.pi  # Limited to 0,2pi
+    n = 100.0
+    theta = np.arange(n) / n * np.pi  # Limited to 0,pi
+    phi = (np.arange(n) / n - 0.5) * 2 * np.pi  # Limited to 0,2pi
     x, y, z = sphere2cart(1, theta, phi)  # Let's assume they're all unit vecs
     r, new_theta, new_phi = cart2sphere(x, y, z)  # Transform back
 
@@ -99,16 +93,16 @@ def test_nearest_pos_semi_def():
     B = np.diag(np.array([0, 0, 3]))
     assert_array_almost_equal(B, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, 2, 3]))
-    Bpsd = np.array([[0., 0., 0.], [0., 1.75, 0.], [0., 0., 2.75]])
+    Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 1.75, 0.0], [0.0, 0.0, 2.75]])
     assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, -2, 3]))
-    Bpsd = np.array([[0., 0., 0.], [0., 0., 0.], [0., 0., 2.]])
+    Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
-    B = np.diag(np.array([-1.e-11, 0, 1000]))
-    Bpsd = np.array([[0., 0., 0.], [0., 0., 0.], [0., 0., 1000.]])
+    B = np.diag(np.array([-1.0e-11, 0, 1000]))
+    Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1000.0]])
     assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, -2, -3]))
-    Bpsd = np.array([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
+    Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
     assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
 
 
@@ -120,8 +114,7 @@ def test_cart_distance():
     pts1 = [2, 1, 0]
     pts2 = [0, 1, -2]
     assert_array_almost_equal(cart_distance(pts1, pts2), np.sqrt(8))
-    pts2 = [[0, 1, -2],
-            [-2, 1, 0]]
+    pts2 = [[0, 1, -2], [-2, 1, 0]]
     assert_array_almost_equal(cart_distance(pts1, pts2), [np.sqrt(8), 4])
 
 
@@ -131,13 +124,13 @@ def test_sphere_distance():
     n = 5000
     n2 = n // 2
     # pi at point n2 in array
-    angles = np.linspace(0, np.pi*2, n, endpoint=False)
+    angles = np.linspace(0, np.pi * 2, n, endpoint=False)
     x = np.sin(angles) * radius
     y = np.cos(angles) * radius
     # dists around half circle, including pi
-    half_x = x[:n2+1]
-    half_y = y[:n2+1]
-    half_dists = np.sqrt(np.diff(half_x)**2 + np.diff(half_y)**2)
+    half_x = x[: n2 + 1]
+    half_y = y[: n2 + 1]
+    half_dists = np.sqrt(np.diff(half_x) ** 2 + np.diff(half_y) ** 2)
     # approximate distances from 0 to pi (not including 0)
     csums = np.cumsum(half_dists)
     # concatenated with distances from pi to 0 again
@@ -167,8 +160,7 @@ def test_vector_cosine(rng):
     pts1 = [2, 1, 0]
     pts2 = [-2, -1, 0]
     assert_array_almost_equal(vector_cosine(pts1, pts2), -1)
-    pts2 = [[-2, -1, 0],
-            [2, 1, 0]]
+    pts2 = [[-2, -1, 0], [2, 1, 0]]
     assert_array_almost_equal(vector_cosine(pts1, pts2), [-1, 1])
     # test relationship with correlation
     # not the same if non-zero vector mean
@@ -185,39 +177,40 @@ def test_vector_cosine(rng):
 
 
 def test_lambert_equal_area_projection_polar():
-
-    theta = np.repeat(np.pi/3, 10)
-    phi = np.linspace(0, 2*np.pi, 10)
+    theta = np.repeat(np.pi / 3, 10)
+    phi = np.linspace(0, 2 * np.pi, 10)
     # points sit on circle with co-latitude pi/3 (60 degrees)
     leap = lambert_equal_area_projection_polar(theta, phi)
-    assert_array_almost_equal(np.sqrt(np.sum(leap**2, axis=1)),
-                              np.array([1., 1., 1., 1., 1.,
-                                        1., 1., 1., 1., 1.]))
+    assert_array_almost_equal(
+        np.sqrt(np.sum(leap**2, axis=1)),
+        np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
+    )
     # points map onto the circle of radius 1
 
 
 def test_lambert_equal_area_projection_cart():
-
-    xyz = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0],
-                    [0, 0, -1]])
+    xyz = np.array(
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 0, -1]]
+    )
     # points sit on +/-1 on all 3 axes
 
     r, theta, phi = cart2sphere(*xyz.T)
 
     leap = lambert_equal_area_projection_polar(theta, phi)
     r2 = np.sqrt(2)
-    assert_array_almost_equal(np.sqrt(np.sum(leap**2, axis=1)),
-                              np.array([r2, r2, 0, r2, r2, 2]))
+    assert_array_almost_equal(
+        np.sqrt(np.sum(leap**2, axis=1)), np.array([r2, r2, 0, r2, r2, 2])
+    )
     # x and y =+/-1 map onto circle of radius sqrt(2)
     # z=1 maps to origin, and z=-1 maps to (an arbitrary point on) the
     # outer circle of radius 2
 
 
 def test_circumradius():
-
-    assert_array_almost_equal(np.sqrt(0.5), circumradius(np.array([0, 2, 0]),
-                                                         np.array([2, 0, 0]),
-                                                         np.array([0, 0, 0])))
+    assert_array_almost_equal(
+        np.sqrt(0.5),
+        circumradius(np.array([0, 2, 0]), np.array([2, 0, 0]), np.array([0, 0, 0])),
+    )
 
 
 def test_vec2vec_rotmat():
@@ -236,8 +229,7 @@ def test_vec2vec_rotmat():
     R2 = vec2vec_rotmat(c_norm, d_norm)
 
     assert_array_almost_equal(R1, R2, decimal=1)
-    assert_array_almost_equal(np.diag(R1),
-                              np.diag(R2), decimal=3)
+    assert_array_almost_equal(np.diag(R1), np.diag(R2), decimal=3)
 
     # we are catching collinear vectors
     # but in the case where they are not
@@ -253,12 +245,10 @@ def test_vec2vec_rotmat():
 
     assert_array_almost_equal(R3, R4, decimal=1)
 
-    assert_array_almost_equal(np.diag(R3),
-                              np.diag(R4), decimal=3)
+    assert_array_almost_equal(np.diag(R3), np.diag(R4), decimal=3)
 
 
 def test_compose_transformations():
-
     A = np.eye(4)
     A[0, -1] = 10
 
@@ -281,9 +271,9 @@ def test_compose_decompose_matrix(rng):
         for angles in permutations(np.deg2rad(90 * rng.random(3)), 3):
             for shears in permutations(3 * rng.random(3), 3):
                 for scale in permutations(3 * rng.random(3), 3):
-
-                    mat = compose_matrix(translate=translate, angles=angles,
-                                         shear=shears, scale=scale)
+                    mat = compose_matrix(
+                        translate=translate, angles=angles, shear=shears, scale=scale
+                    )
                     sc, sh, ang, trans, _ = decompose_matrix(mat)
 
                     assert_array_almost_equal(translate, trans)
@@ -300,8 +290,8 @@ def test_perpendicular_directions():
 
     for v in range(4):
         theta = random.uniform(0, np.pi)
-        phi = random.uniform(0, 2*np.pi)
-        vectors_v[v] = sphere2cart(1., theta, phi)
+        phi = random.uniform(0, 2 * np.pi)
+        vectors_v[v] = sphere2cart(1.0, theta, phi)
     vectors_v[3] = [1, 0, 0]
 
     for vector_v in vectors_v:
@@ -316,7 +306,7 @@ def test_perpendicular_directions():
             assert_almost_equal(cos_angle, 0)
 
         # check if directions are sampled by multiples of 2*pi / num
-        delta_a = 2. * np.pi / num
+        delta_a = 2.0 * np.pi / num
         for d in pd[1:]:
             angle = np.arccos(np.dot(pd[0], d))
             rest = angle % delta_a
@@ -326,17 +316,31 @@ def test_perpendicular_directions():
 
 
 def _rotation_from_angles(r):
-    R = np.array([[1, 0, 0],
-                  [0, np.cos(r[0]), np.sin(r[0])],
-                  [0, -np.sin(r[0]), np.cos(r[0])]])
+    R = np.array(
+        [[1, 0, 0], [0, np.cos(r[0]), np.sin(r[0])], [0, -np.sin(r[0]), np.cos(r[0])]]
+    )
 
-    R = np.dot(R, np.array([[np.cos(r[1]), 0, np.sin(r[1])],
-                            [0, 1, 0],
-                            [-np.sin(r[1]), 0, np.cos(r[1])]]))
+    R = np.dot(
+        R,
+        np.array(
+            [
+                [np.cos(r[1]), 0, np.sin(r[1])],
+                [0, 1, 0],
+                [-np.sin(r[1]), 0, np.cos(r[1])],
+            ]
+        ),
+    )
 
-    R = np.dot(R, np.array([[np.cos(r[2]), np.sin(r[2]), 0],
-                            [-np.sin(r[2]), np.cos(r[2]), 0],
-                            [0, 0, 1]]))
+    R = np.dot(
+        R,
+        np.array(
+            [
+                [np.cos(r[2]), np.sin(r[2]), 0],
+                [-np.sin(r[2]), np.cos(r[2]), 0],
+                [0, 0, 1],
+            ]
+        ),
+    )
     R = np.linalg.inv(R)
     return R
 
@@ -357,17 +361,15 @@ def test_dist_to_corner(rng):
 
 def test_is_hemispherical():
     # Smoke test the ValueError for non-3D vectors
-    assert_raises(ValueError, is_hemispherical, np.array(
-        [[1, 2, 3, 4], [5, 6, 7, 8]]
-    ))
+    assert_raises(ValueError, is_hemispherical, np.array([[1, 2, 3, 4], [5, 6, 7, 8]]))
 
     # Test on hemispherical input
-    xyz = random_uniform_on_sphere(n=100, coords='xyz')
+    xyz = random_uniform_on_sphere(n=100, coords="xyz")
     xyz = xyz[xyz[:, 2] > 0]
     assert_equal(is_hemispherical(xyz)[0], True)
 
     # Test on spherical input
-    xyz = random_uniform_on_sphere(n=100, coords='xyz')
+    xyz = random_uniform_on_sphere(n=100, coords="xyz")
     assert_equal(is_hemispherical(xyz)[0], False)
 
     # Smoke test the ValueError for non unit-vectors

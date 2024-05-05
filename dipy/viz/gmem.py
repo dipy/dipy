@@ -1,5 +1,6 @@
 # Shared objects across Horizon's systems
 
+
 class GlobalHorizon:
     def __init__(self):
         # window level sharing
@@ -7,10 +8,17 @@ class GlobalHorizon:
 
         # slicer level sharing
         self.slicer_opacity = 1
-        self.slicer_colormap = 'gray'
-        self.slicer_colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
+        self.slicer_colormap = "gray"
+        self.slicer_colormaps = [
+            "gray",
+            "magma",
+            "viridis",
+            "jet",
+            "Pastel1",
+            "disting",
+        ]
         self.slicer_colormap_cnt = 0
-        self.slicer_axes = ['x', 'y', 'z']
+        self.slicer_axes = ["x", "y", "z"]
 
         self.slicer_curr_x = None
         self.slicer_curr_y = None

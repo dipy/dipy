@@ -33,7 +33,7 @@ def otsu(image, nbins=256):
     # Clip ends to align class 1 and class 2 variables:
     # The last value of `weight1`/`mean1` should pair with zero values in
     # `weight2`/`mean2`, which do not exist.
-    variance12 = weight1[:-1] * weight2[1:] * (mean1[:-1] - mean2[1:])**2
+    variance12 = weight1[:-1] * weight2[1:] * (mean1[:-1] - mean2[1:]) ** 2
 
     idx = np.argmax(variance12)
     threshold = bin_centers[:-1][idx]
@@ -41,7 +41,7 @@ def otsu(image, nbins=256):
 
 
 def upper_bound_by_rate(data, rate=0.05):
-    r""" Adjusts upper intensity boundary using rates
+    r"""Adjusts upper intensity boundary using rates
 
     It calculates the image intensity histogram, and based on the rate value it
     decide what is the upperbound value for intensity normalization, usually
@@ -71,7 +71,7 @@ def upper_bound_by_rate(data, rate=0.05):
         m[i, 1] = h[i]
         m[i, 2] = h[i + 1]
 
-    g = sorted(g,reverse = True)
+    g = sorted(g, reverse=True)
     sz = np.size(g)
 
     Index = 0
@@ -88,7 +88,7 @@ def upper_bound_by_rate(data, rate=0.05):
 
 
 def upper_bound_by_percent(data, percent=1):
-    """ Find the upper bound for visualization of medical images
+    """Find the upper bound for visualization of medical images
 
     Calculate the histogram of the image and go right to left until you find
     the bound that contains more than a percentage of the image.
@@ -103,7 +103,7 @@ def upper_bound_by_percent(data, percent=1):
     upper_bound : float
     """
 
-    percent = percent / 100.
+    percent = percent / 100.0
     values, bounds = np.histogram(data, 20)
     total_voxels = np.prod(data.shape)
     agg = 0

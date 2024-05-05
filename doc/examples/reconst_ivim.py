@@ -1,4 +1,4 @@
-"""
+r"""
 ============================
 Intravoxel incoherent motion
 ============================
@@ -50,7 +50,7 @@ from dipy.reconst.ivim import IvimModel
 # of b-values. In order to use this model the data should contain signals
 # measured at 0 bvalue.
 
-fraw, fbval, fbvec = get_fnames('ivim')
+fraw, fbval, fbvec = get_fnames("ivim")
 
 ###############################################################################
 # The gtab contains a GradientTable object (information about the gradients
@@ -60,7 +60,7 @@ fraw, fbval, fbvec = get_fnames('ivim')
 data = load_nifti_data(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs, b0_threshold=0)
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print("data.shape (%d, %d, %d, %d)" % data.shape)
 
 ###############################################################################
 # The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
@@ -70,8 +70,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 z = 33
 b = 0
 
-plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray',
-           interpolation='nearest')
+plt.imshow(data[:, :, z, b].T, origin="lower", cmap="gray", interpolation="nearest")
 plt.axhline(y=100)
 plt.axvline(x=170)
 plt.savefig("ivim_data_slice.png")
@@ -94,8 +93,9 @@ x1, x2 = 90, 155
 y1, y2 = 90, 170
 data_slice = data[x1:x2, y1:y2, z, :]
 
-plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower',
-           cmap="gray", interpolation='nearest')
+plt.imshow(
+    data[x1:x2, y1:y2, z, b].T, origin="lower", cmap="gray", interpolation="nearest"
+)
 plt.savefig("CSF_slice.png")
 plt.close()
 
@@ -128,7 +128,7 @@ plt.close()
 # For brevity, we focus on a small section of the slice as selected above,
 # to fit the IVIM model. First, we instantiate the IvimModel object.
 
-ivimmodel = IvimModel(gtab, fit_method='trr')
+ivimmodel = IvimModel(gtab, fit_method="trr")
 
 ###############################################################################
 # To fit the model, call the `fit` method and pass the data for fitting.
@@ -175,11 +175,17 @@ print(estimated_params)
 def plot_map(raw_data, variable, limits, filename):
     fig, ax = plt.subplots(1)
     lower, upper = limits
-    ax.set_title('Map for {}'.format(variable))
-    im = ax.imshow(raw_data.T, origin='lower', clim=(lower, upper),
-                   cmap="gray", interpolation='nearest')
+    ax.set_title("Map for {}".format(variable))
+    im = ax.imshow(
+        raw_data.T,
+        origin="lower",
+        clim=(lower, upper),
+        cmap="gray",
+        interpolation="nearest",
+    )
     fig.colorbar(im)
     fig.savefig(filename)
+
 
 ###############################################################################
 # Let us get the various plots with `fit_method = 'trr'` so that we can
@@ -212,7 +218,7 @@ plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 # of microstructure models. This method has been described in further detail
 # in [Fadnavis19]_ and [Farooq16]_.
 
-ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
+ivimmodel_vp = IvimModel(gtab, fit_method="VarPro")
 ivimfit_vp = ivimmodel_vp.fit(data_slice)
 
 ###############################################################################
@@ -237,8 +243,7 @@ print(estimated_params)
 
 fig, ax = plt.subplots(1)
 
-ax.scatter(gtab.bvals, data_slice[i, j, :],
-           color="green", label="Measured signal")
+ax.scatter(gtab.bvals, data_slice[i, j, :], color="green", label="Measured signal")
 
 ivim_trr_predict = ivimfit.predict(gtab)[i, j, :]
 
@@ -249,8 +254,14 @@ S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
 text_fit = """trr param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
-ax.text(0.65, 0.80, text_fit, horizontalalignment='center',
-        verticalalignment='center', transform=plt.gca().transAxes)
+ax.text(
+    0.65,
+    0.80,
+    text_fit,
+    horizontalalignment="center",
+    verticalalignment="center",
+    transform=plt.gca().transAxes,
+)
 
 ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
 ax.plot(gtab.bvals, ivim_predict_vp, label="VarPro prediction")
@@ -263,10 +274,16 @@ S0_est, f_est, D_star_est, D_est = ivimfit_vp.model_params[i, j, :]
 text_fit = """VarPro param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
-ax.text(0.65, 0.50, text_fit, horizontalalignment='center',
-        verticalalignment='center', transform=plt.gca().transAxes)
+ax.text(
+    0.65,
+    0.50,
+    text_fit,
+    horizontalalignment="center",
+    verticalalignment="center",
+    transform=plt.gca().transAxes,
+)
 
-fig.legend(loc='upper right')
+fig.legend(loc="upper right")
 fig.savefig("ivim_voxel_plot.png")
 
 ###############################################################################
@@ -279,16 +296,36 @@ fig.savefig("ivim_voxel_plot.png")
 # visualize them in one page
 
 plt.figure()
-plot_map(ivimfit_vp.S0_predicted, "Heatmap of S0 predicted from the fit",
-         (0, 10000), "predicted_S0.png")
-plot_map(data_slice[..., 0], "Heatmap of measured signal at bvalue = 0",
-         (0, 10000), "measured_S0.png")
-plot_map(ivimfit_vp.perfusion_fraction, "Heatmap of perfusion fraction values "
-         "predicted from the fit", (0, 1), "perfusion_fraction.png")
-plot_map(ivimfit_vp.D_star, "D* - Heatmap of perfusion coefficients predicted "
-         "from the fit", (0, 0.01), "perfusion_coeff.png")
-plot_map(ivimfit_vp.D, "D - Heatmap of diffusion coefficients predicted from "
-         "the fit", (0, 0.001), "diffusion_coeff.png")
+plot_map(
+    ivimfit_vp.S0_predicted,
+    "Heatmap of S0 predicted from the fit",
+    (0, 10000),
+    "predicted_S0.png",
+)
+plot_map(
+    data_slice[..., 0],
+    "Heatmap of measured signal at bvalue = 0",
+    (0, 10000),
+    "measured_S0.png",
+)
+plot_map(
+    ivimfit_vp.perfusion_fraction,
+    "Heatmap of perfusion fraction values " "predicted from the fit",
+    (0, 1),
+    "perfusion_fraction.png",
+)
+plot_map(
+    ivimfit_vp.D_star,
+    "D* - Heatmap of perfusion coefficients predicted " "from the fit",
+    (0, 0.01),
+    "perfusion_coeff.png",
+)
+plot_map(
+    ivimfit_vp.D,
+    "D - Heatmap of diffusion coefficients predicted from " "the fit",
+    (0, 0.001),
+    "diffusion_coeff.png",
+)
 
 
 ###############################################################################

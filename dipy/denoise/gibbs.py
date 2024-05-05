@@ -11,7 +11,7 @@ _fft = scipy.fft
 
 
 def _image_tv(x, axis=0, n_points=3):
-    """ Computes total variation (TV) of matrix x across a given axis and
+    """Computes total variation (TV) of matrix x across a given axis and
     along two directions.
 
     Parameters
@@ -34,18 +34,25 @@ def _image_tv(x, axis=0, n_points=3):
     xs = x.copy() if axis else x.T.copy()
 
     # Add copies of the data so that data extreme points are also analysed
-    xs = np.concatenate((xs[:, (-n_points-1):], xs, xs[:, 0:(n_points+1)]),
-                        axis=1)
+    xs = np.concatenate(
+        (xs[:, (-n_points - 1) :], xs, xs[:, 0 : (n_points + 1)]), axis=1
+    )
 
-    ptv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
-                      xs[:, (n_points+2):(-n_points)])
-    ntv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
-                      xs[:, n_points:(-n_points-2)])
+    ptv = np.absolute(
+        xs[:, (n_points + 1) : (-n_points - 1)] - xs[:, (n_points + 2) : (-n_points)]
+    )
+    ntv = np.absolute(
+        xs[:, (n_points + 1) : (-n_points - 1)] - xs[:, n_points : (-n_points - 2)]
+    )
     for n in range(1, n_points):
-        ptv = ptv + np.absolute(xs[:, (n_points+1+n):(-n_points-1+n)] -
-                                xs[:, (n_points+2+n):(-n_points+n)])
-        ntv = ntv + np.absolute(xs[:, (n_points+1-n):(-n_points-1-n)] -
-                                xs[:, (n_points-n):(-n_points-2-n)])
+        ptv = ptv + np.absolute(
+            xs[:, (n_points + 1 + n) : (-n_points - 1 + n)]
+            - xs[:, (n_points + 2 + n) : (-n_points + n)]
+        )
+        ntv = ntv + np.absolute(
+            xs[:, (n_points + 1 - n) : (-n_points - 1 - n)]
+            - xs[:, (n_points - n) : (-n_points - 2 - n)]
+        )
 
     if axis:
         return ptv, ntv
@@ -129,13 +136,13 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
 
     # use positive and negative optimal sub-voxel shifts to interpolate to
     # original grid points
-    xs[idx] = (isp[idx] - isn[idx])/(sp[idx] + sn[idx])*sn[idx] + isn[idx]
+    xs[idx] = (isp[idx] - isn[idx]) / (sp[idx] + sn[idx]) * sn[idx] + isn[idx]
 
     return xs if axis else xs.T
 
 
 def _weights(shape):
-    """ Computes the weights necessary to combine two images processed by
+    """Computes the weights necessary to combine two images processed by
     the 1D Gibbs removal procedure along two different axes [1]_.
 
     Parameters
@@ -171,15 +178,15 @@ def _weights(shape):
 
     # Boundaries
     G1[1:-1, 0] = G1[1:-1, -1] = 1
-    G1[0, 0] = G1[-1, -1] = G1[0, -1] = G1[-1, 0] = 1/2
+    G1[0, 0] = G1[-1, -1] = G1[0, -1] = G1[-1, 0] = 1 / 2
     G0[0, 1:-1] = G0[-1, 1:-1] = 1
-    G0[0, 0] = G0[-1, -1] = G0[0, -1] = G0[-1, 0] = 1/2
+    G0[0, 0] = G0[-1, -1] = G0[0, -1] = G0[-1, 0] = 1 / 2
 
     return G0, G1
 
 
 def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
-    """ Suppress Gibbs ringing of a 2D image.
+    """Suppress Gibbs ringing of a 2D image.
 
     Parameters
     ----------
@@ -227,13 +234,12 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
 
     C1 = _fft.fft2(img_c1)
     C0 = _fft.fft2(img_c0)
-    imagec = abs(_fft.ifft2(_fft.fftshift(C1)*G1 + _fft.fftshift(C0)*G0))
+    imagec = abs(_fft.ifft2(_fft.fftshift(C1) * G1 + _fft.fftshift(C0) * G0))
 
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
-                  num_processes=1):
+def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -294,8 +300,10 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
     if slice_axis > 2:
-        raise ValueError("Different slices have to be organized along" +
-                         "one of the 3 first matrix dimensions")
+        raise ValueError(
+            "Different slices have to be organized along"
+            + "one of the 3 first matrix dimensions"
+        )
 
     # 2) Reorder axis to allow iteration over the first axis
     elif nd == 3:
@@ -319,12 +327,10 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        mp.set_start_method('spawn', force=True)
+        mp.set_start_method("spawn", force=True)
         pool = mp.Pool(num_processes)
 
-        partial_func = partial(
-            _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
-        )
+        partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
         vol[:, :, :] = pool.map(partial_func, vol)
         pool.close()
         pool.join()

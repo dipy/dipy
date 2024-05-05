@@ -33,7 +33,7 @@ from dipy.viz.horizon.visualizer import (
     SurfaceVisualizer,
 )
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
+fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
 if has_fury:
     from fury import __version__ as fury_version, actor, ui, window
@@ -55,16 +55,33 @@ HELP_MESSAGE = """
 
 
 class Horizon:
-
-    def __init__(self, tractograms=None, images=None, pams=None, surfaces=None,
-                 cluster=False, rgb=False, cluster_thr=15.0,
-                 random_colors=None, length_gt=0, length_lt=1000,
-                 clusters_gt=0, clusters_lt=10000,
-                 world_coords=True, interactive=True, out_png='tmp.png',
-                 recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
-                 order_transparent=True, buan=False, buan_colors=None,
-                 roi_images=False, roi_colors=(1, 0, 0),
-                 surface_colors=[(1, 0, 0)]):
+    def __init__(
+        self,
+        tractograms=None,
+        images=None,
+        pams=None,
+        surfaces=None,
+        cluster=False,
+        rgb=False,
+        cluster_thr=15.0,
+        random_colors=None,
+        length_gt=0,
+        length_lt=1000,
+        clusters_gt=0,
+        clusters_lt=10000,
+        world_coords=True,
+        interactive=True,
+        out_png="tmp.png",
+        recorded_events=None,
+        return_showm=False,
+        bg_color=(0, 0, 0),
+        order_transparent=True,
+        buan=False,
+        buan_colors=None,
+        roi_images=False,
+        roi_colors=(1, 0, 0),
+        surface_colors=((1, 0, 0),),
+    ):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -145,11 +162,14 @@ class Horizon:
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
         if not has_fury:
-            raise ImportError('Horizon requires FURY. Please install it '
-                              'with pip install fury')
-        if Version(fury_version) < Version('0.10.0'):
-            ValueError('Horizon requires FURY version 0.10.0 or higher.'
-                       ' Please upgrade FURY with pip install -U fury.')
+            raise ImportError(
+                "Horizon requires FURY. Please install it " "with pip install fury"
+            )
+        if Version(fury_version) < Version("0.10.0"):
+            ValueError(
+                "Horizon requires FURY version 0.10.0 or higher."
+                " Please upgrade FURY with pip install -U fury."
+            )
 
         self.cluster = cluster
         self.rgb = rgb
@@ -186,7 +206,7 @@ class Horizon:
 
         if self.random_colors is not None:
             if not self.random_colors:
-                self.random_colors = ['tracts', 'rois']
+                self.random_colors = ["tracts", "rois"]
         else:
             self.random_colors = []
 
@@ -210,14 +230,14 @@ class Horizon:
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
-            if centroid_actors[cent]['selected']:
-                if not centroid_actors[cent]['expanded']:
-                    len_ = centroid_actors[cent]['length']
-                    sz_ = centroid_actors[cent]['size']
-                    if (len_ >= min_length and sz_ >= min_size):
-                        centroid_actors[cent]['actor'].VisibilityOn()
+            if centroid_actors[cent]["selected"]:
+                if not centroid_actors[cent]["expanded"]:
+                    len_ = centroid_actors[cent]["length"]
+                    sz_ = centroid_actors[cent]["size"]
+                    if len_ >= min_length and sz_ >= min_size:
+                        centroid_actors[cent]["actor"].VisibilityOn()
                         cent.VisibilityOff()
-                        centroid_actors[cent]['expanded'] = 1
+                        centroid_actors[cent]["expanded"] = 1
         self.show_m.render()
 
     # TODO: Move to another class/module
@@ -228,15 +248,15 @@ class Horizon:
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
-            valid_length = centroid_actors[cent]['length'] >= min_length
-            valid_size = centroid_actors[cent]['size'] >= min_size
+            valid_length = centroid_actors[cent]["length"] >= min_length
+            valid_size = centroid_actors[cent]["size"] >= min_size
             if self.__hide_centroids:
                 if valid_length or valid_size:
-                    if centroid_actors[cent]['selected'] == 0:
+                    if centroid_actors[cent]["selected"] == 0:
                         cent.VisibilityOff()
             else:
                 if valid_length and valid_size:
-                    if centroid_actors[cent]['selected'] == 0:
+                    if centroid_actors[cent]["selected"] == 0:
                         cent.VisibilityOn()
         self.__hide_centroids = not self.__hide_centroids
         self.show_m.render()
@@ -250,14 +270,14 @@ class Horizon:
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
-            valid_length = centroid_actors[cent]['length'] >= min_length
-            valid_size = centroid_actors[cent]['size'] >= min_size
+            valid_length = centroid_actors[cent]["length"] >= min_length
+            valid_size = centroid_actors[cent]["size"] >= min_size
             if valid_length and valid_size:
-                centroid_actors[cent]['selected'] = (
-                    not centroid_actors[cent]['selected'])
-                clus = centroid_actors[cent]['actor']
-                cluster_actors[clus]['selected'] = (
-                    centroid_actors[cent]['selected'])
+                centroid_actors[cent]["selected"] = not centroid_actors[cent][
+                    "selected"
+                ]
+                clus = centroid_actors[cent]["actor"]
+                cluster_actors[clus]["selected"] = centroid_actors[cent]["selected"]
         self.show_m.render()
 
     def __key_press_events(self, obj, event):
@@ -265,7 +285,7 @@ class Horizon:
         # TODO: Move to another class/module
         if self.cluster:
             # retract help panel
-            if key in ('o', 'O'):
+            if key in ("o", "O"):
                 panel_size = self.help_panel._get_size()
                 if self.__help_visible:
                     new_pos = np.array(self.__win_size) - 10
@@ -275,22 +295,22 @@ class Horizon:
                     self.__help_visible = True
                 self.help_panel._set_position(new_pos)
                 self.show_m.render()
-            if key in ('a', 'A'):
+            if key in ("a", "A"):
                 self.__show_all()
-            if key in ('e', 'E'):
+            if key in ("e", "E"):
                 self.__expand()
             # hide on/off unselected centroids
-            if key in ('h', 'H'):
+            if key in ("h", "H"):
                 self.__hide()
             # invert selection
-            if key in ('i', 'I'):
+            if key in ("i", "I"):
                 self.__invert()
-            if key in ('r', 'R'):
+            if key in ("r", "R"):
                 self.__reset()
             # save current result
-            if key in ('s', 'S'):
+            if key in ("s", "S"):
                 self.__save()
-            if key in ('y', 'Y'):
+            if key in ("y", "Y"):
                 self.__new_window()
 
     # TODO: Move to another class/module
@@ -300,19 +320,28 @@ class Horizon:
         active_streamlines = Streamlines()
         for bundle in cluster_actors.keys():
             if bundle.GetVisibility():
-                t = cluster_actors[bundle]['tractogram']
-                c = cluster_actors[bundle]['cluster']
+                t = cluster_actors[bundle]["tractogram"]
+                c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 active_streamlines.extend(Streamlines(indices))
 
         # Using the header of the first of the tractograms
         active_sft = StatefulTractogram(
-            active_streamlines, self.tractograms[0], Space.RASMM)
+            active_streamlines, self.tractograms[0], Space.RASMM
+        )
         hz2 = Horizon(
-            [active_sft], self.images, cluster=True,
-            cluster_thr=self.cluster_thr/2., random_colors=self.random_colors,
-            length_lt=np.inf, length_gt=0, clusters_lt=np.inf,
-            clusters_gt=0, world_coords=True, interactive=True)
+            [active_sft],
+            self.images,
+            cluster=True,
+            cluster_thr=self.cluster_thr / 2.0,
+            random_colors=self.random_colors,
+            length_lt=np.inf,
+            length_gt=0,
+            clusters_lt=np.inf,
+            clusters_gt=0,
+            world_coords=True,
+            interactive=True,
+        )
         ren2 = hz2.build_scene()
         hz2.build_show(ren2)
 
@@ -324,12 +353,12 @@ class Horizon:
         min_length = np.min(lengths)
         min_size = np.min(sizes)
         for cent in centroid_actors:
-            valid_length = centroid_actors[cent]['length'] >= min_length
-            valid_size = centroid_actors[cent]['size'] >= min_size
+            valid_length = centroid_actors[cent]["length"] >= min_length
+            valid_size = centroid_actors[cent]["size"] >= min_size
             if valid_length and valid_size:
-                centroid_actors[cent]['actor'].VisibilityOff()
+                centroid_actors[cent]["actor"].VisibilityOff()
                 cent.VisibilityOn()
-                centroid_actors[cent]['expanded'] = 0
+                centroid_actors[cent]["expanded"] = 0
         self.show_m.render()
 
     # TODO: Move to another class/module
@@ -339,17 +368,18 @@ class Horizon:
         saving_streamlines = Streamlines()
         for bundle in cluster_actors.keys():
             if bundle.GetVisibility():
-                t = cluster_actors[bundle]['tractogram']
-                c = cluster_actors[bundle]['cluster']
+                t = cluster_actors[bundle]["tractogram"]
+                c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 saving_streamlines.extend(Streamlines(indices))
-        print('Saving result in tmp.trk')
+        print("Saving result in tmp.trk")
 
         # Using the header of the first of the tractograms
         sft_new = StatefulTractogram(
-            saving_streamlines, self.tractograms[0], Space.RASMM)
-        save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
-        print('Saved!')
+            saving_streamlines, self.tractograms[0], Space.RASMM
+        )
+        save_tractogram(sft_new, "tmp.trk", bbox_valid_check=False)
+        print("Saved!")
 
     # TODO: Move to another class/module
     def __show_all(self):
@@ -361,23 +391,21 @@ class Horizon:
         min_size = np.min(sizes)
         if self.__select_all:
             for cent in centroid_actors:
-                valid_length = centroid_actors[cent]['length'] >= min_length
-                valid_size = centroid_actors[cent]['size'] >= min_size
+                valid_length = centroid_actors[cent]["length"] >= min_length
+                valid_size = centroid_actors[cent]["size"] >= min_size
                 if valid_length and valid_size:
-                    centroid_actors[cent]['selected'] = 0
-                    clus = centroid_actors[cent]['actor']
-                    cluster_actors[clus]['selected'] = (
-                        centroid_actors[cent]['selected'])
+                    centroid_actors[cent]["selected"] = 0
+                    clus = centroid_actors[cent]["actor"]
+                    cluster_actors[clus]["selected"] = centroid_actors[cent]["selected"]
             self.__select_all = False
         else:
             for cent in centroid_actors:
-                valid_length = centroid_actors[cent]['length'] >= min_length
-                valid_size = centroid_actors[cent]['size'] >= min_size
+                valid_length = centroid_actors[cent]["length"] >= min_length
+                valid_size = centroid_actors[cent]["size"] >= min_size
                 if valid_length and valid_size:
-                    centroid_actors[cent]['selected'] = 1
-                    clus = centroid_actors[cent]['actor']
-                    cluster_actors[clus]['selected'] = (
-                        centroid_actors[cent]['selected'])
+                    centroid_actors[cent]["selected"] = 1
+                    clus = centroid_actors[cent]["actor"]
+                    cluster_actors[clus]["selected"] = centroid_actors[cent]["selected"]
             self.__select_all = True
         self.show_m.render()
 
@@ -421,23 +449,27 @@ class Horizon:
     def build_show(self, scene):
         self._scene = scene
 
-        title = 'Horizon ' + horizon_version
+        title = "Horizon " + horizon_version
         self.show_m = window.ShowManager(
-            scene, title=title, size=(1920, 1080), reset_camera=False,
-            order_transparent=self.order_transparent)
+            scene,
+            title=title,
+            size=(1920, 1080),
+            reset_camera=False,
+            order_transparent=self.order_transparent,
+        )
 
         if len(self.tractograms) > 0:
-
             if self.cluster:
                 self.__clusters_visualizer = ClustersVisualizer(
-                    self.show_m, scene, self.tractograms)
+                    self.show_m, scene, self.tractograms
+                )
 
             color_ind = 0
 
             for t, sft in enumerate(self.tractograms):
                 streamlines = sft.streamlines
 
-                if 'tracts' in self.random_colors:
+                if "tracts" in self.random_colors:
                     colors = next(self.color_gen)
                 else:
                     colors = None
@@ -445,12 +477,14 @@ class Horizon:
                 if not self.world_coords:
                     # TODO: Get affine from a StatefullTractogram
                     raise ValueError(
-                        'Currently native coordinates are not supported for '
-                        'streamlines.')
+                        "Currently native coordinates are not supported for "
+                        "streamlines."
+                    )
 
                 if self.cluster:
                     self.__clusters_visualizer.add_cluster_actors(
-                        t, streamlines, self.cluster_thr, colors)
+                        t, streamlines, self.cluster_thr, colors
+                    )
                 else:
                     if self.buan:
                         colors = self.buan_colors[color_ind]
@@ -471,13 +505,18 @@ class Horizon:
                 text_block = build_label(HELP_MESSAGE, 18)
 
                 self.help_panel = ui.Panel2D(
-                    size=(300, 200), position=(1615, 875), color=(.8, .8, 1.),
-                    opacity=.2, align='left')
+                    size=(300, 200),
+                    position=(1615, 875),
+                    color=(0.8, 0.8, 1.0),
+                    opacity=0.2,
+                    align="left",
+                )
 
-                self.help_panel.add_element(text_block.obj, coords=(.02, .01))
+                self.help_panel.add_element(text_block.obj, coords=(0.02, 0.01))
                 scene.add(self.help_panel)
-                self.__tabs.append(ClustersTab(
-                    self.__clusters_visualizer, self.cluster_thr))
+                self.__tabs.append(
+                    ClustersTab(self.__clusters_visualizer, self.cluster_thr)
+                )
 
         sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
@@ -488,24 +527,31 @@ class Horizon:
             img_count = 0
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
-                title = 'Image {}'.format(img_count+1)
+                title = "Image {}".format(img_count + 1)
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
                 binary_image = is_binary_image(data)
                 if binary_image and self.__roi_images:
-                    if 'rois' in self.random_colors:
+                    if "rois" in self.random_colors:
                         roi_color = next(self.color_gen)
                     roi_actor = actor.contour_from_roi(
-                        data, affine=affine, color=roi_color)
+                        data, affine=affine, color=roi_color
+                    )
                     scene.add(roi_actor)
                     roi_actors.append(roi_actor)
                 else:
                     slices_viz = SlicesVisualizer(
-                        self.show_m.iren, scene, data, affine=affine,
-                        world_coords=self.world_coords, rgb=self.rgb,
-                        is_binary=binary_image)
-                    self.__tabs.append(SlicesTab(
-                        slices_viz, title, fname, self._show_force_render))
+                        self.show_m.iren,
+                        scene,
+                        data,
+                        affine=affine,
+                        world_coords=self.world_coords,
+                        rgb=self.rgb,
+                        is_binary=binary_image,
+                    )
+                    self.__tabs.append(
+                        SlicesTab(slices_viz, title, fname, self._show_force_render)
+                    )
                     img_count += 1
 
             if len(roi_actors) > 0:
@@ -515,12 +561,14 @@ class Horizon:
         if len(self.pams) > 0:
             if self.images:
                 sync_peaks = check_peak_size(
-                    self.pams, self.images[0][0].shape[:3], sync_slices)
+                    self.pams, self.images[0][0].shape[:3], sync_slices
+                )
             else:
                 sync_peaks = check_peak_size(self.pams)
             for pam in self.pams:
-                peak_viz = PeaksVisualizer((pam.peak_dirs, pam.affine),
-                                           self.world_coords)
+                peak_viz = PeaksVisualizer(
+                    (pam.peak_dirs, pam.affine), self.world_coords
+                )
                 scene.add(peak_viz.actors[0])
                 self.__tabs.append(PeaksTab(peak_viz.actors[0]))
 
@@ -529,10 +577,10 @@ class Horizon:
                 try:
                     vertices, faces, fname = unpack_surface(surface)
                 except ValueError as e:
-                    warn(str(e))
+                    warn(str(e), stacklevel=2)
                     continue
                 color = next(self.color_gen)
-                title = 'Surface {}'.format(idx+1)
+                title = "Surface {}".format(idx + 1)
                 surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
                 surf_tab = SurfaceTab(surf_viz, title, fname)
                 self.__tabs.append(surf_tab)
@@ -548,7 +596,8 @@ class Horizon:
                 remove_from_scene=self._scene.rm,
                 sync_slices=sync_slices,
                 sync_volumes=sync_vol,
-                sync_peaks=sync_peaks)
+                sync_peaks=sync_peaks,
+            )
 
             scene.add(self.__tab_mgr.tab_ui)
             self.__tab_mgr.handle_text_overflows()
@@ -556,29 +605,38 @@ class Horizon:
 
         self.show_m.initialize()
 
-        options = [r'un\hide centroids', 'invert selection',
-                   r'un\select all', 'expand clusters',
-                   'collapse clusters', 'save streamlines',
-                   'recluster']
-        listbox = ui.ListBox2D(values=options, position=(10, 300),
-                               size=(200, 270),
-                               multiselection=False, font_size=18)
+        options = [
+            r"un\hide centroids",
+            "invert selection",
+            r"un\select all",
+            "expand clusters",
+            "collapse clusters",
+            "save streamlines",
+            "recluster",
+        ]
+        listbox = ui.ListBox2D(
+            values=options,
+            position=(10, 300),
+            size=(200, 270),
+            multiselection=False,
+            font_size=18,
+        )
 
         def display_element():
             action = listbox.selected[0]
-            if action == r'un\hide centroids':
+            if action == r"un\hide centroids":
                 self.__hide()
-            if action == 'invert selection':
+            if action == "invert selection":
                 self.__invert()
-            if action == r'un\select all':
+            if action == r"un\select all":
                 self.__show_all()
-            if action == 'expand clusters':
+            if action == "expand clusters":
                 self.__expand()
-            if action == 'collapse clusters':
+            if action == "collapse clusters":
                 self.__reset()
-            if action == 'save streamlines':
+            if action == "save streamlines":
                 self.__save()
-            if action == 'recluster':
+            if action == "recluster":
                 self.__new_window()
 
         listbox.on_change = display_element
@@ -588,10 +646,10 @@ class Horizon:
         self.show_m.scene.add(listbox)
 
         def left_click_centroid_callback(obj, event):
-
-            self.cea[obj]['selected'] = not self.cea[obj]['selected']
-            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
-                self.cea[obj]['selected']
+            self.cea[obj]["selected"] = not self.cea[obj]["selected"]
+            self.cla[self.cea[obj]["cluster_actor"]]["selected"] = self.cea[obj][
+                "selected"
+            ]
             self.show_m.render()
 
         def right_click_centroid_callback(obj, event):
@@ -602,36 +660,32 @@ class Horizon:
             self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
-
-            if self.cla[obj]['selected']:
-                self.cla[obj]['centroid_actor'].VisibilityOn()
-                ca = self.cla[obj]['centroid_actor']
-                self.cea[ca]['selected'] = 0
+            if self.cla[obj]["selected"]:
+                self.cla[obj]["centroid_actor"].VisibilityOn()
+                ca = self.cla[obj]["centroid_actor"]
+                self.cea[ca]["selected"] = 0
                 obj.VisibilityOff()
-                self.cea[ca]['expanded'] = 0
+                self.cea[ca]["expanded"] = 0
 
             self.show_m.render()
 
         def right_click_cluster_callback(obj, event):
-            print('Cluster Area Selected')
+            print("Cluster Area Selected")
             self.show_m.render()
 
         for cl in self.cla:
-            cl.AddObserver('LeftButtonPressEvent',
-                           left_click_cluster_callback,
-                           1.0)
-            cl.AddObserver('RightButtonPressEvent',
-                           right_click_cluster_callback,
-                           1.0)
-            self.cla[cl]['centroid_actor'].AddObserver(
-                'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
-            self.cla[cl]['centroid_actor'].AddObserver(
-                'RightButtonPressEvent', right_click_centroid_callback, 1.0)
+            cl.AddObserver("LeftButtonPressEvent", left_click_cluster_callback, 1.0)
+            cl.AddObserver("RightButtonPressEvent", right_click_cluster_callback, 1.0)
+            self.cla[cl]["centroid_actor"].AddObserver(
+                "LeftButtonPressEvent", left_click_centroid_callback, 1.0
+            )
+            self.cla[cl]["centroid_actor"].AddObserver(
+                "RightButtonPressEvent", right_click_centroid_callback, 1.0
+            )
 
         self.mem.window_timer_cnt = 0
 
         def timer_callback(obj, event):
-
             self.mem.window_timer_cnt += 1
             # TODO possibly add automatic rotation option
             # self.show_m.scene.azimuth(0.01 * self.mem.window_timer_cnt)
@@ -642,11 +696,9 @@ class Horizon:
         scene.reset_clipping_range()
 
         if self.interactive:
-
             self.show_m.add_window_callback(self.__win_callback)
             self.show_m.add_timer_callback(True, 200, timer_callback)
-            self.show_m.iren.AddObserver(
-                'KeyPressEvent', self.__key_press_events)
+            self.show_m.iren.AddObserver("KeyPressEvent", self.__key_press_events)
 
             if self.return_showm:
                 return self.show_m
@@ -656,7 +708,6 @@ class Horizon:
                 self.show_m.start()
 
             else:
-
                 # set to True if event recorded file needs updating
                 recording = False
                 recording_filename = self.recorded_events
@@ -667,19 +718,36 @@ class Horizon:
                     self.show_m.play_events_from_file(recording_filename)
 
         else:
+            window.record(
+                scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
+            )
 
-            window.record(scene, out_path=self.out_png,
-                          size=(1200, 900),
-                          reset_camera=False)
 
-
-def horizon(tractograms=None, images=None, pams=None, surfaces=None,
-            cluster=False, rgb=False, cluster_thr=15.0,
-            random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
-            length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
-            world_coords=True, interactive=True, buan=False, buan_colors=None,
-            roi_images=False, roi_colors=(1, 0, 0), out_png='tmp.png',
-            recorded_events=None, return_showm=False):
+def horizon(
+    tractograms=None,
+    images=None,
+    pams=None,
+    surfaces=None,
+    cluster=False,
+    rgb=False,
+    cluster_thr=15.0,
+    random_colors=None,
+    bg_color=(0, 0, 0),
+    order_transparent=True,
+    length_gt=0,
+    length_lt=1000,
+    clusters_gt=0,
+    clusters_lt=10000,
+    world_coords=True,
+    interactive=True,
+    buan=False,
+    buan_colors=None,
+    roi_images=False,
+    roi_colors=(1, 0, 0),
+    out_png="tmp.png",
+    recorded_events=None,
+    return_showm=False,
+):
     """Interactive medical visualization - Invert the Horizon!
 
 
@@ -757,13 +825,31 @@ def horizon(tractograms=None, images=None, pams=None, surfaces=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, surfaces, cluster, rgb,
-                 cluster_thr, random_colors, length_gt, length_lt, clusters_gt,
-                 clusters_lt, world_coords, interactive, out_png,
-                 recorded_events, return_showm, bg_color=bg_color,
-                 order_transparent=order_transparent, buan=buan,
-                 buan_colors=buan_colors, roi_images=roi_images,
-                 roi_colors=roi_colors)
+    hz = Horizon(
+        tractograms,
+        images,
+        pams,
+        surfaces,
+        cluster,
+        rgb,
+        cluster_thr,
+        random_colors,
+        length_gt,
+        length_lt,
+        clusters_gt,
+        clusters_lt,
+        world_coords,
+        interactive,
+        out_png,
+        recorded_events,
+        return_showm,
+        bg_color=bg_color,
+        order_transparent=order_transparent,
+        buan=buan,
+        buan_colors=buan_colors,
+        roi_images=roi_images,
+        roi_colors=roi_colors,
+    )
 
     scene = hz.build_scene()
 

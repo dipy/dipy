@@ -24,27 +24,28 @@ from dipy.viz import actor, window
 # For the simulation we will use a standard DSI acquisition scheme with 514
 # gradient directions and 1 S0.
 
-btable = np.loadtxt(get_fnames('dsi515btable'))
+btable = np.loadtxt(get_fnames("dsi515btable"))
 
 gtab = gradient_table(btable[:, 0], btable[:, 1:])
 
 ###############################################################################
 # Let's create a multi tensor with 2 fiber directions at 60 degrees.
 
-evals = np.array([[0.0015, 0.0003, 0.0003],
-                  [0.0015, 0.0003, 0.0003]])
+evals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
 
 directions = [(-30, 0), (30, 0)]
 
 fractions = [50, 50]
 
-signal, _ = multi_tensor(gtab, evals, 100, angles=directions,
-                         fractions=fractions, snr=None)
+signal, _ = multi_tensor(
+    gtab, evals, 100, angles=directions, fractions=fractions, snr=None
+)
 
-sphere = get_sphere('repulsion724').subdivide(1)
+sphere = get_sphere("repulsion724").subdivide(1)
 
-odf_gt = multi_tensor_odf(sphere.vertices, evals, angles=directions,
-                          fractions=fractions)
+odf_gt = multi_tensor_odf(
+    sphere.vertices, evals, angles=directions, fractions=fractions
+)
 
 ###############################################################################
 # Perform the reconstructions with standard DSI and DSI with deconvolution.
@@ -70,12 +71,12 @@ scene = window.Scene()
 
 # concatenate data as 4D array
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
-odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap='plasma')
+odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap="plasma")
 
 odf_actor.display(y=0)
 odf_actor.RotateX(90)
 scene.add(odf_actor)
-window.record(scene, out_path='dsid.png', size=(300, 300))
+window.record(scene, out_path="dsid.png", size=(300, 300))
 if interactive:
     window.show(scene)
 

@@ -1,4 +1,5 @@
 """Utilities for testing."""
+
 from functools import partial
 import operator
 from os.path import abspath, dirname, join as pjoin
@@ -8,8 +9,7 @@ import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
 # set path to example data
-IO_DATA_PATH = abspath(pjoin(dirname(__file__),
-                             '..', 'io', 'tests', 'data'))
+IO_DATA_PATH = abspath(pjoin(dirname(__file__), "..", "io", "tests", "data"))
 
 
 def assert_operator(value1, value2, msg="", op=operator.eq):
@@ -18,22 +18,20 @@ def assert_operator(value1, value2, msg="", op=operator.eq):
         if op == operator.is_:
             value1 = bool(value1)
         assert op(value1, value2)
-    except AssertionError:
-        raise AssertionError(msg.format(str(value2), str(value1)))
+    except AssertionError as e:
+        raise AssertionError(msg.format(str(value2), str(value1))) from e
 
 
-assert_greater_equal = partial(assert_operator, op=operator.ge,
-                               msg="{0} >= {1}")
-assert_greater = partial(assert_operator, op=operator.gt,
-                         msg="{0} > {1}")
-assert_less_equal = partial(assert_operator, op=operator.le,
-                            msg="{0} =< {1}")
-assert_less = partial(assert_operator, op=operator.lt,
-                      msg="{0} < {1}")
-assert_true = partial(assert_operator, value2=True, op=operator.is_,
-                      msg="False is not true")
-assert_false = partial(assert_operator, value2=False, op=operator.is_,
-                       msg="True is not false")
+assert_greater_equal = partial(assert_operator, op=operator.ge, msg="{0} >= {1}")
+assert_greater = partial(assert_operator, op=operator.gt, msg="{0} > {1}")
+assert_less_equal = partial(assert_operator, op=operator.le, msg="{0} =< {1}")
+assert_less = partial(assert_operator, op=operator.lt, msg="{0} < {1}")
+assert_true = partial(
+    assert_operator, value2=True, op=operator.is_, msg="False is not true"
+)
+assert_false = partial(
+    assert_operator, value2=False, op=operator.is_, msg="True is not false"
+)
 assert_not_equal = partial(assert_operator, op=operator.ne)
 
 
@@ -96,7 +94,7 @@ class clear_and_catch_warnings(warnings.catch_warnings):
 
     def __enter__(self):
         for mod in self.modules:
-            if hasattr(mod, '__warningregistry__'):
+            if hasattr(mod, "__warningregistry__"):
                 mod_reg = mod.__warningregistry__
                 self._warnreg_copies[mod] = mod_reg.copy()
                 mod_reg.clear()
@@ -105,15 +103,14 @@ class clear_and_catch_warnings(warnings.catch_warnings):
     def __exit__(self, *exc_info):
         super(clear_and_catch_warnings, self).__exit__(*exc_info)
         for mod in self.modules:
-            if hasattr(mod, '__warningregistry__'):
+            if hasattr(mod, "__warningregistry__"):
                 mod.__warningregistry__.clear()
             if mod in self._warnreg_copies:
                 mod.__warningregistry__.update(self._warnreg_copies[mod])
 
 
 def check_for_warnings(warn_printed, w_msg):
-    selected_w = [w for w in warn_printed if issubclass(w.category,
-                                                        UserWarning)]
+    selected_w = [w for w in warn_printed if issubclass(w.category, UserWarning)]
     assert len(selected_w) >= 1
     msg = [str(m.message) for m in selected_w]
     npt.assert_equal(w_msg in msg, True)

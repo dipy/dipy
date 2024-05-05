@@ -8,7 +8,7 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
+fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
 if has_fury:
     from fury import ui
@@ -17,18 +17,18 @@ if has_fury:
 
 @dataclass
 class HorizonUIElement:
-    """Dataclass to define properties of horizon ui elements.
-    """
+    """Dataclass to define properties of horizon ui elements."""
+
     visibility: bool
     selected_value: Any
     obj: Any
     position = (0, 0)
-    size = ('auto', 'auto')
+    size = ("auto", "auto")
 
 
 class HorizonTab(ABC):
-    """Base for different tabs available in horizon.
-    """
+    """Base for different tabs available in horizon."""
+
     def __init__(self):
         self._elements = []
         self.hide = lambda *args: None
@@ -62,7 +62,7 @@ class HorizonTab(ABC):
         ----------
         checkbox : CheckBox2D
         """
-        if '' in checkbox.checked_labels:
+        if "" in checkbox.checked_labels:
             self.show(*self.actors)
         else:
             self.hide(*self.actors)
@@ -71,20 +71,18 @@ class HorizonTab(ABC):
         """Implement if require to update something while the tab becomes
         active.
         """
-        if hasattr(self, '_actor_toggle'):
+        if hasattr(self, "_actor_toggle"):
             self._toggle_actors(self._actor_toggle.obj)
 
     @property
     @abstractmethod
     def name(self):
-        """Name of the tab.
-        """
+        """Name of the tab."""
 
     @property
     @abstractmethod
     def actors(self):
-        """Name of the tab.
-        """
+        """Name of the tab."""
 
     @property
     def tab_id(self):
@@ -98,8 +96,7 @@ class HorizonTab(ABC):
 
     @property
     def elements(self):
-        """list of underlying FURY ui elements in the tab.
-        """
+        """list of underlying FURY ui elements in the tab."""
         return self._elements
 
 
@@ -113,6 +110,7 @@ class TabManager:
     tab_ui : TabUI
         Underlying FURY TabUI object.
     """
+
     def __init__(
         self,
         tabs,
@@ -122,9 +120,8 @@ class TabManager:
         remove_from_scene,
         sync_slices=False,
         sync_volumes=False,
-        sync_peaks=False
+        sync_peaks=False,
     ):
-
         num_tabs = len(tabs)
         self._tabs = tabs
         self._add_to_scene = add_to_scene
@@ -141,53 +138,56 @@ class TabManager:
         self._active_tab_id = num_tabs - 1
 
         self._tab_ui = ui.TabUI(
-            position=(x_pad, 5), size=self._tab_size, nb_tabs=num_tabs,
-            active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
-            draggable=True, startup_tab_id=self._active_tab_id)
+            position=(x_pad, 5),
+            size=self._tab_size,
+            nb_tabs=num_tabs,
+            active_color=(1, 1, 1),
+            inactive_color=(0.5, 0.5, 0.5),
+            draggable=True,
+            startup_tab_id=self._active_tab_id,
+        )
 
         self._tab_ui.on_change = self._tab_selected
 
         self.tab_changed = on_tab_changed
 
         slices_tabs = list(
-            filter(
-                lambda x: x.__class__.__name__ == 'SlicesTab', self._tabs
-            )
+            filter(lambda x: x.__class__.__name__ == "SlicesTab", self._tabs)
         )
         if not self._synchronize_slices and slices_tabs:
-            msg = 'Images are of different dimensions, ' \
-                + 'synchronization of slices will not work'
-            warnings.warn(msg)
+            msg = (
+                "Images are of different dimensions, "
+                + "synchronization of slices will not work"
+            )
+            warnings.warn(msg, stacklevel=2)
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title_font_size = 18
             tab.hide = self._hide_elements
             tab.show = self._show_elements
             tab.build(tab_id)
-            if tab.__class__.__name__ == 'SlicesTab':
+            if tab.__class__.__name__ == "SlicesTab":
                 tab.on_volume_change = self.synchronize_volumes
-            if tab.__class__.__name__ in ['SlicesTab', 'PeaksTab']:
+            if tab.__class__.__name__ in ["SlicesTab", "PeaksTab"]:
                 tab.on_slice_change = self.synchronize_slices
             self._render_tab_elements(tab.tab_id, tab.elements)
 
     def handle_text_overflows(self):
         for tab_id, tab in enumerate(self._tabs):
-            self._handle_title_overflow(
-                tab.name,
-                self._tab_ui.tabs[tab_id].text_block
-            )
-            if tab.__class__.__name__ == 'SlicesTab':
+            self._handle_title_overflow(tab.name, self._tab_ui.tabs[tab_id].text_block)
+            if tab.__class__.__name__ == "SlicesTab":
                 self._handle_label_text_overflow(tab.elements)
 
     def _handle_label_text_overflow(self, elements):
         for element in elements:
-            if (not element.size[0] == 'auto' and
-                    element.obj.__class__.__name__ == 'TextBlock2D' and
-                    isinstance(element.position, tuple)):
+            if (
+                not element.size[0] == "auto"
+                and element.obj.__class__.__name__ == "TextBlock2D"
+                and isinstance(element.position, tuple)
+            ):
                 element.obj.message = show_ellipsis(
-                    element.selected_value,
-                    element.obj.size[0],
-                    element.size[0])
+                    element.selected_value, element.obj.size[0], element.size[0]
+                )
 
     def _handle_title_overflow(self, title_text, title_block):
         """Handle overflow of the tab title and show ellipsis if required.
@@ -199,7 +199,7 @@ class TabManager:
         title_block : TextBlock2D
             Fury UI element for holding the title of the tab.
         """
-        tab_text = title_text.split('.', 1)[0]
+        tab_text = title_text.split(".", 1)[0]
         title_block.message = tab_text
         available_space, _ = self._tab_size
         text_size = title_block.size[0]
@@ -238,7 +238,7 @@ class TabManager:
         elements = []
         vtk_actors = []
         for element in args:
-            if (element.__class__.__name__ == 'HorizonUIElement'):
+            if element.__class__.__name__ == "HorizonUIElement":
                 if isinstance(element.obj, list):
                     for obj in element.obj:
                         elements.append(obj)
@@ -248,8 +248,7 @@ class TabManager:
                 elements.append(element)
 
         for element in elements:
-            if (hasattr(element, '_get_actors') and
-                    callable(element._get_actors)):
+            if hasattr(element, "_get_actors") and callable(element._get_actors):
                 vtk_actors += element.actors
             else:
                 vtk_actors.append(element)
@@ -298,8 +297,7 @@ class TabManager:
         if not self._synchronize_slices and not self._synchronize_peaks:
             return
 
-        for tab in self._get_non_active_tabs(active_tab_id,
-                                             ['SlicesTab', 'PeaksTab']):
+        for tab in self._get_non_active_tabs(active_tab_id, ["SlicesTab", "PeaksTab"]):
             tab.update_slices(x_value, y_value, z_value)
 
     def synchronize_volumes(self, active_tab_id, value):
@@ -320,7 +318,7 @@ class TabManager:
         for slices_tab in self._get_non_active_tabs(active_tab_id):
             slices_tab.update_volume(value)
 
-    def _get_non_active_tabs(self, active_tab_id, types=['SlicesTab']):
+    def _get_non_active_tabs(self, active_tab_id, types=("SlicesTab",)):
         """Get tabs which are not active and slice tabs.
 
         Parameters
@@ -335,14 +333,14 @@ class TabManager:
         return list(
             filter(
                 lambda x: x.__class__.__name__ in types
-                and not x.tab_id == active_tab_id, self._tabs
+                and not x.tab_id == active_tab_id,
+                self._tabs,
             )
         )
 
     @property
     def tab_ui(self):
-        """FURY TabUI object.
-        """
+        """FURY TabUI object."""
         return self._tab_ui
 
 
@@ -363,8 +361,8 @@ def build_label(text, font_size=16, bold=False):
     label = ui.TextBlock2D()
     label.message = text
     label.font_size = font_size
-    label.font_family = 'Arial'
-    label.justification = 'left'
+    label.font_family = "Arial"
+    label.justification = "left"
     label.bold = bold
     label.italic = False
     label.shadow = False
@@ -376,22 +374,22 @@ def build_label(text, font_size=16, bold=False):
 
 
 def build_slider(
-        initial_value,
-        max_value,
-        min_value=0,
-        length=450,
-        line_width=3,
-        radius=8,
-        font_size=16,
-        text_template='{value:.1f} ({ratio:.0%})',
-        on_moving_slider=lambda _slider: None,
-        on_value_changed=lambda _slider: None,
-        on_change=lambda _slider: None,
-        on_handle_released=lambda _istyle, _obj, _slider: None,
-        label='',
-        label_font_size=16,
-        label_style_bold=False,
-        is_double_slider=False
+    initial_value,
+    max_value,
+    min_value=0,
+    length=450,
+    line_width=3,
+    radius=8,
+    font_size=16,
+    text_template="{value:.1f} ({ratio:.0%})",
+    on_moving_slider=lambda _slider: None,
+    on_value_changed=lambda _slider: None,
+    on_change=lambda _slider: None,
+    on_handle_released=lambda _istyle, _obj, _slider: None,
+    label="",
+    label_font_size=16,
+    label_style_bold=False,
+    is_double_slider=False,
 ):
     """Create a horizon theme based disk-knob slider.
 
@@ -436,15 +434,11 @@ def build_slider(
     (label: HorizonUIElement, element(slider): HorizonUIElement)
     """
 
-    if is_double_slider and 'ratio' in text_template:
-        warnings.warn('Double slider only support values and not ratio')
+    if is_double_slider and "ratio" in text_template:
+        warnings.warn("Double slider only support values and not ratio", stacklevel=2)
         return
 
-    slider_label = build_label(
-        label,
-        font_size=label_font_size,
-        bold=label_style_bold
-    )
+    slider_label = build_label(label, font_size=label_font_size, bold=label_style_bold)
 
     if not is_double_slider:
         slider = ui.LineSlider2D(
@@ -455,7 +449,7 @@ def build_slider(
             line_width=line_width,
             outer_radius=radius,
             font_size=font_size,
-            text_template=text_template
+            text_template=text_template,
         )
     else:
         slider = ui.LineDoubleSlider2D(
@@ -466,7 +460,7 @@ def build_slider(
             line_width=line_width,
             outer_radius=radius,
             font_size=font_size,
-            text_template=text_template
+            text_template=text_template,
         )
 
     slider.on_moving_slider = on_moving_slider
@@ -477,27 +471,24 @@ def build_slider(
         slider.handle_events(slider.handle.actor)
         slider.on_left_mouse_button_released = on_handle_released
 
-    slider.default_color = (1., .5, .0)
-    slider.track.color = (.8, .3, .0)
-    slider.active_color = (.9, .4, .0)
+    slider.default_color = (1.0, 0.5, 0.0)
+    slider.track.color = (0.8, 0.3, 0.0)
+    slider.active_color = (0.9, 0.4, 0.0)
     if not is_double_slider:
-        slider.handle.color = (1., .5, .0)
+        slider.handle.color = (1.0, 0.5, 0.0)
     else:
-        slider.handles[0].color = (1., .5, .0)
-        slider.handles[1].color = (1., .5, .0)
+        slider.handles[0].color = (1.0, 0.5, 0.0)
+        slider.handles[1].color = (1.0, 0.5, 0.0)
 
-    return (
-        slider_label,
-        HorizonUIElement(True, initial_value, slider)
-    )
+    return (slider_label, HorizonUIElement(True, initial_value, slider))
 
 
 def build_checkbox(
-        labels=None,
-        checked_labels=None,
-        padding=1,
-        font_size=16,
-        on_change=lambda _checkbox: None
+    labels=None,
+    checked_labels=None,
+    padding=1,
+    font_size=16,
+    on_change=lambda _checkbox: None,
 ):
     """Create horizon theme checkboxes.
 
@@ -520,7 +511,9 @@ def build_checkbox(
     """
 
     if labels is None or not labels:
-        warnings.warn('At least one label needs to be to create checkboxes')
+        warnings.warn(
+            "At least one label needs to be to create checkboxes", stacklevel=2
+        )
         return
 
     if checked_labels is None:
@@ -530,7 +523,7 @@ def build_checkbox(
         labels=labels,
         checked_labels=checked_labels,
         padding=padding,
-        font_size=font_size
+        font_size=font_size,
     )
 
     checkboxes.on_change = on_change
@@ -539,11 +532,11 @@ def build_checkbox(
 
 
 def build_radio_button(
-        labels=None,
-        checked_labels=None,
-        padding=1,
-        font_size=16,
-        on_change=lambda _checkbox: None
+    labels=None,
+    checked_labels=None,
+    padding=1,
+    font_size=16,
+    on_change=lambda _checkbox: None,
 ):
     """Create horizon theme radio buttons.
 
@@ -566,7 +559,9 @@ def build_radio_button(
     """
 
     if labels is None or not labels:
-        warnings.warn('At least one label needs to be to create radio buttons')
+        warnings.warn(
+            "At least one label needs to be to create radio buttons", stacklevel=2
+        )
         return
 
     if checked_labels is None:
@@ -576,7 +571,7 @@ def build_radio_button(
         labels=labels,
         checked_labels=checked_labels,
         padding=padding,
-        font_size=font_size
+        font_size=font_size,
     )
 
     radio.on_change = on_change
@@ -585,12 +580,12 @@ def build_radio_button(
 
 
 def build_switcher(
-        items=None,
-        label='',
-        initial_selection=0,
-        on_prev_clicked=lambda _selected_value: None,
-        on_next_clicked=lambda _selected_value: None,
-        on_value_changed=lambda _selected_idx, _selected_value: None,
+    items=None,
+    label="",
+    initial_selection=0,
+    on_prev_clicked=lambda _selected_value: None,
+    on_next_clicked=lambda _selected_value: None,
+    on_value_changed=lambda _selected_idx, _selected_value: None,
 ):
     """Create horizon theme switcher.
 
@@ -622,7 +617,7 @@ def build_switcher(
     switcher: consists 'obj' which is an array providing FURY UI elements used.
     """
     if items is None:
-        warnings.warn('No items passed in switcher')
+        warnings.warn("No items passed in switcher", stacklevel=2)
         return
 
     num_items = len(items)
@@ -631,45 +626,43 @@ def build_switcher(
         initial_selection = 0
 
     switch_label = build_label(text=label)
-    selection_label = build_label(
-        text=items[initial_selection]['label']).obj
+    selection_label = build_label(text=items[initial_selection]["label"]).obj
 
     left_button = ui.Button2D(
-            icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
-            size=(25, 25))
+        icon_fnames=[("left", read_viz_icons(fname="circle-left.png"))], size=(25, 25)
+    )
     right_button = ui.Button2D(
-            icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
-            size=(25, 25))
+        icon_fnames=[("right", read_viz_icons(fname="circle-right.png"))], size=(25, 25)
+    )
 
-    switcher = HorizonUIElement(True, [initial_selection,
-                                items[initial_selection]['value']],
-                                [left_button, selection_label, right_button])
+    switcher = HorizonUIElement(
+        True,
+        [initial_selection, items[initial_selection]["value"]],
+        [left_button, selection_label, right_button],
+    )
 
     def left_clicked(_i_ren, _obj, _button):
         selected_id = switcher.selected_value[0] - 1
         if selected_id < 0:
             selected_id = num_items - 1
         value_changed(selected_id)
-        on_prev_clicked(items[selected_id]['value'])
-        on_value_changed(selected_id, items[selected_id]['value'])
+        on_prev_clicked(items[selected_id]["value"])
+        on_value_changed(selected_id, items[selected_id]["value"])
 
     def right_clicked(_i_ren, _obj, _button):
         selected_id = switcher.selected_value[0] + 1
         if selected_id >= num_items:
             selected_id = 0
         value_changed(selected_id)
-        on_next_clicked(items[selected_id]['value'])
-        on_value_changed(selected_id, items[selected_id]['value'])
+        on_next_clicked(items[selected_id]["value"])
+        on_value_changed(selected_id, items[selected_id]["value"])
 
     def value_changed(selected_id):
         switcher.selected_value[0] = selected_id
-        switcher.selected_value[1] = items[selected_id]['value']
-        selection_label.message = items[selected_id]['label']
+        switcher.selected_value[1] = items[selected_id]["value"]
+        selection_label.message = items[selected_id]["label"]
 
     left_button.on_left_mouse_button_clicked = left_clicked
     right_button.on_left_mouse_button_clicked = right_clicked
 
-    return (
-        switch_label,
-        switcher
-    )
+    return (switch_label, switcher)

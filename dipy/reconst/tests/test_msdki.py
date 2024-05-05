@@ -1,4 +1,4 @@
-""" Testing Mean Signal DKI (MSDKI) """
+"""Testing Mean Signal DKI (MSDKI)"""
 
 import random
 
@@ -28,13 +28,13 @@ def setup_module():
     global bvecs, gtab, params_single, params_multi, MKgt_multi
     global bvals_3s, MDgt_multi, S0gt_multi, MKgt, MDgt
 
-    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    fimg, fbvals, fbvecs = get_fnames("small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvals = round_bvals(bvals)
     gtab = gradient_table(bvals, bvecs)
 
     # 2 shells for techniques that requires multishell data
-    bvals_3s = np.concatenate((bvals, bvals*1.5, bvals * 2), axis=0)
+    bvals_3s = np.concatenate((bvals, bvals * 1.5, bvals * 2), axis=0)
     bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
     gtab_3s = gradient_table(bvals_3s, bvecs_3s)
 
@@ -46,11 +46,12 @@ def setup_module():
     mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
     f = 0.5
     frac_sph = [f * 100, (1.0 - f) * 100]
-    signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals_sph, S0=100,
-                                                  fractions=frac_sph, snr=None)
+    signal_sph, dt_sph, kt_sph = multi_tensor_dki(
+        gtab_3s, mevals_sph, S0=100, fractions=frac_sph, snr=None
+    )
     # Compute ground truth values
     MDgt = f * Di + (1 - f) * De
-    MKgt = 3 * f * (1-f) * ((Di-De) / MDgt) ** 2
+    MKgt = 3 * f * (1 - f) * ((Di - De) / MDgt) ** 2
     params_single = np.array([MDgt, MKgt])
     msignal_sph = np.zeros(4)
     msignal_sph[0] = signal_sph[0]
@@ -71,12 +72,12 @@ def setup_module():
             for k in range(1):  # Only one k to have some zero voxels
                 f = random.uniform(0.0, 1)
                 frac = [f * 100, (1.0 - f) * 100]
-                signal_i, dt_i, kt_i = multi_tensor_dki(gtab_3s, mevals_sph,
-                                                        S0=100, fractions=frac,
-                                                        snr=None)
+                signal_i, dt_i, kt_i = multi_tensor_dki(
+                    gtab_3s, mevals_sph, S0=100, fractions=frac, snr=None
+                )
                 DWI[i, j, k] = signal_i
-                md_i = f*Di + (1-f)*De
-                mk_i = 3 * f * (1-f) * ((Di-De) / md_i) ** 2
+                md_i = f * Di + (1 - f) * De
+                mk_i = 3 * f * (1 - f) * ((Di - De) / md_i) ** 2
                 MDgt_multi[i, j, k] = md_i
                 MKgt_multi[i, j, k] = mk_i
                 S0gt_multi[i, j, k] = 100
@@ -139,8 +140,7 @@ def test_errors():
 
     # second error raises if negative signal is given to MeanDiffusionKurtosis
     # model
-    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab_3s,
-                  min_signal=-1)
+    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab_3s, min_signal=-1)
 
     # third error raises if wrong mask is given to fit
     mask_wrong = np.ones((2, 3, 1))
@@ -170,7 +170,7 @@ def test_design_matrix():
     D = msdki.design_matrix(ub)
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
-    Dgt[:, 1] = 1.0/6 * ub ** 2
+    Dgt[:, 1] = 1.0 / 6 * ub**2
     assert_array_almost_equal(D, Dgt)
 
 
@@ -259,8 +259,7 @@ def test_kurtosis_to_smt2_conversion():
     # met kurtosis can be out of this expected range. So, if MSK is lower than
     # 0, f is set to 0 (avoiding negative f). On the other hand, if MSK is
     # higher than 2.4, f is set to the maximum value of 1.
-    assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])),
-                              np.array([0., 1.]))
+    assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])), np.array([0.0, 1.0]))
 
     # if msk = np.nan, function outputs awf=np.nan
     assert_(np.isnan(awf_from_msk(np.array(np.nan))))
@@ -274,7 +273,7 @@ def test_smt2_metrics():
     DIgt = 3 * MDgt_multi / (1 + 2 * (1 - AWFgt) ** 2)
     # General microscopic anisotropy estimation (Eq 8 Henriques et al MRM 2019)
     RDe = DIgt * (1 - AWFgt)  # tortuosity assumption
-    VarD = 2/9 * (AWFgt * DIgt ** 2 + (1 - AWFgt) * (DIgt - RDe) ** 2)
+    VarD = 2 / 9 * (AWFgt * DIgt**2 + (1 - AWFgt) * (DIgt - RDe) ** 2)
     MD = (AWFgt * DIgt + (1 - AWFgt) * (DIgt + 2 * RDe)) / 3
     uFAgt = np.sqrt(3 / 2 * VarD[MD > 0] / (VarD[MD > 0] + MD[MD > 0] ** 2))
 
@@ -309,13 +308,13 @@ def test_smt2_specific_cases():
     mevals = np.zeros((64, 3))
     mevals[:, 0] = Da
     fracs = np.ones(64) * 100 / 64
-    signal_pa, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals,
-                                                 angles=bvecs[1:, :],
-                                                 fractions=fracs, snr=None)
+    signal_pa, dt_sph, kt_sph = multi_tensor_dki(
+        gtab_3s, mevals, angles=bvecs[1:, :], fractions=fracs, snr=None
+    )
     mdkiF = mdkiM.fit(signal_pa)
     # decimal is set to 1 because of finite number of directions for powder
     # average calculation
     assert_almost_equal(mdkiF.msk, 2.4, decimal=1)
-    assert_almost_equal(mdkiF.msd * 1000, Da/3 * 1000, decimal=1)
+    assert_almost_equal(mdkiF.msd * 1000, Da / 3 * 1000, decimal=1)
     assert_almost_equal(mdkiF.smt2f, 1, decimal=1)
     assert_almost_equal(mdkiF.smt2di, mdkiF.msd * 3, decimal=1)

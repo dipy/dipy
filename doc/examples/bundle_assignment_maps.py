@@ -39,11 +39,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(model_af_l, fake_tube=True, linewidth=6))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='af_l_before_assignment_maps.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="af_l_before_assignment_maps.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -75,13 +76,13 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, fake_tube=True, colors=disks_color,
-                     linewidth=6))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='af_l_after_assignment_maps.png',
-              size=(600, 600))
+scene.add(actor.line(model_af_l, fake_tube=True, colors=disks_color, linewidth=6))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="af_l_after_assignment_maps.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

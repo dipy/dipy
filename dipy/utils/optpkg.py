@@ -1,4 +1,4 @@
-""" Routines to support optional packages """
+"""Routines to support optional packages"""
 
 import importlib
 
@@ -15,7 +15,7 @@ from dipy.utils.tripwire import TripWire
 
 
 def optional_package(name, *, trip_msg=None, min_version=None):
-    """ Return package-like thing and module setup for package `name`
+    """Return package-like thing and module setup for package `name`
 
     Parameters
     ----------
@@ -83,23 +83,26 @@ def optional_package(name, *, trip_msg=None, min_version=None):
         if not min_version:
             return pkg, True, lambda: None
 
-        current_version = getattr(pkg, '__version__', '0.0.0')
+        current_version = getattr(pkg, "__version__", "0.0.0")
         if Version(current_version) >= Version(min_version):
             return pkg, True, lambda: None
 
         if trip_msg is None:
-            trip_msg = (f'We need at least version {min_version} of '
-                        f'package {name}, but ``import {name}`` '
-                        f'found version {pkg.__version__}')
+            trip_msg = (
+                f"We need at least version {min_version} of "
+                f"package {name}, but ``import {name}`` "
+                f"found version {pkg.__version__}"
+            )
 
     if trip_msg is None:
-        trip_msg = ('We need package %s for these functions, but '
-                    '``import %s`` raised an ImportError'
-                    % (name, name))
+        trip_msg = (
+            "We need package %s for these functions, but "
+            "``import %s`` raised an ImportError" % (name, name)
+        )
     pkg = TripWire(trip_msg)
 
     def setup_module():
         if have_pytest:
-            pytest.mark.skip('No {0} for these tests'.format(name))
+            pytest.mark.skip("No {0} for these tests".format(name))
 
     return pkg, False, setup_module

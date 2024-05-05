@@ -76,7 +76,7 @@ class TissueClassifierHMRF:
         mu, sigmasq = com.seg_stats(image, seg_init, nclasses)
 
         zero = np.zeros_like(image) + 0.001
-        zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
+        zero_noise = add_noise(zero, 10000, 1, noise_type="gaussian")
         image_gauss = np.where(image == 0, zero_noise, image)
 
         final_segmentation = np.empty_like(image)
@@ -84,19 +84,17 @@ class TissueClassifierHMRF:
 
         for i in range(max_iter):
             if self.verbose:
-                print(f'>> Iteration: {i}')
+                print(f">> Iteration: {i}")
 
             PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
             PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
 
-            mu_upd, sigmasq_upd = com.update_param(image_gauss, PVE, mu,
-                                                   nclasses)
+            mu_upd, sigmasq_upd = com.update_param(image_gauss, PVE, mu, nclasses)
             ind = np.argsort(mu_upd)
             mu_upd = mu_upd[ind]
             sigmasq_upd = sigmasq_upd[ind]
 
-            negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd,
-                                         nclasses)
+            negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
             final_segmentation, energy = icm.icm_ising(negll, beta, seg_init)
 
             energy_sum.append(energy[energy > -np.inf].sum())

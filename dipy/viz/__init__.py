@@ -12,7 +12,8 @@ fury_pckg_msg = (
 
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
-    'fury', trip_msg=fury_pckg_msg, min_version="0.10.0")
+    "fury", trip_msg=fury_pckg_msg, min_version="0.10.0"
+)
 
 
 if has_fury:
@@ -20,14 +21,15 @@ if has_fury:
     from fury.data import DATA_DIR as FURY_DATA_DIR, fetch_viz_icons, read_viz_icons
 
 else:
-    warnings.warn(fury_pckg_msg)
+    warnings.warn(fury_pckg_msg, stacklevel=2)
 
 # We make the visualization requirements optional imports:
 _, has_mpl, _ = optional_package(
-    'matplotlib',
+    "matplotlib",
     trip_msg="You do not have Matplotlib installed. Some visualization "
     "functions might not work for you. For installation instructions, "
-    "please visit: https://matplotlib.org/")
+    "please visit: https://matplotlib.org/",
+)
 
 if has_mpl:
     from . import projections

@@ -18,12 +18,23 @@ from dipy.workflows.workflow import Workflow
 class Patch2SelfFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'patch2self'
+        return "patch2self"
 
-    def run(self, input_files, bval_files, model='ols',
-            b0_threshold=50, alpha=1.0, verbose=False, patch_radius=0,
-            b0_denoising=True, clip_negative_vals=False, shift_intensity=True,
-            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+    def run(
+        self,
+        input_files,
+        bval_files,
+        model="ols",
+        b0_threshold=50,
+        alpha=1.0,
+        verbose=False,
+        patch_radius=0,
+        b0_denoising=True,
+        clip_negative_vals=False,
+        shift_intensity=True,
+        out_dir="",
+        out_denoised="dwi_patch2self.nii.gz",
+    ):
         """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
@@ -82,31 +93,44 @@ class Patch2SelfFlow(Workflow):
         for fpath, bvalpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
-                logging.warning('Denoising skipped for now.')
+                logging.warning("Denoising skipped for now.")
             else:
-                logging.info('Denoising %s', fpath)
+                logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
 
                 denoised_data = patch2self(
-                    data, bvals, model=model, b0_threshold=b0_threshold,
-                    alpha=alpha, verbose=verbose, patch_radius=patch_radius,
+                    data,
+                    bvals,
+                    model=model,
+                    b0_threshold=b0_threshold,
+                    alpha=alpha,
+                    verbose=verbose,
+                    patch_radius=patch_radius,
                     b0_denoising=b0_denoising,
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
                 )
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
-                logging.info('Denoised volumes saved as %s', odenoised)
+                logging.info("Denoised volumes saved as %s", odenoised)
 
 
 class NLMeansFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'nlmeans'
+        return "nlmeans"
 
-    def run(self, input_files, sigma=0, patch_radius=1, block_radius=5,
-            rician=True, out_dir='', out_denoised='dwi_nlmeans.nii.gz'):
+    def run(
+        self,
+        input_files,
+        sigma=0,
+        patch_radius=1,
+        block_radius=5,
+        rician=True,
+        out_dir="",
+        out_denoised="dwi_nlmeans.nii.gz",
+    ):
         """Workflow wrapping the nlmeans denoising method.
 
         It applies nlmeans denoise on each file found by 'globing'
@@ -144,33 +168,47 @@ class NLMeansFlow(Workflow):
         for fpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
-                logging.warning('Denoising skipped for now.')
+                logging.warning("Denoising skipped for now.")
             else:
-                logging.info('Denoising %s', fpath)
+                logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
 
                 if sigma == 0:
-                    logging.info('Estimating sigma')
+                    logging.info("Estimating sigma")
                     sigma = estimate_sigma(data)
-                    logging.debug('Found sigma {0}'.format(sigma))
+                    logging.debug("Found sigma {0}".format(sigma))
 
-                denoised_data = nlmeans(data, sigma=sigma,
-                                        patch_radius=patch_radius,
-                                        block_radius=block_radius,
-                                        rician=rician)
+                denoised_data = nlmeans(
+                    data,
+                    sigma=sigma,
+                    patch_radius=patch_radius,
+                    block_radius=block_radius,
+                    rician=rician,
+                )
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
-                logging.info('Denoised volume saved as %s', odenoised)
+                logging.info("Denoised volume saved as %s", odenoised)
 
 
 class LPCAFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'lpca'
+        return "lpca"
 
-    def run(self, input_files, bvalues_files, bvectors_files, sigma=0,
-            b0_threshold=50, bvecs_tol=0.01, patch_radius=2, pca_method='eig',
-            tau_factor=2.3, out_dir='', out_denoised='dwi_lpca.nii.gz'):
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        sigma=0,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        patch_radius=2,
+        pca_method="eig",
+        tau_factor=2.3,
+        out_dir="",
+        out_denoised="dwi_lpca.nii.gz",
+    ):
         r"""Workflow wrapping LPCA denoising method.
 
         Parameters
@@ -242,35 +280,45 @@ class LPCAFlow(Workflow):
         if isinstance(patch_radius, list) and len(patch_radius) == 1:
             patch_radius = int(patch_radius[0])
         for dwi, bval, bvec, odenoised in io_it:
-            logging.info('Denoising %s', dwi)
+            logging.info("Denoising %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             if not sigma:
-                logging.info('Estimating sigma')
+                logging.info("Estimating sigma")
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
-                gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
-                                      atol=bvecs_tol)
-                sigma = pca_noise_estimate(data, gtab, correct_bias=True,
-                                           smooth=3)
-                logging.debug('Found sigma %s', sigma)
+                gtab = gradient_table(
+                    bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                )
+                sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
+                logging.debug("Found sigma %s", sigma)
 
-            denoised_data = localpca(data, sigma=sigma,
-                                     patch_radius=patch_radius,
-                                     pca_method=pca_method,
-                                     tau_factor=tau_factor)
+            denoised_data = localpca(
+                data,
+                sigma=sigma,
+                patch_radius=patch_radius,
+                pca_method=pca_method,
+                tau_factor=tau_factor,
+            )
             save_nifti(odenoised, denoised_data, affine, image.header)
 
-            logging.info('Denoised volume saved as %s', odenoised)
+            logging.info("Denoised volume saved as %s", odenoised)
 
 
 class MPPCAFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'mppca'
+        return "mppca"
 
-    def run(self, input_files, patch_radius=2, pca_method='eig',
-            return_sigma=False, out_dir='', out_denoised='dwi_mppca.nii.gz',
-            out_sigma='dwi_sigma.nii.gz'):
+    def run(
+        self,
+        input_files,
+        patch_radius=2,
+        pca_method="eig",
+        return_sigma=False,
+        out_dir="",
+        out_denoised="dwi_mppca.nii.gz",
+        out_sigma="dwi_sigma.nii.gz",
+    ):
         r"""Workflow wrapping Marcenko-Pastur PCA denoising method.
 
         Parameters
@@ -315,27 +363,37 @@ class MPPCAFlow(Workflow):
             patch_radius = int(patch_radius[0])
 
         for dwi, odenoised, osigma in io_it:
-            logging.info('Denoising %s', dwi)
+            logging.info("Denoising %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
-            denoised_data, sigma = mppca(data, patch_radius=patch_radius,
-                                         pca_method=pca_method,
-                                         return_sigma=True)
+            denoised_data, sigma = mppca(
+                data,
+                patch_radius=patch_radius,
+                pca_method=pca_method,
+                return_sigma=True,
+            )
 
             save_nifti(odenoised, denoised_data, affine, image.header)
-            logging.info('Denoised volume saved as %s', odenoised)
+            logging.info("Denoised volume saved as %s", odenoised)
             if return_sigma:
                 save_nifti(osigma, sigma, affine, image.header)
-                logging.info('Sigma volume saved as %s', osigma)
+                logging.info("Sigma volume saved as %s", osigma)
 
 
 class GibbsRingingFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'gibbs_ringing'
+        return "gibbs_ringing"
 
-    def run(self, input_files, slice_axis=2, n_points=3, num_processes=1,
-            out_dir='', out_unring='dwi_unring.nii.gz'):
+    def run(
+        self,
+        input_files,
+        slice_axis=2,
+        n_points=3,
+        num_processes=1,
+        out_dir="",
+        out_unring="dwi_unring.nii.gz",
+    ):
         r"""Workflow for applying Gibbs Ringing method.
 
         Parameters
@@ -372,12 +430,15 @@ class GibbsRingingFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, ounring in io_it:
-            logging.info('Unringing %s', dwi)
+            logging.info("Unringing %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
-            unring_data = gibbs_removal(data, slice_axis=slice_axis,
-                                        n_points=n_points,
-                                        num_processes=num_processes)
+            unring_data = gibbs_removal(
+                data,
+                slice_axis=slice_axis,
+                n_points=n_points,
+                num_processes=num_processes,
+            )
 
             save_nifti(ounring, unring_data, affine, image.header)
-            logging.info('Denoised volume saved as %s', ounring)
+            logging.info("Denoised volume saved as %s", ounring)

@@ -19,15 +19,16 @@ from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
 from dipy.segment.mask import median_otsu
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
-                             numpass=1, autocrop=True, dilate=2)
+maskdata, mask = median_otsu(
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+)
 
 ###############################################################################
 # We instantiate our CSA model with spherical harmonic order (l) of 4
@@ -42,7 +43,7 @@ csamodel = CsaOdfModel(gtab, 4)
 # data and a sphere as input. The sphere is an object that represents the
 # spherical discrete grid where the ODF values will be evaluated.
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 start_time = time.time()
 
@@ -54,37 +55,40 @@ start_time = time.time()
 # in order to allow resources for other applications. However, most of the
 # times using the default option will be sufficient.
 
-csapeaks_parallel = peaks_from_model(model=csamodel,
-                                     data=maskdata,
-                                     sphere=sphere,
-                                     relative_peak_threshold=.5,
-                                     min_separation_angle=25,
-                                     mask=mask,
-                                     return_odf=False,
-                                     normalize_peaks=True,
-                                     npeaks=5,
-                                     parallel=True,
-                                     num_processes=2)
+csapeaks_parallel = peaks_from_model(
+    model=csamodel,
+    data=maskdata,
+    sphere=sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_odf=False,
+    normalize_peaks=True,
+    npeaks=5,
+    parallel=True,
+    num_processes=2,
+)
 
 time_parallel = time.time() - start_time
-print("peaks_from_model using 2 processes ran in : " +
-      str(time_parallel) + " seconds")
+print("peaks_from_model using 2 processes ran in : " + str(time_parallel) + " seconds")
 
 ###############################################################################
 # If we don't use parallelism then we need to set `parallel=False`:
 
 start_time = time.time()
-csapeaks = peaks_from_model(model=csamodel,
-                            data=maskdata,
-                            sphere=sphere,
-                            relative_peak_threshold=.5,
-                            min_separation_angle=25,
-                            mask=mask,
-                            return_odf=False,
-                            normalize_peaks=True,
-                            npeaks=5,
-                            parallel=False,
-                            num_processes=None)
+csapeaks = peaks_from_model(
+    model=csamodel,
+    data=maskdata,
+    sphere=sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_odf=False,
+    normalize_peaks=True,
+    npeaks=5,
+    parallel=False,
+    num_processes=None,
+)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in : " + str(time_single) + " seconds")

@@ -23,26 +23,18 @@ def test_scale_space():
 
             original = moving
             if test_class is ScaleSpace:
-                ss = test_class(
-                    original,
-                    num_levels,
-                    grid2world,
-                    input_spacing)
+                ss = test_class(original, num_levels, grid2world, input_spacing)
             elif test_class is IsotropicScaleSpace:
                 factors = [4, 2, 1]
                 sigmas = [3.0, 1.0, 0.0]
-                ss = test_class(
-                    original,
-                    factors,
-                    sigmas,
-                    grid2world,
-                    input_spacing)
+                ss = test_class(original, factors, sigmas, grid2world, input_spacing)
             for level in range(num_levels):
                 # Verify sigmas and images are consistent
                 sigmas = ss.get_sigmas(level)
                 expected = sp.ndimage.gaussian_filter(original, sigmas)
-                expected = ((expected - expected.min()) /
-                            (expected.max() - expected.min()))
+                expected = (expected - expected.min()) / (
+                    expected.max() - expected.min()
+                )
                 actual = ss.get_image(level)
                 assert_array_almost_equal(actual, expected)
 

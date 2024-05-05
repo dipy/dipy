@@ -47,9 +47,9 @@ And the letters A-D represent the following points in
 
 """
 
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from functools import wraps
-from itertools import combinations, groupby
+from itertools import combinations
 from warnings import warn
 
 from nibabel.affines import apply_affine
@@ -97,7 +97,7 @@ def density_map(streamlines, affine, vol_dims):
 
     """
     lin_T, offset = _mapping_to_voxel(affine)
-    counts = np.zeros(vol_dims, 'int')
+    counts = np.zeros(vol_dims, "int")
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = inds.T
@@ -107,11 +107,16 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
-def connectivity_matrix(streamlines, affine, label_volume,
-                        inclusive=False, symmetric=True,
-                        return_mapping=False,
-                        mapping_as_streamlines=False):
-    """ Count the streamlines that start and end at each label pair.
+def connectivity_matrix(
+    streamlines,
+    affine,
+    label_volume,
+    inclusive=False,
+    symmetric=True,
+    return_mapping=False,
+    mapping_as_streamlines=False,
+):
+    """Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -150,32 +155,29 @@ def connectivity_matrix(streamlines, affine, label_volume,
 
     # Error checking on label_volume
     kind = label_volume.dtype.kind
-    labels_positive = ((kind == 'u') or
-                       ((kind == 'i') and (label_volume.min() >= 0)))
-    valid_label_volume = (labels_positive and label_volume.ndim == 3)
+    labels_positive = (kind == "u") or ((kind == "i") and (label_volume.min() >= 0))
+    valid_label_volume = labels_positive and label_volume.ndim == 3
     if not valid_label_volume:
-        raise ValueError("label_volume must be a 3d integer array with"
-                         "non-negative label values")
+        raise ValueError(
+            "label_volume must be a 3d integer array with" "non-negative label values"
+        )
 
-    matrix = np.zeros((np.max(label_volume)+1, np.max(label_volume)+1),
-                      dtype=np.int64)
+    matrix = np.zeros(
+        (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
+    )
 
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
 
     if inclusive:
-
         for i, sl in enumerate(streamlines):
-
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
                 crossed_labels = np.unique(label_volume[x, y, z])
             else:
-                crossed_labels = np.unique(label_volume[x, y, z],
-                                           return_index=True)
-                crossed_labels = crossed_labels[0][np.argsort(
-                    crossed_labels[1])]
+                crossed_labels = np.unique(label_volume[x, y, z], return_index=True)
+                crossed_labels = crossed_labels[0][np.argsort(crossed_labels[1])]
 
             for comb in combinations(crossed_labels, 2):
                 matrix[comb] += 1
@@ -187,7 +189,7 @@ def connectivity_matrix(streamlines, affine, label_volume,
                         mapping[comb].append(i)
 
     else:
-        streamlines_end = np.array([sl[0::len(sl)-1] for sl in streamlines])
+        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
@@ -309,21 +311,21 @@ def subsegment(streamlines, max_segment_length):
 
     """
     for sl in streamlines:
-        diff = (sl[1:] - sl[:-1])
-        dist = np.sqrt((diff*diff).sum(-1))
-        num_segments = np.ceil(dist/max_segment_length).astype('int')
+        diff = sl[1:] - sl[:-1]
+        dist = np.sqrt((diff * diff).sum(-1))
+        num_segments = np.ceil(dist / max_segment_length).astype("int")
 
-        output_sl = np.empty((num_segments.sum()+1, 3), 'float')
+        output_sl = np.empty((num_segments.sum() + 1, 3), "float")
         output_sl[0] = sl[0]
 
         count = 1
         for ii in range(len(num_segments)):
             ns = num_segments[ii]
             if ns == 1:
-                output_sl[count] = sl[ii+1]
+                output_sl[count] = sl[ii + 1]
                 count += 1
             elif ns > 1:
-                small_d = diff[ii]/ns
+                small_d = diff[ii] / ns
                 point = sl[ii]
                 for _ in range(ns):
                     point = point + small_d
@@ -335,7 +337,7 @@ def subsegment(streamlines, max_segment_length):
             else:
                 # this should never happen because ns should be a positive
                 # int
-                assert (ns >= 0)
+                assert ns >= 0
         yield output_sl
 
 
@@ -379,7 +381,7 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
-        raise ValueError('mask cannot be more than 3d')
+        raise ValueError("mask cannot be more than 3d")
 
     density = np.asarray(density, int)
     if density.size == 1:
@@ -390,10 +392,10 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
         raise ValueError("density should be in integer array of shape (3,)")
 
     # Grid of points between -.5 and .5, centered at 0, with given density
-    grid = np.mgrid[0:density[0], 0:density[1], 0:density[2]]
+    grid = np.mgrid[0 : density[0], 0 : density[1], 0 : density[2]]
     grid = grid.T.reshape((-1, 3))
     grid = grid / density
-    grid += (.5 / density - .5)
+    grid += 0.5 / density - 0.5
 
     where = np.argwhere(mask)
 
@@ -410,8 +412,9 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     return seeds
 
 
-def random_seeds_from_mask(mask, affine, seeds_count=1,
-                           seed_count_per_voxel=True, random_seed=None):
+def random_seeds_from_mask(
+    mask, affine, seeds_count=1, seed_count_per_voxel=True, random_seed=None
+):
     """Create randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
@@ -476,7 +479,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
-        raise ValueError('mask cannot be more than 3d')
+        raise ValueError("mask cannot be more than 3d")
 
     # Randomize the voxels
     rng = np.random.default_rng(random_seed)
@@ -500,12 +503,11 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
             # Set the random seed with the current seed, the current value of
             # seeds per voxel and the global random seed.
             if random_seed is not None:
-                s_random_seed = hash((np.sum(s) + 1) * i + random_seed) \
-                    % (2**32 - 1)
+                s_random_seed = hash((np.sum(s) + 1) * i + random_seed) % (2**32 - 1)
                 rng = np.random.default_rng(s_random_seed)
             # Generate random triplet
             grid = rng.random(3)
-            seed = s + grid - .5
+            seed = s + grid - 0.5
             seeds.append(seed)
     seeds = np.asarray(seeds)
 
@@ -529,6 +531,7 @@ def _with_initialize(generator):
     called and the first yield value is ignored.
 
     """
+
     @wraps(generator)
     def helper(*args, **kwargs):
         gen = generator(*args, **kwargs)
@@ -582,8 +585,8 @@ def target(streamlines, affine, target_mask, include=True):
             ind = _to_voxel_coordinates(sl, lin_T, offset)
             i, j, k = ind.T
             state = target_mask[i, j, k]
-        except IndexError:
-            raise ValueError("streamlines points are outside of target_mask")
+        except IndexError as e:
+            raise ValueError("streamlines points are outside of target_mask") from e
         if state.any() == include:
             yield sl
 
@@ -632,8 +635,7 @@ def target_line_based(streamlines, affine, target_mask, include=True):
     """
     target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
     lin_T, offset = _mapping_to_voxel(affine)
-    streamline_index = _streamlines_in_mask(
-        streamlines, target_mask, lin_T, offset)
+    streamline_index = _streamlines_in_mask(streamlines, target_mask, lin_T, offset)
     yield
     # End of initialization
 
@@ -641,7 +643,7 @@ def target_line_based(streamlines, affine, target_mask, include=True):
         yield streamlines[idx]
 
 
-def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
+def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
     """Is a streamline near an ROI.
 
     Implements the inner loops of the :func:`near_roi` function.
@@ -688,7 +690,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         e_s += "'either_end', but you entered: %s." % mode
         raise ValueError(e_s)
 
-    dist = cdist(s, roi_coords, 'euclidean')
+    dist = cdist(s, roi_coords, "euclidean")
 
     if mode in ("any", "either_end"):
         return np.min(dist) <= tol
@@ -696,8 +698,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1) <= tol)
 
 
-def near_roi(streamlines, affine, region_of_interest, tol=None,
-             mode="any"):
+def near_roi(streamlines, affine, region_of_interest, tol=None, mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
     they fall within a tolerance distance from an ROI.
 
@@ -745,7 +746,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
         w_s += " inclusion ROI. Setting to: %s" % dtc
-        warn(w_s)
+        warn(w_s, stacklevel=2)
         tol = dtc
 
     roi_coords = np.array(np.where(region_of_interest)).T
@@ -755,15 +756,13 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
-            out[ii] = streamline_near_roi(sl, x_roi_coords, tol=tol,
-                                          mode=mode)
+            out[ii] = streamline_near_roi(sl, x_roi_coords, tol=tol, mode=mode)
         return out
     # If it's a generator, we'll need to generate the output into a list
     else:
         out = []
         for sl in streamlines:
-            out.append(streamline_near_roi(sl, x_roi_coords, tol=tol,
-                                           mode=mode))
+            out.append(streamline_near_roi(sl, x_roi_coords, tol=tol, mode=mode))
 
         return np.array(out, dtype=bool)
 
@@ -785,7 +784,7 @@ def length(streamlines):
     return map(metrics.length, streamlines)
 
 
-def unique_rows(in_array, dtype='f4'):
+def unique_rows(in_array, dtype="f4"):
     """Find the unique rows in an array.
 
     Parameters
@@ -882,7 +881,10 @@ def reduce_rois(rois, include):
     """
     # throw warning if non bool roi detected
     if not np.all([irois.dtype == bool for irois in rois]):
-        warn("Non-boolean input mask detected. Treating all nonzeros as True.")
+        warn(
+            "Non-boolean input mask detected. Treating all nonzeros as True.",
+            stacklevel=2,
+        )
 
     include_roi = np.zeros(rois[0].shape, dtype=bool)
     exclude_roi = np.zeros(rois[0].shape, dtype=bool)
@@ -1009,11 +1011,11 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
     https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
 
     """
-    max_angle = 2. * np.arcsin(step_size / (2. * min_radius_curvature))
+    max_angle = 2.0 * np.arcsin(step_size / (2.0 * min_radius_curvature))
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
         w_msg = "The max_angle found is outside the interval [0 ; pi/2]."
         w_msg += "max_angle will be set to the default value pi/2"
-        warn(w_msg)
+        warn(w_msg, stacklevel=2)
         max_angle = np.pi / 2.0
     return max_angle
 
@@ -1044,7 +1046,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
         w_msg = "The max_angle found is outside the interval [0 ; pi/2]."
         w_msg += "max_angle will be set to the default value pi/2"
-        warn(w_msg)
+        warn(w_msg, stacklevel=2)
         max_angle = np.pi / 2.0
     min_radius_curvature = step_size / 2 / np.sin(max_angle / 2)
     return min_radius_curvature
@@ -1071,22 +1073,28 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
     directions : array (K, 3)
     """
 
-    if (not len(positions.shape) == 2
-            or not len(peaks.shape) == 3
-            or not positions.shape[0] == peaks.shape[0]
-            or not positions.shape[1] == 3
-            or not peaks.shape[2] == 3
-            or not peaks.shape[1] > 0):
-        raise ValueError("The array shapes of the positions and peaks should"
-                         " be (N,3) and (N,M,3), respectively.")
+    if (
+        not len(positions.shape) == 2
+        or not len(peaks.shape) == 3
+        or not positions.shape[0] == peaks.shape[0]
+        or not positions.shape[1] == 3
+        or not peaks.shape[2] == 3
+        or not peaks.shape[1] > 0
+    ):
+        raise ValueError(
+            "The array shapes of the positions and peaks should"
+            " be (N,3) and (N,M,3), respectively."
+        )
 
     seeds = []
     directions = []
 
     for i, s in enumerate(positions):
         voxel_dirs_norm = np.linalg.norm(peaks[i, :, :], axis=1)
-        voxel_dirs = peaks[i, voxel_dirs_norm > 0, :] \
+        voxel_dirs = (
+            peaks[i, voxel_dirs_norm > 0, :]
             / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
+        )
         for d in voxel_dirs[:max_cross, :]:
             seeds.append(s)
             directions.append(d)
