@@ -21,7 +21,7 @@ from dipy.direction import peak_directions
 from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
-from dipy.data import get_sphere
+from dipy.core.sphere import unit_icosahedron
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_angle):
@@ -328,7 +328,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, *, mask=None):
     return odf
 
 
-def bingham_fiber_density(bingham_params, *, sphere=None, mask=None):
+def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     """
     Compute fiber density for each lobe for a given Bingham ODF.
 
@@ -342,10 +342,11 @@ def bingham_fiber_density(bingham_params, *, sphere=None, mask=None):
             elements of Bingham's main direction (indexes 3-5);
             elements of Bingham's dispersion major axis (indexes 6-8);
             elements of Bingham's dispersion minor axis (indexes 9-11).
-    sphere: Sphere, optional
-        Sphere object used for computing surface integral. Defaults to DIPY's
-        `repulsion724` sphere, twice subdivided. For best results, prefer
-        repulsion spheres to symmetric spheres.
+    subdivide: int >= 0, optional
+        Number of times the unit icosahedron used for integration
+        should be subdivided. The higher this value the more precise the
+        approximation will be, at the cost of longer execution times. The
+        default results in a sphere of 10242 points.
     mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed
 
@@ -365,9 +366,7 @@ def bingham_fiber_density(bingham_params, *, sphere=None, mask=None):
            anisotropy: Extraction of bundle-specific structural metrics from
            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
     """
-    # default sphere consists of 11554 equidistant vertices
-    if sphere is None:
-        sphere = get_sphere('repulsion724').subdivide(2)
+    sphere = unit_icosahedron.subdivide(subdivide)
 
     # directions for evaluating the integral
     u = sphere.vertices
