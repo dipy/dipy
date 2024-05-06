@@ -26,7 +26,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     The following are undefined, and raise a ValueError:
     * Quantizing at zero levels because at least one level must be assigned
     * Quantizing at one level because positive values should be assigned a
-      level different from the secial level 0 (at least 2 levels are needed)
+      level different from the special level 0 (at least 2 levels are needed)
 
     Parameters
     ----------
@@ -125,7 +125,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     The following are undefined, and raise a ValueError:
     * Quantizing at zero levels because at least one level must be assigned
     * Quantizing at one level because positive values should be assigned a
-      level different from the secial level 0 (at least 2 levels are needed)
+      level different from the special level 0 (at least 2 levels are needed)
 
     Parameters
     ----------

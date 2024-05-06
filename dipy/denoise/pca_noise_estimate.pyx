@@ -48,7 +48,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     smooth : int
         Radius of a Gaussian smoothing filter to apply to the noise estimate
         before returning. Default: 2.
-    image_as_samples : bool, optional
+    images_as_samples : bool, optional
         Whether to use images as rows (samples) for PCA (algorithm in [1]_) or
         to use images as columns (features).
 
@@ -103,7 +103,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         cnp.npy_intp prx = patch_radius if n0 > 1 else 0
         cnp.npy_intp pry = patch_radius if n1 > 1 else 0
         cnp.npy_intp prz = patch_radius if n2 > 1 else 0
-        double norm = (2 * prx + 1) * (2 * pry + 1) * (2 * prz + 1)
+        cnp.npy_intp norm = (2 * prx + 1) * (2 * pry + 1) * (2 * prz + 1)
         double sum_reg, temp1
         double[:, :, :] I = np.zeros((n0, n1, n2))
 

@@ -22,6 +22,7 @@ from dipy.tracking.utils import (
     random_seeds_from_mask,
     reduce_labels,
     reduce_rois,
+    seeds_directions_pairs,
     seeds_from_mask,
     target,
     target_line_based,
@@ -713,3 +714,29 @@ def test_curvature_angle():
     with pytest.warns(UserWarning):
         npt.assert_equal(min_radius_curvature_from_angle(0, 1),
                          min_radius_curvature_from_angle(np.pi/2, 1))
+
+
+@set_random_number_generator()
+def test_seeds_directions_pairs(rng):
+    positions = rng.random(size=(10, 3))
+    peaks = rng.random(size=(10, 5, 3))
+
+    # test various max_cross value
+    for i in range(-1, 7):
+        seeds, directions = seeds_directions_pairs(
+            positions, peaks, max_cross=i)
+        npt.assert_equal(seeds.shape, directions.shape)
+
+    # test it raise and error if the input array shapes don't match
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions[:, :2], peaks)
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions[:5, :], peaks)
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions, peaks[:, :, :2])
+    npt.assert_raises(ValueError,
+                      seeds_directions_pairs,
+                      positions, peaks.flatten())

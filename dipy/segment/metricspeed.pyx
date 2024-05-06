@@ -1,6 +1,7 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
+cimport numpy as cnp
 
 from libc.math cimport sqrt, acos
 
@@ -389,7 +390,7 @@ cpdef distance_matrix(Metric metric, data1, data2=None):
     2D array (double)
         Distance matrix.
     """
-    cdef int i, j
+    cdef cnp.npy_intp i, j
     if data2 is None:
         data2 = data1
 

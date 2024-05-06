@@ -41,7 +41,7 @@ cdef print_node(CentroidNode* node, prepend=""):
     txt += " thres({})".format(node.threshold)
     txt += "\n"
 
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(node.nb_children):
         txt += prepend
         if i == node.nb_children-1:
@@ -129,7 +129,7 @@ cdef class QuickBundlesX:
         self.nb_levels = len(levels_thresholds)
         self.thresholds = <double*> malloc(self.nb_levels*sizeof(double))
 
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(self.nb_levels):
             self.thresholds[i] = levels_thresholds[i]
 
@@ -257,7 +257,7 @@ cdef class QuickBundlesX:
         return print_node(self.root)
 
     cdef void traverse_postorder(self, CentroidNode* node, void (*visit)(QuickBundlesX, CentroidNode*)):
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(node.nb_children):
             self.traverse_postorder(node.children[i], visit)
         visit(self, node)
@@ -281,7 +281,7 @@ cdef class QuickBundlesX:
         tree_cluster = TreeCluster(threshold=node.threshold,
                                    centroid=np.asarray(centroid),
                                    indices=np.asarray(<int[:node.size]> node.indices).copy())
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(node.nb_children):
             tree_cluster.add(self._build_tree_clustermap(node.children[i]))
 

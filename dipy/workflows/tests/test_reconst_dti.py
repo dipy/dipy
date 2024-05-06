@@ -1,5 +1,6 @@
 from os.path import join
 from tempfile import TemporaryDirectory
+import warnings
 
 import numpy as np
 from numpy.testing import assert_allclose, assert_equal
@@ -7,21 +8,33 @@ from numpy.testing import assert_allclose, assert_equal
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_peaks
-from dipy.reconst.shm import sph_harm_ind_list
+from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.workflows.reconst import ReconstDtiFlow
 
 
 def test_reconst_dti_wls():
-    reconst_flow_core(ReconstDtiFlow)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        reconst_flow_core(ReconstDtiFlow)
 
 
 def test_reconst_dti_nlls():
-    reconst_flow_core(ReconstDtiFlow, extra_args=[], extra_kwargs={})
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        reconst_flow_core(ReconstDtiFlow, extra_args=[], extra_kwargs={})
 
 
 def test_reconst_dti_alt_tensor():
-    reconst_flow_core(ReconstDtiFlow, extra_args=[],
-                      extra_kwargs={'nifti_tensor': False})
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        reconst_flow_core(ReconstDtiFlow, extra_args=[],
+                          extra_kwargs={'nifti_tensor': False})
 
 
 def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):

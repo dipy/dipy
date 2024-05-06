@@ -66,7 +66,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                  int probe_quality=3, int probe_count=1,
                  double data_support_exponent=1, **kwargs):
         """PTT used probe for estimating future propagation steps. A probe is a
-        short, cylinderical model of the connecting segment.
+        short, cylindrical model of the connecting segment.
 
         Parameters
         ----------
@@ -147,7 +147,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double[3] position
         cdef int count
-        cdef int i
+        cdef cnp.npy_intp i
 
         # Initialize Frame
         self.frame[0][0] = init_dir[0]
@@ -364,7 +364,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double data_support = 0
         cdef double[3] tangent
         cdef int tries
-        cdef int i
+        cdef cnp.npy_intp i
 
         self.prepare_propagator(self.step_size)
 

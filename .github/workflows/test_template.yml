@@ -70,6 +70,7 @@ jobs:
       VENV_ARGS: "--python=python"
       USE_PRE: ${{ inputs.use-pre }}
       COVERAGE: ${{ inputs.coverage }}
+      DIPY_WERRORS: 1
       CODECOV_TOKEN: ${{ secrets.codecov-token }}
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
       PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"  # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"

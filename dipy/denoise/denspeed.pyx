@@ -146,8 +146,7 @@ cdef double process_block(double[:, :, ::1] arr,
     """
 
     cdef:
-        cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
-        double patch_vol_size
+        cnp.npy_intp m, n, o, M, N, O, patch_vol_size, a, b, c, cnt, step
         double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
