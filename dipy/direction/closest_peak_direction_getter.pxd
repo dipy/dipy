@@ -22,14 +22,8 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         self,
         double[::1] point)
 
-    cdef double[:] _get_pmf(
-        self,
-        double[::1] point) nogil
-
-    cdef int get_direction_c(
-        self,
-        double[::1] point,
-        double[::1] direction)
+    cdef double* _get_pmf(self, double[::1] point) nogil
+    cdef int get_direction_c(self, double[::1] point, double[::1] direction)
 
 
 cdef class BaseDirectionGetter(BasePmfDirectionGetter):

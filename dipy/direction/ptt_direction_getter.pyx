@@ -18,6 +18,7 @@ Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
 
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
+from libc.stdlib cimport malloc, free
 
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter
@@ -161,7 +162,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         if self.probe_count == 1:
             self.last_val = self.pmf_gen.get_pmf_value_c(self.position,
-                                                         self.frame[0])
+                                                         self.frame[0],
+                                                         &self.pmf_gen.pmf[0])
         else:
             for count in range(self.probe_count):
                 for i in range(3):
@@ -175,7 +177,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                    * self.inv_voxel_size[i])
 
                 self.last_val += self.pmf_gen.get_pmf_value_c(position,
-                                                            self.frame[0])
+                                                              self.frame[0],
+                                                              &self.pmf_gen.pmf[0])
 
 
     cdef void prepare_propagator(self, double arclength) nogil:
@@ -269,7 +272,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 copy_point(&binormal[0], &frame[2][0])
 
             if self.probe_count == 1:
-                fod_amp = self.pmf_gen.get_pmf_value_c(position, tangent)
+                fod_amp = self.pmf_gen.get_pmf_value_c(position, tangent,
+                                                       &self.pmf_gen.pmf[0])
                 fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                 self.last_val_cand = fod_amp
                 likelihood += self.last_val_cand
@@ -291,7 +295,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                            + binormal[i] * self.probe_radius
                                            * sin(c * self.angular_separation)
                                            * self.inv_voxel_size[i])
-                    fod_amp = self.pmf_gen.get_pmf_value_c(new_position, tangent)
+                    fod_amp = self.pmf_gen.get_pmf_value_c(new_position, tangent,
+                                                           &self.pmf_gen.pmf[0])
                     fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                     self.last_val_cand += fod_amp
 
@@ -344,6 +349,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             if (random() * max_posterior <= self.calculate_data_support()):
                 self.last_val = self.last_val_cand
                 return 0
+
         return 1
 
     cdef int propagate(self):
