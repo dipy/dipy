@@ -22,6 +22,7 @@ from libc.stdlib cimport malloc, free
 cdef int probabilistic_tracker(double* point,
                                double* direction,
                                TrackingParameters params,
+                               double* stream_data,
                                PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, idx
