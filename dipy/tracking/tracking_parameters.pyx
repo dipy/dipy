@@ -24,7 +24,9 @@ def generate_tracking_parameters(algo_name, *,
 
     if algo_name in ['deterministic', 'det']:
         params = TrackingParameters(max_len=max_len, step_size=step_size,
-                                    voxel_size=voxel_size)
+                                    voxel_size=voxel_size,
+                                    pmf_threshold=pmf_threshold,
+                                    max_angle=max_angle)
         params.set_tracker_c(deterministic_tracker)
         return params
     elif algo_name in ['probabilistic', 'prob']:
@@ -37,6 +39,8 @@ def generate_tracking_parameters(algo_name, *,
     elif algo_name == 'ptt':
         params = TrackingParameters(max_len=max_len, step_size=step_size,
                                     voxel_size=voxel_size,
+                                    pmf_threshold=pmf_threshold,
+                                    max_angle=max_angle,
                                     probe_length=probe_length,
                                     probe_radius=probe_radius,
                                     probe_quality=probe_quality,
@@ -108,3 +112,11 @@ cdef class ParallelTransportTrackingParameters:
         self.probe_quality = probe_quality
         self.probe_count = probe_count
         self.data_support_exponent = data_support_exponent
+
+        self.probe_step_size = self.probe_length / (self.probe_quality - 1)
+        self.probe_normalizer = 1.0 / (self.probe_quality * self.probe_count)
+        self.k_small = 0.0001
+
+        # Adaptively set in Trekker
+        self.rejection_sampling_nbr_sample = 10
+        self.rejection_sampling_max_try = 100

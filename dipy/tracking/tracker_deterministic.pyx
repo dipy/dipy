@@ -18,9 +18,10 @@ from libc.stdlib cimport malloc, free
 
 
 cdef int deterministic_tracker(double* point,
-                                       double* direction,
-                                       TrackingParameters params,
-                                       PmfGen pmf_gen) noexcept nogil:
+                               double* direction,
+                               TrackingParameters params,
+                               double* stream_data,
+                               PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, max_idx
         double max_value=0
