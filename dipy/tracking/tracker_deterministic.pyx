@@ -29,13 +29,14 @@ cdef int deterministic_tracker(double* point,
         double cos_sim
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
+    if norm(direction) == 0:
+        return 1
+
     pmf = <double*> malloc(len_pmf * sizeof(double))
     if get_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf):
         free(pmf)
         return 1
-    if norm(direction) == 0:
-        free(pmf)
-        return 1
+
     normalize(direction)
 
     for i in range(len_pmf):
