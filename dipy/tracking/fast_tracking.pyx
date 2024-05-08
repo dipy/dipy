@@ -187,8 +187,7 @@ cdef int get_pmf(double* pmf,
         double absolute_pmf_threshold
         double max_pmf=0
 
-    if trilinear_interpolate4d_c(pmf_gen.data, point, pmf):
-        return 1
+    pmf = pmf_gen.get_pmf_c(point, pmf)
 
     for i in range(pmf_len):
         if pmf[i] > max_pmf:
