@@ -23,13 +23,14 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
 from dipy.tracking.tracking_parameters cimport TrackingParameters, func_ptr
-from dipy.tracking.tracker_probabilistic cimport probabilistic_tracker
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 from libc.math cimport floor, ceil
 
+cdef extern from "stdlib.h" nogil:
+    void *memset(void *ptr, int value, size_t num)
 
 def generate_tractogram(double[:,::1] seed_positions,
                         double[:,::1] seed_directions,
@@ -128,6 +129,7 @@ cdef int generate_local_streamline(double* seed,
         cnp.npy_intp i, j
         double[3] point
         double[3] voxdir
+        double* stream_data
         StreamlineStatus stream_status_forward, stream_status_backward
 
     # set the initial position
@@ -136,9 +138,11 @@ cdef int generate_local_streamline(double* seed,
     copy_point(seed, &stream[params.max_len * 3])
 
     # forward tracking
+    stream_data = <double*> malloc(100 * sizeof(double))
+    memset(stream_data, 0, 100 * sizeof(double))
     stream_status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, pmf_gen):  # probabilistic_tracker
+        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -151,16 +155,20 @@ cdef int generate_local_streamline(double* seed,
             stream_status_forward == OUTSIDEIMAGE):
             break
     stream_idx[1] = params.max_len + i -1
+    free(stream_data)
 
     # # backward tracking
+    stream_data = <double*> malloc(100 * sizeof(double))
+    memset(stream_data, 0, 100 * sizeof(double))
     copy_point(seed, point)
     copy_point(direction, voxdir)
     for j in range(3):
         voxdir[j] = voxdir[j] * -1
+
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
         ##### VOXDIR should be the real first direction #####
-        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, pmf_gen):  # probabilistic_tracker
+        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
             break
         # update position
         for j in range(3):
@@ -173,6 +181,7 @@ cdef int generate_local_streamline(double* seed,
             stream_status_backward == OUTSIDEIMAGE):
             break
     stream_idx[0] = params.max_len - i + 1
+    free(stream_data)
     # # need to handle stream status
     return 0 #stream_status
 
