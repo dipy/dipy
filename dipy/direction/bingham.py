@@ -179,7 +179,7 @@ def odf_to_bingham(odf, sphere, *, npeaks=5, max_search_angle=6,
     return fits, n
 
 
-def _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
+def _single_bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     """
     Sample a Bingham function on the directions described by `vertices`.
     The function assumes that `vertices` are already normalized and no
@@ -217,65 +217,7 @@ def _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
     return fn.T
 
 
-def bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices):
-    """
-    Sample a Bingham function on the directions described by `vertices`.
-
-    Parameters
-    ----------
-    f0: float
-        Maximum value of the Bingham function.
-    k1: float
-        Concentration along major axis.
-    k2: float
-        Concentration along minor axis.
-    major_axis: ndarray (3)
-        Direction of major axis
-    minor_axis: ndarray (3)
-        Direction of minor axis
-    vertices: ndarray (N, 3)
-        Unit sphere directions along which the distribution
-        is evaluated.
-
-    Returns
-    -------
-    fn : array (N,)
-        Sampled Bingham function values at each point on directions.
-
-    Notes
-    -----
-    The Bingham function is defined as [1]_,[2]_,[3]_:
-
-    .. math::
-
-        f(n) = f_0 \exp[-k_1(\mu_1^Tn)^2-k_2(\mu_2^Tn)^2]
-
-    where $f(n)$ is the Bingham function value at a given direction $n$, $f_0$
-    is the Bingham maximum peak value, $k_1$ and $k_2$ are the concentration
-    constants parameters (large values correspond to lower dispersion values)
-    along the two dispersion axes $\mu_1$ and $\mu_2$.
-
-    References
-    ----------
-    .. [1] Bingham, C., 1974. An antipodally symmetric distribution on the
-           sphere. Anna1 Stat. 2, 1201-1225.
-    .. [2] Riffert, T.W., Schreiber, J., Anwander, A., Knösche, T.R., 2014.
-           Beyond fractional Anisotropy: Extraction of Bundle-specific
-           structural metrics from crossing fiber models.
-           Neuroimage 100: 176-191. doi: 10.1016/j.neuroimage.2014.06.015
-    .. [3] Henriques RN, 2018. Advanced Methods for Diffusion MRI Data Analysis
-           and their Application to the Healthy Ageing Brain (Doctoral thesis).
-           Downing College, University of Cambridge. doi: 10.17863/CAM.29356
-    """
-    if not (np.linalg.norm(vertices, axis=-1) == 1).any():
-        warn("Some sphere directions are not normalized. Normalizing.",
-             UserWarning)
-        vertices /= np.linalg.norm(vertices, axis=-1, keepdims=True)
-
-    return _bingham_to_odf(f0, k1, k2, major_axis, minor_axis, vertices)
-
-
-def bingham_multi_voxel_odf(bingham_params, sphere, *, mask=None):
+def bingham_to_sf(bingham_params, sphere, *, mask=None):
     """
     Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
 
@@ -322,7 +264,7 @@ def bingham_multi_voxel_odf(bingham_params, sphere, *, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            this_odf += _bingham_to_odf(f0, k1, k2, mu1, mu2, sphere.vertices)
+            this_odf += _single_bingham_to_sf(f0, k1, k2, mu1, mu2, sphere.vertices)
         odf[idx] = this_odf
 
     return odf
@@ -395,7 +337,7 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            bingham_eval = _bingham_to_odf(f0, k1, k2, mu1, mu2, u)
+            bingham_eval = _single_bingham_to_sf(f0, k1, k2, mu1, mu2, u)
             fd[idx + (li,)] = np.sum(bingham_eval * dA)
 
     return fd
@@ -740,11 +682,11 @@ class BinghamMetrics:
             The value of the odf on each point of `sphere`.
         """
         mask = self.gfd > 0
-        return bingham_multi_voxel_odf(self.model_params, sphere, mask=mask)
+        return bingham_to_sf(self.model_params, sphere, mask=mask)
 
 
-def bingham_from_odf(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
-                     min_sep_angle=60, rel_th=0.1):
+def sf_to_bingham(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
+                  min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from a volume of ODF.
 
@@ -794,8 +736,8 @@ def bingham_from_odf(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
     return BinghamMetrics(bpars)
 
 
-def bingham_from_sh(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
-                    max_search_angle=6, min_sep_angle=60, rel_th=0.1):
+def sh_to_bingham(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
+                  max_search_angle=6, min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from an ODF's spherical harmonics (SH)
     representation.

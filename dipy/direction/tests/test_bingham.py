@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
                            assert_array_less)
-from dipy.direction.bingham import (bingham_to_odf, odf_to_bingham,
+from dipy.direction.bingham import (_single_bingham_to_sf, odf_to_bingham,
                                     _bingham_fit_peak, bingham_fiber_density,
-                                    bingham_fiber_spread, bingham_from_odf,
+                                    bingham_fiber_spread, sf_to_bingham,
                                     _convert_bingham_pars, odi2k, k2odi,
-                                    bingham_from_sh)
+                                    sh_to_bingham)
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh
 
@@ -24,11 +24,11 @@ def test_bingham_fit():
 
     # Test if maximum amplitude is in the expected Bingham main direction
     # which should be perpendicular to both ma_axis and mi_axis
-    odf_test = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, peak_dir)
+    odf_test = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, peak_dir)
     assert_almost_equal(odf_test, f0)
 
     # Test Bingham fit on full sampled GT Bingham function
-    odf_gt = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
     a0, c1, c2, mu0, mu1, mu2 = _bingham_fit_peak(odf_gt, peak_dir, sphere, 45)
 
     # check scalar parameters
@@ -134,12 +134,12 @@ def test_bingham_from_odf():
     k1 = 2
     k2 = 6
     f0 = 3
-    odf = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
     # Perform Bingham fit in multi-voxel odf
     multi_odfs = np.zeros((2, 2, 1, len(sphere.vertices)))
     multi_odfs[...] = odf
-    bim = bingham_from_odf(multi_odfs, sphere, npeaks=2, max_search_angle=45)
+    bim = sf_to_bingham(multi_odfs, sphere, npeaks=2, max_search_angle=45)
 
     # check model_params
     assert_almost_equal(bim.model_params[0, 0, 0, 0, 0], f0, decimal=3)
@@ -195,10 +195,10 @@ def test_bingham_from_sh():
     k1 = 2
     k2 = 6
     f0 = 3
-    odf = bingham_to_odf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
-    bim_odf = bingham_from_odf(odf, sphere, npeaks=2, max_search_angle=45)
+    bim_odf = sh_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16)
-    bim_sh = bingham_from_sh(sh, sphere, 16, npeaks=2, max_search_angle=45)
+    bim_sh = sh_to_bingham(sh, sphere, 16, npeaks=2, max_search_angle=45)
     assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params,
                               decimal=3)
