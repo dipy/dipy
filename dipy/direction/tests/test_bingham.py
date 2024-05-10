@@ -197,7 +197,7 @@ def test_bingham_from_sh():
     f0 = 3
     odf = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
-    bim_odf = sh_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
+    bim_odf = sf_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16)
     bim_sh = sh_to_bingham(sh, sphere, 16, npeaks=2, max_search_angle=45)
     assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params,
