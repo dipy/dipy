@@ -102,26 +102,24 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere)
 # parameters of the fitted Bingham functions. The metrics of interest contained
 # in the `BinghamMetrics` class instance are:
 #
-# - afd (apparent fiber density: the maximum value for each peak. Also known as
-#       Bingham's f_0 parameter.)
-# - afd_total (total apparent fiber density: sum of all maximum peak values
-#       across all lobes of the ODF.)
-# - fd (fiber densitiy: as defined in [1]_, one for each peak.)
-# - fs (fiber spread: as defined in [1]_, one for each peak.)
-# - gfd (global fiber density: average of fd across all ODF peaks.)
-# - gfs (global fiber spread: average of fs across all ODF peaks.)
-# - odi_1 (orientation dispersion index along Bingham's first dispersion axis,
-#       one for each peak. Defined in [2]_ and [4]_.)
-# - odi_2 (orientation dispersion index along Bingham's second dispersion axis,
-#       one for each peak.)
-# - odi_total (orientation dispersion index averaged across both Bingham's
+# - amplitude_lobe (the maximum value for each lobe. Also known as Bingham's
+#       f_0 parameter.)
+# - fd_lobe (fiber densitiy: as defined in [1]_, one for each peak.)
+# - fs_lobe (fiber spread: as defined in [1]_, one for each peak.)
+# - fd_voxel (voxel fiber density: average of fd across all ODF lobes.)
+# - fs_voxel (voxel fiber spread: average of fs across all ODF lobes.)
+# - odi1_lobe (orientation dispersion index along Bingham's first dispersion
+#       axis, one for each lobe. Defined in [2]_ and [4]_.)
+# - odi2_lobe (orientation dispersion index along Bingham's second dispersion
+#       axis, one for each lobe.)
+# - odi_total_lobe (orientation dispersion index averaged across both Bingham's
 #       dispersion axes. Defined in [5]_.)
-# - godi_1 (global dispersion index along Bingham's first dispersion axis,
-#       averaged across all peaks)
-# - godi_2 (global dispersion index along Bingham's second dispersion axis,
-#       averaged across all peaks)
-# - godi_total (global dispersion index averaged across both Bingham's axes,
-#       averaged across all peaks)
+# - odi1_voxel (orientation dispersion index along Bingham's first dispersion
+#       axis, averaged across all lobes)
+# - odi2_voxel (orientation dispersion index along Bingham's second dispersion
+#       averaged across all lobes)
+# - odi_total_voxel (orientation dispersion index averaged across both
+#       Bingham's axes and across all lobes)
 # - peak_dirs (peak directions in cartesian coordinates given by the Bingham
 #       fitting, also known as parameter mu_0. These directions are slightly
 #       different than the peak directions given by the function
@@ -169,14 +167,14 @@ BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8)
 # expected to be proportional to the fiber density (FD) of specific fiber
 # populations.
 
-FD_ODF_l1 = BinghamMetrics.fd[:, :, 0, 0]
-FD_ODF_l2 = BinghamMetrics.fd[:, :, 0, 1]
-FD_total = BinghamMetrics.gfd[:, :, 0]
+FD_ODF_l1 = BinghamMetrics.fd_lobe[:, :, 0, 0]
+FD_ODF_l2 = BinghamMetrics.fd_lobe[:, :, 0, 1]
+FD_voxel = BinghamMetrics.fd_voxel[:, :, 0]
 
 FD_images = [FD_ODF_l1[:, -1:1:-1].T,
              FD_ODF_l2[:, -1:1:-1].T,
-             FD_total[:, -1:1:-1].T]
-FD_labels = ['FD ODF lobe 1', 'FD ODF lobe 2', 'FD ODF global']
+             FD_voxel[:, -1:1:-1].T]
+FD_labels = ['FD ODF lobe 1', 'FD ODF lobe 2', 'FD ODF voxel']
 kwargs = [{'vmin': 0, 'vmax': 2},
           {'vmin': 0, 'vmax': 2},
           {'vmin': 0, 'vmax': 2}]
@@ -204,13 +202,13 @@ image_mosaic(FD_images, ax_labels=FD_labels, ax_kwargs=kwargs,
 # Note, for better visualization of ODI estimates, voxels with total FD lower
 # than 0.5 are masked.
 
-ODIt = BinghamMetrics.odi_total[:, :, 0, 0]
-ODI1 = BinghamMetrics.odi_1[:, :, 0, 0]
-ODI2 = BinghamMetrics.odi_2[:, :, 0, 0]
+ODIt = BinghamMetrics.odi_total_lobe[:, :, 0, 0]
+ODI1 = BinghamMetrics.odi1_lobe[:, :, 0, 0]
+ODI2 = BinghamMetrics.odi2_lobe[:, :, 0, 0]
 
-ODIt[FD_total < 0.5] = 0
-ODI1[FD_total < 0.5] = 0
-ODI2[FD_total < 0.5] = 0
+ODIt[FD_voxel < 0.5] = 0
+ODI1[FD_voxel < 0.5] = 0
+ODI2[FD_voxel < 0.5] = 0
 
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
 ODI_labels = ['ODI_1 (lobe 1)', 'ODI_2 (lobe 1)', 'ODI_total (lobe 1)']
@@ -238,16 +236,16 @@ image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
 # population display ODI estimates of zero, corresponding to ODF profiles
 # lacking a second ODF lobe.
 
-ODIt = BinghamMetrics.odi_total[:, :, 0, 1]
-ODI1 = BinghamMetrics.odi_1[:, :, 0, 1]
-ODI2 = BinghamMetrics.odi_2[:, :, 0, 1]
+ODIt = BinghamMetrics.odi_total_lobe[:, :, 0, 1]
+ODI1 = BinghamMetrics.odi1_lobe[:, :, 0, 1]
+ODI2 = BinghamMetrics.odi2_lobe[:, :, 0, 1]
 
-ODIt[FD_total < 0.5] = 0
-ODI1[FD_total < 0.5] = 0
-ODI2[FD_total < 0.5] = 0
+ODIt[FD_voxel < 0.5] = 0
+ODI1[FD_voxel < 0.5] = 0
+ODI2[FD_voxel < 0.5] = 0
 
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
-ODI_labels = ['ODI_1 (lobe 2)', 'ODI_2 (lobe 2)', 'ODI_total (lobe 2)']
+ODI_labels = ['ODI_1 (lobe 2)', 'ODI_2 (lobe 2)', 'ODI_voxel (lobe 2)']
 kwargs = [{'vmin': 0, 'vmax': 0.2},
           {'vmin': 0, 'vmax': 0.2},
           {'vmin': 0, 'vmax': 0.2}]
@@ -268,26 +266,26 @@ image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
 # of zero, corresponding to ODF profiles lacking a second ODF lobe.
 #
 # BinghamMetrics can also be used to compute the average ODI quantities across
-# all ODF lobes aka. global ODI (see below). The average quantitaties are
+# all ODF lobes aka. voxel ODI (see below). The average quantitaties are
 # computed by weigthing each ODF lobe with their respective FD value.
 # These quantities are plotted in the following figure.
 
-ODIt = BinghamMetrics.godi_total[:, :, 0]
-ODI1 = BinghamMetrics.godi_1[:, :, 0]
-ODI2 = BinghamMetrics.godi_2[:, :, 0]
+ODIt = BinghamMetrics.odi_total_voxel[:, :, 0]
+ODI1 = BinghamMetrics.odi1_voxel[:, :, 0]
+ODI2 = BinghamMetrics.odi2_voxel[:, :, 0]
 
-ODIt[FD_total < 0.5] = 0
-ODI1[FD_total < 0.5] = 0
-ODI2[FD_total < 0.5] = 0
+ODIt[FD_voxel < 0.5] = 0
+ODI1[FD_voxel < 0.5] = 0
+ODI2[FD_voxel < 0.5] = 0
 
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
-ODI_labels = ['ODI_1 (global)', 'ODI_2 (global)', 'ODI_total (global)']
+ODI_labels = ['ODI_1 (voxel)', 'ODI_2 (voxel)', 'ODI_total (voxel)']
 kwargs = [{'vmin': 0, 'vmax': 0.2},
           {'vmin': 0, 'vmax': 0.2},
           {'vmin': 0, 'vmax': 0.2}]
 print('Saving the illustration as Bingham_ODI.png')
 image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
-             figsize=(15, 5), filename='Bingham_ODI_global.png')
+             figsize=(15, 5), filename='Bingham_ODI_voxel.png')
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

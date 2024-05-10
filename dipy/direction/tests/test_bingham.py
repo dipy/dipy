@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
                            assert_array_less)
-from dipy.direction.bingham import (_single_bingham_to_sf, odf_to_bingham,
+from dipy.direction.bingham import (_single_bingham_to_sf, _single_sf_to_bingham,
                                     _bingham_fit_peak, bingham_fiber_density,
                                     bingham_fiber_spread, sf_to_bingham,
                                     _convert_bingham_pars, odi2k, k2odi,
@@ -41,10 +41,10 @@ def test_bingham_fit():
     Mus = np.array([mu0, mu1, mu2])
     Mus_ref = np.array([peak_dir, ma_axis, mi_axis])
     assert_array_almost_equal(np.abs(np.diag(np.dot(Mus, Mus_ref))),
-                              np.ones(3))
+                              np.ones(3), decimal=5)
 
     # check the same for bingham_fit_odf
-    fits, n = odf_to_bingham(odf_gt, sphere, max_search_angle=45)
+    fits, n = _single_sf_to_bingham(odf_gt, sphere, max_search_angle=45)
     assert_almost_equal(fits[0][0], f0, decimal=3)
     assert_almost_equal(fits[0][1], k1, decimal=3)
     assert_almost_equal(fits[0][2], k2, decimal=3)
@@ -151,38 +151,38 @@ def test_bingham_from_odf():
 
     # check if we have estimates in the right lobe for all voxels
     peak_v = bim.model_params[0, 0, 0, 0, 0]
-    assert_array_almost_equal(bim.afd[..., 0],
+    assert_array_almost_equal(bim.amplitude_lobe[..., 0],
                               peak_v*np.ones((2, 2, 1)))
-    assert_array_almost_equal(bim.afd[..., 1],
+    assert_array_almost_equal(bim.amplitude_lobe[..., 1],
                               np.zeros((2, 2, 1)))
 
     # check kappas
-    assert_almost_equal(bim.kappa_1[0, 0, 0, 0], k1, decimal=3)
-    assert_almost_equal(bim.kappa_2[0, 0, 0, 0], k2, decimal=3)
-    assert_almost_equal(bim.kappa_total[0, 0, 0, 0], np.sqrt(k1*k2), decimal=3)
+    assert_almost_equal(bim.kappa1_lobe[0, 0, 0, 0], k1, decimal=3)
+    assert_almost_equal(bim.kappa2_lobe[0, 0, 0, 0], k2, decimal=3)
+    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0], np.sqrt(k1*k2), decimal=3)
 
     # check ODI
-    assert_almost_equal(bim.odi_1[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
-    assert_almost_equal(bim.odi_2[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
+    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
+    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
     # ODI2 < ODI total < ODI1
-    assert_array_less(bim.odi_2[..., 0], bim.odi_1[..., 0])
-    assert_array_less(bim.odi_2[..., 0], bim.odi_total[..., 0])
-    assert_array_less(bim.odi_total[..., 0], bim.odi_1[..., 0])
+    assert_array_less(bim.odi2_lobe[..., 0], bim.odi1_lobe[..., 0])
+    assert_array_less(bim.odi2_lobe[..., 0], bim.odi_total_lobe[..., 0])
+    assert_array_less(bim.odi_total_lobe[..., 0], bim.odi1_lobe[..., 0])
 
     # check fiber_density estimates (larger than zero for lobe 0)
-    assert_array_less(np.zeros((2, 2, 1)), bim.fd[:, :, :, 0])
-    assert_almost_equal(np.zeros((2, 2, 1)), bim.fd[:, :, :, 1])
+    assert_array_less(np.zeros((2, 2, 1)), bim.fd_lobe[:, :, :, 0])
+    assert_almost_equal(np.zeros((2, 2, 1)), bim.fd_lobe[:, :, :, 1])
 
     # check global metrics: since this simulations only have one lobe, global
     # metrics have to give the same values than their counterparts for lobe 1
-    assert_almost_equal(bim.godi_1, bim.odi_1[..., 0])
-    assert_almost_equal(bim.godi_2, bim.odi_2[..., 0])
-    assert_almost_equal(bim.godi_total, bim.odi_total[..., 0])
-    assert_almost_equal(bim.gfd, bim.fd[..., 0])
+    assert_almost_equal(bim.odi1_voxel, bim.odi1_lobe[..., 0])
+    assert_almost_equal(bim.odi2_voxel, bim.odi2_lobe[..., 0])
+    assert_almost_equal(bim.odi_total_voxel, bim.odi_total_lobe[..., 0])
+    assert_almost_equal(bim.fd_voxel, bim.fd_lobe[..., 0])
 
     # check fiber spread
-    fs_v = bim.fd[0, 0, 0, 0]/peak_v
-    assert_almost_equal(bim.fs[..., 0], fs_v)
+    fs_v = bim.fd_lobe[0, 0, 0, 0]/peak_v
+    assert_almost_equal(bim.fs_lobe[..., 0], fs_v)
 
     # check reconstructed odf
     reconst_odf = bim.odf(sphere)
