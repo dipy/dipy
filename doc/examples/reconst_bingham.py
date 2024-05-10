@@ -10,16 +10,13 @@ quantify properties from ODFs such as fiber dispersion [1]_,[2]_.
 To begin, let us import the relevant functions and load a data consisting of 10
 b0s and 150 non-b0s with a b-value of 2000s/mm2.
 """
-
-import matplotlib.pyplot as plt
-
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.csdeconv import (auto_response_ssst,
                                    ConstrainedSphericalDeconvModel)
-from dipy.direction.bingham import (bingham_from_odf, bingham_from_sh)
+from dipy.direction.bingham import sf_to_bingham, sh_to_bingham
 from dipy.viz import window, actor
 from dipy.viz.plotting import image_mosaic
 
@@ -96,9 +93,9 @@ if interactive:
 # Step 2. Bingham fitting and Metrics
 # =================================================
 # Now that we have some ODFs, let us fit the Bingham functions to them by using
-# the function `bingham_from_odf`:
+# the function `sf_to_bingham`:
 
-BinghamMetrics = bingham_from_odf(csd_odf, sphere)
+BinghamMetrics = sf_to_bingham(csd_odf, sphere)
 
 ###############################################################################
 # The above function outputs a `BinghamMetrics` class instance, containing the
@@ -152,17 +149,17 @@ if interactive:
 # Bingham functions fitted to CSD fiber ODFs.
 #
 # Alternatively to fitting Bingham functions to sampled ODFs, DIPY also
-# contains the function `bingham_from_sh` to perform Bingham fitting from the
+# contains the function `sh_to_bingham` to perform Bingham fitting from the
 # ODF's spherical harmonic representation. Although this process may require
 # longer processing times, this function may be useful to avoid memory issues
 # in handling heavily sampled ODFs. Below we show the lines of code to use
-# function `bingham_from_sh` (feel free to skip these lines if the function
-# `bingham_from_odf` worked fine for you). Note, to use `bingham_from_sh` you
+# function `sh_to_bingham` (feel free to skip these lines if the function
+# `sf_to_bingham` worked fine for you). Note, to use `sh_to_bingham` you
 # need to specify the maximum order of spherical harmonics that you defined in
 # `csd_model` (in this example this was set to 8):
 
 sh_coeff = csd_fit.shm_coeff
-BinghamMetrics = bingham_from_sh(sh_coeff, sphere, 8)
+BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8)
 
 ###############################################################################
 # Step 3. Bingham Metrics
