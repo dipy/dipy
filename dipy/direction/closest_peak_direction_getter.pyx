@@ -98,19 +98,19 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             directions should be unique.
 
         """
-        cdef double[:] pmf = self._get_pmf(point)
-        return self._get_peak_directions(pmf)
+        cdef double* pmf = self._get_pmf(point)
+        return self._get_peak_directions(<double[:self.len_pmf]>pmf)
 
-    cdef double[:] _get_pmf(self, double[::1] point) nogil:
+    cdef double* _get_pmf(self, double[::1] point) nogil:
         cdef:
             cnp.npy_intp i
             cnp.npy_intp _len = self.len_pmf
-            double[:] pmf
+            double* pmf = &self.pmf_gen.pmf[0]
             double pmf_threshold=self.pmf_threshold
             double absolute_pmf_threshold
             double max_pmf=0
 
-        pmf = self.pmf_gen.get_pmf_c(point)
+        pmf = self.pmf_gen.get_pmf_c(&point[0], pmf)
         for i in range(_len):
             if pmf[i] > max_pmf:
                 max_pmf = pmf[i]
@@ -236,12 +236,13 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             cnp.npy_intp _len = self.len_pmf
-            double[:] pmf
+            double* pmf
             cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 
-        peaks = self._get_peak_directions(pmf)
+        peaks = self._get_peak_directions(<double[:_len]>pmf)
         if len(peaks) == 0:
             return 1
+
         return closest_peak(peaks, direction, self.cos_similarity)
