@@ -23,7 +23,7 @@ class _C:
 data = _C()
 
 
-def setup():
+def setup_module():
     data.gtab = get_gtab_taiwan_dsi()
     data.mevals = np.array(([0.0015, 0.0003, 0.0003],
                             [0.0015, 0.0003, 0.0003]))
