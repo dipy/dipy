@@ -1,3 +1,5 @@
+import warnings
+
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
@@ -5,8 +7,13 @@ fury, has_fury, _ = optional_package('fury', min_version="0.10.0")
 if has_fury:
     from dipy.viz import actor, window
 
+sagittal_deprecation_warning_msg = (
+    "The view argument value `sagital` is deprecated and its support will be"
+    " removed in a future version. Please, use `sagittal` instead."
+)  # codespell:ignore sagital
 
-def show_bundles(bundles, interactive=True, view='sagital', colors=None,
+
+def show_bundles(bundles, interactive=True, view='sagittal', colors=None,
                  linewidth=0.3, save_as=None):
     """Render bundles to visualize them interactively or save them into a png.
 
@@ -20,8 +27,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
     interactive : boolean, optional
         If True a 3D interactive rendering is created. Default is True.
     view : str, optional
-        Viewing angle. Supported options: 'sagital','axial' and 'coronal'.
-        Default is 'sagital'.
+        Viewing angle. Supported options: 'sagittal', 'axial' and 'coronal'.
     colors : list, optional
        Colors to be used for each bundle. If None default colors are used.
     linewidth : float, optional
@@ -31,6 +37,14 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         Default is None.
 
     """
+
+    if view == "sagital":  # codespell:ignore sagital
+        warnings.warn(
+            sagittal_deprecation_warning_msg,
+            category=DeprecationWarning,
+        )
+        view = "sagittal"
+
     scene = window.Scene()
     scene.SetBackground(1., 1, 1)
 
@@ -40,7 +54,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         else:
             lines_actor = actor.streamtube(bundle, linewidth=linewidth,
                                            colors=colors[i])
-        if view == 'sagital':
+        if view == 'sagittal':
             lines_actor.RotateX(-90)
             lines_actor.RotateZ(90)
         elif view == 'axial':
@@ -48,7 +62,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         elif view == 'coronal':
             lines_actor.RotateX(-90)
         else:
-            raise ValueError("Invalid view argument value. Use 'sagital'," +
+            raise ValueError("Invalid view argument value. Use 'sagittal'," +
                              "'axial' or 'coronal'.")
 
         scene.add(lines_actor)
