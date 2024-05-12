@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 from numpy.testing import (
     assert_array_almost_equal,
@@ -310,10 +308,7 @@ def test_using_python_feature_with_cython_metric():
     # by explicitly testing it.
     class ArcLengthFeature(dipysfeature.Feature):
         def infer_shape(self, streamline):
-            if sys.version_info > (3,):
-                return 1  # In Python 3, constant integer are of type long.
-
-            return long(1)
+            return 1
 
         def extract(self, streamline):
             square_norms = np.sum((streamline[1:] - streamline[:-1]) ** 2)
