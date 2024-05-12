@@ -101,7 +101,7 @@ class QtdmriModel(Cache):
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See See https://www.cvxpy.org/ for
-            details. Default: ECOS.
+            details.
 
         References
         ----------
@@ -135,7 +135,7 @@ class QtdmriModel(Cache):
                  constrain_q0=True,
                  bval_threshold=1e10,
                  eigenvalue_threshold=1e-04,
-                 cvxpy_solver="ECOS"
+                 cvxpy_solver="CLARABEL"
                  ):
 
         if radial_order % 2 or radial_order < 0:
@@ -1991,7 +1991,7 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
             )
             constraints = []
             prob = cvxpy.Problem(objective, constraints)
-            prob.solve(solver="ECOS", verbose=False)
+            prob.solve(solver="CLARABEL", verbose=False)
             errorlist[i, counter] = np.mean(
                 (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
             cv_old = errorlist[i, counter - 1]
@@ -2053,7 +2053,7 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
                 lopt * cvxpy.quad_form(c, L)
             )
             prob = cvxpy.Problem(objective, constraints)
-            prob.solve(solver="ECOS", verbose=False)
+            prob.solve(solver="CLARABEL", verbose=False)
             errorlist[i, counter] = np.mean(
                 (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
             cv_old = errorlist[i, counter - 1]
