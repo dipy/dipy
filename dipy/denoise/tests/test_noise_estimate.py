@@ -40,14 +40,14 @@ def test_piesno(rng):
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
     test_piesno_data = load_nifti_data(dpd.get_fnames("test_piesno"))
-    sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10,
+    sigma = piesno(test_piesno_data, N=8, alpha=0.01, step=1, eps=1e-10,
                    return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
 
     noise1 = (rng.standard_normal((100, 100, 100)) * 50) + 10
     noise2 = (rng.standard_normal((100, 100, 100)) * 50) + 10
     rician_noise = np.sqrt(noise1**2 + noise2**2)
-    sigma, mask = piesno(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
+    sigma, mask = piesno(rician_noise, N=1, alpha=0.01, step=1, eps=1e-10,
                          return_mask=True)
 
     # less than 3% of error?
@@ -57,24 +57,24 @@ def test_piesno(rng):
     initial_estimation = (np.median(sigma) /
                           np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5)))
 
-    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
+    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, step=1, eps=1e-10,
                              return_mask=True,
                              initial_estimation=initial_estimation)
 
     assert_(np.abs(sigma - 50) / sigma < 0.03)
 
-    sigma = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
+    sigma = _piesno_3D(rician_noise, N=1, alpha=0.01, step=1, eps=1e-10,
                        return_mask=False,
                        initial_estimation=initial_estimation)
     assert_(np.abs(sigma - 50) / sigma < 0.03)
 
-    sigma = _piesno_3D(np.zeros_like(rician_noise), N=1, alpha=0.01, l=1,
+    sigma = _piesno_3D(np.zeros_like(rician_noise), N=1, alpha=0.01, step=1,
                        eps=1e-10, return_mask=False,
                        initial_estimation=initial_estimation)
 
     assert_(np.all(sigma == 0))
 
-    sigma, mask = _piesno_3D(np.zeros_like(rician_noise), N=1, alpha=0.01, l=1,
+    sigma, mask = _piesno_3D(np.zeros_like(rician_noise), N=1, alpha=0.01, step=1,
                              eps=1e-10, return_mask=True,
                              initial_estimation=initial_estimation)
 
@@ -82,7 +82,7 @@ def test_piesno(rng):
     assert_(np.all(mask == 0))
 
     # Check if no noise points found in array it exits
-    sigma = _piesno_3D(1000*np.ones_like(rician_noise), N=1, alpha=0.01, l=1,
+    sigma = _piesno_3D(1000*np.ones_like(rician_noise), N=1, alpha=0.01, step=1,
                        eps=1e-10, return_mask=False, initial_estimation=10)
     assert_(np.all(sigma == 10))
 
@@ -93,7 +93,7 @@ def test_piesno_type():
     for i in range(10):
         data[:, i, :] = i * 26
 
-    sigma = piesno(data, N=2, alpha=0.01, l=1, eps=1e-10, return_mask=False)
+    sigma = piesno(data, N=2, alpha=0.01, step=1, eps=1e-10, return_mask=False)
     assert_almost_equal(sigma, 79.970003117424739)
 
 
