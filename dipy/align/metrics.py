@@ -15,7 +15,7 @@ from dipy.align import (
 )
 
 
-class SimilarityMetric(metaclass=abc.ABCMeta):
+class SimilarityMetric:
     def __init__(self, dim):
         r"""Similarity Metric abstract class
 
