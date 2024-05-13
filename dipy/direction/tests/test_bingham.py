@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
                            assert_array_less)
-from dipy.direction.bingham import (_single_bingham_to_sf, _single_sf_to_bingham,
-                                    _bingham_fit_peak, bingham_fiber_density,
-                                    bingham_fiber_spread, sf_to_bingham,
-                                    _convert_bingham_pars, odi2k, k2odi,
-                                    sh_to_bingham)
+from dipy.direction.bingham import (_single_bingham_to_sf, sf_to_bingham,
+                                    _single_sf_to_bingham, _bingham_fit_peak,
+                                    bingham_fiber_density, odi2k, k2odi,
+                                    bingham_fiber_spread, sh_to_bingham,
+                                    _convert_bingham_pars)
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh
 
@@ -28,7 +28,8 @@ def test_bingham_fit():
     assert_almost_equal(odf_test, f0)
 
     # Test Bingham fit on full sampled GT Bingham function
-    odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
+    odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis,
+                                   mi_axis, sphere.vertices)
     a0, c1, c2, mu0, mu1, mu2 = _bingham_fit_peak(odf_gt, peak_dir, sphere, 45)
 
     # check scalar parameters
@@ -159,11 +160,14 @@ def test_bingham_from_odf():
     # check kappas
     assert_almost_equal(bim.kappa1_lobe[0, 0, 0, 0], k1, decimal=3)
     assert_almost_equal(bim.kappa2_lobe[0, 0, 0, 0], k2, decimal=3)
-    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0], np.sqrt(k1*k2), decimal=3)
+    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0],
+                        np.sqrt(k1*k2), decimal=3)
 
     # check ODI
-    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
-    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
+    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0],
+                        k2odi(np.array(k1)), decimal=3)
+    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0],
+                        k2odi(np.array(k2)), decimal=3)
     # ODI2 < ODI total < ODI1
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi1_lobe[..., 0])
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi_total_lobe[..., 0])

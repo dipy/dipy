@@ -263,7 +263,8 @@ def bingham_to_sf(bingham_params, sphere, *, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            this_odf += _single_bingham_to_sf(f0, k1, k2, mu1, mu2, sphere.vertices)
+            this_odf += _single_bingham_to_sf(f0, k1, k2, mu1, mu2,
+                                              sphere.vertices)
         odf[idx] = this_odf
 
     return odf
