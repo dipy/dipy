@@ -564,12 +564,12 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     qtdmri_mod_no_l1 = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, cartesian=False, normalization=True,
-        l1_weighting=0.
+        l1_weighting=0., constrain_q0=False
     )
     qtdmri_mod_l1 = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, cartesian=False, normalization=True,
-        l1_weighting=.1
+        l1_weighting=.1, constrain_q0=False
     )
 
     with warnings.catch_warnings():
