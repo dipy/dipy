@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+import multiprocessing as mp
 import warnings
 
 import numpy as np
@@ -102,7 +102,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                     _kwargs.update(kwargs)
                     params.append(_kwargs)
 
-                pool = Pool(num_processes)
+                mp.set_start_method('spawn', force=True)
+                pool = mp.Pool(num_processes)
 
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res

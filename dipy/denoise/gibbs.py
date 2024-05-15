@@ -1,5 +1,5 @@
 from functools import partial
-from multiprocessing import Pool
+import multiprocessing as mp
 
 import numpy as np
 import scipy
@@ -319,7 +319,8 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        pool = Pool(num_processes)
+        mp.set_start_method('spawn', force=True)
+        pool = mp.Pool(num_processes)
 
         partial_func = partial(
             _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
