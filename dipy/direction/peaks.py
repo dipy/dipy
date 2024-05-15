@@ -1,5 +1,5 @@
 from itertools import repeat
-from multiprocessing import Pool
+import multiprocessing as mp
 from os import path
 import tempfile
 
@@ -248,7 +248,8 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             mask_file_name = None
 
-        pool = Pool(num_processes)
+        mp.set_start_method('spawn', force=True)
+        pool = mp.Pool(num_processes)
 
         pam_res = pool.map(_peaks_from_model_parallel_sub,
                            zip(repeat((data_file_name, mask_file_name)),
