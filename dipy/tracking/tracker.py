@@ -41,9 +41,9 @@ def generate_tractogram_py(seeds, streamline_generator=generate_streamlines, pos
 def build_tractogram_algorithm(streamline_generator, tracker_func, pmf_gen_func,
                                stopping_criterion_func, postprocess_streamline=None):
 
-    def generate_tractogram(seed_positions, seed_directions, tracking_parameters):
+    def generate_tractogram(seed_positions, seed_directions, tracker_parameters):
         for s in len(seed_positions):
-            streamline  = streamline_generator(seed_position[i], seed_directions[i],
+            streamline  = streamline_generator(seed_positions[i], seed_directions[i],
                                                tracker_func, pmf_gen_func,
                                                stopping_criterion_func)
             if postprocess_streamline is not None:
@@ -54,16 +54,16 @@ def build_tractogram_algorithm(streamline_generator, tracker_func, pmf_gen_func,
 
 
 def local_tracking(seed_positons, seed_directions, *,
-                   tracking_parameters=None, tractogram_func=None,
+                   tracker_parameters=None, tractogram_func=None,
                    postprocess_streamline=None, buffer_perc=1.0):
     tractogram_func = tractogram_func or generate_tractogram
     if tractogram_func and 'cython' in type(tractogram_func):
         for streamlines in tractogram_func(seed_positons, seed_directions,
-                                           tracking_parameters,
+                                           tracker_parameters,
                                            buffer_prec=buffer_perc):
             yield streamlines
 
-    return generate_tractogram_py(seed_positons, seed_directions, tracking_parameters)
+    return generate_tractogram_py(seed_positons, seed_directions, tracker_parameters)
 
 
 probabilistic_tracking = partial(local_tracking, tractogram_func=generate_tractogram)

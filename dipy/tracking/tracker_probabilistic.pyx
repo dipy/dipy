@@ -15,13 +15,13 @@ from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
-from dipy.tracking.fast_tracking cimport get_pmf, TrackingParameters
+from dipy.tracking.fast_tracking cimport get_pmf, TrackerParameters
 from libc.stdlib cimport malloc, free
 
 
 cdef int probabilistic_tracker(double* point,
                                double* direction,
-                               TrackingParameters params,
+                               TrackerParameters params,
                                double* stream_data,
                                PmfGen pmf_gen) noexcept nogil:
     cdef:

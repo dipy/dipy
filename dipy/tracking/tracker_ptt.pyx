@@ -5,7 +5,6 @@
 
 cimport cython
 from cython.parallel import prange
-import numpy as np
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
 from dipy.direction.pmf cimport PmfGen
@@ -13,14 +12,14 @@ from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cross, normalize, random,
                                     random_perpendicular_vector,
                                     random_point_within_circle)
-from dipy.tracking.fast_tracking cimport TrackingParameters
+from dipy.tracking.fast_tracking cimport TrackerParameters
 from libc.stdlib cimport malloc, free
 
 
 
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
-                                    TrackingParameters params,
+                                    TrackerParameters params,
                                     double* stream_data,
                                     PmfGen pmf_gen) noexcept nogil:
     """
@@ -47,7 +46,7 @@ cdef int parallel_transport_tracker(double* point,
         Current tracking position.
     direction : double[3]
         Previous tracking direction.
-    params : TrackingParameters
+    params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
         Streamline data persitant accros tracking steps.
@@ -123,7 +122,7 @@ cdef int parallel_transport_tracker(double* point,
     return 1
 
 
-cdef int initialize(TrackingParameters params,
+cdef int initialize(TrackerParameters params,
                     double* stream_data,
                     PmfGen pmf_gen,
                     double* seed_point,
@@ -132,7 +131,7 @@ cdef int initialize(TrackingParameters params,
 
         Parameters
         ----------
-        params : TrackingParameters
+        params : TrackerParameters
             PTT tracking parameters.
         stream_data : double*
             Streamline data persitant accros tracking steps.
@@ -176,7 +175,7 @@ cdef int initialize(TrackingParameters params,
                 return 0
         return 1
 
-cdef void initialize_candidate(TrackingParameters params,
+cdef void initialize_candidate(TrackerParameters params,
                                double* stream_data,
                                PmfGen pmf_gen,
                                double* init_dir) noexcept nogil:
@@ -192,7 +191,7 @@ cdef void initialize_candidate(TrackingParameters params,
 
     Parameters
     ----------
-    params : TrackingParameters
+    params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
         Streamline data persitant accros tracking steps.
@@ -241,7 +240,7 @@ cdef void initialize_candidate(TrackingParameters params,
                                                        &stream_data[1])
 
 
-cdef void prepare_propagator(TrackingParameters params,
+cdef void prepare_propagator(TrackerParameters params,
                              double* stream_data,
                              double arclength) noexcept nogil:
     """Prepare the propagator.
@@ -250,7 +249,7 @@ cdef void prepare_propagator(TrackingParameters params,
 
     Parameters
     ----------
-    params : TrackingParameters
+    params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
         Streamline data persitant accros tracking steps.
@@ -295,13 +294,13 @@ cdef void prepare_propagator(TrackingParameters params,
                           * tmp_arclength)
 
 
-cdef double calculate_data_support(TrackingParameters params,
+cdef double calculate_data_support(TrackerParameters params,
                                    double* stream_data,
                                    PmfGen pmf_gen) noexcept nogil:
     """Calculates data support for the candidate probe.
         Parameters
     ----------
-    params : TrackingParameters
+    params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
         Streamline data persitant accros tracking steps.

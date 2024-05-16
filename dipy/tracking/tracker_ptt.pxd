@@ -1,8 +1,8 @@
 from dipy.direction.pmf cimport PmfGen
-from dipy.tracking.fast_tracking cimport TrackingParameters
+from dipy.tracking.tracker_parameters cimport TrackerParameters
 
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
-                                    TrackingParameters params,
+                                    TrackerParameters params,
                                     double* stream_data,
                                     PmfGen pmf_gen) noexcept nogil
