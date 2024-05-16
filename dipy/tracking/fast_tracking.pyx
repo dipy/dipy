@@ -22,7 +22,7 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
-from dipy.tracking.tracking_parameters cimport TrackingParameters, func_ptr
+from dipy.tracking.tracker_parameters cimport TrackerParameters, func_ptr
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
@@ -35,7 +35,7 @@ cdef extern from "stdlib.h" nogil:
 def generate_tractogram(double[:,::1] seed_positions,
                         double[:,::1] seed_directions,
                         StoppingCriterion sc,
-                        TrackingParameters params,
+                        TrackerParameters params,
                         PmfGen pmf_gen,
                         int nbr_threads=0,
                         float buffer_frac=1.0):
@@ -43,7 +43,7 @@ def generate_tractogram(double[:,::1] seed_positions,
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
         cnp.npy_intp _plen = int(ceil(_len * buffer_frac))
-        cnp.npy_intp i,
+        cnp.npy_intp i
         double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
         int* length_arr = <int*> malloc(_len * sizeof(int))
         int* status_arr = <int*> malloc(_len * sizeof(double))
@@ -85,7 +85,7 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
-                               TrackingParameters params,
+                               TrackerParameters params,
                                PmfGen pmf_gen,
                                double** streamlines,
                                int* lengths,
@@ -123,7 +123,7 @@ cdef int generate_local_streamline(double* seed,
                                    double* stream,
                                    int* stream_idx,
                                    StoppingCriterion sc,
-                                   TrackingParameters params,
+                                   TrackerParameters params,
                                    PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j

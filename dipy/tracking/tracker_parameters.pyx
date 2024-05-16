@@ -18,26 +18,26 @@ def generate_tracking_parameters(algo_name, *,
     double probe_radius=0, int probe_quality=3, int probe_count=1,
     double data_support_exponent=1):
 
-    cdef TrackingParameters params
+    cdef TrackerParameters params
 
     algo_name = algo_name.lower()
 
     if algo_name in ['deterministic', 'det']:
-        params = TrackingParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len, step_size=step_size,
                                     voxel_size=voxel_size,
                                     pmf_threshold=pmf_threshold,
                                     max_angle=max_angle)
         params.set_tracker_c(deterministic_tracker)
         return params
     elif algo_name in ['probabilistic', 'prob']:
-        params = TrackingParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len, step_size=step_size,
                                     voxel_size=voxel_size,
                                     pmf_threshold=pmf_threshold,
                                     max_angle=max_angle)
         params.set_tracker_c(probabilistic_tracker)
         return params
     elif algo_name == 'ptt':
-        params = TrackingParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len, step_size=step_size,
                                     voxel_size=voxel_size,
                                     pmf_threshold=pmf_threshold,
                                     max_angle=max_angle,
@@ -49,7 +49,7 @@ def generate_tracking_parameters(algo_name, *,
         params.set_tracker_c(parallel_transport_tracker)
         return params
     #elif algo_name == 'eudx':
-    #    return TrackingParameters(tracker=euDX_tracker,
+    #    return TrackerParameters(tracker=euDX_tracker,
     #                              max_len=max_len, step_size=step_size,
     #                              voxel_size=voxel_size)
     else:
@@ -57,7 +57,7 @@ def generate_tracking_parameters(algo_name, *,
 
 
 
-cdef class TrackingParameters:
+cdef class TrackerParameters:
 
     def __init__(self, max_len, step_size, voxel_size,
                  max_angle, pmf_threshold=None, probe_length=None,
@@ -83,10 +83,10 @@ cdef class TrackingParameters:
         self.ptt = None
 
         if pmf_threshold is not None:
-            self.sh = ShTrackingParameters(pmf_threshold)
+            self.sh = ShTrackerParameters(pmf_threshold)
 
         if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
-            self.ptt = ParallelTransportTrackingParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
+            self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
 
     # def set_tracker(self, tracker):
     #     if callable(tracker):
@@ -98,12 +98,12 @@ cdef class TrackingParameters:
         self.tracker = tracker
 
 
-cdef class ShTrackingParameters:
+cdef class ShTrackerParameters:
 
     def __init__(self, pmf_threshold):
         self.pmf_threshold = pmf_threshold
 
-cdef class ParallelTransportTrackingParameters:
+cdef class ParallelTransportTrackerParameters:
 
     def __init__(self, double probe_length, double probe_radius,
                 int probe_quality, int probe_count, double data_support_exponent):
