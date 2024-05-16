@@ -10,7 +10,7 @@ cython_sources = [
   'tracker_deterministic',
   'tracker_probabilistic',
   'tracker_ptt',
-  'tracking_parameters',
+  'tracker_parameters',
   'vox2track',
   ]
 
@@ -24,7 +24,7 @@ cython_headers = [
   'tracker_deterministic.pxd',
   'tracker_probabilistic.pxd',
   'tracker_ptt.pxd',
-  'tracking_parameters.pxd'
+  'tracker_parameters.pxd'
 ]
 
 foreach ext: cython_sources
