@@ -180,5 +180,10 @@ Metrics = [
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
 filterwarnings = [
-    'ignore:.*You do not have FURY installed.*:UserWarning',
+    # FURY
+    "ignore:.*You do not have FURY installed.*:UserWarning",
+    # pkg_resources (via Ray)
+    "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
+    "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
+    "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
 ]
