@@ -90,7 +90,7 @@ def test_median_otsu():
     data = load_nifti_data(fname)
     data = np.squeeze(data.astype('f8'))
     dummy_mask = data > data.mean()
-    data_masked, mask = median_otsu(data, median_radius=3, numpass=2,
+    _, mask = median_otsu(data, median_radius=3, numpass=2,
                                     autocrop=False, vol_idx=None,
                                     dilate=None)
     assert_equal(mask.sum() < dummy_mask.sum(), True)
@@ -98,7 +98,7 @@ def test_median_otsu():
     data2[..., 0] = data
     data2[..., 1] = data
 
-    data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
+    _, mask2 = median_otsu(data2, median_radius=3, numpass=2,
                                       autocrop=False, vol_idx=[0, 1],
                                       dilate=None)
     assert_almost_equal(mask.sum(), mask2.sum())
