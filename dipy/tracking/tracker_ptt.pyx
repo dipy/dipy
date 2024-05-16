@@ -33,7 +33,7 @@ cdef int parallel_transport_tracker(double* point,
 
     stream_data:
         0    : initialized
-        1-10 : frame
+        1-10 : frame1,2,3
         10-19: propagator
         19-22: position
         22   : last_val
@@ -221,11 +221,9 @@ cdef void initialize_candidate(TrackingParameters params,
 
     stream_data[22] = 0  # last_val
 
-    pmf = <double*> malloc(pmf_gen.pmf.shape[0] * sizeof(double))
     if params.ptt.probe_count == 1:
         stream_data[22] = pmf_gen.get_pmf_value_c(&stream_data[19],
-                                                  &stream_data[1],
-                                                  pmf)  # position, frame[0]
+                                                  &stream_data[1])  # position, frame[0]
     else:
         for count in range(params.ptt.probe_count):
             for i in range(3):
@@ -240,9 +238,7 @@ cdef void initialize_candidate(TrackingParameters params,
                               * params.inv_voxel_size[i])
 
             stream_data[22] += pmf_gen.get_pmf_value_c(&stream_data[19],
-                                                       &stream_data[1],
-                                                       pmf)
-    free(pmf)
+                                                       &stream_data[1])
 
 
 cdef void prepare_propagator(TrackingParameters params,
@@ -332,7 +328,6 @@ cdef double calculate_data_support(TrackingParameters params,
             frame[i][j] = stream_data[1 + i * 3 + j]
 
     likelihood = stream_data[22]
-    pmf = <double*> malloc(pmf_gen.pmf.shape[0] * sizeof(double))
     for q in range(1, params.ptt.probe_quality):
         for i in range(3):
             # stream_data[10:18] : propagator
@@ -357,7 +352,7 @@ cdef double calculate_data_support(TrackingParameters params,
             copy_point(&normal[0], &frame[1][0])
             copy_point(&binormal[0], &frame[2][0])
         if params.ptt.probe_count == 1:
-            fod_amp = pmf_gen.get_pmf_value_c(position, tangent, pmf)
+            fod_amp = pmf_gen.get_pmf_value_c(position, tangent)
             fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
             stream_data[23] = fod_amp  # last_val_cand
             likelihood += stream_data[23]  # last_val_cand
@@ -379,12 +374,12 @@ cdef double calculate_data_support(TrackingParameters params,
                                       + binormal[i] * params.ptt.probe_radius
                                       * sin(c * params.ptt.angular_separation)
                                       * params.inv_voxel_size[i])
-                fod_amp = pmf_gen.get_pmf_value_c(new_position, tangent, pmf)
+                fod_amp = pmf_gen.get_pmf_value_c(new_position, tangent)
                 fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
                 stream_data[23] += fod_amp  # last_val_cand
 
             likelihood += stream_data[23]  # last_val_cand
-    free(pmf)
+
     likelihood *= params.ptt.probe_normalizer
     if params.ptt.data_support_exponent != 1:
         likelihood = pow(likelihood, params.ptt.data_support_exponent)
