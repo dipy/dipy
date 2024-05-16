@@ -26,6 +26,8 @@ from dipy.segment.featurespeed import ResampleFeature
 from dipy.data.fetcher import fetch_hbn, get_two_hcp842_bundles
 from dipy.io.streamline import load_trk
 from dipy.io.image import load_nifti
+import dipy.stats.analysis as dsa
+import dipy.tracking.streamline as dts
 
 
 ###############################################################################
