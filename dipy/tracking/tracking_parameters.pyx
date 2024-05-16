@@ -113,6 +113,10 @@ cdef class ParallelTransportTrackingParameters:
         self.probe_count = probe_count
         self.data_support_exponent = data_support_exponent
 
+        self.probe_step_size = self.probe_length / (self.probe_quality - 1)
+        self.probe_normalizer = 1.0 / (self.probe_quality * self.probe_count)
+        self.k_small = 0.0001
+
         # Adaptively set in Trekker
         self.rejection_sampling_nbr_sample = 10
         self.rejection_sampling_max_try = 100
