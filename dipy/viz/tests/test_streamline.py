@@ -1,5 +1,6 @@
 import os
 import tempfile
+import warnings
 
 from numpy.testing import assert_equal, assert_raises
 import pytest
@@ -18,6 +19,7 @@ fury, have_fury, _ = optional_package('fury', min_version="0.10.0")
 if have_fury:
     from dipy.viz import window
     from dipy.viz.streamline import (
+        sagittal_deprecation_warning_msg,
         show_bundles,
         viz_displacement_mag,
         viz_two_bundles,
@@ -30,12 +32,25 @@ bundles = read_five_af_bundles()
 @pytest.mark.skipif(not have_fury or not have_matplotlib,
                     reason='Requires FURY and Matplotlib')
 def test_output_created():
-    views = ['axial', 'sagital', 'coronal']
 
     colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
               [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
 
     with tempfile.TemporaryDirectory() as temp_dir:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=sagittal_deprecation_warning_msg,
+                category=DeprecationWarning,
+            )
+
+            view = "sagital"  # codespell:ignore sagital
+            fname = os.path.join(temp_dir, f'test_{view}.png')
+            show_bundles(bundles, False, view=view, save_as=fname)
+            assert_equal(os.path.exists(fname), True)
+
+        views = ['axial', 'sagittal', 'coronal']
+
         for view in views:
             fname = os.path.join(temp_dir, f'test_{view}.png')
             show_bundles(bundles, False, view=view, save_as=fname)

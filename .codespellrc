@@ -5,4 +5,4 @@ skip = .git,*.pdf,*.svg,*.bib
 # te -- the TE
 # ue,lod,ans,lastr,numer,lamda,PrIs -- variable names
 # Hart,Flagg -- name
-ignore-words-list = reson,nd,te,ue,lod,hart,ans,lastr,numer,lamda,flagg,pris
+ignore-words-list = reson,nd,te,ue,lod,hart,ans,lastr,numer,lamda,flagg,pris,sagital

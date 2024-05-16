@@ -2,6 +2,8 @@ import numpy as np
 from scipy.ndimage import convolve
 from scipy.special import gammainccinv
 
+from dipy.utils.deprecator import deprecated_params
+
 
 def _inv_nchi_cdf(N, K, alpha):
     """Inverse CDF for the noncentral chi distribution
@@ -21,7 +23,8 @@ opt_quantile = {1: 0.79681213002002,
               128: 0.5322811923303339}
 
 
-def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
+@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+def piesno(data, N, alpha=0.01, step=100, itermax=100, eps=1e-5,
            return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
@@ -42,7 +45,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     alpha : float
         Probabilistic estimation threshold for the gamma function.
 
-    l : int
+    step : int
         number of initial estimates for sigma to try.
 
     itermax : int
@@ -114,7 +117,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
             sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
                                                           N,
                                                           alpha=alpha,
-                                                          l=l,
+                                                          step=step,
                                                           itermax=itermax,
                                                           eps=eps,
                                                           return_mask=True,
@@ -124,7 +127,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         sigma, mask_noise = _piesno_3D(data,
                                        N,
                                        alpha=alpha,
-                                       l=l,
+                                       step=step,
                                        itermax=itermax,
                                        eps=eps,
                                        return_mask=True,
@@ -136,7 +139,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     return sigma
 
 
-def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
+@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+def _piesno_3D(data, N, alpha=0.01, step=100, itermax=100, eps=1e-5,
                return_mask=False, initial_estimation=None):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
@@ -155,7 +159,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         Probabilistic estimation threshold for the gamma function.
         Default: 0.01.
 
-    l : int (optional)
+    step : int (optional)
         number of initial estimates for sigma to try. Default: 100.
 
     itermax : int (optional)
@@ -222,7 +226,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     else:
         m = initial_estimation
 
-    phi = np.arange(1, l + 1) * m / l
+    phi = np.arange(1, step + 1) * m / step
     K = data.shape[-1]
     sum_m2 = np.sum(data.astype(np.float32)**2, axis=2)
 
