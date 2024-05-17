@@ -36,13 +36,11 @@ target_file = get_target_tractogram_hcp()
 
 sft_atlas = load_trk(atlas_file, "same", bbox_valid_check=False)
 atlas = sft_atlas.streamlines
-atlas_header = create_tractogram_header(atlas_file,
-                                        *sft_atlas.space_attributes)
+atlas_header = create_tractogram_header(atlas_file, *sft_atlas.space_attributes)
 
 sft_target = load_trk(target_file, "same", bbox_valid_check=False)
 target = sft_target.streamlines
-target_header = create_tractogram_header(target_file,
-                                         *sft_target.space_attributes)
+target_header = create_tractogram_header(target_file, *sft_target.space_attributes)
 
 ###############################################################################
 # let's visualize atlas tractogram and target tractogram before registration
@@ -53,7 +51,7 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(target, colors=(1, 1, 0)))
-window.record(scene, out_path='tractograms_initial.png', size=(600, 600))
+window.record(scene, out_path="tractograms_initial.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -67,8 +65,13 @@ if interactive:
 # registration (SLR) [Garyfallidis15]_
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
-    atlas, target, x0='affine', verbose=True, progressive=True,
-    rng=np.random.RandomState(1984))
+    atlas,
+    target,
+    x0="affine",
+    verbose=True,
+    progressive=True,
+    rng=np.random.RandomState(1984),
+)
 
 
 ###############################################################################
@@ -86,8 +89,7 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(moved, colors=(1, 1, 0)))
-window.record(scene, out_path='tractograms_after_registration.png',
-              size=(600, 600))
+window.record(scene, out_path="tractograms_after_registration.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -148,11 +150,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(model_af_l))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='AF_L_model_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="AF_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -163,13 +166,15 @@ if interactive:
 
 rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
 
-recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
-                                            model_clust_thr=0.1,
-                                            reduction_thr=15,
-                                            pruning_thr=7,
-                                            reduction_distance='mdf',
-                                            pruning_distance='mdf',
-                                            slr=True)
+recognized_af_l, af_l_labels = rb.recognize(
+    model_bundle=model_af_l,
+    model_clust_thr=0.1,
+    reduction_thr=15,
+    pruning_thr=7,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle
@@ -179,11 +184,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='AF_L_recognized_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -197,28 +203,28 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_af_l = StatefulTractogram(recognized_af_l, atlas_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_rec_1.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_1.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values.
 
-recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
-                                            model_clust_thr=0.1,
-                                            reduction_thr=20,
-                                            pruning_thr=10,
-                                            reduction_distance='mdf',
-                                            pruning_distance='mdf',
-                                            slr=True)
+recognized_af_l, af_l_labels = rb.recognize(
+    model_bundle=model_af_l,
+    model_clust_thr=0.1,
+    reduction_thr=20,
+    pruning_thr=10,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
@@ -228,11 +234,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='AF_L_recognized_bundle2.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -245,28 +252,28 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_af_l = StatefulTractogram(recognized_af_l, atlas_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_rec_2.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_2.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values further.
 
-recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
-                                            model_clust_thr=0.1,
-                                            reduction_thr=25,
-                                            pruning_thr=12,
-                                            reduction_distance='mdf',
-                                            pruning_distance='mdf',
-                                            slr=True)
+recognized_af_l, af_l_labels = rb.recognize(
+    model_bundle=model_af_l,
+    model_clust_thr=0.1,
+    reduction_thr=25,
+    pruning_thr=12,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
@@ -276,11 +283,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='AF_L_recognized_bundle3.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -293,16 +301,14 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_af_l = StatefulTractogram(recognized_af_l, atlas_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_rec_3.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_3.trk", bbox_valid_check=False)
 
 
@@ -319,9 +325,10 @@ r_recognized_af_l, r_af_l_labels = rb.refine(
     model_clust_thr=0.1,
     reduction_thr=15,
     pruning_thr=6,
-    reduction_distance='mdf',
-    pruning_distance='mdf',
-    slr=True)
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted refined Arcuate Fasciculus Left bundle.
@@ -331,11 +338,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(r_recognized_af_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='AF_L_refine_recognized_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -349,16 +357,14 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_af_l = StatefulTractogram(r_recognized_af_l, atlas_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(r_recognized_af_l, atlas_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_rec_refine.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_af_l = StatefulTractogram(target[r_af_l_labels], target_header,
-                               Space.RASMM)
+reco_af_l = StatefulTractogram(target[r_af_l_labels], target_header, Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_refine.trk", bbox_valid_check=False)
 
 ###############################################################################
@@ -372,11 +378,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(model_cst_l))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='CST_L_model_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="CST_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -385,13 +392,15 @@ if interactive:
 #
 # The Corticospinal tract model bundle
 
-recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
-                                              model_clust_thr=0.1,
-                                              reduction_thr=15,
-                                              pruning_thr=7,
-                                              reduction_distance='mdf',
-                                              pruning_distance='mdf',
-                                              slr=True)
+recognized_cst_l, cst_l_labels = rb.recognize(
+    model_bundle=model_cst_l,
+    model_clust_thr=0.1,
+    reduction_thr=15,
+    pruning_thr=7,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle
@@ -401,11 +410,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='CST_L_recognized_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -419,28 +429,28 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_1.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_1.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values.
 
-recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
-                                              model_clust_thr=0.1,
-                                              reduction_thr=20,
-                                              pruning_thr=10,
-                                              reduction_distance='mdf',
-                                              pruning_distance='mdf',
-                                              slr=True)
+recognized_cst_l, cst_l_labels = rb.recognize(
+    model_bundle=model_cst_l,
+    model_clust_thr=0.1,
+    reduction_thr=20,
+    pruning_thr=10,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle.
@@ -450,11 +460,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='CST_L_recognized_bundle2.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -467,28 +478,28 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_2.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_2.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values further.
 
-recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
-                                              model_clust_thr=0.1,
-                                              reduction_thr=25,
-                                              pruning_thr=12,
-                                              reduction_distance='mdf',
-                                              pruning_distance='mdf',
-                                              slr=True)
+recognized_cst_l, cst_l_labels = rb.recognize(
+    model_bundle=model_cst_l,
+    model_clust_thr=0.1,
+    reduction_thr=25,
+    pruning_thr=12,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle.
@@ -498,11 +509,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='CST_L_recognized_bundle3.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -517,16 +529,14 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_3.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_3.trk", bbox_valid_check=False)
 
 ###############################################################################
@@ -537,14 +547,15 @@ save_trk(reco_cst_l, "CST_L_org_3.trk", bbox_valid_check=False)
 # smaller values in the auto-calibrated RecoBundles (refinement) step.
 
 r_recognized_cst_l, r_cst_l_labels = rb.refine(
-                                     model_bundle=model_cst_l,
-                                     pruned_streamlines=recognized_cst_l,
-                                     model_clust_thr=0.1,
-                                     reduction_thr=15,
-                                     pruning_thr=6,
-                                     reduction_distance='mdf',
-                                     pruning_distance='mdf',
-                                     slr=True)
+    model_bundle=model_cst_l,
+    pruned_streamlines=recognized_cst_l,
+    model_clust_thr=0.1,
+    reduction_thr=15,
+    pruning_thr=6,
+    reduction_distance="mdf",
+    pruning_distance="mdf",
+    slr=True,
+)
 
 ###############################################################################
 # let's visualize extracted refined Corticospinal tract Left bundle.
@@ -554,11 +565,12 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(r_recognized_cst_l.copy()))
-scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -30.46, -40.44),
-                 view_up=(-0.03, 0.028, 0.89))
-window.record(scene, out_path='CST_L_refine_recognized_bundle.png',
-              size=(600, 600))
+scene.set_camera(
+    focal_point=(-18.17281532, -19.55606842, 6.92485857),
+    position=(-360.11, -30.46, -40.44),
+    view_up=(-0.03, 0.028, 0.89),
+)
+window.record(scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -571,16 +583,14 @@ if interactive:
 # Save the bundle as a trk file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
-reco_cst_l = StatefulTractogram(r_recognized_cst_l, atlas_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(r_recognized_cst_l, atlas_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_refine.trk", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
-reco_cst_l = StatefulTractogram(target[r_cst_l_labels], target_header,
-                                Space.RASMM)
+reco_cst_l = StatefulTractogram(target[r_cst_l_labels], target_header, Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
 
 ###############################################################################

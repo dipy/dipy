@@ -14,7 +14,7 @@ def test_vec_val_vect():
         for shape1 in ((3, 3), (4, 3), (3, 4)):
             shape = shape0 + shape1
             evecs, evals = make_vecs_vals(shape)
-            res1 = np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+            res1 = np.einsum("...ij,...j,...kj->...ik", evecs, evals, evecs)
             assert_almost_equal(res1, vec_val_vect(evecs, evals))
 
 

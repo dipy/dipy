@@ -15,7 +15,7 @@ from dipy.tracking.streamline import (
 from dipy.utils.optpkg import optional_package
 
 _, have_matplotlib, _ = optional_package("matplotlib")
-fury, have_fury, _ = optional_package('fury', min_version="0.10.0")
+fury, have_fury, _ = optional_package("fury", min_version="0.10.0")
 if have_fury:
     from dipy.viz import window
     from dipy.viz.streamline import (
@@ -29,12 +29,17 @@ if have_fury:
 bundles = read_five_af_bundles()
 
 
-@pytest.mark.skipif(not have_fury or not have_matplotlib,
-                    reason='Requires FURY and Matplotlib')
+@pytest.mark.skipif(
+    not have_fury or not have_matplotlib, reason="Requires FURY and Matplotlib"
+)
 def test_output_created():
-
-    colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
-              [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
+    colors = [
+        [0.91, 0.26, 0.35],
+        [0.99, 0.50, 0.38],
+        [0.99, 0.88, 0.57],
+        [0.69, 0.85, 0.64],
+        [0.51, 0.51, 0.63],
+    ]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         with warnings.catch_warnings():
@@ -45,18 +50,18 @@ def test_output_created():
             )
 
             view = "sagital"  # codespell:ignore sagital
-            fname = os.path.join(temp_dir, f'test_{view}.png')
+            fname = os.path.join(temp_dir, f"test_{view}.png")
             show_bundles(bundles, False, view=view, save_as=fname)
             assert_equal(os.path.exists(fname), True)
 
-        views = ['axial', 'sagittal', 'coronal']
+        views = ["axial", "sagittal", "coronal"]
 
         for view in views:
-            fname = os.path.join(temp_dir, f'test_{view}.png')
+            fname = os.path.join(temp_dir, f"test_{view}.png")
             show_bundles(bundles, False, view=view, save_as=fname)
             assert_equal(os.path.exists(fname), True)
 
-        fname = os.path.join(temp_dir, 'test_colors.png')
+        fname = os.path.join(temp_dir, "test_colors.png")
         show_bundles(bundles, False, colors=colors, save_as=fname)
         assert_equal(os.path.exists(fname), True)
 
@@ -66,22 +71,21 @@ def test_output_created():
 
         cb1, cb2 = two_cingulum_bundles()
 
-        fname = os.path.join(temp_dir, 'test_two_bundles.png')
+        fname = os.path.join(temp_dir, "test_two_bundles.png")
         viz_two_bundles(cb1, cb2, fname=fname)
         assert_equal(os.path.exists(fname), True)
 
 
-@pytest.mark.skipif(not have_fury, reason='Requires FURY')
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_incorrect_view():
-    assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
+    assert_raises(ValueError, show_bundles, bundles, False, "wrong_view")
 
 
-@pytest.mark.skipif(not have_fury or not have_matplotlib,
-                    reason='Requires FURY and Matplotlib')
+@pytest.mark.skipif(
+    not have_fury or not have_matplotlib, reason="Requires FURY and Matplotlib"
+)
 def test_bundlewarp_viz():
-
     with tempfile.TemporaryDirectory() as temp_dir:
-
         cingulum_bundles = two_cingulum_bundles()
 
         cb1 = cingulum_bundles[0]
@@ -92,14 +96,15 @@ def test_bundlewarp_viz():
 
         deformed_bundle, affine_bundle, _, _, _ = bundlewarp(cb1, cb2)
 
-        offsets, directions, colors = bundlewarp_vector_filed(affine_bundle,
-                                                              deformed_bundle)
+        offsets, directions, colors = bundlewarp_vector_filed(
+            affine_bundle, deformed_bundle
+        )
         points_aligned, _ = unlist_streamlines(affine_bundle)
 
-        fname = os.path.join(temp_dir, 'test_vector_field.png')
+        fname = os.path.join(temp_dir, "test_vector_field.png")
         viz_vector_field(points_aligned, directions, colors, offsets, fname)
         assert_equal(os.path.exists(fname), True)
 
-        fname = os.path.join(temp_dir, 'test_mag_viz.png')
+        fname = os.path.join(temp_dir, "test_mag_viz.png")
         viz_displacement_mag(affine_bundle, offsets, fname)
         assert_equal(os.path.exists(fname), True)

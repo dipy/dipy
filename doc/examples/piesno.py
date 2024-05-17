@@ -44,7 +44,7 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Then we load the data and the affine:
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("sherbrooke_3shell")
 data, affine = load_nifti(dwi_fname)
 
 
@@ -66,14 +66,14 @@ axial = data[:, :, data.shape[2] // 2, 0].T
 axial_piesno = mask[:, :, data.shape[2] // 2].T
 
 fig, ax = plt.subplots(1, 2)
-ax[0].imshow(axial, cmap='gray', origin='lower')
-ax[0].set_title('Axial slice of the b=0 data')
-ax[1].imshow(axial_piesno, cmap='gray', origin='lower')
-ax[1].set_title('Background voxels from the data')
+ax[0].imshow(axial, cmap="gray", origin="lower")
+ax[0].set_title("Axial slice of the b=0 data")
+ax[1].imshow(axial_piesno, cmap="gray", origin="lower")
+ax[1].set_title("Background voxels from the data")
 for a in ax:
     a.set_axis_off()
 
-plt.savefig('piesno.png', bbox_inches='tight')
+plt.savefig("piesno.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -81,11 +81,10 @@ plt.savefig('piesno.png', bbox_inches='tight')
 # Showing the mid axial slice of the b=0 image (left) and estimated
 # background voxels (right) used to estimate the noise standard deviation.
 
-save_nifti('mask_piesno.nii.gz', mask.astype(np.uint8), affine)
+save_nifti("mask_piesno.nii.gz", mask.astype(np.uint8), affine)
 
-print('The noise standard deviation is sigma = ', sigma)
-print('The std of the background is =',
-      np.std(data[mask[..., :].astype(bool)]))
+print("The noise standard deviation is sigma = ", sigma)
+print("The std of the background is =", np.std(data[mask[..., :].astype(bool)]))
 
 ###############################################################################
 # Here, we obtained a noise standard deviation of 7.26. For comparison, a

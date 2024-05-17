@@ -5,14 +5,22 @@ from tqdm.auto import tqdm
 
 from dipy.utils.optpkg import optional_package
 
-joblib, has_joblib, _ = optional_package('joblib')
-dask, has_dask, _ = optional_package('dask')
-ray, has_ray, _ = optional_package('ray')
+joblib, has_joblib, _ = optional_package("joblib")
+dask, has_dask, _ = optional_package("dask")
+ray, has_ray, _ = optional_package("ray")
 
 
-def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
-            backend=None, func_args=None, func_kwargs=None,
-            **kwargs):
+def paramap(
+    func,
+    in_list,
+    out_shape=None,
+    n_jobs=-1,
+    engine="joblib",
+    backend=None,
+    func_args=None,
+    func_kwargs=None,
+    **kwargs,
+):
     """
     Maps a function to a list of inputs in parallel.
 
@@ -61,9 +69,7 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
             raise joblib()
         if backend is None:
             backend = "loky"
-        pp = joblib.Parallel(
-            n_jobs=n_jobs, backend=backend,
-            **kwargs)
+        pp = joblib.Parallel(n_jobs=n_jobs, backend=backend, **kwargs)
         dd = joblib.delayed(func)
         d_l = [dd(ii, *func_args, **func_kwargs) for ii in in_list]
         results = pp(tqdm(d_l))
@@ -81,15 +87,15 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
         def partial(func, *args, **keywords):
             def newfunc(in_arg):
                 return func(in_arg, *args, **keywords)
+
             return newfunc
+
         pp = partial(func, *func_args, **func_kwargs)
         dd = [dask.delayed(pp)(ii) for ii in in_list]
         if backend == "multiprocessing":
-            results = dask.compute(*dd, scheduler="processes",
-                                   workers=n_jobs, **kwargs)
+            results = dask.compute(*dd, scheduler="processes", workers=n_jobs, **kwargs)
         elif backend == "threading":
-            results = dask.compute(*dd, scheduler="threads",
-                                   workers=n_jobs, **kwargs)
+            results = dask.compute(*dd, scheduler="threads", workers=n_jobs, **kwargs)
         else:
             raise ValueError("%s is not a backend for dask" % backend)
 
@@ -98,8 +104,9 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
             raise ray()
 
         func = ray.remote(func)
-        results = ray.get([func.remote(ii, *func_args, **func_kwargs)
-                           for ii in in_list])
+        results = ray.get(
+            [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
+        )
 
     elif engine == "serial":
         results = []

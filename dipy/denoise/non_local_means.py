@@ -3,9 +3,8 @@ import numpy as np
 from dipy.denoise.nlmeans_block import nlmeans_block
 
 
-def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-                    rician=True):
-    r""" Non-local means for denoising 3D and 4D images, using
+def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
+    r"""Non-local means for denoising 3D and 4D images, using
         blockwise averaging approach
 
     Parameters
@@ -42,30 +41,35 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                 Technology, 2011
 
     """
-    if not np.isscalar(sigma) and not sigma.shape == (1, ):
+    if not np.isscalar(sigma) and not sigma.shape == (1,):
         raise ValueError("Sigma input needs to be of type float", sigma)
     if mask is None and arr.ndim > 2:
-        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype='f8')
+        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype="f8")
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ascontiguousarray(mask, dtype="f8")
 
     if mask.ndim != 3:
-        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+        raise ValueError("mask needs to be a 3D ndarray", mask.shape)
 
     if arr.ndim == 3:
-        return np.array(nlmeans_block(
-            np.double(arr),
-            mask,
-            patch_radius,
-            block_radius,
-            sigma,
-            int(rician))).astype(arr.dtype)
+        return np.array(
+            nlmeans_block(
+                np.double(arr), mask, patch_radius, block_radius, sigma, int(rician)
+            )
+        ).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
         for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = np.array(nlmeans_block(np.double(
-                arr[..., i]), mask, patch_radius, block_radius, sigma,
-                int(rician))).astype(arr.dtype)
+            denoised_arr[..., i] = np.array(
+                nlmeans_block(
+                    np.double(arr[..., i]),
+                    mask,
+                    patch_radius,
+                    block_radius,
+                    sigma,
+                    int(rician),
+                )
+            ).astype(arr.dtype)
 
         return denoised_arr
 

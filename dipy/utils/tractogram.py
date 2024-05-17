@@ -1,5 +1,5 @@
-
 """This module is dedicated to the handling of tractograms."""
+
 import logging
 import os
 
@@ -7,9 +7,15 @@ import numpy as np
 import trx.trx_file_memmap as tmm
 
 
-def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
-                           delete_dps=False, delete_groups=False,
-                           check_space_attributes=True, preallocation=False):
+def concatenate_tractogram(
+    tractogram_list,
+    *,
+    delete_dpv=False,
+    delete_dps=False,
+    delete_groups=False,
+    check_space_attributes=True,
+    preallocation=False,
+):
     """Concatenate multiple tractograms into one.
 
     If the data_per_point or data_per_streamline is not the same for all
@@ -46,8 +52,9 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
             delete_groups = True
         trx_list.append(sft)
 
-    trx_list = [curr_trx for curr_trx in trx_list
-                if curr_trx.header["NB_STREAMLINES"] > 0]
+    trx_list = [
+        curr_trx for curr_trx in trx_list if curr_trx.header["NB_STREAMLINES"] > 0
+    ]
 
     if not trx_list:
         logging.warning("Inputs of concatenation were empty.")
@@ -68,11 +75,10 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
 
     if check_space_attributes:
         for curr_trx in trx_list[1:]:
-            if not np.allclose(ref_trx.header["VOXEL_TO_RASMM"],
-                               curr_trx.header["VOXEL_TO_RASMM"]) or \
-                                   not np.array_equal(
-                                       ref_trx.header["DIMENSIONS"],
-                                       curr_trx.header["DIMENSIONS"]
+            if not np.allclose(
+                ref_trx.header["VOXEL_TO_RASMM"], curr_trx.header["VOXEL_TO_RASMM"]
+            ) or not np.array_equal(
+                ref_trx.header["DIMENSIONS"], curr_trx.header["DIMENSIONS"]
             ):
                 raise ValueError("Wrong space attributes.")
 
@@ -84,14 +90,15 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
     # Verifying the validity of fixed-size arrays, coherence between inputs
     for curr_trx in trx_list:
         for key in all_dpv:
-            if key not in ref_trx.data_per_vertex.keys() \
-                    or key not in curr_trx.data_per_vertex.keys():
+            if (
+                key not in ref_trx.data_per_vertex.keys()
+                or key not in curr_trx.data_per_vertex.keys()
+            ):
                 if not delete_dpv:
                     logging.debug(
                         "{} dpv key does not exist in all TrxFile.".format(key)
                     )
-                    raise ValueError(
-                        "TrxFile must be sharing identical dpv " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dpv " "keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
@@ -104,15 +111,15 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
 
     for curr_trx in trx_list:
         for key in all_dps:
-            if key not in ref_trx.data_per_streamline.keys() \
-                    or key not in curr_trx.data_per_streamline.keys():
+            if (
+                key not in ref_trx.data_per_streamline.keys()
+                or key not in curr_trx.data_per_streamline.keys()
+            ):
                 if not delete_dps:
                     logging.debug(
-                        "{} dps key does not exist in all " "TrxFile.".format(
-                            key)
+                        "{} dps key does not exist in all " "TrxFile.".format(key)
                     )
-                    raise ValueError(
-                        "TrxFile must be sharing identical dps " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dps " "keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype
@@ -134,9 +141,10 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
                     all_groups_len[group_key] += len(trx_1.groups[group_key])
                 else:
                     all_groups_len[group_key] = len(trx_1.groups[group_key])
-                if group_key in all_groups_dtype and \
-                    trx_1.groups[group_key].dtype !=  \
-                        all_groups_dtype[group_key]:
+                if (
+                    group_key in all_groups_dtype
+                    and trx_1.groups[group_key].dtype != all_groups_dtype[group_key]
+                ):
                     raise ValueError("Shared group key, has different dtype.")
                 else:
                     all_groups_dtype[group_key] = trx_1.groups[group_key].dtype
@@ -152,8 +160,7 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
             nb_vertices += curr_pts_len
 
         new_trx = tmm.TrxFile(
-            nb_vertices=nb_vertices, nb_streamlines=nb_streamlines,
-            init_as=ref_trx
+            nb_vertices=nb_vertices, nb_streamlines=nb_streamlines, init_as=ref_trx
         )
         if delete_dps:
             new_trx.data_per_streamline = {}
@@ -183,8 +190,9 @@ def concatenate_tractogram(tractogram_list, *, delete_dpv=False,
             count = 0
             for curr_trx in trx_list:
                 curr_len = len(curr_trx.groups[group_key])
-                new_trx.groups[group_key][pos: pos + curr_len] = \
+                new_trx.groups[group_key][pos : pos + curr_len] = (
                     curr_trx.groups[group_key] + count
+                )
                 pos += curr_len
                 count += curr_trx.header["NB_STREAMLINES"]
 

@@ -2,6 +2,7 @@
 """
 Class and helper functions for fitting the DeepN4 model.
 """
+
 import logging
 
 import numpy as np
@@ -12,7 +13,7 @@ from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_im
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package("tensorflow")
 if have_tf:
     from tensorflow.keras.layers import (
         Concatenate,
@@ -25,32 +26,35 @@ if have_tf:
     )
     from tensorflow.keras.models import Model
 else:
+
     class Model:
         pass
 
     class Layer:
         pass
-    logging.warning('This model requires Tensorflow.\
+
+    logging.warning(
+        "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
-                    https://github.com/apple/tensorflow_macos')
+                    https://github.com/apple/tensorflow_macos"
+    )
 
 
 logging.basicConfig()
-logger = logging.getLogger('deepn4')
+logger = logging.getLogger("deepn4")
 
 
 class EncoderBlock(Layer):
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(EncoderBlock, self).__init__()
-        self.conv3d = Conv3D(out_channels,
-                             kernel_size,
-                             strides=strides,
-                             padding=padding,
-                             use_bias=False)
-        self.instnorm = GroupNormalization(groups=-1, axis=-1,
-                                           center=False, scale=False)
+        self.conv3d = Conv3D(
+            out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
+        )
+        self.instnorm = GroupNormalization(
+            groups=-1, axis=-1, center=False, scale=False
+        )
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -64,13 +68,12 @@ class EncoderBlock(Layer):
 class DecoderBlock(Layer):
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(DecoderBlock, self).__init__()
-        self.conv3d = Conv3DTranspose(out_channels,
-                                      kernel_size,
-                                      strides=strides,
-                                      padding=padding,
-                                      use_bias=False)
-        self.instnorm = GroupNormalization(groups=-1, axis=-1,
-                                           center=False, scale=False)
+        self.conv3d = Conv3DTranspose(
+            out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
+        )
+        self.instnorm = GroupNormalization(
+            groups=-1, axis=-1, center=False, scale=False
+        )
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
@@ -84,67 +87,47 @@ class DecoderBlock(Layer):
 def UNet3D(input_shape):
     inputs = tf.keras.Input(input_shape)
     # Encode
-    x = EncoderBlock(32, kernel_size=3,
-                     strides=1, padding='same')(inputs)
-    syn0 = EncoderBlock(64, kernel_size=3,
-                        strides=1, padding='same')(x)
+    x = EncoderBlock(32, kernel_size=3, strides=1, padding="same")(inputs)
+    syn0 = EncoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
 
     x = MaxPool3D()(syn0)
-    x = EncoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn1 = EncoderBlock(128, kernel_size=3,
-                        strides=1, padding='same')(x)
+    x = EncoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
+    syn1 = EncoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
 
     x = MaxPool3D()(syn1)
-    x = EncoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn2 = EncoderBlock(256, kernel_size=3,
-                        strides=1, padding='same')(x)
+    x = EncoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
+    syn2 = EncoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
 
     x = MaxPool3D()(syn2)
-    x = EncoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = EncoderBlock(512, kernel_size=3,
-                     strides=1, padding='same')(x)
+    x = EncoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
+    x = EncoderBlock(512, kernel_size=3, strides=1, padding="same")(x)
 
     # Last layer without relu
-    x = Conv3D(512, kernel_size=1,
-               strides=1, padding='same')(x)
+    x = Conv3D(512, kernel_size=1, strides=1, padding="same")(x)
 
-    x = DecoderBlock(512, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    x = DecoderBlock(512, kernel_size=2, strides=2, padding="valid")(x)
 
     x = Concatenate()([x, syn2])
 
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    x = DecoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
+    x = DecoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
+    x = DecoderBlock(256, kernel_size=2, strides=2, padding="valid")(x)
 
     x = Concatenate()([x, syn1])
 
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    x = DecoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
+    x = DecoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
+    x = DecoderBlock(128, kernel_size=2, strides=2, padding="valid")(x)
 
     x = Concatenate()([x, syn0])
 
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
+    x = DecoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
+    x = DecoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
 
-    x = DecoderBlock(1, kernel_size=1,
-                     strides=1, padding='valid')(x)
+    x = DecoderBlock(1, kernel_size=1, strides=1, padding="valid")(x)
 
     # Last layer without relu
-    out = Conv3DTranspose(1, kernel_size=1,
-                          strides=1, padding='valid')(x)
+    out = Conv3DTranspose(1, kernel_size=1, strides=1, padding="valid")(x)
 
     return Model(inputs, out)
 
@@ -181,7 +164,7 @@ class DeepN4:
         if not have_tf:
             raise tf()
 
-        log_level = 'INFO' if verbose else 'CRITICAL'
+        log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
         # Synb0 network load
@@ -192,7 +175,7 @@ class DeepN4:
         r"""
         Load the model pre-training weights to use for the fitting.
         """
-        fetch_model_weights_path = get_fnames('deepn4_default_weights')
+        fetch_model_weights_path = get_fnames("deepn4_default_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -207,9 +190,11 @@ class DeepN4:
         """
         try:
             self.model.load_weights(weights_path)
-        except ValueError:
-            raise ValueError('Expected input for the provided model weights \
-                             do not match the declared model')
+        except ValueError as e:
+            raise ValueError(
+                "Expected input for the provided model weights \
+                             do not match the declared model"
+            ) from e
 
     def __predict(self, x_test):
         r"""
@@ -230,7 +215,6 @@ class DeepN4:
         return self.model.predict(x_test)
 
     def pad(self, img, sz):
-
         tmp = np.zeros((sz, sz, sz))
 
         diff = int((sz - img.shape[0]) / 2)
@@ -262,20 +246,34 @@ class DeepN4:
         return tmp, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ]
 
     def load_resample(self, subj):
-
-        input_data, [lx, lX, ly, lY, lz, lZ, rx, rX,
-                     ry, rY, rz, rZ] = self.pad(subj, 128)
+        input_data, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ] = self.pad(
+            subj, 128
+        )
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
         input_data = normalize(input_data, 0, in_max, 0, 1)
         input_data = np.squeeze(input_data)
         input_vols = np.zeros((1, 128, 128, 128, 1))
         input_vols[0, :, :, :, 0] = input_data
 
-        return (tf.convert_to_tensor(input_vols, dtype=tf.float32),
-                lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max)
+        return (
+            tf.convert_to_tensor(input_vols, dtype=tf.float32),
+            lx,
+            lX,
+            ly,
+            lY,
+            lz,
+            lZ,
+            rx,
+            rX,
+            ry,
+            rY,
+            rz,
+            rZ,
+            in_max,
+        )
 
     def predict(self, img, img_affine):
-        """ Wrapper function to facilitate prediction of larger dataset.
+        """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
 
@@ -293,8 +291,9 @@ class DeepN4:
         """
         # Preprocess input data (resample, normalize, and pad)
         resampled_T1, affine2, ori_shape = transform_img(img, img_affine)
-        (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ,
-         in_max) = self.load_resample(resampled_T1)
+        (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
+            self.load_resample(resampled_T1)
+        )
 
         # Run the model to get the bias field
         logfield = self.__predict(in_features)
@@ -303,19 +302,21 @@ class DeepN4:
 
         # Postprocess predicted field (reshape - unpad, smooth the field,
         # upsample)
-        final_field = np.zeros([resampled_T1.shape[0],
-                                resampled_T1.shape[1],
-                                resampled_T1.shape[2]])
+        final_field = np.zeros(
+            [resampled_T1.shape[0], resampled_T1.shape[1], resampled_T1.shape[2]]
+        )
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
         upsample_final_field = recover_img(
-            final_fields, affine2, ori_shape, np.shape(final_fields))
+            final_fields, affine2, ori_shape, np.shape(final_fields)
+        )
 
         # Correct the image
         THRESHOLD = 0.5
-        below_threshold_mask = (np.abs(upsample_final_field) < THRESHOLD)
-        with np.errstate(divide='ignore', invalid='ignore'):
+        below_threshold_mask = np.abs(upsample_final_field) < THRESHOLD
+        with np.errstate(divide="ignore", invalid="ignore"):
             final_corrected = np.where(
-                below_threshold_mask, 0, img / upsample_final_field)
+                below_threshold_mask, 0, img / upsample_final_field
+            )
 
         return final_corrected

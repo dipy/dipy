@@ -14,23 +14,22 @@ def test_resample():
 
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)
-    data2, affine2 = reslice(data[..., 0], affine, zooms, new_zooms, order=1,
-                             mode='constant')
+    data2, affine2 = reslice(
+        data[..., 0], affine, zooms, new_zooms, order=1, mode="constant"
+    )
     img2 = nib.Nifti1Image(data2, affine2)
     new_zooms_confirmed = img2.header.get_zooms()[:3]
     assert_almost_equal(new_zooms, new_zooms_confirmed)
 
     # test that shape changes correctly for the first 3 dimensions (check 4D)
-    new_zooms = (1, 1, 1.)
-    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=0,
-                             mode='reflect')
+    new_zooms = (1, 1, 1.0)
+    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=0, mode="reflect")
     assert_equal(2 * np.array(data.shape[:3]), data2.shape[:3])
     assert_equal(data2.shape[-1], data.shape[-1])
 
     # same with different interpolation order
-    new_zooms = (1, 1, 1.)
-    data3, affine2 = reslice(data, affine, zooms, new_zooms, order=5,
-                             mode='reflect')
+    new_zooms = (1, 1, 1.0)
+    data3, affine2 = reslice(data, affine, zooms, new_zooms, order=5, mode="reflect")
     assert_equal(2 * np.array(data.shape[:3]), data3.shape[:3])
     assert_equal(data3.shape[-1], data.shape[-1])
 
@@ -60,9 +59,9 @@ def test_resample():
     assert_almost_equal(affine2, affine3)
 
     # test invalid values of num_threads
-    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
-                  num_processes=0)
+    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms, num_processes=0)
 
     # test invalid volume dimension
-    assert_raises(ValueError, reslice, np.zeros((4, 4, 4, 4, 1)), affine,
-                  zooms, new_zooms)
+    assert_raises(
+        ValueError, reslice, np.zeros((4, 4, 4, 4, 1)), affine, zooms, new_zooms
+    )

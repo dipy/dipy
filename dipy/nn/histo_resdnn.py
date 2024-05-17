@@ -2,6 +2,7 @@
 """
 Class and helper functions for fitting the Histological ResDNN model.
 """
+
 import logging
 
 import numpy as np
@@ -15,29 +16,32 @@ from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
     from tensorflow.keras.layers import Add, Dense, Input
     from tensorflow.keras.models import Model
 else:
-    logging.warning('This model requires Tensorflow.\
+    logging.warning(
+        "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
-                    https://github.com/apple/tensorflow_macos')
+                    https://github.com/apple/tensorflow_macos"
+    )
 
 
 logging.basicConfig()
-logger = logging.getLogger('histo_resdnn')
+logger = logging.getLogger("histo_resdnn")
+
 
 class HistoResDNN:
     """
     This class is intended for the ResDNN Histology Network model.
     """
 
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
     @doctest_skip_parser
-    def __init__(self, sh_order_max=8, basis_type='tournier07', verbose=False):
+    def __init__(self, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in [1, 2].
@@ -77,7 +81,7 @@ class HistoResDNN:
             Deep learning captures more accurate diffusion fiber orientations
             distributions than constrained spherical deconvolution.
             arXiv preprint arXiv:1911.07927.
-        """
+        """  # noqa: E501
 
         if not have_tf:
             raise tf()
@@ -86,23 +90,25 @@ class HistoResDNN:
         self.sh_size = len(sph_harm_ind_list(sh_order_max)[0])
         self.basis_type = basis_type
 
-        log_level = 'INFO' if verbose else 'CRITICAL'
+        log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
-        if self.basis_type != 'tournier07':
-            logger.warning('Be careful, original weights were obtained '
-                           'from training on the tournier07 basis, '
-                           'unless you re-trained the network, do not '
-                           'change basis!')
+        if self.basis_type != "tournier07":
+            logger.warning(
+                "Be careful, original weights were obtained "
+                "from training on the tournier07 basis, "
+                "unless you re-trained the network, do not "
+                "change basis!"
+            )
 
         # ResDNN Network Flow
         num_hidden = self.sh_size
         inputs = Input(shape=(self.sh_size,))
-        x1 = Dense(400, activation='relu')(inputs)
-        x2 = Dense(num_hidden, activation='relu')(x1)
-        x3 = Dense(200, activation='relu')(x2)
-        x4 = Dense(num_hidden, activation='linear')(x3)
+        x1 = Dense(400, activation="relu")(inputs)
+        x2 = Dense(num_hidden, activation="relu")(x1)
+        x3 = Dense(200, activation="relu")(x2)
+        x4 = Dense(num_hidden, activation="linear")(x3)
         res_add = Add()([x2, x4])
-        x5 = Dense(200, activation='relu')(res_add)
+        x5 = Dense(200, activation="relu")(res_add)
         x6 = Dense(num_hidden)(x5)
 
         self.model = Model(inputs=inputs, outputs=x6)
@@ -113,7 +119,7 @@ class HistoResDNN:
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
-        fetch_model_weights_path = get_fnames('histo_resdnn_weights')
+        fetch_model_weights_path = get_fnames("histo_resdnn_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -132,10 +138,11 @@ class HistoResDNN:
         """
         try:
             self.model.load_weights(weights_path)
-        except ValueError:
-            raise ValueError('Expected input for the provided model weights '
-                             'do not match the declared model ({})'
-                             .format(self.sh_size))
+        except ValueError as e:
+            raise ValueError(
+                "Expected input for the provided model weights "
+                "do not match the declared model ({})".format(self.sh_size)
+            ) from e
 
     def __predict(self, x_test):
         r"""
@@ -155,14 +162,15 @@ class HistoResDNN:
         """
 
         if x_test.shape[-1] != self.sh_size:
-            raise ValueError('Expected input for the provided model weights '
-                             'do not match the declared model ({})'
-                             .format(self.sh_size))
+            raise ValueError(
+                "Expected input for the provided model weights "
+                "do not match the declared model ({})".format(self.sh_size)
+            )
 
         return self.model.predict(x_test)
 
     def predict(self, data, gtab, mask=None, chunk_size=1000):
-        """ Wrapper function to facilitate prediction of larger dataset.
+        """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
 
@@ -189,24 +197,25 @@ class HistoResDNN:
 
         """
         if mask is None:
-            logger.warning('Mask should be provided to accelerate '
-                           'computation, and because predictions are '
-                           'not reliable outside of the brain.')
+            logger.warning(
+                "Mask should be provided to accelerate "
+                "computation, and because predictions are "
+                "not reliable outside of the brain."
+            )
             mask = np.sum(data, axis=-1)
         mask = mask.astype(bool)
 
         # Extract B0's and obtain a mean B0
         b0_indices = gtab.b0s_mask
         if not len(b0_indices) > 0:
-            raise ValueError('b0 must be present for DWI normalization.')
-        logger.info('b0 indices found are: {}'.format(
-            np.argwhere(b0_indices).ravel()))
+            raise ValueError("b0 must be present for DWI normalization.")
+        logger.info("b0 indices found are: {}".format(np.argwhere(b0_indices).ravel()))
 
         mean_b0 = np.mean(data[..., b0_indices], axis=-1)
 
         # Detect number of b-values and extract a single shell of DW-MRI Data
         unique_shells = np.sort(unique_bvals_magnitude(gtab.bvals))
-        logger.info('Number of b-values: {}'.format(unique_shells))
+        logger.info("Number of b-values: {}".format(unique_shells))
 
         # Extract DWI only
         dw_indices = get_bval_indices(gtab.bvals, unique_shells[1])
@@ -216,14 +225,19 @@ class HistoResDNN:
         # Normalize the DW-MRI Data with the mean b0 (voxel-wise)
         norm_dw_data = np.zeros(dw_data.shape)
         for n in range(len(dw_indices)):
-            norm_dw_data[..., n] = np.divide(dw_data[..., n], mean_b0,
-                                             where=np.abs(mean_b0) > 0.000001)
+            norm_dw_data[..., n] = np.divide(
+                dw_data[..., n], mean_b0, where=np.abs(mean_b0) > 0.000001
+            )
 
         # Fit SH to the raw DWI signal
         h_sphere = HemiSphere(xyz=dw_bvecs)
-        dw_sh_coef = sf_to_sh(norm_dw_data, h_sphere, smooth=0.0006,
-                              basis_type=self.basis_type,
-                              sh_order_max=self.sh_order_max)
+        dw_sh_coef = sf_to_sh(
+            norm_dw_data,
+            h_sphere,
+            smooth=0.0006,
+            basis_type=self.basis_type,
+            sh_order_max=self.sh_order_max,
+        )
 
         # Flatten and mask the data (N, SH_SIZE) to facilitate chunks
         ori_shape = dw_sh_coef.shape
@@ -231,22 +245,30 @@ class HistoResDNN:
         flat_pred_sh_coef = np.zeros(flat_dw_sh_coef.shape)
 
         count = len(flat_dw_sh_coef) // chunk_size
-        for i in range(count+1):
+        for i in range(count + 1):
             if i % 100 == 0 or i == count:
-                logger.info('Chunk #{} out of {}'.format(i, count))
+                logger.info("Chunk #{} out of {}".format(i, count))
             tmp_sh = self.__predict(
-                flat_dw_sh_coef[i*chunk_size:(i+1)*chunk_size])
+                flat_dw_sh_coef[i * chunk_size : (i + 1) * chunk_size]
+            )
 
             # Removing negative values from the SF
-            sphere = get_sphere('repulsion724')
-            tmp_sf = sh_to_sf(sh=tmp_sh, sphere=sphere,
-                              basis_type=self.basis_type,
-                              sh_order_max=self.sh_order_max)
+            sphere = get_sphere("repulsion724")
+            tmp_sf = sh_to_sf(
+                sh=tmp_sh,
+                sphere=sphere,
+                basis_type=self.basis_type,
+                sh_order_max=self.sh_order_max,
+            )
             tmp_sf[tmp_sf < 0] = 0
-            tmp_sh = sf_to_sh(tmp_sf, sphere, smooth=0.0006,
-                              basis_type=self.basis_type,
-                              sh_order_max=self.sh_order_max)
-            flat_pred_sh_coef[i*chunk_size:(i+1)*chunk_size] = tmp_sh
+            tmp_sh = sf_to_sh(
+                tmp_sf,
+                sphere,
+                smooth=0.0006,
+                basis_type=self.basis_type,
+                sh_order_max=self.sh_order_max,
+            )
+            flat_pred_sh_coef[i * chunk_size : (i + 1) * chunk_size] = tmp_sh
 
         pred_sh_coef = np.zeros(ori_shape)
         pred_sh_coef[mask > 0] = flat_pred_sh_coef

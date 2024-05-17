@@ -28,7 +28,7 @@ def average_bundle_length(bundle):
 
     """
     metric = AveragePointwiseEuclideanMetric()
-    qb = QuickBundles(threshold=85., metric=metric)
+    qb = QuickBundles(threshold=85.0, metric=metric)
     clusters = qb.cluster(bundle)
     centroids = Streamlines(clusters.centroids)
 
@@ -56,8 +56,7 @@ def find_missing(lst, cb):
     return [x for x in range(0, len(cb)) if x not in lst]
 
 
-def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
-               affine=True):
+def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affine=True):
     """Register two bundles using nonlinear method.
 
     Parameters
@@ -111,14 +110,15 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
 
     """
     if alpha <= 0.01:
-        warnings.warn("Using alpha<=0.01 will result in extreme deformations")
+        warnings.warn(
+            "Using alpha<=0.01 will result in extreme deformations", stacklevel=2
+        )
 
     if average_bundle_length(static) <= 50:
         beta = 10
 
-    x0 = 'affine' if affine else 'rigid'
-    moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0=x0,
-                                           rm_small_clusters=0)
+    x0 = "affine" if affine else "rigid"
+    moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0=x0, rm_small_clusters=0)
 
     if dist is not None:
         print("using pre-computed distances")
@@ -137,11 +137,9 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     all_matched = False
 
     while all_matched is False:
-
         num = len(all_pairs)
 
         if num < len(moving):
-
             ml = find_missing(all_pairs, moving)
 
             dist2 = dist[:][ml]
@@ -173,15 +171,15 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     # Append deformed streamlines in deformed_bundle
 
     for _, pairs in enumerate(matched_pairs):
-
         s1 = static[int(pairs[1])]
         s2 = moving_aligned[int(pairs[0])]
 
         static_s = s1
         moving_s = s2
 
-        reg = DeformableRegistration(X=static_s, Y=moving_s, alpha=alpha,
-                                     beta=beta, max_iterations=max_iter)
+        reg = DeformableRegistration(
+            X=static_s, Y=moving_s, alpha=alpha, beta=beta, max_iterations=max_iter
+        )
         ty, pr = reg.register()
         ty = ty.astype(float)
         deformed_bundle.append(ty)
@@ -217,7 +215,7 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     points_deformed, _ = unlist_streamlines(deformed_bundle)
     vector_field = points_deformed - points_aligned
 
-    offsets = np.sqrt(np.sum((vector_field)**2, 1))  # vector field modules
+    offsets = np.sqrt(np.sum((vector_field) ** 2, 1))  # vector field modules
 
     # Normalize vectors to be unitary (directions)
     directions = vector_field / np.array([offsets]).T
@@ -229,8 +227,9 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     return offsets, directions, colors
 
 
-def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
-                              plotting=False):
+def bundlewarp_shape_analysis(
+    moving_aligned, deformed_bundle, no_disks=10, plotting=False
+):
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp
@@ -265,8 +264,9 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
         Float array containing standard deviations
     """
     n = no_disks
-    offsets, directions, colors = bundlewarp_vector_filed(moving_aligned,
-                                                          deformed_bundle)
+    offsets, directions, colors = bundlewarp_vector_filed(
+        moving_aligned, deformed_bundle
+    )
 
     indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
@@ -277,15 +277,13 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10,
 
     disks_color = []
     for _, ind in enumerate(indx):
-
         disks_color.append(tuple(colors[ind]))
 
-    x = np.array(range(1, n+1))
+    x = np.array(range(1, n + 1))
     shape_profile = np.zeros(n)
     stdv = np.zeros(n)
 
     for i in range(n):
-
         mask = indx == i
         if sum(mask):
             shape_profile[i] = np.mean(offsets[mask])

@@ -14,11 +14,13 @@ import dipy.tracking.streamline as streamline_utils
 
 dtype = "float32"
 threshold = 7
-data = [np.arange(3 * 5, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
-        np.arange(3 * 10, dtype=dtype).reshape((-1, 3)) + 0 * threshold,
-        np.arange(3 * 15, dtype=dtype).reshape((-1, 3)) + 8 * threshold,
-        np.arange(3 * 17, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
-        np.arange(3 * 20, dtype=dtype).reshape((-1, 3)) + 8 * threshold]
+data = [
+    np.arange(3 * 5, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
+    np.arange(3 * 10, dtype=dtype).reshape((-1, 3)) + 0 * threshold,
+    np.arange(3 * 15, dtype=dtype).reshape((-1, 3)) + 8 * threshold,
+    np.arange(3 * 17, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
+    np.arange(3 * 20, dtype=dtype).reshape((-1, 3)) + 8 * threshold,
+]
 
 clusters_truth = [[0, 1], [2, 4], [3]]
 
@@ -36,50 +38,44 @@ def test_quickbundles_empty_data():
 
 
 def test_quickbundles_wrong_metric():
-    assert_raises(ValueError, QuickBundles,
-                  threshold=10., metric="WrongMetric")
+    assert_raises(ValueError, QuickBundles, threshold=10.0, metric="WrongMetric")
 
 
 def test_quickbundles_shape_incompatibility():
     # QuickBundles' old default metric (AveragePointwiseEuclideanMetric,
     #  aka MDF) requires that all streamlines have the same number of points.
     metric = dipysmetric.AveragePointwiseEuclideanMetric()
-    qb = QuickBundles(threshold=20., metric=metric)
+    qb = QuickBundles(threshold=20.0, metric=metric)
     assert_raises(ValueError, qb.cluster, data)
 
     # QuickBundles' new default metric (AveragePointwiseEuclideanMetric,
     # aka MDF combined with ResampleFeature) will automatically resample
     # streamlines so they all have 18 points.
-    qb = QuickBundles(threshold=20.)
+    qb = QuickBundles(threshold=20.0)
     clusters1 = qb.cluster(data)
 
     feature = dipysfeature.ResampleFeature(nb_points=18)
     metric = dipysmetric.AveragePointwiseEuclideanMetric(feature)
-    qb = QuickBundles(threshold=20., metric=metric)
+    qb = QuickBundles(threshold=20.0, metric=metric)
     clusters2 = qb.cluster(data)
 
-    assert_arrays_equal(list(itertools.chain(*clusters1)),
-                        list(itertools.chain(*clusters2)))
+    assert_arrays_equal(
+        list(itertools.chain(*clusters1)), list(itertools.chain(*clusters2))
+    )
 
 
 @set_random_number_generator(7)
 def test_quickbundles_2D(rng):
     # Test quickbundles clustering using 2D points and the Eulidean metric.
     data = []
-    data += \
-        [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]
-    data += \
-        [rng.standard_normal((1, 2)) + np.array([10, 10]) for _ in range(2)]
-    data += \
-        [rng.standard_normal((1, 2)) + np.array([-10, 10]) for _ in range(3)]
-    data += \
-        [rng.standard_normal((1, 2)) + np.array([10, -10]) for _ in range(4)]
-    data += \
-        [rng.standard_normal((1, 2)) + np.array([-10, -10]) for _ in range(5)]
+    data += [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]
+    data += [rng.standard_normal((1, 2)) + np.array([10, 10]) for _ in range(2)]
+    data += [rng.standard_normal((1, 2)) + np.array([-10, 10]) for _ in range(3)]
+    data += [rng.standard_normal((1, 2)) + np.array([10, -10]) for _ in range(4)]
+    data += [rng.standard_normal((1, 2)) + np.array([-10, -10]) for _ in range(5)]
     data = np.array(data, dtype=dtype)
 
-    clusters_truth = [[0], [1, 2], [3, 4, 5],
-                      [6, 7, 8, 9], [10, 11, 12, 13, 14]]
+    clusters_truth = [[0], [1, 2], [3, 4, 5], [6, 7, 8, 9], [10, 11, 12, 13, 14]]
 
     # # Uncomment the following to visualize this test
     # import pylab as plt
@@ -92,10 +88,10 @@ def test_quickbundles_2D(rng):
 
     # Theoretically, using a threshold above the following value will not
     # produce expected results.
-    threshold = np.sqrt(2*(10**2))-np.sqrt(2)
+    threshold = np.sqrt(2 * (10**2)) - np.sqrt(2)
     metric = dipysmetric.SumPointwiseEuclideanMetric()
     ordering = np.arange(len(data))
-    for i in range(100):
+    for _ in range(100):
         rng.shuffle(ordering)
         clusters = quickbundles(data, metric, threshold, ordering=ordering)
 
@@ -104,16 +100,13 @@ def test_quickbundles_2D(rng):
             # Find the corresponding cluster in 'clusters_truth'
             for cluster_truth in clusters_truth:
                 if cluster_truth[0] in cluster.indices:
-                    assert_equal(sorted(cluster.indices),
-                                 sorted(cluster_truth))
+                    assert_equal(sorted(cluster.indices), sorted(cluster_truth))
 
     # Cluster each cluster again using a small threshold
     for cluster in clusters:
-        subclusters = quickbundles(data, metric, threshold=0,
-                                   ordering=cluster.indices)
+        subclusters = quickbundles(data, metric, threshold=0, ordering=cluster.indices)
         assert_equal(len(subclusters), len(cluster))
-        assert_equal(sorted(itertools.chain(*subclusters)),
-                     sorted(cluster.indices))
+        assert_equal(sorted(itertools.chain(*subclusters)), sorted(cluster.indices))
 
     # A very large threshold should produce only 1 cluster
     clusters = quickbundles(data, metric, threshold=np.inf)
@@ -125,21 +118,23 @@ def test_quickbundles_2D(rng):
     clusters = quickbundles(data, metric, threshold=0)
     assert_equal(len(clusters), len(data))
     assert_array_equal(list(map(len, clusters)), np.ones(len(data)))
-    assert_array_equal([idx for cluster in clusters
-                        for idx in cluster.indices], range(len(data)))
+    assert_array_equal(
+        [idx for cluster in clusters for idx in cluster.indices], range(len(data))
+    )
 
 
 def test_quickbundles_streamlines():
     rdata = streamline_utils.set_number_of_points(data, 10)
-    qb = QuickBundles(threshold=2*threshold)
+    qb = QuickBundles(threshold=2 * threshold)
 
     clusters = qb.cluster(rdata)
     # By default `refdata` refers to data being clustered.
     assert_equal(clusters.refdata, rdata)
     # Set `refdata` to return indices instead of actual data points.
     clusters.refdata = None
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*clusters_truth)))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth))
+    )
 
     # Cluster read-only data
     for datum in rdata:
@@ -153,13 +148,12 @@ def test_quickbundles_streamlines():
 
 
 def test_quickbundles_with_python_metric():
-
     class MDFpy(dipysmetric.Metric):
         def are_compatible(self, shape1, shape2):
             return shape1 == shape2
 
         def dist(self, features1, features2):
-            dist = np.sqrt(np.sum((features1 - features2)**2, axis=1))
+            dist = np.sqrt(np.sum((features1 - features2) ** 2, axis=1))
             dist = np.sum(dist / len(features1))
             return dist
 
@@ -172,8 +166,9 @@ def test_quickbundles_with_python_metric():
     assert_equal(clusters.refdata, rdata)
     # Set `refdata` to return indices instead of actual data points.
     clusters.refdata = None
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*clusters_truth)))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth))
+    )
 
     # Cluster read-only data
     for datum in rdata:
@@ -190,7 +185,7 @@ def test_quickbundles_with_not_order_invariant_metric():
     metric = dipysmetric.AveragePointwiseEuclideanMetric()
     qb = QuickBundles(threshold=np.inf, metric=metric)
 
-    streamline = np.arange(10*3, dtype=dtype).reshape((-1, 3))
+    streamline = np.arange(10 * 3, dtype=dtype).reshape((-1, 3))
     streamlines = [streamline, streamline[::-1]]
 
     clusters = qb.cluster(streamlines)
@@ -199,7 +194,7 @@ def test_quickbundles_with_not_order_invariant_metric():
 
 
 def test_quickbundles_memory_leaks():
-    qb = QuickBundles(threshold=2*threshold)
+    qb = QuickBundles(threshold=2 * threshold)
 
     type_name_pattern = "memoryview"
     initial_types_refcount = get_type_refcount(type_name_pattern)

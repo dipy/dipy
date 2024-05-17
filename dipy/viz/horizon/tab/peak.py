@@ -23,21 +23,20 @@ class PeaksTab(HorizonTab):
         super().__init__()
 
         self._actor = peak_actor
-        self._name = 'Peaks'
+        self._name = "Peaks"
 
         self._tab_id = 0
 
         self._actor_toggle = build_checkbox(
-            labels=[''],
-            checked_labels=[''],
-            on_change=self._toggle_actors)
+            labels=[""], checked_labels=[""], on_change=self._toggle_actors
+        )
 
         self._opacity_label, self._opacity = build_slider(
-            initial_value=1.,
-            max_value=1.,
-            text_template='{ratio:.0%}',
+            initial_value=1.0,
+            max_value=1.0,
+            text_template="{ratio:.0%}",
             on_change=self._change_opacity,
-            label='Opacity'
+            label="Opacity",
         )
 
         min_centers = self._actor.min_centers
@@ -48,11 +47,10 @@ class PeaksTab(HorizonTab):
             initial_value=cross_section[0],
             min_value=min_centers[0],
             max_value=max_centers[0],
-            text_template='{value:.0f}',
-            label='X Slice'
+            text_template="{value:.0f}",
+            label="X Slice",
         )
-        self._change_slice_x = partial(
-            self._change_slice, selected_slice=self._slice_x)
+        self._change_slice_x = partial(self._change_slice, selected_slice=self._slice_x)
         self._adjust_slice_x = partial(self._change_slice_x, sync_slice=True)
         self._slice_x.obj.on_moving_slider = self._change_slice_x
         self._slice_x.obj.on_value_changed = self._adjust_slice_x
@@ -61,11 +59,10 @@ class PeaksTab(HorizonTab):
             initial_value=cross_section[1],
             min_value=min_centers[1],
             max_value=max_centers[1],
-            text_template='{value:.0f}',
-            label='Y Slice'
+            text_template="{value:.0f}",
+            label="Y Slice",
         )
-        self._change_slice_y = partial(
-            self._change_slice, selected_slice=self._slice_y)
+        self._change_slice_y = partial(self._change_slice, selected_slice=self._slice_y)
         self._adjust_slice_y = partial(self._change_slice_y, sync_slice=True)
         self._slice_y.obj.on_moving_slider = self._change_slice_y
         self._slice_y.obj.on_value_changed = self._adjust_slice_y
@@ -74,11 +71,10 @@ class PeaksTab(HorizonTab):
             initial_value=cross_section[2],
             min_value=min_centers[2],
             max_value=max_centers[2],
-            text_template='{value:.0f}',
-            label='Z Slice'
+            text_template="{value:.0f}",
+            label="Z Slice",
         )
-        self._change_slice_z = partial(
-            self._change_slice, selected_slice=self._slice_z)
+        self._change_slice_z = partial(self._change_slice, selected_slice=self._slice_z)
         self._adjust_slice_z = partial(self._change_slice_z, sync_slice=True)
         self._slice_z.obj.on_moving_slider = self._change_slice_z
         self._slice_z.obj.on_value_changed = self._adjust_slice_z
@@ -88,53 +84,65 @@ class PeaksTab(HorizonTab):
 
         self._range_x_label, self._range_x = build_slider(
             initial_value=(low_ranges[0], high_ranges[0]),
-            min_value=low_ranges[0], max_value=high_ranges[0],
-            text_template='{value:.0f}',
-            label='X Range',
-            is_double_slider=True
+            min_value=low_ranges[0],
+            max_value=high_ranges[0],
+            text_template="{value:.0f}",
+            label="X Range",
+            is_double_slider=True,
         )
-        self._change_range_x = partial(
-            self._change_range, selected_range=self._range_x)
+        self._change_range_x = partial(self._change_range, selected_range=self._range_x)
         self._range_x.obj.on_change = self._change_range_x
 
         self._range_y_label, self._range_y = build_slider(
             initial_value=(low_ranges[1], high_ranges[1]),
-            min_value=low_ranges[1], max_value=high_ranges[1],
-            text_template='{value:.0f}',
-            label='Y Range',
-            is_double_slider=True
+            min_value=low_ranges[1],
+            max_value=high_ranges[1],
+            text_template="{value:.0f}",
+            label="Y Range",
+            is_double_slider=True,
         )
-        self._change_range_y = partial(
-            self._change_range, selected_range=self._range_y)
+        self._change_range_y = partial(self._change_range, selected_range=self._range_y)
         self._range_y.obj.on_change = self._change_range_y
 
         self._range_z_label, self._range_z = build_slider(
             initial_value=(low_ranges[2], high_ranges[2]),
-            min_value=low_ranges[2], max_value=high_ranges[2],
-            text_template='{value:.0f}',
-            label='Z Range',
-            is_double_slider=True
+            min_value=low_ranges[2],
+            max_value=high_ranges[2],
+            text_template="{value:.0f}",
+            label="Z Range",
+            is_double_slider=True,
         )
-        self._change_range_z = partial(
-            self._change_range, selected_range=self._range_z)
+        self._change_range_z = partial(self._change_range, selected_range=self._range_z)
         self._range_z.obj.on_change = self._change_range_z
 
-        self._view_mode_label = build_label(text='View Mode')
+        self._view_mode_label = build_label(text="View Mode")
 
-        self._view_modes = ['Cross section', 'Range']
+        self._view_modes = ["Cross section", "Range"]
         self._view_mode_toggler = build_radio_button(
-            self._view_modes, [self._view_modes[0]],
-            padding=1.5, on_change=self._toggle_view_mode)
+            self._view_modes,
+            [self._view_modes[0]],
+            padding=1.5,
+            on_change=self._toggle_view_mode,
+        )
 
         self._register_elements(
-            self._opacity_label, self._opacity, self._actor_toggle,
-            self._slice_x_label, self._slice_x,
-            self._slice_y_label, self._slice_y,
-            self._slice_z_label, self._slice_z,
-            self._range_x_label, self._range_x,
-            self._range_y_label, self._range_y,
-            self._range_z_label, self._range_z,
-            self._view_mode_label, self._view_mode_toggler,
+            self._opacity_label,
+            self._opacity,
+            self._actor_toggle,
+            self._slice_x_label,
+            self._slice_x,
+            self._slice_y_label,
+            self._slice_y,
+            self._slice_z_label,
+            self._slice_z,
+            self._range_x_label,
+            self._range_x,
+            self._range_y_label,
+            self._range_y,
+            self._range_z_label,
+            self._range_z,
+            self._view_mode_label,
+            self._view_mode_toggler,
         )
 
     def _change_opacity(self, slider):
@@ -160,15 +168,19 @@ class PeaksTab(HorizonTab):
             Selected horizon ui element intended to change.
         """
         selected_range.selected_value = (
-            slider.left_disk_value, slider.right_disk_value)
+            slider.left_disk_value,
+            slider.right_disk_value,
+        )
         self._actor.display_extent(
-            self._range_x.selected_value[0], self._range_x.selected_value[1],
-            self._range_y.selected_value[0], self._range_y.selected_value[1],
-            self._range_z.selected_value[0], self._range_z.selected_value[1],
+            self._range_x.selected_value[0],
+            self._range_x.selected_value[1],
+            self._range_y.selected_value[0],
+            self._range_y.selected_value[1],
+            self._range_z.selected_value[0],
+            self._range_z.selected_value[1],
         )
 
-    def _change_slice(
-            self, slider, selected_slice, sync_slice=False):
+    def _change_slice(self, slider, selected_slice, sync_slice=False):
         """Update the slice value of peaks actor by adjusting the slider. Only
         usable in Cross Section view mode.
 
@@ -201,51 +213,66 @@ class PeaksTab(HorizonTab):
             )
 
     def _show_cross_section(self):
-        """Show Cross Section view mode. Hide the Range sliders and labels.
-        """
+        """Show Cross Section view mode. Hide the Range sliders and labels."""
         self.hide(
-            self._range_x_label, self._range_x,
-            self._range_y_label, self._range_y,
-            self._range_z_label, self._range_z,
+            self._range_x_label,
+            self._range_x,
+            self._range_y_label,
+            self._range_y,
+            self._range_z_label,
+            self._range_z,
         )
         self.show(
-            self._slice_x_label, self._slice_x,
-            self._slice_y_label, self._slice_y,
-            self._slice_z_label, self._slice_z,
+            self._slice_x_label,
+            self._slice_x,
+            self._slice_y_label,
+            self._slice_y,
+            self._slice_z_label,
+            self._slice_z,
         )
         self._change_slice(self._slice_x.obj, self._slice_x, sync_slice=True)
 
     def _show_range(self):
-        """Show Range view mode. Hide Cross Section sliders and labels.
-        """
+        """Show Range view mode. Hide Cross Section sliders and labels."""
         self.hide(
-            self._slice_x_label, self._slice_x,
-            self._slice_y_label, self._slice_y,
-            self._slice_z_label, self._slice_z,
+            self._slice_x_label,
+            self._slice_x,
+            self._slice_y_label,
+            self._slice_y,
+            self._slice_z_label,
+            self._slice_z,
         )
         self.show(
-            self._range_x_label, self._range_x,
-            self._range_y_label, self._range_y,
-            self._range_z_label, self._range_z,
+            self._range_x_label,
+            self._range_x,
+            self._range_y_label,
+            self._range_y,
+            self._range_z_label,
+            self._range_z,
         )
 
     def _toggle_view_mode(self, radio):
         self._view_mode_toggler.selected_value = radio.checked_labels
         if radio.checked_labels[0] == self._view_modes[0]:
             self._actor.display_cross_section(
-                self._actor.cross_section[0], self._actor.cross_section[1],
-                self._actor.cross_section[2])
+                self._actor.cross_section[0],
+                self._actor.cross_section[1],
+                self._actor.cross_section[2],
+            )
             self._show_cross_section()
         else:
             self._actor.display_extent(
-                self._actor.low_ranges[0], self._actor.high_ranges[0],
-                self._actor.low_ranges[1], self._actor.high_ranges[1],
-                self._actor.low_ranges[2], self._actor.high_ranges[2])
+                self._actor.low_ranges[0],
+                self._actor.high_ranges[0],
+                self._actor.low_ranges[1],
+                self._actor.high_ranges[1],
+                self._actor.low_ranges[2],
+                self._actor.high_ranges[2],
+            )
             self._show_range()
 
     def on_tab_selected(self):
-        """Trigger when tab becomes active.
-        """
+        """Trigger when tab becomes active."""
         super().on_tab_selected()
         self._toggle_view_mode(self._view_mode_toggler.obj)
 
@@ -280,38 +307,39 @@ class PeaksTab(HorizonTab):
         """
         self._tab_id = tab_id
 
-        x_pos = .02
-        self._actor_toggle.position = (x_pos, .85)
+        x_pos = 0.02
+        self._actor_toggle.position = (x_pos, 0.85)
 
-        x_pos = .04
-        self._opacity_label.position = (x_pos, .85)
-        self._slice_x_label.position = (x_pos, .62)
-        self._slice_y_label.position = (x_pos, .38)
-        self._slice_z_label.position = (x_pos, .15)
-        self._range_x_label.position = (x_pos, .62)
-        self._range_y_label.position = (x_pos, .38)
-        self._range_z_label.position = (x_pos, .15)
+        x_pos = 0.04
+        self._opacity_label.position = (x_pos, 0.85)
+        self._slice_x_label.position = (x_pos, 0.62)
+        self._slice_y_label.position = (x_pos, 0.38)
+        self._slice_z_label.position = (x_pos, 0.15)
+        self._range_x_label.position = (x_pos, 0.62)
+        self._range_y_label.position = (x_pos, 0.38)
+        self._range_z_label.position = (x_pos, 0.15)
 
-        x_pos = .10
-        self._opacity.position = (x_pos, .85)
-        self._slice_x.position = (x_pos, .62)
-        self._slice_y.position = (x_pos, .38)
-        self._slice_z.position = (x_pos, .15)
+        x_pos = 0.10
+        self._opacity.position = (x_pos, 0.85)
+        self._slice_x.position = (x_pos, 0.62)
+        self._slice_y.position = (x_pos, 0.38)
+        self._slice_z.position = (x_pos, 0.15)
 
-        x_pos = .105
-        self._range_x.position = (x_pos, .66)
-        self._range_y.position = (x_pos, .42)
-        self._range_z.position = (x_pos, .19)
+        x_pos = 0.105
+        self._range_x.position = (x_pos, 0.66)
+        self._range_y.position = (x_pos, 0.42)
+        self._range_z.position = (x_pos, 0.19)
 
-        x_pos = .52
-        self._view_mode_label.position = (x_pos, .85)
+        x_pos = 0.52
+        self._view_mode_label.position = (x_pos, 0.85)
 
-        x_pos = .62
-        self._view_mode_toggler.position = (x_pos, .80)
+        x_pos = 0.62
+        self._view_mode_toggler.position = (x_pos, 0.80)
 
         cross_section = self._actor.cross_section
         self._actor.display_cross_section(
-            cross_section[0], cross_section[1], cross_section[2])
+            cross_section[0], cross_section[1], cross_section[2]
+        )
 
     @property
     def name(self):

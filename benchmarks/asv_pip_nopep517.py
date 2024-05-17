@@ -15,11 +15,12 @@ It remains licensed as the rest of NUMPY (BSD 3-Clause as of November 2023).
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 """
+
 import subprocess
 import sys
 
 # pip ignores '--global-option' when pep517 is enabled therefore we disable it.
-cmd = [sys.executable, '-mpip', 'wheel', '--no-use-pep517']
+cmd = [sys.executable, "-mpip", "wheel", "--no-use-pep517"]
 try:
     output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
 except Exception as e:

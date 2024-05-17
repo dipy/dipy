@@ -24,18 +24,40 @@ registration that can be used to detect a failing component.
 DEBUG : print as much information as possible to isolate the cause of a bug.
 """
 
-from dipy.align._public import (syn_registration, register_dwi_to_template, # noqa
-                                write_mapping, read_mapping, resample,
-                                center_of_mass, translation,
-                                rigid_isoscaling, rigid_scaling,
-                                rigid, affine, motion_correction,
-                                affine_registration, register_series,
-                                register_dwi_series, streamline_registration)
+from dipy.align._public import (
+    affine,
+    affine_registration,
+    center_of_mass,
+    motion_correction,
+    read_mapping,
+    register_dwi_series,
+    register_dwi_to_template,  # noqa
+    register_series,
+    resample,
+    rigid,
+    rigid_isoscaling,
+    rigid_scaling,
+    streamline_registration,
+    syn_registration,
+    translation,
+    write_mapping,
+)
 
-__all__ = ["syn_registration", "register_dwi_to_template",
-           "write_mapping", "read_mapping", "resample",
-           "center_of_mass", "translation",
-           "rigid_isoscaling", "rigid_scaling",
-           "rigid", "affine", "motion_correction",
-           "affine_registration", "register_series",
-           "register_dwi_series", "streamline_registration"]
+__all__ = [
+    "syn_registration",
+    "register_dwi_to_template",
+    "write_mapping",
+    "read_mapping",
+    "resample",
+    "center_of_mass",
+    "translation",
+    "rigid_isoscaling",
+    "rigid_scaling",
+    "rigid",
+    "affine",
+    "motion_correction",
+    "affine_registration",
+    "register_series",
+    "register_dwi_series",
+    "streamline_registration",
+]

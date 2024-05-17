@@ -54,8 +54,7 @@ np.random.seed(2014)
 # semiovale (cso), a part of the brain known to contain multiple crossing
 # white matter fiber populations.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(
-    'stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
@@ -95,19 +94,39 @@ csd_cso = xval.kfold_xval(csd_model, cso_vox, 2, response, rng=rng)
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches([12, 6])
-ax[0].plot(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0], 'o',
-           color='b', label='DTI in CC')
-ax[0].plot(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0], 'o',
-           color='r', label='CSD in CC')
-ax[1].plot(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0], 'o',
-           color='b', label='DTI in CSO')
-ax[1].plot(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0], 'o',
-           color='r', label='CSD in CSO')
-ax[0].legend(loc='upper left')
-ax[1].legend(loc='upper left')
+ax[0].plot(
+    cc_vox[gtab.b0s_mask == 0],
+    dti_cc[gtab.b0s_mask == 0],
+    "o",
+    color="b",
+    label="DTI in CC",
+)
+ax[0].plot(
+    cc_vox[gtab.b0s_mask == 0],
+    csd_cc[gtab.b0s_mask == 0],
+    "o",
+    color="r",
+    label="CSD in CC",
+)
+ax[1].plot(
+    cso_vox[gtab.b0s_mask == 0],
+    dti_cso[gtab.b0s_mask == 0],
+    "o",
+    color="b",
+    label="DTI in CSO",
+)
+ax[1].plot(
+    cso_vox[gtab.b0s_mask == 0],
+    csd_cso[gtab.b0s_mask == 0],
+    "o",
+    color="r",
+    label="CSD in CSO",
+)
+ax[0].legend(loc="upper left")
+ax[1].legend(loc="upper left")
 for this_ax in ax:
-    this_ax.set_xlabel('Data (relative to S0)')
-    this_ax.set_ylabel('Model prediction (relative to S0)')
+    this_ax.set_xlabel("Data (relative to S0)")
+    this_ax.set_ylabel("Model prediction (relative to S0)")
 fig.savefig("model_predictions.png")
 
 ###############################################################################
@@ -120,22 +139,28 @@ fig.savefig("model_predictions.png")
 # We can also quantify the goodness of fit of the models by calculating an
 # R-squared score:
 
-cc_dti_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
-                           dti_cc[gtab.b0s_mask == 0])[0]**2
-cc_csd_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
-                           csd_cc[gtab.b0s_mask == 0])[0]**2
-cso_dti_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
-                            dti_cso[gtab.b0s_mask == 0])[0]**2
-cso_csd_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
-                            csd_cso[gtab.b0s_mask == 0])[0]**2
+cc_dti_r2 = (
+    stats.pearsonr(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0])[0] ** 2
+)
+cc_csd_r2 = (
+    stats.pearsonr(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0])[0] ** 2
+)
+cso_dti_r2 = (
+    stats.pearsonr(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0])[0] ** 2
+)
+cso_csd_r2 = (
+    stats.pearsonr(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0])[0] ** 2
+)
 
-print("Corpus callosum\n"
-      "DTI R2 : %s\n"
-      "CSD R2 : %s\n"
-      "\n"
-      "Centrum Semiovale\n"
-      "DTI R2 : %s\n"
-      "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
+print(
+    "Corpus callosum\n"
+    "DTI R2 : %s\n"
+    "CSD R2 : %s\n"
+    "\n"
+    "Centrum Semiovale\n"
+    "DTI R2 : %s\n"
+    "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2)
+)
 
 ###############################################################################
 # As you can see, DTI is a pretty good model for describing the signal in the

@@ -40,7 +40,7 @@ from dipy.segment.mask import median_otsu
 # multi-shell dataset which was kindly provided by Hansen and Jespersen
 # (more details about the data are provided in their paper [Hansen2016]_).
 
-fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
@@ -52,8 +52,9 @@ gtab = gradient_table(bvals, bvecs)
 # :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`).
 
 # data masking
-maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
-                             autocrop=False, dilate=1)
+maskdata, mask = median_otsu(
+    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
+)
 
 # Smoothing
 fwhm = 1.25
@@ -85,7 +86,7 @@ dkimodel = dki.DiffusionKurtosisModel(gtab)
 dkifit = dkimodel.fit(data_smooth, mask=mask)
 
 # Initialize well aligned mask with ones
-well_aligned_mask = np.ones(data.shape[:-1], dtype='bool')
+well_aligned_mask = np.ones(data.shape[:-1], dtype="bool")
 
 # Diffusion coefficient of linearity (cl) has to be larger than 0.4, thus
 # we exclude voxels with cl < 0.4.
@@ -128,25 +129,40 @@ MK = dkifit.mk(0, 3)
 
 axial_slice = 9
 
-fig1, ax = plt.subplots(1, 2, figsize=(9, 4),
-                        subplot_kw={'xticks': [], 'yticks': []})
+fig1, ax = plt.subplots(1, 2, figsize=(9, 4), subplot_kw={"xticks": [], "yticks": []})
 
 AWF[AWF == 0] = np.nan
 TORT[TORT == 0] = np.nan
 
-ax[0].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray,
-             interpolation='nearest', origin='lower')
-im0 = ax[0].imshow(AWF[:, :, axial_slice].T, cmap=plt.cm.Reds, alpha=0.9,
-                   vmin=0.3, vmax=0.7, interpolation='nearest', origin='lower')
+ax[0].imshow(
+    MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation="nearest", origin="lower"
+)
+im0 = ax[0].imshow(
+    AWF[:, :, axial_slice].T,
+    cmap=plt.cm.Reds,
+    alpha=0.9,
+    vmin=0.3,
+    vmax=0.7,
+    interpolation="nearest",
+    origin="lower",
+)
 fig1.colorbar(im0, ax=ax.flat[0])
 
-ax[1].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray,
-             interpolation='nearest', origin='lower')
-im1 = ax[1].imshow(TORT[:, :, axial_slice].T, cmap=plt.cm.Blues, alpha=0.9,
-                   vmin=2, vmax=6, interpolation='nearest', origin='lower')
+ax[1].imshow(
+    MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation="nearest", origin="lower"
+)
+im1 = ax[1].imshow(
+    TORT[:, :, axial_slice].T,
+    cmap=plt.cm.Blues,
+    alpha=0.9,
+    vmin=2,
+    vmax=6,
+    interpolation="nearest",
+    origin="lower",
+)
 fig1.colorbar(im1, ax=ax.flat[1])
 
-fig1.savefig('Kurtosis_Microstructural_measures.png')
+fig1.savefig("Kurtosis_Microstructural_measures.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -102,7 +102,6 @@ def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
         binary_mask = mask > 0
 
     for from_index, to_index in neighbor_indices:
-
         # Flatten the dwi images
         if mask is not None:
             flat_from_image = dwi_data[..., from_index][binary_mask]
@@ -111,7 +110,6 @@ def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
             flat_from_image = dwi_data[..., from_index].flatten()
             flat_to_image = dwi_data[..., to_index].flatten()
 
-        neighbor_correlations.append(
-            np.corrcoef(flat_from_image, flat_to_image)[0, 1])
+        neighbor_correlations.append(np.corrcoef(flat_from_image, flat_to_image)[0, 1])
 
     return np.mean(neighbor_correlations)

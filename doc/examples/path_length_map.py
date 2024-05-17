@@ -43,8 +43,8 @@ from dipy.viz import actor, colormap as cmap, window
 # :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
 # and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -55,12 +55,16 @@ gtab = gradient_table(bvals, bvecs)
 white_matter = (labels == 1) | (labels == 2)
 
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
-csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                             relative_peak_threshold=.8,
-                             min_separation_angle=45,
-                             mask=white_matter)
+csa_peaks = peaks_from_model(
+    csa_model,
+    data,
+    default_sphere,
+    relative_peak_threshold=0.8,
+    min_separation_angle=45,
+    mask=white_matter,
+)
 
-stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 
 ###############################################################################
 # We will use an anatomically-based corpus callosum ROI as our seed mask to
@@ -73,8 +77,7 @@ seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Make a streamline bundle model of the corpus callosum ROI connectivity
-streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
-                            step_size=2)
+streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine, step_size=2)
 streamlines = Streamlines(streamlines)
 
 # Visualize the streamlines and the Path Length Map base ROI
@@ -83,8 +86,9 @@ streamlines = Streamlines(streamlines)
 streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
-seedroi_actor = actor.contour_from_roi(seed_mask, affine,
-                                       surface_color, surface_opacity)
+seedroi_actor = actor.contour_from_roi(
+    seed_mask, affine, surface_color, surface_opacity
+)
 
 scene = window.Scene()
 scene.add(streamlines_actor)
@@ -98,8 +102,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, n_frames=1, out_path='plm_roi_sls.png',
-              size=(800, 800))
+window.record(scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -126,22 +129,24 @@ path_length_map_base_roi = seed_mask
 wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 
 # save the WMPL as a nifti
-save_nifti('example_cc_path_length_map.nii.gz', wmpl.astype(np.float32),
-           affine)
+save_nifti("example_cc_path_length_map.nii.gz", wmpl.astype(np.float32), affine)
 
 # get the T1 to show anatomical context of the WMPL
-t1_fname = get_fnames('stanford_t1')
+t1_fname = get_fnames("stanford_t1")
 t1_data = load_nifti_data(t1_fname)
 
 
 fig = mpl.pyplot.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
-ax = AxesGrid(fig, 111,
-              nrows_ncols=(1, 3),
-              cbar_location="right",
-              cbar_mode="single",
-              cbar_size="10%",
-              cbar_pad="5%")
+ax = AxesGrid(
+    fig,
+    111,
+    nrows_ncols=(1, 3),
+    cbar_location="right",
+    cbar_mode="single",
+    cbar_size="10%",
+    cbar_pad="5%",
+)
 
 ###############################################################################
 # We will mask our WMPL to ignore values less than zero because negative
@@ -152,16 +157,13 @@ wmpl_show = np.ma.masked_where(wmpl < 0, wmpl)
 
 slx, sly, slz = [60, 50, 35]
 ax[0].matshow(np.rot90(t1_data[:, slx, :]), cmap=mpl.cm.bone)
-im = ax[0].matshow(np.rot90(wmpl_show[:, slx, :]),
-                   cmap=mpl.cm.cool, vmin=0, vmax=80)
+im = ax[0].matshow(np.rot90(wmpl_show[:, slx, :]), cmap=mpl.cm.cool, vmin=0, vmax=80)
 
 ax[1].matshow(np.rot90(t1_data[:, sly, :]), cmap=mpl.cm.bone)
-im = ax[1].matshow(np.rot90(wmpl_show[:, sly, :]), cmap=mpl.cm.cool,
-                   vmin=0, vmax=80)
+im = ax[1].matshow(np.rot90(wmpl_show[:, sly, :]), cmap=mpl.cm.cool, vmin=0, vmax=80)
 
 ax[2].matshow(np.rot90(t1_data[:, slz, :]), cmap=mpl.cm.bone)
-im = ax[2].matshow(np.rot90(wmpl_show[:, slz, :]),
-                   cmap=mpl.cm.cool, vmin=0, vmax=80)
+im = ax[2].matshow(np.rot90(wmpl_show[:, slz, :]), cmap=mpl.cm.cool, vmin=0, vmax=80)
 
 ax.cbar_axes[0].colorbar(im)
 for lax in ax:

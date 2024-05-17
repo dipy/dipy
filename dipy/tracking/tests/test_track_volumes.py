@@ -12,12 +12,12 @@ def tracks_to_expected(tracks, vol_dims):
     for t_no, t in enumerate(tracks):
         u_ps = set()
         ti = np.round(t).astype(np.int32)
-        for p_no, p in enumerate(ti):
+        for p in ti:
             if np.any(p < 0):
                 p[p < 0] = 0
             too_high = p >= vol_dims
             if np.any(too_high):
-                p[too_high] = vol_dims[too_high]-1
+                p[too_high] = vol_dims[too_high] - 1
             p = tuple(p)
             if p in u_ps:
                 continue
@@ -34,8 +34,7 @@ def tracks_to_expected(tracks, vol_dims):
 def test_track_volumes():
     # simplest case
     vol_dims = (1, 2, 3)
-    tracks = ([[0, 0, 0],
-               [0, 1, 1]],)
+    tracks = ([[0, 0, 0], [0, 1, 1]],)
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
     tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])
@@ -47,15 +46,10 @@ def test_track_volumes():
 
     # non-unique points, non-integer points, points outside
     vol_dims = (5, 10, 15)
-    tracks = ([[-1, 0, 1],
-               [0, 0.1, 0],
-               [1, 1, 1],
-               [1, 1, 1],
-               [2, 2, 2]],
-              [[0.7, 0, 0],
-               [1, 1, 1],
-               [1, 2, 2],
-               [1, 11, 0]])
+    tracks = (
+        [[-1, 0, 1], [0, 0.1, 0], [1, 1, 1], [1, 1, 1], [2, 2, 2]],
+        [[0.7, 0, 0], [1, 1, 1], [1, 2, 2], [1, 11, 0]],
+    )
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
     tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])

@@ -33,8 +33,8 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -42,7 +42,7 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 
-seed_mask = (labels == 2)
+seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
@@ -59,7 +59,7 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
-stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(gfa, 0.25)
 
 ###############################################################################
 # Next, we need to set up our two direction getters
@@ -68,10 +68,12 @@ stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 # Example #1: Bootstrap direction getter with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-boot_dg_csd = BootDirectionGetter.from_data(data, csd_model, max_angle=30.,
-                                            sphere=small_sphere)
-boot_streamline_generator = LocalTracking(boot_dg_csd, stopping_criterion,
-                                          seeds, affine, step_size=.5)
+boot_dg_csd = BootDirectionGetter.from_data(
+    data, csd_model, max_angle=30.0, sphere=small_sphere
+)
+boot_streamline_generator = LocalTracking(
+    boot_dg_csd, stopping_criterion, seeds, affine, step_size=0.5
+)
 streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_bootstrap_dg.trk")
@@ -79,8 +81,7 @@ save_trk(sft, "tractogram_bootstrap_dg.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_bootstrap_dg.png',
-                  size=(800, 800))
+    window.record(scene, out_path="tractogram_bootstrap_dg.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -100,10 +101,10 @@ if has_fury:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pmf = csd_fit.odf(small_sphere).clip(min=0)
-peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.,
-                                              sphere=small_sphere)
-peak_streamline_generator = LocalTracking(peak_dg, stopping_criterion, seeds,
-                                          affine, step_size=.5)
+peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.0, sphere=small_sphere)
+peak_streamline_generator = LocalTracking(
+    peak_dg, stopping_criterion, seeds, affine, step_size=0.5
+)
 streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "closest_peak_dg_CSD.trk")
@@ -111,8 +112,7 @@ save_trk(sft, "closest_peak_dg_CSD.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_closest_peak_dg.png',
-                  size=(800, 800))
+    window.record(scene, out_path="tractogram_closest_peak_dg.png", size=(800, 800))
     if interactive:
         window.show(scene)
 

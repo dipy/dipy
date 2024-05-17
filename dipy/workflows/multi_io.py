@@ -10,6 +10,7 @@ from dipy.workflows.base import get_args_default
 
 def common_start(sa, sb):
     """Return the longest common substring from the beginning of sa and sb."""
+
     def _iter():
         for a, b in zip(sa, sb):
             if a == b:
@@ -17,15 +18,16 @@ def common_start(sa, sb):
             else:
                 return
 
-    return ''.join(_iter())
+    return "".join(_iter())
 
 
 def slash_to_under(dir_str):
-    return ''.join(dir_str.replace('/', '_'))
+    return "".join(dir_str.replace("/", "_"))
 
 
-def connect_output_paths(inputs, out_dir, out_files,
-                         output_strategy='absolute', mix_names=True):
+def connect_output_paths(
+    inputs, out_dir, out_files, output_strategy="absolute", mix_names=True
+):
     """Generate a list of output files paths based on input files and
     output strategies.
 
@@ -62,7 +64,7 @@ def connect_output_paths(inputs, out_dir, out_files,
     max_size = np.max(sizes_of_inputs)
     min_size = np.min(sizes_of_inputs)
     if min_size > 1 and min_size != max_size:
-        raise ImportError('Size of input issue')
+        raise ImportError("Size of input issue")
 
     elif min_size == 1:
         for i, sz in enumerate(sizes_of_inputs):
@@ -72,18 +74,17 @@ def connect_output_paths(inputs, out_dir, out_files,
     if mix_names:
         mixing_prefixes = concatenate_inputs(inputs)
     else:
-        mixing_prefixes = [''] * len(inputs[0])
+        mixing_prefixes = [""] * len(inputs[0])
 
-    for (mix_pref, inp) in zip(mixing_prefixes, inputs[0]):
+    for mix_pref, inp in zip(mixing_prefixes, inputs[0]):
         inp_dirname = os.path.dirname(inp)
-        if output_strategy == 'prepend':
+        if output_strategy == "prepend":
             if os.path.isabs(out_dir):
                 dname = out_dir + inp_dirname
             if not os.path.isabs(out_dir):
-                dname = os.path.join(
-                    os.getcwd(), out_dir + inp_dirname)
+                dname = os.path.join(os.getcwd(), out_dir + inp_dirname)
 
-        elif output_strategy == 'append':
+        elif output_strategy == "append":
             dname = os.path.join(inp_dirname, out_dir)
 
         else:
@@ -102,25 +103,26 @@ def concatenate_inputs(multi_inputs):
     """Concatenate list of inputs."""
     mixing_names = []
     for inps in zip(*multi_inputs):
-        mixing_name = ''
-        for i, inp in enumerate(inps):
-            mixing_name += basename_without_extension(inp) + '_'
+        mixing_name = ""
+        for inp in inps:
+            mixing_name += basename_without_extension(inp) + "_"
 
-        mixing_names.append(mixing_name + '_')
+        mixing_names.append(mixing_name + "_")
     return mixing_names
 
 
 def basename_without_extension(fname):
     base = os.path.basename(fname)
-    result = base.split('.')[0]
-    if result[-4:] == '.nii':
-        result = result.split('.')[0]
+    result = base.split(".")[0]
+    if result[-4:] == ".nii":
+        result = result.split(".")[0]
 
     return result
 
 
-def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
-                mix_names=False, out_keys=None):
+def io_iterator(
+    inputs, out_dir, fnames, output_strategy="absolute", mix_names=False, out_keys=None
+):
     """Create an IOIterator from the parameters.
 
     Parameters
@@ -154,7 +156,7 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
+def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
     """Create an IOIterator using introspection.
 
     Parameters
@@ -174,8 +176,8 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
 
     """
     args, _, _, values = inspect.getargvalues(frame)
-    args.remove('self')
-    del values['self']
+    args.remove("self")
+    del values["self"]
 
     spargs, defaults = get_args_default(fnc)
 
@@ -185,7 +187,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
 
     inputs = []
     outputs = []
-    out_dir = ''
+    out_dir = ""
 
     # inputs
     for arv in args[:split_at]:
@@ -194,14 +196,15 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     # defaults
     out_keys = []
     for arv in args[split_at:]:
-        if arv == 'out_dir':
+        if arv == "out_dir":
             out_dir = values[arv]
-        elif 'out_' in arv:
+        elif "out_" in arv:
             out_keys.append(arv)
             outputs.append(values[arv])
 
-    return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names,
-                       out_keys=out_keys)
+    return io_iterator(
+        inputs, out_dir, outputs, output_strategy, mix_names, out_keys=out_keys
+    )
 
 
 class IOIterator:
@@ -213,7 +216,7 @@ class IOIterator:
     inputs.
     """
 
-    def __init__(self, output_strategy='absolute', mix_names=False):
+    def __init__(self, output_strategy="absolute", mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
         self.inputs = []
@@ -223,9 +226,9 @@ class IOIterator:
         self.file_existence_check(args)
         self.input_args = list(args)
         for inp in self.input_args:
-            if type(inp) == str:
+            if isinstance(inp, str):
                 self.inputs.append(sorted(glob(inp)))
-            if type(inp) == list and all(isinstance(s, str) for s in inp):
+            if isinstance(inp, list) and all(isinstance(s, str) for s in inp):
                 nested = [sorted(glob(i)) for i in inp if isinstance(i, str)]
                 self.inputs.append(list(itertools.chain.from_iterable(nested)))
 
@@ -245,18 +248,19 @@ class IOIterator:
                 self.out_dir,
                 self.out_fnames,
                 self.output_strategy,
-                self.mix_names)
+                self.mix_names,
+            )
 
             self.create_directories()
 
         else:
-            raise ImportError('No inputs')
+            raise ImportError("No inputs")
 
     def create_directories(self):
         for outputs in self.outputs:
             for output in outputs:
                 directory = os.path.dirname(output)
-                if not (directory == '' or os.path.exists(directory)):
+                if not (directory == "" or os.path.exists(directory)):
                     os.makedirs(directory)
 
     def __iter__(self):
@@ -270,15 +274,13 @@ class IOIterator:
                 yield i_o
 
     def file_existence_check(self, args):
-
         input_args = []
         for fname in args:
             if isinstance(fname, str):
                 input_args.append(fname)
             # unpack variable string
-            if isinstance(fname, list) and all(isinstance(s, str)
-                                               for s in fname):
-                input_args += [f for f in fname]
+            if isinstance(fname, list) and all(isinstance(s, str) for s in fname):
+                input_args += fname
         for path in input_args:
             if len(glob(path)) == 0:
-                raise OSError('File not found: ' + path)
+                raise OSError("File not found: " + path)

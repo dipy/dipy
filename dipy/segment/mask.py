@@ -14,7 +14,7 @@ from scipy.ndimage import binary_dilation, generate_binary_structure
 
 
 def multi_median(data, median_radius, numpass):
-    """ Applies median filter multiple times on input data.
+    """Applies median filter multiple times on input data.
 
     Parameters
     ----------
@@ -39,14 +39,14 @@ def multi_median(data, median_radius, numpass):
 
     # Multi pass
     output = np.empty_like(data)
-    for i in range(0, numpass):
+    for _ in range(0, numpass):
         median_filter(data, medarr, output=output)
         data, output = output, data
     return data
 
 
 def applymask(vol, mask):
-    """ Mask vol with mask.
+    """Mask vol with mask.
 
     Parameters
     ----------
@@ -87,13 +87,16 @@ def bounding_box(vol):
     """
     # Find bounds on first dimension
     temp = vol
-    for i in range(vol.ndim - 1):
+    for _ in range(vol.ndim - 1):
         temp = temp.any(-1)
     mins = [temp.argmax()]
     maxs = [len(temp) - temp[::-1].argmax()]
     # Check that vol is not all 0
     if mins[0] == 0 and temp[0] == 0:
-        warn('No data found in volume to bound. Returning empty bounding box.')
+        warn(
+            "No data found in volume to bound. Returning empty bounding box.",
+            stacklevel=2,
+        )
         return [0] * vol.ndim, [0] * vol.ndim
     # Find bounds on remaining dimensions
     if vol.ndim > 1:
@@ -123,8 +126,9 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
-                autocrop=False, dilate=None):
+def median_otsu(
+    input_volume, vol_idx=None, median_radius=4, numpass=4, autocrop=False, dilate=None
+):
     """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an
@@ -260,9 +264,7 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     cfa = color_fa(FA, tensor_fit.evecs)
     roi = np.asarray(roi, dtype=bool)
 
-    include = ((cfa >= threshold[0::2]) &
-               (cfa <= threshold[1::2]) &
-               roi[..., None])
+    include = (cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]
     mask = np.all(include, axis=-1)
 
     if return_cfa:
@@ -294,8 +296,7 @@ def clean_cc_mask(mask):
     # Flood fill algorithm to find contiguous regions.
     labels, numL = label(mask)
 
-    volumes = [len(labels[np.where(labels == l_idx+1)])
-               for l_idx in np.arange(numL)]
+    volumes = [len(labels[np.where(labels == l_idx + 1)]) for l_idx in np.arange(numL)]
     biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
     new_cc_mask[np.where(labels == biggest_vol)] = 1
 

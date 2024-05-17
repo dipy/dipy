@@ -46,12 +46,12 @@ The DKI model expresses the diffusion-weighted signal as:
 
     S(n,b)=S_{0}e^{-bD(n)+\\frac{1}{6}b^{2}D(n)^{2}K(n)}
 
-where $\mathbf{b}$ is the applied diffusion weighting (which is dependent on
+where $\\mathbf{b}$ is the applied diffusion weighting (which is dependent on
 the measurement parameters), $S_0$ is the signal in the absence of diffusion
-gradient sensitization, $\mathbf{D(n)}$ is the value of diffusion along
-direction $\mathbf{n}$, and $\mathbf{K(n)}$ is the value of kurtosis along
-direction $\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
-$\mathbf{K(n)}$ can be related to the diffusion tensor (DT) and kurtosis tensor
+gradient sensitization, $\\mathbf{D(n)}$ is the value of diffusion along
+direction $\\mathbf{n}$, and $\\mathbf{K(n)}$ is the value of kurtosis along
+direction $\\mathbf{n}$. The directional diffusion $\\mathbf{D(n)}$ and kurtosis
+$\\mathbf{K(n)}$ can be related to the diffusion tensor (DT) and kurtosis tensor
 (KT) using the following equations:
 
 .. math::
@@ -105,7 +105,7 @@ from dipy.viz.plotting import compare_maps
 # provided in their paper [Hansen2016]_). The total size of the downloaded
 # data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
@@ -138,8 +138,9 @@ gtab = gradient_table(bvals[bval_sel == 1], bvecs[bval_sel == 1])
 # compute a brain mask to avoid unnecessary calculations on the background
 # of the image.
 
-datamask, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
-                             autocrop=False, dilate=1)
+datamask, mask = median_otsu(
+    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
+)
 
 ###############################################################################
 # Since the diffusion kurtosis model involves the estimation of a large number
@@ -191,11 +192,16 @@ tenmodel = dti.TensorModel(gtab)
 tenfit = tenmodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 fits = [tenfit, dkifit]
-maps = ['fa', 'md', 'rd', 'ad']
-fit_labels = ['DTI', 'DKI']
-map_kwargs = [{'vmax': 0.7}, {'vmax': 2e-3}, {'vmax': 2e-3}, {'vmax': 2e-3}]
-compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
-             filename='Diffusion_tensor_measures_from_DTI_and_DKI.png')
+maps = ["fa", "md", "rd", "ad"]
+fit_labels = ["DTI", "DKI"]
+map_kwargs = [{"vmax": 0.7}, {"vmax": 2e-3}, {"vmax": 2e-3}, {"vmax": 2e-3}]
+compare_maps(
+    fits,
+    maps,
+    fit_labels=fit_labels,
+    map_kwargs=map_kwargs,
+    filename="Diffusion_tensor_measures_from_DTI_and_DKI.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -212,10 +218,14 @@ compare_maps(fits, maps, fit_labels=fit_labels, map_kwargs=map_kwargs,
 # instance can be used to estimate the non-Gaussian measures of mean kurtosis
 # (MK), the radial kurtosis (RK) and the axial kurtosis (AK).
 
-maps = ['mk', 'rk', 'ak']
-compare_maps([dkifit], maps, fit_labels=['DKI'],
-             map_kwargs={'vmin': 0, 'vmax': 1.5},
-             filename='DKI_standard_measures.png')
+maps = ["mk", "rk", "ak"]
+compare_maps(
+    [dkifit],
+    maps,
+    fit_labels=["DKI"],
+    map_kwargs={"vmin": 0, "vmax": 1.5},
+    filename="DKI_standard_measures.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -292,10 +302,17 @@ compare_maps([dkifit], maps, fit_labels=['DKI'],
 # the FA measures from the diffusion tensor.
 # These measures are computed and illustrated below:
 
-compare_maps([dkifit], ['mkt', 'rtk', 'kfa'], fit_labels=['DKI'],
-             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1.5},
-                         {'vmin': 0, 'vmax': 1}],
-             filename='Alternative_DKI_metrics.png')
+compare_maps(
+    [dkifit],
+    ["mkt", "rtk", "kfa"],
+    fit_labels=["DKI"],
+    map_kwargs=[
+        {"vmin": 0, "vmax": 1.5},
+        {"vmin": 0, "vmax": 1.5},
+        {"vmin": 0, "vmax": 1},
+    ],
+    filename="Alternative_DKI_metrics.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -323,7 +340,7 @@ compare_maps([dkifit], ['mkt', 'rtk', 'kfa'], fit_labels=['DKI'],
 #    unconstrained counterpart to verify that there are no unexpected
 #    qualitative differences.
 
-dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
+dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method="CLS")
 dkifit_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 ###############################################################################
@@ -333,10 +350,13 @@ dkifit_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 # -- instead of for example acquisition artifacts -- can be corrected with
 # this method.
 
-compare_maps([dkifit, dkifit_plus], ['mkt', 'rtk', 'ak'],
-             fit_labels=['DKI', 'DKI+'],
-             map_kwargs={'vmin': 0, 'vmax': 1.5},
-             filename='Alternative_DKI_measures_comparison_to_DKIplus.png')
+compare_maps(
+    [dkifit, dkifit_plus],
+    ["mkt", "rtk", "ak"],
+    fit_labels=["DKI", "DKI+"],
+    map_kwargs={"vmin": 0, "vmax": 1.5},
+    filename="Alternative_DKI_measures_comparison_to_DKIplus.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -19,11 +19,11 @@ The diffusion tensor models the diffusion signal as:
 
     \\frac{S(\\mathbf{g}, b)}{S_0} = e^{-b\\mathbf{g}^T \\mathbf{D} \\mathbf{g}}
 
-Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
+Where $\\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
-duration of diffusion-weighting gradient. $S(\mathbf{g}, b)$ is the
+duration of diffusion-weighting gradient. $S(\\mathbf{g}, b)$ is the
 diffusion-weighted signal measured and $S_0$ is the signal conducted in a
-measurement with no diffusion weighting. $\mathbf{D}$ is a positive-definite
+measurement with no diffusion weighting. $\\mathbf{D}$ is a positive-definite
 quadratic form, which contains six free parameters to be fit. These six
 parameters are:
 
@@ -78,7 +78,7 @@ The size of the dataset is 87 MBytes. You only need to fetch once. It
 will return the file names of our data.
 """
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 
 """
 Next, we read the saved dataset. gtab contains a ``GradientTable``
@@ -90,7 +90,7 @@ data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print("data.shape (%d, %d, %d, %d)" % data.shape)
 
 """
 data.shape ``(81, 106, 76, 160)``
@@ -102,9 +102,10 @@ calculating Tensors on the background of the image. This is done using DIPY_'s
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
-                             numpass=1, autocrop=True, dilate=2)
-print('maskdata.shape (%d, %d, %d, %d)' % maskdata.shape)
+maskdata, mask = median_otsu(
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+)
+print("maskdata.shape (%d, %d, %d, %d)" % maskdata.shape)
 
 """
 maskdata.shape ``(72, 87, 59, 160)``
@@ -144,9 +145,9 @@ the tensor:
 
 .. math::
 
-        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                    \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
-                    \lambda_2^2+\lambda_3^2}}
+        FA = \\sqrt{\frac{1}{2}\frac{(\\lambda_1-\\lambda_2)^2+(\\lambda_1-
+                    \\lambda_3)^2+(\\lambda_2-\\lambda_3)^2}{\\lambda_1^2+
+                    \\lambda_2^2+\\lambda_3^2}}
 
 Note that FA should be interpreted carefully. It may be an indication of the
 density of packing of fibers in a voxel, and the amount of myelin wrapping
@@ -155,7 +156,7 @@ FA may decrease in locations in which there is fanning of white matter fibers,
 or where more than one population of white matter fibers crosses.
 """
 
-print('Computing anisotropy measures (FA, MD, RGB)')
+print("Computing anisotropy measures (FA, MD, RGB)")
 from dipy.reconst.dti import color_fa, fractional_anisotropy
 
 FA = fractional_anisotropy(tenfit.evals)
@@ -174,7 +175,7 @@ affine matrix which transform the image's coordinates to the world coordinates.
 Here, we choose to save the FA in ``float32``.
 """
 
-save_nifti('tensor_fa.nii.gz', FA.astype(np.float32), affine)
+save_nifti("tensor_fa.nii.gz", FA.astype(np.float32), affine)
 
 """
 You can now see the result with any nifti viewer or check it slice by slice
@@ -182,7 +183,7 @@ using matplotlib_'s ``imshow``. In the same way you can save the eigen values,
 the eigen vectors or any other properties of the tensor.
 """
 
-save_nifti('tensor_evecs.nii.gz', tenfit.evecs.astype(np.float32), affine)
+save_nifti("tensor_evecs.nii.gz", tenfit.evecs.astype(np.float32), affine)
 
 """
 Other tensor statistics can be calculated from the ``tenfit`` object. For
@@ -195,7 +196,7 @@ eigen-values of the ``TensorFit`` class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
-save_nifti('tensors_md.nii.gz', MD1.astype(np.float32), affine)
+save_nifti("tensors_md.nii.gz", MD1.astype(np.float32), affine)
 
 """
 The other is to call the ``TensorFit`` class method:
@@ -212,18 +213,18 @@ sure that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 
 FA = np.clip(FA, 0, 1)
 RGB = color_fa(FA, tenfit.evecs)
-save_nifti('tensor_rgb.nii.gz', np.array(255 * RGB, 'uint8'), affine)
+save_nifti("tensor_rgb.nii.gz", np.array(255 * RGB, "uint8"), affine)
 
 """
 Let's try to visualize the tensor ellipsoids of a small rectangular
 area in an axial slice of the splenium of the corpus callosum (CC).
 """
 
-print('Computing tensor ellipsoids in a part of the splenium of the CC')
+print("Computing tensor ellipsoids in a part of the splenium of the CC")
 
 from dipy.data import get_sphere
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 from dipy.viz import actor, window
 
@@ -244,12 +245,12 @@ contrast.
 cfa = RGB[13:43, 44:74, 28:29]
 cfa /= cfa.max()
 
-scene.add(actor.tensor_slicer(evals, evecs, scalar_colors=cfa, sphere=sphere,
-                              scale=0.3))
+scene.add(
+    actor.tensor_slicer(evals, evecs, scalar_colors=cfa, sphere=sphere, scale=0.3)
+)
 
-print('Saving illustration as tensor_ellipsoids.png')
-window.record(scene, n_frames=1, out_path='tensor_ellipsoids.png',
-              size=(600, 600))
+print("Saving illustration as tensor_ellipsoids.png")
+window.record(scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -268,11 +269,10 @@ for the same area as we did with the ellipsoids.
 
 tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 
-odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5,
-                             colormap=None)
+odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
 scene.add(odf_actor)
-print('Saving illustration as tensor_odfs.png')
-window.record(scene, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
+print("Saving illustration as tensor_odfs.png")
+window.record(scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

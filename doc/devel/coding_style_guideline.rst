@@ -26,13 +26,28 @@ Coding style
 ------------
 
 DIPY uses the standard Python PEP8_ style to ensure the
-readability and consistency across the toolkit. Conformance to the PEP8_ syntax
-is checked automatically when requesting to push to DIPY. There are
-`software systems <https://pypi.python.org/pypi/pep8>`_ that will check your
-code for PEP8_ compliance, and most text editors can be configured to check the
-compliance of your code with PEP8_. Beyond the aspects checked, as a
-contributor to DIPY, you should try to ensure that your code, including
-comments, conforms to the above principles.
+readability and consistency across the toolkit. DIPY has adopted an automated
+style checking framework that uses `pre-commit <https://pre-commit.com/>`_ and
+`ruff <https://docs.astral.sh/ruff/>`_. Style conformance rules are specified
+in the ``ruff.toml`` configuration file. When requesting to push to DIPY, the
+compliance to the set of rules is automatically checked using a GitHub Actions
+workflow.
+
+In order to check the compliance locally, developers should install the
+``[style]`` dependencies::
+
+  pip install -e .[style]
+
+The git hook scripts need to be installed then running::
+
+  pre-commit install
+
+``pre-commit`` will then run automatically on ``git commit``.
+
+Most text editors can be configured to check the compliance of your code with
+the set of rules specified in the ``ruff.toml`` file. Beyond the aspects
+checked, as a contributor to DIPY, you should try to ensure that your code,
+including comments, conforms to the above principles.
 
 Imports
 -------

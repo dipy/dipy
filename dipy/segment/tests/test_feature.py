@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 from numpy.testing import (
     assert_array_almost_equal,
@@ -17,8 +15,8 @@ from dipy.testing.decorators import set_random_number_generator
 
 dtype = "float32"
 rng = np.random.default_rng()
-s1 = np.array([np.arange(10, dtype=dtype)]*3).T  # 10x3
-s2 = np.arange(3*10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
+s1 = np.array([np.arange(10, dtype=dtype)] * 3).T  # 10x3
+s2 = np.arange(3 * 10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
 s3 = rng.random((5, 4), dtype=dtype)  # 5x4
 s4 = rng.random((5, 3), dtype=dtype)  # 5x3
 
@@ -63,8 +61,9 @@ def test_feature_resample():
             super(ResampleFeature, self).__init__(is_order_invariant=False)
             self.nb_points = nb_points
             if nb_points <= 0:
-                msg = ("ResampleFeature: `nb_points` must be strictly"
-                       " positive: {0}").format(nb_points)
+                msg = (
+                    "ResampleFeature: `nb_points` must be strictly" " positive: {0}"
+                ).format(nb_points)
                 raise ValueError(msg)
 
         def infer_shape(self, streamline):
@@ -77,9 +76,11 @@ def test_feature_resample():
     assert_raises(ValueError, ResampleFeature, nb_points=0)
 
     max_points = max(map(len, [s1, s2, s3, s4]))
-    for nb_points in [2, 5, 2*max_points]:
-        for feature in [dipysfeature.ResampleFeature(nb_points),
-                        ResampleFeature(nb_points)]:
+    for nb_points in [2, 5, 2 * max_points]:
+        for feature in [
+            dipysfeature.ResampleFeature(nb_points),
+            ResampleFeature(nb_points),
+        ]:
             for s in [s1, s2, s3, s4]:
                 # Test method infer_shape
                 assert_equal(feature.infer_shape(s), (nb_points, s.shape[1]))
@@ -87,16 +88,16 @@ def test_feature_resample():
                 # Test method extract
                 features = feature.extract(s)
                 assert_equal(features.shape, (nb_points, s.shape[1]))
-                assert_array_almost_equal(features,
-                                          set_number_of_points(s, nb_points))
+                assert_array_almost_equal(features, set_number_of_points(s, nb_points))
 
             # This feature type is not order invariant
             assert_false(feature.is_order_invariant)
             for s in [s1, s2, s3, s4]:
                 features = feature.extract(s)
                 features_flip = feature.extract(s[::-1])
-                assert_array_equal(features_flip,
-                                   set_number_of_points(s[::-1], nb_points))
+                assert_array_equal(
+                    features_flip, set_number_of_points(s[::-1], nb_points)
+                )
                 assert_true(np.any(np.not_equal(features, features_flip)))
 
 
@@ -140,7 +141,7 @@ def test_feature_midpoint():
             return 1, streamline.shape[1]
 
         def extract(self, streamline):
-            return streamline[[len(streamline)//2]]
+            return streamline[[len(streamline) // 2]]
 
     for feature in [dipysfeature.MidpointFeature(), MidpointFeature()]:
         for s in [s1, s2, s3, s4]:
@@ -150,7 +151,7 @@ def test_feature_midpoint():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, s.shape[1]))
-            assert_array_almost_equal(features, s[len(s)//2][None, :])
+            assert_array_almost_equal(features, s[len(s) // 2][None, :])
 
         # This feature type is not order invariant
         assert_false(feature.is_order_invariant)
@@ -207,8 +208,10 @@ def test_feature_vector_of_endpoints():
         def extract(self, streamline):
             return streamline[[-1]] - streamline[[0]]
 
-    feature_types = [dipysfeature.VectorOfEndpointsFeature(),
-                     VectorOfEndpointsFeature()]
+    feature_types = [
+        dipysfeature.VectorOfEndpointsFeature(),
+        VectorOfEndpointsFeature(),
+    ]
     for feature in feature_types:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
@@ -244,8 +247,9 @@ def test_feature_extract(rng):
     feature = CenterOfMass64bit()
 
     nb_points = rng.integers(20, 30, size=(nb_streamlines,)) * 3
-    streamlines = [np.arange(nb).reshape((-1, 3)).astype(np.float32)
-                   for nb in nb_points]
+    streamlines = [
+        np.arange(nb).reshape((-1, 3)).astype(np.float32) for nb in nb_points
+    ]
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
@@ -304,10 +308,7 @@ def test_using_python_feature_with_cython_metric():
     # by explicitly testing it.
     class ArcLengthFeature(dipysfeature.Feature):
         def infer_shape(self, streamline):
-            if sys.version_info > (3,):
-                return 1  # In Python 3, constant integer are of type long.
-
-            return long(1)
+            return 1
 
         def extract(self, streamline):
             square_norms = np.sum((streamline[1:] - streamline[:-1]) ** 2)

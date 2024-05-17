@@ -22,7 +22,7 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 ###############################################################################
 # Download and get the data filenames for this tutorial.
 
-fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
+fraw, fbval, fbvec = get_fnames("taiwan_ntu_dsi")
 
 ###############################################################################
 # img contains a nibabel Nifti1Image object (data) and gtab contains a
@@ -35,10 +35,9 @@ fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
 
 data, affine, voxel_size = load_nifti(fraw, return_voxsize=True)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-bvecs[1:] = (bvecs[1:] /
-                 np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
+bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
 gtab = gradient_table(bvals, bvecs)
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print("data.shape (%d, %d, %d, %d)" % data.shape)
 
 ###############################################################################
 # This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
@@ -61,27 +60,29 @@ gqfit = gqmodel.fit(dataslice, mask=mask)
 ###############################################################################
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 ###############################################################################
 # Calculate the ODFs with this specific sphere
 
 ODF = gqfit.odf(sphere)
 
-print('ODF.shape (%d, %d, %d)' % ODF.shape)
+print("ODF.shape (%d, %d, %d)" % ODF.shape)
 
 ###############################################################################
 # Using ``peaks_from_model`` we can find the main peaks of the ODFs and other
 # properties.
 
-gqpeaks = peaks_from_model(model=gqmodel,
-                           data=dataslice,
-                           sphere=sphere,
-                           relative_peak_threshold=.5,
-                           min_separation_angle=25,
-                           mask=mask,
-                           return_odf=False,
-                           normalize_peaks=True)
+gqpeaks = peaks_from_model(
+    model=gqmodel,
+    data=dataslice,
+    sphere=sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_odf=False,
+    normalize_peaks=True,
+)
 
 gqpeak_values = gqpeaks.peak_values
 
@@ -95,20 +96,22 @@ gqpeak_indices = gqpeaks.peak_indices
 
 GFA = gqpeaks.gfa
 
-print('GFA.shape (%d, %d)' % GFA.shape)
+print("GFA.shape (%d, %d)" % GFA.shape)
 
 ###############################################################################
 # With parameter ``return_odf=True`` we can obtain the ODF using
 # ``gqpeaks.ODF``
 
-gqpeaks = peaks_from_model(model=gqmodel,
-                           data=dataslice,
-                           sphere=sphere,
-                           relative_peak_threshold=.5,
-                           min_separation_angle=25,
-                           mask=mask,
-                           return_odf=True,
-                           normalize_peaks=True)
+gqpeaks = peaks_from_model(
+    model=gqmodel,
+    data=dataslice,
+    sphere=sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_odf=True,
+    normalize_peaks=True,
+)
 
 ###############################################################################
 # This ODF will be of course identical to the ODF calculated above as long as

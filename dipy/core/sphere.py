@@ -7,8 +7,7 @@ from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
 
-__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices',
-           'unique_edges']
+__all__ = ["Sphere", "HemiSphere", "faces_from_sphere_vertices", "unique_edges"]
 
 
 def _all_specified(*args):
@@ -41,6 +40,7 @@ def faces_from_sphere_vertices(vertices):
 
     """
     from scipy.spatial import Delaunay
+
     faces = Delaunay(vertices).convex_hull
     if len(vertices) < 2**16:
         return np.asarray(faces, np.uint16)
@@ -108,7 +108,7 @@ def unique_sets(sets, return_inverse=False):
     sets = np.sort(sets, 1)
     order = np.lexsort(sets.T)
     sets = sets[order]
-    flag = np.ones(len(sets), 'bool')
+    flag = np.ones(len(sets), "bool")
     flag[1:] = (sets[1:] != sets[:-1]).any(-1)
     uniqsets = sets[flag]
     if return_inverse:
@@ -147,23 +147,36 @@ class Sphere:
 
     """
 
-    def __init__(self, x=None, y=None, z=None,
-                 theta=None, phi=None,
-                 xyz=None,
-                 faces=None, edges=None):
-
-        all_specified = _all_specified(x, y, z) + _all_specified(xyz) + \
-                        _all_specified(theta, phi)
-        one_complete = (_some_specified(x, y, z) + _some_specified(xyz) +
-                        _some_specified(theta, phi))
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        z=None,
+        theta=None,
+        phi=None,
+        xyz=None,
+        faces=None,
+        edges=None,
+    ):
+        all_specified = (
+            _all_specified(x, y, z) + _all_specified(xyz) + _all_specified(theta, phi)
+        )
+        one_complete = (
+            _some_specified(x, y, z)
+            + _some_specified(xyz)
+            + _some_specified(theta, phi)
+        )
 
         if not (all_specified == 1 and one_complete == 1):
-            raise ValueError("Sphere must be constructed using either "
-                             "(x,y,z), (theta, phi) or xyz.")
+            raise ValueError(
+                "Sphere must be constructed using either "
+                "(x,y,z), (theta, phi) or xyz."
+            )
 
         if edges is not None and faces is None:
-            raise ValueError("Either specify both faces and "
-                             "edges, only faces, or neither.")
+            raise ValueError(
+                "Either specify both faces and " "edges, only faces, or neither."
+            )
 
         if edges is not None:
             self.edges = np.asarray(edges)
@@ -183,7 +196,7 @@ class Sphere:
         r, self.theta, self.phi = cart2sphere(x, y, z)
 
         if not np.allclose(r, 1):
-            warnings.warn("Vertices are not on the unit sphere.")
+            warnings.warn("Vertices are not on the unit sphere.", stacklevel=2)
 
     @auto_attr
     def vertices(self):
@@ -256,7 +269,7 @@ class Sphere:
             faces = np.concatenate([face1, face2, face3, face4])
 
         if len(vertices) < 2**16:
-            faces = np.asarray(faces, dtype='uint16')
+            faces = np.asarray(faces, dtype="uint16")
         return Sphere(xyz=vertices, faces=faces)
 
     def find_closest(self, xyz):
@@ -317,16 +330,26 @@ class HemiSphere(Sphere):
     Sphere
 
     """
-    def __init__(self, x=None, y=None, z=None,
-                 theta=None, phi=None,
-                 xyz=None,
-                 faces=None, edges=None, tol=1e-5):
+
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        z=None,
+        theta=None,
+        phi=None,
+        xyz=None,
+        faces=None,
+        edges=None,
+        tol=1e-5,
+    ):
         """Create a HemiSphere from points"""
 
         sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
-        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol,
-                                                         return_mapping=True)
-        uniq_vertices *= 1 - 2*(uniq_vertices[:, -1:] < 0)
+        uniq_vertices, mapping = remove_similar_vertices(
+            sphere.vertices, tol, return_mapping=True
+        )
+        uniq_vertices *= 1 - 2 * (uniq_vertices[:, -1:] < 0)
         if faces is not None:
             faces = np.asarray(faces)
             faces = unique_sets(mapping[faces])
@@ -338,8 +361,13 @@ class HemiSphere(Sphere):
     @classmethod
     def from_sphere(cls, sphere, tol=1e-5):
         """Create instance from a Sphere"""
-        return cls(theta=sphere.theta, phi=sphere.phi,
-                   edges=sphere.edges, faces=sphere.faces, tol=tol)
+        return cls(
+            theta=sphere.theta,
+            phi=sphere.phi,
+            edges=sphere.edges,
+            faces=sphere.faces,
+            tol=tol,
+        )
 
     def mirror(self):
         """Create a full Sphere from a HemiSphere"""
@@ -421,23 +449,23 @@ def _get_forces(charges):
     all_charges = np.concatenate((charges, -charges))
     all_charges = all_charges[:, None]
     r = charges - all_charges
-    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         force = r / r_mag**3
-        potential = 1. / r_mag
+        potential = 1.0 / r_mag
 
     d = np.arange(len(charges))
     force[d, d] = 0
     force = force.sum(0)
-    force_r_comp = (charges*force).sum(-1)[:, None]
-    f_theta = force - force_r_comp*charges
+    force_r_comp = (charges * force).sum(-1)[:, None]
+    f_theta = force - force_r_comp * charges
     potential[d, d] = 0
-    potential = 2*potential.sum()
+    potential = 2 * potential.sum()
     return f_theta, potential
 
 
-def disperse_charges(hemi, iters, const=.2):
+def disperse_charges(hemi, iters, const=0.2):
     """Models electrostatic repulsion on the unit sphere
 
     Places charges on a sphere and simulates the repulsive forces felt by each
@@ -475,7 +503,7 @@ def disperse_charges(hemi, iters, const=.2):
         raise ValueError("expecting HemiSphere")
     charges = hemi.vertices
     forces, v = _get_forces(charges)
-    force_mag = np.sqrt((forces*forces).sum())
+    force_mag = np.sqrt((forces * forces).sum())
     const = const / force_mag.max()
     potential = np.empty(iters)
     v_min = v
@@ -490,7 +518,7 @@ def disperse_charges(hemi, iters, const=.2):
             forces = new_forces
             potential[ii] = v_min = v
         else:
-            const /= 2.
+            const /= 2.0
             potential[ii] = v_min
 
     return HemiSphere(xyz=charges), potential
@@ -519,9 +547,7 @@ def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
 
     """
     if not isinstance(n_points, int) or n_points <= 4:
-        raise ValueError(
-            "Number of points must be a positive integer greater than 4."
-        )
+        raise ValueError("Number of points must be a positive integer greater than 4.")
 
     random_shift = 0
     if randomize:
@@ -530,13 +556,13 @@ def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
 
     indices = np.arange(n_points)
 
-    increment = np.pi * (3. - np.sqrt(5.))
+    increment = np.pi * (3.0 - np.sqrt(5.0))
     if not hemisphere:
         offset = 2.0 / n_points
         y = ((indices * offset) - 1) + (offset / 2)
     else:
         offset = 1.0 / n_points
-        y = ((indices * offset)) + (offset / 2)
+        y = (indices * offset) + (offset / 2)
 
     r = np.sqrt(1 - y**2)
     phi = ((indices + random_shift) % n_points) * increment
@@ -569,7 +595,8 @@ def _equality_constraints(vects):
 
     N = vects.shape[0] // 3
     vects = vects.reshape((N, 3))
-    return (vects ** 2).sum(1) - 1.0
+    return (vects**2).sum(1) - 1.0
+
 
 def _grad_equality_constraints(vects):
     r"""Return normals to the surface constraint (which corresponds to
@@ -588,10 +615,10 @@ def _grad_equality_constraints(vects):
 
     N = vects.shape[0] // 3
     vects = vects.reshape((N, 3))
-    vects = (vects.T / np.sqrt((vects ** 2).sum(1))).T
+    vects = (vects.T / np.sqrt((vects**2).sum(1))).T
     grad = np.zeros((N, N * 3))
     for i in range(3):
-        grad[:, i * N:(i + 1) * N] = np.diag(vects[:, i])
+        grad[:, i * N : (i + 1) * N] = np.diag(vects[:, i])
     return grad
 
 
@@ -631,7 +658,7 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
     """
 
     nb_points = vects.shape[0] // 3
-    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    weights = kwargs.get("weights", np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
     all_charges = np.concatenate((charges, -charges))
     all_charges = all_charges[:, None]
@@ -639,7 +666,7 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
     r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        potential = 1 / r_mag ** alpha
+        potential = 1 / r_mag**alpha
 
     d = np.arange(len(charges))
     potential[d, d] = 0
@@ -683,7 +710,7 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
     """
 
     nb_points = vects.shape[0] // 3
-    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    weights = kwargs.get("weights", np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
     all_charges = np.concatenate((charges, -charges))
     all_charges = all_charges[:, None]
@@ -691,7 +718,7 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
     r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        forces = -2 * alpha * r / r_mag ** (alpha + 2.)
+        forces = -2 * alpha * r / r_mag ** (alpha + 2.0)
 
     d = np.arange(len(charges))
     forces[d, d] = 0
@@ -722,10 +749,16 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
     """
 
     K = init_pointset.shape[0]
-    vects = optimize.fmin_slsqp(_get_forces_alt, init_pointset.reshape(K * 3),
-                                f_eqcons=_equality_constraints,
-                                fprime=_get_grad_forces_alt, iter=iters,
-                                acc=tol, args=(), iprint=0)
+    vects = optimize.fmin_slsqp(
+        _get_forces_alt,
+        init_pointset.reshape(K * 3),
+        f_eqcons=_equality_constraints,
+        fprime=_get_grad_forces_alt,
+        iter=iters,
+        acc=tol,
+        args=(),
+        iprint=0,
+    )
     return vects.reshape((K, 3))
 
 
@@ -771,59 +804,73 @@ def euler_characteristic_check(sphere, chi=2):
 
 
 octahedron_vertices = np.array(
-    [[1.0, 0.0, 0.0],
-     [-1.0, 0.0, 0.0],
-     [0.0, 1.0, 0.0],
-     [0.0, -1.0, 0.0],
-     [0.0,  0.0, 1.0],
-     [0.0,  0.0, -1.0], ])
+    [
+        [1.0, 0.0, 0.0],
+        [-1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, -1.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, -1.0],
+    ]
+)
 octahedron_faces = np.array(
-    [[0, 4, 2],
-     [1, 5, 3],
-     [4, 2, 1],
-     [5, 3, 0],
-     [1, 4, 3],
-     [0, 5, 2],
-     [0, 4, 3],
-     [1, 5, 2], ], dtype='uint16')
+    [
+        [0, 4, 2],
+        [1, 5, 3],
+        [4, 2, 1],
+        [5, 3, 0],
+        [1, 4, 3],
+        [0, 5, 2],
+        [0, 4, 3],
+        [1, 5, 2],
+    ],
+    dtype="uint16",
+)
 
 t = (1 + np.sqrt(5)) / 2
 icosahedron_vertices = np.array(
-    [[t,  1,  0],     # 0
-     [-t,  1,  0],    # 1
-     [t, -1,  0],     # 2
-     [-t, -1,  0],    # 3
-     [1,  0,  t],     # 4
-     [1,  0, -t],     # 5
-     [-1,  0,  t],    # 6
-     [-1,  0, -t],    # 7
-     [0,  t,  1],     # 8
-     [0, -t,  1],     # 9
-     [0,  t, -1],     # 10
-     [0, -t, -1], ])   # 11
+    [
+        [t, 1, 0],  # 0
+        [-t, 1, 0],  # 1
+        [t, -1, 0],  # 2
+        [-t, -1, 0],  # 3
+        [1, 0, t],  # 4
+        [1, 0, -t],  # 5
+        [-1, 0, t],  # 6
+        [-1, 0, -t],  # 7
+        [0, t, 1],  # 8
+        [0, -t, 1],  # 9
+        [0, t, -1],  # 10
+        [0, -t, -1],
+    ]
+)  # 11
 
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(
-    [[8,  4,  0],
-     [2,  5,  0],
-     [2,  5, 11],
-     [9,  2, 11],
-     [2,  4,  0],
-     [9,  2,  4],
-     [10,  8,  1],
-     [10,  8,  0],
-     [10,  5,  0],
-     [6,  3,  1],
-     [9,  6,  3],
-     [6,  8,  1],
-     [6,  8,  4],
-     [9,  6,  4],
-     [7, 10,  1],
-     [7, 10,  5],
-     [7,  3,  1],
-     [7,  3, 11],
-     [9,  3, 11],
-     [7,  5, 11], ], dtype='uint16')
+    [
+        [8, 4, 0],
+        [2, 5, 0],
+        [2, 5, 11],
+        [9, 2, 11],
+        [2, 4, 0],
+        [9, 2, 4],
+        [10, 8, 1],
+        [10, 8, 0],
+        [10, 5, 0],
+        [6, 3, 1],
+        [9, 6, 3],
+        [6, 8, 1],
+        [6, 8, 4],
+        [9, 6, 4],
+        [7, 10, 1],
+        [7, 10, 5],
+        [7, 3, 1],
+        [7, 3, 11],
+        [9, 3, 11],
+        [7, 5, 11],
+    ],
+    dtype="uint16",
+)
 
 unit_octahedron = Sphere(xyz=octahedron_vertices, faces=octahedron_faces)
 unit_icosahedron = Sphere(xyz=icosahedron_vertices, faces=icosahedron_faces)

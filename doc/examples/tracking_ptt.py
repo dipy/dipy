@@ -25,15 +25,15 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-seed_mask = (labels == 2)
+seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
@@ -46,24 +46,25 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
-stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(gfa, 0.25)
 
 ###############################################################################
 # Prepare the PTT direction getter using the fiber ODF (FOD) obtain with CSD.
 # Start the local tractography using PTT direction getter.
 
-sphere = get_sphere(name='repulsion724')
+sphere = get_sphere(name="repulsion724")
 fod = csd_fit.odf(sphere)
 pmf = fod.clip(min=0)
-ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=15, probe_length=0.5,
-                                     sphere=sphere)
+ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=15, probe_length=0.5, sphere=sphere)
 
 # Parallel Transport Tractography
-streamline_generator = LocalTracking(direction_getter=ptt_dg,
-                                     stopping_criterion=stopping_criterion,
-                                     seeds=seeds,
-                                     affine=affine,
-                                     step_size=0.2)
+streamline_generator = LocalTracking(
+    direction_getter=ptt_dg,
+    stopping_criterion=stopping_criterion,
+    seeds=seeds,
+    affine=affine,
+    step_size=0.2,
+)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_ptt_dg_pmf.trk")
@@ -71,8 +72,7 @@ save_trk(sft, "tractogram_ptt_dg_pmf.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_ptt_dg_pmf.png',
-                  size=(800, 800))
+    window.record(scene, out_path="tractogram_ptt_dg_pmf.png", size=(800, 800))
     if interactive:
         window.show(scene)
 

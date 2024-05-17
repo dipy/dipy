@@ -40,8 +40,8 @@ from dipy.viz import regtools
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
-                                            pjoin(folder, 'HARDI150.nii.gz'),
-                                            return_img=True)
+    pjoin(folder, "HARDI150.nii.gz"), return_img=True
+)
 static = np.squeeze(static_data)[..., 0]
 static_grid2world = static_affine
 
@@ -50,8 +50,8 @@ static_grid2world = static_affine
 
 files, folder2 = fetch_syn_data()
 moving_data, moving_affine, moving_img = load_nifti(
-                                            pjoin(folder2, 'b0.nii.gz'),
-                                            return_img=True)
+    pjoin(folder2, "b0.nii.gz"), return_img=True
+)
 moving = moving_data
 moving_grid2world = moving_affine
 
@@ -63,16 +63,19 @@ moving_grid2world = moving_affine
 # "transforming" the moving image using an identity transform
 
 identity = np.eye(4)
-affine_map = AffineMap(identity,
-                       static.shape, static_grid2world,
-                       moving.shape, moving_grid2world)
+affine_map = AffineMap(
+    identity, static.shape, static_grid2world, moving.shape, moving_grid2world
+)
 resampled = affine_map.transform(moving)
-regtools.overlay_slices(static, resampled, None, 0,
-                        "Static", "Moving", "resampled_0.png")
-regtools.overlay_slices(static, resampled, None, 1,
-                        "Static", "Moving", "resampled_1.png")
-regtools.overlay_slices(static, resampled, None, 2,
-                        "Static", "Moving", "resampled_2.png")
+regtools.overlay_slices(
+    static, resampled, None, 0, "Static", "Moving", "resampled_0.png"
+)
+regtools.overlay_slices(
+    static, resampled, None, 1, "Static", "Moving", "resampled_1.png"
+)
+regtools.overlay_slices(
+    static, resampled, None, 2, "Static", "Moving", "resampled_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -83,8 +86,9 @@ regtools.overlay_slices(static, resampled, None, 2,
 # We can obtain a very rough (and fast) registration by just aligning the
 # centers of mass of the two images
 
-c_of_mass = transform_centers_of_mass(static, static_grid2world,
-                                      moving, moving_grid2world)
+c_of_mass = transform_centers_of_mass(
+    static, static_grid2world, moving, moving_grid2world
+)
 
 ###############################################################################
 # We can now transform the moving image and draw it on top of the static image,
@@ -92,12 +96,15 @@ c_of_mass = transform_centers_of_mass(static, static_grid2world,
 # the same space
 
 transformed = c_of_mass.transform(moving)
-regtools.overlay_slices(static, transformed, None, 0,
-                        "Static", "Transformed", "transformed_com_0.png")
-regtools.overlay_slices(static, transformed, None, 1,
-                        "Static", "Transformed", "transformed_com_1.png")
-regtools.overlay_slices(static, transformed, None, 2,
-                        "Static", "Transformed", "transformed_com_2.png")
+regtools.overlay_slices(
+    static, transformed, None, 0, "Static", "Transformed", "transformed_com_0.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 1, "Static", "Transformed", "transformed_com_1.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 2, "Static", "Transformed", "transformed_com_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -153,10 +160,9 @@ factors = [4, 2, 1]
 # Now we go ahead and instantiate the registration class with the configuration
 # we just prepared
 
-affreg = AffineRegistration(metric=metric,
-                            level_iters=level_iters,
-                            sigmas=sigmas,
-                            factors=factors)
+affreg = AffineRegistration(
+    metric=metric, level_iters=level_iters, sigmas=sigmas, factors=factors
+)
 
 ###############################################################################
 # Using AffineRegistration we can register our images in as many stages as we
@@ -174,21 +180,30 @@ affreg = AffineRegistration(metric=metric,
 transform = TranslationTransform3D()
 params0 = None
 starting_affine = c_of_mass.affine
-translation = affreg.optimize(static, moving, transform, params0,
-                              static_grid2world, moving_grid2world,
-                              starting_affine=starting_affine)
+translation = affreg.optimize(
+    static,
+    moving,
+    transform,
+    params0,
+    static_grid2world,
+    moving_grid2world,
+    starting_affine=starting_affine,
+)
 
 ###############################################################################
 # If we look at the result, we can see that this translation is much better
 # than simply aligning the centers of mass
 
 transformed = translation.transform(moving)
-regtools.overlay_slices(static, transformed, None, 0,
-                        "Static", "Transformed", "transformed_trans_0.png")
-regtools.overlay_slices(static, transformed, None, 1,
-                        "Static", "Transformed", "transformed_trans_1.png")
-regtools.overlay_slices(static, transformed, None, 2,
-                        "Static", "Transformed", "transformed_trans_2.png")
+regtools.overlay_slices(
+    static, transformed, None, 0, "Static", "Transformed", "transformed_trans_0.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 1, "Static", "Transformed", "transformed_trans_1.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 2, "Static", "Transformed", "transformed_trans_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -204,20 +219,29 @@ regtools.overlay_slices(static, transformed, None, 2,
 transform = RigidTransform3D()
 params0 = None
 starting_affine = translation.affine
-rigid = affreg.optimize(static, moving, transform, params0,
-                        static_grid2world, moving_grid2world,
-                        starting_affine=starting_affine)
+rigid = affreg.optimize(
+    static,
+    moving,
+    transform,
+    params0,
+    static_grid2world,
+    moving_grid2world,
+    starting_affine=starting_affine,
+)
 
 ###############################################################################
 # This produces a slight rotation, and the images are now better aligned
 
 transformed = rigid.transform(moving)
-regtools.overlay_slices(static, transformed, None, 0,
-                        "Static", "Transformed", "transformed_rigid_0.png")
-regtools.overlay_slices(static, transformed, None, 1,
-                        "Static", "Transformed", "transformed_rigid_1.png")
-regtools.overlay_slices(static, transformed, None, 2,
-                        "Static", "Transformed", "transformed_rigid_2.png")
+regtools.overlay_slices(
+    static, transformed, None, 0, "Static", "Transformed", "transformed_rigid_0.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 1, "Static", "Transformed", "transformed_rigid_1.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 2, "Static", "Transformed", "transformed_rigid_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -233,20 +257,29 @@ regtools.overlay_slices(static, transformed, None, 2,
 transform = AffineTransform3D()
 params0 = None
 starting_affine = rigid.affine
-affine = affreg.optimize(static, moving, transform, params0,
-                         static_grid2world, moving_grid2world,
-                         starting_affine=starting_affine)
+affine = affreg.optimize(
+    static,
+    moving,
+    transform,
+    params0,
+    static_grid2world,
+    moving_grid2world,
+    starting_affine=starting_affine,
+)
 
 ###############################################################################
 # This results in a slight shear and scale
 
 transformed = affine.transform(moving)
-regtools.overlay_slices(static, transformed, None, 0,
-                        "Static", "Transformed", "transformed_affine_0.png")
-regtools.overlay_slices(static, transformed, None, 1,
-                        "Static", "Transformed", "transformed_affine_1.png")
-regtools.overlay_slices(static, transformed, None, 2,
-                        "Static", "Transformed", "transformed_affine_2.png")
+regtools.overlay_slices(
+    static, transformed, None, 0, "Static", "Transformed", "transformed_affine_0.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 1, "Static", "Transformed", "transformed_affine_1.png"
+)
+regtools.overlay_slices(
+    static, transformed, None, 2, "Static", "Transformed", "transformed_affine_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -275,18 +308,22 @@ xformed_img, reg_affine = affine_registration(
     moving_affine=moving_affine,
     static_affine=static_affine,
     nbins=32,
-    metric='MI',
+    metric="MI",
     pipeline=pipeline,
     level_iters=level_iters,
     sigmas=sigmas,
-    factors=factors)
+    factors=factors,
+)
 
-regtools.overlay_slices(static, xformed_img, None, 0,
-                        "Static", "Transformed", "xformed_affine_0.png")
-regtools.overlay_slices(static, xformed_img, None, 1,
-                        "Static", "Transformed", "xformed_affine_1.png")
-regtools.overlay_slices(static, xformed_img, None, 2,
-                        "Static", "Transformed", "xformed_affine_2.png")
+regtools.overlay_slices(
+    static, xformed_img, None, 0, "Static", "Transformed", "xformed_affine_0.png"
+)
+regtools.overlay_slices(
+    static, xformed_img, None, 1, "Static", "Transformed", "xformed_affine_1.png"
+)
+regtools.overlay_slices(
+    static, xformed_img, None, 2, "Static", "Transformed", "xformed_affine_2.png"
+)
 
 
 ###############################################################################
@@ -305,23 +342,26 @@ regtools.overlay_slices(static, xformed_img, None, 2,
 
 xformed_dwi, reg_affine = register_dwi_to_template(
     dwi=static_img,
-    gtab=(pjoin(folder, 'HARDI150.bval'),
-          pjoin(folder, 'HARDI150.bvec')),
+    gtab=(pjoin(folder, "HARDI150.bval"), pjoin(folder, "HARDI150.bvec")),
     template=moving_img,
     reg_method="aff",
     nbins=32,
-    metric='MI',
+    metric="MI",
     pipeline=pipeline,
     level_iters=level_iters,
     sigmas=sigmas,
-    factors=factors)
+    factors=factors,
+)
 
-regtools.overlay_slices(moving, xformed_dwi, None, 0,
-                        "Static", "Transformed", "xformed_dwi_0.png")
-regtools.overlay_slices(moving, xformed_dwi, None, 1,
-                        "Static", "Transformed", "xformed_dwi_1.png")
-regtools.overlay_slices(moving, xformed_dwi, None, 2,
-                        "Static", "Transformed", "xformed_dwi_2.png")
+regtools.overlay_slices(
+    moving, xformed_dwi, None, 0, "Static", "Transformed", "xformed_dwi_0.png"
+)
+regtools.overlay_slices(
+    moving, xformed_dwi, None, 1, "Static", "Transformed", "xformed_dwi_1.png"
+)
+regtools.overlay_slices(
+    moving, xformed_dwi, None, 2, "Static", "Transformed", "xformed_dwi_2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

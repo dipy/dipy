@@ -1,4 +1,4 @@
-""" Testing volumes """
+"""Testing volumes"""
 
 import numpy as np
 import numpy.testing as npt
@@ -13,7 +13,6 @@ def test_adjacency_calc():
 
     cutoff = 1.99
     for img_shape in [(50, 50), (50, 50, 5)]:
-
         mask = None
         adj = adjacency_calc(img_shape, mask, cutoff=cutoff)
         # check that adj in the first voxel is correct
@@ -36,4 +35,3 @@ def test_adjacency_calc():
             npt.assert_equal(adj[0], [0, 1, 5, 6, 50, 51, 55, 56])
         # test that adj only corresponds to flattened and masked data
         npt.assert_equal(len(adj), mask.sum())
-

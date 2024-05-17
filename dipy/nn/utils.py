@@ -61,12 +61,11 @@ def unnormalize(image, norm_min, norm_max, min_v, max_v):
     np.ndarray
         unnormalized image from range min_v to max_v
     """
-    return (image - norm_min) / (norm_max-norm_min) * \
-           (max_v - min_v) + min_v
+    return (image - norm_min) / (norm_max - norm_min) * (max_v - min_v) + min_v
 
 
 def set_logger_level(log_level, logger):
-    """ Change the logger to one of the following:
+    """Change the logger to one of the following:
     DEBUG, INFO, WARNING, CRITICAL, ERROR
 
     Parameters
@@ -77,8 +76,7 @@ def set_logger_level(log_level, logger):
     logger.setLevel(level=log_level)
 
 
-def transform_img(image, affine, voxsize=None,
-                  init_shape=(256, 256, 256), scale=2):
+def transform_img(image, affine, voxsize=None, init_shape=(256, 256, 256), scale=2):
     r"""
     Function to reshape image as an input to the model
 
@@ -106,18 +104,26 @@ def transform_img(image, affine, voxsize=None,
     else:
         affine2 = affine.copy()
     ori_shape = np.array(image.shape)
-    affine2[:3, 3] += np.array([init_shape[0]//2,
-                                init_shape[1]//2,
-                                init_shape[2]//2])
+    affine2[:3, 3] += np.array(
+        [init_shape[0] // 2, init_shape[1] // 2, init_shape[2] // 2]
+    )
     inv_affine = np.linalg.inv(affine2)
     transformed_img = affine_transform(image, inv_affine, output_shape=init_shape)
-    transformed_img, _ = reslice(transformed_img, np.eye(4), (1, 1, 1),
-                                 (scale, scale, scale))
+    transformed_img, _ = reslice(
+        transformed_img, np.eye(4), (1, 1, 1), (scale, scale, scale)
+    )
     return transformed_img, affine2, ori_shape
 
 
-def recover_img(image, affine, ori_shape, image_shape,
-                init_shape=(256, 256, 256), voxsize=None, scale=2):
+def recover_img(
+    image,
+    affine,
+    ori_shape,
+    image_shape,
+    init_shape=(256, 256, 256),
+    voxsize=None,
+    scale=2,
+):
     r"""
     Function to recover image back to its original shape
 
@@ -146,14 +152,16 @@ def recover_img(image, affine, ori_shape, image_shape,
     """
     new_image, _ = reslice(image, np.eye(4), (scale, scale, scale), (1, 1, 1))
     recovered_img = affine_transform(new_image, affine, output_shape=ori_shape)
-    affine[:3, 3] += np.array([init_shape[0]//2,
-                               init_shape[1]//2,
-                               init_shape[2]//2])
+    affine[:3, 3] += np.array(
+        [init_shape[0] // 2, init_shape[1] // 2, init_shape[2] // 2]
+    )
     if voxsize is not None and np.any(voxsize != np.ones(3)):
-        kwargs = {'order': 1,
-                  'mode': 'constant',
-                  'matrix': voxsize,
-                  'output_shape': image_shape}
+        kwargs = {
+            "order": 1,
+            "mode": "constant",
+            "matrix": voxsize,
+            "output_shape": image_shape,
+        }
         recovered_img = np.round(affine_transform(recovered_img, **kwargs))
     return recovered_img
 
@@ -173,7 +181,7 @@ def correct_minor_errors(binary_img):
     largest_img : np.ndarray
     """
     largest_img = np.zeros_like(binary_img)
-    chunks, n_chunk = label(np.abs(1-binary_img))
+    chunks, n_chunk = label(np.abs(1 - binary_img))
     u, c = np.unique(chunks[chunks != 0], return_counts=True)
     target = u[np.argmax(c)]
     largest_img = np.where(chunks == target, 0, 1)
@@ -184,17 +192,17 @@ def correct_minor_errors(binary_img):
     largest_img = np.where(chunks == target, 1, 0)
 
     for x in range(largest_img.shape[0]):
-        chunks, n_chunk = label(np.abs(1-largest_img[x]))
+        chunks, n_chunk = label(np.abs(1 - largest_img[x]))
         u, c = np.unique(chunks[chunks != 0], return_counts=True)
         target = u[np.argmax(c)]
         largest_img[x] = np.where(chunks == target, 0, 1)
     for y in range(largest_img.shape[1]):
-        chunks, n_chunk = label(np.abs(1-largest_img[:, y]))
+        chunks, n_chunk = label(np.abs(1 - largest_img[:, y]))
         u, c = np.unique(chunks[chunks != 0], return_counts=True)
         target = u[np.argmax(c)]
         largest_img[:, y] = np.where(chunks == target, 0, 1)
     for z in range(largest_img.shape[2]):
-        chunks, n_chunk = label(np.abs(1-largest_img[..., z]))
+        chunks, n_chunk = label(np.abs(1 - largest_img[..., z]))
         u, c = np.unique(chunks[chunks != 0], return_counts=True)
         target = u[np.argmax(c)]
         largest_img[..., z] = np.where(chunks == target, 0, 1)

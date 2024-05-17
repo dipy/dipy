@@ -15,7 +15,6 @@ def test_EuDXDirectionGetter(rng):
             return SillyFit(self)
 
     class SillyFit:
-
         def __init__(self, model):
             self.model = model
 
@@ -33,15 +32,21 @@ def test_EuDXDirectionGetter(rng):
     data = rng.random((3, 4, 5, 2))
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        peaks = peaks_from_model(SillyModel(), data, default_sphere,
-                                 relative_peak_threshold=.5,
-                                 min_separation_angle=25)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        peaks = peaks_from_model(
+            SillyModel(),
+            data,
+            default_sphere,
+            relative_peak_threshold=0.5,
+            min_separation_angle=25,
+        )
     peaks._initialize()
 
     up = np.zeros(3)
-    up[2] = 1.
+    up[2] = 1.0
     down = -up
 
     for i in range(3 - 1):
@@ -50,13 +55,13 @@ def test_EuDXDirectionGetter(rng):
                 point = np.array([i, j, k], dtype=float)
 
                 # Test that the angle threshold rejects points
-                peaks.ang_thr = 0.
+                peaks.ang_thr = 0.0
                 state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 1)
 
                 # Here we leverage the fact that we know Hemispheres project
                 # all their vertices into the z >= 0 half of the sphere.
-                peaks.ang_thr = 90.
+                peaks.ang_thr = 90.0
                 state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 0)
                 expected_dir = peaks.peak_dirs[i, j, k, 0]
@@ -70,19 +75,25 @@ def test_EuDXDirectionGetter(rng):
                 npt.assert_equal(state, 0)
 
                 # Check that points are rounded to get initial direction
-                point -= .5
+                point -= 0.5
                 initial_dir = peaks.initial_direction(point)
                 # It should be a (1, 3) array
                 npt.assert_array_almost_equal(initial_dir, [expected_dir])
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
-                                  relative_peak_threshold=.5,
-                                  min_separation_angle=25,
-                                  npeaks=1)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        peaks1 = peaks_from_model(
+            SillyModel(),
+            data,
+            default_sphere,
+            relative_peak_threshold=0.5,
+            min_separation_angle=25,
+            npeaks=1,
+        )
     peaks1._initialize()
     point = np.array([1, 1, 1], dtype=float)
 

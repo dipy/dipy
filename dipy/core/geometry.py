@@ -1,4 +1,4 @@
-""" Utility functions for algebra etc """
+"""Utility functions for algebra etc"""
 
 import itertools
 import math
@@ -14,20 +14,37 @@ _NEXT_AXIS = [1, 2, 0, 1]
 
 # map axes strings to/from tuples of inner axis, parity, repetition, frame
 _AXES2TUPLE = {
-    'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
-    'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
-    'syxz': (1, 1, 0, 0), 'syxy': (1, 1, 1, 0), 'szxy': (2, 0, 0, 0),
-    'szxz': (2, 0, 1, 0), 'szyx': (2, 1, 0, 0), 'szyz': (2, 1, 1, 0),
-    'rzyx': (0, 0, 0, 1), 'rxyx': (0, 0, 1, 1), 'ryzx': (0, 1, 0, 1),
-    'rxzx': (0, 1, 1, 1), 'rxzy': (1, 0, 0, 1), 'ryzy': (1, 0, 1, 1),
-    'rzxy': (1, 1, 0, 1), 'ryxy': (1, 1, 1, 1), 'ryxz': (2, 0, 0, 1),
-    'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
+    "sxyz": (0, 0, 0, 0),
+    "sxyx": (0, 0, 1, 0),
+    "sxzy": (0, 1, 0, 0),
+    "sxzx": (0, 1, 1, 0),
+    "syzx": (1, 0, 0, 0),
+    "syzy": (1, 0, 1, 0),
+    "syxz": (1, 1, 0, 0),
+    "syxy": (1, 1, 1, 0),
+    "szxy": (2, 0, 0, 0),
+    "szxz": (2, 0, 1, 0),
+    "szyx": (2, 1, 0, 0),
+    "szyz": (2, 1, 1, 0),
+    "rzyx": (0, 0, 0, 1),
+    "rxyx": (0, 0, 1, 1),
+    "ryzx": (0, 1, 0, 1),
+    "rxzx": (0, 1, 1, 1),
+    "rxzy": (1, 0, 0, 1),
+    "ryzy": (1, 0, 1, 1),
+    "rzxy": (1, 1, 0, 1),
+    "ryxy": (1, 1, 1, 1),
+    "ryxz": (2, 0, 0, 1),
+    "rzxz": (2, 0, 1, 1),
+    "rxyz": (2, 1, 0, 1),
+    "rzyz": (2, 1, 1, 1),
+}
 
-_TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
+_TUPLE2AXES = dict({(v, k) for k, v in _AXES2TUPLE.items()})
 
 
 def sphere2cart(r, theta, phi):
-    """ Spherical to Cartesian coordinates
+    """Spherical to Cartesian coordinates
 
     This is the standard physics convention where `theta` is the
     inclination (polar) angle, and `phi` is the azimuth angle.
@@ -101,7 +118,7 @@ def sphere2cart(r, theta, phi):
 
 
 def cart2sphere(x, y, z):
-    r""" Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
+    r"""Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
 
     See doc for ``sphere2cart`` for angle conventions and derivation
     of the formulae.
@@ -130,7 +147,7 @@ def cart2sphere(x, y, z):
     r = np.sqrt(x * x + y * y + z * z)
     cos = np.divide(z, r, where=r > 0)
     theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1))
-    theta = np.where(r > 0, theta, 0.)
+    theta = np.where(r > 0, theta, 0.0)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
@@ -149,7 +166,7 @@ def sph2latlon(theta, phi):
 
 
 def normalized_vector(vec, axis=-1):
-    """ Return vector divided by its Euclidean (L2) norm
+    """Return vector divided by its Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
 
@@ -180,7 +197,7 @@ def normalized_vector(vec, axis=-1):
 
 
 def vector_norm(vec, axis=-1, keepdims=False):
-    """ Return vector Euclidean (L2) norm
+    """Return vector Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
 
@@ -226,7 +243,7 @@ def vector_norm(vec, axis=-1, keepdims=False):
 
 
 def rodrigues_axis_rotation(r, theta):
-    """ Rodrigues formula
+    """Rodrigues formula
 
     Rotation matrix for rotation around axis r for angle theta.
 
@@ -277,18 +294,16 @@ def rodrigues_axis_rotation(r, theta):
     if theta > 1e-30:
         n = r / np.linalg.norm(r)
         Sn = np.array([[0, -n[2], n[1]], [n[2], 0, -n[0]], [-n[1], n[0], 0]])
-        R = np.eye(3) + np.sin(theta) * Sn + \
-            (1 - np.cos(theta)) * np.dot(Sn, Sn)
+        R = np.eye(3) + np.sin(theta) * Sn + (1 - np.cos(theta)) * np.dot(Sn, Sn)
     else:
         Sr = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
         theta2 = theta * theta
-        R = np.eye(3) + (1 - theta2 / 6.) * \
-            Sr + (.5 - theta2 / 24.) * np.dot(Sr, Sr)
+        R = np.eye(3) + (1 - theta2 / 6.0) * Sr + (0.5 - theta2 / 24.0) * np.dot(Sr, Sr)
     return R
 
 
 def nearest_pos_semi_def(B):
-    """ Least squares positive semi-definite tensor estimation
+    """Least squares positive semi-definite tensor estimation
 
     Parameters
     ----------
@@ -329,7 +344,7 @@ def nearest_pos_semi_def(B):
     lam1a, lam2a, lam3a = vals
     scalers = np.zeros((3,))
     if cardneg == 2:
-        b112 = np.max([0, lam1a + (lam2a + lam3a) / 3.])
+        b112 = np.max([0, lam1a + (lam2a + lam3a) / 3.0])
         scalers[0] = b112
     elif cardneg == 1:
         lam1b = lam1a + 0.25 * lam3a
@@ -338,10 +353,10 @@ def nearest_pos_semi_def(B):
             scalers[:2] = lam1b, lam2b
         else:  # one of the lam1b, lam2b is < 0
             if lam2b < 0:
-                b111 = np.max([0, lam1a + (lam2a + lam3a) / 3.])
+                b111 = np.max([0, lam1a + (lam2a + lam3a) / 3.0])
                 scalers[0] = b111
             if lam1b < 0:
-                b221 = np.max([0, lam2a + (lam1a + lam3a) / 3.])
+                b221 = np.max([0, lam2a + (lam1a + lam3a) / 3.0])
                 scalers[1] = b221
     # resort the scalers to match the original vecs
     scalers = scalers[np.argsort(inds)]
@@ -349,7 +364,7 @@ def nearest_pos_semi_def(B):
 
 
 def sphere_distance(pts1, pts2, radius=None, check_radius=True):
-    """ Distance across sphere surface between `pts1` and `pts2`
+    """Distance across sphere surface between `pts1` and `pts2`
 
     Parameters
     ----------
@@ -388,14 +403,13 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     """
     pts1 = np.asarray(pts1)
     pts2 = np.asarray(pts2)
-    lens1 = np.sqrt(np.sum(pts1 ** 2, axis=-1))
-    lens2 = np.sqrt(np.sum(pts2 ** 2, axis=-1))
+    lens1 = np.sqrt(np.sum(pts1**2, axis=-1))
+    lens2 = np.sqrt(np.sum(pts2**2, axis=-1))
     if radius is None:
         radius = (np.mean(lens1) + np.mean(lens2)) / 2.0
     if check_radius:
-        if not (np.allclose(radius, lens1) and
-                np.allclose(radius, lens2)):
-            raise ValueError('Radii do not match sphere surface')
+        if not (np.allclose(radius, lens1) and np.allclose(radius, lens2)):
+            raise ValueError("Radii do not match sphere surface")
     # Get angle with vector cosine
     dots = np.inner(pts1, pts2)
     lens = lens1 * lens2
@@ -404,7 +418,7 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
 
 
 def cart_distance(pts1, pts2):
-    """ Cartesian distance between `pts1` and `pts2`
+    """Cartesian distance between `pts1` and `pts2`
 
     If either of `pts1` or `pts2` is 2D, then we take the first
     dimension to index points, and the second indexes coordinate.  More
@@ -441,7 +455,7 @@ def cart_distance(pts1, pts2):
 
 
 def vector_cosine(vecs1, vecs2):
-    """ Cosine of angle between two (sets of) vectors
+    """Cosine of angle between two (sets of) vectors
 
     The cosine of the angle between two vectors ``v1`` and ``v2`` is
     given by the inner product of ``v1`` and ``v2`` divided by the
@@ -471,15 +485,15 @@ def vector_cosine(vecs1, vecs2):
     """
     vecs1 = np.asarray(vecs1)
     vecs2 = np.asarray(vecs2)
-    lens1 = np.sqrt(np.sum(vecs1 ** 2, axis=-1))
-    lens2 = np.sqrt(np.sum(vecs2 ** 2, axis=-1))
+    lens1 = np.sqrt(np.sum(vecs1**2, axis=-1))
+    lens2 = np.sqrt(np.sum(vecs2**2, axis=-1))
     dots = np.inner(vecs1, vecs2)
     lens = lens1 * lens2
     return dots / lens
 
 
 def lambert_equal_area_projection_polar(theta, phi):
-    r""" Lambert Equal Area Projection from polar sphere to plane
+    r"""Lambert Equal Area Projection from polar sphere to plane
 
     Return positions in (y1,y2) plane corresponding to the points
     with polar coordinates (theta, phi) on the unit sphere, under the
@@ -508,12 +522,15 @@ def lambert_equal_area_projection_polar(theta, phi):
        planar coordinates of points following mapping by Lambert's EAP.
     """
 
-    return 2 * np.repeat(np.sin(theta / 2), 2).reshape((theta.shape[0], 2)) * \
-        np.column_stack((np.cos(phi), np.sin(phi)))
+    return (
+        2
+        * np.repeat(np.sin(theta / 2), 2).reshape((theta.shape[0], 2))
+        * np.column_stack((np.cos(phi), np.sin(phi)))
+    )
 
 
 def lambert_equal_area_projection_cart(x, y, z):
-    r""" Lambert Equal Area Projection from cartesian vector to plane
+    r"""Lambert Equal Area Projection from cartesian vector to plane
 
     Return positions in $(y_1,y_2)$ plane corresponding to the
     directions of the vectors with cartesian coordinates xyz under the
@@ -547,7 +564,7 @@ def lambert_equal_area_projection_cart(x, y, z):
     return lambert_equal_area_projection_polar(theta, phi)
 
 
-def euler_matrix(ai, aj, ak, axes='sxyz'):
+def euler_matrix(ai, aj, ak, axes="sxyz"):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
 
     Code modified from the work of Christoph Gohlke, link provided here
@@ -624,8 +641,9 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     return M
 
 
-def compose_matrix(scale=None, shear=None, angles=None, translate=None,
-                   perspective=None):
+def compose_matrix(
+    scale=None, shear=None, angles=None, translate=None, perspective=None
+):
     """Return 4x4 transformation matrix from sequence of
     transformations.
 
@@ -675,7 +693,7 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None,
         T[:3, 3] = translate[:3]
         M = np.dot(M, T)
     if angles is not None:
-        R = euler_matrix(angles[0], angles[1], angles[2], 'sxyz')
+        R = euler_matrix(angles[0], angles[1], angles[2], "sxyz")
         M = np.dot(M, R)
     if shear is not None:
         Z = np.identity(4)
@@ -739,7 +757,7 @@ def decompose_matrix(matrix):
     if not np.linalg.det(P):
         raise ValueError("matrix is singular")
 
-    scale = np.zeros((3, ), dtype=np.float64)
+    scale = np.zeros((3,), dtype=np.float64)
     shear = [0, 0, 0]
     angles = [0, 0, 0]
 
@@ -785,7 +803,7 @@ def decompose_matrix(matrix):
 
 
 def circumradius(a, b, c):
-    """ a, b and c are 3-dimensional vectors which are the vertices of a
+    """a, b and c are 3-dimensional vectors which are the vertices of a
     triangle. The function returns the circumradius of the triangle, i.e
     the radius of the smallest circle that can contain the triangle. In
     the degenerate case when the 3 points are collinear it returns
@@ -808,16 +826,15 @@ def circumradius(a, b, c):
     z = np.cross(x, y)
     # test for collinearity
     if np.linalg.norm(z) == 0:
-        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y),
-                              np.dot(a - b, a - b))) / 2.
+        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y), np.dot(a - b, a - b))) / 2.0
     else:
         m = np.vstack((x, y, z))
-        w = np.dot(np.linalg.inv(m.T), np.array([xx / 2., yy / 2., 0]))
-        return np.linalg.norm(w) / 2.
+        w = np.dot(np.linalg.inv(m.T), np.array([xx / 2.0, yy / 2.0, 0]))
+        return np.linalg.norm(w) / 2.0
 
 
 def vec2vec_rotmat(u, v):
-    r""" rotation matrix from 2 unit vectors
+    r"""rotation matrix from 2 unit vectors
 
     u, v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to
     v.
@@ -871,14 +888,14 @@ def vec2vec_rotmat(u, v):
     w = w / wn
 
     # vp is in plane of u,v,  perpendicular to u
-    vp = (v - (np.dot(u, v) * u))
+    vp = v - (np.dot(u, v) * u)
     vp = vp / np.linalg.norm(vp)
 
     # (u vp w) is an orthonormal basis
     P = np.array([u, vp, w])
     Pt = P.T
     cosa = np.clip(np.dot(u, v), -1, 1)
-    sina = np.sqrt(1 - cosa ** 2)
+    sina = np.sqrt(1 - cosa**2)
     R = np.array([[cosa, -sina, 0], [sina, cosa, 0], [0, 0, 1]])
     Rp = np.dot(Pt, np.dot(R, P))
 
@@ -891,7 +908,7 @@ def vec2vec_rotmat(u, v):
 
 
 def compose_transformations(*mats):
-    """ Compose multiple 4x4 affine transformations in one 4x4 matrix
+    """Compose multiple 4x4 affine transformations in one 4x4 matrix
 
     Parameters
     ----------
@@ -908,17 +925,16 @@ def compose_transformations(*mats):
     """
     prev = mats[0]
     if len(mats) < 2:
-        raise ValueError('At least two or more matrices are needed')
+        raise ValueError("At least two or more matrices are needed")
 
     for mat in mats[1:]:
-
         prev = np.dot(mat, prev)
 
     return prev
 
 
 def perpendicular_directions(v, num=30, half=False):
-    r""" Computes n evenly spaced perpendicular directions relative to a given
+    r"""Computes n evenly spaced perpendicular directions relative to a given
     vector v
 
     Parameters
@@ -996,22 +1012,32 @@ def perpendicular_directions(v, num=30, half=False):
 
     # Define circumference or semi-circumference
     if half is True:
-        a = np.linspace(0., math.pi, num=num, endpoint=False)
+        a = np.linspace(0.0, math.pi, num=num, endpoint=False)
     else:
-        a = np.linspace(0., 2 * math.pi, num=num, endpoint=False)
+        a = np.linspace(0.0, 2 * math.pi, num=num, endpoint=False)
 
     cosa = np.cos(a)
     sina = np.sin(a)
 
     # Check if vector is not aligned to the x axis
-    if abs(v[0] - 1.) > er:
-        sq = np.sqrt(v[1]**2 + v[2]**2)
-        psamples = np.array([- sq*sina, (v[0]*v[1]*sina - v[2]*cosa) / sq,
-                             (v[0]*v[2]*sina + v[1]*cosa) / sq])
+    if abs(v[0] - 1.0) > er:
+        sq = np.sqrt(v[1] ** 2 + v[2] ** 2)
+        psamples = np.array(
+            [
+                -sq * sina,
+                (v[0] * v[1] * sina - v[2] * cosa) / sq,
+                (v[0] * v[2] * sina + v[1] * cosa) / sq,
+            ]
+        )
     else:
-        sq = np.sqrt(v[0]**2 + v[2]**2)
-        psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
-                             (v[0]*cosa - v[2]*v[1]*sina) / sq])
+        sq = np.sqrt(v[0] ** 2 + v[2] ** 2)
+        psamples = np.array(
+            [
+                -(v[2] * cosa + v[0] * v[1] * sina) / sq,
+                sina * sq,
+                (v[0] * cosa - v[2] * v[1] * sina) / sq,
+            ]
+        )
 
     return psamples.T
 
@@ -1058,16 +1084,16 @@ def is_hemispherical(vecs):
 
     References
     ----------
-    https://rstudio-pubs-static.s3.amazonaws.com/27121_a22e51b47c544980bad594d5e0bb2d04.html  # noqa
+    https://rstudio-pubs-static.s3.amazonaws.com/27121_a22e51b47c544980bad594d5e0bb2d04.html
 
-    """
+    """  # noqa: E501
     if vecs.shape[1] != 3:
         raise ValueError("Input vectors must be 3D vectors")
     if not np.allclose(1, np.linalg.norm(vecs, axis=1)):
         raise ValueError("Input vectors must be unit vectors")
 
     # Generate all pairwise cross products
-    v0, v1 = zip(*[p for p in itertools.permutations(vecs, 2)])
+    v0, v1 = zip(*itertools.permutations(vecs, 2))
     cross_prods = np.cross(v0, v1)
 
     # Normalize them
@@ -1086,9 +1112,7 @@ def is_hemispherical(vecs):
     is_hemi = len(vecs) in np.sum(dot_prod_test.astype(int), axis=1)
 
     if is_hemi:
-        vertices = cross_prods[
-            np.sum(dot_prod_test.astype(int), axis=1) == len(vecs)
-        ]
+        vertices = cross_prods[np.sum(dot_prod_test.astype(int), axis=1) == len(vecs)]
 
         pole = np.mean(vertices, axis=0)
         pole /= np.linalg.norm(pole)

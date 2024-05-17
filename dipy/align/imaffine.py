@@ -1,45 +1,45 @@
-""" Affine image registration module consisting of the following classes:
+"""Affine image registration module consisting of the following classes:
 
-    AffineMap: encapsulates the necessary information to perform affine
-        transforms between two domains, defined by a `static` and a `moving`
-        image. The `domain` of the transform is the set of points in the
-        `static` image's grid, and the `codomain` is the set of points in
-        the `moving` image. When we call the `transform` method, `AffineMap`
-        maps each point `x` of the domain (`static` grid) to the codomain
-        (`moving` grid) and interpolates the `moving` image at that point
-        to obtain the intensity value to be placed at `x` in the resulting
-        grid. The `transform_inverse` method performs the opposite operation
-        mapping points in the codomain to points in the domain.
+AffineMap: encapsulates the necessary information to perform affine
+    transforms between two domains, defined by a `static` and a `moving`
+    image. The `domain` of the transform is the set of points in the
+    `static` image's grid, and the `codomain` is the set of points in
+    the `moving` image. When we call the `transform` method, `AffineMap`
+    maps each point `x` of the domain (`static` grid) to the codomain
+    (`moving` grid) and interpolates the `moving` image at that point
+    to obtain the intensity value to be placed at `x` in the resulting
+    grid. The `transform_inverse` method performs the opposite operation
+    mapping points in the codomain to points in the domain.
 
-    ParzenJointHistogram: computes the marginal and joint distributions of
-        intensities of a pair of images, using Parzen windows [Parzen62]
-        with a cubic spline kernel, as proposed by Mattes et al. [Mattes03].
-        It also computes the gradient of the joint histogram w.r.t. the
-        parameters of a given transform.
+ParzenJointHistogram: computes the marginal and joint distributions of
+    intensities of a pair of images, using Parzen windows [Parzen62]
+    with a cubic spline kernel, as proposed by Mattes et al. [Mattes03].
+    It also computes the gradient of the joint histogram w.r.t. the
+    parameters of a given transform.
 
-    MutualInformationMetric: computes the value and gradient of the mutual
-        information metric the way `Optimizer` needs them. That is, given
-        a set of transform parameters, it will use `ParzenJointHistogram`
-        to compute the value and gradient of the joint intensity histogram
-        evaluated at the given parameters, and evaluate the value and
-        gradient of the histogram's mutual information.
+MutualInformationMetric: computes the value and gradient of the mutual
+    information metric the way `Optimizer` needs them. That is, given
+    a set of transform parameters, it will use `ParzenJointHistogram`
+    to compute the value and gradient of the joint intensity histogram
+    evaluated at the given parameters, and evaluate the value and
+    gradient of the histogram's mutual information.
 
-    AffineRegistration: it runs the multi-resolution registration, putting
-        all the pieces together. It needs to create the scale space of the
-        images and run the multi-resolution registration by using the Metric
-        and the Optimizer at each level of the Gaussian pyramid. At each
-        level, it will setup the metric to compute value and gradient of the
-        metric with the input images with different levels of smoothing.
+AffineRegistration: it runs the multi-resolution registration, putting
+    all the pieces together. It needs to create the scale space of the
+    images and run the multi-resolution registration by using the Metric
+    and the Optimizer at each level of the Gaussian pyramid. At each
+    level, it will setup the metric to compute value and gradient of the
+    metric with the input images with different levels of smoothing.
 
-    References
-    ----------
-    [Parzen62] E. Parzen. On the estimation of a probability density
-               function and the mode. Annals of Mathematical Statistics,
-               33(3), 1065-1076, 1962.
-    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-               & Eubank, W. PET-CT image registration in the chest using
-               free-form deformations. IEEE Transactions on Medical
-               Imaging, 22(1), 120-8, 2003.
+References
+----------
+[Parzen62] E. Parzen. On the estimation of a probability density
+           function and the mode. Annals of Mathematical Statistics,
+           33(3), 1065-1076, 1962.
+[Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+           & Eubank, W. PET-CT image registration in the chest using
+           free-form deformations. IEEE Transactions on Medical
+           Imaging, 22(1), 120-8, 2003.
 
 """
 
@@ -60,12 +60,12 @@ from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
 
-_interp_options = ['nearest', 'linear']
-_transform_method = dict()
-_transform_method[(2, 'nearest')] = vf.transform_2d_affine_nn
-_transform_method[(3, 'nearest')] = vf.transform_3d_affine_nn
-_transform_method[(2, 'linear')] = vf.transform_2d_affine
-_transform_method[(3, 'linear')] = vf.transform_3d_affine
+_interp_options = ["nearest", "linear"]
+_transform_method = {}
+_transform_method[(2, "nearest")] = vf.transform_2d_affine_nn
+_transform_method[(3, "nearest")] = vf.transform_3d_affine_nn
+_transform_method[(2, "linear")] = vf.transform_2d_affine
+_transform_method[(3, "linear")] = vf.transform_3d_affine
 _number_dim_affine_matrix = 2
 
 
@@ -78,10 +78,15 @@ class AffineInvalidValuesError(Exception):
 
 
 class AffineMap:
-
-    def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
-                 codomain_grid_shape=None, codomain_grid2world=None):
-        """ AffineMap.
+    def __init__(
+        self,
+        affine,
+        domain_grid_shape=None,
+        domain_grid2world=None,
+        codomain_grid_shape=None,
+        codomain_grid2world=None,
+    ):
+        """AffineMap.
 
         Implements an affine transformation whose domain is given by
         `domain_grid` and `domain_grid2world`, and whose co-domain is
@@ -176,40 +181,43 @@ class AffineMap:
 
         try:
             affine = np.array(affine)
-        except Exception:
-            raise TypeError("Input must be type ndarray, or be convertible"
-                            " to one.")
+        except Exception as e:
+            raise TypeError(
+                "Input must be type ndarray, or be convertible" " to one."
+            ) from e
 
         if len(affine.shape) != _number_dim_affine_matrix:
-            raise AffineInversionError('Affine transform must be 2D')
+            raise AffineInversionError("Affine transform must be 2D")
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError("Affine transform must be a square "
-                                       "matrix")
+            raise AffineInversionError("Affine transform must be a square " "matrix")
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError("Affine transform contains invalid"
-                                           " elements")
+            raise AffineInvalidValuesError(
+                "Affine transform contains invalid" " elements"
+            )
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros
         if not np.all(affine[-1, :-1] == 0.0):
-            raise AffineInvalidValuesError("First {n_1} columns in last row"
-                                           " in matrix contain non-zeros!"
-                                           .format(n_1=affine.shape[0] - 1))
+            raise AffineInvalidValuesError(
+                "First {n_1} columns in last row"
+                " in matrix contain non-zeros!".format(n_1=affine.shape[0] - 1)
+            )
 
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
-            raise AffineInvalidValuesError("Last row, last column in matrix"
-                                           " is not 1.0!")
+            raise AffineInvalidValuesError(
+                "Last row, last column in matrix" " is not 1.0!"
+            )
 
         # making a copy to insulate it from changes outside object
         self.affine = affine.copy()
 
         try:
             self.affine_inv = npl.inv(affine)
-        except npl.LinAlgError:
-            raise AffineInversionError('Affine cannot be inverted')
+        except npl.LinAlgError as e:
+            raise AffineInversionError("Affine cannot be inverted") from e
 
     def __str__(self):
         """Printable format - relies on ndarray's implementation."""
@@ -221,35 +229,47 @@ class AffineMap:
         return self.affine.__repr__()
 
     def __format__(self, format_spec):
-        """ Implementation various formatting options."""
+        """Implementation various formatting options."""
 
         if format_spec is None or self.affine is None:
             return str(self.affine)
         elif isinstance(format_spec, str):
             format_spec = format_spec.lower()
-            if format_spec in ['', ' ', 'f', 'full']:
+            if format_spec in ["", " ", "f", "full"]:
                 return str(self.affine)
             # rotation part only (initial 3x3)
-            elif format_spec in ['r', 'rotation']:
+            elif format_spec in ["r", "rotation"]:
                 return str(self.affine[:-1, :-1])
             # translation part only (4th col)
-            elif format_spec in ['t', 'translation']:
+            elif format_spec in ["t", "translation"]:
                 # notice unusual indexing to make it a column vector
                 #   i.e. rows from 0 to n-1, cols from n to n
                 return str(self.affine[:-1, -1:])
             else:
-                allowed_formats_print_map = ['full', 'f',
-                                             'rotation', 'r',
-                                             'translation', 't']
-                raise NotImplementedError("Format {} not recognized or"
-                                          "implemented.\nTry one of {}"
-                                          .format(format_spec,
-                                                  allowed_formats_print_map))
+                allowed_formats_print_map = [
+                    "full",
+                    "f",
+                    "rotation",
+                    "r",
+                    "translation",
+                    "t",
+                ]
+                raise NotImplementedError(
+                    "Format {} not recognized or" "implemented.\nTry one of {}".format(
+                        format_spec, allowed_formats_print_map
+                    )
+                )
 
-    def _apply_transform(self, image, interpolation='linear',
-                         image_grid2world=None, sampling_grid_shape=None,
-                         sampling_grid2world=None, resample_only=False,
-                         apply_inverse=False):
+    def _apply_transform(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+        apply_inverse=False,
+    ):
         """Transform the input image applying this affine transform.
 
         This is a generic function to transform images using either this
@@ -305,7 +325,7 @@ class AffineMap:
         """
         # Verify valid interpolation requested
         if interpolation not in _interp_options:
-            msg = 'Unknown interpolation method: %s' % (interpolation,)
+            msg = "Unknown interpolation method: %s" % (interpolation,)
             raise ValueError(msg)
 
         # Obtain sampling grid
@@ -315,7 +335,7 @@ class AffineMap:
             else:
                 sampling_grid_shape = self.domain_shape
         if sampling_grid_shape is None:
-            msg = 'Unknown sampling info. Provide a valid sampling_grid_shape'
+            msg = "Unknown sampling info. Provide a valid sampling_grid_shape"
             raise ValueError(msg)
 
         dim = len(sampling_grid_shape)
@@ -324,7 +344,7 @@ class AffineMap:
         # Verify valid image dimension
         img_dim = len(image.shape)
         if img_dim < 2 or img_dim > 3:
-            raise ValueError('Undefined transform for dim: %d' % (img_dim,))
+            raise ValueError("Undefined transform for dim: %d" % (img_dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -357,15 +377,20 @@ class AffineMap:
             comp = image_world2grid.dot(aff.dot(sampling_grid2world))
 
         # Transform the input image
-        if interpolation == 'linear':
+        if interpolation == "linear":
             image = image.astype(np.float64)
-        transformed = _transform_method[(dim, interpolation)](image, shape,
-                                                              comp)
+        transformed = _transform_method[(dim, interpolation)](image, shape, comp)
         return transformed
 
-    def transform(self, image, interpolation='linear', image_grid2world=None,
-                  sampling_grid_shape=None, sampling_grid2world=None,
-                  resample_only=False):
+    def transform(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+    ):
         """Transform the input image from co-domain to domain space.
 
         By default, the transformed image is sampled at a grid defined by
@@ -405,17 +430,26 @@ class AffineMap:
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interpolation,
-                                            image_grid2world,
-                                            sampling_grid_shape,
-                                            sampling_grid2world,
-                                            resample_only,
-                                            apply_inverse=False)
+        transformed = self._apply_transform(
+            image,
+            interpolation,
+            image_grid2world,
+            sampling_grid_shape,
+            sampling_grid2world,
+            resample_only,
+            apply_inverse=False,
+        )
         return np.array(transformed)
 
-    def transform_inverse(self, image, interpolation='linear',
-                          image_grid2world=None, sampling_grid_shape=None,
-                          sampling_grid2world=None, resample_only=False):
+    def transform_inverse(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+    ):
         """Transform the input image from domain to co-domain space.
 
         By default, the transformed image is sampled at a grid defined by
@@ -455,17 +489,19 @@ class AffineMap:
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interpolation,
-                                            image_grid2world,
-                                            sampling_grid_shape,
-                                            sampling_grid2world,
-                                            resample_only,
-                                            apply_inverse=True)
+        transformed = self._apply_transform(
+            image,
+            interpolation,
+            image_grid2world,
+            sampling_grid_shape,
+            sampling_grid2world,
+            resample_only,
+            apply_inverse=True,
+        )
         return np.array(transformed)
 
 
 class MutualInformationMetric:
-
     def __init__(self, nbins=32, sampling_proportion=None):
         r"""Initialize an instance of the Mutual Information metric.
 
@@ -503,9 +539,17 @@ class MutualInformationMetric:
         self.metric_val = None
         self.metric_grad = None
 
-    def setup(self, transform, static, moving, static_grid2world=None,
-              moving_grid2world=None, starting_affine=None,
-              static_mask=None, moving_mask=None):
+    def setup(
+        self,
+        transform,
+        static,
+        moving,
+        static_grid2world=None,
+        moving_grid2world=None,
+        starting_affine=None,
+        static_mask=None,
+        moving_mask=None,
+    ):
         r"""Prepare the metric to compute intensity densities and gradients.
 
         The histograms will be setup to compute probability densities of
@@ -558,22 +602,24 @@ class MutualInformationMetric:
         self.static_world2grid = npl.inv(static_grid2world)
         self.moving_grid2world = moving_grid2world
         self.moving_world2grid = npl.inv(moving_grid2world)
-        self.static_direction, self.static_spacing = \
-            get_direction_and_spacings(static_grid2world, self.dim)
-        self.moving_direction, self.moving_spacing = \
-            get_direction_and_spacings(moving_grid2world, self.dim)
+        self.static_direction, self.static_spacing = get_direction_and_spacings(
+            static_grid2world, self.dim
+        )
+        self.moving_direction, self.moving_spacing = get_direction_and_spacings(
+            moving_grid2world, self.dim
+        )
         self.starting_affine = starting_affine
 
         P = np.eye(self.dim + 1)
         if self.starting_affine is not None:
             P = self.starting_affine
 
-        self.affine_map = AffineMap(P, static.shape, static_grid2world,
-                                    moving.shape, moving_grid2world)
+        self.affine_map = AffineMap(
+            P, static.shape, static_grid2world, moving.shape, moving_grid2world
+        )
 
         # Masks can only be used with dense sampling
         if self.sampling_proportion in [None, 1.0]:
-
             if static_mask is not None:
                 self.static_mask = static_mask.astype(np.int32)
             else:
@@ -585,11 +631,10 @@ class MutualInformationMetric:
                 self.moving_mask = None
 
         else:
-
             if (static_mask is not None) or (moving_mask is not None):
                 wm = "Masking is not implemented for sampling_proportion < 1, "
                 wm = wm + "setting static_mask = None and moving_mask = None"
-                warn(wm, UserWarning)
+                warn(wm, UserWarning, stacklevel=2)
 
             self.static_mask, self.moving_mask = None, None
 
@@ -612,15 +657,15 @@ class MutualInformationMetric:
             if self.starting_affine is None:
                 self.samples_prealigned = self.samples
             else:
-                self.samples_prealigned = \
-                    self.starting_affine.dot(self.samples.T).T
+                self.samples_prealigned = self.starting_affine.dot(self.samples.T).T
             # Sample the static image
             static_p = self.static_world2grid.dot(self.samples.T).T
-            static_p = static_p[..., :self.dim]
+            static_p = static_p[..., : self.dim]
             self.static_vals, inside = self.interp_method(static, static_p)
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
-        self.histogram.setup(self.static, self.moving,
-                             self.static_mask, self.moving_mask)
+        self.histogram.setup(
+            self.static, self.moving, self.static_mask, self.moving_mask
+        )
 
     def _update_histogram(self):
         r"""Update the histogram according to the current affine transform.
@@ -658,24 +703,23 @@ class MutualInformationMetric:
             if self.static_mask is not None:
                 static_mask_values = self.static_mask
             if self.moving_mask is not None:
-                moving_mask_values =\
-                 self.affine_map.transform(
-                    self.moving_mask, interpolation='nearest').astype(np.int32)
+                moving_mask_values = self.affine_map.transform(
+                    self.moving_mask, interpolation="nearest"
+                ).astype(np.int32)
 
             self.histogram.update_pdfs_dense(
-                static_values, moving_values,
-                self.static_mask, moving_mask_values)
+                static_values, moving_values, self.static_mask, moving_mask_values
+            )
         else:  # Sparse case
             sp_to_moving = self.moving_world2grid.dot(self.affine_map.affine)
             pts = sp_to_moving.dot(self.samples.T).T  # Points on moving grid
-            pts = pts[..., :self.dim]
+            pts = pts[..., : self.dim]
             self.moving_vals, inside = self.interp_method(self.moving, pts)
             self.moving_vals = np.array(self.moving_vals)
             static_values = self.static_vals
             moving_values = self.moving_vals
             self.histogram.update_pdfs_sparse(static_values, moving_values)
-        return static_values, moving_values,\
-            static_mask_values, moving_mask_values
+        return static_values, moving_values, static_mask_values, moving_mask_values
 
     def _update_mutual_information(self, params, update_gradient=True):
         r"""Update marginal and joint distributions and the joint gradient.
@@ -709,8 +753,9 @@ class MutualInformationMetric:
         self.affine_map.set_affine(current_affine)
 
         # Update the histogram with the current joint intensities
-        static_values, moving_values, static_mask_values, moving_mask_values =\
+        static_values, moving_values, static_mask_values, moving_mask_values = (
             self._update_histogram()
+        )
 
         H = self.histogram  # Shortcut to `self.histogram`
         grad = None  # Buffer to write the MI gradient into (if needed)
@@ -722,11 +767,13 @@ class MutualInformationMetric:
                 # associated with the >>static image's grid<< cells
                 # The image gradient must be eval. at current moved points
                 grid_to_world = current_affine.dot(self.static_grid2world)
-                mgrad, inside = vf.gradient(self.moving,
-                                            self.moving_world2grid,
-                                            self.moving_spacing,
-                                            self.static.shape,
-                                            grid_to_world)
+                mgrad, inside = vf.gradient(
+                    self.moving,
+                    self.moving_world2grid,
+                    self.moving_spacing,
+                    self.static.shape,
+                    grid_to_world,
+                )
                 # The Jacobian must be evaluated at the pre-aligned points
                 H.update_gradient_dense(
                     params,
@@ -736,24 +783,25 @@ class MutualInformationMetric:
                     static2prealigned,
                     mgrad,
                     static_mask_values,
-                    moving_mask_values)
+                    moving_mask_values,
+                )
             else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
                 pts = current_affine.dot(self.samples.T).T  # Moved points
-                mgrad, inside = vf.sparse_gradient(self.moving,
-                                                   self.moving_world2grid,
-                                                   self.moving_spacing,
-                                                   pts)
+                mgrad, inside = vf.sparse_gradient(
+                    self.moving, self.moving_world2grid, self.moving_spacing, pts
+                )
                 # The Jacobian must be evaluated at the pre-aligned points
-                pts = self.samples_prealigned[..., :self.dim]
-                H.update_gradient_sparse(params, self.transform, static_values,
-                                         moving_values, pts, mgrad)
+                pts = self.samples_prealigned[..., : self.dim]
+                H.update_gradient_sparse(
+                    params, self.transform, static_values, moving_values, pts, mgrad
+                )
 
         # Call the cythonized MI computation with self.histogram fields
-        self.metric_val = compute_parzen_mi(H.joint, H.joint_grad,
-                                            H.smarginal, H.mmarginal,
-                                            grad)
+        self.metric_val = compute_parzen_mi(
+            H.joint, H.joint_grad, H.smarginal, H.mmarginal, grad
+        )
 
     def distance(self, params):
         r"""Numeric value of the negative Mutual Information.
@@ -832,16 +880,17 @@ class MutualInformationMetric:
 
 
 class AffineRegistration:
-
-    def __init__(self,
-                 metric=None,
-                 level_iters=None,
-                 sigmas=None,
-                 factors=None,
-                 method='L-BFGS-B',
-                 ss_sigma_factor=None,
-                 options=None,
-                 verbosity=VerbosityLevels.STATUS):
+    def __init__(
+        self,
+        metric=None,
+        level_iters=None,
+        sigmas=None,
+        factors=None,
+        method="L-BFGS-B",
+        ss_sigma_factor=None,
+        options=None,
+        verbosity=VerbosityLevels.STATUS,
+    ):
         """Initialize an instance of the AffineRegistration class.
 
         Parameters
@@ -894,7 +943,7 @@ class AffineRegistration:
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
-            raise ValueError('The iterations sequence cannot be empty')
+            raise ValueError("The iterations sequence cannot be empty")
 
         self.options = options
         self.method = method
@@ -914,7 +963,7 @@ class AffineRegistration:
 
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
-    docstring_addendum = \
+    docstring_addendum = (
         """verbosity: int (one of {0, 1, 2, 3}), optional
             Set the verbosity level of the algorithm:
             0 : do not print anything
@@ -925,14 +974,24 @@ class AffineRegistration:
             3 : print as much information as possible to isolate the cause
                 of a bug.
             Default: % s
-    """ % VerbosityLevels.STATUS
+    """
+        % VerbosityLevels.STATUS
+    )
 
     __init__.__doc__ = __init__.__doc__ + docstring_addendum
 
-    def _init_optimizer(self, static, moving, transform, params0,
-                        static_grid2world, moving_grid2world,
-                        starting_affine,
-                        static_mask, moving_mask):
+    def _init_optimizer(
+        self,
+        static,
+        moving,
+        transform,
+        params0,
+        static_grid2world,
+        moving_grid2world,
+        starting_affine,
+        static_mask,
+        moving_mask,
+    ):
         r"""Initialize the registration optimizer.
 
         Initializes the optimizer by computing the scale space of the input
@@ -981,11 +1040,15 @@ class AffineRegistration:
 
         # ensure that masks are not all zeros
         if np.all(static_mask == 0):
-            warn("static_mask is all zeros, setting to None (which means \
-                  the entire volume will be used)", UserWarning)
+            warn(
+                "static_mask is all zeros, setting to None (which means \
+                  the entire volume will be used)",
+                UserWarning,
+                stacklevel=2,
+            )
             static_mask = None
         if np.all(moving_mask == 0):
-            warn("moving_mask is all zeros, setting to None", UserWarning)
+            warn("moving_mask is all zeros, setting to None", UserWarning, stacklevel=2)
             moving_mask = None
 
         # save masks for use elsewhere
@@ -994,9 +1057,9 @@ class AffineRegistration:
         # multiply images by masks for transform_centers_of_mass
         static_masked, moving_masked = static, moving
         if static_mask is not None:
-            static_masked = static*static_mask
+            static_masked = static * static_mask
         if moving_mask is not None:
-            moving_masked = moving*moving_mask
+            moving_masked = moving * moving_mask
 
         if params0 is None:
             params0 = self.transform.get_identity_parameters()
@@ -1004,36 +1067,39 @@ class AffineRegistration:
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
         elif isinstance(starting_affine, str):
-            if starting_affine == 'mass':
-                affine_map = transform_centers_of_mass(static_masked,
-                                                       static_grid2world,
-                                                       moving_masked,
-                                                       moving_grid2world)
+            if starting_affine == "mass":
+                affine_map = transform_centers_of_mass(
+                    static_masked, static_grid2world, moving_masked, moving_grid2world
+                )
                 self.starting_affine = affine_map.affine
                 print("starting_affine in imaffine:", self.starting_affine)
-            elif starting_affine == 'voxel-origin':
-                affine_map = transform_origins(static, static_grid2world,
-                                               moving, moving_grid2world)
+            elif starting_affine == "voxel-origin":
+                affine_map = transform_origins(
+                    static, static_grid2world, moving, moving_grid2world
+                )
                 self.starting_affine = affine_map.affine
-            elif starting_affine == 'centers':
-                affine_map = transform_geometric_centers(static,
-                                                         static_grid2world,
-                                                         moving,
-                                                         moving_grid2world)
+            elif starting_affine == "centers":
+                affine_map = transform_geometric_centers(
+                    static, static_grid2world, moving, moving_grid2world
+                )
                 self.starting_affine = affine_map.affine
             else:
-                raise ValueError('Invalid starting_affine strategy')
-        elif (isinstance(starting_affine, np.ndarray) and
-              starting_affine.shape >= (self.dim, self.dim + 1)):
+                raise ValueError("Invalid starting_affine strategy")
+        elif isinstance(starting_affine, np.ndarray) and starting_affine.shape >= (
+            self.dim,
+            self.dim + 1,
+        ):
             self.starting_affine = starting_affine
         else:
-            raise ValueError('Invalid starting_affine matrix')
+            raise ValueError("Invalid starting_affine matrix")
 
         # Extract information from affine matrices to create the scale space
-        static_direction, static_spacing = \
-            get_direction_and_spacings(static_grid2world, self.dim)
-        moving_direction, moving_spacing = \
-            get_direction_and_spacings(moving_grid2world, self.dim)
+        static_direction, static_spacing = get_direction_and_spacings(
+            static_grid2world, self.dim
+        )
+        moving_direction, moving_spacing = get_direction_and_spacings(
+            moving_grid2world, self.dim
+        )
 
         # Scale the images by min and max values (where mask == 1)
         if static_mask is not None:
@@ -1051,30 +1117,57 @@ class AffineRegistration:
 
         # Build the scale space of the input images
         if self.use_isotropic:
-            self.moving_ss = IsotropicScaleSpace(moving, self.factors,
-                                                 self.sigmas,
-                                                 moving_grid2world,
-                                                 moving_spacing, False)
+            self.moving_ss = IsotropicScaleSpace(
+                moving,
+                self.factors,
+                self.sigmas,
+                moving_grid2world,
+                moving_spacing,
+                False,
+            )
 
-            self.static_ss = IsotropicScaleSpace(static, self.factors,
-                                                 self.sigmas,
-                                                 static_grid2world,
-                                                 static_spacing, False)
+            self.static_ss = IsotropicScaleSpace(
+                static,
+                self.factors,
+                self.sigmas,
+                static_grid2world,
+                static_spacing,
+                False,
+            )
 
         else:
-            self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
-                                        moving_spacing, self.ss_sigma_factor,
-                                        False)
+            self.moving_ss = ScaleSpace(
+                moving,
+                self.levels,
+                moving_grid2world,
+                moving_spacing,
+                self.ss_sigma_factor,
+                False,
+            )
 
-            self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
-                                        static_spacing, self.ss_sigma_factor,
-                                        False)
+            self.static_ss = ScaleSpace(
+                static,
+                self.levels,
+                static_grid2world,
+                static_spacing,
+                self.ss_sigma_factor,
+                False,
+            )
 
-    def optimize(self, static, moving, transform, params0,
-                 static_grid2world=None, moving_grid2world=None,
-                 starting_affine=None, ret_metric=False,
-                 static_mask=None, moving_mask=None):
-        r""" Start the optimization process.
+    def optimize(
+        self,
+        static,
+        moving,
+        transform,
+        params0,
+        static_grid2world=None,
+        moving_grid2world=None,
+        starting_affine=None,
+        ret_metric=False,
+        static_mask=None,
+        moving_mask=None,
+    ):
+        r"""Start the optimization process.
 
         Parameters
         ----------
@@ -1134,10 +1227,17 @@ class AffineRegistration:
             the value of the function at the optimal parameters.
 
         """
-        self._init_optimizer(static, moving, transform, params0,
-                             static_grid2world, moving_grid2world,
-                             starting_affine,
-                             static_mask, moving_mask)
+        self._init_optimizer(
+            static,
+            moving,
+            transform,
+            params0,
+            static_grid2world,
+            moving_grid2world,
+            starting_affine,
+            static_mask,
+            moving_mask,
+        )
         del starting_affine  # Now we must refer to self.starting_affine
         del static_mask  # Now we must refer to self.static_mask
         del moving_mask  # Now we must refer to self.moving_mask
@@ -1147,32 +1247,37 @@ class AffineRegistration:
         original_static_grid2world = self.static_ss.get_affine(0)
         original_moving_shape = self.moving_ss.get_image(0).shape
         original_moving_grid2world = self.moving_ss.get_affine(0)
-        affine_map = AffineMap(None,
-                               original_static_shape,
-                               original_static_grid2world,
-                               original_moving_shape,
-                               original_moving_grid2world)
+        affine_map = AffineMap(
+            None,
+            original_static_shape,
+            original_static_grid2world,
+            original_moving_shape,
+            original_moving_grid2world,
+        )
 
         for level in range(self.levels - 1, -1, -1):
             self.current_level = level
             max_iter = self.level_iters[-1 - level]
             if self.verbosity >= VerbosityLevels.STATUS:
-                print('Optimizing level %d [max iter: %d]' % (level, max_iter))
+                print("Optimizing level %d [max iter: %d]" % (level, max_iter))
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)
             current_static_shape = self.static_ss.get_domain_shape(level)
             current_static_grid2world = self.static_ss.get_affine(level)
-            current_affine_map = AffineMap(None,
-                                           current_static_shape,
-                                           current_static_grid2world,
-                                           original_static_shape,
-                                           original_static_grid2world)
+            current_affine_map = AffineMap(
+                None,
+                current_static_shape,
+                current_static_grid2world,
+                original_static_shape,
+                original_static_grid2world,
+            )
             current_static = current_affine_map.transform(smooth_static)
             current_static_mask = None
             if self.static_mask is not None:
                 current_static_mask = current_affine_map.transform(
-                    self.static_mask, interpolation="nearest").astype(np.int32)
+                    self.static_mask, interpolation="nearest"
+                ).astype(np.int32)
 
             # The moving image is full resolution
             current_moving_grid2world = original_moving_grid2world
@@ -1180,25 +1285,33 @@ class AffineRegistration:
             current_moving = self.moving_ss.get_image(level)
 
             # Prepare the metric for iterations at this resolution
-            self.metric.setup(transform, current_static, current_moving,
-                              current_static_grid2world,
-                              current_moving_grid2world, self.starting_affine,
-                              current_static_mask, self.moving_mask)
+            self.metric.setup(
+                transform,
+                current_static,
+                current_moving,
+                current_static_grid2world,
+                current_moving_grid2world,
+                self.starting_affine,
+                current_static_mask,
+                self.moving_mask,
+            )
 
             # Optimize this level
             if self.options is None:
-                self.options = {'gtol': 1e-4,
-                                'disp': False}
+                self.options = {"gtol": 1e-4, "disp": False}
 
-            if self.method == 'L-BFGS-B':
-                self.options['maxfun'] = max_iter
+            if self.method == "L-BFGS-B":
+                self.options["maxfun"] = max_iter
             else:
-                self.options['maxiter'] = max_iter
+                self.options["maxiter"] = max_iter
 
-            opt = Optimizer(self.metric.distance_and_gradient,
-                            self.params0,
-                            method=self.method, jac=True,
-                            options=self.options)
+            opt = Optimizer(
+                self.metric.distance_and_gradient,
+                self.params0,
+                method=self.method,
+                jac=True,
+                options=self.options,
+            )
             params = opt.xopt
 
             # Update starting_affine matrix with optimal parameters
@@ -1214,9 +1327,8 @@ class AffineRegistration:
         return affine_map
 
 
-def transform_centers_of_mass(static, static_grid2world,
-                              moving, moving_grid2world):
-    r""" Transformation to align the center of mass of the input images.
+def transform_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the center of mass of the input images.
 
     Parameters
     ----------
@@ -1248,15 +1360,14 @@ def transform_centers_of_mass(static, static_grid2world,
     c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
 
 
-def transform_geometric_centers(static, static_grid2world,
-                                moving, moving_grid2world):
-    r""" Transformation to align the geometric center of the input images.
+def transform_geometric_centers(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the geometric center of the input images.
 
     With "geometric center" of a volume we mean the physical coordinates of
     its central voxel
@@ -1291,15 +1402,14 @@ def transform_geometric_centers(static, static_grid2world,
     c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
 
 
-def transform_origins(static, static_grid2world,
-                      moving, moving_grid2world):
-    r""" Transformation to align the origins of the input images.
+def transform_origins(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the origins of the input images.
 
     With "origin" of a volume we mean the physical coordinates of
     voxel (0,0,0)
@@ -1332,7 +1442,7 @@ def transform_origins(static, static_grid2world,
     c_moving = moving_grid2world[:dim, dim]
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
