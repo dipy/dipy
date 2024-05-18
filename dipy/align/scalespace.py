@@ -4,7 +4,7 @@ import numpy as np
 import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
 
-from dipy.align import floating
+from dipy.align.utils import floating
 
 logger = logging.getLogger(__name__)
 
