@@ -83,9 +83,7 @@ def concatenate_tractogram(
                 raise ValueError("Wrong space attributes.")
 
     if preallocation and not delete_groups:
-        raise ValueError(
-            "Groups are variables, cannot be handled with " "preallocation"
-        )
+        raise ValueError("Groups are variables, cannot be handled with preallocation")
 
     # Verifying the validity of fixed-size arrays, coherence between inputs
     for curr_trx in trx_list:
@@ -98,7 +96,7 @@ def concatenate_tractogram(
                     logging.debug(
                         "{} dpv key does not exist in all TrxFile.".format(key)
                     )
-                    raise ValueError("TrxFile must be sharing identical dpv " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dpv keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
@@ -119,7 +117,7 @@ def concatenate_tractogram(
                     logging.debug(
                         "{} dps key does not exist in all " "TrxFile.".format(key)
                     )
-                    raise ValueError("TrxFile must be sharing identical dps " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dps keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype

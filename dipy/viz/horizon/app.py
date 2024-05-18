@@ -163,7 +163,7 @@ class Horizon:
         """
         if not has_fury:
             raise ImportError(
-                "Horizon requires FURY. Please install it " "with pip install fury"
+                "Horizon requires FURY. Please install it with pip install fury"
             )
         if Version(fury_version) < Version("0.10.0"):
             ValueError(

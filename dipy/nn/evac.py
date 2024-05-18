@@ -453,7 +453,7 @@ class EVACPlus:
             voxsize = np.expand_dims(voxsize, 0)
         else:
             raise ValueError(
-                "T1 data should be a np.ndarray of dimension 3 " "or a list/tuple of it"
+                "T1 data should be a np.ndarray of dimension 3 or a list/tuple of it"
             )
 
         input_data = np.zeros((128, 128, 128, len(T1)))

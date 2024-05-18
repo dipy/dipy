@@ -148,7 +148,7 @@ def load_tractogram(
 
     if trk_header_check and extension == ".trk":
         if not is_header_compatible(filename, reference):
-            logging.error("Trk file header does not match the provided " "reference.")
+            logging.error("Trk file header does not match the provided reference.")
             return False
 
     timer = time.time()

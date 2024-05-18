@@ -118,7 +118,7 @@ def test_buan_bundle_profiles(rng):
 
 @pytest.mark.skipif(
     not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
-    reason="Requires Pandas, StatsModels, PyTables, and " "matplotlib",
+    reason="Requires Pandas, StatsModels, PyTables, and matplotlib",
 )
 @set_random_number_generator()
 def test_bundle_analysis_tractometry_flow(rng):
@@ -192,7 +192,7 @@ def test_bundle_analysis_tractometry_flow(rng):
 
 @pytest.mark.skipif(
     not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
-    reason="Requires Pandas, StatsModels, PyTables, and " "matplotlib",
+    reason="Requires Pandas, StatsModels, PyTables, and matplotlib",
 )
 def test_linear_mixed_models_flow():
     with TemporaryDirectory() as dirpath:
@@ -282,7 +282,7 @@ def test_linear_mixed_models_flow():
 
 @pytest.mark.skipif(
     not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
-    reason="Requires Pandas, StatsModels, PyTables, and " "matplotlib",
+    reason="Requires Pandas, StatsModels, PyTables, and matplotlib",
 )
 @set_random_number_generator()
 def test_bundle_shape_analysis_flow(rng):

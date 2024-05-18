@@ -51,7 +51,7 @@ def check_dimensions(static, moving):
 
     if len(static.shape) > 3 and len(moving.shape) > 3:
         raise ValueError(
-            "Dimension mismatch: One of the input should " "be 2D or 3D dimensions."
+            "Dimension mismatch: One of the input should be 2D or 3D dimensions."
         )
 
 

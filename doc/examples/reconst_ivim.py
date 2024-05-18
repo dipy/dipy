@@ -310,19 +310,19 @@ plot_map(
 )
 plot_map(
     ivimfit_vp.perfusion_fraction,
-    "Heatmap of perfusion fraction values " "predicted from the fit",
+    "Heatmap of perfusion fraction values predicted from the fit",
     (0, 1),
     "perfusion_fraction.png",
 )
 plot_map(
     ivimfit_vp.D_star,
-    "D* - Heatmap of perfusion coefficients predicted " "from the fit",
+    "D* - Heatmap of perfusion coefficients predicted from the fit",
     (0, 0.01),
     "perfusion_coeff.png",
 )
 plot_map(
     ivimfit_vp.D,
-    "D - Heatmap of diffusion coefficients predicted from " "the fit",
+    "D - Heatmap of diffusion coefficients predicted from the fit",
     (0, 0.001),
     "diffusion_coeff.png",
 )

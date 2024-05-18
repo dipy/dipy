@@ -160,7 +160,7 @@ class StatefulTractogram:
         self._space = space
 
         if origin not in Origin:
-            raise ValueError("Origin MUST be from Origin enum, " "e.g Origin.NIFTI.")
+            raise ValueError("Origin MUST be from Origin enum, e.g Origin.NIFTI.")
         self._origin = origin
 
         logger.debug(self)

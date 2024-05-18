@@ -147,9 +147,9 @@ axis_Z = np.argmin(np.sum((gtab.bvecs - np.array([0, 0, 1])) ** 2, axis=-1))
 for direction in [0, axis_X, axis_Y, axis_Z]:
     SNR = mean_signal[direction] / noise_std
     if direction == 0:
-        print("SNR for the b=0 image is :", SNR)
+        print(f"SNR for the b=0 image is : {SNR}")
     else:
-        print("SNR for direction", direction, " ", gtab.bvecs[direction], "is :", SNR)
+        print(f"SNR for direction {direction} {gtab.bvecs[direction]} is : {SNR}")
 
 ###############################################################################
 # Since the CC is aligned with the X axis, the lowest SNR is for that gradient

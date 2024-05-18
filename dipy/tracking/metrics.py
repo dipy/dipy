@@ -772,7 +772,7 @@ def arbitrarypoint(xyz, distance):
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)
     if cumlen[-1] < distance:
-        raise ValueError("Given distance is bigger than " "the length of the curve")
+        raise ValueError("Given distance is bigger than the length of the curve")
     ind = np.where((cumlen - distance) > 0)[0][0]
     len0 = cumlen[ind - 1]
     len1 = cumlen[ind]

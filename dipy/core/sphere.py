@@ -175,7 +175,7 @@ class Sphere:
 
         if edges is not None and faces is None:
             raise ValueError(
-                "Either specify both faces and " "edges, only faces, or neither."
+                "Either specify both faces and edges, only faces, or neither."
             )
 
         if edges is not None:

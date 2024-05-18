@@ -529,7 +529,7 @@ def affine_registration(
 
     if pipeline == ["center_of_mass"] and ret_metric:
         raise ValueError(
-            "center of mass registration cannot return any " "quality metric."
+            "center of mass registration cannot return any quality metric."
         )
 
     # Go through the selected transformation:
@@ -585,29 +585,29 @@ def affine_registration(
 
 center_of_mass = partial(affine_registration, pipeline=["center_of_mass"])
 center_of_mass.__doc__ = (
-    "Implements a center of mass transform. " "Based on `affine_registration()`."
+    "Implements a center of mass transform. Based on `affine_registration()`."
 )
 
 translation = partial(affine_registration, pipeline=["translation"])
 translation.__doc__ = (
-    "Implements a translation transform. " "Based on `affine_registration()`."
+    "Implements a translation transform. Based on `affine_registration()`."
 )
 
 rigid = partial(affine_registration, pipeline=["rigid"])
-rigid.__doc__ = "Implements a rigid transform. " "Based on `affine_registration()`."
+rigid.__doc__ = "Implements a rigid transform. Based on `affine_registration()`."
 
 rigid_isoscaling = partial(affine_registration, pipeline=["rigid_isoscaling"])
 rigid_isoscaling.__doc__ = (
-    "Implements a rigid isoscaling transform. " "Based on `affine_registration()`."
+    "Implements a rigid isoscaling transform. Based on `affine_registration()`."
 )
 
 rigid_scaling = partial(affine_registration, pipeline=["rigid_scaling"])
 rigid_scaling.__doc__ = (
-    "Implements a rigid scaling transform. " "Based on `affine_registration()`."
+    "Implements a rigid scaling transform. Based on `affine_registration()`."
 )
 
 affine = partial(affine_registration, pipeline=["affine"])
-affine.__doc__ = "Implements an affine transform. " "Based on `affine_registration()`."
+affine.__doc__ = "Implements an affine transform. Based on `affine_registration()`."
 
 
 _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
