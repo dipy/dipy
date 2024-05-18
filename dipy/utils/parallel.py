@@ -97,7 +97,7 @@ def paramap(
         elif backend == "threading":
             results = dask.compute(*dd, scheduler="threads", workers=n_jobs, **kwargs)
         else:
-            raise ValueError("%s is not a backend for dask" % backend)
+            raise ValueError(f"{backend} is not a backend for dask")
 
     if engine == "ray":
         if not has_ray:

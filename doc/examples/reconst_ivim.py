@@ -60,7 +60,7 @@ fraw, fbval, fbvec = get_fnames("ivim")
 data = load_nifti_data(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs, b0_threshold=0)
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
@@ -145,7 +145,7 @@ ivimfit = ivimmodel.fit(data_slice)
 # order : $\mathbf{S_{0}, f, D^*, D}$.
 
 ivimparams = ivimfit.model_params
-print("ivimparams.shape : {}".format(ivimparams.shape))
+print(f"ivimparams.shape : {ivimparams.shape}")
 
 ###############################################################################
 # As we see, we have a 20x20 slice at the height z = 33. Thus we
@@ -175,7 +175,7 @@ print(estimated_params)
 def plot_map(raw_data, variable, limits, filename):
     fig, ax = plt.subplots(1)
     lower, upper = limits
-    ax.set_title("Map for {}".format(variable))
+    ax.set_title(f"Map for {variable}")
     im = ax.imshow(
         raw_data.T,
         origin="lower",
@@ -251,8 +251,10 @@ ax.plot(gtab.bvals, ivim_trr_predict, label="trr prediction")
 
 S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
 
-text_fit = """trr param estimates: \n S0={:06.3f} f={:06.4f}\n
-            D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
+trr_pro_param_est = (
+    f"S0={S0_est:06.3f} f={f_est:06.4f}\n" f"D*={D_star_est:06.5f} D={D_est:06.5f}"
+)
+text_fit = f"""trr param estimates:\n {trr_pro_param_est}"""
 
 ax.text(
     0.65,
@@ -271,8 +273,10 @@ ax.set_ylabel("Signals")
 
 S0_est, f_est, D_star_est, D_est = ivimfit_vp.model_params[i, j, :]
 
-text_fit = """VarPro param estimates: \n S0={:06.3f} f={:06.4f}\n
-            D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
+var_pro_param_est = (
+    f"S0={S0_est:06.3f} f={f_est:06.4f}\n" f"D*={D_star_est:06.5f} D={D_est:06.5f}"
+)
+text_fit = f"""VarPro param estimates:\n{var_pro_param_est}"""
 
 ax.text(
     0.65,

@@ -146,7 +146,7 @@ class ReconstMAPMRIFlow(Workflow):
             out_perng,
             out_parng,
         ) in io_it:
-            logging.info("Computing MAPMRI metrics for {0}".format(dwi))
+            logging.info(f"Computing MAPMRI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -155,9 +155,9 @@ class ReconstMAPMRIFlow(Workflow):
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
                     warn(
-                        "b0_threshold (value: {0}) is too low, increase your "
-                        "b0_threshold. It should be higher than the first b0 "
-                        "value({1}).".format(b0_threshold, bvals.min()),
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
             gtab = gradient_table(
@@ -265,7 +265,7 @@ class ReconstMAPMRIFlow(Workflow):
                 n = mapfit_aniso.ng_parallel()
                 save_nifti(out_parng, n.astype(np.float32), affine)
 
-            logging.info("MAPMRI saved in {0}".format(os.path.abspath(out_dir)))
+            logging.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
 
 
 class ReconstDtiFlow(Workflow):
@@ -449,7 +449,7 @@ class ReconstDtiFlow(Workflow):
             opeaks_indices,
             ogfa,
         ) in io_it:
-            logging.info("Computing DTI metrics for {0}".format(dwi))
+            logging.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -538,7 +538,7 @@ class ReconstDtiFlow(Workflow):
                 msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
                 logging.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs["out_" + metric])
+                    logging.info(self.last_generated_outputs[f"out_{metric}"])
 
             # save peaks
             peaks_dti = peaks_from_model(
@@ -688,7 +688,7 @@ class ReconstDsiFlow(Workflow):
             opeaks_indices,
             ogfa,
         ) in io_it:
-            logging.info("Computing DSI Model for {0}".format(dwi))
+            logging.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -737,7 +737,7 @@ class ReconstDsiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            logging.info("DSI metrics saved to {0}".format(os.path.abspath(out_dir)))
+            logging.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
 
 
 class ReconstCSDFlow(Workflow):
@@ -853,7 +853,7 @@ class ReconstCSDFlow(Workflow):
             opeaks_indices,
             ogfa,
         ) in io_it:
-            logging.info("Loading {0}".format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -863,9 +863,9 @@ class ReconstCSDFlow(Workflow):
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
                     warn(
-                        "b0_threshold (value: {0}) is too low, increase your "
-                        "b0_threshold. It should be higher than the first b0 "
-                        "value ({1}).".format(b0_threshold, bvals.min()),
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
             gtab = gradient_table(
@@ -876,16 +876,16 @@ class ReconstCSDFlow(Workflow):
             n_params = ((sh_order + 1) * (sh_order + 2)) / 2
             if data.shape[-1] < n_params:
                 raise ValueError(
-                    "You need at least {0} unique DWI volumes to "
-                    "compute fiber odfs. You currently have: {1}"
-                    " DWI volumes.".format(n_params, data.shape[-1])
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
                 )
 
             if frf is None:
                 logging.info("Computing response function")
                 if roi_center is not None:
-                    logging.info("Response ROI center:\n{0}".format(roi_center))
-                    logging.info("Response ROI radii:\n{0}".format(roi_radii))
+                    logging.info(f"Response ROI center:\n{roi_center}")
+                    logging.info(f"Response ROI radii:\n{roi_radii}")
                 response, ratio = auto_response_ssst(
                     gtab,
                     data,
@@ -908,13 +908,9 @@ class ReconstCSDFlow(Workflow):
                 response = (response, ratio)
 
             logging.info(
-                "Eigenvalues for the frf of the input" " data are :{0}".format(
-                    response[0]
-                )
+                f"Eigenvalues for the frf of the input data are :{response[0]}"
             )
-            logging.info(
-                "Ratio for smallest to largest eigen value is {0}".format(ratio)
-            )
+            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
 
@@ -957,7 +953,7 @@ class ReconstCSDFlow(Workflow):
             if dname_ == "":
                 logging.info("Pam5 file saved in current directory")
             else:
-                logging.info("Pam5 file saved in {0}".format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1058,7 +1054,7 @@ class ReconstCSAFlow(Workflow):
             opeaks_indices,
             ogfa,
         ) in io_it:
-            logging.info("Loading {0}".format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1067,9 +1063,9 @@ class ReconstCSAFlow(Workflow):
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
                     warn(
-                        "b0_threshold (value: {0}) is too low, increase your "
-                        "b0_threshold. It should be higher than the first b0 "
-                        "value ({1}).".format(b0_threshold, bvals.min()),
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
             gtab = gradient_table(
@@ -1079,7 +1075,7 @@ class ReconstCSAFlow(Workflow):
 
             peaks_sphere = default_sphere
 
-            logging.info("Starting CSA computations {0}".format(dwi))
+            logging.info(f"Starting CSA computations {dwi}")
 
             csa_model = CsaOdfModel(gtab, sh_order)
 
@@ -1100,7 +1096,7 @@ class ReconstCSAFlow(Workflow):
 
             save_peaks(opam, peaks_csa)
 
-            logging.info("Finished CSA {0}".format(dwi))
+            logging.info(f"Finished CSA {dwi}")
 
             if extract_pam_values:
                 peaks_to_niftis(
@@ -1117,7 +1113,7 @@ class ReconstCSAFlow(Workflow):
             if dname_ == "":
                 logging.info("Pam5 file saved in current directory")
             else:
-                logging.info("Pam5 file saved in {0}".format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1292,7 +1288,7 @@ class ReconstDkiFlow(Workflow):
             opeaks_indices,
             ogfa,
         ) in io_it:
-            logging.info("Computing DKI metrics for {0}".format(dwi))
+            logging.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1386,7 +1382,7 @@ class ReconstDkiFlow(Workflow):
             if "rk" in save_metrics:
                 save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
-            logging.info("DKI metrics saved in {0}".format(os.path.dirname(oevals)))
+            logging.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
 
             # save peaks
             peaks_dki = peaks_from_model(
@@ -1434,9 +1430,9 @@ class ReconstDkiFlow(Workflow):
         if any(mask_non_weighted_bvals(bvals, b0_threshold)):
             if b0_threshold < bvals.min():
                 warn(
-                    "b0_threshold (value: {0}) is too low, increase your "
-                    "b0_threshold. It should be higher than the first b0 "
-                    "value ({1}).".format(b0_threshold, bvals.min()),
+                    f"b0_threshold (value: {b0_threshold}) is too low, "
+                    "increase your b0_threshold. It should be higher than the "
+                    f"first b0 value ({bvals.min()}).",
                     stacklevel=2,
                 )
 
@@ -1535,7 +1531,7 @@ class ReconstIvimFlow(Workflow):
             oD_star,
             oD,
         ) in io_it:
-            logging.info("Computing IVIM metrics for {0}".format(dwi))
+            logging.info(f"Computing IVIM metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1564,7 +1560,7 @@ class ReconstIvimFlow(Workflow):
             if "D" in save_metrics:
                 save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
-            logging.info("IVIM metrics saved in {0}".format(os.path.dirname(oD)))
+            logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
 
     def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
         logging.info("Intra-Voxel Incoherent Motion Estimation...")
@@ -1574,9 +1570,9 @@ class ReconstIvimFlow(Workflow):
         if any(mask_non_weighted_bvals(bvals, b0_threshold)):
             if b0_threshold < bvals.min():
                 warn(
-                    "b0_threshold (value: {0}) is too low, increase your "
-                    "b0_threshold. It should be higher than the first b0 "
-                    "value ({1}).".format(b0_threshold, bvals.min()),
+                    f"b0_threshold (value: {b0_threshold}) is too low, "
+                    "increase your b0_threshold. It should be higher than the "
+                    f"first b0 value ({bvals.min()}).",
                     stacklevel=2,
                 )
 
@@ -1760,7 +1756,7 @@ class ReconstRUMBAFlow(Workflow):
             ogfa,
         ) in io_it:
             # Read the data
-            logging.info("Loading {0}".format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1772,9 +1768,9 @@ class ReconstRUMBAFlow(Workflow):
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
                     warn(
-                        "b0_threshold (value: {0}) is too low, increase your "
-                        "b0_threshold. It should be higher than the first b0 "
-                        "value ({1}).".format(b0_threshold, bvals.min()),
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
 
@@ -1840,6 +1836,6 @@ class ReconstRUMBAFlow(Workflow):
             if dname_ == "":
                 logging.info("Pam5 file saved in current directory")
             else:
-                logging.info("Pam5 file saved in {0}".format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it

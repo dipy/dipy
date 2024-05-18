@@ -208,7 +208,7 @@ def test_horizon_wrong_dtype_images():
     with warnings.catch_warnings(record=True) as l_warns:
         horizon(images=images, interactive=False)
         check_for_warnings(
-            l_warns, "skipping image 1, passed image is not in " + "numerical format"
+            l_warns, "skipping image 1, passed image is not in numerical format"
         )
 
 
@@ -262,7 +262,7 @@ def test_surfaces(rng):
         show_m = horizon(surfaces=surfaces, return_showm=True)
         analysis = window.analyze_scene(show_m.scene)
         npt.assert_equal(analysis.actors, 0)
-        check_for_warnings(l_warns, "Vertices do not have correct shape: " + "(100, 4)")
+        check_for_warnings(l_warns, "Vertices do not have correct shape: (100, 4)")
 
     vertices = rng.random((100, 3))
     faces = rng.integers(0, 100, size=(100, 4))
@@ -276,7 +276,7 @@ def test_surfaces(rng):
         show_m = horizon(surfaces=surfaces, return_showm=True)
         analysis = window.analyze_scene(show_m.scene)
         npt.assert_equal(analysis.actors, 0)
-        check_for_warnings(l_warns, "Faces do not have correct shape: " + "(100, 4)")
+        check_for_warnings(l_warns, "Faces do not have correct shape: (100, 4)")
 
 
 @pytest.mark.skipif(skip_it, reason="Needs xvfb")

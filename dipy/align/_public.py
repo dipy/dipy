@@ -248,8 +248,7 @@ def register_dwi_to_template(
         )
     else:
         raise ValueError(
-            "reg_method should be one of 'aff' or 'syn', but you"
-            " provided %s" % reg_method
+            f"reg_method should be one of 'aff' or 'syn', but you provided {reg_method}"
         )
 
     return warped_b0, mapping

@@ -147,7 +147,7 @@ class NumpyDocString:
 
     def __setitem__(self, key, val):
         if key not in self._parsed_data:
-            warn("Unknown section %s" % key, stacklevel=2)
+            warn(f"Unknown section {key}", stacklevel=2)
         else:
             self._parsed_data[key] = val
 
@@ -243,7 +243,7 @@ class NumpyDocString:
                     return g[3], None
                 else:
                     return g[2], g[1]
-            raise ValueError("%s is not a item name" % text)
+            raise ValueError(f"{text} is not a item name")
 
         def push_item(name, rest):
             if not name:
@@ -381,7 +381,7 @@ class NumpyDocString:
             out += self._str_header(name)
             for param, param_type, desc in self[name]:
                 if param_type:
-                    out += ["%s : %s" % (param, param_type)]
+                    out += [f"{param} : {param_type}"]
                 else:
                     out += [param]
                 out += self._str_indent(desc)
@@ -404,16 +404,16 @@ class NumpyDocString:
         last_had_desc = True
         for func, desc, role in self["See Also"]:
             if role:
-                link = ":%s:`%s`" % (role, func)
+                link = f":{role}:`{func}`"
             elif func_role:
-                link = ":%s:`%s`" % (func_role, func)
+                link = f":{func_role}:`{func}`"
             else:
-                link = "`%s`_" % func
+                link = f"`{func}`_"
             if desc or last_had_desc:
                 out += [""]
                 out += [link]
             else:
-                out[-1] += ", %s" % link
+                out[-1] += f", {link}"
             if desc:
                 out += self._str_indent([" ".join(desc)])
                 last_had_desc = True
@@ -425,11 +425,11 @@ class NumpyDocString:
     def _str_index(self):
         idx = self["index"]
         out = []
-        out += [".. index:: %s" % idx.get("default", "")]
+        out += [f".. index:: {idx.get('default', '')}"]
         for section, references in idx.items():
             if section == "default":
                 continue
-            out += ["   :%s: %s" % (section, ", ".join(references))]
+            out += [f"   :{section}: {', '.join(references)}"]
         return out
 
     def __str__(self, func_role=""):

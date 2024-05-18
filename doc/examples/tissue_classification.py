@@ -30,7 +30,7 @@ from dipy.segment.tissue import TissueClassifierHMRF
 
 t1_fname, _, _ = get_fnames("tissue_data")
 t1 = load_nifti_data(t1_fname)
-print("t1.shape (%d, %d, %d)" % t1.shape)
+print(f"t1.shape {t1.shape}")
 
 ###############################################################################
 # We have fetched the T1 volume. Now we will look at the axial and coronal
@@ -84,7 +84,7 @@ initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta)
 
 t1 = time.time()
 total_time = t1 - t0
-print("Total time:" + str(total_time))
+print(f"Total time: {total_time}")
 
 fig = plt.figure()
 a = fig.add_subplot(1, 2, 1)

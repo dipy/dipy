@@ -87,9 +87,9 @@ csd_peaks = peaks_from_model(
 )
 
 time_single = time.time() - start_time
-print("peaks_from_model ran in :" + str(time_single) + " seconds")
+print(f"peaks_from_model ran in : {time_single} seconds")
 
-print("Speedup factor : " + str(time_single / time_parallel))
+print(f"Speedup factor : {time_single / time_parallel}")
 
 ###############################################################################
 # In Windows if you get a runtime error about frozen executable please start

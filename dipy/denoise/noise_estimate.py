@@ -360,8 +360,8 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         factor = correction_factor[N]
     else:
         raise ValueError(
-            "N = {0} is not supported! Please choose amongst \
-{1}".format(N, sorted(correction_factor.keys()))
+            f"N = {N} is not supported! Please choose amongst "
+            f"{sorted(correction_factor.keys())}"
         )
 
     if arr.ndim == 3:

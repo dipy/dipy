@@ -302,8 +302,8 @@ def genpca(
         var = sigma**2
         if not sigma.shape == arr.shape[:-1]:
             e_s = "You provided a sigma array with a shape"
-            e_s += "{0} for data with".format(sigma.shape)
-            e_s += "shape {0}. Please provide a sigma array".format(arr.shape)
+            e_s += f"{sigma.shape} for data with"
+            e_s += f"shape {arr.shape}. Please provide a sigma array"
             e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
     elif isinstance(sigma, (int, float)):

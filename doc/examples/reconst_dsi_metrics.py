@@ -36,7 +36,7 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
 gtab = gradient_table(bvals, bvecs)
 
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # Instantiate the Model and apply it to the data.
@@ -76,7 +76,7 @@ rtop_pdf = dsmodel.fit(dataslice).rtop_pdf(normalized=False)
 # to show that we calculate the mean square error on this two measures.
 
 mse = np.sum((rtop_signal - rtop_pdf) ** 2) / rtop_signal.size
-print("mse = %f" % mse)
+print(f"mse = {mse:f}")
 
 ###############################################################################
 # Leaving the normalized parameter to the default changes the values of the

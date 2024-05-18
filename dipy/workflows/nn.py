@@ -47,7 +47,7 @@ class EVACPlusFlow(Workflow):
         empty_flag = True
 
         for fpath, mask_out_path, masked_out_path in io_it:
-            logging.info("Applying evac+ brain extraction on {0}".format(fpath))
+            logging.info(f"Applying evac+ brain extraction on {fpath}")
 
             data, affine, img, voxsize = load_nifti(
                 fpath, return_img=True, return_voxsize=True
@@ -58,12 +58,12 @@ class EVACPlusFlow(Workflow):
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
-            logging.info("Mask saved as {0}".format(mask_out_path))
+            logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
                 save_nifti(masked_out_path, masked_volume, affine, img.header)
 
-                logging.info("Masked volume saved as {0}".format(masked_out_path))
+                logging.info(f"Masked volume saved as {masked_out_path}")
             empty_flag = False
         if empty_flag:
             raise ValueError(

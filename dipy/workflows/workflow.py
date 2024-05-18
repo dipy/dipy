@@ -95,7 +95,7 @@ class Workflow:
         reached (not implemented in child class or literally called on this
         class)
         """
-        raise Exception("Error: {} does not have a run method.".format(self.__class__))
+        raise Exception(f"Error: {self.__class__} does not have a run method.")
 
     def get_sub_runs(self):
         """Return No sub runs since this is a simple workflow."""

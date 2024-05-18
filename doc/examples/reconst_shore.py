@@ -36,7 +36,7 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 data_small = data[10:40, 22, 10:40]
 
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
@@ -79,7 +79,7 @@ sphere = get_sphere("repulsion724")
 # Compute the ODFs
 
 odf = asmfit.odf(sphere)
-print("odf.shape (%d, %d, %d)" % odf.shape)
+print(f"odf.shape {odf.shape}")
 
 ###############################################################################
 # Display the ODFs

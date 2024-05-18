@@ -236,7 +236,7 @@ class CCMetric(SimilarityMetric):
             self.compute_backward_step = cc.compute_cc_backward_step_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError("CC Metric not defined for dim. %d" % self.dim)
+            raise ValueError(f"CC Metric not defined for dim. {self.dim}")
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -416,14 +416,14 @@ class EMMetric(SimilarityMetric):
             self.compute_stats = em.compute_masked_class_stats_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError("EM Metric not defined for dim. %d" % self.dim)
+            raise ValueError(f"EM Metric not defined for dim. {self.dim}")
 
         if self.step_type == "demons":
             self.compute_step = self.compute_demons_step
         elif self.step_type == "gauss_newton":
             self.compute_step = self.compute_gauss_newton_step
         else:
-            raise ValueError("Opt. step %s not defined" % self.step_type)
+            raise ValueError(f"Opt. step {self.step_type} not defined")
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -743,14 +743,14 @@ class SSDMetric(SimilarityMetric):
         elif self.dim == 3:
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError("SSD Metric not defined for dim. %d" % self.dim)
+            raise ValueError(f"SSD Metric not defined for dim. {self.dim}")
 
         if self.step_type == "gauss_newton":
             self.compute_step = self.compute_gauss_newton_step
         elif self.step_type == "demons":
             self.compute_step = self.compute_demons_step
         else:
-            raise ValueError("Opt. step %s not defined" % self.step_type)
+            raise ValueError(f"Opt. step {self.step_type} not defined")
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.

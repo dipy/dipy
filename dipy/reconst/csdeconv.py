@@ -557,14 +557,14 @@ potrf, potrs = ll.get_lapack_funcs(("potrf", "potrs"))
 def _solve_cholesky(Q, z):
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
     if info > 0:
-        msg = "%d-th leading minor not positive definite" % info
+        msg = f"{info}-th leading minor not positive definite"
         raise la.LinAlgError(msg)
     if info < 0:
-        msg = "illegal value in %d-th argument of internal potrf" % -info
+        msg = f"illegal value in {-info}-th argument of internal potrf"
         raise ValueError(msg)
     f, info = potrs(L, z, lower=False, overwrite_b=False)
     if info != 0:
-        msg = "illegal value in %d-th argument of internal potrs" % -info
+        msg = f"illegal value in {-info}-th argument of internal potrs"
         raise ValueError(msg)
     return f
 
@@ -999,8 +999,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = """No voxel with a FA higher than {} were found.
-        Try a larger roi or a lower threshold.""".format(str(fa_thr))
+        msg = f"""No voxel with a FA higher than {str(fa_thr)} were found.
+        Try a larger roi or a lower threshold."""
         warnings.warn(msg, UserWarning, stacklevel=2)
 
     return mask

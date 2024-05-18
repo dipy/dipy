@@ -449,7 +449,7 @@ class Horizon:
     def build_show(self, scene):
         self._scene = scene
 
-        title = "Horizon " + horizon_version
+        title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
             scene,
             title=title,
@@ -527,7 +527,7 @@ class Horizon:
             img_count = 0
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
-                title = "Image {}".format(img_count + 1)
+                title = f"Image {img_count + 1}"
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
                 binary_image = is_binary_image(data)
@@ -580,7 +580,7 @@ class Horizon:
                     warn(str(e), stacklevel=2)
                     continue
                 color = next(self.color_gen)
-                title = "Surface {}".format(idx + 1)
+                title = f"Surface {idx + 1}"
                 surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
                 surf_tab = SurfaceTab(surf_viz, title, fname)
                 self.__tabs.append(surf_tab)

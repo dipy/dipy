@@ -120,14 +120,14 @@ def test_build_checkbox():
         checkbox = build_checkbox()
         npt.assert_equal(checkbox, None)
         check_for_warnings(
-            l_warns, "At least one label needs to be to create" + " checkboxes"
+            l_warns, "At least one label needs to be to create checkboxes"
         )
 
     with warnings.catch_warnings(record=True) as l_warns:
         checkbox = build_checkbox([])
         npt.assert_equal(checkbox, None)
         check_for_warnings(
-            l_warns, "At least one label needs to be to create" + " checkboxes"
+            l_warns, "At least one label needs to be to create checkboxes"
         )
 
 
@@ -143,14 +143,14 @@ def test_build_radio():
         radio = build_radio_button()
         npt.assert_equal(radio, None)
         check_for_warnings(
-            l_warns, "At least one label needs to be to create" + " radio buttons"
+            l_warns, "At least one label needs to be to create radio buttons"
         )
 
     with warnings.catch_warnings(record=True) as l_warns:
         radio = build_radio_button([])
         npt.assert_equal(radio, None)
         check_for_warnings(
-            l_warns, "At least one label needs to be to create" + " radio buttons"
+            l_warns, "At least one label needs to be to create radio buttons"
         )
 
 

@@ -138,7 +138,7 @@ sphere = get_sphere("repulsion724")
 # Compute the fODFs.
 
 odf = f_fit.odf(sphere)
-print("fODF.shape (%d, %d, %d, %d)" % odf.shape)
+print(f"fODF.shape {odf.shape}")
 
 ###############################################################################
 # Display a part of the fODFs

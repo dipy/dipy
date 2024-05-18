@@ -101,7 +101,7 @@ def anatomical_measures(
         st = bundle[st_i]
         dt["streamline"].extend([st_i] * len(st))
 
-    file_name = bname + "_" + pname
+    file_name = f"{bname}_{pname}"
 
     save_buan_profiles_hdf5(os.path.join(dir_name, file_name), dt)
 

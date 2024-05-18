@@ -364,12 +364,10 @@ def slicer_panel(
         i, j, k = obj.picker.GetPointIJK()
         res = mem.slicer_vol[i, j, k]
         try:
-            message = "%.3f" % res
+            message = f"{res:.3f}"
         except TypeError:
-            message = "%.3f %.3f %.3f" % (res[0], res[1], res[2])
-        picker_label.message = (
-            "({}, {}, {})".format(str(i), str(j), str(k)) + " " + message
-        )
+            message = f"{res[0]:.3f} {res[1]:.3f} {res[2]:.3f}"
+        picker_label.message = f"({str(i)}, {str(j)}, {str(k)}) {message}"
 
     mem.slicer_vol_idx = 0
     mem.slicer_vol = tmp_new

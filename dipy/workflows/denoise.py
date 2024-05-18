@@ -176,7 +176,7 @@ class NLMeansFlow(Workflow):
                 if sigma == 0:
                     logging.info("Estimating sigma")
                     sigma = estimate_sigma(data)
-                    logging.debug("Found sigma {0}".format(sigma))
+                    logging.debug(f"Found sigma {sigma}")
 
                 denoised_data = nlmeans(
                     data,

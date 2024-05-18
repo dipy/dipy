@@ -442,7 +442,7 @@ def test_cluster_map_str_and_repr():
 
     expected_str = "[" + ", ".join(map(str, clusters)) + "]"
     assert_equal(str(cluster_map), expected_str)
-    assert_equal(repr(cluster_map), "ClusterMap(" + expected_str + ")")
+    assert_equal(repr(cluster_map), f"ClusterMap({expected_str})")
 
 
 def test_cluster_map_size():

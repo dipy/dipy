@@ -90,7 +90,7 @@ data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 """
 data.shape ``(81, 106, 76, 160)``
@@ -105,7 +105,7 @@ from dipy.segment.mask import median_otsu
 maskdata, mask = median_otsu(
     data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
 )
-print("maskdata.shape (%d, %d, %d, %d)" % maskdata.shape)
+print(f"maskdata.shape {maskdata.shape}")
 
 """
 maskdata.shape ``(72, 87, 59, 160)``

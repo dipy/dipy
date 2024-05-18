@@ -28,7 +28,7 @@ class SphinxDocString(NumpyDocString):
     def _str_signature(self):
         return ['']
         if self['Signature']:
-            return ['``%s``' % self['Signature']] + ['']
+            return [f"``{self['Signature']}``"] + ['']
         else:
             return ['']
 
@@ -44,8 +44,7 @@ class SphinxDocString(NumpyDocString):
             out += self._str_field_list(name)
             out += ['']
             for param,param_type,desc in self[name]:
-                out += self._str_indent(['**%s** : %s' % (param.strip(),
-                                                          param_type)])
+                out += self._str_indent([f'**{param.strip()}** : {param_type}'])
                 out += ['']
                 out += self._str_indent(desc,8)
                 out += ['']
@@ -71,7 +70,7 @@ class SphinxDocString(NumpyDocString):
             prefix = getattr(self, '_name', '')
 
             if prefix:
-                prefix = '~%s.' % prefix
+                prefix = f'~{prefix}.'
 
             autosum = []
             others = []
@@ -163,7 +162,7 @@ class SphinxDocString(NumpyDocString):
                 m = re.match(r'.. \[([a-z0-9._-]+)\]', line, re.I)
                 if m:
                     items.append(m.group(1))
-            out += [' ' + ", ".join(["[%s]_" % item for item in items]), '']
+            out += [' ' + ", ".join([f"[{item}]_" for item in items]), '']
         return out
 
     def _str_examples(self):

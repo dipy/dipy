@@ -198,8 +198,8 @@ class ShoreModel(Cache):
                 raise ImportError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-                    msg += " One of %s" % ", ".join(cvxpy.installed_solvers())
+                    msg = f"Input `cvxpy_solver` was set to {cvxpy_solver}."
+                    msg += f" One of {', '.join(cvxpy.installed_solvers())}"
                     msg += " was expected."
                     raise ValueError(msg)
 
@@ -778,9 +778,9 @@ def shore_indices(radial_order, index):
     m_i = 0
 
     if n_c < (index + 1):
-        msg = "The index %s is higher than the number of" % index
+        msg = f"The index {index} is higher than the number of"
         msg += " coefficients of the truncated basis,"
-        msg += " which is %s starting from 0." % int(n_c - 1)
+        msg += f" which is {int(n_c - 1)} starting from 0."
         msg += " Select a lower index."
         raise ValueError(msg)
     else:
@@ -820,7 +820,7 @@ def shore_order(n, ell, m):
     if ell % 2 == 1 or ell > n or ell < 0 or n < 0 or np.abs(m) > ell:
         msg = "The index l must be even and 0 <= l <= n, the index m must be "
         msg += "-l <= m <= ell. Given values were"
-        msg += " [n,l,m]=[%s]." % ",".join([str(n), str(ell), str(m)])
+        msg += f" [n,l,m]=[{','.join([str(n), str(ell), str(m)])}]."
         raise ValueError(msg)
     else:
         if n % 2 == 1:

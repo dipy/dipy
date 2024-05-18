@@ -170,10 +170,10 @@ MK = dki_fit.mk(0, 3)
 fig1, axs = plt.subplots(nrows=2, ncols=2, figsize=(10, 10))
 
 for f_i in range(f.size):
-    axs[0, 0].plot(ang, MSD[f_i], linewidth=1.0, label="$F: %.2f$" % f[f_i])
-    axs[0, 1].plot(ang, MSK[f_i], linewidth=1.0, label="$F: %.2f$" % f[f_i])
-    axs[1, 0].plot(ang, MD[f_i], linewidth=1.0, label="$F: %.2f$" % f[f_i])
-    axs[1, 1].plot(ang, MK[f_i], linewidth=1.0, label="$F: %.2f$" % f[f_i])
+    axs[0, 0].plot(ang, MSD[f_i], linewidth=1.0, label=f"$F: {f[f_i]:.2f}$")
+    axs[0, 1].plot(ang, MSK[f_i], linewidth=1.0, label=f"$F: {f[f_i]:.2f}$")
+    axs[1, 0].plot(ang, MD[f_i], linewidth=1.0, label=f"$F: {f[f_i]:.2f}$")
+    axs[1, 1].plot(ang, MK[f_i], linewidth=1.0, label=f"$F: {f[f_i]:.2f}$")
 
 # Adjust properties of the first panel of the figure
 axs[0, 0].set_xlabel("Intersection angle")

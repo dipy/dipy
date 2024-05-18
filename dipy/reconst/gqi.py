@@ -221,8 +221,7 @@ def equatorial_maximum(vertices, odf, pole, width):
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
         print(
-            "empty equatorial band at %s  pole with width %f"
-            % (np.array_str(pole), width)
+            f"empty equatorial band at {np.array_str(pole)}  pole with width {width:f}"
         )
         return None, None
     eqvals = [odf[i] for i in eqvert]
@@ -248,9 +247,7 @@ def patch_maximum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print(
-            "empty cone around pole %s with with width %f" % (np.array_str(pole), width)
-        )
+        print(f"empty cone around pole {np.array_str(pole)} with with width {width:f}")
         return np.Null, np.Null
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
@@ -267,9 +264,7 @@ def patch_sum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print(
-            "empty cone around pole %s with with width %f" % (np.array_str(pole), width)
-        )
+        print(f"empty cone around pole {np.array_str(pole)} with with width {width:f}")
         return np.Null
     return np.sum([odf[i] for i in eqvert])
 

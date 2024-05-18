@@ -58,19 +58,19 @@ def check_img_dtype(images):
         data, affine, fname = unpack_image(img)
         if np.issubdtype(data.dtype, np.integer):
             if data.dtype != np.int32:
-                msg = "{} is not supported, falling back to int32"
-                warnings.warn(msg.format(data.dtype), stacklevel=2)
+                msg = f"{data.dtype} is not supported, falling back to int32"
+                warnings.warn(msg, stacklevel=2)
                 img = (data.astype(np.int32), affine, fname)
             valid_images.append(img)
         elif np.issubdtype(data.dtype, np.floating):
             if data.dtype != np.float64 and data.dtype != np.float32:
-                msg = "{} is not supported, falling back to float32"
-                warnings.warn(msg.format(data.dtype), stacklevel=2)
+                msg = f"{data.dtype} is not supported, falling back to float32"
+                warnings.warn(msg, stacklevel=2)
                 img = (data.astype(np.float32), affine, fname)
             valid_images.append(img)
         else:
-            msg = "skipping image {}, passed image is not in numerical format"
-            warnings.warn(msg.format(idx + 1), stacklevel=2)
+            msg = f"skipping image {idx + 1}, passed image is not in numerical format"
+            warnings.warn(msg, stacklevel=2)
 
     return valid_images
 
@@ -95,7 +95,7 @@ def show_ellipsis(text, text_size, available_size):
     """
     if text_size > available_size:
         max_chars = int((available_size / text_size) * len(text))
-        ellipsis_text = "..." + text[-(max_chars - 3) :]
+        ellipsis_text = f"...{text[-(max_chars - 3) :]}"
         return ellipsis_text
     return text
 
@@ -136,9 +136,9 @@ def unpack_surface(surface):
     data = _unpack_data(surface)
 
     if data[0].shape[-1] != 3:
-        raise ValueError("Vertices do not have correct shape:" + f" {data[0].shape}")
+        raise ValueError(f"Vertices do not have correct shape: {data[0].shape}")
     if data[1].shape[-1] != 3:
-        raise ValueError("Faces do not have correct shape:" + f" {data[1].shape}")
+        raise ValueError(f"Faces do not have correct shape: {data[1].shape}")
     return data
 
 

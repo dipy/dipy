@@ -620,7 +620,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
         n_order = n_coils  # Noncentral Chi noise (order = # of coils)
     else:
         raise ValueError(
-            "Invalid recon_type. Should be 'smf' or 'sos', " + f"received {recon_type}"
+            f"Invalid recon_type. Should be 'smf' or 'sos', received {recon_type}"
         )
 
     data = data.reshape(-1, 1)
@@ -974,7 +974,7 @@ def rumba_deconv_global(
         n_order = n_coils  # Noncentral Chi noise (order = # of coils)
     else:
         raise ValueError(
-            "Invalid recon_type. Should be 'smf' or 'sos', " + f"received f{recon_type}"
+            f"Invalid recon_type. Should be 'smf' or 'sos', received f{recon_type}"
         )
 
     mask_vec = np.ravel(mask)

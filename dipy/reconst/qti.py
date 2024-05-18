@@ -479,7 +479,7 @@ def qti_signal(gtab, D, C, S0=1):
             C = C[..., np.newaxis]
         else:
             raise ValueError(
-                "The shape of C must be (..., 6, 6), (..., 21, 1), or " + "(..., 21)."
+                "The shape of C must be (..., 6, 6), (..., 21, 1), or (..., 21)."
             )
     if D.shape[0:-2] != C.shape[0:-2]:
         raise ValueError("The shapes of C and D are not compatible")
@@ -753,7 +753,7 @@ class QtiModel(ReconstModel):
             warn(
                 "The combination of the b-tensor shapes, sizes, and "
                 + "orientations does not enable all elements of the covariance "
-                + "tensor to be estimated (rank(X.T @ X) = %s < 28)." % rank,
+                + f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
                 stacklevel=2,
             )
 
@@ -761,7 +761,7 @@ class QtiModel(ReconstModel):
             self.fit_method = common_fit_methods[fit_method]
         except KeyError as e:
             raise ValueError(
-                "Invalid value (%s) for 'fit_method'." % fit_method
+                f"Invalid value ({fit_method}) for 'fit_method'."
                 + " Options: 'OLS', 'WLS', 'SDPdc'."
             ) from e
 

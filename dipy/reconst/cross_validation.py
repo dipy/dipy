@@ -106,7 +106,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     if div_by_folds != 0:
         msg = "The number of folds must divide the diffusion-weighted "
         msg += "data equally, but "
-        msg = "np.mod(%s, %s) is %s" % (data_b.shape[-1], folds, div_by_folds)
+        msg = f"np.mod({data_b.shape[-1]}, {folds}) is {div_by_folds}"
         raise ValueError(msg)
 
     data_0 = data[..., gtab.b0s_mask]
@@ -139,7 +139,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data, mask=mask)
         if not hasattr(this_fit, "predict"):
-            err_str = "Models of type: %s " % this_model.__class__
+            err_str = f"Models of type: {this_model.__class__} "
             err_str += "do not have an implementation of model prediction"
             err_str += " and do not support cross-validation"
             raise ValueError(err_str)

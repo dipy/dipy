@@ -140,8 +140,8 @@ class HistoResDNN:
             self.model.load_weights(weights_path)
         except ValueError as e:
             raise ValueError(
-                "Expected input for the provided model weights "
-                "do not match the declared model ({})".format(self.sh_size)
+                "Expected input for the provided model weights do not match the "
+                f"declared model ({self.sh_size})"
             ) from e
 
     def __predict(self, x_test):
@@ -163,8 +163,8 @@ class HistoResDNN:
 
         if x_test.shape[-1] != self.sh_size:
             raise ValueError(
-                "Expected input for the provided model weights "
-                "do not match the declared model ({})".format(self.sh_size)
+                "Expected input for the provided model weights do not match the "
+                f"declared model ({self.sh_size})"
             )
 
         return self.model.predict(x_test)
@@ -209,13 +209,13 @@ class HistoResDNN:
         b0_indices = gtab.b0s_mask
         if not len(b0_indices) > 0:
             raise ValueError("b0 must be present for DWI normalization.")
-        logger.info("b0 indices found are: {}".format(np.argwhere(b0_indices).ravel()))
+        logger.info(f"b0 indices found are: {np.argwhere(b0_indices).ravel()}")
 
         mean_b0 = np.mean(data[..., b0_indices], axis=-1)
 
         # Detect number of b-values and extract a single shell of DW-MRI Data
         unique_shells = np.sort(unique_bvals_magnitude(gtab.bvals))
-        logger.info("Number of b-values: {}".format(unique_shells))
+        logger.info(f"Number of b-values: {unique_shells}")
 
         # Extract DWI only
         dw_indices = get_bval_indices(gtab.bvals, unique_shells[1])
@@ -247,7 +247,7 @@ class HistoResDNN:
         count = len(flat_dw_sh_coef) // chunk_size
         for i in range(count + 1):
             if i % 100 == 0 or i == count:
-                logger.info("Chunk #{} out of {}".format(i, count))
+                logger.info(f"Chunk #{i} out of {count}")
             tmp_sh = self.__predict(
                 flat_dw_sh_coef[i * chunk_size : (i + 1) * chunk_size]
             )
