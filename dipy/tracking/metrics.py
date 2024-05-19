@@ -854,7 +854,3 @@ def midpoint2point(xyz, p):
     """
     mid = midpoint(xyz)
     return np.sqrt(np.sum((xyz - mid) ** 2))
-
-
-if __name__ == "__main__":
-    pass
