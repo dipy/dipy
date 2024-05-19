@@ -435,13 +435,13 @@ class StreamlineLinearRegistration:
         msg += "set_number_of_points from dipy.tracking.streamline"
 
         if not np.all(np.array(list(map(len, static))) == static[0].shape[0]):
-            raise ValueError("Static streamlines " + msg)
+            raise ValueError(f"Static streamlines {msg}")
 
         if not np.all(np.array(list(map(len, moving))) == moving[0].shape[0]):
-            raise ValueError("Moving streamlines " + msg)
+            raise ValueError(f"Moving streamlines {msg}")
 
         if not np.all(np.array(list(map(len, moving))) == static[0].shape[0]):
-            raise ValueError("Static and moving streamlines " + msg)
+            raise ValueError(f"Static and moving streamlines {msg}")
 
         if mat is None:
             static_centered, static_shift = center_streamlines(static)
@@ -1110,8 +1110,8 @@ def slr_with_qbx(
         rng = np.random.default_rng()
 
     if verbose:
-        logger.info("Static streamlines size {}".format(len(static)))
-        logger.info("Moving streamlines size {}".format(len(moving)))
+        logger.info(f"Static streamlines size {len(static)}")
+        logger.info(f"Moving streamlines size {len(moving)}")
 
     def check_range(streamline, gt=greater_than, lt=less_than):
         if (length(streamline) > gt) & (length(streamline) < lt):
@@ -1122,12 +1122,8 @@ def slr_with_qbx(
     streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
     streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
     if verbose:
-        logger.info(
-            "Static streamlines after length reduction {}".format(len(streamlines1))
-        )
-        logger.info(
-            "Moving streamlines after length reduction {}".format(len(streamlines2))
-        )
+        logger.info(f"Static streamlines after length reduction {len(streamlines1)}")
+        logger.info(f"Moving streamlines after length reduction {len(streamlines2)}")
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(
@@ -1187,22 +1183,12 @@ def slr_with_qbx(
         )
 
     if verbose:
-        logger.info(
-            "QB static centroids size %d"
-            % len(
-                qb_centroids1,
-            )
-        )
-        logger.info(
-            "QB moving centroids size %d"
-            % len(
-                qb_centroids2,
-            )
-        )
+        logger.info(f"QB static centroids size {len(qb_centroids1)}")
+        logger.info(f"QB moving centroids size {len(qb_centroids2)}")
         duration = time() - t
-        logger.info("SLR finished in  %0.3f seconds." % (duration,))
+        logger.info(f"SLR finished in {duration:0.3f} seconds.")
         if slm.iterations is not None:
-            logger.info("SLR iterations: %d " % (slm.iterations,))
+            logger.info(f"SLR iterations: {slm.iterations}")
 
     moved = slm.transform(moving)
 
@@ -1375,16 +1361,12 @@ def groupwise_slr(
         d_improve = np.mean(d[prev_iter, :]) - np.mean(d[i_iter, :])
 
         if verbose:
-            logging.info(
-                f"Iteration {i_iter} group distance: " + f"{np.mean(d[i_iter, :])}"
-            )
-            logging.info(
-                f"Iteration {i_iter} improvement previous 3: " + f"{d_improve}"
-            )
+            logging.info(f"Iteration {i_iter} group distance: {np.mean(d[i_iter, :])}")
+            logging.info(f"Iteration {i_iter} improvement previous 3: {d_improve}")
 
         if d_improve < tol:
             if verbose:
-                logging.info("Registration converged " + f"{d_improve} < {tol}")
+                logging.info("Registration converged {d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs)

@@ -53,7 +53,7 @@ def run():
     mod_name, flow_name = cli_flows.get(script_name, (None, None))
     if mod_name is None:
         print(f"Flow: {script_name} not Found in DIPY")
-        print("Available flows: %s" % ", ".join(cli_flows.keys()))
+        print(f"Available flows: {', '.join(cli_flows.keys())}")
         sys.exit(1)
     mod, _, _ = optional_package(mod_name)
     run_flow(getattr(mod, flow_name)())

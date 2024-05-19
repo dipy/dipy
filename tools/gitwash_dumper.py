@@ -19,10 +19,10 @@ def clone_repo(url, branch):
     cwd = os.getcwd()
     tmpdir = tempfile.mkdtemp()
     try:
-        cmd = 'git clone %s %s' % (url, tmpdir)
+        cmd = f'git clone {url} {tmpdir}'
         call(cmd, shell=True)
         os.chdir(tmpdir)
-        cmd = 'git checkout %s' % branch
+        cmd = f'git checkout {branch}'
         call(cmd, shell=True)
     except:
         shutil.rmtree(tmpdir)
@@ -136,17 +136,17 @@ def make_link_targets(proj_name,
                            'and / or mailing list URLs')
     lines = []
     if url is not None:
-        lines.append('.. _`%s`: %s\n' % (proj_name, url))
+        lines.append(f'.. _`{proj_name}`: {url}\n')
     if not have_gh_url:
-        gh_url = 'http://github.com/%s/%s\n' % (user_name, repo_name)
-        lines.append('.. _`%s github`: %s\n' % (proj_name, gh_url))
+        gh_url = f'http://github.com/{user_name}/{repo_name}\n'
+        lines.append(f'.. _`{proj_name} github`: {gh_url}\n')
     if ml_url is not None:
-        lines.append('.. _`%s mailing list`: %s\n' % (proj_name, ml_url))
+        lines.append(f'.. _`{proj_name} mailing list`: {ml_url}\n')
     if len(lines) == 0:
         # Nothing to do
         return
     # A neat little header line
-    lines = ['.. %s\n' % proj_name] + lines
+    lines = [f'.. {proj_name}\n'] + lines
     out_links = open(out_link_fname, 'wt')
     out_links.writelines(lines)
     out_links.close()
@@ -175,13 +175,11 @@ def main():
                       help="github username for main repo - e.g fperez",
                       metavar="MAIN_GH_USER")
     parser.add_option("--gitwash-url", dest="gitwash_url",
-                      help="URL to gitwash repository - default %s"
-                      % GITWASH_CENTRAL,
+                      help=f"URL to gitwash repository - default {GITWASH_CENTRAL}",
                       default=GITWASH_CENTRAL,
                       metavar="GITWASH_URL")
     parser.add_option("--gitwash-branch", dest="gitwash_branch",
-                      help="branch in gitwash repository - default %s"
-                      % GITWASH_BRANCH,
+                      help=f"branch in gitwash repository - default {GITWASH_BRANCH}",
                       default=GITWASH_BRANCH,
                       metavar="GITWASH_BRANCH")
     parser.add_option("--source-suffix", dest="source_suffix",

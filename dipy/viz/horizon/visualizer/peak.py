@@ -338,14 +338,14 @@ def peak(
     if peaks_dirs.ndim != 5:
         raise ValueError(
             "Invalid peak directions. The shape of the structure "
-            "must be (XxYxZxDx3). Your data has {} dimensions."
-            "".format(peaks_dirs.ndim)
+            f"must be (XxYxZxDx3). Your data has {peaks_dirs.ndim} dimensions."
+            ""
         )
     if peaks_dirs.shape[4] != 3:
         raise ValueError(
             "Invalid peak directions. The shape of the last "
             "dimension must be 3. Your data has a last dimension "
-            "of {}.".format(peaks_dirs.shape[4])
+            f"of {peaks_dirs.shape[4]}."
         )
 
     dirs_shape = peaks_dirs.shape
@@ -354,8 +354,7 @@ def peak(
         if peaks_values.ndim != 4:
             raise ValueError(
                 "Invalid peak values. The shape of the structure "
-                "must be (XxYxZxD). Your data has {} dimensions."
-                "".format(peaks_values.ndim)
+                f"must be (XxYxZxD). Your data has {peaks_values.ndim} dimensions."
             )
         vals_shape = peaks_values.shape
         if vals_shape != dirs_shape[:4]:
@@ -369,8 +368,8 @@ def peak(
         if mask.ndim != 3:
             warnings.warn(
                 "Invalid mask. The mask must be a 3D array. The "
-                "passed mask has {} dimensions. Ignoring passed "
-                "mask.".format(mask.ndim),
+                f"passed mask has {mask.ndim} dimensions. Ignoring passed "
+                "mask.",
                 UserWarning,
                 stacklevel=2,
             )

@@ -28,7 +28,7 @@ class CombinedWorkflow(Workflow):
         be implemented in every new combined_workflow.
         """
         raise AttributeError(
-            "Error: _get_sub_flows() has to be defined for {}".format(self.__class__)
+            f"Error: _get_sub_flows() has to be defined for {self.__class__}"
         )
 
     def set_sub_flows_optionals(self, opts):

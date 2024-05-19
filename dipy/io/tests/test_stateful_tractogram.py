@@ -913,9 +913,8 @@ def test_invalid_streamlines():
     assert expected_idx_to_keep == obtained_idx_to_keep
     assert_(
         len(sft) == src_strml_count,
-        msg="An unshifted gold standard should have {} invalid streamlines".format(
-            src_strml_count - src_strml_count
-        ),
+        msg="An unshifted gold standard should have "
+        f"{src_strml_count - src_strml_count} invalid streamlines",
     )
 
     # Change the dimensions so that a few streamlines become invalid
@@ -931,9 +930,8 @@ def test_invalid_streamlines():
     assert obtained_idx_to_keep == expected_idx_to_keep
     assert_(
         len(sft) == expected_len_sft,
-        msg="The shifted gold standard should have {} invalid streamlines".format(
-            src_strml_count - expected_len_sft
-        ),
+        msg="The shifted gold standard should have "
+        f"{src_strml_count - expected_len_sft} invalid streamlines",
     )
 
 
@@ -970,10 +968,9 @@ def test_invalid_streamlines_epsilon():
     assert obtained_idx_to_keep == expected_idx_to_keep
     assert_(
         len(sft) == expected_len_sft,
-        msg="Too big of an epsilon ({} mm) should have removed {} streamlines "
-        "({} corners)".format(
-            epsilon, expected_removed_strml_count, expected_removed_strml_count
-        ),
+        msg=f"Too big of an epsilon ({epsilon} mm) should have removed "
+        f"{expected_removed_strml_count} streamlines "
+        f"({expected_removed_strml_count} corners)",
     )
 
 
@@ -1137,25 +1134,21 @@ def recursive_compare(d1, d2, level="root"):
             s2 = set(d2.keys())
             common_keys = s1 & s2
             if s1 - s2:
-                raise ValueError("Keys {} in d1 but not in d2".format(s1 - s2))
+                raise ValueError(f"Keys {s1 - s2} in d1 but not in d2")
         else:
             common_keys = set(d1.keys())
 
         for k in common_keys:
-            recursive_compare(d1[k], d2[k], level="{}.{}".format(level, k))
+            recursive_compare(d1[k], d2[k], level=f"{level}.{k}")
 
     elif isinstance(d1, list) and isinstance(d2, list):
         if len(d1) != len(d2):
-            raise ValueError(
-                "Lists do not have the same length at level {}".format(level)
-            )
+            raise ValueError(f"Lists do not have the same length at level {level}")
         common_len = min(len(d1), len(d2))
 
         for i in range(common_len):
-            recursive_compare(d1[i], d2[i], level="{}[{}]".format(level, i))
+            recursive_compare(d1[i], d2[i], level=f"{level}[{i}]")
 
     else:
         if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
-            raise ValueError(
-                "Values {}, {} do not match at level {}".format(d1, d2, level)
-            )
+            raise ValueError(f"Values {d1}, {d2} do not match at level {level}")

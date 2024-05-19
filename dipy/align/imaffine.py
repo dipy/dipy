@@ -199,8 +199,8 @@ class AffineMap:
         # First n-1 columns in last row in matrix contain non-zeros
         if not np.all(affine[-1, :-1] == 0.0):
             raise AffineInvalidValuesError(
-                "First {n_1} columns in last row"
-                " in matrix contain non-zeros!".format(n_1=affine.shape[0] - 1)
+                f"First {affine.shape[0] - 1} columns in last row"
+                " in matrix contain non-zeros!"
             )
 
         # Last row, last column in matrix must be 1.0!
@@ -253,9 +253,8 @@ class AffineMap:
                     "t",
                 ]
                 raise NotImplementedError(
-                    "Format {} not recognized or" "implemented.\nTry one of {}".format(
-                        format_spec, allowed_formats_print_map
-                    )
+                    f"Format {format_spec} not recognized or implemented.\n"
+                    f"Try one of {allowed_formats_print_map}"
                 )
 
     def _apply_transform(
@@ -323,7 +322,7 @@ class AffineMap:
         """
         # Verify valid interpolation requested
         if interpolation not in _interp_options:
-            msg = "Unknown interpolation method: %s" % (interpolation,)
+            msg = f"Unknown interpolation method: {interpolation}"
             raise ValueError(msg)
 
         # Obtain sampling grid
@@ -342,7 +341,7 @@ class AffineMap:
         # Verify valid image dimension
         img_dim = len(image.shape)
         if img_dim < 2 or img_dim > 3:
-            raise ValueError("Undefined transform for dim: %d" % (img_dim,))
+            raise ValueError(f"Undefined transform for dim: {img_dim}")
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -1257,7 +1256,7 @@ class AffineRegistration:
             self.current_level = level
             max_iter = self.level_iters[-1 - level]
             if self.verbosity >= VerbosityLevels.STATUS:
-                print("Optimizing level %d [max iter: %d]" % (level, max_iter))
+                print(f"Optimizing level {level} [max iter: {max_iter}]")
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)

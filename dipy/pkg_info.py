@@ -40,7 +40,7 @@ def pkg_commit_hash(pkg_path):
     # Try and get commit from written commit text file
     pth = os.path.join(pkg_path, COMMIT_INFO_FNAME)
     if not os.path.isfile(pth):
-        raise OSError("Missing commit info file %s" % pth)
+        raise OSError(f"Missing commit info file {pth}")
     cfg_parser = configparser.RawConfigParser()
     cfg_parser.read(pth)
     archive_subst = cfg_parser.get("commit hash", "archive_subst_hash")

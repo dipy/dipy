@@ -92,9 +92,7 @@ def test_check_img_dtype(rng):
 
     with warnings.catch_warnings(record=True) as l_warns:
         npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.int32)
-        check_for_warnings(
-            l_warns, "int64 is not supported, falling back to" + " int32"
-        )
+        check_for_warnings(l_warns, "int64 is not supported, falling back to int32")
 
     data = rng.random((5, 5, 5)).astype(np.float16)
     images = [
@@ -103,9 +101,7 @@ def test_check_img_dtype(rng):
 
     with warnings.catch_warnings(record=True) as l_warns:
         npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.float32)
-        check_for_warnings(
-            l_warns, "float16 is not supported, falling back to" + " float32"
-        )
+        check_for_warnings(l_warns, "float16 is not supported, falling back to float32")
 
     data = rng.random((5, 5, 5)).astype(np.bool_)
     images = [
@@ -115,7 +111,7 @@ def test_check_img_dtype(rng):
     with warnings.catch_warnings(record=True) as l_warns:
         check_img_dtype(images)
         check_for_warnings(
-            l_warns, "skipping image 1, passed image is not in " + "numerical format"
+            l_warns, "skipping image 1, passed image is not in numerical format"
         )
 
 
@@ -123,7 +119,7 @@ def test_show_ellipsis():
     text = "IAmALongFileName"
     text_size = 10
     available_size = 5
-    result_text = "..." + text[-5:]
+    result_text = f"...{text[-5:]}"
 
     npt.assert_equal(show_ellipsis(text, text_size, available_size), result_text)
 

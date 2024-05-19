@@ -527,7 +527,7 @@ class PositiveDefiniteLeastSquares:
                 # Return zeros if optimization failed
                 status = self.unconstrained_problem.status
                 if status != "optimal":
-                    msg = "Solver failed to produce an optimum: %s." % status
+                    msg = f"Solver failed to produce an optimum: {status}."
                     warnings.warn(msg, stacklevel=2)
                     msg = "Optimization failed, returning zero array."
                     warnings.warn(msg, stacklevel=2)
@@ -545,7 +545,7 @@ class PositiveDefiniteLeastSquares:
             # Show warning if solution is not optimal
             status = self.problem.status
             if status != "optimal":
-                msg = "Solver failed to produce an optimum: %s." % status
+                msg = f"Solver failed to produce an optimum: {status}."
                 warnings.warn(msg, stacklevel=2)
 
             # Return solution

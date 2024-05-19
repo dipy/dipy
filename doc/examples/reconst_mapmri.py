@@ -65,7 +65,7 @@ gtab = gradient_table(
 
 data_small = data[40:65, 50:51]
 
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # The MAP-MRI Model can now be instantiated. The ``radial_order`` determines
@@ -360,7 +360,7 @@ sphere = get_sphere("repulsion724")
 # also make the ODFs noisier. Always check the results visually.
 
 odf = mapfit_both_iso.odf(sphere, s=2)
-print("odf.shape (%d, %d, %d, %d)" % odf.shape)
+print(f"odf.shape {odf.shape}")
 
 ###############################################################################
 # Display the ODFs.

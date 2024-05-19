@@ -113,7 +113,7 @@ def reslice(
                 pool.close()
         else:
             raise ValueError(
-                "dimension of data should be 3 or 4 but you" " provided %d" % data.ndim
+                f"dimension of data should be 3 or 4 but you provided {data.ndim}"
             )
 
         Rx = np.eye(4)

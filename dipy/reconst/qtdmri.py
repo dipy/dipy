@@ -140,23 +140,23 @@ class QtdmriModel(Cache):
     ):
         if radial_order % 2 or radial_order < 0:
             msg = "radial_order must be zero or an even positive integer."
-            msg += " radial_order %s was given." % radial_order
+            msg += f" radial_order {radial_order} was given."
             raise ValueError(msg)
 
         if time_order < 0:
             msg = "time_order must be larger or equal than zero integer."
-            msg += " time_order %s was given." % time_order
+            msg += f" time_order {time_order} was given."
             raise ValueError(msg)
 
         if not isinstance(laplacian_regularization, bool):
             msg = "laplacian_regularization must be True or False."
-            msg += " Input value was %s." % laplacian_regularization
+            msg += f" Input value was {laplacian_regularization}."
             raise ValueError(msg)
 
         if laplacian_regularization:
             msg = "laplacian_regularization weighting must be 'GCV' "
             msg += "or a float larger or equal than zero."
-            msg += " Input value was %s." % laplacian_weighting
+            msg += f" Input value was {laplacian_weighting}."
             if isinstance(laplacian_weighting, str):
                 if laplacian_weighting != "GCV":
                     raise ValueError(msg)
@@ -168,13 +168,13 @@ class QtdmriModel(Cache):
 
         if not isinstance(l1_regularization, bool):
             msg = "l1_regularization must be True or False."
-            msg += " Input value was %s." % l1_regularization
+            msg += f" Input value was {l1_regularization}."
             raise ValueError(msg)
 
         if l1_regularization:
             msg = "l1_weighting weighting must be 'CV' "
             msg += "or a float larger or equal than zero."
-            msg += " Input value was %s." % l1_weighting
+            msg += f" Input value was {l1_weighting}."
             if isinstance(l1_weighting, str):
                 if l1_weighting != "CV":
                     raise ValueError(msg)
@@ -186,27 +186,27 @@ class QtdmriModel(Cache):
 
         if not isinstance(cartesian, bool):
             msg = "cartesian must be True or False."
-            msg += " Input value was %s." % cartesian
+            msg += f" Input value was {cartesian}."
             raise ValueError(msg)
 
         if not isinstance(anisotropic_scaling, bool):
             msg = "anisotropic_scaling must be True or False."
-            msg += " Input value was %s." % anisotropic_scaling
+            msg += f" Input value was {anisotropic_scaling}."
             raise ValueError(msg)
 
         if not isinstance(constrain_q0, bool):
             msg = "constrain_q0 must be True or False."
-            msg += " Input value was %s." % constrain_q0
+            msg += f" Input value was {constrain_q0}."
             raise ValueError(msg)
 
         if not isinstance(bval_threshold, float) or bval_threshold < 0:
             msg = "bval_threshold must be a positive float."
-            msg += " Input value was %s." % bval_threshold
+            msg += f" Input value was {bval_threshold}."
             raise ValueError(msg)
 
         if not isinstance(eigenvalue_threshold, float) or eigenvalue_threshold < 0:
             msg = "eigenvalue_threshold must be a positive float."
-            msg += " Input value was %s." % eigenvalue_threshold
+            msg += f" Input value was {eigenvalue_threshold}."
             raise ValueError(msg)
 
         if laplacian_regularization or l1_regularization:
@@ -216,8 +216,8 @@ class QtdmriModel(Cache):
                 raise ImportError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-                    msg += " One of %s" % ", ".join(cvxpy.installed_solvers())
+                    msg = f"Input `cvxpy_solver` was set to {cvxpy_solver}."
+                    msg += f" One of {', '.join(cvxpy.installed_solvers())}"
                     msg += " was expected."
                     raise ValueError(msg)
 

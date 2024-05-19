@@ -154,12 +154,12 @@ cso_csd_r2 = (
 
 print(
     "Corpus callosum\n"
-    "DTI R2 : %s\n"
-    "CSD R2 : %s\n"
+    f"DTI R2 : {cc_dti_r2}\n"
+    f"CSD R2 : {cc_csd_r2}\n"
     "\n"
     "Centrum Semiovale\n"
-    "DTI R2 : %s\n"
-    "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2)
+    f"DTI R2 : {cso_dti_r2}\n"
+    f"CSD R2 : {cso_csd_r2}\n"
 )
 
 ###############################################################################

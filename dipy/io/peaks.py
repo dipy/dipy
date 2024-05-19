@@ -52,11 +52,7 @@ def load_peaks(fname, verbose=False):
     version = f.attrs["version"]
 
     if version != "0.0.1":
-        raise OSError(
-            "Incorrect PAM5 file version {0}".format(
-                version,
-            )
-        )
+        raise OSError(f"Incorrect PAM5 file version {version}")
 
     try:
         affine = pamh["affine"][:]

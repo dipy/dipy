@@ -114,7 +114,7 @@ def _already_there_msg(folder):
     Prints a message indicating that a certain data-set is already in place
     """
     msg = "Dataset is already in place. If you want to fetch it again "
-    msg += "please first remove the folder %s " % folder
+    msg += f"please first remove the folder {folder} "
     _log(msg)
 
 
@@ -143,11 +143,11 @@ def check_md5(filename, stored_md5=None):
     if stored_md5 is not None:
         computed_md5 = _get_file_md5(filename)
         if stored_md5 != computed_md5:
-            msg = """The downloaded file, %s, does not have the expected md5
-   checksum of "%s". Instead, the md5 checksum was: "%s". This could mean that
-   something is wrong with the file or that the upstream file has been updated.
-   You can try downloading the file again or updating to the newest version of
-   dipy.""" % (filename, stored_md5, computed_md5)
+            msg = f"""The downloaded file, {filename}, does not have the expected md5
+   checksum of "{stored_md5}". Instead, the md5 checksum was: "{computed_md5}". This
+   could mean that something is wrong with the file or that the upstream file has been
+   updated. You can try downloading the file again or updating to the newest version of
+   dipy."""
             raise FetcherError(msg)
 
 
@@ -207,11 +207,11 @@ def fetch_data(files, folder, data_size=None, use_headers=False):
 
     """
     if not op.exists(folder):
-        _log("Creating new folder %s" % folder)
+        _log(f"Creating new folder {folder}")
         os.makedirs(folder)
 
     if data_size is not None:
-        _log("Data size is approximately %s" % data_size)
+        _log(f"Data size is approximately {data_size}")
 
     all_skip = True
     for f in files:
@@ -220,14 +220,14 @@ def fetch_data(files, folder, data_size=None, use_headers=False):
         if op.exists(fullpath) and (_get_file_md5(fullpath) == md5):
             continue
         all_skip = False
-        _log('Downloading "%s" to %s' % (f, folder))
-        _log("From: %s" % url)
+        _log(f'Downloading "{f}" to {folder}')
+        _log(f"From: {url}")
         _get_file_data(fullpath, url, use_headers=use_headers)
         check_md5(fullpath, md5)
     if all_skip:
         _already_there_msg(folder)
     else:
-        _log("Files successfully downloaded to %s" % folder)
+        _log(f"Files successfully downloaded to {folder}")
 
 
 def _make_fetcher(
@@ -693,9 +693,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
     ["14035265"],
     ["hcp_bundle_fa.nii.gz"],
     ["2d5c0036b0575597378ddf39191028ea"],
-    doc=(
-        "Download map of FA within two bundles in one" + "of the hcp dataset subjects"
-    ),
+    doc=("Download map of FA within two bundles in one of the hcp dataset subjects"),
     data_size="230kb",
 )
 
@@ -1514,7 +1512,7 @@ def get_fnames(name="small_64D"):
         return pjoin(DATA_DIR, "t1_coronal_slice.npy")
     if name == "t-design":
         N = 45
-        return pjoin(DATA_DIR, "tdesign" + str(N) + ".txt")
+        return pjoin(DATA_DIR, f"tdesign{N}.txt")
     if name == "scil_b0":
         files, folder = fetch_scil_b0()
         files = files["datasets_multi-site_all_companies.zip"][2]
@@ -1926,7 +1924,7 @@ def fetch_tissue_data():
     fname_list = ["t1_brain.nii.gz", "t1_brain_denoised.nii.gz", "power_map.nii.gz"]
 
     if not op.exists(folder):
-        _log("Creating new directory %s" % folder)
+        _log(f"Creating new directory {folder}")
         os.makedirs(folder)
         msg = "Downloading 3 Nifti1 images (9.3MB)..."
         _log(msg)
@@ -1936,7 +1934,7 @@ def fetch_tissue_data():
             check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
         _log("Done.")
-        _log("Files copied in folder %s" % folder)
+        _log(f"Files copied in folder {folder}")
     else:
         _already_there_msg(folder)
 
@@ -2292,7 +2290,7 @@ def read_bundles_2_subjects(
 
     for bun in bundles:
         streams = load_tractogram(
-            pjoin(dname, subj_id, "bundles", "bundles_" + bun + ".trk"),
+            pjoin(dname, subj_id, "bundles", f"bundles_{bun}.trk"),
             "same",
             bbox_valid_check=False,
         ).streamlines

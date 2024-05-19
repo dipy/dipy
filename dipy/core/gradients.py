@@ -194,7 +194,7 @@ class GradientTable:
                     b_tensor = cigar_tensor
                 else:
                     raise ValueError(
-                        "%s is an invalid value for btens. " % btens
+                        f"{btens} is an invalid value for btens. "
                         + "Please provide one of the following: "
                         + "'LTE', 'PTE', 'STE', 'CTE'."
                     )
@@ -229,7 +229,7 @@ class GradientTable:
                         b_tensors[i] = np.matmul(np.matmul(R, cigar_tensor), R.T) * bval
                     else:
                         raise ValueError(
-                            "%s is an invalid value in btens. " % btens[i]
+                            f"{btens[i]} is an invalid value in btens. "
                             + "Array element options: 'LTE', 'PTE', 'STE', "
                             + "'CTE'."
                         )
@@ -242,7 +242,7 @@ class GradientTable:
                 self.btens = btens
             else:
                 raise ValueError(
-                    "%s is an invalid value for btens. " % btens
+                    f"{btens} is an invalid value for btens. "
                     + "Please provide a string, an array of "
                     + "strings, or an array of exact b-tensors. "
                     + "String options: 'LTE', 'PTE', 'STE', 'CTE'"
@@ -333,12 +333,12 @@ class GradientTable:
         show(self.__str__())
 
     def __str__(self):
-        msg = "B-values shape {}\n".format(self.bvals.shape)
-        msg += "         min {:f}\n".format(self.bvals.min())
-        msg += "         max {:f}\n".format(self.bvals.max())
-        msg += "B-vectors shape {}\n".format(self.bvecs.shape)
-        msg += "          min {:f}\n".format(self.bvecs.min())
-        msg += "          max {:f}\n".format(self.bvecs.max())
+        msg = f"B-values shape {self.bvals.shape}\n"
+        msg += f"         min {self.bvals.min():f}\n"
+        msg += f"         max {self.bvals.max():f}\n"
+        msg += f"B-vectors shape {self.bvecs.shape}\n"
+        msg += f"          min {self.bvecs.min():f}\n"
+        msg += f"          max {self.bvecs.max():f}\n"
         return msg
 
 
@@ -422,9 +422,9 @@ def gradient_table_from_bvals_bvecs(
         # checking for the correctness of bvals
         if b0_threshold < bvals.min():
             warn(
-                "b0_threshold (value: {0}) is too low, increase your "
+                f"b0_threshold (value: {b0_threshold}) is too low, increase your "
                 "b0_threshold. It should be higher than the lowest b0 value "
-                "({1}).".format(b0_threshold, bvals.min()),
+                f"({bvals.min()}).",
                 stacklevel=2,
             )
 
@@ -1221,7 +1221,7 @@ def params_to_btens(bval, bdelta, b_eta):
 
     if not input_types_all_ok:
         s = [x.__name__ for x in expected_input_types]
-        it_msg = "All input types should any of: {}".format(s)
+        it_msg = f"All input types should any of: {s}"
         raise ValueError(it_msg)
 
     # Check input values within expected ranges

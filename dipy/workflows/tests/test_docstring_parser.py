@@ -237,7 +237,7 @@ def non_blank_line_by_line_compare(a, b):
     for n, line in enumerate(a):
         if not line == b[n]:
             raise AssertionError(
-                "Lines %s of a and b differ: " "\n>>> %s\n<<< %s\n" % (n, line, b[n])
+                f"Lines {n} of a and b differ: \n>>> {line}\n<<< {b[n]}\n"
             )
 
 

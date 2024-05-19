@@ -42,7 +42,7 @@ def _roll_evals(evals, axis=-1):
 
     """
     if evals.shape[-1] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[-1])
+        msg = f"Expecting 3 eigenvalues, got {evals.shape[-1]}"
         raise ValueError(msg)
 
     evals = np.rollaxis(evals, axis)

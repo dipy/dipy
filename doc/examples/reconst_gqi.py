@@ -37,7 +37,7 @@ data, affine, voxel_size = load_nifti(fraw, return_voxsize=True)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
 gtab = gradient_table(bvals, bvecs)
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
@@ -67,7 +67,7 @@ sphere = get_sphere("repulsion724")
 
 ODF = gqfit.odf(sphere)
 
-print("ODF.shape (%d, %d, %d)" % ODF.shape)
+print(f"ODF.shape {ODF.shape}")
 
 ###############################################################################
 # Using ``peaks_from_model`` we can find the main peaks of the ODFs and other
@@ -96,7 +96,7 @@ gqpeak_indices = gqpeaks.peak_indices
 
 GFA = gqpeaks.gfa
 
-print("GFA.shape (%d, %d)" % GFA.shape)
+print(f"GFA.shape {GFA.shape}")
 
 ###############################################################################
 # With parameter ``return_odf=True`` we can obtain the ODF using

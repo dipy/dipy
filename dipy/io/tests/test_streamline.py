@@ -172,7 +172,7 @@ def teardown_module():
 
 def io_tractogram(extension):
     with TemporaryDirectory() as tmp_dir:
-        fname = "test.{}".format(extension)
+        fname = f"test.{extension}"
         fpath = os.path.join(tmp_dir, fname)
 
         in_affine = np.eye(4)

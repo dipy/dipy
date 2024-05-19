@@ -62,8 +62,9 @@ def test_feature_resample():
             self.nb_points = nb_points
             if nb_points <= 0:
                 msg = (
-                    "ResampleFeature: `nb_points` must be strictly" " positive: {0}"
-                ).format(nb_points)
+                    "ResampleFeature: `nb_points` must be strictly positive: "
+                    f"{nb_points}"
+                )
                 raise ValueError(msg)
 
         def infer_shape(self, streamline):

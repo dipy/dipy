@@ -36,7 +36,7 @@ gtab = gradient_table(bvals, bvecs)
 # GradientTable object (gradient information e.g. b-values). For example to
 # read the b-values it is possible to write print(gtab.bvals).
 
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # Remove most of the background using DIPY's mask module.
@@ -71,7 +71,7 @@ csapeaks = peaks_from_model(
 
 GFA = csapeaks.gfa
 
-print("GFA.shape (%d, %d, %d)" % GFA.shape)
+print(f"GFA.shape {GFA.shape}")
 
 ###############################################################################
 # Apart from GFA, csapeaks also has the attributes peak_values, peak_indices

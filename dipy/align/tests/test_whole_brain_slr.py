@@ -46,7 +46,7 @@ def test_whole_brain_slr():
     d12_minsum = np.sum(np.min(D12, axis=0))
     d1m_minsum = np.sum(np.min(D1M, axis=0))
 
-    print("distances= ", d12_minsum, " ", d1m_minsum)
+    print(f"distances= {d12_minsum} {d1m_minsum}")
 
     assert_equal(d1m_minsum < d12_minsum, True)
 

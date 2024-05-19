@@ -126,7 +126,7 @@ class LocalTracking:
             and seeds.shape[0] != initial_directions.shape[0]
         ):
             raise ValueError(
-                "initial_directions and seeds must have the " + "same shape[0]."
+                "initial_directions and seeds must have the same shape[0]."
             )
         if (
             initial_directions is None

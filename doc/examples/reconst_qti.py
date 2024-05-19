@@ -110,7 +110,7 @@ gtab = gradient_table(bvals, bvecs, btens=btens)
 
 ranks = np.array([np.linalg.matrix_rank(b) for b in gtab.btens])
 for i, ell in enumerate(["b = 0", "LTE", "PTE"]):
-    print("%s volumes with %s" % (np.sum(ranks == i), ell))
+    print(f"{np.sum(ranks == i)} volumes with {ell}")
 
 ###############################################################################
 # Now that we have data acquired with tensor-valued diffusion encoding and the

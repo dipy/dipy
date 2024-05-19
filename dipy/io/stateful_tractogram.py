@@ -225,25 +225,21 @@ class StatefulTractogram:
 
     def __str__(self):
         """Generate the string for printing"""
-        text = "Affine: \n{}".format(
-            np.array2string(
-                self._affine, formatter={"float_kind": lambda x: "%.6f" % x}
-            )
+        affine = np.array2string(
+            self._affine, formatter={"float_kind": lambda x: f"{x:.6f}"}
         )
-        text += "\ndimensions: {}".format(np.array2string(self._dimensions))
-        text += "\nvoxel_sizes: {}".format(
-            np.array2string(
-                self._voxel_sizes, formatter={"float_kind": lambda x: "%.2f" % x}
-            )
+        vox_sizes = np.array2string(
+            self._voxel_sizes, formatter={"float_kind": lambda x: "{x:.2f}"}
         )
-        text += "\nvoxel_order: {}".format(self._voxel_order)
+        text = f"Affine: \n{affine}"
+        text += f"\ndimensions: {np.array2string(self._dimensions)}"
+        text += f"\nvoxel_sizes: {vox_sizes}"
+        text += f"\nvoxel_order: {self._voxel_order}"
 
-        text += "\nstreamline_count: {}".format(self._get_streamline_count())
-        text += "\npoint_count: {}".format(self._get_point_count())
-        text += "\ndata_per_streamline keys: {}".format(
-            self.get_data_per_streamline_keys()
-        )
-        text += "\ndata_per_point keys: {}".format(self.get_data_per_point_keys())
+        text += f"\nstreamline_count: {self._get_streamline_count()}"
+        text += f"\npoint_count: {self._get_point_count()}"
+        text += f"\ndata_per_streamline keys: {self.get_data_per_streamline_keys()}"
+        text += f"\ndata_per_point keys: {self.get_data_per_point_keys()}"
 
         return text
 

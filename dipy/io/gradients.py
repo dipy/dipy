@@ -58,7 +58,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         elif ext == ".npy":
             vals.append(np.squeeze(np.load(this_fname)))
         else:
-            e_s = "File type %s is not recognized" % ext
+            e_s = f"File type {ext} is not recognized"
             raise ValueError(e_s)
 
     # Once out of the loop, unpack them:

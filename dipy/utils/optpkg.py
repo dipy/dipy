@@ -96,13 +96,13 @@ def optional_package(name, *, trip_msg=None, min_version=None):
 
     if trip_msg is None:
         trip_msg = (
-            "We need package %s for these functions, but "
-            "``import %s`` raised an ImportError" % (name, name)
+            f"We need package {name} for these functions, but "
+            f"``import {name}`` raised an ImportError"
         )
     pkg = TripWire(trip_msg)
 
     def setup_module():
         if have_pytest:
-            pytest.mark.skip("No {0} for these tests".format(name))
+            pytest.mark.skip(f"No {name} for these tests")
 
     return pkg, False, setup_module

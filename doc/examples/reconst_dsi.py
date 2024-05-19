@@ -36,7 +36,7 @@ data, affine, voxel_size = load_nifti(fraw, return_voxsize=True)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
 gtab = gradient_table(bvals, bvecs)
-print("data.shape (%d, %d, %d, %d)" % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
@@ -62,7 +62,7 @@ sphere = get_sphere("repulsion724")
 
 ODF = dsfit.odf(sphere)
 
-print("ODF.shape (%d, %d, %d)" % ODF.shape)
+print(f"ODF.shape {ODF.shape}")
 
 ###############################################################################
 # In a similar fashion it is possible to calculate the PDFs of all voxels
@@ -70,7 +70,7 @@ print("ODF.shape (%d, %d, %d)" % ODF.shape)
 
 PDF = dsfit.pdf()
 
-print("PDF.shape (%d, %d, %d, %d, %d)" % PDF.shape)
+print(f"PDF.shape {PDF.shape}")
 
 ###############################################################################
 # We see that even for a single slice this PDF array is close to 345 MBytes

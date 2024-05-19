@@ -283,4 +283,4 @@ class IOIterator:
                 input_args += fname
         for path in input_args:
             if len(glob(path)) == 0:
-                raise OSError("File not found: " + path)
+                raise OSError(f"File not found: {path}")

@@ -39,8 +39,8 @@ class MaskFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for input_path, out_mask_path in io_it:
-            logging.info("Creating mask of {0}".format(input_path))
+            logging.info(f"Creating mask of {input_path}")
             data, affine = load_nifti(input_path)
             mask = np.bitwise_and(data > lb, data < ub)
             save_nifti(out_mask_path, mask.astype(np.ubyte), affine)
-            logging.info("Mask saved at {0}".format(out_mask_path))
+            logging.info(f"Mask saved at {out_mask_path}")
