@@ -130,7 +130,3 @@ class Dpy:
 
     def close(self):
         self.f.close()
-
-
-if __name__ == "__main__":
-    pass

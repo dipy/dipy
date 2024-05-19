@@ -676,7 +676,3 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
         # Enforce positivity
         prop_deconv = np.clip(prop_deconv, 0, np.inf)
     return prop_deconv / prop_deconv.sum()
-
-
-if __name__ == "__main__":
-    pass
