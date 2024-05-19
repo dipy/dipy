@@ -415,7 +415,7 @@ class DiffeomorphicMap:
         if out_shape is None:
             if self.domain_shape is None:
                 raise ValueError(
-                    "Unable to infer sampling info. " "Provide a valid out_shape."
+                    "Unable to infer sampling info. Provide a valid out_shape."
                 )
             out_shape = self.domain_shape
         else:

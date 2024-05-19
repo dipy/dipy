@@ -518,7 +518,7 @@ class ConvertTractogramFlow(Workflow):
 
             if in_extension == out_extension:
                 warnings.warn(
-                    "Input and output are the same file format, " "Skipping...",
+                    "Input and output are the same file format. Skipping...",
                     stacklevel=2,
                 )
                 continue

@@ -81,11 +81,11 @@ class Cnn1DDenoiser:
         """
         if not have_tf:
             raise ImportError(
-                "TensorFlow is not available. Please install " "TensorFlow 2+."
+                "TensorFlow is not available. Please install TensorFlow 2+."
             )
         if not have_sklearn:
             raise ImportError(
-                "scikit-learn is not available. Please install " "scikit-learn."
+                "scikit-learn is not available. Please install scikit-learn."
             )
         input_layer = Input(shape=(sig_length, 1))
         x = Conv1D(

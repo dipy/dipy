@@ -190,12 +190,10 @@ class AffineMap:
             raise AffineInversionError("Affine transform must be 2D")
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError("Affine transform must be a square " "matrix")
+            raise AffineInversionError("Affine transform must be a square matrix")
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError(
-                "Affine transform contains invalid" " elements"
-            )
+            raise AffineInvalidValuesError("Affine transform contains invalid elements")
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros

@@ -266,7 +266,7 @@ class MapmriModel(ReconstModel, Cache):
 
         if positivity_constraint:
             if not have_cvxpy:
-                raise ImportError("CVXPY package needed to enforce " "constraints.")
+                raise ImportError("CVXPY package needed to enforce constraints.")
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     installed_solvers = ", ".join(cvxpy.installed_solvers())
@@ -879,7 +879,7 @@ class MapmriFit(ReconstFit):
             )
         if not self.model.anisotropic_scaling:
             raise ValueError(
-                "Parallel non-Gaussianity is not defined using " "isotropic scaling."
+                "Parallel non-Gaussianity is not defined using isotropic scaling."
             )
 
         coef = self._mapmri_coef
@@ -909,7 +909,7 @@ class MapmriFit(ReconstFit):
             )
         if not self.model.anisotropic_scaling:
             raise ValueError(
-                "Parallel non-Gaussianity is not defined using " "isotropic scaling."
+                "Parallel non-Gaussianity is not defined using isotropic scaling."
             )
 
         ind_mat = self.model.ind_mat
@@ -954,7 +954,7 @@ class MapmriFit(ReconstFit):
             )
         if not self.model.anisotropic_scaling:
             raise ValueError(
-                "Parallel non-Gaussianity is not defined using " "isotropic scaling."
+                "Parallel non-Gaussianity is not defined using isotropic scaling."
             )
 
         ind_mat = self.model.ind_mat

@@ -83,9 +83,7 @@ def concatenate_tractogram(
                 raise ValueError("Wrong space attributes.")
 
     if preallocation and not delete_groups:
-        raise ValueError(
-            "Groups are variables, cannot be handled with " "preallocation"
-        )
+        raise ValueError("Groups are variables, cannot be handled with preallocation")
 
     # Verifying the validity of fixed-size arrays, coherence between inputs
     for curr_trx in trx_list:
