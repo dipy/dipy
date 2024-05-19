@@ -50,7 +50,7 @@ def simulated_bundles(no_streamlines=50, n_pts=100):
 
 bundle = simulated_bundles()
 
-print("This bundle has %d streamlines" % len(bundle))
+print(f"This bundle has {len(bundle)} streamlines")
 
 ###############################################################################
 # Using the ``length`` function we can retrieve the lengths of each streamline.

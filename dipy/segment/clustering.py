@@ -85,7 +85,7 @@ class Cluster:
         elif isinstance(idx, list):
             return [self[i] for i in idx]
 
-        msg = "Index must be a int or a slice! Not '{0}'".format(type(idx))
+        msg = f"Index must be a int or a slice! Not '{type(idx)}'"
         raise TypeError(msg)
 
     def __iter__(self):
@@ -95,7 +95,7 @@ class Cluster:
         return "[" + ", ".join(map(str, self.indices)) + "]"
 
     def __repr__(self):
-        return "Cluster(" + str(self) + ")"
+        return f"Cluster({str(self)})"
 
     def __eq__(self, other):
         return isinstance(other, Cluster) and self.indices == other.indices
@@ -252,7 +252,7 @@ class ClusterMap:
         return "[" + ", ".join(map(str, self)) + "]"
 
     def __repr__(self):
-        return "ClusterMap(" + str(self) + ")"
+        return f"ClusterMap({str(self)})"
 
     def _richcmp(self, other, op):
         """Compares this cluster map with another cluster map or an integer.
@@ -513,7 +513,7 @@ class QuickBundles(Clustering):
             feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
         else:
-            raise ValueError("Unknown metric: {0}".format(metric))
+            raise ValueError(f"Unknown metric: {metric}")
 
     def cluster(self, streamlines, ordering=None):
         """Clusters `streamlines` into bundles.
@@ -586,7 +586,7 @@ class QuickBundlesX(Clustering):
             feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
         else:
-            raise ValueError("Unknown metric: {0}".format(metric))
+            raise ValueError(f"Unknown metric: {metric}")
 
     def cluster(self, streamlines, ordering=None):
         """Clusters `streamlines` into bundles.
@@ -751,9 +751,9 @@ def qbx_and_merge(
     sample_streamlines = set_number_of_points(streamlines, nb_pts)
 
     if verbose:
-        logger.info(" Resampled to {} points".format(nb_pts))
-        logger.info(" Size is %0.3f MB" % (nbytes(sample_streamlines),))
-        logger.info(" Duration of resampling is %0.3f s" % (time() - t,))
+        logger.info(f" Resampled to {nb_pts} points")
+        logger.info(f" Size is {nbytes(sample_streamlines):0.3f} MB")
+        logger.info(f" Duration of resampling is {time() - t:0.3f} s")
         logger.info(" QBX phase starting...")
 
     qbx = QuickBundlesX(thresholds, metric=AveragePointwiseEuclideanMetric())
@@ -788,10 +788,8 @@ def qbx_and_merge(
     merged_cluster_map.refdata = streamlines
 
     if verbose:
-        logger.info(
-            " QuickBundlesX time for %d random streamlines" % (select_randomly,)
-        )
+        logger.info(f" QuickBundlesX time for {select_randomly} random streamlines")
 
-        logger.info(" Duration %0.3f s\n" % (time() - t1,))
+        logger.info(f" Duration {time() - t1:0.3f} s\n")
 
     return merged_cluster_map

@@ -37,9 +37,7 @@ def run_flow(flow):
         help="Force overwriting output files.",
     )
 
-    parser.add_argument(
-        "--version", action="version", version="DIPY {}".format(dipy_version)
-    )
+    parser.add_argument("--version", action="version", version=f"DIPY {dipy_version}")
 
     parser.add_argument(
         "--out_strat",

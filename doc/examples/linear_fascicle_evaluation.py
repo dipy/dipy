@@ -240,7 +240,7 @@ ax.hist(mean_rmse - model_rmse, bins=100, histtype="step")
 ax.text(
     0.2,
     0.9,
-    "Median RMSE, mean model: %.2f" % np.median(mean_rmse),
+    f"Median RMSE, mean model: {np.median(mean_rmse):.2f}",
     horizontalalignment="left",
     verticalalignment="center",
     transform=ax.transAxes,
@@ -248,7 +248,7 @@ ax.text(
 ax.text(
     0.2,
     0.8,
-    "Median RMSE, LiFE: %.2f" % np.median(model_rmse),
+    f"Median RMSE, LiFE: {np.median(model_rmse):.2f}",
     horizontalalignment="left",
     verticalalignment="center",
     transform=ax.transAxes,

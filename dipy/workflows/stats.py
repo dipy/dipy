@@ -127,7 +127,7 @@ class SNRinCCFlow(Workflow):
                 )
 
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
-            logging.info("CC mask saved as {0}".format(cc_mask_path))
+            logging.info(f"CC mask saved as {cc_mask_path}")
 
             masked_data = data[mask_cc_part]
             mean_signal = 0
@@ -138,13 +138,13 @@ class SNRinCCFlow(Workflow):
             mask_noise = ~mask_noise
 
             save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
-            logging.info("Mask noise saved as {0}".format(mask_noise_path))
+            logging.info(f"Mask noise saved as {mask_noise_path}")
 
             noise_std = 0
             if np.count_nonzero(mask_noise.astype(np.uint8)):
                 noise_std = np.std(data[mask_noise, :])
 
-            logging.info("Noise standard deviation sigma= " + str(noise_std))
+            logging.info(f"Noise standard deviation sigma= {noise_std}")
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
             gtab.bvecs[idx] = np.inf
@@ -157,38 +157,19 @@ class SNRinCCFlow(Workflow):
             for direction in ["b0", axis_X, axis_Y, axis_Z]:
                 if direction == "b0":
                     SNR = mean_signal[0] / noise_std if noise_std else 0
-                    logging.info("SNR for the b=0 image is :" + str(SNR))
+                    logging.info(f"SNR for the b=0 image is : {SNR}")
                 else:
                     logging.info(
-                        "SNR for direction "
-                        + str(direction)
-                        + " "
-                        + str(gtab.bvecs[direction])
-                        + "is :"
-                        + str(SNR)
+                        f"SNR for direction {direction} {gtab.bvecs[direction]} is: "
+                        f"{SNR}"
                     )
                     SNR_directions.append(direction)
                     SNR = mean_signal[direction] / noise_std if noise_std else 0
                 SNR_output.append(SNR)
 
-            data = [
-                {
-                    "data": str(SNR_output[0])
-                    + " "
-                    + str(SNR_output[1])
-                    + " "
-                    + str(SNR_output[2])
-                    + " "
-                    + str(SNR_output[3]),
-                    "directions": "b0"
-                    + " "
-                    + str(SNR_directions[0])
-                    + " "
-                    + str(SNR_directions[1])
-                    + " "
-                    + str(SNR_directions[2]),
-                }
-            ]
+            snr_str = f"{SNR_output[0]} {SNR_output[1]} {SNR_output[2]} {SNR_output[3]}"
+            dir_str = f"b0 {SNR_directions[0]} {SNR_directions[1]} {SNR_directions[2]}"
+            data = [{"data": snr_str, "directions": dir_str}]
 
             with open(os.path.join(out_dir, out_path), "w") as myfile:
                 json.dump(data, myfile)
@@ -288,11 +269,11 @@ def buan_bundle_profiles(
                 fm = metric_name[:-7]
                 bm = os.path.split(mb[io])[1][:-4]
 
-                logging.info("bm = " + bm)
+                logging.info(f"bm = {bm}")
 
                 dt = {}
 
-                logging.info("metric = " + metric_files_names_dti[mn])
+                logging.info(f"metric = {metric_files_names_dti[mn]}")
 
                 metric, _ = load_nifti(metric_files_names_dti[mn])
 
@@ -315,8 +296,8 @@ def buan_bundle_profiles(
                 fm = metric_name[:-5]
                 bm = os.path.split(mb[io])[1][:-4]
 
-                logging.info("bm = " + bm)
-                logging.info("metric = " + metric_files_names_csa[mn])
+                logging.info(f"bm = {bm}")
+                logging.info(f"metric = {metric_files_names_csa[mn]}")
                 dt = {}
                 metric = load_peaks(metric_files_names_csa[mn])
 
@@ -380,7 +361,7 @@ class BundleAnalysisTractometryFlow(Workflow):
         groups.sort()
         for group in groups:
             if os.path.isdir(os.path.join(subject_folder, group)):
-                logging.info("group = {0}".format(group))
+                logging.info(f"group = {group}")
                 all_subjects = os.listdir(os.path.join(subject_folder, group))
                 all_subjects.sort()
                 logging.info(all_subjects)
@@ -524,11 +505,11 @@ class LinearMixedModelsFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for file_path in io_it:
-            logging.info("Applying metric {0}".format(file_path))
+            logging.info(f"Applying metric {file_path}")
 
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
-            logging.info(" file name = " + file_name)
-            logging.info("file path = " + file_path)
+            logging.info(f" file name = {file_name}")
+            logging.info(f"file path = {file_path}")
 
             pvalues = np.zeros(no_disks)
             warnings.filterwarnings("ignore")
@@ -537,7 +518,7 @@ class LinearMixedModelsFlow(Workflow):
                 disk_count = i + 1
                 df = pd.read_hdf(file_path, where="disk=disk_count")
 
-                logging.info("read the dataframe for disk number " + str(disk_count))
+                logging.info(f"read the dataframe for disk number {disk_count}")
                 # check if data has significant data to perform LMM
                 if len(df) < 10:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
@@ -665,5 +646,5 @@ class BundleShapeAnalysis(Workflow):
             plt.imshow(ba_matrix, cmap=cmap)
             plt.colorbar()
             plt.clim(0, 1)
-            plt.savefig(os.path.join(out_dir, "SM_" + bun[:-4]))
+            plt.savefig(os.path.join(out_dir, f"SM_{bun[:-4]}"))
             plt.clf()

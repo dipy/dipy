@@ -81,7 +81,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             msg = "No direction getter defined. Eudx"
             dg = pam
 
-        logging.info("{0} direction getter strategy selected".format(msg))
+        logging.info(f"{msg} direction getter strategy selected")
         return dg
 
     def _core_run(
@@ -130,7 +130,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
         )
         save_tractogram(sft, out_tract, bbox_valid_check=False)
-        logging.info("Saved {0}".format(out_tract))
+        logging.info(f"Saved {out_tract}")
 
     def run(
         self,
@@ -206,7 +206,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for pams_path, stopping_path, seeding_path, out_tract in io_it:
-            logging.info("Local tracking on {0}".format(pams_path))
+            logging.info(f"Local tracking on {pams_path}")
 
             pam = load_peaks(pams_path, verbose=False)
             dg = self._get_direction_getter(
@@ -314,7 +314,7 @@ class PFTrackingPAMFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract in io_it:
-            logging.info("Particle Filtering tracking on {0}".format(pams_path))
+            logging.info(f"Particle Filtering tracking on {pams_path}")
 
             pam = load_peaks(pams_path, verbose=False)
 
@@ -367,4 +367,4 @@ class PFTrackingPAMFlow(Workflow):
                 streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
             )
             save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logging.info("Saved {0}".format(out_tract))
+            logging.info(f"Saved {out_tract}")

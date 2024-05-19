@@ -406,9 +406,9 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6, rng=None):
         assert_equal(
             time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
             True,
-            "mapf_scale_stat_reg_stat ({0}s) slower than "
-            "mapf_scale_adapt_reg_stat ({1}s). It should be the"
-            " opposite.".format(time_scale_stat_reg_stat, time_scale_adapt_reg_stat),
+            f"mapf_scale_stat_reg_stat ({time_scale_stat_reg_stat}s) slower "
+            f"than mapf_scale_adapt_reg_stat ({time_scale_adapt_reg_stat}s). It "
+            "should be the opposite.",
         )
 
     # check if the fitted signal is the same

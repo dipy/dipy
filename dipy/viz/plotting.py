@@ -71,7 +71,7 @@ def compare_maps(
         transpose = m > n
 
     if fit_labels is None:
-        fit_labels = ["Fit " + str(i + 1) for i in range(m)]
+        fit_labels = [f"Fit {i + 1}" for i in range(m)]
     if map_labels is None:
         map_labels = maps
 
@@ -101,7 +101,7 @@ def compare_maps(
                 if callable(attr):
                     attr = attr()
             except AttributeError:
-                warn("Could not recover attribute " + maps[j] + ".", stacklevel=2)
+                warn(f"Could not recover attribute {maps[j]}.", stacklevel=2)
                 attr = np.zeros((2, 2))
             data = np.squeeze(np.array(attr, dtype=float)).T
             ax[i, j].imshow(

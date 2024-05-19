@@ -112,7 +112,7 @@ def test_nlmeans_4d_3dsigma_and_threads():
     # mask[25-10:25+10] = 1
     mask[:] = 1
 
-    print("cpu count %d" % (cpu_count(),))
+    print(f"cpu count {cpu_count()}")
 
     print("1")
     t = time()

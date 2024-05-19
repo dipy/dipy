@@ -70,7 +70,7 @@ class MedianOtsuFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, mask_out_path, masked_out_path in io_it:
-            logging.info("Applying median_otsu segmentation on {0}".format(fpath))
+            logging.info(f"Applying median_otsu segmentation on {fpath}")
 
             data, affine, img = load_nifti(fpath, return_img=True)
             masked_volume, mask_volume = median_otsu(
@@ -84,12 +84,12 @@ class MedianOtsuFlow(Workflow):
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
-            logging.info("Mask saved as {0}".format(mask_out_path))
+            logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
                 save_nifti(masked_out_path, masked_volume, affine, img.header)
 
-                logging.info("Masked volume saved as {0}".format(masked_out_path))
+                logging.info(f"Masked volume saved as {masked_out_path}")
 
         return io_it
 
@@ -235,7 +235,7 @@ class RecoBundlesFlow(Workflow):
         input_obj = load_tractogram(streamline_files, "same", bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
-        logging.info(" Loading time %0.3f sec" % (time() - t,))
+        logging.info(f" Loading time {time() - t:0.3f} sec")
 
         rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
@@ -245,7 +245,7 @@ class RecoBundlesFlow(Workflow):
             model_bundle = load_tractogram(
                 mb, "same", bbox_valid_check=False
             ).streamlines
-            logging.info(" Loading time %0.3f sec" % (time() - t,))
+            logging.info(f" Loading time {time() - t:0.3f} sec")
             logging.info("model file = ")
             logging.info(mb)
 
@@ -304,8 +304,8 @@ class RecoBundlesFlow(Workflow):
                     model_bundle, recognized_bundle, slr_select
                 )
 
-                logging.info("Bundle adjacency Metric {0}".format(ba))
-                logging.info("Bundle Min Distance Metric {0}".format(bmd))
+                logging.info(f"Bundle adjacency Metric {ba}")
+                logging.info(f"Bundle Min Distance Metric {bmd}")
 
             new_tractogram = StatefulTractogram(
                 recognized_bundle, streamline_files, Space.RASMM

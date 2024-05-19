@@ -276,7 +276,7 @@ def test_affreg_all_transforms(rng):
         # Sum of absolute differences
         end_sad = np.abs(static - transformed).sum()
         reduction = 1 - end_sad / start_sad
-        print("%s>>%f" % (ttype, reduction))
+        print(f"{ttype}>>{reduction:f}")
         assert reduction > 0.9
 
     # Verify that exception is raised if level_iters is empty
@@ -358,14 +358,14 @@ def test_affreg_defaults(rng):
             # Sum of absolute differences
             end_sad = np.abs(static - transformed).sum()
             reduction = 1 - end_sad / start_sad
-            print("%s>>%f" % (ttype, reduction))
+            print(f"{ttype}>>{reduction:f}")
             assert reduction > 0.9
 
             transformed_inv = affine_map.transform_inverse(static)
             # Sum of absolute differences
             end_sad = np.abs(moving - transformed_inv).sum()
             reduction = 1 - end_sad / start_sad
-            print("%s>>%f" % (ttype, reduction))
+            print(f"{ttype}>>{reduction:f}")
             assert reduction > 0.89
 
 

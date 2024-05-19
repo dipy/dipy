@@ -735,9 +735,7 @@ class RecoBundles:
 
         if nb_neighb_streamlines == 0:
             if self.verbose:
-                logger.info(
-                    "You have no neighbor streamlines... " + "No bundle recognition"
-                )
+                logger.info("You have no neighbor streamlines... No bundle recognition")
             return Streamlines([]), []
         if self.verbose:
             logger.info(f" Number of neighbor streamlines" f" {nb_neighb_streamlines}")
@@ -867,7 +865,7 @@ class RecoBundles:
 
         pruning_matrix = dist_matrix.copy()
         if self.verbose:
-            logger.info(" Pruning matrix size is (%d, %d)" % pruning_matrix.shape)
+            logger.info(f" Pruning matrix size is {pruning_matrix.shape}")
 
         mins = np.min(pruning_matrix, axis=0)
         pruned_indices = [

@@ -105,7 +105,7 @@ class ResliceFlow(Workflow):
 
         for inputfile, outpfile in io_it:
             data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
-            logging.info("Processing {0}".format(inputfile))
+            logging.info(f"Processing {inputfile}")
             new_data, new_affine = reslice(
                 data,
                 affine,
@@ -117,7 +117,7 @@ class ResliceFlow(Workflow):
                 num_processes=num_processes,
             )
             save_nifti(outpfile, new_data, new_affine)
-            logging.info("Resliced file save in {0}".format(outpfile))
+            logging.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):
@@ -211,7 +211,7 @@ class SlrWithQbxFlow(Workflow):
         io_it = self.get_io_iterator()
 
         logging.info("QuickBundlesX clustering is in use")
-        logging.info("QBX thresholds {0}".format(qbx_thr))
+        logging.info(f"QBX thresholds {qbx_thr}")
 
         for (
             static_file,
@@ -222,8 +222,8 @@ class SlrWithQbxFlow(Workflow):
             moving_centroids_file,
             moved_centroids_file,
         ) in io_it:
-            logging.info("Loading static file {0}".format(static_file))
-            logging.info("Loading moving file {0}".format(moving_file))
+            logging.info(f"Loading static file {static_file}")
+            logging.info(f"Loading moving file {moving_file}")
 
             static_obj = nib.streamlines.load(static_file)
             moving_obj = nib.streamlines.load(moving_file)
@@ -241,16 +241,16 @@ class SlrWithQbxFlow(Workflow):
                 qbx_thr=qbx_thr,
             )
 
-            logging.info("Saving output file {0}".format(out_moved_file))
+            logging.info(f"Saving output file {out_moved_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 moved, affine_to_rasmm=np.eye(4)
             )
             nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
 
-            logging.info("Saving output file {0}".format(out_affine_file))
+            logging.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
-            logging.info("Saving output file {0}".format(static_centroids_file))
+            logging.info(f"Saving output file {static_centroids_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_static, affine_to_rasmm=np.eye(4)
             )
@@ -258,7 +258,7 @@ class SlrWithQbxFlow(Workflow):
                 new_tractogram, static_centroids_file, header=static_header
             )
 
-            logging.info("Saving output file {0}".format(moving_centroids_file))
+            logging.info(f"Saving output file {moving_centroids_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_moving, affine_to_rasmm=np.eye(4)
             )
@@ -268,7 +268,7 @@ class SlrWithQbxFlow(Workflow):
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            logging.info("Saving output file {0}".format(moved_centroids_file))
+            logging.info(f"Saving output file {moved_centroids_file}")
 
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_moved, affine_to_rasmm=np.eye(4)
@@ -481,8 +481,8 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logging.info("Optimal parameters: {0}".format(str(xopt)))
-                logging.info("Similarity metric: {0}".format(str(fopt)))
+                logging.info(f"Optimal parameters: {str(xopt)}")
+                logging.info(f"Similarity metric: {str(fopt)}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -738,7 +738,7 @@ class SynRegistrationFlow(Workflow):
             )
 
         logging.info("Starting Diffeomorphic Registration")
-        logging.info("Using {0} Metric".format(metric.upper()))
+        logging.info(f"Using {metric.upper()} Metric")
 
         # Init parameter if they are not setup
         init_param = {
@@ -779,8 +779,8 @@ class SynRegistrationFlow(Workflow):
             _,
             omap_file,
         ) in io_it:
-            logging.info("Loading static file {0}".format(static_file))
-            logging.info("Loading moving file {0}".format(moving_file))
+            logging.info(f"Loading static file {static_file}")
+            logging.info(f"Loading moving file {moving_file}")
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -845,11 +845,11 @@ class SynRegistrationFlow(Workflow):
             inv_static = mapping.transform(static_image)
 
             # Saving
-            logging.info("Saving warped {0}".format(owarped_file))
+            logging.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info("Saving inverse transformes static {0}".format(out_inv_static))
+            logging.info(f"Saving inverse transformes static {out_inv_static}")
             save_nifti(out_inv_static, inv_static, static_grid2world)
-            logging.info("Saving Diffeomorphic map {0}".format(omap_file))
+            logging.info(f"Saving Diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -900,7 +900,7 @@ class MotionCorrectionFlow(Workflow):
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
             # Load the data from the input files and store into objects.
-            logging.info("Loading {0}".format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -909,9 +909,9 @@ class MotionCorrectionFlow(Workflow):
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
                     warn(
-                        "b0_threshold (value: {0}) is too low, increase your "
-                        "b0_threshold. It should be higher than the lowest "
-                        "b0 value ({1}).".format(b0_threshold, bvals.min()),
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"lowest b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
             gtab = gradient_table(
@@ -926,7 +926,7 @@ class MotionCorrectionFlow(Workflow):
             save_nifti(omoved, reg_img.get_fdata(), affine)
             # Write the affine matrix array to disk
             with open(oafffine, "w") as outfile:
-                outfile.write("# Array shape: {0}\n".format(reg_affines.shape))
+                outfile.write(f"# Array shape: {reg_affines.shape}\n")
                 for affine_slice in reg_affines:
                     np.savetxt(outfile, affine_slice, fmt="%-7.2f")
                     outfile.write("# New slice\n")
@@ -1004,8 +1004,8 @@ class BundleWarpFlow(Workflow):
             registration of white matter tracts." bioRxiv (2023): 2023-01.
         """
 
-        logging.info("Loading static file {0}".format(static_file))
-        logging.info("Loading moving file {0}".format(moving_file))
+        logging.info(f"Loading static file {static_file}")
+        logging.info(f"Loading moving file {moving_file}")
 
         static_obj = nib.streamlines.load(static_file)
         moving_obj = nib.streamlines.load(moving_file)
@@ -1026,7 +1026,7 @@ class BundleWarpFlow(Workflow):
             affine=affine,
         )
 
-        logging.info("Saving output file {0}".format(out_linear_moved))
+        logging.info(f"Saving output file {out_linear_moved}")
         new_tractogram = nib.streamlines.Tractogram(
             affine_bundle, affine_to_rasmm=np.eye(4)
         )
@@ -1034,7 +1034,7 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
         )
 
-        logging.info("Saving output file {0}".format(out_nonlinear_moved))
+        logging.info(f"Saving output file {out_nonlinear_moved}")
         new_tractogram = nib.streamlines.Tractogram(
             deformed_bundle, affine_to_rasmm=np.eye(4)
         )
@@ -1044,14 +1044,14 @@ class BundleWarpFlow(Workflow):
 
         df = pd.DataFrame(warp, columns=["transforms", "gaussian_kernel"])
 
-        logging.info("Saving output file {0}".format(out_warp_transform))
+        logging.info(f"Saving output file {out_warp_transform}")
         np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
 
-        logging.info("Saving output file {0}".format(out_warp_kernel))
+        logging.info(f"Saving output file {out_warp_kernel}")
         np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
 
-        logging.info("Saving output file {0}".format(out_dist))
+        logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)
 
-        logging.info("Saving output file {0}".format(out_matched_pairs))
+        logging.info(f"Saving output file {out_matched_pairs}")
         np.save(pjoin(out_dir, out_matched_pairs), mp)

@@ -30,7 +30,7 @@ def test_make_fetcher():
 
         # create local HTTP Server
         testfile_folder = op.split(symmetric362)[0] + os.sep
-        testfile_url = "file:" + pathname2url(testfile_folder)
+        testfile_url = f"file:{pathname2url(testfile_folder)}"
         print(testfile_url)
         print(symmetric362)
         current_dir = os.getcwd()
@@ -81,7 +81,7 @@ def test_fetch_data():
         print(testfile_url)
         testfile_dir, testfile_name = op.split(testfile_url)
         # create local HTTP Server
-        test_server_url = "http://127.0.0.1:8001/" + testfile_name
+        test_server_url = f"http://127.0.0.1:8001/{testfile_name}"
         current_dir = os.getcwd()
         # change pwd to directory containing testfile.
         os.chdir(testfile_dir + os.sep)

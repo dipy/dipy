@@ -146,20 +146,20 @@ def test_deprecate_with_version():
         npt.assert_equal(len(w), 1)
     npt.assert_equal(
         func.__doc__,
-        "foo\n\n* Will raise {} as of version: 100.6\n".format(ExpiredDeprecationError),
+        f"foo\n\n* Will raise {ExpiredDeprecationError} as of version: 100.6\n",
     )
     func = dec("foo", until="0.3")(func_no_doc)
     npt.assert_raises(ExpiredDeprecationError, func)
     npt.assert_equal(
         func.__doc__,
-        "foo\n\n* Raises {} as of version: 0.3\n".format(ExpiredDeprecationError),
+        f"foo\n\n* Raises {ExpiredDeprecationError} as of version: 0.3\n",
     )
     func = dec("foo", "0.2", "0.3")(func_no_doc)
     npt.assert_raises(ExpiredDeprecationError, func)
     npt.assert_equal(
         func.__doc__,
         "foo\n\n* deprecated from version: 0.2\n"
-        "* Raises {} as of version: 0.3\n".format(ExpiredDeprecationError),
+        f"* Raises {ExpiredDeprecationError} as of version: 0.3\n",
     )
     func = dec("foo", "0.2", "0.3")(func_doc_long)
     # Python 3.13 strips indents from docstrings
@@ -168,8 +168,8 @@ def test_deprecate_with_version():
             func.__doc__,
             "Fake docstring.\n   \n   foo\n   \n"
             "   * deprecated from version: 0.2\n"
-            "   * Raises {} as of version: 0.3\n   \n"
-            "   Some text.\n".format(ExpiredDeprecationError),
+            f"   * Raises {ExpiredDeprecationError} as of version: 0.3\n   \n"
+            "   Some text.\n",
         )
         npt.assert_raises(ExpiredDeprecationError, func)
     else:
@@ -177,8 +177,8 @@ def test_deprecate_with_version():
             func.__doc__,
             "Fake docstring.\n\nfoo\n\n"
             "* deprecated from version: 0.2\n"
-            "* Raises {} as of version: 0.3\n\n"
-            "Some text.\n".format(ExpiredDeprecationError),
+            f"* Raises {ExpiredDeprecationError} as of version: 0.3\n\n"
+            "Some text.\n",
         )
         npt.assert_raises(ExpiredDeprecationError, func)
 

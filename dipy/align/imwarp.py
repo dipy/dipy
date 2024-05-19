@@ -1247,12 +1247,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         # Build the scale space of the input images
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            logger.info("Applying zero mask: " + str(self.mask0))
+            logger.info(f"Applying zero mask: {self.mask0}")
 
         if self.verbosity >= VerbosityLevels.STATUS:
             logger.info(
-                "Creating scale space from the moving image."
-                + " Levels: %d. Sigma factor: %f." % (self.levels, self.ss_sigma_factor)
+                f"Creating scale space from the moving image. Levels: {self.levels}. "
+                f"Sigma factor: {self.ss_sigma_factor:f}."
             )
 
         self.moving_ss = ScaleSpace(
@@ -1266,8 +1266,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         if self.verbosity >= VerbosityLevels.STATUS:
             logger.info(
-                "Creating scale space from the static image."
-                + " Levels: %d. Sigma factor: %f." % (self.levels, self.ss_sigma_factor)
+                f"Creating scale space from the static image. Levels: {self.levels}. "
+                f"Sigma factor: {self.ss_sigma_factor:f}."
             )
 
         self.static_ss = ScaleSpace(
@@ -1618,7 +1618,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.OPT_START)
         for level in range(self.levels - 1, -1, -1):
             if self.verbosity >= VerbosityLevels.STATUS:
-                logger.info("Optimizing level %d" % level)
+                logger.info(f"Optimizing level {level}")
 
             self.current_level = level
 
@@ -1654,14 +1654,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             logger.info(
-                "Static-Reference Residual error: %0.6f (%0.6f)" % (stats[1], stats[2])
+                f"Static-Reference Residual error: {stats[1]:0.6f} ({stats[2]:0.6f})"
             )
 
         residual, stats = self.moving_to_ref.compute_inversion_error()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             logger.info(
-                "Moving-Reference Residual error :%0.6f (%0.6f)" % (stats[1], stats[2])
+                f"Moving-Reference Residual error :{stats[1]:0.6f} ({stats[2]:0.6f})"
             )
 
         # Compose the two partial transformations
@@ -1672,7 +1672,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # Report mean and std for the composed deformation field
         residual, stats = self.static_to_ref.compute_inversion_error()
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            logger.info("Final residual error: %0.6f (%0.6f)" % (stats[1], stats[2]))
+            logger.info(f"Final residual error: {stats[1]:0.6f} ({stats[2]:0.6f})")
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
@@ -1721,7 +1721,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
             if prealign is not None:
-                logger.info("Pre-align: " + str(prealign))
+                logger.info(f"Pre-align: {prealign}")
 
         self._init_optimizer(
             static.astype(floating),

@@ -45,7 +45,7 @@ def show_images(img_ref, img_warp, fig_name):
     axarr[0].imshow(img_warp)
     axarr[0].contour(img_ref, colors="r")
     ssd = np.sum((img_warp - img_ref) ** 2)
-    axarr[1].set_title("difference, SSD=%.02f" % ssd)
+    axarr[1].set_title(f"difference, SSD={ssd:.02f}")
     im = axarr[1].imshow(img_warp - img_ref)
     plt.colorbar(im)
     fig.tight_layout()

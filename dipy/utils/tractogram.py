@@ -95,17 +95,14 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_vertex.keys()
             ):
                 if not delete_dpv:
-                    logging.debug(
-                        "{} dpv key does not exist in all TrxFile.".format(key)
-                    )
+                    logging.debug(f"{key} dpv key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dpv " "keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
             ):
                 logging.debug(
-                    "{} dpv key is not declared with the same dtype "
-                    "in all TrxFile.".format(key)
+                    f"{key} dpv key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dpv key, has different dtype.")
 
@@ -116,17 +113,14 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_streamline.keys()
             ):
                 if not delete_dps:
-                    logging.debug(
-                        "{} dps key does not exist in all " "TrxFile.".format(key)
-                    )
+                    logging.debug(f"{key} dps key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dps " "keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype
             ):
                 logging.debug(
-                    "{} dps key is not declared with the same dtype "
-                    "in all TrxFile.".format(key)
+                    f"{key} dps key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dps key, has different dtype.")
 
@@ -177,9 +171,7 @@ def concatenate_tractogram(
             if not os.path.isdir(os.path.join(tmp_dir, "groups/")):
                 os.mkdir(os.path.join(tmp_dir, "groups/"))
             dtype = all_groups_dtype[group_key]
-            group_filename = os.path.join(
-                tmp_dir, "groups/" "{}.{}".format(group_key, dtype.name)
-            )
+            group_filename = os.path.join(tmp_dir, f"groups/{group_key}.{dtype.name}")
             group_len = all_groups_len[group_key]
             new_trx.groups[group_key] = tmm._create_memmap(
                 group_filename, mode="w+", shape=(group_len,), dtype=dtype

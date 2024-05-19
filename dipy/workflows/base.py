@@ -117,15 +117,15 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
         self.doc = npds["Parameters"]
-        self.description = "{0}\n\n{1}".format(
-            " ".join(npds["Summary"]), " ".join(npds["Extended Summary"])
+        self.description = (
+            f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"
         )
 
         if npds["References"]:
             ref_text = [text or "\n" for text in npds["References"]]
             ref_idx = self.epilog.find("References: \n") + len("References: \n")
-            self.epilog = "{0}{1}\n{2}".format(
-                self.epilog[:ref_idx], "".join(ref_text), self.epilog[ref_idx:]
+            self.epilog = (
+                f"{self.epilog[:ref_idx]}{''.join(ref_text)}\n{self.epilog[ref_idx:]}"
             )
 
         self._output_params = [
@@ -166,7 +166,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             dtype, isnarg = self._select_dtype(typestr)
             help_msg = " ".join(self.doc[i][2])
 
-            _args = ["{0}{1}".format(prefix, arg)]
+            _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
 
             if is_optional:
@@ -238,21 +238,21 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             len_args = len(args)
             len_defaults = len(defaults)
 
-            flow_args = self.add_argument_group("{0} arguments(optional)".format(name))
+            flow_args = self.add_argument_group(f"{name} arguments(optional)")
 
             for i, arg_name in enumerate(args):
                 is_not_optionnal = i < len_args - len_defaults
                 if "out_" in arg_name or is_not_optionnal:
                     continue
 
-                arg_name = "{0}.{1}".format(short_name, arg_name)
+                arg_name = f"{short_name}.{arg_name}"
                 sub_flow_optionals[name][arg_name] = None
                 prefix = "--"
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
                 help_msg = "".join(_doc[i][2])
 
-                _args = ["{0}{1}".format(prefix, arg_name)]
+                _args = [f"{prefix}{arg_name}"]
                 _kwargs = {
                     "help": help_msg,
                     "type": dtype,

@@ -331,7 +331,7 @@ class EVACPlus:
         is mainly intended for the class function 'predict'.
         """
         fetch_model_weights_path = get_fnames("evac_default_weights")
-        print("fetched " + fetch_model_weights_path)
+        print(f"fetched {fetch_model_weights_path}")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):

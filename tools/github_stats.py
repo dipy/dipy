@@ -195,8 +195,7 @@ if __name__ == "__main__":
         if not unique_authors:
             print("No commits during this period.")
         else:
-            print("The following %i authors contributed %i commits." %
-                  (len(unique_authors), ncommits))
+            print(f"The following {len(unique_authors)} authors contributed {ncommits} commits.")
             print()
             print('\n'.join(unique_authors))
             print()

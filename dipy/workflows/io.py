@@ -56,9 +56,9 @@ class IoInfoFlow(Workflow):
 
         for input_path in io_it:
             mult_ = len(input_path)
-            logging.info("-----------" + mult_ * "-")
-            logging.info("Looking at {0}".format(input_path))
-            logging.info("-----------" + mult_ * "-")
+            logging.info(f"-----------{mult_ * '-'}")
+            logging.info(f"Looking at {input_path}")
+            logging.info(f"-----------{mult_ * '-'}")
 
             ipath_lower = input_path.lower()
             extension = os.path.splitext(ipath_lower)[1]
@@ -67,64 +67,59 @@ class IoInfoFlow(Workflow):
                 data, affine, img, vox_sz, affcodes = load_nifti(
                     input_path, return_img=True, return_voxsize=True, return_coords=True
                 )
-                logging.info("Data size {0}".format(data.shape))
-                logging.info("Data type {0}".format(data.dtype))
+                logging.info(f"Data size {data.shape}")
+                logging.info(f"Data type {data.dtype}")
 
                 if data.ndim == 3:
                     logging.info(
-                        "Data min {0} max {1} avg {2}".format(
-                            data.min(), data.max(), data.mean()
-                        )
+                        f"Data min {data.min()} max {data.max()} avg {data.mean()}"
                     )
                     logging.info(
-                        "2nd percentile {0} 98th percentile {1}".format(
-                            np.percentile(data, 2), np.percentile(data, 98)
-                        )
+                        f"2nd percentile {np.percentile(data, 2)} "
+                        f"98th percentile {np.percentile(data, 98)}"
                     )
                 if data.ndim == 4:
                     logging.info(
-                        "Data min {0} max {1} avg {2} of vol 0".format(
-                            data[..., 0].min(), data[..., 0].max(), data[..., 0].mean()
-                        )
+                        f"Data min {data[..., 0].min()} "
+                        f"max {data[..., 0].max()} "
+                        f"avg {data[..., 0].mean()} of vol 0"
                     )
-                    msg = "2nd percentile {0} 98th percentile {1} of vol 0"
-                    logging.info(
-                        msg.format(
-                            np.percentile(data[..., 0], 2),
-                            np.percentile(data[..., 0], 98),
-                        )
+                    msg = (
+                        f"2nd percentile {np.percentile(data[..., 0], 2)} "
+                        f"98th percentile {np.percentile(data[..., 0], 98)} "
+                        f"of vol 0"
                     )
-                logging.info("Native coordinate system {0}".format("".join(affcodes)))
+                    logging.info(msg)
+                logging.info(f"Native coordinate system {''.join(affcodes)}")
                 logging.info(f"Affine Native to RAS matrix \n{affine}")
-                logging.info("Voxel size {0}".format(np.array(vox_sz)))
+                logging.info(f"Voxel size {np.array(vox_sz)}")
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = "Voxel size is not isotropic. Please reslice.\n"
                     logging.warning(msg, stacklevel=2)
 
             if os.path.basename(input_path).lower().find("bval") > -1:
                 bvals = np.loadtxt(input_path)
-                logging.info("b-values \n{0}".format(bvals))
-                logging.info("Total number of b-values {}".format(len(bvals)))
+                logging.info(f"b-values \n{bvals}")
+                logging.info(f"Total number of b-values {len(bvals)}")
                 shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
-                logging.info("Number of gradient shells {0}".format(shells))
+                logging.info(f"Number of gradient shells {shells}")
                 logging.info(
-                    "Number of b0s {0} (b0_thr {1})\n".format(
-                        np.sum(bvals <= b0_threshold), b0_threshold
-                    )
+                    f"Number of b0s {np.sum(bvals <= b0_threshold)} "
+                    f"(b0_thr {b0_threshold})\n"
                 )
 
             if os.path.basename(input_path).lower().find("bvec") > -1:
                 bvecs = np.loadtxt(input_path)
-                logging.info("Bvectors shape on disk is {0}".format(bvecs.shape))
+                logging.info(f"Bvectors shape on disk is {bvecs.shape}")
                 rows, cols = bvecs.shape
                 if rows < cols:
                     bvecs = bvecs.T
-                logging.info("Bvectors are \n{0}".format(bvecs))
+                logging.info(f"Bvectors are \n{bvecs}")
                 norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
                 res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
                 ncl1 = np.sum(norms < 1 - bvecs_tol)
-                logging.info("Total number of unit bvectors {0}".format(len(res[0])))
-                logging.info("Total number of non-unit bvectors {0}\n".format(ncl1))
+                logging.info(f"Total number of unit bvectors {len(res[0])}")
+                logging.info(f"Total number of non-unit bvectors {ncl1}\n")
 
             if extension in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
                 sft = None
@@ -240,15 +235,14 @@ class FetchFlow(Workflow):
         if "all" in data_names:
             for name, fetcher_function in available_data.items():
                 logging.info("------------------------------------------")
-                logging.info("Fetching at {0}".format(name))
+                logging.info(f"Fetching at {name}")
                 logging.info("------------------------------------------")
                 fetcher_function()
 
         elif "list" in data_names:
             logging.info(
-                "Please, select between the following data names:" " {0}".format(
-                    ", ".join(available_data.keys())
-                )
+                "Please, select between the following data names: "
+                f"{', '.join(available_data.keys())}"
             )
 
         else:
@@ -259,21 +253,18 @@ class FetchFlow(Workflow):
                     continue
 
                 logging.info("------------------------------------------")
-                logging.info("Fetching at {0}".format(data_name))
+                logging.info(f"Fetching at {data_name}")
                 logging.info("------------------------------------------")
                 available_data[data_name]()
 
             nb_success = len(data_names) - len(skipped_names)
             print("\n")
-            logging.info("Fetched {0} / {1} Files ".format(nb_success, len(data_names)))
+            logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
             if skipped_names:
+                logging.warn(f"Skipped data name(s): {' '.join(skipped_names)}")
                 logging.warn(
-                    "Skipped data name(s):" " {0}".format(" ".join(skipped_names))
-                )
-                logging.warn(
-                    "Please, select between the following data" " names: {0}".format(
-                        ", ".join(available_data.keys())
-                    )
+                    "Please, select between the following data names: "
+                    f"{', '.join(available_data.keys())}"
                 )
 
         if out_dir:
@@ -309,7 +300,7 @@ class SplitFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for fpath, osplit in io_it:
-            logging.info("Splitting {0}".format(fpath))
+            logging.info(f"Splitting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if vol_idx == 0:
@@ -318,7 +309,7 @@ class SplitFlow(Workflow):
             split_vol = data[..., vol_idx]
             save_nifti(osplit, split_vol, affine, image.header)
 
-            logging.info("Split volume saved as {0}".format(osplit))
+            logging.info(f"Split volume saved as {osplit}")
 
 
 class ConcatenateTractogramFlow(Workflow):
@@ -403,9 +394,7 @@ class ConcatenateTractogramFlow(Workflow):
         valid_extensions = ["trk", "trx", "tck", "fib", "dpy", "vtk"]
         if out_extension.lower() not in valid_extensions:
             raise ValueError(
-                "Invalid extension. Valid extensions are: " "{0}".format(
-                    valid_extensions
-                )
+                f"Invalid extension. Valid extensions are: {valid_extensions}"
             )
 
         out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
@@ -482,7 +471,7 @@ class ConvertTensorsFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for fpath, otensor in io_it:
-            logging.info("Converting {0}".format(fpath))
+            logging.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
             save_nifti(otensor, data, affine, image.header)

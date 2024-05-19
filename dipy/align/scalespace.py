@@ -156,11 +156,11 @@ class ScaleSpace:
             the scale space level to be printed
 
         """
-        logger.info("Domain shape: " + str(self.get_domain_shape(level)))
-        logger.info("Spacing: " + str(self.get_spacing(level)))
-        logger.info("Scaling: " + str(self.get_scaling(level)))
-        logger.info("Affine: " + str(self.get_affine(level)))
-        logger.info("Sigmas: " + str(self.get_sigmas(level)))
+        logger.info(f"Domain shape: {self.get_domain_shape(level)}")
+        logger.info(f"Spacing: {self.get_spacing(level)}")
+        logger.info(f"Scaling: {self.get_scaling(level)}")
+        logger.info(f"Affine: {self.get_affine(level)}")
+        logger.info(f"Sigmas: {self.get_sigmas(level)}")
 
     def _get_attribute(self, attribute, level):
         """Return an attribute from the Scale Space at a given level.
@@ -184,7 +184,7 @@ class ScaleSpace:
         """
         if 0 <= level < self.num_levels:
             return attribute[level]
-        raise ValueError("Invalid pyramid level: " + str(level))
+        raise ValueError(f"Invalid pyramid level: {level}")
 
     def get_image(self, level):
         """Smoothed image at a given level.

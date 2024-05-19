@@ -687,7 +687,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
     else:
         e_s = "For determining relationship to an array, you can use "
         e_s += "one of the following modes: 'any', 'all', 'both_end',"
-        e_s += "'either_end', but you entered: %s." % mode
+        e_s += f"'either_end', but you entered: {mode}."
         raise ValueError(e_s)
 
     dist = cdist(s, roi_coords, "euclidean")
@@ -745,7 +745,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None, mode="any"):
         tol = dtc
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
-        w_s += " inclusion ROI. Setting to: %s" % dtc
+        w_s += f" inclusion ROI. Setting to: {dtc}"
         warn(w_s, stacklevel=2)
         tol = dtc
 

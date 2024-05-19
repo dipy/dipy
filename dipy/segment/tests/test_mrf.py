@@ -258,7 +258,7 @@ def test_square_iter(rng):
 
     for i in range(max_iter):
         print("\n")
-        print(">> Iteration: " + str(i))
+        print(f">> Iteration: {i}")
         print("\n")
 
         PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
@@ -352,7 +352,7 @@ def test_icm_square(rng):
 
     for i in range(max_iter):
         print("\n")
-        print(">> Iteration: " + str(i))
+        print(f">> Iteration: {i}")
         print("\n")
 
         final_segmentation_1, energy_1 = icm.icm_ising(
@@ -365,7 +365,7 @@ def test_icm_square(rng):
 
     for j in range(max_iter):
         print("\n")
-        print(">> Iteration: " + str(j))
+        print(f">> Iteration: {j}")
         print("\n")
 
         final_segmentation_2, energy_2 = icm.icm_ising(

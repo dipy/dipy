@@ -294,9 +294,9 @@ def convert_tensors(tensor, from_format, to_format):
     }
 
     if from_format.lower() not in tensor_order.keys():
-        raise ValueError("Unknown tensor format: {}".format(from_format))
+        raise ValueError(f"Unknown tensor format: {from_format}")
     if to_format.lower() not in tensor_order.keys():
-        raise ValueError("Unknown tensor format: {}".format(to_format))
+        raise ValueError(f"Unknown tensor format: {to_format}")
 
     if from_format.lower() == to_format.lower():
         return tensor
