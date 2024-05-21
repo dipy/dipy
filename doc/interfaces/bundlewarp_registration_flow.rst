@@ -53,7 +53,7 @@ is the ``s_UF_L.trk``, and the ``moving`` is ``m_UF_L.trk``.
 
 Run the following workflow::
 
-    dipy_bundlewarp "s_UF_L.trk" "m_UF_L.trk" --alpha 0.01 --force
+    dipy_bundlewarp "s_UF_L.trk" "m_UF_L.trk" --alpha 0.5 --force
 
 Per default, the BundleWarp workflow will save a nonlinearly transformed bundle
 as ``nonlinearly_moved.trk``.
