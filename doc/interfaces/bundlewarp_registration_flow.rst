@@ -44,7 +44,7 @@ Partially Deformable BundleWarp Registration
 Here, we partially deform/warp the moving bundle to align it with the static bundle.
 partial deformations improve linear registration while preserving the anatomical
 shape and structures of the moving bundle. Here, we use a relatively higher value
-of alpha=0.05. By default, BundleWarp partially deforms the bundle to preserve
+of alpha=0.5. By default, BundleWarp partially deforms the bundle to preserve
 the key characteristics of the original bundle.
 
 The following BundleWarp workflow requires two positional input arguments;
