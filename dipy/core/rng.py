@@ -41,10 +41,9 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
 
     """
     if not ix or not iy or not iz or not it:
-        raise ValueError('A seed value can not be null.')
+        raise ValueError("A seed value can not be null.")
 
-    if architecture()[0] == '64':
-
+    if architecture()[0] == "64":
         # If 64 bits are available then the following lines of code will be
         # faster.
         ix = (11600 * ix) % 2147483579
@@ -53,7 +52,6 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
         it = (33000 * it) % 2147483123
 
     else:
-
         # If only 32 bits are available
 
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
@@ -70,7 +68,7 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
         if it < 0:
             it = it + 2147483123
 
-    W = ix/2147483579.0 + iy/2147483543.0 + iz/2147483423.0 + it/2147483123.0
+    W = ix / 2147483579.0 + iy / 2147483543.0 + iz / 2147483423.0 + it / 2147483123.0
 
     return W - floor(W)
 
@@ -110,7 +108,7 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
 
     """
     if not ix or not iy or not iz:
-        raise ValueError('A seed value can not be null.')
+        raise ValueError("A seed value can not be null.")
     ix = (171 * ix) % 30269
     iy = (172 * iy) % 30307
     iz = (170 * iz) % 30323
@@ -130,8 +128,9 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
     if iz < 0:
         iz = iz + 30323
     """
-    return np.remainder(float(ix) / 30269. + float(iy) / 30307. +
-                        float(iz) / 30323., 1.0)
+    return np.remainder(
+        float(ix) / 30269.0 + float(iy) / 30307.0 + float(iz) / 30323.0, 1.0
+    )
 
 
 def LEcuyer(s1=100001, s2=200002):
@@ -165,7 +164,7 @@ def LEcuyer(s1=100001, s2=200002):
 
     """
     if not s1 or not s2:
-        raise ValueError('A seed value can not be null.')
+        raise ValueError("A seed value can not be null.")
     k = s1 / 53668
     s1 = 40014 * (s1 - k * 53668) - k * 12211
     if s1 < 0:
@@ -178,4 +177,4 @@ def LEcuyer(s1=100001, s2=200002):
     if z < 0:
         z = z + 2147483562
 
-    return z / 2147483563.
+    return z / 2147483563.0

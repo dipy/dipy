@@ -1,16 +1,20 @@
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 
 
 class SingleLayerPerceptron:
-
-    def __init__(self, input_shape=(28, 28),
-                 num_hidden=128, act_hidden='relu',
-                 dropout=0.2,
-                 num_out=10, act_out='softmax',
-                 optimizer='adam',
-                 loss='sparse_categorical_crossentropy'):
+    def __init__(
+        self,
+        input_shape=(28, 28),
+        num_hidden=128,
+        act_hidden="relu",
+        dropout=0.2,
+        num_out=10,
+        act_out="softmax",
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+    ):
         """Single Layer Perceptron with Dropout.
 
         Parameters
@@ -37,17 +41,17 @@ class SingleLayerPerceptron:
         self.accuracy = None
         self.loss = None
 
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Input(shape=input_shape),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(num_hidden, activation=act_hidden),
-            tf.keras.layers.Dropout(dropout),
-            tf.keras.layers.Dense(num_out, activation=act_out)
-            ])
+        model = tf.keras.models.Sequential(
+            [
+                tf.keras.layers.Input(shape=input_shape),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(num_hidden, activation=act_hidden),
+                tf.keras.layers.Dropout(dropout),
+                tf.keras.layers.Dense(num_out, activation=act_out),
+            ]
+        )
 
-        model.compile(optimizer=optimizer,
-                      loss=loss,
-                      metrics=['accuracy'])
+        model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
         self.model = model
 
@@ -89,8 +93,8 @@ class SingleLayerPerceptron:
 
         """
         hist = self.model.fit(x_train, y_train, epochs=epochs)
-        self.accuracy = hist.history['accuracy'][0]
-        self.loss = hist.history['loss'][0]
+        self.accuracy = hist.history["accuracy"][0]
+        self.loss = hist.history["loss"][0]
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
@@ -115,7 +119,7 @@ class SingleLayerPerceptron:
             return list of loss value and accuracy value on test dataset
 
         """
-        return self.model.evaluate(x_test,  y_test, verbose=verbose)
+        return self.model.evaluate(x_test, y_test, verbose=verbose)
 
     def predict(self, x_test):
         """Predict the output from input samples.
@@ -138,15 +142,17 @@ class SingleLayerPerceptron:
 
 
 class MultipleLayerPercepton:
-
-    def __init__(self, input_shape=(28, 28),
-                 num_hidden=(128, ),
-                 act_hidden='relu',
-                 dropout=0.2,
-                 num_out=10,
-                 act_out='softmax',
-                 loss='sparse_categorical_crossentropy',
-                 optimizer='adam'):
+    def __init__(
+        self,
+        input_shape=(28, 28),
+        num_hidden=(128,),
+        act_hidden="relu",
+        dropout=0.2,
+        num_out=10,
+        act_out="softmax",
+        loss="sparse_categorical_crossentropy",
+        optimizer="adam",
+    ):
         """Multiple Layer Perceptron with Dropout.
 
         Parameters
@@ -194,9 +200,9 @@ class MultipleLayerPercepton:
         self.model = tf.keras.models.Model(inputs=inp, outputs=out)
 
         # compiling the model
-        self.model.compile(optimizer=self.optimizer,
-                           loss=self.loss,
-                           metrics=['accuracy'])
+        self.model.compile(
+            optimizer=self.optimizer, loss=self.loss, metrics=["accuracy"]
+        )
 
     def summary(self):
         """Get the summary of the model.
@@ -236,8 +242,8 @@ class MultipleLayerPercepton:
 
         """
         hist = self.model.fit(x_train, y_train, epochs=epochs)
-        self.accuracy = hist.history['accuracy'][0]
-        self.loss = hist.history['loss'][0]
+        self.accuracy = hist.history["accuracy"][0]
+        self.loss = hist.history["loss"][0]
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
@@ -262,7 +268,7 @@ class MultipleLayerPercepton:
             return list of loss value and accuracy value on test dataset
 
         """
-        return self.model.evaluate(x_test,  y_test, verbose=verbose)
+        return self.model.evaluate(x_test, y_test, verbose=verbose)
 
     def predict(self, x_test):
         """Predict the output from input samples.

@@ -56,44 +56,44 @@ def test_mask_from_roi():
 def test_convert_tensor():
     # Test case 1: Convert from 'dipy' to 'mrtrix'
     tensor = np.array([[[[1, 2, 3, 4, 5, 6]]]])
-    converted_tensor = convert_tensors(tensor, 'dipy', 'mrtrix')
+    converted_tensor = convert_tensors(tensor, "dipy", "mrtrix")
     expected_tensor = np.array([[[[1, 3, 6, 2, 4, 5]]]])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 2: Convert from 'mrtrix' to 'ants'
     tensor = np.array([[[[1, 2, 3, 4, 5, 6]]]])
-    converted_tensor = convert_tensors(tensor, 'mrtrix', 'ants')
+    converted_tensor = convert_tensors(tensor, "mrtrix", "ants")
     expected_tensor = np.array([[[[[1, 4, 2, 5, 6, 3]]]]])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 3: Convert from 'ants' to 'fsl'
     tensor = np.array([[[[1, 2, 3, 4, 5, 6]]]])
-    converted_tensor = convert_tensors(tensor, 'ants', 'fsl')
+    converted_tensor = convert_tensors(tensor, "ants", "fsl")
     expected_tensor = np.array([[[[1, 2, 4, 3, 5, 6]]]])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 4: Convert from 'fsl' to 'dipy'
     tensor = np.array([[[[1, 2, 3, 4, 5, 6]]]])
-    converted_tensor = convert_tensors(tensor, 'fsl', 'dipy')
+    converted_tensor = convert_tensors(tensor, "fsl", "dipy")
     expected_tensor = np.array([[[[1, 2, 4, 3, 5, 6]]]])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 5: Convert from 'dipy' to 'ants'
     tensor = np.array([[[[1, 2, 3, 4, 5, 6]]]])
-    converted_tensor = convert_tensors(tensor, 'dipy', 'ants')
+    converted_tensor = convert_tensors(tensor, "dipy", "ants")
     expected_tensor = np.array([[[[[1, 2, 3, 4, 5, 6]]]]])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 6: Convert from 'ants' to 'dipy'
     tensor = np.array([[[[[1, 2, 3, 4, 5, 6]]]]])
-    converted_tensor = convert_tensors(tensor, 'ants', 'dipy')
+    converted_tensor = convert_tensors(tensor, "ants", "dipy")
     expected_tensor = np.array([1, 2, 3, 4, 5, 6])
     npt.assert_array_equal(converted_tensor, expected_tensor)
 
     # Test case 7: Convert from 'dipy' to 'dipy'
     tensor = np.array([[[[[1, 2, 3, 4, 5, 6]]]]])
-    converted_tensor = convert_tensors(tensor, 'dipy', 'dipy')
+    converted_tensor = convert_tensors(tensor, "dipy", "dipy")
     npt.assert_array_equal(converted_tensor, tensor)
 
-    npt.assert_raises(ValueError, convert_tensors, tensor, 'amico', 'dipy')
-    npt.assert_raises(ValueError, convert_tensors, tensor, 'dipy', 'amico')
+    npt.assert_raises(ValueError, convert_tensors, tensor, "amico", "dipy")
+    npt.assert_raises(ValueError, convert_tensors, tensor, "dipy", "amico")

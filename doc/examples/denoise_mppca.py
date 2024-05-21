@@ -13,7 +13,7 @@ The basic idea behind the PCA-based denoising algorithms is to remove the
 components of the data that are classified as noise. The Principal Components
 classification can be performed based on prior noise variance estimates
 [Manjon2013]_
-(see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)  # noqa E501
+(see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)
 or automatically based on the Marchenko-Pastur distribution [Veraa2016a]_.
 In addition to noise suppression, the PCA algorithm can be used to get the
 standard deviation of the noise [Veraa2016b]_.
@@ -23,7 +23,7 @@ estimate the noise standard deviation using the PCA algorithm based
 on the Marcenko-Pastur distribution [Veraa2016a]
 
 Let's load the necessary modules
-"""
+"""  # noqa: E501
 
 # load general modules
 from time import time
@@ -50,7 +50,7 @@ from dipy.segment.mask import median_otsu
 # provided in their paper [Hansen2016]_). The total size of the downloaded data
 # is 192 MBytes, however you only need to fetch it once.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames('cfin_multib')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames("cfin_multib")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
@@ -103,22 +103,18 @@ orig = data[:, :, sli, gra]
 den = denoised_arr[:, :, sli, gra]
 rms_diff = np.sqrt((orig - den) ** 2)
 
-fig1, ax = plt.subplots(1, 3, figsize=(12, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
+fig1, ax = plt.subplots(1, 3, figsize=(12, 6), subplot_kw={"xticks": [], "yticks": []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(orig.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[0].set_title('Original')
-ax.flat[1].imshow(den.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[1].set_title('Denoised Output')
-ax.flat[2].imshow(rms_diff.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[2].set_title('Residuals')
+ax.flat[0].imshow(orig.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[0].set_title("Original")
+ax.flat[1].imshow(den.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[1].set_title("Denoised Output")
+ax.flat[2].imshow(rms_diff.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[2].set_title("Residuals")
 
-fig1.savefig('denoised_mppca.png')
+fig1.savefig("denoised_mppca.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -132,7 +128,7 @@ fig1.savefig('denoised_mppca.png')
 #
 # Below we show how the denoised data can be saved.
 
-save_nifti('denoised_mppca.nii.gz', denoised_arr, affine)
+save_nifti("denoised_mppca.nii.gz", denoised_arr, affine)
 
 ###############################################################################
 # Additionally, we show how the PCA denoising algorithm affects different
@@ -141,8 +137,9 @@ save_nifti('denoised_mppca.nii.gz', denoised_arr, affine)
 
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
-maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
-                             autocrop=False, dilate=1)
+maskdata, mask = median_otsu(
+    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
+)
 
 dki_orig = dkimodel.fit(data, mask=mask)
 dki_den = dkimodel.fit(denoised_arr, mask=mask)
@@ -159,31 +156,26 @@ MK_orig = dki_orig.mk(0, 3)
 MK_den = dki_den.mk(0, 3)
 
 
-fig2, ax = plt.subplots(2, 3, figsize=(10, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
+fig2, ax = plt.subplots(2, 3, figsize=(10, 6), subplot_kw={"xticks": [], "yticks": []})
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.03)
 
-ax.flat[0].imshow(MD_orig[:, :, sli].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
-ax.flat[0].set_title('MD (DKI)')
-ax.flat[1].imshow(FA_orig[:, :, sli].T, cmap='gray', vmin=0, vmax=0.7,
-                  origin='lower')
-ax.flat[1].set_title('FA (DKI)')
-ax.flat[2].imshow(MK_orig[:, :, sli].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(MD_den[:, :, sli].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
-ax.flat[3].set_title('MD (DKI)')
-ax.flat[4].imshow(FA_den[:, :, sli].T, cmap='gray', vmin=0, vmax=0.7,
-                  origin='lower')
-ax.flat[4].set_title('FA (DKI)')
-ax.flat[5].imshow(MK_den[:, :, sli].T, cmap='gray', vmin=0, vmax=1.5,
-                  origin='lower')
-ax.flat[5].set_title('AD (DKI)')
+ax.flat[0].imshow(
+    MD_orig[:, :, sli].T, cmap="gray", vmin=0, vmax=2.0e-3, origin="lower"
+)
+ax.flat[0].set_title("MD (DKI)")
+ax.flat[1].imshow(FA_orig[:, :, sli].T, cmap="gray", vmin=0, vmax=0.7, origin="lower")
+ax.flat[1].set_title("FA (DKI)")
+ax.flat[2].imshow(MK_orig[:, :, sli].T, cmap="gray", vmin=0, vmax=1.5, origin="lower")
+ax.flat[2].set_title("AD (DKI)")
+ax.flat[3].imshow(MD_den[:, :, sli].T, cmap="gray", vmin=0, vmax=2.0e-3, origin="lower")
+ax.flat[3].set_title("MD (DKI)")
+ax.flat[4].imshow(FA_den[:, :, sli].T, cmap="gray", vmin=0, vmax=0.7, origin="lower")
+ax.flat[4].set_title("FA (DKI)")
+ax.flat[5].imshow(MK_den[:, :, sli].T, cmap="gray", vmin=0, vmax=1.5, origin="lower")
+ax.flat[5].set_title("AD (DKI)")
 plt.show()
-fig2.savefig('denoised_dki.png')
+fig2.savefig("denoised_dki.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -207,11 +199,11 @@ denoised_arr, sigma = mppca(data, patch_radius=2, return_sigma=True)
 ###############################################################################
 # Let's plot the noise standard deviation estimate:
 
-fig3 = plt.figure('PCA Noise standard deviation estimation')
-plt.imshow(sigma[..., sli].T, cmap='gray', origin='lower')
-plt.axis('off')
+fig3 = plt.figure("PCA Noise standard deviation estimation")
+plt.imshow(sigma[..., sli].T, cmap="gray", origin="lower")
+plt.axis("off")
 plt.show()
-fig3.savefig('pca_sigma.png')
+fig3.savefig("pca_sigma.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

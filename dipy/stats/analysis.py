@@ -16,9 +16,8 @@ from dipy.tracking.streamline import (
 )
 
 
-def peak_values(
-        bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):
-    """ Peak_values function finds the generalized fractional anisotropy (gfa)
+def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):
+    """Peak_values function finds the generalized fractional anisotropy (gfa)
         and quantitative anisotropy (qa) values from peaks object (eg: csa) for
         every point on a streamline used while tracking and saves it in hd5
         file.
@@ -47,17 +46,20 @@ def peak_values(
     """
 
     gfa = peaks.gfa
-    anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group_id,
-                        ind, dir_name)
+    anatomical_measures(
+        bundle, gfa, dt, pname + "_gfa", bname, subject, group_id, ind, dir_name
+    )
 
-    qa = peaks.qa[...,0]
-    anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group_id,
-                        ind, dir_name)
+    qa = peaks.qa[..., 0]
+    anatomical_measures(
+        bundle, qa, dt, pname + "_qa", bname, subject, group_id, ind, dir_name
+    )
 
 
-def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
-                        ind, dir_name):
-    """ Calculates dti measure (eg: FA, MD) per point on streamlines and
+def anatomical_measures(
+    bundle, metric, dt, pname, bname, subject, group_id, ind, dir_name
+):
+    """Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
     Parameters
@@ -88,20 +90,18 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
     dt[pname] = []
     dt["group"] = []
 
-    values = map_coordinates(metric, bundle._data.T,
-                             order=1)
+    values = map_coordinates(metric, bundle._data.T, order=1)
 
-    dt["disk"].extend(ind[list(range(len(values)))]+1)
-    dt["subject"].extend([subject]*len(values))
-    dt["group"].extend([group_id]*len(values))
+    dt["disk"].extend(ind[list(range(len(values)))] + 1)
+    dt["subject"].extend([subject] * len(values))
+    dt["group"].extend([group_id] * len(values))
     dt[pname].extend(values)
 
     for st_i in range(len(bundle)):
-
         st = bundle[st_i]
-        dt["streamline"].extend([st_i]*len(st))
+        dt["streamline"].extend([st_i] * len(st))
 
-    file_name = bname + "_" + pname
+    file_name = f"{bname}_{pname}"
 
     save_buan_profiles_hdf5(os.path.join(dir_name, file_name), dt)
 
@@ -136,22 +136,21 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     """
 
-    mbundle_streamlines = set_number_of_points(model_bundle,
-                                               nb_points=no_disks)
+    mbundle_streamlines = set_number_of_points(model_bundle, nb_points=no_disks)
 
     metric = AveragePointwiseEuclideanMetric()
-    qb = QuickBundles(threshold=85., metric=metric)
+    qb = QuickBundles(threshold=85.0, metric=metric)
     clusters = qb.cluster(mbundle_streamlines)
     centroids = Streamlines(clusters.centroids)
 
-    _, indx = cKDTree(centroids.get_data(), 1,
-                      copy_data=True).query(target_bundle.get_data(), k=1)
+    _, indx = cKDTree(centroids.get_data(), 1, copy_data=True).query(
+        target_bundle.get_data(), k=1
+    )
 
     return indx
 
 
-def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
-                     stat=np.mean):
+def gaussian_weights(bundle, n_points=100, return_mahalnobis=False, stat=np.mean):
     """
     Calculate weights for each streamline/node in a bundle, based on a
     Mahalanobis distance from the core the bundle, at that node (mean, per
@@ -201,9 +200,9 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         c = np.cov(node_coords.T, ddof=0)
         # Reorganize as an upper diagonal matrix for expected Mahalanobis
         # input:
-        c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
-                      [0, c[1, 1], c[1, 2]],
-                      [0, 0, c[2, 2]]])
+        c = np.array(
+            [[c[0, 0], c[0, 1], c[0, 2]], [0, c[1, 1], c[1, 2]], [0, 0, c[2, 2]]]
+        )
         # Calculate the mean or median of this node as well
         # delta = node_coords - np.mean(node_coords, 0)
         m = stat(node_coords, 0)
@@ -229,8 +228,16 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     return w / np.sum(w, 0)
 
 
-def afq_profile(data, bundle, affine, n_points=100, profile_stat=np.average,
-                orient_by=None, weights=None, **weights_kwarg):
+def afq_profile(
+    data,
+    bundle,
+    affine,
+    n_points=100,
+    profile_stat=np.average,
+    orient_by=None,
+    weights=None,
+    **weights_kwarg,
+):
     """
     Calculates a summarized profile of data for a bundle or tract
     along its length.
@@ -306,8 +313,8 @@ def afq_profile(data, bundle, affine, n_points=100, profile_stat=np.average,
             # We check that weights *always sum to 1 across streamlines*:
             if not np.allclose(np.sum(weights, 0), np.ones(n_points)):
                 raise ValueError(
-                    "The sum of weights across streamlines",
-                    " must be equal to 1")
+                    "The sum of weights across streamlines", " must be equal to 1"
+                )
 
         return profile_stat(values, weights=weights, axis=0)
     else:

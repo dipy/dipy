@@ -20,25 +20,29 @@ class SurfaceTab(HorizonTab):
         self._file_name = Path(file_name or tab_name).name
 
         self._actor_toggle = build_checkbox(
-            labels=[''],
-            checked_labels=[''],
-            on_change=self._toggle_actors)
-
-        self._surface_opacity_label, self._surface_opacity = build_slider(
-            initial_value=1.,
-            max_value=1.,
-            text_template='{ratio:.0%}',
-            on_change=self._change_opacity,
-            label='Opacity'
+            labels=[""], checked_labels=[""], on_change=self._toggle_actors
         )
 
-        self._file_label = build_label(text='Filename',)
+        self._surface_opacity_label, self._surface_opacity = build_slider(
+            initial_value=1.0,
+            max_value=1.0,
+            text_template="{ratio:.0%}",
+            on_change=self._change_opacity,
+            label="Opacity",
+        )
+
+        self._file_label = build_label(
+            text="Filename",
+        )
         self._file_name_label = build_label(text=self._file_name)
 
-        self._register_elements(self._actor_toggle,
-                                self._surface_opacity_label,
-                                self._surface_opacity, self._file_label,
-                                self._file_name_label)
+        self._register_elements(
+            self._actor_toggle,
+            self._surface_opacity_label,
+            self._surface_opacity,
+            self._file_label,
+            self._file_name_label,
+        )
 
     def _change_opacity(self, slider):
         """Change opacity value according to slider changed.
@@ -51,11 +55,9 @@ class SurfaceTab(HorizonTab):
         self._update_opacities()
 
     def _update_opacities(self):
-        """Update opacities of visible actors based on selected values.
-        """
+        """Update opacities of visible actors based on selected values."""
         for actor in self.actors:
-            actor.GetProperty().SetOpacity(
-                self._surface_opacity.selected_value)
+            actor.GetProperty().SetOpacity(self._surface_opacity.selected_value)
 
     def build(self, tab_id):
         """Build all the elements under the tab.
@@ -67,14 +69,14 @@ class SurfaceTab(HorizonTab):
         """
         self._tab_id = tab_id
 
-        y_pos = .85
-        self._actor_toggle.position = (.02, y_pos)
-        self._surface_opacity_label.position = (.05, y_pos)
-        self._surface_opacity.position = (.10, y_pos)
+        y_pos = 0.85
+        self._actor_toggle.position = (0.02, y_pos)
+        self._surface_opacity_label.position = (0.05, y_pos)
+        self._surface_opacity.position = (0.10, y_pos)
 
         y_pos = 0.65
-        self._file_label.position = (.05, y_pos)
-        self._file_name_label.position = (.13, y_pos)
+        self._file_label.position = (0.05, y_pos)
+        self._file_name_label.position = (0.13, y_pos)
 
     @property
     def name(self):
@@ -88,6 +90,5 @@ class SurfaceTab(HorizonTab):
 
     @property
     def actors(self):
-        """Actors controlled by this tab.
-        """
+        """Actors controlled by this tab."""
         return self._visualizer.actors

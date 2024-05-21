@@ -39,6 +39,7 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 (150 orientations, b=2000 $s/mm^2$) which is one of the standard example
 datasets in DIPY_.
 """
+
 import numpy as np
 
 from dipy.core.gradients import gradient_table
@@ -62,9 +63,9 @@ interactive = False
 rng = np.random.default_rng(1)
 
 # Read data
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
-t1_fname = get_fnames('stanford_t1')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
+t1_fname = get_fnames("stanford_t1")
 
 data, affine = load_nifti(hardi_fname)
 labels = load_nifti_data(label_fname)
@@ -77,7 +78,7 @@ gtab = gradient_table(bvals, bvecs)
 dshape = data.shape[:-1]
 xa, xb, ya, yb, za, zb = [15, 42, 10, 65, 18, 65]
 data_small = data[xa:xb, ya:yb, za:zb]
-selectionmask = np.zeros(dshape, 'bool')
+selectionmask = np.zeros(dshape, "bool")
 selectionmask[xa:xb, ya:yb, za:zb] = True
 
 ###############################################################################
@@ -89,10 +90,14 @@ selectionmask[xa:xb, ya:yb, za:zb] = True
 
 # Perform CSA
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
-csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                             relative_peak_threshold=.6,
-                             min_separation_angle=45,
-                             mask=selectionmask)
+csa_peaks = peaks_from_model(
+    csa_model,
+    data,
+    default_sphere,
+    relative_peak_threshold=0.6,
+    min_separation_angle=45,
+    mask=selectionmask,
+)
 
 # Stopping Criterion
 stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
@@ -109,15 +114,16 @@ stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit = csd_model.fit(data_small)
-csd_fit_shm = np.lib.pad(csd_fit.shm_coeff, ((xa, dshape[0]-xb),
-                                             (ya, dshape[1]-yb),
-                                             (za, dshape[2]-zb),
-                                             (0, 0)), 'constant')
+csd_fit_shm = np.lib.pad(
+    csd_fit.shm_coeff,
+    ((xa, dshape[0] - xb), (ya, dshape[1] - yb), (za, dshape[2] - zb), (0, 0)),
+    "constant",
+)
 
 # Probabilistic direction getting for fiber tracking
-prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit_shm,
-                                                    max_angle=30.,
-                                                    sphere=default_sphere)
+prob_dg = ProbabilisticDirectionGetter.from_shcoeff(
+    csd_fit_shm, max_angle=30.0, sphere=default_sphere
+)
 
 ###############################################################################
 # The optic radiation is reconstructed by tracking fibers from the calcarine
@@ -126,9 +132,9 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit_shm,
 # dimensions 3x3x3 voxels.
 
 # Set a seed region region for tractography.
-mask = np.zeros(data.shape[:-1], 'bool')
+mask = np.zeros(data.shape[:-1], "bool")
 rad = 3
-mask[26-rad:26+rad, 29-rad:29+rad, 31-rad:31+rad] = True
+mask[26 - rad : 26 + rad, 29 - rad : 29 + rad, 31 - rad : 31 + rad] = True
 seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 
 ###############################################################################
@@ -136,8 +142,9 @@ seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 # direction getter along with the stopping criterion and seeds as input.
 
 # Perform tracking using Local Tracking
-streamlines_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
-                                      affine, step_size=.5)
+streamlines_generator = LocalTracking(
+    prob_dg, stopping_criterion, seeds, affine, step_size=0.5
+)
 
 # Compute streamlines.
 streamlines = Streamlines(streamlines_generator)
@@ -148,9 +155,9 @@ streamlines = Streamlines(streamlines_generator)
 # find the fibers that traverse through this ROI.
 
 # Set a mask for the lateral geniculate nucleus (LGN)
-mask_lgn = np.zeros(data.shape[:-1], 'bool')
+mask_lgn = np.zeros(data.shape[:-1], "bool")
 rad = 5
-mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
+mask_lgn[35 - rad : 35 + rad, 42 - rad : 42 + rad, 28 - rad : 28 + rad] = True
 
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, affine, mask_lgn, tol=1.8)
@@ -192,12 +199,12 @@ fbc = FBCMeasures(streamlines, k)
 # are included) and 0.2 (removing the 20 percent most spurious fibers).
 
 # Calculate LFBC for original fibers
-fbc_sl_orig, clrs_orig, rfbc_orig = \
-  fbc.get_points_rfbc_thresholded(0, emphasis=0.01)
+fbc_sl_orig, clrs_orig, rfbc_orig = fbc.get_points_rfbc_thresholded(0, emphasis=0.01)
 
 # Apply a threshold on the RFBC to remove spurious fibers
-fbc_sl_thres, clrs_thres, rfbc_thres = \
-  fbc.get_points_rfbc_thresholded(0.125, emphasis=0.01)
+fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(
+    0.125, emphasis=0.01
+)
 
 ###############################################################################
 # The results of FBC measures are visualized, showing the original fibers
@@ -223,17 +230,15 @@ vol_actor2.display(x=35)
 scene.add(vol_actor2)
 
 # Show original fibers
-scene.set_camera(position=(-264, 285, 155),
-                 focal_point=(0, -14, 9),
-                 view_up=(0, 0, 1))
-window.record(scene, n_frames=1, out_path='OR_before.png', size=(900, 900))
+scene.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+window.record(scene, n_frames=1, out_path="OR_before.png", size=(900, 900))
 if interactive:
     window.show(scene)
 
 # Show thresholded fibers
 scene.rm(lineactor)
 scene.add(actor.line(fbc_sl_thres, np.vstack(clrs_thres), linewidth=0.2))
-window.record(scene, n_frames=1, out_path='OR_after.png', size=(900, 900))
+window.record(scene, n_frames=1, out_path="OR_after.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

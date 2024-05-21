@@ -2,6 +2,8 @@ import numpy as np
 from scipy.ndimage import convolve
 from scipy.special import gammainccinv
 
+from dipy.utils.deprecator import deprecated_params
+
 
 def _inv_nchi_cdf(N, K, alpha):
     """Inverse CDF for the noncentral chi distribution
@@ -11,18 +13,20 @@ def _inv_nchi_cdf(N, K, alpha):
 
 # List of optimal quantile for PIESNO.
 # Get optimal quantile for N if available, else use the median.
-opt_quantile = {1: 0.79681213002002,
-                2: 0.7306303027491917,
-                4: 0.6721952960782169,
-                8: 0.6254030432343569,
-               16: 0.5900487123737876,
-               32: 0.5641772300866416,
-               64: 0.5455611840489607,
-              128: 0.5322811923303339}
+opt_quantile = {
+    1: 0.79681213002002,
+    2: 0.7306303027491917,
+    4: 0.6721952960782169,
+    8: 0.6254030432343569,
+    16: 0.5900487123737876,
+    32: 0.5641772300866416,
+    64: 0.5455611840489607,
+    128: 0.5322811923303339,
+}
 
 
-def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
-           return_mask=False):
+@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+def piesno(data, N, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
 
@@ -42,7 +46,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     alpha : float
         Probabilistic estimation threshold for the gamma function.
 
-    l : int
+    step : int
         number of initial estimates for sigma to try.
 
     itermax : int
@@ -102,33 +106,37 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         q = 0.5
 
     # Initial estimation of sigma
-    initial_estimation = (np.percentile(data, q * 100) /
-                          np.sqrt(2 * _inv_nchi_cdf(N, 1, q)))
+    initial_estimation = np.percentile(data, q * 100) / np.sqrt(
+        2 * _inv_nchi_cdf(N, 1, q)
+    )
 
     if data.ndim == 4:
-
         sigma = np.zeros(data.shape[-2], dtype=np.float32)
         mask_noise = np.zeros(data.shape[:-1], dtype=bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
-                                                          N,
-                                                          alpha=alpha,
-                                                          l=l,
-                                                          itermax=itermax,
-                                                          eps=eps,
-                                                          return_mask=True,
-                                                          initial_estimation=initial_estimation)
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(
+                data[..., idx, :],
+                N,
+                alpha=alpha,
+                step=step,
+                itermax=itermax,
+                eps=eps,
+                return_mask=True,
+                initial_estimation=initial_estimation,
+            )
 
     else:
-        sigma, mask_noise = _piesno_3D(data,
-                                       N,
-                                       alpha=alpha,
-                                       l=l,
-                                       itermax=itermax,
-                                       eps=eps,
-                                       return_mask=True,
-                                       initial_estimation=initial_estimation)
+        sigma, mask_noise = _piesno_3D(
+            data,
+            N,
+            alpha=alpha,
+            step=step,
+            itermax=itermax,
+            eps=eps,
+            return_mask=True,
+            initial_estimation=initial_estimation,
+        )
 
     if return_mask:
         return sigma, mask_noise
@@ -136,8 +144,17 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     return sigma
 
 
-def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
-               return_mask=False, initial_estimation=None):
+@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+def _piesno_3D(
+    data,
+    N,
+    alpha=0.01,
+    step=100,
+    itermax=100,
+    eps=1e-5,
+    return_mask=False,
+    initial_estimation=None,
+):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
     This is the slice by slice version for working on a 4D array.
@@ -155,7 +172,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         Probabilistic estimation threshold for the gamma function.
         Default: 0.01.
 
-    l : int (optional)
+    step : int (optional)
         number of initial estimates for sigma to try. Default: 100.
 
     itermax : int (optional)
@@ -222,29 +239,29 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     else:
         m = initial_estimation
 
-    phi = np.arange(1, l + 1) * m / l
+    phi = np.arange(1, step + 1) * m / step
     K = data.shape[-1]
-    sum_m2 = np.sum(data.astype(np.float32)**2, axis=2)
+    sum_m2 = np.sum(data.astype(np.float32) ** 2, axis=2)
 
     sigma_prev = 0
     sigma = m
     prev_idx = 0
     mask = np.zeros(data.shape[:-1], dtype=bool)
 
-    lambda_minus = _inv_nchi_cdf(N, K, alpha/2)
-    lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha/2)
+    lambda_minus = _inv_nchi_cdf(N, K, alpha / 2)
+    lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha / 2)
 
     for sigma_init in phi:
-
         s = sum_m2 / (2 * K * sigma_init**2)
-        found_idx = np.sum(np.logical_and(lambda_minus <= s, s <= lambda_plus),
-                           dtype=np.int16)
+        found_idx = np.sum(
+            np.logical_and(lambda_minus <= s, s <= lambda_plus), dtype=np.int16
+        )
 
         if found_idx > prev_idx:
             sigma = sigma_init
             prev_idx = found_idx
 
-    for n in range(itermax):
+    for _ in range(itermax):
         if np.abs(sigma - sigma_prev) < eps:
             break
 
@@ -325,23 +342,27 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
 
     # Precomputed factor from Koay 2006, this corrects the bias of magnitude
     # image
-    correction_factor = {0: 1,  # No correction
-                         1: 0.42920367320510366,
-                         4: 0.4834941393603609,
-                         6: 0.4891759468548269,
-                         8: 0.49195420135894175,
-                        12: 0.4946862482541263,
-                        16: 0.4960339908122364,
-                        20: 0.4968365823718557,
-                        24: 0.49736907650825657,
-                        32: 0.49803177052530145,
-                        64: 0.49901964176235936}
+    correction_factor = {
+        0: 1,  # No correction
+        1: 0.42920367320510366,
+        4: 0.4834941393603609,
+        6: 0.4891759468548269,
+        8: 0.49195420135894175,
+        12: 0.4946862482541263,
+        16: 0.4960339908122364,
+        20: 0.4968365823718557,
+        24: 0.49736907650825657,
+        32: 0.49803177052530145,
+        64: 0.49901964176235936,
+    }
 
     if N in correction_factor:
         factor = correction_factor[N]
     else:
-        raise ValueError("N = {0} is not supported! Please choose amongst \
-{1}".format(N, sorted(list(correction_factor.keys()))))
+        raise ValueError(
+            f"N = {N} is not supported! Please choose amongst "
+            f"{sorted(correction_factor.keys())}"
+        )
 
     if arr.ndim == 3:
         sigma = np.zeros(1, dtype=np.float32)
@@ -360,7 +381,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
 
     for i in range(sigma.size):
         convolve(arr[..., i], k, output=conv_out)
-        mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * conv_out)
-        sigma[i] = np.sqrt(np.mean(mean_block[mask]**2) / factor)
+        mean_block = np.sqrt(6 / 7) * (arr[..., i] - 1 / 6 * conv_out)
+        sigma[i] = np.sqrt(np.mean(mean_block[mask] ** 2) / factor)
 
     return sigma

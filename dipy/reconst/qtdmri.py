@@ -11,9 +11,9 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
-    from scipy.special import factorial, factorial2
+    from scipy.special import factorial
 except ImportError:
-    from scipy.misc import factorial, factorial2
+    from scipy.misc import factorial
 import random
 
 from scipy.optimize import fmin_l_bfgs_b
@@ -28,137 +28,137 @@ plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 class QtdmriModel(Cache):
     r"""The q$\tau$-dMRI model [1] to analytically and continuously represent
-        the q$\tau$ diffusion signal attenuation over diffusion sensitization
-        q and diffusion time $\tau$. The model can be seen as an extension of
-        the MAP-MRI basis [2] towards different diffusion times.
+    the q$\tau$ diffusion signal attenuation over diffusion sensitization
+    q and diffusion time $\tau$. The model can be seen as an extension of
+    the MAP-MRI basis [2] towards different diffusion times.
 
-        The main idea is to model the diffusion signal over time and space as
-        a linear combination of continuous functions,
+    The main idea is to model the diffusion signal over time and space as
+    a linear combination of continuous functions,
 
-        ..math::
-            :nowrap:
-                \begin{equation}
-                    \hat{E}(\textbf{q},\tau;\textbf{c}) =
-                    \sum_i^{N_{\textbf{q}}}\sum_k^{N_\tau} \textbf{c}_{ik}
-                    \,\Phi_i(\textbf{q})\,T_k(\tau),
-                \end{equation}
+    ..math::
+        :nowrap:
+            \begin{equation}
+                \hat{E}(\textbf{q},\tau;\textbf{c}) =
+                \sum_i^{N_{\textbf{q}}}\sum_k^{N_\tau} \textbf{c}_{ik}
+                \,\Phi_i(\textbf{q})\,T_k(\tau),
+            \end{equation}
 
-        where $\Phi$ and $T$ are the spatial and temporal basis functions,
-        $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal
-        order, and $i,k$ are basis order iterators.
+    where $\Phi$ and $T$ are the spatial and temporal basis functions,
+    $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal
+    order, and $i,k$ are basis order iterators.
 
-        The estimation of the coefficients $c_i$ can be regularized using
-        either analytic Laplacian regularization, sparsity regularization using
-        the l1-norm, or both to do a type of elastic net regularization.
+    The estimation of the coefficients $c_i$ can be regularized using
+    either analytic Laplacian regularization, sparsity regularization using
+    the l1-norm, or both to do a type of elastic net regularization.
 
-        From the coefficients, there exists an analytical formula to estimate
-        the ODF, RTOP, RTAP, RTPP, QIV and MSD, for any diffusion time.
+    From the coefficients, there exists an analytical formula to estimate
+    the ODF, RTOP, RTAP, RTPP, QIV and MSD, for any diffusion time.
 
-        Parameters
-        ----------
-        gtab : GradientTable,
-            gradient directions and bvalues container class. The bvalues
-            should be in the normal s/mm^2. big_delta and small_delta need to
-            given in seconds.
-        radial_order : unsigned int,
-            an even integer representing the spatial/radial order of the basis.
-        time_order : unsigned int,
-            an integer larger or equal than zero representing the time order
-            of the basis.
-        laplacian_regularization : bool,
-            Regularize using the Laplacian of the qt-dMRI basis.
-        laplacian_weighting: string or scalar,
-            The string 'GCV' makes it use generalized cross-validation to find
-            the regularization weight [3]. A scalar sets the regularization
-            weight to that value.
-        l1_regularization : bool,
-            Regularize by imposing sparsity in the coefficients using the
-            l1-norm.
-        l1_weighting : 'CV' or scalar,
-            The string 'CV' makes it use five-fold cross-validation to find
-            the regularization weight. A scalar sets the regularization weight
-            to that value.
-        cartesian : bool
-            Whether to use the Cartesian or spherical implementation of the
-            qt-dMRI basis, which we first explored in [4].
-        anisotropic_scaling : bool
-            Whether to use anisotropic scaling or isotropic scaling. This
-            option can be used to test if the Cartesian implementation is
-            equivalent with the spherical one when using the same scaling.
-        normalization : bool
-            Whether to normalize the basis functions such that their inner
-            product is equal to one. Normalization is only necessary when
-            imposing sparsity in the spherical basis if cartesian=False.
-        constrain_q0 : bool
-            whether to constrain the q0 point to unity along the tau-space.
-            This is necessary to ensure that $E(0,\tau)=1$.
-        bval_threshold : float
-            the threshold b-value to be used, such that only data points below
-            that threshold are used when estimating the scale factors.
-        eigenvalue_threshold : float,
-            Sets the minimum of the tensor eigenvalues in order to avoid
-            stability problem.
-        cvxpy_solver : str, optional
-            cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See See https://www.cvxpy.org/ for
-            details.
+    Parameters
+    ----------
+    gtab : GradientTable,
+        gradient directions and bvalues container class. The bvalues
+        should be in the normal s/mm^2. big_delta and small_delta need to
+        given in seconds.
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    laplacian_regularization : bool,
+        Regularize using the Laplacian of the qt-dMRI basis.
+    laplacian_weighting: string or scalar,
+        The string 'GCV' makes it use generalized cross-validation to find
+        the regularization weight [3]. A scalar sets the regularization
+        weight to that value.
+    l1_regularization : bool,
+        Regularize by imposing sparsity in the coefficients using the
+        l1-norm.
+    l1_weighting : 'CV' or scalar,
+        The string 'CV' makes it use five-fold cross-validation to find
+        the regularization weight. A scalar sets the regularization weight
+        to that value.
+    cartesian : bool
+        Whether to use the Cartesian or spherical implementation of the
+        qt-dMRI basis, which we first explored in [4].
+    anisotropic_scaling : bool
+        Whether to use anisotropic scaling or isotropic scaling. This
+        option can be used to test if the Cartesian implementation is
+        equivalent with the spherical one when using the same scaling.
+    normalization : bool
+        Whether to normalize the basis functions such that their inner
+        product is equal to one. Normalization is only necessary when
+        imposing sparsity in the spherical basis if cartesian=False.
+    constrain_q0 : bool
+        whether to constrain the q0 point to unity along the tau-space.
+        This is necessary to ensure that $E(0,\tau)=1$.
+    bval_threshold : float
+        the threshold b-value to be used, such that only data points below
+        that threshold are used when estimating the scale factors.
+    eigenvalue_threshold : float,
+        Sets the minimum of the tensor eigenvalues in order to avoid
+        stability problem.
+    cvxpy_solver : str, optional
+        cvxpy solver name. Optionally optimize the positivity constraint
+        with a particular cvxpy solver. See See https://www.cvxpy.org/ for
+        details.
 
-        References
-        ----------
-        .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-           Representation of dMRI in Space and Time", Medical Image Analysis,
-           2017.
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+       Representation of dMRI in Space and Time", Medical Image Analysis,
+       2017.
 
-        .. [2] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+    .. [2] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
 
-        .. [3] Craven et al. "Smoothing Noisy Data with Spline Functions."
-           NUMER MATH 31.4 (1978): 377-403.
+    .. [3] Craven et al. "Smoothing Noisy Data with Spline Functions."
+       NUMER MATH 31.4 (1978): 377-403.
 
-        .. [4] Fick, Rutger HJ, et al. "A unifying framework for spatial and
-           temporal diffusion in diffusion mri." International Conference on
-           Information Processing in Medical Imaging. Springer, Cham, 2015.
-        """
+    .. [4] Fick, Rutger HJ, et al. "A unifying framework for spatial and
+       temporal diffusion in diffusion mri." International Conference on
+       Information Processing in Medical Imaging. Springer, Cham, 2015.
+    """
 
-    def __init__(self,
-                 gtab,
-                 radial_order=6,
-                 time_order=2,
-                 laplacian_regularization=False,
-                 laplacian_weighting=0.2,
-                 l1_regularization=False,
-                 l1_weighting=0.1,
-                 cartesian=True,
-                 anisotropic_scaling=True,
-                 normalization=False,
-                 constrain_q0=True,
-                 bval_threshold=1e10,
-                 eigenvalue_threshold=1e-04,
-                 cvxpy_solver="CLARABEL"
-                 ):
-
+    def __init__(
+        self,
+        gtab,
+        radial_order=6,
+        time_order=2,
+        laplacian_regularization=False,
+        laplacian_weighting=0.2,
+        l1_regularization=False,
+        l1_weighting=0.1,
+        cartesian=True,
+        anisotropic_scaling=True,
+        normalization=False,
+        constrain_q0=True,
+        bval_threshold=1e10,
+        eigenvalue_threshold=1e-04,
+        cvxpy_solver="CLARABEL",
+    ):
         if radial_order % 2 or radial_order < 0:
             msg = "radial_order must be zero or an even positive integer."
-            msg += " radial_order %s was given." % radial_order
+            msg += f" radial_order {radial_order} was given."
             raise ValueError(msg)
 
         if time_order < 0:
             msg = "time_order must be larger or equal than zero integer."
-            msg += " time_order %s was given." % time_order
+            msg += f" time_order {time_order} was given."
             raise ValueError(msg)
 
         if not isinstance(laplacian_regularization, bool):
             msg = "laplacian_regularization must be True or False."
-            msg += " Input value was %s." % laplacian_regularization
+            msg += f" Input value was {laplacian_regularization}."
             raise ValueError(msg)
 
         if laplacian_regularization:
             msg = "laplacian_regularization weighting must be 'GCV' "
             msg += "or a float larger or equal than zero."
-            msg += " Input value was %s." % laplacian_weighting
+            msg += f" Input value was {laplacian_weighting}."
             if isinstance(laplacian_weighting, str):
-                if laplacian_weighting != 'GCV':
+                if laplacian_weighting != "GCV":
                     raise ValueError(msg)
             elif isinstance(laplacian_weighting, float):
                 if laplacian_weighting < 0:
@@ -168,15 +168,15 @@ class QtdmriModel(Cache):
 
         if not isinstance(l1_regularization, bool):
             msg = "l1_regularization must be True or False."
-            msg += " Input value was %s." % l1_regularization
+            msg += f" Input value was {l1_regularization}."
             raise ValueError(msg)
 
         if l1_regularization:
             msg = "l1_weighting weighting must be 'CV' "
             msg += "or a float larger or equal than zero."
-            msg += " Input value was %s." % l1_weighting
+            msg += f" Input value was {l1_weighting}."
             if isinstance(l1_weighting, str):
-                if l1_weighting != 'CV':
+                if l1_weighting != "CV":
                     raise ValueError(msg)
             elif isinstance(l1_weighting, float):
                 if l1_weighting < 0:
@@ -186,29 +186,27 @@ class QtdmriModel(Cache):
 
         if not isinstance(cartesian, bool):
             msg = "cartesian must be True or False."
-            msg += " Input value was %s." % cartesian
+            msg += f" Input value was {cartesian}."
             raise ValueError(msg)
 
         if not isinstance(anisotropic_scaling, bool):
             msg = "anisotropic_scaling must be True or False."
-            msg += " Input value was %s." % anisotropic_scaling
+            msg += f" Input value was {anisotropic_scaling}."
             raise ValueError(msg)
 
         if not isinstance(constrain_q0, bool):
             msg = "constrain_q0 must be True or False."
-            msg += " Input value was %s." % constrain_q0
+            msg += f" Input value was {constrain_q0}."
             raise ValueError(msg)
 
-        if (not isinstance(bval_threshold, float) or
-                bval_threshold < 0):
+        if not isinstance(bval_threshold, float) or bval_threshold < 0:
             msg = "bval_threshold must be a positive float."
-            msg += " Input value was %s." % bval_threshold
+            msg += f" Input value was {bval_threshold}."
             raise ValueError(msg)
 
-        if (not isinstance(eigenvalue_threshold, float) or
-                eigenvalue_threshold < 0):
+        if not isinstance(eigenvalue_threshold, float) or eigenvalue_threshold < 0:
             msg = "eigenvalue_threshold must be a positive float."
-            msg += " Input value was %s." % eigenvalue_threshold
+            msg += f" Input value was {eigenvalue_threshold}."
             raise ValueError(msg)
 
         if laplacian_regularization or l1_regularization:
@@ -218,8 +216,8 @@ class QtdmriModel(Cache):
                 raise ImportError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-                    msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
+                    msg = f"Input `cvxpy_solver` was set to {cvxpy_solver}."
+                    msg += f" One of {', '.join(cvxpy.installed_solvers())}"
                     msg += " was expected."
                     raise ValueError(msg)
 
@@ -247,21 +245,20 @@ class QtdmriModel(Cache):
         if self.cartesian:
             self.ind_mat = qtdmri_index_matrix(radial_order, time_order)
         else:
-            self.ind_mat = qtdmri_isotropic_index_matrix(radial_order,
-                                                         time_order)
+            self.ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
 
         # precompute parts of laplacian regularization matrices
-        self.part4_reg_mat_tau = part4_reg_matrix_tau(self.ind_mat, 1.)
-        self.part23_reg_mat_tau = part23_reg_matrix_tau(self.ind_mat, 1.)
-        self.part1_reg_mat_tau = part1_reg_matrix_tau(self.ind_mat, 1.)
+        self.part4_reg_mat_tau = part4_reg_matrix_tau(self.ind_mat, 1.0)
+        self.part23_reg_mat_tau = part23_reg_matrix_tau(self.ind_mat, 1.0)
+        self.part1_reg_mat_tau = part1_reg_matrix_tau(self.ind_mat, 1.0)
         if self.cartesian:
-            self.S_mat, self.T_mat, self.U_mat = (
-                mapmri.mapmri_STU_reg_matrices(radial_order)
+            self.S_mat, self.T_mat, self.U_mat = mapmri.mapmri_STU_reg_matrices(
+                radial_order
             )
         else:
             self.part1_uq_iso_precomp = (
                 mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
-                    self.ind_mat[:, :3], 1.
+                    self.ind_mat[:, :3], 1.0
                 )
             )
 
@@ -278,18 +275,25 @@ class QtdmriModel(Cache):
 
         if self.cartesian:
             if self.anisotropic_scaling:
-                us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
-                                                       qvals[bval_mask],
-                                                       bvecs[bval_mask],
-                                                       tau[bval_mask])
+                us, ut, R = qtdmri_anisotropic_scaling(
+                    data_norm[bval_mask],
+                    qvals[bval_mask],
+                    bvecs[bval_mask],
+                    tau[bval_mask],
+                )
                 tau_scaling = ut / us.mean()
                 tau_scaled = tau * tau_scaling
                 ut /= tau_scaling
                 us = np.clip(us, self.eigenvalue_threshold, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
                 M = qtdmri_signal_matrix_(
-                    self.radial_order, self.time_order, us, ut, q, tau_scaled,
-                    self.normalization
+                    self.radial_order,
+                    self.time_order,
+                    us,
+                    ut,
+                    q,
+                    tau_scaled,
+                    self.normalization,
                 )
             else:
                 us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
@@ -300,8 +304,13 @@ class QtdmriModel(Cache):
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
                 M = qtdmri_signal_matrix_(
-                    self.radial_order, self.time_order, us, ut, q, tau_scaled,
-                    self.normalization
+                    self.radial_order,
+                    self.time_order,
+                    us,
+                    ut,
+                    q,
+                    tau_scaled,
+                    self.normalization,
                 )
         else:
             us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
@@ -312,8 +321,13 @@ class QtdmriModel(Cache):
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
             M = qtdmri_isotropic_signal_matrix_(
-                self.radial_order, self.time_order, us[0], ut, q, tau_scaled,
-                normalization=self.normalization
+                self.radial_order,
+                self.time_order,
+                us[0],
+                ut,
+                q,
+                tau_scaled,
+                normalization=self.normalization,
             )
 
         b0_indices = np.arange(self.gtab.tau.shape[0])[self.gtab.b0s_mask]
@@ -324,39 +338,47 @@ class QtdmriModel(Cache):
             first_tau_pos.append(np.where(tau0_ordered == unique_tau)[0][0])
         M0 = M[b0_indices[first_tau_pos]]
 
-        lopt = 0.
-        alpha = 0.
+        lopt = 0.0
+        alpha = 0.0
         if self.laplacian_regularization and not self.l1_regularization:
             if self.cartesian:
                 laplacian_matrix = qtdmri_laplacian_reg_matrix(
-                    self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
+                    self.ind_mat,
+                    us,
+                    ut,
+                    self.S_mat,
+                    self.T_mat,
+                    self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
-                    normalization=self.normalization
+                    normalization=self.normalization,
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, us, ut, self.part1_uq_iso_precomp,
-                    self.part1_reg_mat_tau, self.part23_reg_mat_tau,
+                    self.ind_mat,
+                    us,
+                    ut,
+                    self.part1_uq_iso_precomp,
+                    self.part1_reg_mat_tau,
+                    self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
-                    normalization=self.normalization
+                    normalization=self.normalization,
                 )
-            if self.laplacian_weighting == 'GCV':
+            if self.laplacian_weighting == "GCV":
                 try:
-                    lopt = generalized_crossvalidation(data_norm, M,
-                                                       laplacian_matrix)
+                    lopt = generalized_crossvalidation(data_norm, M, laplacian_matrix)
                 except BaseException:
                     msg = "Laplacian GCV failed. lopt defaulted to 2e-4."
-                    warn(msg)
+                    warn(msg, stacklevel=2)
                     lopt = 2e-4
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix - data_norm) +
-                lopt * cvxpy.quad_form(c, laplacian_matrix)
+                cvxpy.sum_squares(design_matrix - data_norm)
+                + lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
@@ -366,21 +388,20 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
-                cvxpy_solution_optimal = prob.status == 'optimal'
+                cvxpy_solution_optimal = prob.status == "optimal"
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif self.l1_regularization and not self.laplacian_regularization:
-            if self.l1_weighting == 'CV':
+            if self.l1_weighting == "CV":
                 alpha = l1_crossvalidation(b0s_mask, data_norm, M)
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix - data_norm) +
-                alpha * cvxpy.norm1(c)
+                cvxpy.sum_squares(design_matrix - data_norm) + alpha * cvxpy.norm1(c)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
@@ -390,7 +411,7 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
-                cvxpy_solution_optimal = prob.status == 'optimal'
+                cvxpy_solution_optimal = prob.status == "optimal"
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
@@ -398,35 +419,44 @@ class QtdmriModel(Cache):
         elif self.l1_regularization and self.laplacian_regularization:
             if self.cartesian:
                 laplacian_matrix = qtdmri_laplacian_reg_matrix(
-                    self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
+                    self.ind_mat,
+                    us,
+                    ut,
+                    self.S_mat,
+                    self.T_mat,
+                    self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
-                    normalization=self.normalization
+                    normalization=self.normalization,
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, us, ut, self.part1_uq_iso_precomp,
-                    self.part1_reg_mat_tau, self.part23_reg_mat_tau,
+                    self.ind_mat,
+                    us,
+                    ut,
+                    self.part1_uq_iso_precomp,
+                    self.part1_reg_mat_tau,
+                    self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
-                    normalization=self.normalization
+                    normalization=self.normalization,
                 )
-            if self.laplacian_weighting == 'GCV':
-                lopt = generalized_crossvalidation(data_norm, M,
-                                                   laplacian_matrix)
+            if self.laplacian_weighting == "GCV":
+                lopt = generalized_crossvalidation(data_norm, M, laplacian_matrix)
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
-            if self.l1_weighting == 'CV':
-                alpha = elastic_crossvalidation(b0s_mask, data_norm, M,
-                                                laplacian_matrix, lopt)
+            if self.l1_weighting == "CV":
+                alpha = elastic_crossvalidation(
+                    b0s_mask, data_norm, M, laplacian_matrix, lopt
+                )
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix - data_norm) +
-                alpha * cvxpy.norm1(c) +
-                lopt * cvxpy.quad_form(c, laplacian_matrix)
+                cvxpy.sum_squares(design_matrix - data_norm)
+                + alpha * cvxpy.norm1(c)
+                + lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
@@ -436,7 +466,7 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
-                cvxpy_solution_optimal = prob.status == 'optimal'
+                cvxpy_solution_optimal = prob.status == "optimal"
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
@@ -455,17 +485,34 @@ class QtdmriModel(Cache):
             msg = "cvxpy optimization resulted in non-optimal solution. Check "
             msg += "cvxpy_solution_optimal attribute in fitted object to see "
             msg += "which voxels are affected."
-            warn(msg)
+            warn(msg, stacklevel=2)
         return QtdmriFit(
-            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha,
-            cvxpy_solution_optimal)
+            self,
+            qtdmri_coef,
+            us,
+            ut,
+            tau_scaling,
+            R,
+            lopt,
+            alpha,
+            cvxpy_solution_optimal,
+        )
 
 
 class QtdmriFit:
-
-    def __init__(self, model, qtdmri_coef, us, ut, tau_scaling, R, lopt,
-                 alpha, cvxpy_solution_optimal):
-        """ Calculates diffusion properties for a single voxel
+    def __init__(
+        self,
+        model,
+        qtdmri_coef,
+        us,
+        ut,
+        tau_scaling,
+        R,
+        lopt,
+        alpha,
+        cvxpy_solution_optimal,
+    ):
+        """Calculates diffusion properties for a single voxel
 
         Parameters
         ----------
@@ -520,24 +567,25 @@ class QtdmriFit:
             2017.
         """
         if self.model.cartesian:
-            II = self.model.cache_get('qtdmri_to_mapmri_matrix',
-                                      key=tau)
+            II = self.model.cache_get("qtdmri_to_mapmri_matrix", key=tau)
             if II is None:
-                II = qtdmri_to_mapmri_matrix(self.model.radial_order,
-                                             self.model.time_order, self.ut,
-                                             self.tau_scaling * tau)
-                self.model.cache_set('qtdmri_to_mapmri_matrix',
-                                     tau, II)
+                II = qtdmri_to_mapmri_matrix(
+                    self.model.radial_order,
+                    self.model.time_order,
+                    self.ut,
+                    self.tau_scaling * tau,
+                )
+                self.model.cache_set("qtdmri_to_mapmri_matrix", tau, II)
         else:
-            II = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
-                                      key=tau)
+            II = self.model.cache_get("qtdmri_isotropic_to_mapmri_matrix", key=tau)
             if II is None:
-                II = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
-                                                       self.model.time_order,
-                                                       self.ut,
-                                                       self.tau_scaling * tau)
-                self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
-                                     tau, II)
+                II = qtdmri_isotropic_to_mapmri_matrix(
+                    self.model.radial_order,
+                    self.model.time_order,
+                    self.ut,
+                    self.tau_scaling * tau,
+                )
+                self.model.cache_set("qtdmri_isotropic_to_mapmri_matrix", tau, II)
         mapmri_coef = np.dot(II, self._qtdmri_coef)
         return mapmri_coef
 
@@ -545,13 +593,14 @@ class QtdmriFit:
         """As a measure of sparsity, calculates the number of largest
         coefficients needed to absolute sum up to 99% of the total absolute sum
         of all coefficients"""
-        if not 0. < threshold < 1.:
+        if not 0.0 < threshold < 1.0:
             msg = "sparsity threshold must be between zero and one"
             raise ValueError(msg)
         total_weight = np.sum(abs(self._qtdmri_coef))
         absolute_normalized_coef_array = (
-            np.sort(abs(self._qtdmri_coef))[::-1] / total_weight)
-        current_weight = 0.
+            np.sort(abs(self._qtdmri_coef))[::-1] / total_weight
+        )
+        current_weight = 0.0
         counter = 0
         while current_weight < threshold:
             current_weight += absolute_normalized_coef_array[counter]
@@ -562,13 +611,14 @@ class QtdmriFit:
         """As a measure of sparsity, calculates the number of largest
         coefficients needed to squared sum up to 99% of the total squared sum
         of all coefficients"""
-        if not 0. < threshold < 1.:
+        if not 0.0 < threshold < 1.0:
             msg = "sparsity threshold must be between zero and one"
             raise ValueError(msg)
-        total_weight = np.sum(self._qtdmri_coef ** 2)
+        total_weight = np.sum(self._qtdmri_coef**2)
         squared_normalized_coef_array = (
-            np.sort(self._qtdmri_coef ** 2)[::-1] / total_weight)
-        current_weight = 0.
+            np.sort(self._qtdmri_coef**2)[::-1] / total_weight
+        )
+        current_weight = 0.0
         counter = 0
         while current_weight < threshold:
             current_weight += squared_normalized_coef_array[counter]
@@ -576,7 +626,7 @@ class QtdmriFit:
         return counter
 
     def odf(self, sphere, tau, s=2):
-        r""" Calculates the analytical Orientation Distribution Function (ODF)
+        r"""Calculates the analytical Orientation Distribution Function (ODF)
         for a given diffusion time tau from the signal, [1]_ Eq. (32). The
         qtdmri coefficients are first converted to mapmri coefficients
         following [2].
@@ -603,21 +653,21 @@ class QtdmriFit:
         if self.model.cartesian:
             v_ = sphere.vertices
             v = np.dot(v_, self.R)
-            I_s = mapmri.mapmri_odf_matrix(self.model.radial_order, self.us,
-                                           s, v)
+            I_s = mapmri.mapmri_odf_matrix(self.model.radial_order, self.us, s, v)
             odf = np.dot(I_s, mapmri_coef)
         else:
-            II = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            II = self.model.cache_get("ODF_matrix", key=(sphere, s))
             if II is None:
                 II = mapmri.mapmri_isotropic_odf_matrix(
-                    self.model.radial_order, 1, s, sphere.vertices)
-                self.model.cache_set('ODF_matrix', (sphere, s), II)
+                    self.model.radial_order, 1, s, sphere.vertices
+                )
+                self.model.cache_set("ODF_matrix", (sphere, s), II)
 
             odf = self.us[0] ** s * np.dot(II, mapmri_coef)
         return odf
 
     def odf_sh(self, tau, s=2):
-        r""" Calculates the real analytical odf for a given discrete sphere.
+        r"""Calculates the real analytical odf for a given discrete sphere.
         Computes the design matrix of the ODF for the given sphere vertices
         and radial moment [1]_ eq. (32). The radial moment s acts as a
         sharpening method. The analytical equation for the spherical ODF basis
@@ -645,23 +695,20 @@ class QtdmriFit:
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         if self.model.cartesian:
-            msg = 'odf in spherical harmonics not yet implemented for '
-            msg += 'cartesian implementation'
+            msg = "odf in spherical harmonics not yet implemented for "
+            msg += "cartesian implementation"
             raise ValueError(msg)
-        II = self.model.cache_get('ODF_sh_matrix',
-                                  key=(self.model.radial_order, s))
+        II = self.model.cache_get("ODF_sh_matrix", key=(self.model.radial_order, s))
 
         if II is None:
-            II = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order,
-                                                       1, s)
-            self.model.cache_set('ODF_sh_matrix', (self.model.radial_order, s),
-                                 II)
+            II = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order, 1, s)
+            self.model.cache_set("ODF_sh_matrix", (self.model.radial_order, s), II)
 
         odf = self.us[0] ** s * np.dot(II, mapmri_coef)
         return odf
 
     def rtpp(self, tau):
-        r""" Calculates the analytical return to the plane probability (RTPP)
+        r"""Calculates the analytical return to the plane probability (RTPP)
         for a given diffusion time tau, [1]_ eq. (42). The analytical formula
         for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11). The
         qtdmri coefficients are first converted to mapmri coefficients
@@ -689,43 +736,48 @@ class QtdmriFit:
         if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
-            sel = Bm > 0.  # select only relevant coefficients
+            sel = Bm > 0.0  # select only relevant coefficients
             const = 1 / (np.sqrt(2 * np.pi) * self.us[0])
             ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
             rtpp_vec = const * Bm[sel] * ind_sum * mapmri_coef[sel]
             rtpp = rtpp_vec.sum()
             return rtpp
         else:
-            ind_mat = mapmri.mapmri_isotropic_index_matrix(
-                self.model.radial_order
-            )
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(self.model.radial_order)
             rtpp_vec = np.zeros(int(ind_mat.shape[0]))
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
-                    for j in range(1, 2 + n // 2):
-                        ll = n + 2 - 2 * j
-                        const = (-1 / 2.0) ** (ll / 2) / np.sqrt(np.pi)
-                        matsum = 0
-                        for k in range(0, j):
-                            matsum += (
-                                (-1) ** k *
-                                mapmri.binomialfloat(j + ll - 0.5, j - k - 1) *
-                                gamma(ll / 2 + k + 1 / 2.0) /
-                                (factorial(k) * 0.5 ** (ll / 2 + 1 / 2.0 + k)))
-                        for m in range(-ll, ll + 1):
-                            rtpp_vec[count] = const * matsum
-                            count += 1
+                for j in range(1, 2 + n // 2):
+                    ll = n + 2 - 2 * j
+                    const = (-1 / 2.0) ** (ll / 2) / np.sqrt(np.pi)
+                    matsum = 0
+                    for k in range(0, j):
+                        matsum += (
+                            (-1) ** k
+                            * mapmri.binomialfloat(j + ll - 0.5, j - k - 1)
+                            * gamma(ll / 2 + k + 1 / 2.0)
+                            / (factorial(k) * 0.5 ** (ll / 2 + 1 / 2.0 + k))
+                        )
+                    for _ in range(-ll, ll + 1):
+                        rtpp_vec[count] = const * matsum
+                        count += 1
             direction = np.array(self.R[:, 0], ndmin=2)
-            r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
-                                        direction[:, 2])
+            r, theta, phi = cart2sphere(
+                direction[:, 0], direction[:, 1], direction[:, 2]
+            )
 
-            rtpp = mapmri_coef * (1 / self.us[0]) *\
-                rtpp_vec * real_sh_descoteaux_from_index(
-                    ind_mat[:, 2], ind_mat[:, 1], theta, phi)
+            rtpp = (
+                mapmri_coef
+                * (1 / self.us[0])
+                * rtpp_vec
+                * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1], theta, phi
+                )
+            )
             return rtpp.sum()
 
     def rtap(self, tau):
-        r""" Calculates the analytical return to the axis probability (RTAP)
+        r"""Calculates the analytical return to the axis probability (RTAP)
         for a given diffusion time tau, [1]_ eq. (40, 44a). The analytical
         formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
         The qtdmri coefficients are first converted to mapmri coefficients
@@ -753,45 +805,49 @@ class QtdmriFit:
         if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
-            sel = Bm > 0.  # select only relevant coefficients
+            sel = Bm > 0.0  # select only relevant coefficients
             const = 1 / (2 * np.pi * np.prod(self.us[1:]))
             ind_sum = (-1.0) ** (np.sum(ind_mat[sel, 1:], axis=1) / 2.0)
             rtap_vec = const * Bm[sel] * ind_sum * mapmri_coef[sel]
             rtap = np.sum(rtap_vec)
         else:
-            ind_mat = mapmri.mapmri_isotropic_index_matrix(
-                self.model.radial_order
-            )
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(self.model.radial_order)
             rtap_vec = np.zeros(int(ind_mat.shape[0]))
             count = 0
 
             for n in range(0, self.model.radial_order + 1, 2):
                 for j in range(1, 2 + n // 2):
                     ll = n + 2 - 2 * j
-                    kappa = ((-1) ** (j - 1) * 2. ** (-(ll + 3) / 2.0)) / np.pi
+                    kappa = ((-1) ** (j - 1) * 2.0 ** (-(ll + 3) / 2.0)) / np.pi
                     matsum = 0
                     for k in range(0, j):
-                        matsum += ((-1) ** k *
-                                   mapmri.binomialfloat(j + ll - 0.5,
-                                                        j - k - 1) *
-                                   gamma((ll + 1) / 2.0 + k)) /\
-                            (factorial(k) * 0.5 ** ((ll + 1) / 2.0 + k))
-                    for m in range(-ll, ll + 1):
+                        matsum += (
+                            (-1) ** k
+                            * mapmri.binomialfloat(j + ll - 0.5, j - k - 1)
+                            * gamma((ll + 1) / 2.0 + k)
+                        ) / (factorial(k) * 0.5 ** ((ll + 1) / 2.0 + k))
+                    for _ in range(-ll, ll + 1):
                         rtap_vec[count] = kappa * matsum
                         count += 1
             rtap_vec *= 2
 
             direction = np.array(self.R[:, 0], ndmin=2)
-            r, theta, phi = cart2sphere(direction[:, 0],
-                                        direction[:, 1], direction[:, 2])
-            rtap_vec = mapmri_coef * (1 / self.us[0] ** 2) *\
-                rtap_vec * real_sh_descoteaux_from_index(
-                    ind_mat[:, 2], ind_mat[:, 1], theta, phi)
+            r, theta, phi = cart2sphere(
+                direction[:, 0], direction[:, 1], direction[:, 2]
+            )
+            rtap_vec = (
+                mapmri_coef
+                * (1 / self.us[0] ** 2)
+                * rtap_vec
+                * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1], theta, phi
+                )
+            )
             rtap = rtap_vec.sum()
         return rtap
 
     def rtop(self, tau):
-        r""" Calculates the analytical return to the origin probability (RTOP)
+        r"""Calculates the analytical return to the origin probability (RTOP)
         for a given diffusion time tau [1]_ eq. (36, 43). The analytical
         formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
         The qtdmri coefficients are first converted to mapmri coefficients
@@ -819,14 +875,12 @@ class QtdmriFit:
         if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
-            const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.us))
+            const = 1 / (np.sqrt(8 * np.pi**3) * np.prod(self.us))
             ind_sum = (-1.0) ** (np.sum(ind_mat, axis=1) / 2)
             rtop_vec = const * ind_sum * Bm * mapmri_coef
             rtop = rtop_vec.sum()
         else:
-            ind_mat = mapmri.mapmri_isotropic_index_matrix(
-                self.model.radial_order
-            )
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat_isotropic(ind_mat)
             const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
             rtop_vec = const * (-1.0) ** (ind_mat[:, 0] - 1) * Bm
@@ -835,7 +889,7 @@ class QtdmriFit:
         return rtop
 
     def msd(self, tau):
-        r""" Calculates the analytical Mean Squared Displacement (MSD) for a
+        r"""Calculates the analytical Mean Squared Displacement (MSD) for a
         given diffusion time tau. It is defined as the Laplacian of the origin
         of the estimated signal [1]_. The analytical formula for the MAP-MRI
         basis was derived in [2]_ eq. (C13, D1). The qtdmri coefficients are
@@ -862,34 +916,42 @@ class QtdmriFit:
         if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
-            sel = Bm > 0.  # select only relevant coefficients
+            sel = Bm > 0.0  # select only relevant coefficients
             ind_sum = np.sum(ind_mat[sel], axis=1)
             nx, ny, nz = ind_mat[sel].T
 
-            numerator = (-1) ** (0.5 * (-ind_sum)) * np.pi ** (3 / 2.0) *\
-                ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
-                 mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2)
+            numerator = (
+                (-1) ** (0.5 * (-ind_sum))
+                * np.pi ** (3 / 2.0)
+                * (
+                    (1 + 2 * nx) * mu[0] ** 2
+                    + (1 + 2 * ny) * mu[1] ** 2
+                    + (1 + 2 * nz) * mu[2] ** 2
+                )
+            )
 
-            denominator = np.sqrt(2. ** (-ind_sum) * factorial(nx) *
-                                  factorial(ny) * factorial(nz)) *\
-                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *\
-                gamma(0.5 - 0.5 * nz)
+            denominator = (
+                np.sqrt(
+                    2.0 ** (-ind_sum) * factorial(nx) * factorial(ny) * factorial(nz)
+                )
+                * gamma(0.5 - 0.5 * nx)
+                * gamma(0.5 - 0.5 * ny)
+                * gamma(0.5 - 0.5 * nz)
+            )
 
             msd_vec = mapmri_coef[sel] * (numerator / denominator)
             msd = msd_vec.sum()
         else:
-            ind_mat = mapmri.mapmri_isotropic_index_matrix(
-                self.model.radial_order
-            )
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat_isotropic(ind_mat)
-            sel = Bm > 0.  # select only relevant coefficients
+            sel = Bm > 0.0  # select only relevant coefficients
             msd_vec = (4 * ind_mat[sel, 0] - 1) * Bm[sel]
             msd = self.us[0] ** 2 * msd_vec * mapmri_coef[sel]
             msd = msd.sum()
         return msd
 
     def qiv(self, tau):
-        r""" Calculates the analytical Q-space Inverse Variance (QIV) for given
+        r"""Calculates the analytical Q-space Inverse Variance (QIV) for given
         diffusion time tau.
         It is defined as the inverse of the Laplacian of the origin of the
         estimated propagator [1]_ eq. (22). The analytical formula for the
@@ -922,28 +984,32 @@ class QtdmriFit:
             sel = Bm > 0  # select only relevant coefficients
             nx, ny, nz = ind_mat[sel].T
 
-            numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
-                np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
-                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
-                gamma(0.5 - 0.5 * nz)
+            numerator = (
+                8
+                * np.pi**2
+                * (ux * uy * uz) ** 3
+                * np.sqrt(factorial(nx) * factorial(ny) * factorial(nz))
+                * gamma(0.5 - 0.5 * nx)
+                * gamma(0.5 - 0.5 * ny)
+                * gamma(0.5 - 0.5 * nz)
+            )
 
-            denominator = np.sqrt(2. ** (-1 + nx + ny + nz)) *\
-                ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
-                 ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+            denominator = np.sqrt(2.0 ** (-1 + nx + ny + nz)) * (
+                (1 + 2 * nx) * uy**2 * uz**2
+                + ux**2 * ((1 + 2 * nz) * uy**2 + (1 + 2 * ny) * uz**2)
+            )
 
             qiv_vec = mapmri_coef[sel] * (numerator / denominator)
             qiv = qiv_vec.sum()
         else:
-            ind_mat = mapmri.mapmri_isotropic_index_matrix(
-                self.model.radial_order
-            )
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat_isotropic(ind_mat)
-            sel = Bm > 0.  # select only relevant coefficients
+            sel = Bm > 0.0  # select only relevant coefficients
             j = ind_mat[sel, 0]
-            qiv_vec = ((8 * (-1.0) ** (1 - j) *
-                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4.0 * j - 1) *
-                                                           Bm[sel]))
-            qiv = ux ** 5 * qiv_vec * mapmri_coef[sel]
+            qiv_vec = (8 * (-1.0) ** (1 - j) * np.sqrt(2) * np.pi ** (7 / 2.0)) / (
+                (4.0 * j - 1) * Bm[sel]
+            )
+            qiv = ux**5 * qiv_vec * mapmri_coef[sel]
             qiv = qiv.sum()
         return qiv
 
@@ -958,7 +1024,7 @@ class QtdmriFit:
             E = self.predict(gtab)
         return E
 
-    def predict(self, qvals_or_gtab, S0=1.):
+    def predict(self, qvals_or_gtab, S0=1.0):
         r"""Recovers the reconstructed signal for any qvalue array or
         gradient table.
         """
@@ -975,25 +1041,40 @@ class QtdmriFit:
         if self.model.cartesian:
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
-                M = qtdmri_signal_matrix_(self.model.radial_order,
-                                          self.model.time_order,
-                                          self.us, self.ut, q_rot, tau,
-                                          self.model.normalization)
+                M = qtdmri_signal_matrix_(
+                    self.model.radial_order,
+                    self.model.time_order,
+                    self.us,
+                    self.ut,
+                    q_rot,
+                    tau,
+                    self.model.normalization,
+                )
             else:
-                M = qtdmri_signal_matrix_(self.model.radial_order,
-                                          self.model.time_order,
-                                          self.us, self.ut, q, tau,
-                                          self.model.normalization)
+                M = qtdmri_signal_matrix_(
+                    self.model.radial_order,
+                    self.model.time_order,
+                    self.us,
+                    self.ut,
+                    q,
+                    tau,
+                    self.model.normalization,
+                )
         else:
             M = qtdmri_isotropic_signal_matrix_(
-                self.model.radial_order, self.model.time_order,
-                self.us[0], self.ut, q, tau,
-                normalization=self.model.normalization)
+                self.model.radial_order,
+                self.model.time_order,
+                self.us[0],
+                self.ut,
+                q,
+                tau,
+                normalization=self.model.normalization,
+            )
         E = S0 * np.dot(M, self._qtdmri_coef)
         return E
 
     def norm_of_laplacian_signal(self):
-        """ Calculates the norm of the laplacian of the fitted signal [1]_.
+        """Calculates the norm of the laplacian of the fitted signal [1]_.
         This information could be useful to assess if the extrapolation of the
         fitted signal contains spurious oscillations. A high laplacian norm may
         indicate that these are present, and any q-space indices that
@@ -1012,43 +1093,57 @@ class QtdmriFit:
         """
         if self.model.cartesian:
             lap_matrix = qtdmri_laplacian_reg_matrix(
-                self.model.ind_mat, self.us, self.ut,
-                self.model.S_mat, self.model.T_mat, self.model.U_mat,
+                self.model.ind_mat,
+                self.us,
+                self.ut,
+                self.model.S_mat,
+                self.model.T_mat,
+                self.model.U_mat,
                 self.model.part1_reg_mat_tau,
                 self.model.part23_reg_mat_tau,
                 self.model.part4_reg_mat_tau,
-                normalization=self.model.normalization
+                normalization=self.model.normalization,
             )
         else:
             lap_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                self.model.ind_mat, self.us, self.ut,
+                self.model.ind_mat,
+                self.us,
+                self.ut,
                 self.model.part1_uq_iso_precomp,
                 self.model.part1_reg_mat_tau,
                 self.model.part23_reg_mat_tau,
                 self.model.part4_reg_mat_tau,
-                normalization=self.model.normalization
+                normalization=self.model.normalization,
             )
-        norm_laplacian = np.dot(self._qtdmri_coef,
-                                np.dot(self._qtdmri_coef, lap_matrix))
+        norm_laplacian = np.dot(
+            self._qtdmri_coef, np.dot(self._qtdmri_coef, lap_matrix)
+        )
         return norm_laplacian
 
     def pdf(self, rt_points):
-        """ Diffusion propagator on a given set of real points.
-            if the array r_points is non writeable, then intermediate
-            results are cached for faster recalculation
+        """Diffusion propagator on a given set of real points.
+        if the array r_points is non writeable, then intermediate
+        results are cached for faster recalculation
         """
         tau_scaling = self.tau_scaling
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
         if self.model.cartesian:
-            K = qtdmri_eap_matrix_(self.model.radial_order,
-                                   self.model.time_order,
-                                   self.us, self.ut, rt_points_,
-                                   self.model.normalization)
+            K = qtdmri_eap_matrix_(
+                self.model.radial_order,
+                self.model.time_order,
+                self.us,
+                self.ut,
+                rt_points_,
+                self.model.normalization,
+            )
         else:
             K = qtdmri_isotropic_eap_matrix_(
-                self.model.radial_order, self.model.time_order,
-                self.us[0], self.ut, rt_points_,
-                normalization=self.model.normalization
+                self.model.radial_order,
+                self.model.time_order,
+                self.us[0],
+                self.ut,
+                rt_points_,
+                normalization=self.model.normalization,
             )
         eap = np.dot(K, self._qtdmri_coef)
         return eap
@@ -1098,9 +1193,14 @@ def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
     counter = 0
     mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
     for j, ll, m, o in qtdmri_ind_mat:
-        index_overlap = np.all([j == mapmri_ind_mat[:, 0],
-                                ll == mapmri_ind_mat[:, 1],
-                                m == mapmri_ind_mat[:, 2]], 0)
+        index_overlap = np.all(
+            [
+                j == mapmri_ind_mat[:, 0],
+                ll == mapmri_ind_mat[:, 1],
+                m == mapmri_ind_mat[:, 2],
+            ],
+            0,
+        )
         mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
     return mapmri_mat
@@ -1169,25 +1269,27 @@ def qtdmri_temporal_normalization(ut):
 
 def qtdmri_mapmri_normalization(mu):
     """Normalization factor for Cartesian MAP-MRI basis. The scaling is the
-        same for every basis function depending only on the spatial scaling
-        mu.
+    same for every basis function depending only on the spatial scaling
+    mu.
     """
-    sqrtC = np.sqrt(8 * np.prod(mu)) * np.pi ** (3. / 4.)
+    sqrtC = np.sqrt(8 * np.prod(mu)) * np.pi ** (3.0 / 4.0)
     return sqrtC
 
 
-def qtdmri_mapmri_isotropic_normalization(j, l, u0):
+def qtdmri_mapmri_isotropic_normalization(j, ell, u0):
     """Normalization factor for Spherical MAP-MRI basis. The normalization
-       for a basis function with orders [j,l,m] depends only on orders j,l and
-       the isotropic scale factor.
+    for a basis function with orders [j,l,m] depends only on orders j,l and
+    the isotropic scale factor.
     """
-    sqrtC = ((2 * np.pi) ** (3. / 2.) *
-             np.sqrt(2 ** l * u0 ** 3 * gamma(j) / gamma(j + l + 1. / 2.)))
+    sqrtC = (2 * np.pi) ** (3.0 / 2.0) * np.sqrt(
+        2**ell * u0**3 * gamma(j) / gamma(j + ell + 1.0 / 2.0)
+    )
     return sqrtC
 
 
-def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
-                          normalization=False):
+def qtdmri_signal_matrix_(
+    radial_order, time_order, us, ut, q, tau, normalization=False
+):
     """Function to generate the qtdmri signal basis."""
     M = qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau)
     if normalization:
@@ -1215,12 +1317,9 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
     for o in range(time_order + 1):
         temporal_storage[:, o] = temporal_basis(o, ut, tau)
 
-    Qx_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
-                          dtype=complex)
-    Qy_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
-                          dtype=complex)
-    Qz_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
-                          dtype=complex)
+    Qx_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
+    Qy_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
+    Qz_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
     for n in range(radial_order + 1 + 4):
         Qx_storage[:, n] = mapmri.mapmri_phi_1d(n, qx, mux)
         Qy_storage[:, n] = mapmri.mapmri_phi_1d(n, qy, muy)
@@ -1229,9 +1328,9 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
     counter = 0
     Q = np.zeros((n_dat, n_elem))
     for nx, ny, nz, o in ind_mat:
-        Q[:, counter] = (np.real(
-            Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz]) *
-            temporal_storage[:, o]
+        Q[:, counter] = (
+            np.real(Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz])
+            * temporal_storage[:, o]
         )
         counter += 1
 
@@ -1267,19 +1366,20 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     K = np.zeros((n_dat, n_elem))
     for nx, ny, nz, o in ind_mat:
         K[:, counter] = (
-            Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz] *
-            temporal_storage[:, o]
+            Kx_storage[:, nx]
+            * Ky_storage[:, ny]
+            * Kz_storage[:, nz]
+            * temporal_storage[:, o]
         )
         counter += 1
 
     return K
 
 
-def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau,
-                                    normalization=False):
-    M = qtdmri_isotropic_signal_matrix(
-        radial_order, time_order, us, ut, q, tau
-    )
+def qtdmri_isotropic_signal_matrix_(
+    radial_order, time_order, us, ut, q, tau, normalization=False
+):
+    M = qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
     if normalization:
         ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
         j, ll = ind_mat[:, :2].T
@@ -1306,15 +1406,14 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
         for ll in range(0, radial_order + 1, 2):
-            radial_storage[j - 1, ll // 2, :] = radial_basis_opt(
-                j, ll, us, qvals)
+            radial_storage[j - 1, ll // 2, :] = radial_basis_opt(j, ll, us, qvals)
 
     # Angular Basis
     angular_storage = np.zeros([num_l, num_m, n_dat])
     for ll in range(0, radial_order + 1, 2):
         for m in range(-ll, ll + 1):
-            angular_storage[ll // 2, m + ll, :] = (
-                angular_basis_opt(ll, m, qvals, theta, phi)
+            angular_storage[ll // 2, m + ll, :] = angular_basis_opt(
+                ll, m, qvals, theta, phi
             )
 
     # Temporal Basis
@@ -1326,31 +1425,29 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     M = np.zeros((n_dat, n_elem))
     counter = 0
     for j, ll, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j - 1, ll // 2, :] *
-                         angular_storage[ll // 2, m + ll, :] *
-                         temporal_storage[o, :])
+        M[:, counter] = (
+            radial_storage[j - 1, ll // 2, :]
+            * angular_storage[ll // 2, m + ll, :]
+            * temporal_storage[o, :]
+        )
         counter += 1
     return M
 
 
-def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
-                       normalization=False):
-    sqrtCut = 1.
+def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=False):
+    sqrtCut = 1.0
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
         sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
-    K_tau = (
-        qtdmri_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
-    )
+    K_tau = qtdmri_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
     return K_tau
 
 
-def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid,
-                                 normalization=False):
-    K = qtdmri_isotropic_eap_matrix(
-        radial_order, time_order, us, ut, grid
-    )
+def qtdmri_isotropic_eap_matrix_(
+    radial_order, time_order, us, ut, grid, normalization=False
+):
+    K = qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)
     if normalization:
         ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
         j, ll = ind_mat[:, :2].T
@@ -1385,16 +1482,15 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
         for ll in range(0, radial_order + 1, 2):
-            radial_storage[j - 1, ll // 2, :] = radial_basis_EAP_opt(
-                j, ll, us, R)
+            radial_storage[j - 1, ll // 2, :] = radial_basis_EAP_opt(j, ll, us, R)
 
     # Angular Basis
     angular_storage = np.zeros([num_j, num_l, num_m, n_dat])
     for j in range(1, num_j + 1):
         for ll in range(0, radial_order + 1, 2):
             for m in range(-ll, ll + 1):
-                angular_storage[j - 1, ll // 2, m + ll, :] = (
-                    angular_basis_EAP_opt(j, ll, m, R, theta, phi)
+                angular_storage[j - 1, ll // 2, m + ll, :] = angular_basis_EAP_opt(
+                    j, ll, m, R, theta, phi
                 )
 
     # Temporal Basis
@@ -1406,63 +1502,66 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     M = np.zeros((n_dat, n_elem))
     counter = 0
     for j, ll, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j - 1, ll // 2, :] *
-                         angular_storage[j - 1, ll // 2, m + ll, :] *
-                         temporal_storage[o, :])
+        M[:, counter] = (
+            radial_storage[j - 1, ll // 2, :]
+            * angular_storage[j - 1, ll // 2, m + ll, :]
+            * temporal_storage[o, :]
+        )
         counter += 1
     return M
 
 
-def radial_basis_opt(j, l, us, q):
-    """ Spatial basis dependent on spatial scaling factor us
-    """
+def radial_basis_opt(j, ell, us, q):
+    """Spatial basis dependent on spatial scaling factor us"""
     const = (
-        us ** l * np.exp(-2 * np.pi ** 2 * us ** 2 * q ** 2) *
-        genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * us ** 2 * q ** 2)
+        us**ell
+        * np.exp(-2 * np.pi**2 * us**2 * q**2)
+        * genlaguerre(j - 1, ell + 0.5)(4 * np.pi**2 * us**2 * q**2)
     )
     return const
 
 
-def angular_basis_opt(l, m, q, theta, phi):
-    """ Angular basis independent of spatial scaling factor us. Though it
+def angular_basis_opt(ell, m, q, theta, phi):
+    """Angular basis independent of spatial scaling factor us. Though it
     includes q, it is independent of the data and can be precomputed.
     """
     const = (
-        (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
-        (2 * np.pi ** 2 * q ** 2) ** (l / 2) *
-        real_sh_descoteaux_from_index(m, l, theta, phi)
+        (-1) ** (ell / 2)
+        * np.sqrt(4.0 * np.pi)
+        * (2 * np.pi**2 * q**2) ** (ell / 2)
+        * real_sh_descoteaux_from_index(m, ell, theta, phi)
     )
     return const
 
 
-def radial_basis_EAP_opt(j, l, us, r):
+def radial_basis_EAP_opt(j, ell, us, r):
     radial_part = (
-        (us ** 3) ** (-1) / (us ** 2) ** (l / 2) *
-        np.exp(- r ** 2 / (2 * us ** 2)) *
-        genlaguerre(j - 1, l + 0.5)(r ** 2 / us ** 2)
+        (us**3) ** (-1)
+        / (us**2) ** (ell / 2)
+        * np.exp(-(r**2) / (2 * us**2))
+        * genlaguerre(j - 1, ell + 0.5)(r**2 / us**2)
     )
     return radial_part
 
 
-def angular_basis_EAP_opt(j, l, m, r, theta, phi):
+def angular_basis_EAP_opt(j, ell, m, r, theta, phi):
     angular_part = (
-        (-1) ** (j - 1) * (np.sqrt(2) * np.pi) ** (-1) *
-        (r ** 2 / 2) ** (l / 2) * real_sh_descoteaux_from_index(
-            m, l, theta, phi)
+        (-1) ** (j - 1)
+        * (np.sqrt(2) * np.pi) ** (-1)
+        * (r**2 / 2) ** (ell / 2)
+        * real_sh_descoteaux_from_index(m, ell, theta, phi)
     )
     return angular_part
 
 
 def temporal_basis(o, ut, tau):
-    """ Temporal basis dependent on temporal scaling factor ut
-    """
+    """Temporal basis dependent on temporal scaling factor ut"""
     const = np.exp(-ut * tau / 2.0) * special.laguerre(o)(ut * tau)
     return const
 
 
 def qtdmri_index_matrix(radial_order, time_order):
-    """Computes the SHORE basis order indices according to [1].
-    """
+    """Computes the SHORE basis order indices according to [1]."""
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
         for i in range(0, n + 1):
@@ -1474,8 +1573,7 @@ def qtdmri_index_matrix(radial_order, time_order):
 
 
 def qtdmri_isotropic_index_matrix(radial_order, time_order):
-    """Computes the SHORE basis order indices according to [1].
-    """
+    """Computes the SHORE basis order indices according to [1]."""
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
@@ -1486,12 +1584,18 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
     return np.array(index_matrix)
 
 
-def qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
-                                S_mat=None, T_mat=None, U_mat=None,
-                                part1_ut_precomp=None,
-                                part23_ut_precomp=None,
-                                part4_ut_precomp=None,
-                                normalization=False):
+def qtdmri_laplacian_reg_matrix(
+    ind_mat,
+    us,
+    ut,
+    S_mat=None,
+    T_mat=None,
+    U_mat=None,
+    part1_ut_precomp=None,
+    part23_ut_precomp=None,
+    part4_ut_precomp=None,
+    normalization=False,
+):
     """Computes the cartesian qt-dMRI Laplacian regularization matrix. If
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix B
@@ -1507,8 +1611,9 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
         radial_order = ind_mat[:, :3].max()
         S_mat, T_mat, U_mat = mapmri.mapmri_STU_reg_matrices(radial_order)
 
-    part1_us = mapmri.mapmri_laplacian_reg_matrix(ind_mat[:, :3], us,
-                                                  S_mat, T_mat, U_mat)
+    part1_us = mapmri.mapmri_laplacian_reg_matrix(
+        ind_mat[:, :3], us, S_mat, T_mat, U_mat
+    )
     part23_us = part23_reg_matrix_q(ind_mat, U_mat, T_mat, us)
     part4_us = part4_reg_matrix_q(ind_mat, U_mat, us)
 
@@ -1523,7 +1628,7 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
     if part4_ut_precomp is None:
         part4_ut = part4_reg_matrix_tau(ind_mat, ut)
     else:
-        part4_ut = part4_ut_precomp * ut ** 3
+        part4_ut = part4_ut_precomp * ut**3
 
     regularization_matrix = (
         part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
@@ -1536,12 +1641,16 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
     return regularization_matrix
 
 
-def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
-                                          part1_uq_iso_precomp=None,
-                                          part1_ut_precomp=None,
-                                          part23_ut_precomp=None,
-                                          part4_ut_precomp=None,
-                                          normalization=False):
+def qtdmri_isotropic_laplacian_reg_matrix(
+    ind_mat,
+    us,
+    ut,
+    part1_uq_iso_precomp=None,
+    part1_ut_precomp=None,
+    part23_ut_precomp=None,
+    part4_ut_precomp=None,
+    normalization=False,
+):
     """Computes the spherical qt-dMRI Laplacian regularization matrix. If
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix C
@@ -1554,10 +1663,8 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
         2017.
     """
     if part1_uq_iso_precomp is None:
-        part1_us = (
-            mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
-                ind_mat[:, :3], us[0]
-            )
+        part1_us = mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
+            ind_mat[:, :3], us[0]
         )
     else:
         part1_us = part1_uq_iso_precomp * us[0]
@@ -1575,7 +1682,7 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
     if part4_ut_precomp is None:
         part4_ut = part4_reg_matrix_tau(ind_mat, ut)
     else:
-        part4_ut = part4_ut_precomp * ut ** 3
+        part4_ut = part4_ut_precomp * ut**3
 
     part23_us = part23_iso_reg_matrix_q(ind_mat, us[0])
     part4_us = part4_iso_reg_matrix_q(ind_mat, us[0])
@@ -1612,18 +1719,24 @@ def part23_reg_matrix_q(ind_mat, U_mat, T_mat, us):
             val = 0
             if x[i] == x[k] and y[i] == y[k]:
                 val += (
-                    (uz / (ux * uy)) *
-                    U_mat[x[i], x[k]] * U_mat[y[i], y[k]] * T_mat[z[i], z[k]]
+                    (uz / (ux * uy))
+                    * U_mat[x[i], x[k]]
+                    * U_mat[y[i], y[k]]
+                    * T_mat[z[i], z[k]]
                 )
             if x[i] == x[k] and z[i] == z[k]:
                 val += (
-                    (uy / (ux * uz)) *
-                    U_mat[x[i], x[k]] * T_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                    (uy / (ux * uz))
+                    * U_mat[x[i], x[k]]
+                    * T_mat[y[i], y[k]]
+                    * U_mat[z[i], z[k]]
                 )
             if y[i] == y[k] and z[i] == z[k]:
                 val += (
-                    (ux / (uy * uz)) *
-                    T_mat[x[i], x[k]] * U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                    (ux / (uy * uz))
+                    * T_mat[x[i], x[k]]
+                    * U_mat[y[i], y[k]]
+                    * U_mat[z[i], z[k]]
                 )
             LR[i, k] = LR[k, i] = val
     return LR
@@ -1645,22 +1758,25 @@ def part23_iso_reg_matrix_q(ind_mat, us):
 
     for i in range(n_elem):
         for k in range(i, n_elem):
-            if ind_mat[i, 1] == ind_mat[k, 1] and \
-               ind_mat[i, 2] == ind_mat[k, 2]:
+            if ind_mat[i, 1] == ind_mat[k, 1] and ind_mat[i, 2] == ind_mat[k, 2]:
                 ji = ind_mat[i, 0]
                 jk = ind_mat[k, 0]
                 ll = ind_mat[i, 1]
                 if ji == (jk + 1):
                     LR[i, k] = LR[k, i] = (
-                        2. ** (-ll) * -gamma(3 / 2.0 + jk + ll) / gamma(jk)
+                        2.0 ** (-ll) * -gamma(3 / 2.0 + jk + ll) / gamma(jk)
                     )
                 elif ji == jk:
-                    LR[i, k] = LR[k, i] = 2. ** (-(ll + 1)) *\
-                        (1 - 4 * ji - 2 * ll) *\
-                        gamma(1 / 2.0 + ji + ll) / gamma(ji)
+                    LR[i, k] = LR[k, i] = (
+                        2.0 ** (-(ll + 1))
+                        * (1 - 4 * ji - 2 * ll)
+                        * gamma(1 / 2.0 + ji + ll)
+                        / gamma(ji)
+                    )
                 elif ji == (jk - 1):
-                    LR[i, k] = LR[k, i] = 2. ** (-ll) *\
-                        -gamma(3 / 2.0 + ji + ll) / gamma(ji)
+                    LR[i, k] = LR[k, i] = (
+                        2.0 ** (-ll) * -gamma(3 / 2.0 + ji + ll) / gamma(ji)
+                    )
     return LR / us
 
 
@@ -1682,8 +1798,10 @@ def part4_reg_matrix_q(ind_mat, U_mat, us):
         for k in range(i, n_elem):
             if x[i] == x[k] and y[i] == y[k] and z[i] == z[k]:
                 LR[i, k] = LR[k, i] = (
-                    (1. / (ux * uy * uz)) * U_mat[x[i], x[k]] *
-                    U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                    (1.0 / (ux * uy * uz))
+                    * U_mat[x[i], x[k]]
+                    * U_mat[y[i], y[k]]
+                    * U_mat[z[i], z[k]]
                 )
     return LR
 
@@ -1702,17 +1820,20 @@ def part4_iso_reg_matrix_q(ind_mat, us):
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
-            if ind_mat[i, 0] == ind_mat[k, 0] and \
-               ind_mat[i, 1] == ind_mat[k, 1] and \
-               ind_mat[i, 2] == ind_mat[k, 2]:
+            if (
+                ind_mat[i, 0] == ind_mat[k, 0]
+                and ind_mat[i, 1] == ind_mat[k, 1]
+                and ind_mat[i, 2] == ind_mat[k, 2]
+            ):
                 ji = ind_mat[i, 0]
                 ll = ind_mat[i, 1]
                 LR[i, k] = LR[k, i] = (
-                    2. ** (-(ll + 2)) * gamma(1 / 2.0 + ji + ll) /
-                    (np.pi ** 2 * gamma(ji))
+                    2.0 ** (-(ll + 2))
+                    * gamma(1 / 2.0 + ji + ll)
+                    / (np.pi**2 * gamma(ji))
                 )
 
-    return LR / us ** 3
+    return LR / us**3
 
 
 def part1_reg_matrix_tau(ind_mat, ut):
@@ -1732,7 +1853,7 @@ def part1_reg_matrix_tau(ind_mat, ut):
             oi = ind_mat[i, 3]
             ok = ind_mat[k, 3]
             if oi == ok:
-                LD[i, k] = LD[k, i] = 1. / ut
+                LD[i, k] = LD[k, i] = 1.0 / ut
     return LD
 
 
@@ -1753,7 +1874,7 @@ def part23_reg_matrix_tau(ind_mat, ut):
             oi = ind_mat[i, 3]
             ok = ind_mat[k, 3]
             if oi == ok:
-                LD[i, k] = LD[k, i] = 1 / 2.
+                LD[i, k] = LD[k, i] = 1 / 2.0
             else:
                 LD[i, k] = LD[k, i] = np.abs(oi - ok)
     return ut * LD
@@ -1773,29 +1894,39 @@ def part4_reg_matrix_tau(ind_mat, ut):
     LD = np.zeros((n_elem, n_elem))
 
     for i in range(n_elem):
-            for k in range(i, n_elem):
-                oi = ind_mat[i, 3]
-                ok = ind_mat[k, 3]
+        for k in range(i, n_elem):
+            oi = ind_mat[i, 3]
+            ok = ind_mat[k, 3]
 
-                sum1 = 0
-                for p in range(1, min([ok, oi]) + 1 + 1):
-                    sum1 += (oi - p) * (ok - p) * H(min([oi, ok]) - p)
+            sum1 = 0
+            for p in range(1, min([ok, oi]) + 1 + 1):
+                sum1 += (oi - p) * (ok - p) * H(min([oi, ok]) - p)
 
-                sum2 = 0
-                for p in range(0, min(ok - 2, oi - 1) + 1):
-                    sum2 += p
+            sum2 = 0
+            for p in range(0, min(ok - 2, oi - 1) + 1):
+                sum2 += p
 
-                sum3 = 0
-                for p in range(0, min(ok - 1, oi - 2) + 1):
-                    sum3 += p
+            sum3 = 0
+            for p in range(0, min(ok - 1, oi - 2) + 1):
+                sum3 += p
 
-                LD[i, k] = LD[k, i] = (
-                    0.25 * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) +
-                    min([oi, ok]) + sum1 + H(oi - 1) * H(ok - 1) *
-                    (oi + ok - 2 + sum2 + sum3 + H(abs(oi - ok) - 1) *
-                     (abs(oi - ok) - 1) * min([ok - 1, oi - 1]))
+            LD[i, k] = LD[k, i] = (
+                0.25 * np.abs(oi - ok)
+                + (1 / 16.0) * mapmri.delta(oi, ok)
+                + min([oi, ok])
+                + sum1
+                + H(oi - 1)
+                * H(ok - 1)
+                * (
+                    oi
+                    + ok
+                    - 2
+                    + sum2
+                    + sum3
+                    + H(abs(oi - ok) - 1) * (abs(oi - ok) - 1) * min([ok - 1, oi - 1])
                 )
-    return LD * ut ** 3
+            )
+    return LD * ut**3
 
 
 def H(value):
@@ -1820,9 +1951,16 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     input_stuff = (data, M, MMt, K, LR)
 
     bounds = ((1e-5, 1),)
-    res = fmin_l_bfgs_b(GCV_cost_function,
-                        startpoint, args=(input_stuff,), approx_grad=True,
-                        bounds=bounds, disp=False, pgtol=1e-10, factr=10.)
+    res = fmin_l_bfgs_b(
+        GCV_cost_function,
+        startpoint,
+        args=(input_stuff,),
+        approx_grad=True,
+        bounds=bounds,
+        disp=False,
+        pgtol=1e-10,
+        factr=10.0,
+    )
     return res[0][0]
 
 
@@ -1843,12 +1981,12 @@ def GCV_cost_function(weight, arguments):
 
 
 def qtdmri_isotropic_scaling(data, q, tau):
-    """  Constructs design matrix for fitting an exponential to the
+    """Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
-    dataclip = np.clip(data, 1e-05, 1.)
+    dataclip = np.clip(data, 1e-05, 1.0)
     logE = -np.log(dataclip)
-    logE_q = logE / (2 * np.pi ** 2)
+    logE_q = logE / (2 * np.pi**2)
     logE_tau = logE * 2
 
     B_q = np.array([q * q])
@@ -1863,12 +2001,12 @@ def qtdmri_isotropic_scaling(data, q, tau):
 
 
 def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
-    """  Constructs design matrix for fitting an exponential to the
+    """Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
     dataclip = np.clip(data, 1e-05, 10e10)
     logE = -np.log(dataclip)
-    logE_q = logE / (2 * np.pi ** 2)
+    logE_q = logE / (2 * np.pi**2)
     logE_tau = logE * 2
 
     B_q = design_matrix_spatial(bvecs, q)
@@ -1887,7 +2025,7 @@ def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
 
 
 def design_matrix_spatial(bvecs, qvals):
-    """  Constructs design matrix for DTI weighted least squares or
+    """Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
@@ -1904,25 +2042,28 @@ def design_matrix_spatial(bvecs, qvals):
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
     B = np.zeros((bvecs.shape[0], 6))
-    B[:, 0] = bvecs[:, 0] * bvecs[:, 0] * 1. * qvals ** 2  # Bxx
-    B[:, 1] = bvecs[:, 0] * bvecs[:, 1] * 2. * qvals ** 2  # Bxy
-    B[:, 2] = bvecs[:, 1] * bvecs[:, 1] * 1. * qvals ** 2  # Byy
-    B[:, 3] = bvecs[:, 0] * bvecs[:, 2] * 2. * qvals ** 2  # Bxz
-    B[:, 4] = bvecs[:, 1] * bvecs[:, 2] * 2. * qvals ** 2  # Byz
-    B[:, 5] = bvecs[:, 2] * bvecs[:, 2] * 1. * qvals ** 2  # Bzz
+    B[:, 0] = bvecs[:, 0] * bvecs[:, 0] * 1.0 * qvals**2  # Bxx
+    B[:, 1] = bvecs[:, 0] * bvecs[:, 1] * 2.0 * qvals**2  # Bxy
+    B[:, 2] = bvecs[:, 1] * bvecs[:, 1] * 1.0 * qvals**2  # Byy
+    B[:, 3] = bvecs[:, 0] * bvecs[:, 2] * 2.0 * qvals**2  # Bxz
+    B[:, 4] = bvecs[:, 1] * bvecs[:, 2] * 2.0 * qvals**2  # Byz
+    B[:, 5] = bvecs[:, 2] * bvecs[:, 2] * 1.0 * qvals**2  # Bzz
     return B
 
 
-def create_rt_space_grid(grid_size_r, max_radius_r, grid_size_tau,
-                         min_radius_tau, max_radius_tau):
-    """ Generates EAP grid (for potential positivity constraint)."""
+def create_rt_space_grid(
+    grid_size_r, max_radius_r, grid_size_tau, min_radius_tau, max_radius_tau
+):
+    """Generates EAP grid (for potential positivity constraint)."""
     tau_list = np.linspace(min_radius_tau, max_radius_tau, grid_size_tau)
-    constraint_grid_tau = np.c_[0., 0., 0., 0.]
+    constraint_grid_tau = np.c_[0.0, 0.0, 0.0, 0.0]
     for tau in tau_list:
         constraint_grid = mapmri.create_rspace(grid_size_r, max_radius_r)
         constraint_grid_tau = np.vstack(
-            [constraint_grid_tau,
-             np.c_[constraint_grid, np.zeros(constraint_grid.shape[0]) + tau]]
+            [
+                constraint_grid_tau,
+                np.c_[constraint_grid, np.zeros(constraint_grid.shape[0]) + tau],
+            ]
         )
     return constraint_grid_tau[1:]
 
@@ -1937,15 +2078,19 @@ def qtdmri_number_of_coefficients(radial_order, time_order):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    F = np.floor(radial_order / 2.)
+    F = np.floor(radial_order / 2.0)
     Msym = (F + 1) * (F + 2) * (4 * F + 3) / 6
     M_total = Msym * (time_order + 1)
     return M_total
 
 
-def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
+def l1_crossvalidation(b0s_mask, E, M, weight_array=None):
     """cross-validation function to find the optimal weight of alpha for
     sparsity regularization"""
+
+    if weight_array is None:
+        weight_array = np.linspace(0, 0.4, 21)
+
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
@@ -1969,11 +2114,11 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
         (sub1, test1),
         (sub2, test2),
         (sub3, test3),
-        (sub4, test4)
+        (sub4, test4),
     )
 
     errorlist = np.zeros((5, 21))
-    errorlist[:, 0] = 100.
+    errorlist[:, 0] = 100.0
     optimal_alpha_sub = np.zeros(5)
     for i, (sub, test) in enumerate(cv_list):
         counter = 1
@@ -1986,14 +2131,14 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
             recovered_signal = cvxpy.Constant(M[sub]) @ c
             data = cvxpy.Constant(E[test])
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix - data) +
-                alpha * cvxpy.norm1(c)
+                cvxpy.sum_squares(design_matrix - data) + alpha * cvxpy.norm1(c)
             )
             constraints = []
             prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="CLARABEL", verbose=False)
             errorlist[i, counter] = np.mean(
-                (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
+                (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2
+            )
             cv_old = errorlist[i, counter - 1]
             cv_new = errorlist[i, counter]
             counter += 1
@@ -2002,10 +2147,13 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
     return optimal_alpha
 
 
-def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
-                            weight_array=np.linspace(0, .2, 21)):
+def elastic_crossvalidation(b0s_mask, E, M, L, lopt, weight_array=None):
     """cross-validation function to find the optimal weight of alpha for
     sparsity regularization when also Laplacian regularization is used."""
+
+    if weight_array is None:
+        weight_array = np.linspace(0, 0.2, 21)
+
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
@@ -2029,11 +2177,11 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         (sub1, test1),
         (sub2, test2),
         (sub3, test3),
-        (sub4, test4)
+        (sub4, test4),
     )
 
     errorlist = np.zeros((5, 21))
-    errorlist[:, 0] = 100.
+    errorlist[:, 0] = 100.0
     optimal_alpha_sub = np.zeros(5)
     for i, (sub, test) in enumerate(cv_list):
         counter = 1
@@ -2048,14 +2196,15 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         while cv_old >= cv_new and counter < weight_array.shape[0]:
             alpha = weight_array[counter]
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix - data) +
-                alpha * cvxpy.norm1(c) +
-                lopt * cvxpy.quad_form(c, L)
+                cvxpy.sum_squares(design_matrix - data)
+                + alpha * cvxpy.norm1(c)
+                + lopt * cvxpy.quad_form(c, L)
             )
             prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="CLARABEL", verbose=False)
             errorlist[i, counter] = np.mean(
-                (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
+                (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2
+            )
             cv_old = errorlist[i, counter - 1]
             cv_new = errorlist[i, counter]
             counter += 1
@@ -2065,10 +2214,14 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
 
 
 def visualise_gradient_table_G_Delta_rainbow(
-        gtab,
-        big_delta_start=None, big_delta_end=None, G_start=None, G_end=None,
-        bval_isolines=np.r_[0, 250, 1000, 2500, 5000, 7500, 10000, 14000],
-        alpha_shading=0.6):
+    gtab,
+    big_delta_start=None,
+    big_delta_end=None,
+    G_start=None,
+    G_end=None,
+    bval_isolines=np.r_[0, 250, 1000, 2500, 5000, 7500, 10000, 14000],
+    alpha_shading=0.6,
+):
     """This function visualizes a q-tau acquisition scheme as a function of
     gradient strength and pulse separation (big_delta). It represents every
     measurements at its G and big_delta position regardless of b-vector, with a
@@ -2107,9 +2260,9 @@ def visualise_gradient_table_G_Delta_rainbow(
     if big_delta_end is None:
         big_delta_end = Delta.max() + 0.004
     if G_start is None:
-        G_start = 0.
+        G_start = 0.0
     if G_end is None:
-        G_end = G.max() + .05
+        G_end = G.max() + 0.05
 
     Delta_ = np.linspace(big_delta_start, big_delta_end, 50)
     G_ = np.linspace(G_start, G_end, 50)
@@ -2120,16 +2273,16 @@ def visualise_gradient_table_G_Delta_rainbow(
     )
     bvals_ = gtab_grid.bvals.reshape(G_grid.shape)
 
-    plt.contourf(Delta_, G_, bvals_,
-                 levels=bval_isolines,
-                 cmap='rainbow', alpha=alpha_shading)
+    plt.contourf(
+        Delta_, G_, bvals_, levels=bval_isolines, cmap="rainbow", alpha=alpha_shading
+    )
     cb = plt.colorbar(spacing="proportional")
     cb.ax.tick_params(labelsize=16)
-    plt.scatter(Delta, G, c='k', s=25)
+    plt.scatter(Delta, G, c="k", s=25)
 
     plt.xlim(big_delta_start, big_delta_end)
     plt.ylim(G_start, G_end)
-    cb.set_label('b-value ($s$/$mm^2$)', fontsize=18)
-    plt.xlabel(r'Pulse Separation $\Delta$ [sec]', fontsize=18)
-    plt.ylabel('Gradient Strength [T/m]', fontsize=18)
+    cb.set_label("b-value ($s$/$mm^2$)", fontsize=18)
+    plt.xlabel(r"Pulse Separation $\Delta$ [sec]", fontsize=18)
+    plt.ylabel("Gradient Strength [T/m]", fontsize=18)
     return None

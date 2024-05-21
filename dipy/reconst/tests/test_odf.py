@@ -21,7 +21,6 @@ class SimpleOdfModel(OdfModel):
 
 
 class SimpleOdfFit(OdfFit):
-
     def odf(self, sphere=None):
         if sphere is None:
             sphere = self.model.sphere
@@ -38,12 +37,11 @@ def test_OdfFit():
 
 
 def test_minmax_normalize():
-
     bvalue = 3000
     S0 = 1
     SNR = 100
 
-    sphere = get_sphere('symmetric362')
+    sphere = get_sphere("symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], sphere.vertices))
     bvals = np.zeros(len(bvecs)) + bvalue
     bvals[0] = 0
@@ -51,10 +49,10 @@ def test_minmax_normalize():
 
     evals = np.array(([0.0017, 0.0003, 0.0003], [0.0017, 0.0003, 0.0003]))
 
-    multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)],
-                 fractions=[50, 50], snr=SNR)
-    odf = multi_tensor_odf(sphere.vertices, evals, angles=[(0, 0), (90, 0)],
-                           fractions=[50, 50])
+    multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=SNR)
+    odf = multi_tensor_odf(
+        sphere.vertices, evals, angles=[(0, 0), (90, 0)], fractions=[50, 50]
+    )
 
     odf2 = minmax_normalize(odf)
     assert_equal(odf2.max(), 1)
@@ -75,9 +73,9 @@ def test_gfa():
 
     # The following series follows the rule (sqrt(n-1)/((n-1)^2))
     g = gfa(np.hstack([np.ones(9), [0]]))
-    assert_almost_equal(g, np.sqrt(9./81))
+    assert_almost_equal(g, np.sqrt(9.0 / 81))
     g = gfa(np.hstack([np.ones(99), [0]]))
-    assert_almost_equal(g, np.sqrt(99./(99.**2)))
+    assert_almost_equal(g, np.sqrt(99.0 / (99.0**2)))
 
     # All-zeros returns a nan with no warning:
     g = gfa(np.zeros(10))

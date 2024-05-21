@@ -42,7 +42,7 @@ def get_ext_modules(pkg_name):
 
 
 def main():
-    usage = "usage: %prog [options] <pkg_name>\n\n" + __doc__
+    usage = f"usage: %prog [options] <pkg_name>\n\n{__doc__}"
     parser = OptionParser(usage=usage)
     opts, args = parser.parse_args()
     if len(args) == 0:
@@ -51,7 +51,7 @@ def main():
     mod_name = args[0]
     mods = get_ext_modules(mod_name)
     for mod in mods:
-        print("Testing module: " + mod.__name__)
+        print(f"Testing module: {mod.__name__}")
         doctest.testmod(mod, optionflags=doctest.NORMALIZE_WHITESPACE)
 
 

@@ -20,8 +20,8 @@ from dipy.io.image import load_nifti_data
 from dipy.segment.mask import median_otsu
 from dipy.viz import regtools
 
-fname_moving = get_fnames('reg_o')
-fname_static = get_fnames('reg_c')
+fname_moving = get_fnames("reg_o")
+fname_static = get_fnames("reg_c")
 
 moving = np.load(fname_moving)
 static = np.load(fname_static)
@@ -31,8 +31,9 @@ static = np.load(fname_static)
 # image, we can plot them on top of each other with different channels to see
 # where the differences are located
 
-regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
-                        'input_images.png')
+regtools.overlay_images(
+    static, moving, "Static", "Overlay", "Moving", "input_images.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -73,7 +74,7 @@ mapping = sdr.optimize(static, moving)
 # It is a good idea to visualize the resulting deformation map to make sure
 # the result is reasonable (at least, visually)
 
-regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
+regtools.plot_2d_diffeomorphic_map(mapping, 10, "diffeomorphic_map.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -85,9 +86,15 @@ regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 # Now let's warp the moving image and see if it gets similar to the static
 # image
 
-warped_moving = mapping.transform(moving, 'linear')
-regtools.overlay_images(static, warped_moving, 'Static', 'Overlay',
-                        'Warped moving', 'direct_warp_result.png')
+warped_moving = mapping.transform(moving, "linear")
+regtools.overlay_images(
+    static,
+    warped_moving,
+    "Static",
+    "Overlay",
+    "Warped moving",
+    "direct_warp_result.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -100,9 +107,15 @@ regtools.overlay_images(static, warped_moving, 'Static', 'Overlay',
 # And we can also apply the inverse mapping to verify that the warped static
 # image is similar to the moving image
 
-warped_static = mapping.transform_inverse(static, 'linear')
-regtools.overlay_images(warped_static, moving, 'Warped static', 'Overlay',
-                        'Moving', 'inverse_warp_result.png')
+warped_static = mapping.transform_inverse(static, "linear")
+regtools.overlay_images(
+    warped_static,
+    moving,
+    "Warped static",
+    "Overlay",
+    "Moving",
+    "inverse_warp_result.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -128,14 +141,15 @@ def callback_CC(sdr, status):
         wmoving = sdr.metric.moving_image
         wstatic = sdr.metric.static_image
         # draw the images on top of each other with different colors
-        regtools.overlay_images(wmoving, wstatic, 'Warped moving', 'Overlay',
-                                'Warped static')
+        regtools.overlay_images(
+            wmoving, wstatic, "Warped moving", "Overlay", "Warped static"
+        )
 
 
 ###############################################################################
 # Now we are ready to configure and run the registration. First load the data
 
-t1_name, b0_name = get_fnames('syn_data')
+t1_name, b0_name = get_fnames("syn_data")
 data = load_nifti_data(b0_name)
 
 ###############################################################################
@@ -178,16 +192,18 @@ warped = mapping.transform(moving)
 # We can see the effect of the warping by switching between the images before
 # and after registration
 
-regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
-                        't1_slices_input.png')
+regtools.overlay_images(
+    static, moving, "Static", "Overlay", "Moving", "t1_slices_input.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Input images.
 
-regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
-                        't1_slices_res.png')
+regtools.overlay_images(
+    static, warped, "Static", "Overlay", "Warped moving", "t1_slices_res.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -200,8 +216,9 @@ regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
 # And we can apply the inverse warping too
 
 inv_warped = mapping.transform_inverse(static)
-regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay',
-                        'moving', 't1_slices_res2.png')
+regtools.overlay_images(
+    inv_warped, moving, "Warped static", "Overlay", "moving", "t1_slices_res2.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -213,7 +230,7 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay',
 #
 # Finally, let's see the deformation
 
-regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
+regtools.plot_2d_diffeomorphic_map(mapping, 5, "diffeomorphic_map_b0s.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

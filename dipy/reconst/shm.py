@@ -37,27 +37,30 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
-descoteaux07_legacy_msg = \
-    "The legacy descoteaux07 SH basis uses absolute values for negative " \
-    "harmonic phase factors. It is outdated and will be deprecated in a "\
-    "future DIPY release. Consider using the new descoteaux07 basis by setting"\
+descoteaux07_legacy_msg = (
+    "The legacy descoteaux07 SH basis uses absolute values for negative "
+    "harmonic phase factors. It is outdated and will be deprecated in a "
+    "future DIPY release. Consider using the new descoteaux07 basis by setting"
     "the `legacy` parameter to `False`."
-tournier07_legacy_msg = \
-    "The legacy tournier07 basis is not normalized. It is outdated and will " \
-    "be deprecated in a future release of DIPY. Consider using the new " \
+)
+tournier07_legacy_msg = (
+    "The legacy tournier07 basis is not normalized. It is outdated and will "
+    "be deprecated in a future release of DIPY. Consider using the new "
     "tournier07 basis by setting the `legacy` parameter to `False`."
+)
 
 
 def _copydoc(obj):
     def bandit(f):
         f.__doc__ = obj.__doc__
         return f
+
     return bandit
 
 
-@deprecated_params('n', 'l_values', since='1.9', until='2.0')
+@deprecated_params("n", "l_values", since="1.9", until="2.0")
 def forward_sdeconv_mat(r_rh, l_values):
-    """ Build forward spherical deconvolution matrix
+    """Build forward spherical deconvolution matrix
 
     Parameters
     ----------
@@ -81,9 +84,17 @@ def forward_sdeconv_mat(r_rh, l_values):
     return np.diag(r_rh[l_values // 2])
 
 
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def sh_to_rh(r_sh, m_values, l_values):
-    """ Spherical harmonics (SH) to rotational harmonics (RH)
+    """Spherical harmonics (SH) to rotational harmonics (RH)
 
     Calculate the rotational harmonic decomposition up to
     harmonic phase factor ``m``, order ``l`` for an axially and antipodally
@@ -128,9 +139,17 @@ def sh_to_rh(r_sh, m_values, l_values):
     return r_rh
 
 
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def gen_dirac(m_values, l_values, theta, phi, legacy=True):
-    """ Generate Dirac delta function orientated in (theta, phi) on the sphere
+    """Generate Dirac delta function orientated in (theta, phi) on the sphere
 
     The spherical harmonics (SH) representation of this Dirac is returned as
     coefficients to spherical harmonic functions produced from ``descoteaux07``
@@ -164,11 +183,18 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
         `(m + 2) * (m + 1) / 2`.
 
     """
-    return real_sh_descoteaux_from_index(m_values, l_values, theta, phi,
-                                         legacy=legacy)
+    return real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=legacy)
 
 
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     """Compute spherical harmonics.
 
@@ -214,18 +240,33 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     x = np.cos(phi)
     val = sps.lpmv(m_values, l_values, x).astype(complex)
     val *= np.sqrt((2 * l_values + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (sps.gammaln(l_values - m_values + 1) - sps.gammaln(l_values + m_values + 1)))
+    val *= np.exp(
+        0.5
+        * (sps.gammaln(l_values - m_values + 1) - sps.gammaln(l_values + m_values + 1))
+    )
     val = val * np.exp(1j * m_values * theta)
     return val
 
 
-@deprecate_with_version('dipy.reconst.shm.real_sph_harm is deprecated, '
-                        'Please use '
-                        'dipy.reconst.shm.real_sh_descoteaux_from_index '
-                        'instead', since='1.3', until='2.0')
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecate_with_version(
+    "dipy.reconst.shm.real_sph_harm is deprecated, "
+    "Please use "
+    "dipy.reconst.shm.real_sh_descoteaux_from_index "
+    "instead",
+    since="1.3",
+    until="2.0",
+)
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def real_sph_harm(m_values, l_values, theta, phi):
-    """ Compute real spherical harmonics.
+    """Compute real spherical harmonics.
 
     Where the real harmonic $Y^m_l$ is defined to be:
 
@@ -259,9 +300,17 @@ def real_sph_harm(m_values, l_values, theta, phi):
     return real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True)
 
 
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
-    """ Compute real spherical harmonics as initially defined in Tournier
+    """Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
     is defined to be:
 
@@ -308,16 +357,24 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
 
     if not legacy:
         # The Tournier basis from MRtrix3 is normalized
-        real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
+        real_sh *= np.where(m_values == 0, 1.0, np.sqrt(2))
     else:
-        warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
+        warn(tournier07_legacy_msg, category=PendingDeprecationWarning, stacklevel=2)
 
     return real_sh
 
 
-@deprecated_params(['m', 'n',], ['m_values', 'l_values'], since='1.9', until='2.0')
+@deprecated_params(
+    [
+        "m",
+        "n",
+    ],
+    ["m_values", "l_values"],
+    since="1.9",
+    until="2.0",
+)
 def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
-    """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
+    """Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_l$ is defined to be:
 
         Imag($Y^m_l$) * sqrt(2)      if m > 0
@@ -355,22 +412,21 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
-        warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
+        warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning, stacklevel=2)
         sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
         sh = spherical_harmonics(m_values, l_values, phi, theta)
 
     real_sh = np.where(m_values > 0, sh.imag, sh.real)
-    real_sh *= np.where(m_values == 0, 1., np.sqrt(2))
+    real_sh *= np.where(m_values == 0, 1.0, np.sqrt(2))
 
     return real_sh
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def real_sh_tournier(sh_order_max, theta, phi,
-                     full_basis=False,
-                     legacy=True):
-    """ Compute real spherical harmonics as initially defined in Tournier
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
+    """Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
     is defined to be:
 
@@ -425,11 +481,10 @@ def real_sh_tournier(sh_order_max, theta, phi,
 
     return real_sh, m_values, l_values
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def real_sh_descoteaux(sh_order_max, theta, phi,
-                       full_basis=False,
-                       legacy=True):
-    """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
+    """Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_l$ is defined to be:
 
         Imag($Y^m_l$) * sqrt(2)      if m > 0
@@ -476,16 +531,18 @@ def real_sh_descoteaux(sh_order_max, theta, phi,
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi,
-                                            legacy)
+    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy)
 
     return real_sh, m_value, l_value
 
 
-@deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, '
-                        'Please use dipy.reconst.shm.real_sh_tournier instead',
-                        since='1.3', until='2.0')
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+@deprecate_with_version(
+    "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, "
+    "Please use dipy.reconst.shm.real_sh_tournier instead",
+    since="1.3",
+    until="2.0",
+)
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     """
     Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
@@ -533,10 +590,14 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     return real_sh_tournier(sh_order_max, theta, phi, legacy=True)
 
 
-@deprecate_with_version('dipy.reconst.shm.real_sym_sh_basis is deprecated, '
-                        'Please use dipy.reconst.shm.real_sh_descoteaux '
-                        'instead', since='1.3', until='2.0')
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+@deprecate_with_version(
+    "dipy.reconst.shm.real_sym_sh_basis is deprecated, "
+    "Please use dipy.reconst.shm.real_sh_descoteaux "
+    "instead",
+    since="1.3",
+    until="2.0",
+)
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_basis(sh_order_max, theta, phi):
     """Samples a real symmetric spherical harmonic basis at point on the sphere
 
@@ -581,11 +642,14 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     return real_sh_descoteaux(sh_order_max, theta, phi, legacy=True)
 
 
-sph_harm_lookup = {None: real_sh_descoteaux,
-                   "tournier07": real_sh_tournier,
-                   "descoteaux07": real_sh_descoteaux}
+sph_harm_lookup = {
+    None: real_sh_descoteaux,
+    "tournier07": real_sh_tournier,
+    "descoteaux07": real_sh_descoteaux,
+}
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def sph_harm_ind_list(sh_order_max, full_basis=False):
     """
     Returns the order (``l``) and phase_factor (``m``) of all the symmetric
@@ -620,15 +684,15 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
         ncoef = int((sh_order_max + 1) * (sh_order_max + 1))
     else:
         if sh_order_max % 2 != 0:
-            raise ValueError('sh_order_max must be an even integer >= 0')
+            raise ValueError("sh_order_max must be an even integer >= 0")
         l_range = np.arange(0, sh_order_max + 1, 2, dtype=int)
         ncoef = int((sh_order_max + 2) * (sh_order_max + 1) // 2)
 
     l_list = np.repeat(l_range, l_range * 2 + 1)
     offset = 0
-    m_list = np.empty(ncoef, 'int')
+    m_list = np.empty(ncoef, "int")
     for ii in l_range:
-        m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
+        m_list[offset : offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
         offset = offset + 2 * ii + 1
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
@@ -658,7 +722,7 @@ def order_from_ncoef(ncoef, full_basis=False):
 
     # Solve the quadratic equation derived from :
     # ncoef = (sh_order_max + 2) * (sh_order_max + 1) / 2
-    return -1 + int(np.sqrt(9 - 4 * (2-2*ncoef))//2)
+    return -1 + int(np.sqrt(9 - 4 * (2 - 2 * ncoef)) // 2)
 
 
 def smooth_pinv(B, L):
@@ -687,7 +751,7 @@ def smooth_pinv(B, L):
     """
     L = np.diag(L)
     inv = np.linalg.pinv(np.concatenate((B, L)))
-    return inv[:, :len(B)]
+    return inv[:, : len(B)]
 
 
 def lazy_index(index):
@@ -698,7 +762,7 @@ def lazy_index(index):
     """
     index = np.array(index)
     assert index.ndim == 1
-    if index.dtype.kind == 'b':
+    if index.dtype.kind == "b":
         index = index.nonzero()[0]
     if len(index) == 1:
         return slice(index[0], index[0] + 1)
@@ -737,7 +801,7 @@ def _gfa_sh(coef, sh0_index=0):
     # By adding 1 to numer and denom where both and are 0, we prevent 0/0
     numer = numer + allzero
     denom = denom + allzero
-    return np.sqrt(1. - (numer / denom))
+    return np.sqrt(1.0 - (numer / denom))
 
 
 class SphHarmModel(OdfModel, Cache):
@@ -763,17 +827,20 @@ class SphHarmModel(OdfModel, Cache):
             sh_order = self.sh_order_max
             theta = sphere.theta
             phi = sphere.phi
-            sampling_matrix, m_values, l_values = real_sh_descoteaux(sh_order,
-                                                                     theta, phi)
+            sampling_matrix, m_values, l_values = real_sh_descoteaux(
+                sh_order, theta, phi
+            )
             self.cache_set("sampling_matrix", sphere, sampling_matrix)
         return sampling_matrix
 
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def __init__(self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5,
-                 assume_normed=False):
+
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def __init__(
+        self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5, assume_normed=False
+    ):
         """Creates a model that can be used to fit or sample diffusion data
 
         Parameters
@@ -805,8 +872,9 @@ class QballBaseModel(SphHarmModel):
         self.min_signal = min_signal
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
-        B, m_values, l_values = real_sh_descoteaux(sh_order_max, theta[:, None],
-                                                   phi[:, None])
+        B, m_values, l_values = real_sh_descoteaux(
+            sh_order_max, theta[:, None], phi[:, None]
+        )
         L = -l_values * (l_values + 1)
         legendre0 = sps.lpn(sh_order_max, 0)[0]
         F = legendre0[l_values]
@@ -910,7 +978,7 @@ class SphHarmFit(OdfFit):
         S0 : float array
            The mean non-diffusion-weighted signal in each voxel.
         """
-        if not hasattr(self.model, 'predict'):
+        if not hasattr(self.model, "predict"):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
         return self.model.predict(self._shm_coef, gtab, S0)
@@ -924,9 +992,10 @@ class CsaOdfModel(QballBaseModel):
     .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With
            Solid Angle Consideration.
     """
-    min = .001
-    max = .999
-    _n0_const = .5 / np.sqrt(np.pi)
+
+    min = 0.001
+    max = 0.999
+    _n0_const = 0.5 / np.sqrt(np.pi)
 
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
@@ -959,6 +1028,7 @@ class OpdtModel(QballBaseModel):
            probability density functions in high angular resolution diffusion
            imaging.
     """
+
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, np.sqrt(smooth) * L)
         L = L[:, None]
@@ -976,8 +1046,7 @@ class OpdtModel(QballBaseModel):
 def _slowadc_formula(data, delta_b, delta_q):
     """formula used in SlowAdcOpdfModel"""
     logd = -np.log(data)
-    return (np.dot(logd * (1.5 - logd) * data, delta_q.T)
-            - np.dot(data, delta_b.T))
+    return np.dot(logd * (1.5 - logd) * data, delta_q.T) - np.dot(data, delta_b.T)
 
 
 class QballModel(QballBaseModel):
@@ -1000,12 +1069,11 @@ class QballModel(QballBaseModel):
 
 
 def normalize_data(data, where_b0, min_signal=1e-5, out=None):
-    """Normalizes the data with respect to the mean b0
-    """
+    """Normalizes the data with respect to the mean b0"""
     if out is None:
-        out = np.array(data, dtype='float32', copy=True)
+        out = np.array(data, dtype="float32", copy=True)
     else:
-        if out.dtype.kind != 'f':
+        if out.dtype.kind != "f":
             raise ValueError("out must be floating point")
         out[:] = data
 
@@ -1016,8 +1084,7 @@ def normalize_data(data, where_b0, min_signal=1e-5, out=None):
 
 
 def hat(B):
-    """Returns the hat matrix for the design matrix B
-    """
+    """Returns the hat matrix for the design matrix B"""
 
     U, S, V = np.linalg.svd(B, False)
     H = np.dot(U, U.T)
@@ -1032,7 +1099,7 @@ def lcr_matrix(H):
 
     """
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
-        raise ValueError('H should be a square matrix')
+        raise ValueError("H should be a square matrix")
 
     leverages = np.sqrt(1 - H.diagonal(), where=H.diagonal() < 1)
     leverages = leverages[:, None]
@@ -1091,6 +1158,7 @@ class ResidualBootstrapWrapper:
     There wrapper than samples the residual bootstrap distribution of signal and
     returns that sample.
     """
+
     def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):
         """Builds a ResidualBootstrapWapper
 
@@ -1126,13 +1194,21 @@ class ResidualBootstrapWrapper:
         signal = self._signal_object[index].copy()
         dwi_signal = signal[self._where_dwi]
         boot_signal = bootstrap_data_voxel(dwi_signal, self._H, self._R)
-        boot_signal.clip(self._min_signal, 1., out=boot_signal)
+        boot_signal.clip(self._min_signal, 1.0, out=boot_signal)
         signal[self._where_dwi] = boot_signal
         return signal
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
-             legacy=True, smooth=0.0):
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def sf_to_sh(
+    sf,
+    sphere,
+    sh_order_max=4,
+    basis_type=None,
+    full_basis=False,
+    legacy=True,
+    smooth=0.0,
+):
     """Spherical function to spherical harmonics (SH).
 
     Parameters
@@ -1184,10 +1260,9 @@ def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
-                                           sphere.phi,
-                                           full_basis=full_basis,
-                                           legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(
+        sh_order_max, sphere.theta, sphere.phi, full_basis=full_basis, legacy=legacy
+    )
 
     L = -l_values * (l_values + 1)
     invB = smooth_pinv(B, np.sqrt(smooth) * L)
@@ -1195,9 +1270,11 @@ def sf_to_sh(sf, sphere, sh_order_max=4, basis_type=None, full_basis=False,
 
     return sh
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def sh_to_sf(sh, sphere, sh_order_max=4, basis_type=None,
-             full_basis=False, legacy=True):
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def sh_to_sf(
+    sh, sphere, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
+):
     """Spherical harmonics (SH) to spherical function (SF).
 
     Parameters
@@ -1247,19 +1324,26 @@ def sh_to_sf(sh, sphere, sh_order_max=4, basis_type=None,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
-                                           sphere.phi,
-                                           full_basis=full_basis,
-                                           legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(
+        sh_order_max, sphere.theta, sphere.phi, full_basis=full_basis, legacy=legacy
+    )
 
     sf = np.dot(sh, B.T)
 
     return sf
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def sh_to_sf_matrix(sphere, sh_order_max=4, basis_type=None, full_basis=False,
-                    legacy=True, return_inv=True, smooth=0):
-    """ Matrix that transforms Spherical harmonics (SH) to spherical
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def sh_to_sf_matrix(
+    sphere,
+    sh_order_max=4,
+    basis_type=None,
+    full_basis=False,
+    legacy=True,
+    return_inv=True,
+    smooth=0,
+):
+    """Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 
     Parameters
@@ -1315,10 +1399,9 @@ def sh_to_sf_matrix(sphere, sh_order_max=4, basis_type=None, full_basis=False,
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B, m_values, l_values = sph_harm_basis(sh_order_max, sphere.theta,
-                                           sphere.phi,
-                                           full_basis=full_basis,
-                                           legacy=legacy)
+    B, m_values, l_values = sph_harm_basis(
+        sh_order_max, sphere.theta, sphere.phi, full_basis=full_basis, legacy=legacy
+    )
 
     if return_inv:
         L = -l_values * (l_values + 1)
@@ -1378,14 +1461,15 @@ def calculate_max_order(n_coeffs, full_basis=False):
             return int(L1)
 
     # Otherwise, the input didn't make sense:
-    raise ValueError(f"The input to ``calculate_max_order`` was"
-                     f" {n_coeffs}, but that is not a valid number"
-                     f" of coefficients for a spherical harmonics"
-                     f" basis set.")
+    raise ValueError(
+        f"The input to ``calculate_max_order`` was"
+        f" {n_coeffs}, but that is not a valid number"
+        f" of coefficients for a spherical harmonics"
+        f" basis set."
+    )
 
 
-def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
-                      non_negative=True):
+def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True):
     r"""Calculate anisotropic power map with a given SH coefficient matrix.
 
     Parameters
@@ -1450,7 +1534,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
 
     if ap.ndim < 1:
         # For the off chance we have a scalar on our hands
-        ap = np.reshape(ap, (1, ))
+        ap = np.reshape(ap, (1,))
     log_ap = np.zeros_like(ap)
     log_ap[ap > 0] = np.log(ap[ap > 0]) - np.log(norm_factor)
 
@@ -1487,8 +1571,7 @@ def convert_sh_to_full_basis(sh_coeffs):
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1])
     _, n = sph_harm_ind_list(sh_order_max, full_basis=True)
 
-    full_sh_coeffs =\
-        np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(int))
+    full_sh_coeffs = np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(int))
     mask = np.mod(n, 2) == 0
 
     full_sh_coeffs[..., mask] = sh_coeffs
@@ -1531,15 +1614,14 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    sh_order_max = calculate_max_order(sh_coeffs.shape[-1],
-                                       full_basis=full_basis)
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
     m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
-    if sh_basis == 'descoteaux07':
-        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.)**m_values, 1.)
-    elif sh_basis == 'tournier07':
-        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1., 1./np.sqrt(2))
+    if sh_basis == "descoteaux07":
+        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.0) ** m_values, 1.0)
+    elif sh_basis == "tournier07":
+        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1.0, 1.0 / np.sqrt(2))
     else:
         raise ValueError("Invalid basis name.")
 
@@ -1582,15 +1664,14 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    sh_order_max = calculate_max_order(sh_coeffs.shape[-1],
-                                       full_basis=full_basis)
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
     m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
-    if sh_basis == 'descoteaux07':
-        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.)**m_values, 1.)
-    elif sh_basis == 'tournier07':
-        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1., np.sqrt(2))
+    if sh_basis == "descoteaux07":
+        out_sh_coeffs = sh_coeffs * np.where(m_values < 0, (-1.0) ** m_values, 1.0)
+    elif sh_basis == "tournier07":
+        out_sh_coeffs = sh_coeffs * np.where(m_values == 0, 1.0, np.sqrt(2))
     else:
         raise ValueError("Invalid basis name.")
 

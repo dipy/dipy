@@ -1,4 +1,5 @@
-""" Utility functions for file formats """
+"""Utility functions for file formats"""
+
 import logging
 import numbers
 import os
@@ -37,13 +38,13 @@ def nifti1_symmat(image_data, *args, **kwargs):
     """
     image_data = make5d(image_data)
     last_dim = image_data.shape[-1]
-    n = (np.sqrt(1+8*last_dim) - 1)/2
+    n = (np.sqrt(1 + 8 * last_dim) - 1) / 2
     if (n % 1) != 0:
         raise ValueError("input_data does not seem to have matrix elements")
 
     image = Nifti1Image(image_data, *args, **kwargs)
     hdr = image.header
-    hdr.set_intent('symmetric matrix', (n,))
+    hdr.set_intent("symmetric matrix", (n,))
     return image
 
 
@@ -55,7 +56,7 @@ def make5d(data):
     if data.ndim > 5:
         raise ValueError("input is already more than 5d")
     shape = data.shape
-    shape = shape[:-1] + (1,)*(5-len(shape)) + shape[-1:]
+    shape = shape[:-1] + (1,) * (5 - len(shape)) + shape[-1:]
     return data.reshape(shape)
 
 
@@ -86,21 +87,21 @@ def decfa(img_orig, scale=False):
     https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
     """
 
-    dest_dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
+    dest_dtype = np.dtype([("R", "uint8"), ("G", "uint8"), ("B", "uint8")])
     out_data = np.zeros(img_orig.shape[:3], dtype=dest_dtype)
 
     data_orig = np.asanyarray(img_orig.dataobj)
 
     if scale:
-        data_orig = (data_orig * 255).astype('uint8')
+        data_orig = (data_orig * 255).astype("uint8")
 
     for ii in np.ndindex(img_orig.shape[:3]):
         val = data_orig[ii]
         out_data[ii] = (val[0], val[1], val[2])
 
     new_hdr = img_orig.header
-    new_hdr['dim'][4] = 1
-    new_hdr.set_intent(1001, name='Color FA')
+    new_hdr["dim"][4] = 1
+    new_hdr.set_intent(1001, name="Color FA")
     new_hdr.set_data_dtype(dest_dtype)
 
     return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
@@ -129,14 +130,14 @@ def decfa_to_float(img_orig):
     """
 
     data_orig = np.asanyarray(img_orig.dataobj)
-    out_data = np.zeros(data_orig.shape + (3, ), dtype=np.uint8)
+    out_data = np.zeros(data_orig.shape + (3,), dtype=np.uint8)
 
     for ii in np.ndindex(img_orig.shape[:3]):
         val = data_orig[ii]
         out_data[ii] = np.array([val[0], val[1], val[2]])
 
     new_hdr = img_orig.header
-    new_hdr['dim'][4] = 3
+    new_hdr["dim"][4] = 3
 
     # Remove the original intent
     new_hdr.set_intent(0)
@@ -181,11 +182,11 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
 
     if not affine.shape == (4, 4):
         all_valid = False
-        logging.warning('Transformation matrix must be 4x4')
+        logging.warning("Transformation matrix must be 4x4")
 
     if not affine[0:3, 0:3].any():
         all_valid = False
-        logging.warning('Rotation matrix cannot be all zeros')
+        logging.warning("Rotation matrix cannot be all zeros")
 
     if not len(dimensions) >= 3:
         all_valid = False
@@ -194,10 +195,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in dimensions:
         if not isinstance(i, numbers.Integral):
             all_valid = False
-            logging.warning('Dimensions must be int.')
+            logging.warning("Dimensions must be int.")
         if i <= 0:
             all_valid = False
-            logging.warning('Dimensions must be above 0.')
+            logging.warning("Dimensions must be above 0.")
 
     if not len(voxel_sizes) >= 3:
         all_valid = False
@@ -205,10 +206,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_sizes:
         if not isinstance(i, numbers.Number):
             all_valid = False
-            logging.warning('Voxel size must be int/float.')
+            logging.warning("Voxel size must be int/float.")
         if i <= 0:
             all_valid = False
-            logging.warning('Voxel size must be above 0.')
+            logging.warning("Voxel size must be above 0.")
 
     if not len(voxel_order) >= 3:
         all_valid = False
@@ -216,13 +217,13 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_order:
         if not isinstance(i, str):
             all_valid = False
-            logging.warning('Voxel order must be string/char.')
-        if i not in ['R', 'A', 'S', 'L', 'P', 'I']:
+            logging.warning("Voxel order must be string/char.")
+        if i not in ["R", "A", "S", "L", "P", "I"]:
             all_valid = False
-            logging.warning('Voxel order does not follow convention.')
+            logging.warning("Voxel order does not follow convention.")
 
     if only_3d_warning:
-        logging.warning('Only 3D (and above) reference are considered valid.')
+        logging.warning("Only 3D (and above) reference are considered valid.")
 
     return all_valid
 
@@ -256,7 +257,7 @@ def split_name_with_gz(filename):
 
 
 def get_reference_info(reference):
-    """ Will compare the spatial attribute of 2 references.
+    """Will compare the spatial attribute of 2 references.
 
     Parameters
     ----------
@@ -279,13 +280,13 @@ def get_reference_info(reference):
     if isinstance(reference, str):
         _, ext = split_name_with_gz(reference)
         ext = ext.lower()
-        if ext in ['.nii', '.nii.gz']:
+        if ext in [".nii", ".nii.gz"]:
             header = nib.load(reference).header
             is_nifti = True
-        elif ext == '.trk':
+        elif ext == ".trk":
             header = nib.streamlines.load(reference, lazy_load=True).header
             is_trk = True
-        elif ext == '.trx':
+        elif ext == ".trx":
             header = trx_file_memmap.load(reference).header
             is_trx = True
     elif isinstance(reference, trx_file_memmap.TrxFile):
@@ -300,10 +301,10 @@ def get_reference_info(reference):
     elif isinstance(reference, nib.nifti1.Nifti1Header):
         header = reference
         is_nifti = True
-    elif isinstance(reference, dict) and 'magic_number' in reference:
+    elif isinstance(reference, dict) and "magic_number" in reference:
         header = reference
         is_trk = True
-    elif isinstance(reference, dict) and 'NB_VERTICES' in reference:
+    elif isinstance(reference, dict) and "NB_VERTICES" in reference:
         header = reference
         is_trx = True
     elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
@@ -311,32 +312,32 @@ def get_reference_info(reference):
 
     if is_nifti:
         affine = header.get_best_affine()
-        dimensions = header['dim'][1:4]
-        voxel_sizes = header['pixdim'][1:4]
+        dimensions = header["dim"][1:4]
+        voxel_sizes = header["pixdim"][1:4]
 
         if not affine[0:3, 0:3].any():
             raise ValueError(
-                'Invalid affine, contains only zeros.'
-                'Cannot determine voxel order from transformation')
-        voxel_order = ''.join(nib.aff2axcodes(affine))
+                "Invalid affine, contains only zeros."
+                "Cannot determine voxel order from transformation"
+            )
+        voxel_order = "".join(nib.aff2axcodes(affine))
     elif is_trk:
-        affine = header['voxel_to_rasmm']
-        dimensions = header['dimensions']
-        voxel_sizes = header['voxel_sizes']
-        voxel_order = header['voxel_order']
+        affine = header["voxel_to_rasmm"]
+        dimensions = header["dimensions"]
+        voxel_sizes = header["voxel_sizes"]
+        voxel_order = header["voxel_order"]
     elif is_sft:
-        affine, dimensions, voxel_sizes, voxel_order =\
-            reference.space_attributes
+        affine, dimensions, voxel_sizes, voxel_order = reference.space_attributes
     elif is_trx:
-        affine = header['VOXEL_TO_RASMM']
-        dimensions = header['DIMENSIONS']
+        affine = header["VOXEL_TO_RASMM"]
+        dimensions = header["DIMENSIONS"]
         voxel_sizes = nib.affines.voxel_sizes(affine)
-        voxel_order = ''.join(nib.aff2axcodes(affine))
+        voxel_order = "".join(nib.aff2axcodes(affine))
     else:
-        raise TypeError('Input reference is not one of the supported format')
+        raise TypeError("Input reference is not one of the supported format")
 
     if isinstance(voxel_order, np.bytes_):
-        voxel_order = voxel_order.decode('utf-8')
+        voxel_order = voxel_order.decode("utf-8")
 
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
@@ -344,7 +345,7 @@ def get_reference_info(reference):
 
 
 def is_header_compatible(reference_1, reference_2):
-    """ Will compare the spatial attribute of 2 references
+    """Will compare the spatial attribute of 2 references
 
     Parameters
     ----------
@@ -362,33 +363,36 @@ def is_header_compatible(reference_1, reference_2):
     """
 
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = get_reference_info(
-        reference_1)
+        reference_1
+    )
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = get_reference_info(
-        reference_2)
+        reference_2
+    )
 
     identical_header = True
     if not np.allclose(affine_1, affine_2, rtol=1e-03, atol=1e-03):
-        logging.error('Affine not equal')
+        logging.error("Affine not equal")
         identical_header = False
 
     if not np.array_equal(dimensions_1, dimensions_2):
-        logging.error('Dimensions not equal')
+        logging.error("Dimensions not equal")
         identical_header = False
 
     if not np.allclose(voxel_sizes_1, voxel_sizes_2, rtol=1e-03, atol=1e-03):
-        logging.error('Voxel_size not equal')
+        logging.error("Voxel_size not equal")
         identical_header = False
 
     if voxel_order_1 != voxel_order_2:
-        logging.error('Voxel_order not equal')
+        logging.error("Voxel_order not equal")
         identical_header = False
 
     return identical_header
 
 
-def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
-                             voxel_order):
-    """ Write a standard trk/tck header from spatial attribute """
+def create_tractogram_header(
+    tractogram_type, affine, dimensions, voxel_sizes, voxel_order
+):
+    """Write a standard trk/tck header from spatial attribute"""
     if isinstance(tractogram_type, str):
         tractogram_type = detect_format(tractogram_type)
 
@@ -402,11 +406,11 @@ def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
 
 
 def create_nifti_header(affine, dimensions, voxel_sizes):
-    """ Write a standard nifti header from spatial attribute """
+    """Write a standard nifti header from spatial attribute"""
     new_header = nib.Nifti1Header()
     new_header.set_sform(affine)
-    new_header['dim'][1:4] = dimensions
-    new_header['pixdim'][1:4] = voxel_sizes
+    new_header["dim"][1:4] = dimensions
+    new_header["pixdim"][1:4] = voxel_sizes
 
     new_header.affine = new_header.get_best_affine()
 
@@ -414,7 +418,7 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
 
 
 def save_buan_profiles_hdf5(fname, dt, key=None):
-    """ Saves the given input dataframe to .h5 file
+    """Saves the given input dataframe to .h5 file
 
     Parameters
     ----------
@@ -429,11 +433,11 @@ def save_buan_profiles_hdf5(fname, dt, key=None):
     """
 
     df = pd.DataFrame(dt)
-    filename_hdf5 = fname + '.h5'
+    filename_hdf5 = fname + ".h5"
 
     if key is None:
         base_name_parts, _ = os.path.splitext(os.path.basename(fname))
-        key = base_name_parts.split('.')[0]
+        key = base_name_parts.split(".")[0]
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
     store.append(key, df, data_columns=True, complevel=9)
@@ -461,8 +465,9 @@ def read_img_arr_or_path(data, affine=None):
     data, affine : ndarray and 4x4 array
     """
     if isinstance(data, np.ndarray) and affine is None:
-        raise ValueError("If data is provided as an array, an affine has ",
-                         "to be provided as well")
+        raise ValueError(
+            "If data is provided as an array, an affine has ", "to be provided as well"
+        )
     if isinstance(data, str):
         data = nib.load(data)
     if isinstance(data, nib.Nifti1Image):

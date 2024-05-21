@@ -40,16 +40,23 @@ def from_3x3_to_6x1(T):
             \\end{bmatrix}^T
     """
     if T.shape[-2::] != (3, 3):
-        raise ValueError('The shape of the input array must be (..., 3, 3).')
+        raise ValueError("The shape of the input array must be (..., 3, 3).")
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All matrices converted to Voigt notation are not symmetric.')
+        warn(
+            "All matrices converted to Voigt notation are not symmetric.", stacklevel=2
+        )
     C = np.sqrt(2)
-    V = np.stack((T[..., 0, 0],
-                  T[..., 1, 1],
-                  T[..., 2, 2],
-                  C * T[..., 1, 2],
-                  C * T[..., 0, 2],
-                  C * T[..., 0, 1]), axis=-1)[..., np.newaxis]
+    V = np.stack(
+        (
+            T[..., 0, 0],
+            T[..., 1, 1],
+            T[..., 2, 2],
+            C * T[..., 1, 2],
+            C * T[..., 0, 2],
+            C * T[..., 0, 1],
+        ),
+        axis=-1,
+    )[..., np.newaxis]
     return V
 
 
@@ -78,11 +85,15 @@ def from_6x1_to_3x3(V):
             \\end{bmatrix}^T
     """
     if V.shape[-2::] != (6, 1):
-        raise ValueError('The shape of the input array must be (..., 6, 1).')
+        raise ValueError("The shape of the input array must be (..., 6, 1).")
     C = 1 / np.sqrt(2)
-    T = np.array(([V[..., 0, 0], C * V[..., 5, 0], C * V[..., 4, 0]],
-                  [C * V[..., 5, 0], V[..., 1, 0], C * V[..., 3, 0]],
-                  [C * V[..., 4, 0], C * V[..., 3, 0], V[..., 2, 0]]))
+    T = np.array(
+        (
+            [V[..., 0, 0], C * V[..., 5, 0], C * V[..., 4, 0]],
+            [C * V[..., 5, 0], V[..., 1, 0], C * V[..., 3, 0]],
+            [C * V[..., 4, 0], C * V[..., 3, 0], V[..., 2, 0]],
+        )
+    )
     T = np.moveaxis(T, (0, 1), (-2, -1))
     return T
 
@@ -118,18 +129,40 @@ def from_6x6_to_21x1(T):
             \\end{matrix}
     """
     if T.shape[-2::] != (6, 6):
-        raise ValueError('The shape of the input array must be (..., 6, 6).')
+        raise ValueError("The shape of the input array must be (..., 6, 6).")
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2), equal_nan=True)):
-        warn('All matrices converted to Voigt notation are not symmetric.')
+        warn(
+            "All matrices converted to Voigt notation are not symmetric.", stacklevel=2
+        )
     C = np.sqrt(2)
-    V = np.stack(([T[..., 0, 0], T[..., 1, 1], T[..., 2, 2],
-                   C * T[..., 1, 2], C * T[..., 0, 2], C * T[..., 0, 1],
-                   C * T[..., 0, 3], C * T[..., 0, 4], C * T[..., 0, 5],
-                   C * T[..., 1, 3], C * T[..., 1, 4], C * T[..., 1, 5],
-                   C * T[..., 2, 3], C * T[..., 2, 4], C * T[..., 2, 5],
-                   T[..., 3, 3], T[..., 4, 4], T[..., 5, 5],
-                   C * T[..., 3, 4], C * T[..., 4, 5], C * T[..., 3, 5]]),
-                 axis=-1)[..., np.newaxis]
+    V = np.stack(
+        (
+            [
+                T[..., 0, 0],
+                T[..., 1, 1],
+                T[..., 2, 2],
+                C * T[..., 1, 2],
+                C * T[..., 0, 2],
+                C * T[..., 0, 1],
+                C * T[..., 0, 3],
+                C * T[..., 0, 4],
+                C * T[..., 0, 5],
+                C * T[..., 1, 3],
+                C * T[..., 1, 4],
+                C * T[..., 1, 5],
+                C * T[..., 2, 3],
+                C * T[..., 2, 4],
+                C * T[..., 2, 5],
+                T[..., 3, 3],
+                T[..., 4, 4],
+                T[..., 5, 5],
+                C * T[..., 3, 4],
+                C * T[..., 4, 5],
+                C * T[..., 3, 5],
+            ]
+        ),
+        axis=-1,
+    )[..., np.newaxis]
     return V
 
 
@@ -164,21 +197,60 @@ def from_21x1_to_6x6(V):
             \\end{matrix}
     """
     if V.shape[-2::] != (21, 1):
-        raise ValueError('The shape of the input array must be (..., 21, 1).')
+        raise ValueError("The shape of the input array must be (..., 21, 1).")
     C = 1 / np.sqrt(2)
     T = np.array(
-        ([V[..., 0, 0], C * V[..., 5, 0], C * V[..., 4, 0],
-          C * V[..., 6, 0], C * V[..., 7, 0], C * V[..., 8, 0]],
-         [C * V[..., 5, 0], V[..., 1, 0], C * V[..., 3, 0],
-          C * V[..., 9, 0], C * V[..., 10, 0], C * V[..., 11, 0]],
-         [C * V[..., 4, 0], C * V[..., 3, 0], V[..., 2, 0],
-          C * V[..., 12, 0], C * V[..., 13, 0], C * V[..., 14, 0]],
-         [C * V[..., 6, 0], C * V[..., 9, 0], C * V[..., 12, 0],
-          V[..., 15, 0], C * V[..., 18, 0], C * V[..., 20, 0]],
-         [C * V[..., 7, 0], C * V[..., 10, 0], C * V[..., 13, 0],
-          C * V[..., 18, 0], V[..., 16, 0], C * V[..., 19, 0]],
-         [C * V[..., 8, 0], C * V[..., 11, 0], C * V[..., 14, 0],
-          C * V[..., 20, 0], C * V[..., 19, 0], V[..., 17, 0]]))
+        (
+            [
+                V[..., 0, 0],
+                C * V[..., 5, 0],
+                C * V[..., 4, 0],
+                C * V[..., 6, 0],
+                C * V[..., 7, 0],
+                C * V[..., 8, 0],
+            ],
+            [
+                C * V[..., 5, 0],
+                V[..., 1, 0],
+                C * V[..., 3, 0],
+                C * V[..., 9, 0],
+                C * V[..., 10, 0],
+                C * V[..., 11, 0],
+            ],
+            [
+                C * V[..., 4, 0],
+                C * V[..., 3, 0],
+                V[..., 2, 0],
+                C * V[..., 12, 0],
+                C * V[..., 13, 0],
+                C * V[..., 14, 0],
+            ],
+            [
+                C * V[..., 6, 0],
+                C * V[..., 9, 0],
+                C * V[..., 12, 0],
+                V[..., 15, 0],
+                C * V[..., 18, 0],
+                C * V[..., 20, 0],
+            ],
+            [
+                C * V[..., 7, 0],
+                C * V[..., 10, 0],
+                C * V[..., 13, 0],
+                C * V[..., 18, 0],
+                V[..., 16, 0],
+                C * V[..., 19, 0],
+            ],
+            [
+                C * V[..., 8, 0],
+                C * V[..., 11, 0],
+                C * V[..., 14, 0],
+                C * V[..., 20, 0],
+                C * V[..., 19, 0],
+                V[..., 17, 0],
+            ],
+        )
+    )
     T = np.moveaxis(T, (0, 1), (-2, -1))
     return T
 
@@ -212,9 +284,13 @@ def cvxpy_1x6_to_3x3(V):
 
     f = 1 / np.sqrt(2)
 
-    T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4]],
-                 [f * V[0, 5],     V[0, 1], f * V[0, 3]],
-                 [f * V[0, 4], f * V[0, 3],    V[0, 2]]])
+    T = cp.bmat(
+        [
+            [V[0, 0], f * V[0, 5], f * V[0, 4]],
+            [f * V[0, 5], V[0, 1], f * V[0, 3]],
+            [f * V[0, 4], f * V[0, 3], V[0, 2]],
+        ]
+    )
     return T
 
 
@@ -253,18 +329,51 @@ def cvxpy_1x21_to_6x6(V):
 
     f = 1 / np.sqrt(2)
 
-    T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4], f * V[0, 6],
-                f * V[0, 7], f * V[0, 8]],
-                [f * V[0, 5], V[0, 1],
-                 f * V[0, 3], f * V[0, 9], f * V[0, 10], f * V[0, 11]],
-                [f * V[0, 4], f * V[0, 3], V[0, 2], f * V[0, 12],
-                 f * V[0, 13], f * V[0, 14]],
-                [f * V[0, 6], f * V[0, 9],
-                 f * V[0, 12], V[0, 15], f * V[0, 18], f * V[0, 20]],
-                [f * V[0, 7], f * V[0, 10], f * V[0, 13], f * V[0, 18],
-                 V[0, 16], f * V[0, 19]],
-                [f * V[0, 8], f * V[0, 11],
-                 f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
+    T = cp.bmat(
+        [
+            [V[0, 0], f * V[0, 5], f * V[0, 4], f * V[0, 6], f * V[0, 7], f * V[0, 8]],
+            [
+                f * V[0, 5],
+                V[0, 1],
+                f * V[0, 3],
+                f * V[0, 9],
+                f * V[0, 10],
+                f * V[0, 11],
+            ],
+            [
+                f * V[0, 4],
+                f * V[0, 3],
+                V[0, 2],
+                f * V[0, 12],
+                f * V[0, 13],
+                f * V[0, 14],
+            ],
+            [
+                f * V[0, 6],
+                f * V[0, 9],
+                f * V[0, 12],
+                V[0, 15],
+                f * V[0, 18],
+                f * V[0, 20],
+            ],
+            [
+                f * V[0, 7],
+                f * V[0, 10],
+                f * V[0, 13],
+                f * V[0, 18],
+                V[0, 16],
+                f * V[0, 19],
+            ],
+            [
+                f * V[0, 8],
+                f * V[0, 11],
+                f * V[0, 14],
+                f * V[0, 20],
+                f * V[0, 19],
+                V[0, 17],
+            ],
+        ]
+    )
     return T
 
 
@@ -273,7 +382,7 @@ e_iso = np.eye(3) / 3
 E_iso = np.eye(6) / 3
 E_bulk = from_3x3_to_6x1(e_iso) @ from_3x3_to_6x1(e_iso).T
 E_shear = E_iso - E_bulk
-E_tsym = E_bulk + .4 * E_shear
+E_tsym = E_bulk + 0.4 * E_shear
 
 
 def dtd_covariance(DTD):
@@ -310,13 +419,13 @@ def dtd_covariance(DTD):
     dims = DTD.shape
     if len(dims) != 3 or (dims[1:3] != (3, 3) and dims[1:3] != (6, 1)):
         raise ValueError(
-            'The shape of DTD must be (number of tensors, 3, 3) or (number of '
-            + 'tensors, 6, 1).')
+            "The shape of DTD must be (number of tensors, 3, 3) or (number of "
+            + "tensors, 6, 1)."
+        )
     if dims[1:3] == (3, 3):
         DTD = from_3x3_to_6x1(DTD)
     D = np.mean(DTD, axis=0)
-    C = (np.mean(DTD @ np.swapaxes(DTD, -2, -1), axis=0)
-         - D @ np.swapaxes(D, -2, -1))
+    C = np.mean(DTD @ np.swapaxes(DTD, -2, -1), axis=0) - D @ np.swapaxes(D, -2, -1)
     return C
 
 
@@ -353,8 +462,7 @@ def qti_signal(gtab, D, C, S0=1):
 
     # Validate input and convert to Voigt notation if necessary
     if gtab.btens is None:
-        raise ValueError(
-            'QTI requires b-tensors to be defined in the gradient table.')
+        raise ValueError("QTI requires b-tensors to be defined in the gradient table.")
     if D.shape[-2::] != (6, 1):
         if D.shape[-2::] == (3, 3):
             D = from_3x3_to_6x1(D)
@@ -362,7 +470,8 @@ def qti_signal(gtab, D, C, S0=1):
             D = D[..., np.newaxis]
         else:
             raise ValueError(
-                'The shape of D must be (..., 3, 3), (..., 6, 1) or (..., 6).')
+                "The shape of D must be (..., 3, 3), (..., 6, 1) or (..., 6)."
+            )
     if C.shape[-2::] != (21, 1):
         if C.shape[-2::] == (6, 6):
             C = from_6x6_to_21x1(C)
@@ -370,16 +479,15 @@ def qti_signal(gtab, D, C, S0=1):
             C = C[..., np.newaxis]
         else:
             raise ValueError(
-                'The shape of C must be (..., 6, 6), (..., 21, 1), or '
-                + '(..., 21).'
+                "The shape of C must be (..., 6, 6), (..., 21, 1), or (..., 21)."
             )
     if D.shape[0:-2] != C.shape[0:-2]:
-        raise ValueError('The shapes of C and D are not compatible')
+        raise ValueError("The shapes of C and D are not compatible")
     if not isinstance(S0, (int, float)):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
-                'S0 must be a single number or an array of the same shape '
-                + ' compatible with D and C.'
+                "S0 must be a single number or an array of the same shape "
+                + " compatible with D and C."
             )
 
     # Generate signals
@@ -387,9 +495,12 @@ def qti_signal(gtab, D, C, S0=1):
     for i, bten in enumerate(gtab.btens):
         b = from_3x3_to_6x1(bten)
         b_sq = from_6x6_to_21x1(b @ np.swapaxes(b, -2, -1))
-        S[..., i] = S0 * np.exp(
-            - np.swapaxes(b, -2, -1) @ D
-            + .5 * np.swapaxes(b_sq, -2, -1) @ C)[..., 0, 0]
+        S[..., i] = (
+            S0
+            * np.exp(-np.swapaxes(b, -2, -1) @ D + 0.5 * np.swapaxes(b_sq, -2, -1) @ C)[
+                ..., 0, 0
+            ]
+        )
     return S
 
 
@@ -423,8 +534,7 @@ def design_matrix(btens):
     for i, bten in enumerate(btens):
         b = from_3x3_to_6x1(bten)
         b_sq = from_6x6_to_21x1(b @ b.T)
-        X[i] = np.concatenate(
-            ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
+        X[i] = np.concatenate(([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
     return X
 
 
@@ -462,8 +572,8 @@ def _ols_fit(data, mask, X, step=int(1e4)):
     else:  # Iterate over data
         params_masked = np.zeros((size, 28))
         for i in range(0, size, step):
-            S = np.log(data_masked[i:i + step])[..., np.newaxis]
-            params_masked[i:i + step] = (X_inv @ X.T @ S)[..., 0]
+            S = np.log(data_masked[i : i + step])[..., np.newaxis]
+            params_masked[i : i + step] = (X_inv @ X.T @ S)[..., 0]
     params[np.where(mask.ravel())] = params_masked
     params = params.reshape((mask.shape + (28,)))
     return params
@@ -505,11 +615,11 @@ def _wls_fit(data, mask, X, step=int(1e4)):
     else:  # Iterate over data
         params_masked = np.zeros((size, 28))
         for i in range(0, size, step):
-            S = np.log(data_masked[i:i + step])[..., np.newaxis]
-            C = data_masked[i:i + step][:, np.newaxis, :]
+            S = np.log(data_masked[i : i + step])[..., np.newaxis]
+            C = data_masked[i : i + step][:, np.newaxis, :]
             B = X.T * C
             A = np.linalg.pinv(B @ X)
-            params_masked[i:i + step] = (A @ B @ S)[..., 0]
+            params_masked[i : i + step] = (A @ B @ S)[..., 0]
     params[np.where(mask.ravel())] = params_masked
     params = params.reshape((mask.shape + (28,)))
     return params
@@ -547,12 +657,10 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     """
 
     if not have_cvxpy:
-        raise ImportError(
-                    'CVXPY package needed to enforce constraints')
+        raise ImportError("CVXPY package needed to enforce constraints")
 
     if cvxpy_solver not in cp.installed_solvers():
-        raise ValueError(
-                    'The selected solver is not available')
+        raise ValueError("The selected solver is not available")
 
     params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     data_masked = data[mask]
@@ -574,29 +682,29 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     unconstrained = cp.Problem(objective)
 
     for i in range(0, size, 1):
-        vox_data = data_masked[i:i+1, :].T
-        vox_log_data = log_data[i:i+1, :].T
+        vox_data = data_masked[i : i + 1, :].T
+        vox_log_data = log_data[i : i + 1, :].T
         vox_log_data[np.isinf(vox_log_data)] = 0
-        y.value = (vox_data * vox_log_data)
+        y.value = vox_data * vox_log_data
         A.value = vox_data * X
 
         try:
             prob.solve(solver=cvxpy_solver, verbose=False)
             m = x.value
         except Exception:
-            msg = 'Constrained optimization failed, attempting unconstrained'
-            msg += ' optimization.'
-            warn(msg)
+            msg = "Constrained optimization failed, attempting unconstrained"
+            msg += " optimization."
+            warn(msg, stacklevel=2)
             try:
                 unconstrained.solve(solver=cvxpy_solver)
                 m = x.value
             except Exception:
-                msg = 'Unconstrained optimization failed,'
-                msg += ' returning zero array.'
-                warn(msg)
+                msg = "Unconstrained optimization failed,"
+                msg += " returning zero array."
+                warn(msg, stacklevel=2)
                 m = np.zeros(x.shape)
 
-        params_masked[i:i+1, :] = m.T
+        params_masked[i : i + 1, :] = m.T
 
     params_masked[:, 0] += np.log(scale[:, 0])
     params[np.where(mask.ravel())] = params_masked
@@ -605,8 +713,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
 
 
 class QtiModel(ReconstModel):
-
-    def __init__(self, gtab, fit_method='WLS', cvxpy_solver='SCS'):
+    def __init__(self, gtab, fit_method="WLS", cvxpy_solver="SCS"):
         """Covariance tensor model of q-space trajectory imaging [1]_.
 
         Parameters
@@ -638,24 +745,25 @@ class QtiModel(ReconstModel):
 
         if self.gtab.btens is None:
             raise ValueError(
-                'QTI requires b-tensors to be defined in the gradient table.')
+                "QTI requires b-tensors to be defined in the gradient table."
+            )
         self.X = design_matrix(self.gtab.btens)
         rank = np.linalg.matrix_rank(self.X.T @ self.X)
         if rank < 28:
             warn(
-                'The combination of the b-tensor shapes, sizes, and ' +
-                'orientations does not enable all elements of the covariance ' +
-                'tensor to be estimated (rank(X.T @ X) = %s < 28).' % rank
+                "The combination of the b-tensor shapes, sizes, and "
+                + "orientations does not enable all elements of the covariance "
+                + f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
+                stacklevel=2,
             )
 
         try:
             self.fit_method = common_fit_methods[fit_method]
-        except KeyError:
+        except KeyError as e:
             raise ValueError(
-                'Invalid value (%s) for \'fit_method\'.' % fit_method
-                + ' Options: \'OLS\', \'WLS\', \'SDPdc\'.'
-            )
-
+                f"Invalid value ({fit_method}) for 'fit_method'."
+                + " Options: 'OLS', 'WLS', 'SDPdc'."
+            ) from e
 
         self.cvxpy_solver = cvxpy_solver
         self.fit_method_name = fit_method
@@ -679,9 +787,9 @@ class QtiModel(ReconstModel):
             mask = np.ones(data.shape[:-1], dtype=bool)
         else:
             if mask.shape != data.shape[:-1]:
-                raise ValueError('Mask is not the same shape as data.')
+                raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-        if self.fit_method_name == 'SDPdc':
+        if self.fit_method_name == "SDPdc":
             params = self.fit_method(data, mask, self.X, self.cvxpy_solver)
         else:
             params = self.fit_method(data, mask, self.X)
@@ -712,7 +820,6 @@ class QtiModel(ReconstModel):
 
 
 class QtiFit:
-
     def __init__(self, params):
         """Fitted QTI model.
 
@@ -742,7 +849,8 @@ class QtiFit:
         """
         if gtab.btens is None:
             raise ValueError(
-                'QTI requires b-tensors to be defined in the gradient table.')
+                "QTI requires b-tensors to be defined in the gradient table."
+            )
         S0 = self.S0_hat
         D = self.params[..., 1:7, np.newaxis]
         C = self.params[..., 7::, np.newaxis]
@@ -777,10 +885,9 @@ class QtiFit:
                 \\text{MD} = \\langle \\mathbf{D} \\rangle :
                 \\mathbf{E}_\\text{iso}
         """
-        md = np.matmul(
-            self.params[..., np.newaxis, 1:7],
-            from_3x3_to_6x1(e_iso)
-        )[..., 0, 0]
+        md = np.matmul(self.params[..., np.newaxis, 1:7], from_3x3_to_6x1(e_iso))[
+            ..., 0, 0
+        ]
         return md
 
     @auto_attr
@@ -799,10 +906,9 @@ class QtiFit:
 
                 V_\\text{MD} = \\mathbb{C} : \\mathbb{E}_\\text{bulk}
         """
-        v_md = np.matmul(
-            self.params[..., np.newaxis, 7::],
-            from_6x6_to_21x1(E_bulk)
-        )[..., 0, 0]
+        v_md = np.matmul(self.params[..., np.newaxis, 7::], from_6x6_to_21x1(E_bulk))[
+            ..., 0, 0
+        ]
         return v_md
 
     @auto_attr
@@ -822,8 +928,7 @@ class QtiFit:
                 V_\\text{shear} = \\mathbb{C} : \\mathbb{E}_\\text{shear}
         """
         v_shear = np.matmul(
-            self.params[..., np.newaxis, 7::],
-            from_6x6_to_21x1(E_shear)
+            self.params[..., np.newaxis, 7::], from_6x6_to_21x1(E_shear)
         )[..., 0, 0]
         return v_shear
 
@@ -843,10 +948,9 @@ class QtiFit:
 
                 V_\\text{iso} = \\mathbb{C} : \\mathbb{E}_\\text{iso}
         """
-        v_iso = np.matmul(
-            self.params[..., np.newaxis, 7::],
-            from_6x6_to_21x1(E_iso)
-        )[..., 0, 0]
+        v_iso = np.matmul(self.params[..., np.newaxis, 7::], from_6x6_to_21x1(E_iso))[
+            ..., 0, 0
+        ]
         return v_iso
 
     @auto_attr
@@ -858,8 +962,7 @@ class QtiFit:
         d_sq : numpy.ndarray
         """
         d_sq = np.matmul(
-            self.params[..., 1:7, np.newaxis],
-            self.params[..., np.newaxis, 1:7]
+            self.params[..., 1:7, np.newaxis], self.params[..., np.newaxis, 1:7]
         )
         return d_sq
 
@@ -884,8 +987,7 @@ class QtiFit:
                 \\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
                 \\rangle
         """
-        mean_d_sq = from_21x1_to_6x6(
-            self.params[..., 7::, np.newaxis]) + self.d_sq
+        mean_d_sq = from_21x1_to_6x6(self.params[..., 7::, np.newaxis]) + self.d_sq
         return mean_d_sq
 
     @auto_attr
@@ -906,9 +1008,13 @@ class QtiFit:
                 {\\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle :
                 \\mathbb{E}_\\text{bulk}}
         """
-        c_md = self.v_md / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
-            from_6x6_to_21x1(E_bulk))[..., 0, 0]
+        c_md = (
+            self.v_md
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+                from_6x6_to_21x1(E_bulk),
+            )[..., 0, 0]
+        )
         return c_md
 
     @auto_attr
@@ -931,11 +1037,17 @@ class QtiFit:
                 \\otimes
                 \\mathbf{D} \\rangle : \\mathbb{E}_\\text{iso}}
         """
-        c_mu = (1.5 * np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
-            from_6x6_to_21x1(E_shear)) / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
-            from_6x6_to_21x1(E_iso)))[..., 0, 0]
+        c_mu = (
+            1.5
+            * np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+                from_6x6_to_21x1(E_shear),
+            )
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+                from_6x6_to_21x1(E_iso),
+            )
+        )[..., 0, 0]
         return c_mu
 
     @auto_attr
@@ -978,11 +1090,17 @@ class QtiFit:
                 \\rangle :
                 \\mathbb{E}_\\text{iso}}
         """
-        c_m = (1.5 * np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
-            from_6x6_to_21x1(E_shear)) / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
-            from_6x6_to_21x1(E_iso)))[..., 0, 0]
+        c_m = (
+            1.5
+            * np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+                from_6x6_to_21x1(E_shear),
+            )
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+                from_6x6_to_21x1(E_iso),
+            )
+        )[..., 0, 0]
         return c_m
 
     @auto_attr
@@ -1061,11 +1179,14 @@ class QtiFit:
                 {\\langle \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D}
                 \\rangle : \\mathbb{E}_\\text{bulk}}
         """
-        k_bulk = (3 * np.matmul(
-            self.params[..., np.newaxis, 7::],
-            from_6x6_to_21x1(E_bulk)) / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
-            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        k_bulk = (
+            3
+            * np.matmul(self.params[..., np.newaxis, 7::], from_6x6_to_21x1(E_bulk))
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+                from_6x6_to_21x1(E_bulk),
+            )
+        )[..., 0, 0]
         return k_bulk
 
     @auto_attr
@@ -1087,11 +1208,15 @@ class QtiFit:
                 \\otimes
                 \\langle \\mathbf{D} \\rangle : \\mathbb{E}_\\text{bulk}}
         """
-        k_shear = (6 / 5 * np.matmul(
-            self.params[..., np.newaxis, 7::],
-            from_6x6_to_21x1(E_shear)) / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
-            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        k_shear = (
+            6
+            / 5
+            * np.matmul(self.params[..., np.newaxis, 7::], from_6x6_to_21x1(E_shear))
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+                from_6x6_to_21x1(E_bulk),
+            )
+        )[..., 0, 0]
         return k_shear
 
     @auto_attr
@@ -1115,12 +1240,19 @@ class QtiFit:
                 \\otimes \\langle \\mathbf{D} \\rangle :
                 \\mathbb{E}_\\text{bulk}}
         """
-        k_mu = (6 / 5 * np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
-            from_6x6_to_21x1(E_shear)) / np.matmul(
-            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
-            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        k_mu = (
+            6
+            / 5
+            * np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+                from_6x6_to_21x1(E_shear),
+            )
+            / np.matmul(
+                np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+                from_6x6_to_21x1(E_bulk),
+            )
+        )[..., 0, 0]
         return k_mu
 
 
-common_fit_methods = {'OLS': _ols_fit, 'WLS': _wls_fit, 'SDPdc': _sdpdc_fit}
+common_fit_methods = {"OLS": _ols_fit, "WLS": _wls_fit, "SDPdc": _sdpdc_fit}

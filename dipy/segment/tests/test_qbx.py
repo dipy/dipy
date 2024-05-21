@@ -13,8 +13,7 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import Streamlines, set_number_of_points
 
 
-def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
-                    radius=1, rng=None):
+def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1, radius=1, rng=None):
     if rng is None:
         rng = np.random.default_rng(42)
     bundle = []
@@ -22,8 +21,8 @@ def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
     bundle_length = step_size * nb_pts
 
     Z = -np.linspace(0, bundle_length, nb_pts)
-    for k in range(nb_streamlines):
-        theta = rng.random() * (2*np.pi)
+    for _ in range(nb_streamlines):
+        theta = rng.random() * (2 * np.pi)
         r = radius * rng.random()
 
         Xk = np.ones(nb_pts) * (r * np.cos(theta))
@@ -38,7 +37,7 @@ def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
 def bearing_bundles(nb_balls=6, bearing_radius=2):
     bundles = []
 
-    for theta in np.linspace(0, 2*np.pi, nb_balls, endpoint=False):
+    for theta in np.linspace(0, 2 * np.pi, nb_balls, endpoint=False):
         x = bearing_radius * np.cos(theta)
         y = bearing_radius * np.sin(theta)
 
@@ -49,14 +48,13 @@ def bearing_bundles(nb_balls=6, bearing_radius=2):
     return bundles
 
 
-def streamlines_in_circle(nb_streamlines=1, nb_pts=30, step_size=1,
-                          radius=1):
+def streamlines_in_circle(nb_streamlines=1, nb_pts=30, step_size=1, radius=1):
     bundle = []
 
     bundle_length = step_size * nb_pts
 
     Z = np.linspace(0, bundle_length, nb_pts)
-    for theta in np.linspace(0, 2*np.pi, nb_streamlines, endpoint=False):
+    for theta in np.linspace(0, 2 * np.pi, nb_streamlines, endpoint=False):
         Xk = np.ones(nb_pts) * (radius * np.cos(theta))
         Yk = np.ones(nb_pts) * (radius * np.sin(theta))
         Zk = Z.copy()
@@ -66,14 +64,13 @@ def streamlines_in_circle(nb_streamlines=1, nb_pts=30, step_size=1,
     return bundle
 
 
-def streamlines_parallel(nb_streamlines=1, nb_pts=30, step_size=1,
-                         delta=1):
+def streamlines_parallel(nb_streamlines=1, nb_pts=30, step_size=1, delta=1):
     bundle = []
 
     bundle_length = step_size * nb_pts
 
     Z = np.linspace(0, bundle_length, nb_pts)
-    for x in delta*np.arange(0, nb_streamlines):
+    for x in delta * np.arange(0, nb_streamlines):
         Xk = np.ones(nb_pts) * x
         Yk = np.zeros(nb_pts)
         Zk = Z.copy()
@@ -99,12 +96,9 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
 
 
 def test_3D_points():
-
-    points = np.array([[[1, 0, 0]],
-                       [[3, 0, 0]],
-                       [[2, 0, 0]],
-                       [[5, 0, 0]],
-                       [[5.5, 0, 0]]], dtype="f4")
+    points = np.array(
+        [[[1, 0, 0]], [[3, 0, 0]], [[2, 0, 0]], [[5, 0, 0]], [[5.5, 0, 0]]], dtype="f4"
+    )
 
     thresholds = [4, 2, 1]
     metric = AveragePointwiseEuclideanMetric()
@@ -117,16 +111,16 @@ def test_3D_points():
 
 
 def test_3D_segments():
-    points = np.array([[[1, 0, 0],
-                        [1, 1, 0]],
-                       [[3, 1, 0],
-                        [3, 0, 0]],
-                       [[2, 0, 0],
-                        [2, 1, 0]],
-                       [[5, 1, 0],
-                        [5, 0, 0]],
-                       [[5.5, 0, 0],
-                        [5.5, 1, 0]]], dtype="f4")
+    points = np.array(
+        [
+            [[1, 0, 0], [1, 1, 0]],
+            [[3, 1, 0], [3, 0, 0]],
+            [[2, 0, 0], [2, 1, 0]],
+            [[5, 1, 0], [5, 0, 0]],
+            [[5.5, 0, 0], [5.5, 1, 0]],
+        ],
+        dtype="f4",
+    )
 
     thresholds = [4, 2, 1]
 
@@ -145,7 +139,6 @@ def test_3D_segments():
 
 
 def test_with_simulated_bundles():
-
     streamlines = simulated_bundle(3, False, 2)
     thresholds = [10, 3, 1]
     qbx_class = QuickBundlesX(thresholds)
@@ -157,13 +150,12 @@ def test_with_simulated_bundles():
     assert_equal(tree.leaves[2][0], 2)
     clusters.refdata = streamlines
 
-    assert_array_equal(clusters[0][0],
-                       np.array([[0., -10., -5.],
-                                 [0., 10., -5.]]))
+    assert_array_equal(
+        clusters[0][0], np.array([[0.0, -10.0, -5.0], [0.0, 10.0, -5.0]])
+    )
 
 
 def test_with_simulated_bundles2():
-
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1))
@@ -177,7 +169,6 @@ def test_with_simulated_bundles2():
 
 
 def test_circle_parallel_fornix():
-
     circle = streamlines_in_circle(100, step_size=2)
 
     parallel = streamlines_parallel(100)
@@ -196,7 +187,7 @@ def test_circle_parallel_fornix():
     clusters = tree.get_clusters(2)
     assert_equal(len(clusters), 34)
 
-    thresholds = [.5]
+    thresholds = [0.5]
 
     qbx_class = QuickBundlesX(thresholds)
     tree = qbx_class.cluster(parallel)
@@ -209,7 +200,6 @@ def test_circle_parallel_fornix():
 
 
 def test_raise_mdf():
-
     thresholds = [1, 0.1]
 
     metric = MinimumAverageDirectFlipMetric()
@@ -220,11 +210,9 @@ def test_raise_mdf():
 
 @set_random_number_generator(42)
 def test_qbx_and_merge(rng):
-
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1, rng=rng))
-
 
     streamlines = Streamlines(list(itertools.chain(*bundles)))
 
@@ -243,6 +231,5 @@ def test_qbx_and_merge(rng):
     assert_equal(len(qbx_centroids) > len(qbxm_centroids), True)
 
     # check that refdata clusters return streamlines in qbx_and_merge
-    streamline_idx =qbxm_clusters[0].indices[0]
+    streamline_idx = qbxm_clusters[0].indices[0]
     assert_array_equal(qbxm_clusters[0][0], streamlines[streamline_idx])
-

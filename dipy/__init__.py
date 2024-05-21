@@ -34,6 +34,7 @@ Utilities
  __version__   -- Dipy version
 
 """
+
 import sys
 
 from dipy.version import version as __version__
@@ -44,29 +45,30 @@ from .pkg_info import get_pkg_info as _get_pkg_info
 
 def get_info():
     from os.path import dirname
+
     return _get_pkg_info(dirname(__file__))
 
 
 del sys
 
 submodules = [
-    'align',
-    'core',
-    'data',
-    'denoise',
-    'direction',
-    'io',
-    'nn',
-    'reconst',
-    'segment',
-    'sims',
-    'stats',
-    'tracking',
-    'utils',
-    'viz',
-    'workflows',
-    'tests',
-    'testing'
+    "align",
+    "core",
+    "data",
+    "denoise",
+    "direction",
+    "io",
+    "nn",
+    "reconst",
+    "segment",
+    "sims",
+    "stats",
+    "tracking",
+    "utils",
+    "viz",
+    "workflows",
+    "tests",
+    "testing",
 ]
 
-__all__ = submodules + ['__version__', 'setup_test', 'get_info']
+__all__ = submodules + ["__version__", "setup_test", "get_info"]

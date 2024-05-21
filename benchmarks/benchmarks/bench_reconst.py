@@ -1,37 +1,33 @@
-""" Benchmarks for``dipy.reconst`` module."""
+"""Benchmarks for``dipy.reconst`` module."""
 
 import numpy as np
 
-from dipy.core.gradients import GradientTable
 from dipy.core.sphere import unique_edges
-from dipy.data import default_sphere, read_stanford_labels
-from dipy.io.image import load_nifti_data
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.data import default_sphere
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 class BenchRecSpeed:
-
     def setup(self):
         vertices, faces = default_sphere.vertices, default_sphere.faces
         self.edges = unique_edges(faces)
         self.odf = np.zeros(len(vertices))
-        self.odf[1] = 1.
-        self.odf[143] = 143.
-        self.odf[305] = 305.
+        self.odf[1] = 1.0
+        self.odf[143] = 143.0
+        self.odf[305] = 305.0
 
     def time_local_maxima(self):
         local_maxima(self.odf, self.edges)
 
 
 class BenchVecValSum:
-
     def setup(self):
-
         def make_vecs_vals(shape):
-            return (np.random.randn(*shape),
-                    np.random.randn(*(shape[:-2] + shape[-1:])))
+            return (
+                np.random.randn(*shape),
+                np.random.randn(*(shape[:-2] + shape[-1:])),
+            )
 
         shape = (10, 12, 3, 3)
         self.evecs, self.evals = make_vecs_vals(shape)
@@ -64,26 +60,26 @@ class BenchVecValSum:
 #         self.small_gtab = GradientTable(self.gtab.gradients[:75])
 
 
-    # def time_csdeconv_basic(self):
-    #     # TODO: define response and remove None
-    #     sh_order_max = 8
-    #     model = ConstrainedSphericalDeconvModel(self.gtab, None,
-    #                                             sh_order_max=sh_order_max)
-    #     model.fit(self.data_small, self.mask_small)
+# def time_csdeconv_basic(self):
+#     # TODO: define response and remove None
+#     sh_order_max = 8
+#     model = ConstrainedSphericalDeconvModel(self.gtab, None,
+#                                             sh_order_max=sh_order_max)
+#     model.fit(self.data_small, self.mask_small)
 
-    # def time_csdeconv_small_dataset(self):
-    #      # TODO: define response and remove None
-    #     # Smaller data set
-    #     # data_small = data_small[..., :75].copy()
-    #     sh_order_max = 8
-    #     model = ConstrainedSphericalDeconvModel(self.small_gtab, None,
-    #                                             sh_order_max=sh_order_max)
-    #     model.fit(self.data_small, self.mask_small)
+# def time_csdeconv_small_dataset(self):
+#      # TODO: define response and remove None
+#     # Smaller data set
+#     # data_small = data_small[..., :75].copy()
+#     sh_order_max = 8
+#     model = ConstrainedSphericalDeconvModel(self.small_gtab, None,
+#                                             sh_order_max=sh_order_max)
+#     model.fit(self.data_small, self.mask_small)
 
-    # def time_csdeconv_super_resolution(self):
-    #      # TODO: define response and remove None
-    #     # Super resolution
-    #     sh_order_max = 12
-    #     model = ConstrainedSphericalDeconvModel(self.gtab, None,
-    #                                             sh_order_max=sh_order_max)
-    #     model.fit(self.data_small, self.mask_small)
+# def time_csdeconv_super_resolution(self):
+#      # TODO: define response and remove None
+#     # Super resolution
+#     sh_order_max = 12
+#     model = ConstrainedSphericalDeconvModel(self.gtab, None,
+#                                             sh_order_max=sh_order_max)
+#     model.fit(self.data_small, self.mask_small)

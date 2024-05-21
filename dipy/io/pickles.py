@@ -1,4 +1,5 @@
-""" Load and save pickles """
+"""Load and save pickles"""
+
 import pickle
 
 
@@ -31,7 +32,7 @@ def save_pickle(fname, dix):
     dipy.io.pickles.load_pickle
 
     """
-    out = open(fname, 'wb')
+    out = open(fname, "wb")
     pickle.dump(dix, out, protocol=pickle.HIGHEST_PROTOCOL)
     out.close()
 
@@ -54,7 +55,7 @@ def load_pickle(fname):
     dipy.io.pickles.save_pickle
 
     """
-    inp = open(fname, 'rb')
+    inp = open(fname, "rb")
     dix = pickle.load(inp)
     inp.close()
     return dix

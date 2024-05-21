@@ -55,16 +55,16 @@ def test_peak_directions_nl():
         B = 1 + (x * z > 0) + 2 * (y * z > 0)
         return A * B
 
-    directions, values = peak_directions_nl(discrete_eval, .01)
+    directions, values = peak_directions_nl(discrete_eval, 0.01)
     assert_equal(directions.shape, (4, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, .3)
+    directions, values = peak_directions_nl(discrete_eval, 0.3)
     assert_equal(directions.shape, (3, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, .6)
+    directions, values = peak_directions_nl(discrete_eval, 0.6)
     assert_equal(directions.shape, (2, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, .8)
+    directions, values = peak_directions_nl(discrete_eval, 0.8)
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 4 * 3 / np.sqrt(3))
 
@@ -75,13 +75,13 @@ def test_peak_directions_nl():
         B = (x * z > 0) + 2 * (y * z > 0)
         return A * B
 
-    directions, values = peak_directions_nl(discrete_eval, 0.)
+    directions, values = peak_directions_nl(discrete_eval, 0.0)
     assert_equal(directions.shape, (3, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, .6)
+    directions, values = peak_directions_nl(discrete_eval, 0.6)
     assert_equal(directions.shape, (2, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, .8)
+    directions, values = peak_directions_nl(discrete_eval, 0.8)
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 3 * 3 / np.sqrt(3))
 
@@ -101,7 +101,6 @@ class SimpleOdfModel(OdfModel):
 
 
 class SimpleOdfFit(OdfFit):
-
     def odf(self, sphere=None):
         if sphere is None:
             sphere = self.model.sphere
@@ -127,32 +126,32 @@ def test_peak_directions():
     sphere = fit.model.sphere
 
     # Only one peak
-    direction, val, ind = peak_directions(odf, sphere, .5, 45)
+    direction, val, ind = peak_directions(odf, sphere, 0.5, 45)
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
     assert_array_equal(direction, dir_e)
 
-    odf[0] = mx * .9
+    odf[0] = mx * 0.9
     # Two peaks, relative_threshold
-    direction, val, ind = peak_directions(odf, sphere, 1., 0)
+    direction, val, ind = peak_directions(odf, sphere, 1.0, 0)
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    direction, val, ind = peak_directions(odf, sphere, .8, 0)
+    direction, val, ind = peak_directions(odf, sphere, 0.8, 0)
     dir_e = sphere.vertices[[argmax, 0]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
     assert_array_equal(val, odf[ind])
 
     # Two peaks, angle_sep
-    direction, val, ind = peak_directions(odf, sphere, 0., 90)
+    direction, val, ind = peak_directions(odf, sphere, 0.0, 90)
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    direction, val, ind = peak_directions(odf, sphere, 0., 0)
+    direction, val, ind = peak_directions(odf, sphere, 0.0, 0)
     dir_e = sphere.vertices[[argmax, 0]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
@@ -160,170 +159,150 @@ def test_peak_directions():
 
 
 def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
-
-    _, fbvals, fbvecs = get_fnames('small_64D')
+    _, fbvals, fbvecs = get_fnames("small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=fractions, snr=SNR)
+    S, sticks = multi_tensor(
+        gtab, mevals, S0, angles=angles, fractions=fractions, snr=SNR
+    )
 
-    sphere = get_sphere('symmetric724').subdivide(2)
+    sphere = get_sphere("symmetric724").subdivide(2)
 
     if half_sphere:
-
         sphere = HemiSphere.from_sphere(sphere)
 
-    odf_gt = multi_tensor_odf(sphere.vertices, mevals,
-                              angles=angles, fractions=fractions)
+    odf_gt = multi_tensor_odf(
+        sphere.vertices, mevals, angles=angles, fractions=fractions
+    )
 
     return odf_gt, sticks, sphere
 
 
 def test_peak_directions_thorough():
-
     # two equal fibers (creating a very sharp odf)
-    mevals = np.array([[0.0025, 0.0003, 0.0003],
-                       [0.0025, 0.0003, 0.0003]])
+    mevals = np.array([[0.0025, 0.0003, 0.0003], [0.0025, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0)]
     fractions = [50, 50]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
-                                            100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two unequal fibers
     fractions = [75, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
-                                            100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .20, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.20, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers short angle (simulating very sharp ODF)
-    mevals = np.array(([0.0045, 0.0003, 0.0003],
-                       [0.0045, 0.0003, 0.0003]))
+    mevals = np.array(([0.0045, 0.0003, 0.0003], [0.0045, 0.0003, 0.0003]))
     fractions = [50, 50]
     angles = [(0, 0), (20, 0)]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles,
-                                            fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 15.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 15.0)
 
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # 1 fiber
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     fractions = [50, 50]
     angles = [(15, 0), (15, 0)]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles,
-                                            fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 15.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 15.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
-    assert_(abs(AE) < 2. or abs(AE - 180) < 2.)
+    assert_(abs(AE) < 2.0 or abs(AE - 180) < 2.0)
 
     # two equal fibers and one small noisy one
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]]
+    )
     angles = [(0, 0), (45, 0), (90, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers and one faulty
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]]
+    )
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers and one very very annoying one
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]]
+    )
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [40, 40, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # three peaks and one faulty
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+        ]
+    )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [35, 35, 20, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 3, 2)
 
     # four peaks
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+        ]
+    )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [25, 25, 25, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .15, 5.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.15, 5.0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 2)
 
     # four difficult peaks
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]])
+    mevals = np.array(
+        [
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+        ]
+    )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [30, 30, 20, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
@@ -333,8 +312,9 @@ def test_peak_directions_thorough():
     expected = np.concatenate([sticks, -sticks], axis=0)
     assert_almost_equal(angular_similarity(directions, expected), 8, 1)
 
-    odf_gt, sticks, hsphere = _create_mt_sim(mevals, angles, fractions,
-                                             100, None, half_sphere=True)
+    odf_gt, sticks, hsphere = _create_mt_sim(
+        mevals, angles, fractions, 100, None, half_sphere=True
+    )
 
     directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
@@ -342,17 +322,14 @@ def test_peak_directions_thorough():
     # four peaks and one them quite small
     fractions = [35, 35, 20, 10]
 
-    odf_gt, sticks, sphere = _create_mt_sim(mevals,
-                                            angles,
-                                            fractions,
-                                            100,
-                                            None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
 
-    odf_gt, sticks, hsphere = _create_mt_sim(mevals, angles, fractions,
-                                             100, None, half_sphere=True)
+    odf_gt, sticks, hsphere = _create_mt_sim(
+        mevals, angles, fractions, 100, None, half_sphere=True
+    )
 
     directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
@@ -360,52 +337,63 @@ def test_peak_directions_thorough():
     # isotropic case
     mevals = np.array([[0.0015, 0.0015, 0.0015]])
     angles = [(0, 0)]
-    fractions = [100.]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
-                                            100, None)
+    fractions = [100.0]
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_equal(len(values) > 10, True)
 
 
 def test_difference_with_minmax():
-
     # Show difference with and without minmax normalization
     # we create an odf here with 3 main peaks, 1 small sharp unwanted peak
     # (noise) and an isotropic compartment.
-    mevals = np.array([[0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.00005, 0.00005],
-                       [0.0015, 0.0015, 0.0015]])
+    mevals = np.array(
+        [
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.0003, 0.0003],
+            [0.0015, 0.00005, 0.00005],
+            [0.0015, 0.0015, 0.0015],
+        ]
+    )
     angles = [(0, 0), (45, 0), (90, 0), (90, 90), (0, 0)]
     fractions = [20, 20, 10, 1, 100 - 20 - 20 - 10 - 1]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
-                                            100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     # We will show that when the minmax normalization is used we can remove
     # the noisy peak using a lower threshold.
 
     odf_gt_minmax = (odf_gt - odf_gt.min()) / (odf_gt.max() - odf_gt.min())
 
-    _, values_1, _ = peak_directions(odf_gt, sphere, .30, 25.)
+    _, values_1, _ = peak_directions(odf_gt, sphere, 0.30, 25.0)
 
     assert_equal(len(values_1), 3)
 
-    _, values_2, _ = peak_directions(odf_gt_minmax, sphere, .30, 25.)
+    _, values_2, _ = peak_directions(odf_gt_minmax, sphere, 0.30, 25.0)
 
     assert_equal(len(values_2), 3)
 
     # Setting the smallest value of the odf to zero is like running
     # peak_directions without the odf_min correction.
-    odf_gt[odf_gt.argmin()] = 0.
-    _, values_3, _ = peak_directions(odf_gt, sphere, .30, 25.,)
+    odf_gt[odf_gt.argmin()] = 0.0
+    _, values_3, _ = peak_directions(
+        odf_gt,
+        sphere,
+        0.30,
+        25.0,
+    )
 
     assert_equal(len(values_3), 4)
 
     # we show here that to actually get that noisy peak out we need to
     # increase the peak threshold considerably
-    directions, values_4, indices = peak_directions(odf_gt, sphere, .60, 25.,)
+    directions, values_4, indices = peak_directions(
+        odf_gt,
+        sphere,
+        0.60,
+        25.0,
+    )
 
     assert_equal(len(values_4), 3)
     assert_almost_equal(values_1, values_4)
@@ -413,12 +401,11 @@ def test_difference_with_minmax():
 
 @set_random_number_generator()
 def test_degenerate_cases(rng):
-
     sphere = default_sphere
 
     # completely isotropic and degenerate case
     odf = np.zeros(sphere.vertices.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
     print(directions, values, indices)
 
     assert_equal(len(values), 0)
@@ -429,13 +416,13 @@ def test_degenerate_cases(rng):
     odf[0] = 0.020
     odf[1] = 0.018
 
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
     print(directions, values, indices)
 
     assert_equal(values[0], 0.02)
 
-    odf = - np.ones(sphere.vertices.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    odf = -np.ones(sphere.vertices.shape[0])
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
     print(directions, values, indices)
 
     assert_equal(len(values), 0)
@@ -443,20 +430,20 @@ def test_degenerate_cases(rng):
     odf = np.zeros(sphere.vertices.shape[0])
     odf[0] = 0.020
     odf[1] = 0.018
-    odf[2] = - 0.018
+    odf[2] = -0.018
 
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
     assert_equal(values[0], 0.02)
 
     odf = np.ones(sphere.vertices.shape[0])
     odf += 0.1 * rng.random(odf.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    assert_(all(values > values[0] * .5))
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    assert_(all(values > values[0] * 0.5))
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
     odf[1:] = np.finfo(float).eps * rng.random(odf.shape[0] - 1)
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
 
     assert_equal(values[0], 1)
     assert_equal(len(values), 1)
@@ -465,34 +452,36 @@ def test_degenerate_cases(rng):
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
-    for sphere in [_sphere, get_sphere('symmetric642')]:
+    for sphere in [_sphere, get_sphere("symmetric642")]:
         # Test basic case
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
         odf_argmax = _odf.argmax()
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
-            pam = peaks_from_model(model, data, sphere, .5, 45,
-                                   normalize_peaks=True)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            pam = peaks_from_model(model, data, sphere, 0.5, 45, normalize_peaks=True)
 
         assert_array_equal(pam.gfa, gfa(_odf))
-        assert_array_equal(pam.peak_values[:, 0], 1.)
-        assert_array_equal(pam.peak_values[:, 1:], 0.)
+        assert_array_equal(pam.peak_values[:, 0], 1.0)
+        assert_array_equal(pam.peak_values[:, 1:], 0.0)
         mn, mx = _odf.min(), _odf.max()
         assert_array_equal(pam.qa[:, 0], (mx - mn) / mx)
-        assert_array_equal(pam.qa[:, 1:], 0.)
+        assert_array_equal(pam.qa[:, 1:], 0.0)
         assert_array_equal(pam.peak_indices[:, 0], odf_argmax)
         assert_array_equal(pam.peak_indices[:, 1:], -1)
 
         # Test that odf array matches and is right shape
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
-            pam = peaks_from_model(
-                model, data, sphere, .5, 45, return_odf=True)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            pam = peaks_from_model(model, data, sphere, 0.5, 45, return_odf=True)
         expected_shape = (len(data), len(_odf))
         assert_equal(pam.odf.shape, expected_shape)
         assert_((_odf == pam.odf).all())
@@ -503,21 +492,24 @@ def test_peaksFromModel():
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
-            pam = peaks_from_model(model, data, sphere, .5, 45, mask=mask,
-                                   normalize_peaks=True)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            pam = peaks_from_model(
+                model, data, sphere, 0.5, 45, mask=mask, normalize_peaks=True
+            )
         assert_array_equal(pam.gfa[~mask], 0)
         assert_array_equal(pam.qa[~mask], 0)
         assert_array_equal(pam.peak_values[~mask], 0)
         assert_array_equal(pam.peak_indices[~mask], -1)
 
         assert_array_equal(pam.gfa[mask], gfa(_odf))
-        assert_array_equal(pam.peak_values[mask, 0], 1.)
-        assert_array_equal(pam.peak_values[mask, 1:], 0.)
+        assert_array_equal(pam.peak_values[mask, 0], 1.0)
+        assert_array_equal(pam.peak_values[mask, 1:], 0.0)
         mn, mx = _odf.min(), _odf.max()
         assert_array_equal(pam.qa[mask, 0], (mx - mn) / mx)
-        assert_array_equal(pam.qa[mask, 1:], 0.)
+        assert_array_equal(pam.qa[mask, 1:], 0.0)
         assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
         assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
@@ -527,12 +519,20 @@ def test_peaksFromModel():
                 for return_sh in [True, False]:
                     with warnings.catch_warnings():
                         warnings.filterwarnings(
-                            "ignore", message=descoteaux07_legacy_msg,
-                            category=PendingDeprecationWarning)
-                        pam = peaks_from_model(model, data, sphere, .5, 45,
-                                               normalize_peaks=normalize_peaks,
-                                               return_odf=return_odf,
-                                               return_sh=return_sh)
+                            "ignore",
+                            message=descoteaux07_legacy_msg,
+                            category=PendingDeprecationWarning,
+                        )
+                        pam = peaks_from_model(
+                            model,
+                            data,
+                            sphere,
+                            0.5,
+                            45,
+                            normalize_peaks=normalize_peaks,
+                            return_odf=return_odf,
+                            return_sh=return_sh,
+                        )
 
                     b = BytesIO()
                     pickle.dump(pam, b)
@@ -540,57 +540,93 @@ def test_peaksFromModel():
                     new_pam = pickle.load(b)
                     b.close()
 
-                    for attr in ['peak_dirs', 'peak_values', 'peak_indices',
-                                 'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
-                        assert_array_equal(getattr(pam, attr),
-                                           getattr(new_pam, attr))
-                        assert_array_equal(pam.sphere.vertices,
-                                           new_pam.sphere.vertices)
+                    for attr in [
+                        "peak_dirs",
+                        "peak_values",
+                        "peak_indices",
+                        "gfa",
+                        "qa",
+                        "shm_coeff",
+                        "B",
+                        "odf",
+                    ]:
+                        assert_array_equal(getattr(pam, attr), getattr(new_pam, attr))
+                        assert_array_equal(pam.sphere.vertices, new_pam.sphere.vertices)
 
 
 def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames('small_64D')
+    _, fbvals, fbvecs = get_fnames("small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
-    data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
-                           fractions=[50, 50], snr=SNR)
+    data, _ = multi_tensor(
+        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+    )
 
     for sphere in [_sphere, default_sphere]:
-
         # test equality with/without multiprocessing
         model = SimpleOdfModel(gtab)
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
-            pam_multi = peaks_from_model(model, data, sphere, .5, 45,
-                                         normalize_peaks=True, return_odf=True,
-                                         return_sh=True, parallel=True)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            pam_multi = peaks_from_model(
+                model,
+                data,
+                sphere,
+                0.5,
+                45,
+                normalize_peaks=True,
+                return_odf=True,
+                return_sh=True,
+                parallel=True,
+            )
 
-            pam_single = peaks_from_model(model, data, sphere, .5, 45,
-                                          normalize_peaks=True,
-                                          return_odf=True,
-                                          return_sh=True, parallel=False)
+            pam_single = peaks_from_model(
+                model,
+                data,
+                sphere,
+                0.5,
+                45,
+                normalize_peaks=True,
+                return_odf=True,
+                return_sh=True,
+                parallel=False,
+            )
 
-            pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
-                                              normalize_peaks=True,
-                                              return_odf=True,
-                                              return_sh=True, parallel=True,
-                                              num_processes=-1)
+            pam_multi_inv1 = peaks_from_model(
+                model,
+                data,
+                sphere,
+                0.5,
+                45,
+                normalize_peaks=True,
+                return_odf=True,
+                return_sh=True,
+                parallel=True,
+                num_processes=-1,
+            )
 
-            pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
-                                              normalize_peaks=True,
-                                              return_odf=True,
-                                              return_sh=True, parallel=True,
-                                              num_processes=-2)
+            pam_multi_inv2 = peaks_from_model(
+                model,
+                data,
+                sphere,
+                0.5,
+                45,
+                normalize_peaks=True,
+                return_odf=True,
+                return_sh=True,
+                parallel=True,
+                num_processes=-2,
+            )
 
         for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
             assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
@@ -601,17 +637,12 @@ def test_peaksFromModelParallel():
             assert_equal(pam.qa.shape, pam_single.qa.shape)
             assert_array_almost_equal(pam.qa, pam_single.qa)
 
-            assert_equal(pam.peak_values.dtype,
-                         pam_single.peak_values.dtype)
-            assert_equal(pam.peak_values.shape,
-                         pam_single.peak_values.shape)
-            assert_array_almost_equal(pam.peak_values,
-                                      pam_single.peak_values)
+            assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
+            assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
+            assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
 
-            assert_equal(pam.peak_indices.dtype,
-                         pam_single.peak_indices.dtype)
-            assert_equal(pam.peak_indices.shape,
-                         pam_single.peak_indices.shape)
+            assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
+            assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
             assert_array_equal(pam.peak_indices, pam_single.peak_indices)
 
             assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
@@ -628,30 +659,32 @@ def test_peaksFromModelParallel():
 
 
 def test_peaks_shm_coeff():
-
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames('small_64D')
+    _, fbvals, fbvecs = get_fnames("small_64D")
 
     sphere = default_sphere
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
-    data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
-                           fractions=[50, 50], snr=SNR)
+    data, _ = multi_tensor(
+        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+    )
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
         model = CsaOdfModel(gtab, 4)
-        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                               return_odf=True, return_sh=True)
+        pam = peaks_from_model(
+            model, data[None, :], sphere, 0.5, 45, return_odf=True, return_sh=True
+        )
     # Test that spherical harmonic coefficients return back correctly
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
@@ -659,19 +692,29 @@ def test_peaks_shm_coeff():
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                               return_odf=True, return_sh=False)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        pam = peaks_from_model(
+            model, data[None, :], sphere, 0.5, 45, return_odf=True, return_sh=False
+        )
     assert_equal(pam.shm_coeff, None)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=tournier07_legacy_msg,
-            category=PendingDeprecationWarning)
-        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                               return_odf=True, return_sh=True,
-                               sh_basis_type='tournier07')
+            "ignore", message=tournier07_legacy_msg, category=PendingDeprecationWarning
+        )
+        pam = peaks_from_model(
+            model,
+            data[None, :],
+            sphere,
+            0.5,
+            45,
+            return_odf=True,
+            return_sh=True,
+            sh_basis_type="tournier07",
+        )
 
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
@@ -679,10 +722,9 @@ def test_peaks_shm_coeff():
 
 @set_random_number_generator()
 def test_reshape_peaks_for_visualization(rng):
-
-    data1 = rng.standard_normal((10, 5, 3)).astype('float32')
-    data2 = rng.standard_normal((10, 2, 5, 3)).astype('float32')
-    data3 = rng.standard_normal((10, 2, 12, 5, 3)).astype('float32')
+    data1 = rng.standard_normal((10, 5, 3)).astype("float32")
+    data2 = rng.standard_normal((10, 2, 5, 3)).astype("float32")
+    data3 = rng.standard_normal((10, 2, 12, 5, 3)).astype("float32")
 
     data1_reshape = reshape_peaks_for_visualization(data1)
     data2_reshape = reshape_peaks_for_visualization(data2)
@@ -698,70 +740,96 @@ def test_reshape_peaks_for_visualization(rng):
 
 
 def test_peaks_from_positions():
-
-    thresh = .5
+    thresh = 0.5
     min_angle = 25
     npeaks = 5
 
-    _, fbvals, fbvecs = get_fnames('small_64D')
+    _, fbvals, fbvecs = get_fnames("small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     voxels = []
-    for i in range(27):
-        v, _ = multi_tensor(gtab, mevals, S0=100,
-                            angles=[(0, 0), (randint(0, 90), randint(0, 90))],
-                            fractions=[50, 50], snr=10)
+    for _ in range(27):
+        v, _ = multi_tensor(
+            gtab,
+            mevals,
+            S0=100,
+            angles=[(0, 0), (randint(0, 90), randint(0, 90))],
+            fractions=[50, 50],
+            snr=10,
+        )
         voxels.append(v)
     data = np.array(voxels).reshape((3, 3, 3, -1))
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
         model = CsaOdfModel(gtab, 4)
-        pam = peaks_from_model(model, data, default_sphere, return_odf=True,
-                               return_sh=False, legacy=True, npeaks=npeaks,
-                               relative_peak_threshold=thresh,
-                               min_separation_angle=min_angle)
+        pam = peaks_from_model(
+            model,
+            data,
+            default_sphere,
+            return_odf=True,
+            return_sh=False,
+            legacy=True,
+            npeaks=npeaks,
+            relative_peak_threshold=thresh,
+            min_separation_angle=min_angle,
+        )
 
     # test the peaks at each voxel using int coordinates
     positions = np.array(list(product(range(3), range(3), range(3))))
-    peaks = peaks_from_positions(positions, pam.odf, default_sphere,
-                                 relative_peak_threshold=thresh,
-                                 min_separation_angle=min_angle,
-                                 npeaks=npeaks)
+    peaks = peaks_from_positions(
+        positions,
+        pam.odf,
+        default_sphere,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using float coordinates
     positions = np.array(list(product(range(3), range(3), range(3))))
-    peaks = peaks_from_positions(positions.astype(float), pam.odf,
-                                 default_sphere,
-                                 relative_peak_threshold=thresh,
-                                 min_separation_angle=min_angle,
-                                 npeaks=npeaks)
+    peaks = peaks_from_positions(
+        positions.astype(float),
+        pam.odf,
+        default_sphere,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using double coordinates
     positions = np.array(list(product(range(3), range(3), range(3))))
-    peaks = peaks_from_positions(positions.astype(np.float64), pam.odf,
-                                 default_sphere,
-                                 relative_peak_threshold=thresh,
-                                 min_separation_angle=min_angle,
-                                 npeaks=npeaks)
+    peaks = peaks_from_positions(
+        positions.astype(np.float64),
+        pam.odf,
+        default_sphere,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
     # test the peaks extraction at the mid point between 2 voxels
     odfs = [pam.odf[0, 0, 0], pam.odf[0, 0, 0]]
     odfs = np.array(odfs).reshape((2, 1, 1, -1))
-    positions = np.array([[0., 0, 0], [0.5, 0, 0], [1., 0, 0]])
-    peaks = peaks_from_positions(positions, odfs, default_sphere,
-                                 relative_peak_threshold=thresh,
-                                 min_separation_angle=min_angle,
-                                 npeaks=npeaks)
+    positions = np.array([[0.0, 0, 0], [0.5, 0, 0], [1.0, 0, 0]])
+    peaks = peaks_from_positions(
+        positions,
+        odfs,
+        default_sphere,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
     assert_array_equal(peaks[0], peaks[1])
     assert_array_equal(peaks[0], peaks[2])

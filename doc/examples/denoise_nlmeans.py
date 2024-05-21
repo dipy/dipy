@@ -23,7 +23,7 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Then, let's fetch and load a T1 data from Stanford University
 
-t1_fname = get_fnames('stanford_t1')
+t1_fname = get_fnames("stanford_t1")
 data, affine = load_nifti(t1_fname)
 
 mask = data > 1500
@@ -42,8 +42,7 @@ sigma = estimate_sigma(data, N=32)
 
 t = time()
 
-den = nlmeans(data, sigma=sigma, mask=mask, patch_radius=1,
-              block_radius=2, rician=True)
+den = nlmeans(data, sigma=sigma, mask=mask, patch_radius=1, block_radius=2, rician=True)
 
 print("total time", time() - t)
 
@@ -61,21 +60,21 @@ difference[~mask[:, :, axial_middle].T] = 0
 
 
 fig, ax = plt.subplots(1, 3)
-ax[0].imshow(before, cmap='gray', origin='lower')
-ax[0].set_title('before')
-ax[1].imshow(after, cmap='gray', origin='lower')
-ax[1].set_title('after')
-ax[2].imshow(difference, cmap='gray', origin='lower')
-ax[2].set_title('difference')
+ax[0].imshow(before, cmap="gray", origin="lower")
+ax[0].set_title("before")
+ax[1].imshow(after, cmap="gray", origin="lower")
+ax[1].set_title("after")
+ax[2].imshow(difference, cmap="gray", origin="lower")
+ax[2].set_title("difference")
 
-plt.savefig('denoised.png', bbox_inches='tight')
+plt.savefig("denoised.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Showing axial slice before (left) and after (right) NLMEANS denoising
 
-save_nifti('denoised.nii.gz', den, affine)
+save_nifti("denoised.nii.gz", den, affine)
 
 ###############################################################################
 # An improved version of non-local means denoising is adaptive soft coefficient

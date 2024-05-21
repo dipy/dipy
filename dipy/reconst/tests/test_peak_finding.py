@@ -1,4 +1,3 @@
-
 import numpy as np
 import numpy.testing as npt
 
@@ -24,9 +23,9 @@ def test_local_maxima():
 
     # Create an artificial odf with a few peaks
     odf = np.zeros(len(vertices))
-    odf[1] = 1.
-    odf[143] = 143.
-    odf[361] = 361.
+    odf[1] = 1.0
+    odf[143] = 143.0
+    odf[361] = 361.0
     peak_values, peak_index = local_maxima(odf, edges)
     npt.assert_array_equal(peak_values, [361, 143, 1])
     npt.assert_array_equal(peak_index, [361, 143, 1])
@@ -34,9 +33,9 @@ def test_local_maxima():
     # Check that neighboring points can both be peaks
     odf = np.zeros(len(vertices))
     point1, point2 = edges[0]
-    odf[[point1, point2]] = 1.
+    odf[[point1, point2]] = 1.0
     peak_values, peak_index = local_maxima(odf, edges)
-    npt.assert_array_equal(peak_values, [1., 1.])
+    npt.assert_array_equal(peak_values, [1.0, 1.0])
     npt.assert_(point1 in peak_index)
     npt.assert_(point2 in peak_index)
 
@@ -52,9 +51,9 @@ def test_local_maxima():
 
     # Create an artificial odf with a few peaks
     odf = np.zeros(len(vertices))
-    odf[1] = 1.
-    odf[143] = 143.
-    odf[300] = 300.
+    odf[1] = 1.0
+    odf[143] = 143.0
+    odf[300] = 300.0
     peak_value, peak_index = local_maxima(odf, edges)
     npt.assert_array_equal(peak_value, [300, 143, 1])
     npt.assert_array_equal(peak_index, [300, 143, 1])
@@ -62,9 +61,9 @@ def test_local_maxima():
     # Check that neighboring points can both be peaks
     odf = np.zeros(len(vertices))
     point1, point2 = edges[0]
-    odf[[point1, point2]] = 1.
+    odf[[point1, point2]] = 1.0
     peak_values, peak_index = local_maxima(odf, edges)
-    npt.assert_array_equal(peak_values, [1., 1.])
+    npt.assert_array_equal(peak_values, [1.0, 1.0])
     npt.assert_(point1 in peak_index)
     npt.assert_(point2 in peak_index)
 
@@ -79,30 +78,34 @@ def test_local_maxima():
 
 
 def test_remove_similar_peaks():
-    vertices = np.array([[1., 0., 0.],
-                         [0., 1., 0.],
-                         [0., 0., 1.],
-                         [1.1, 1., 0.],
-                         [0., 2., 1.],
-                         [2., 1., 0.],
-                         [1., 0., 0.]])
-    norms = np.sqrt((vertices*vertices).sum(-1))
-    vertices = vertices/norms[:, None]
+    vertices = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.1, 1.0, 0.0],
+            [0.0, 2.0, 1.0],
+            [2.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0],
+        ]
+    )
+    norms = np.sqrt((vertices * vertices).sum(-1))
+    vertices = vertices / norms[:, None]
 
     # Return unique vertices
-    uv = remove_similar_vertices(vertices, .01)
+    uv = remove_similar_vertices(vertices, 0.01)
     npt.assert_array_equal(uv, vertices[:6])
 
     # Return vertices with mapping and indices
-    uv, mapping, index = remove_similar_vertices(vertices, .01,
-                                                 return_mapping=True,
-                                                 return_index=True)
+    uv, mapping, index = remove_similar_vertices(
+        vertices, 0.01, return_mapping=True, return_index=True
+    )
     npt.assert_array_equal(uv, vertices[:6])
     npt.assert_array_equal(mapping, list(range(6)) + [0])
     npt.assert_array_equal(index, range(6))
 
     # Test mapping with different angles
-    uv, mapping = remove_similar_vertices(vertices, .01, return_mapping=True)
+    uv, mapping = remove_similar_vertices(vertices, 0.01, return_mapping=True)
     npt.assert_array_equal(uv, vertices[:6])
     npt.assert_array_equal(mapping, list(range(6)) + [0])
     uv, mapping = remove_similar_vertices(vertices, 30, return_mapping=True)
@@ -113,7 +116,7 @@ def test_remove_similar_peaks():
     npt.assert_array_equal(mapping, list(range(3)) + [0, 1, 0, 0])
 
     # Test index with different angles
-    uv, index = remove_similar_vertices(vertices, .01, return_index=True)
+    uv, index = remove_similar_vertices(vertices, 0.01, return_index=True)
     npt.assert_array_equal(uv, vertices[:6])
     npt.assert_array_equal(index, range(6))
     uv, index = remove_similar_vertices(vertices, 30, return_index=True)
@@ -125,16 +128,16 @@ def test_remove_similar_peaks():
 
 
 def test_search_descending():
-    a = np.linspace(10., 1., 10)
+    a = np.linspace(10.0, 1.0, 10)
 
-    npt.assert_equal(search_descending(a, 1.), 1)
-    npt.assert_equal(search_descending(a, .89), 2)
-    npt.assert_equal(search_descending(a, .79), 3)
+    npt.assert_equal(search_descending(a, 1.0), 1)
+    npt.assert_equal(search_descending(a, 0.89), 2)
+    npt.assert_equal(search_descending(a, 0.79), 3)
 
     # Test small array
-    npt.assert_equal(search_descending(a[:1], 1.), 1)
-    npt.assert_equal(search_descending(a[:1], 0.), 1)
-    npt.assert_equal(search_descending(a[:1], .5), 1)
+    npt.assert_equal(search_descending(a[:1], 1.0), 1)
+    npt.assert_equal(search_descending(a[:1], 0.0), 1)
+    npt.assert_equal(search_descending(a[:1], 0.5), 1)
 
     # Test very small array
-    npt.assert_equal(search_descending(a[:0], 1.), 0)
+    npt.assert_equal(search_descending(a[:0], 1.0), 0)

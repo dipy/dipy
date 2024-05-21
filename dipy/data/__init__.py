@@ -73,19 +73,79 @@ from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 from dipy.utils.arrfuncs import as_native_array
 
+__all__ = [
+    "fetch_30_bundle_atlas_hcp842",
+    "fetch_bundle_atlas_hcp842",
+    "fetch_bundle_fa_hcp",
+    "fetch_bundle_warp_dataset",
+    "fetch_bundles_2_subjects",
+    "fetch_cenir_multib",
+    "fetch_cfin_multib",
+    "fetch_disco1_dataset",
+    "fetch_disco2_dataset",
+    "fetch_disco3_dataset",
+    "fetch_disco_dataset",
+    "fetch_evac_test",
+    "fetch_evac_weights",
+    "fetch_gold_standard_io",
+    "fetch_hbn",
+    "fetch_isbi2013_2shell",
+    "fetch_ivim",
+    "fetch_mni_template",
+    "fetch_ptt_minimal_dataset",
+    "fetch_resdnn_weights",
+    "fetch_scil_b0",
+    "fetch_sherbrooke_3shell",
+    "fetch_stanford_hardi",
+    "fetch_stanford_labels",
+    "fetch_stanford_pve_maps",
+    "fetch_stanford_t1",
+    "fetch_stanford_tracks",
+    "fetch_syn_data",
+    "fetch_synb0_test",
+    "fetch_synb0_weights",
+    "fetch_taiwan_ntu_dsi",
+    "fetch_target_tractogram_hcp",
+    "fetch_tissue_data",
+    "get_bundle_atlas_hcp842",
+    "get_fnames",
+    "get_target_tractogram_hcp",
+    "get_two_hcp842_bundles",
+    "read_DiB_70_lte_pte_ste",
+    "read_DiB_217_lte_pte_ste",
+    "read_bundles_2_subjects",
+    "read_cenir_multib",
+    "read_cfin_dwi",
+    "read_cfin_t1",
+    "read_five_af_bundles",
+    "read_isbi2013_2shell",
+    "read_ivim",
+    "read_mni_template",
+    "read_qte_lte_pte",
+    "read_scil_b0",
+    "read_sherbrooke_3shell",
+    "read_stanford_hardi",
+    "read_stanford_labels",
+    "read_stanford_pve_maps",
+    "read_stanford_t1",
+    "read_syn_data",
+    "read_taiwan_ntu_dsi",
+    "read_tissue_data",
+]
+
 
 def loads_compat(byte_data):
-    return pickle.loads(byte_data, encoding='latin1')
+    return pickle.loads(byte_data, encoding="latin1")
 
 
-DATA_DIR = pjoin(dirname(__file__), 'files')
+DATA_DIR = pjoin(dirname(__file__), "files")
 SPHERE_FILES = {
-    'symmetric362': pjoin(DATA_DIR, 'evenly_distributed_sphere_362.npz'),
-    'symmetric642': pjoin(DATA_DIR, 'evenly_distributed_sphere_642.npz'),
-    'symmetric724': pjoin(DATA_DIR, 'evenly_distributed_sphere_724.npz'),
-    'repulsion724': pjoin(DATA_DIR, 'repulsion724.npz'),
-    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz'),
-    'repulsion200': pjoin(DATA_DIR, 'repulsion200.npz')
+    "symmetric362": pjoin(DATA_DIR, "evenly_distributed_sphere_362.npz"),
+    "symmetric642": pjoin(DATA_DIR, "evenly_distributed_sphere_642.npz"),
+    "symmetric724": pjoin(DATA_DIR, "evenly_distributed_sphere_724.npz"),
+    "repulsion724": pjoin(DATA_DIR, "repulsion724.npz"),
+    "repulsion100": pjoin(DATA_DIR, "repulsion100.npz"),
+    "repulsion200": pjoin(DATA_DIR, "repulsion200.npz"),
 }
 
 
@@ -93,8 +153,8 @@ class DataError(Exception):
     pass
 
 
-def get_sim_voxels(name='fib1'):
-    """ provide some simulated voxel data
+def get_sim_voxels(name="fib1"):
+    """provide some simulated voxel data
 
     Parameters
     ----------
@@ -131,17 +191,17 @@ def get_sim_voxels(name='fib1'):
     These sim voxels were provided by M.M. Correia using Rician noise.
 
     """
-    if name == 'fib0':
-        fname = pjoin(DATA_DIR, 'fib0.pkl.gz')
-    if name == 'fib1':
-        fname = pjoin(DATA_DIR, 'fib1.pkl.gz')
-    if name == 'fib2':
-        fname = pjoin(DATA_DIR, 'fib2.pkl.gz')
-    return loads_compat(gzip.open(fname, 'rb').read())
+    if name == "fib0":
+        fname = pjoin(DATA_DIR, "fib0.pkl.gz")
+    if name == "fib1":
+        fname = pjoin(DATA_DIR, "fib1.pkl.gz")
+    if name == "fib2":
+        fname = pjoin(DATA_DIR, "fib2.pkl.gz")
+    return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_skeleton(name='C1'):
-    """ Provide skeletons generated from Local Skeleton Clustering (LSC).
+def get_skeleton(name="C1"):
+    """Provide skeletons generated from Local Skeleton Clustering (LSC).
 
     Parameters
     ----------
@@ -162,15 +222,15 @@ def get_skeleton(name='C1'):
     ['N', 'hidden', 'indices', 'most']
 
     """
-    if name == 'C1':
-        fname = pjoin(DATA_DIR, 'C1.pkl.gz')
-    if name == 'C3':
-        fname = pjoin(DATA_DIR, 'C3.pkl.gz')
-    return loads_compat(gzip.open(fname, 'rb').read())
+    if name == "C1":
+        fname = pjoin(DATA_DIR, "C1.pkl.gz")
+    if name == "C3":
+        fname = pjoin(DATA_DIR, "C3.pkl.gz")
+    return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_sphere(name='symmetric362'):
-    """ provide triangulated spheres
+def get_sphere(name="symmetric362"):
+    """provide triangulated spheres
 
     Parameters
     ----------
@@ -202,29 +262,32 @@ def get_sphere(name='symmetric362'):
         ...
     DataError: No sphere called "not a sphere name"
 
-    """
+    """  # noqa: E501
     fname = SPHERE_FILES.get(name)
     if fname is None:
-        raise DataError('No sphere called "%s"' % name)
+        raise DataError(f'No sphere called "{name}"')
     res = np.load(fname)
     # Set to native byte order to avoid errors in compiled routines for
     # big-endian platforms, when using these spheres.
-    return Sphere(xyz=as_native_array(res['vertices']),
-                  faces=as_native_array(res['faces']))
+    return Sphere(
+        xyz=as_native_array(res["vertices"]), faces=as_native_array(res["faces"])
+    )
 
 
-default_sphere = HemiSphere.from_sphere(get_sphere('repulsion724'))
-small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
+default_sphere = HemiSphere.from_sphere(get_sphere("repulsion724"))
+small_sphere = HemiSphere.from_sphere(get_sphere("symmetric362"))
 
 
 def _gradient_from_file(filename):
     """Reads a gradient file saved as a text file compatible with np.loadtxt
     and saved in the dipy data directory"""
+
     def gtab_getter():
         gradfile = pjoin(DATA_DIR, filename)
-        grad = np.loadtxt(gradfile, delimiter=',')
+        grad = np.loadtxt(gradfile, delimiter=",")
         gtab = GradientTable(grad)
         return gtab
+
     return gtab_getter
 
 
@@ -234,7 +297,7 @@ get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")
 
 
 def dsi_voxels():
-    fimg, fbvals, fbvecs = get_fnames('small_101D')
+    fimg, fbvals, fbvecs = get_fnames("small_101D")
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
     data, _ = load_nifti(fimg)
@@ -244,18 +307,20 @@ def dsi_voxels():
 
 def dsi_deconv_voxels():
     from dipy.sims.voxel import sticks_and_ball
-    gtab = gradient_table(np.loadtxt(get_fnames('dsi515btable')))
+
+    gtab = gradient_table(np.loadtxt(get_fnames("dsi515btable")))
     data = np.zeros((2, 2, 2, 515))
     for ix in range(2):
         for iy in range(2):
             for iz in range(2):
-                data[ix, iy, iz], _ = sticks_and_ball(gtab,
-                                                      d=0.0015,
-                                                      S0=1.,
-                                                      angles=[(0, 0),
-                                                              (90, 0)],
-                                                      fractions=[50, 50],
-                                                      snr=None)
+                data[ix, iy, iz], _ = sticks_and_ball(
+                    gtab,
+                    d=0.0015,
+                    S0=1.0,
+                    angles=[(0, 0), (90, 0)],
+                    fractions=[50, 50],
+                    snr=None,
+                )
     return data, gtab
 
 
@@ -307,7 +372,7 @@ def get_cmap(name):
     def simple_cmap(v):
         """Emulates matplotlib colormap callable"""
         rgba = np.ones((len(v), 4))
-        for i, color in enumerate(('red', 'green', 'blue')):
+        for i, color in enumerate(("red", "green", "blue")):
             x, y0, y1 = zip(*desc[color])
             # Matplotlib allows more complex colormaps, but for users who do
             # not have Matplotlib dipy makes a few simple colormaps available.
@@ -320,16 +385,16 @@ def get_cmap(name):
 
 
 def two_cingulum_bundles():
-    fname = get_fnames('cb_2')
+    fname = get_fnames("cb_2")
     res = np.load(fname)
-    cb1 = relist_streamlines(res['points'], res['offsets'])
-    cb2 = relist_streamlines(res['points2'], res['offsets2'])
+    cb1 = relist_streamlines(res["points"], res["offsets"])
+    cb2 = relist_streamlines(res["points2"], res["offsets2"])
     return cb1, cb2
 
 
 def matlab_life_results():
-    matlab_rmse = np.load(pjoin(DATA_DIR, 'life_matlab_rmse.npy'))
-    matlab_weights = np.load(pjoin(DATA_DIR, 'life_matlab_weights.npy'))
+    matlab_rmse = np.load(pjoin(DATA_DIR, "life_matlab_rmse.npy"))
+    matlab_weights = np.load(pjoin(DATA_DIR, "life_matlab_weights.npy"))
     return matlab_rmse, matlab_weights
 
 
@@ -363,19 +428,19 @@ def load_sdp_constraints(model_name, order=None):
 
     """
 
-    file = model_name + '_constraint'
+    file = model_name + "_constraint"
     if order is not None:
-        file += '_' + str(order)
-    file += '.npz'
+        file += f"_{str(order)}"
+    file += ".npz"
     path = pjoin(DATA_DIR, file)
 
     if not exists(path):
-        raise ValueError("Constraints file '" + file + "' not found.")
+        raise ValueError(f"Constraints file '{file}' not found.")
 
     try:
         array = load_npz(path)
         n, x = array.shape
-        sdp_constraints = [array[i*x:(i+1)*x] for i in range(n//x)]
+        sdp_constraints = [array[i * x : (i + 1) * x] for i in range(n // x)]
         return sdp_constraints
-    except Exception:
-        raise ValueError("Failed to read constraints file '" + file + "'.")
+    except Exception as e:
+        raise ValueError(f"Failed to read constraints file '{file}'.") from e

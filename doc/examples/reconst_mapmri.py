@@ -40,7 +40,7 @@ from dipy.viz.plotting import compare_maps
 # basis. The total size of the downloaded data is 187.66 MBytes, however you
 # only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
 ###############################################################################
 # ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
@@ -59,13 +59,13 @@ gtab = gradient_table(bvals, bvecs)
 
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
-gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-                      big_delta=big_delta,
-                      small_delta=small_delta)
+gtab = gradient_table(
+    bvals=gtab.bvals, bvecs=gtab.bvecs, big_delta=big_delta, small_delta=small_delta
+)
 
 data_small = data[40:65, 50:51]
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # The MAP-MRI Model can now be instantiated. The ``radial_order`` determines
@@ -130,25 +130,35 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 radial_order = 6
 
-map_model_laplacian_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                               laplacian_regularization=True,
-                                               laplacian_weighting=.2)
+map_model_laplacian_aniso = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=True,
+    laplacian_weighting=0.2,
+)
 
-map_model_positivity_aniso = mapmri.MapmriModel(gtab,
-                                                radial_order=radial_order,
-                                                laplacian_regularization=False,
-                                                positivity_constraint=True)
+map_model_positivity_aniso = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=False,
+    positivity_constraint=True,
+)
 
-map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                          laplacian_regularization=True,
-                                          laplacian_weighting=.05,
-                                          positivity_constraint=True)
+map_model_both_aniso = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=True,
+    laplacian_weighting=0.05,
+    positivity_constraint=True,
+)
 
-map_model_plus_aniso = mapmri.MapmriModel(gtab,
-                                          radial_order=radial_order,
-                                          laplacian_regularization=False,
-                                          positivity_constraint=True,
-                                          global_constraints=True)
+map_model_plus_aniso = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=False,
+    positivity_constraint=True,
+    global_constraints=True,
+)
 
 ###############################################################################
 # Note that when we use only Laplacian regularization, the ``GCV`` option may
@@ -164,9 +174,13 @@ mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
 mapfit_plus_aniso = map_model_plus_aniso.fit(data_small)
 
-fits = [mapfit_laplacian_aniso, mapfit_positivity_aniso, mapfit_both_aniso,
-        mapfit_plus_aniso]
-fit_labels = ['MAPL', 'CMAP', 'CMAPL', 'MAP+']
+fits = [
+    mapfit_laplacian_aniso,
+    mapfit_positivity_aniso,
+    mapfit_both_aniso,
+    mapfit_plus_aniso,
+]
+fit_labels = ["MAPL", "CMAP", "CMAPL", "MAP+"]
 
 ###############################################################################
 # From the fitted models we will first illustrate the estimation of q-space
@@ -176,8 +190,13 @@ fit_labels = ['MAPL', 'CMAP', 'CMAPL', 'MAP+']
 # and positivity in discrete points (CMAPL). We first show the RTOP
 # [Ozarslan2013]_.
 
-compare_maps(fits, maps=['rtop'], fit_labels=fit_labels, map_labels=['RTOP'],
-             filename='MAPMRI_rtop.png')
+compare_maps(
+    fits,
+    maps=["rtop"],
+    fit_labels=fit_labels,
+    map_labels=["RTOP"],
+    filename="MAPMRI_rtop.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -189,10 +208,14 @@ compare_maps(fits, maps=['rtop'], fit_labels=fit_labels, map_labels=['RTOP'],
 # differences in reconstruction can be further illustrated by visualizing the
 # analytic norm of the Laplacian of the fitted signal.
 
-compare_maps(fits, maps=['norm_of_laplacian_signal'], fit_labels=fit_labels,
-             map_labels=['Norm of Laplacian'],
-             map_kwargs={'vmin': 0, 'vmax': 3},
-             filename='MAPMRI_norm_laplacian.png')
+compare_maps(
+    fits,
+    maps=["norm_of_laplacian_signal"],
+    fit_labels=fit_labels,
+    map_labels=["Norm of Laplacian"],
+    map_kwargs={"vmin": 0, "vmax": 3},
+    filename="MAPMRI_norm_laplacian.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -212,10 +235,13 @@ compare_maps(fits, maps=['norm_of_laplacian_signal'], fit_labels=fit_labels,
 fits = fits[2:]
 fit_labels = fit_labels[2:]
 
-compare_maps(fits, maps=['msd', 'qiv', 'rtop', 'rtap', 'rtpp'],
-             fit_labels=fit_labels,
-             map_labels=['MSD', 'QIV', 'RTOP', 'RTAP', 'RTPP'],
-             filename='MAPMRI_maps.png')
+compare_maps(
+    fits,
+    maps=["msd", "qiv", "rtop", "rtap", "rtpp"],
+    fit_labels=fit_labels,
+    map_labels=["MSD", "QIV", "RTOP", "RTAP", "RTPP"],
+    filename="MAPMRI_maps.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -256,27 +282,36 @@ compare_maps(fits, maps=['msd', 'qiv', 'rtop', 'rtap', 'rtpp'],
 # This threshold makes the scale estimation in MAP-MRI use only samples that
 # realistically describe Gaussian diffusion, i.e., at low b-values.
 
-map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                       laplacian_regularization=True,
-                                       laplacian_weighting=.05,
-                                       positivity_constraint=True,
-                                       bval_threshold=2000)
+map_model_both_ng = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=True,
+    laplacian_weighting=0.05,
+    positivity_constraint=True,
+    bval_threshold=2000,
+)
 
-map_model_plus_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                       positivity_constraint=True,
-                                       global_constraints=True,
-                                       bval_threshold=2000)
+map_model_plus_ng = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    positivity_constraint=True,
+    global_constraints=True,
+    bval_threshold=2000,
+)
 
 mapfit_both_ng = map_model_both_ng.fit(data_small)
 mapfit_plus_ng = map_model_plus_ng.fit(data_small)
 
 fits = [mapfit_both_ng, mapfit_plus_ng]
-fit_labels = ['CMAPL', 'MAP+']
+fit_labels = ["CMAPL", "MAP+"]
 
-compare_maps(fits, maps=['ng', 'ng_perpendicular', 'ng_parallel'],
-             fit_labels=fit_labels,
-             map_labels=['NG', 'NG perpendicular', 'NG parallel'],
-             filename='MAPMRI_ng.png')
+compare_maps(
+    fits,
+    maps=["ng", "ng_perpendicular", "ng_parallel"],
+    fit_labels=fit_labels,
+    map_labels=["NG", "NG perpendicular", "NG parallel"],
+    filename="MAPMRI_ng.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -302,18 +337,21 @@ compare_maps(fits, maps=['ng', 'ng_perpendicular', 'ng_parallel'],
 # signal.
 
 radial_order = 8
-map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                        laplacian_regularization=True,
-                                        laplacian_weighting=.1,
-                                        positivity_constraint=True,
-                                        anisotropic_scaling=False)
+map_model_both_iso = mapmri.MapmriModel(
+    gtab,
+    radial_order=radial_order,
+    laplacian_regularization=True,
+    laplacian_weighting=0.1,
+    positivity_constraint=True,
+    anisotropic_scaling=False,
+)
 
 mapfit_both_iso = map_model_both_iso.fit(data_small)
 
 ###############################################################################
 # Load an ODF reconstruction sphere.
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 ###############################################################################
 # Compute the ODFs.
@@ -322,7 +360,7 @@ sphere = get_sphere('repulsion724')
 # also make the ODFs noisier. Always check the results visually.
 
 odf = mapfit_both_iso.odf(sphere, s=2)
-print('odf.shape (%d, %d, %d, %d)' % odf.shape)
+print(f"odf.shape {odf.shape}")
 
 ###############################################################################
 # Display the ODFs.
@@ -331,11 +369,11 @@ print('odf.shape (%d, %d, %d, %d)' % odf.shape)
 interactive = False
 
 scene = window.Scene()
-sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
+sfu = actor.odf_slicer(odf, sphere=sphere, colormap="plasma", scale=0.5)
 sfu.display(y=0)
 sfu.RotateX(-90)
 scene.add(sfu)
-window.record(scene, out_path='odfs.png', size=(600, 600))
+window.record(scene, out_path="odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

@@ -16,7 +16,7 @@ def test_expand_range():
         ("1,2,5-7,10", [1, 2, 5, 6, 7, 10]),
         ("1,2,5-7,10", (1, 2, 5, 6, 7, 10)),
         ("1,a,3", ValueError),
-        ("1-2-3", ValueError)
+        ("1-2-3", ValueError),
     ]
 
     for input_string, expected_output in test_cases:
@@ -24,7 +24,7 @@ def test_expand_range():
         if not isinstance(expected_output, (np.ndarray, list, tuple)):
             try:
                 expand_range(input_string)
-                assert False, f"Expected ValueError for input: {input_string}"
+                raise AssertionError(f"Expected ValueError for input: {input_string}")
             except ValueError:
                 assert True
         else:

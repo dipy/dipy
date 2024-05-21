@@ -10,9 +10,16 @@ from dipy.tracking.streamline import set_number_of_points
 
 
 class FastStreamlineSearch:
-    def __init__(self, ref_streamlines, max_radius, nb_mpts=4, bin_size=20.0,
-                 resampling=24, bidirectional=True):
-        """ Fast Streamline Search (FFS)
+    def __init__(
+        self,
+        ref_streamlines,
+        max_radius,
+        nb_mpts=4,
+        bin_size=20.0,
+        resampling=24,
+        bidirectional=True,
+    ):
+        """Fast Streamline Search (FFS)
 
         Generate the Binned K-D Tree structure with reference streamlines,
         using streamlines barycenter and mean-points.
@@ -51,8 +58,11 @@ class FastStreamlineSearch:
             raise ValueError("max_radius needs to be a positive value")
 
         if resampling < 20:
-            warnings.warn("For accurate results, resampling should be"
-                          " at least >= 10 and preferably >= 20")
+            warnings.warn(
+                "For accurate results, resampling should be"
+                " at least >= 10 and preferably >= 20",
+                stacklevel=2,
+            )
 
         if resampling % nb_mpts != 0:
             raise ValueError("nb_mpts needs to be a factor of resampling")
@@ -72,7 +82,8 @@ class FastStreamlineSearch:
 
         if self.bidirectional:
             self.ref_slines = np.concatenate(
-                [self.ref_slines, np.flip(self.ref_slines, axis=1)])
+                [self.ref_slines, np.flip(self.ref_slines, axis=1)]
+            )
 
         # Compute streamlines barycenter
         barycenters = self._slines_barycenters(self.ref_slines)
@@ -93,8 +104,7 @@ class FastStreamlineSearch:
         # Assign a list of streamlines to each bin
         baryc_tree = cKDTree(barycenters)
         center_dist = bin_size / 2.0 + bin_overlap
-        baryc_bins = baryc_tree.query_ball_point(bins_center, center_dist,
-                                                 p=np.inf)
+        baryc_bins = baryc_tree.query_ball_point(bins_center, center_dist, p=np.inf)
 
         # Compute streamlines mean-points
         meanpts = self._slines_mean_points(self.ref_slines)
@@ -107,7 +117,7 @@ class FastStreamlineSearch:
                 self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
 
     def radius_search(self, streamlines, radius, use_negative=True):
-        """ Radius Search using Fast Streamline Search
+        """Radius Search using Fast Streamline Search
 
         For each given streamlines, return all reference streamlines
         within the given radius. See [StOnge2022]_ for further details.
@@ -141,8 +151,10 @@ class FastStreamlineSearch:
                         Neuroinformatics, 2022.
         """
         if radius > self.max_radius:
-            raise ValueError("radius should be smaller or equal to the given"
-                             "\n 'max_radius' in FastStreamlineSearch init")
+            raise ValueError(
+                "radius should be smaller or equal to the given"
+                "\n 'max_radius' in FastStreamlineSearch init"
+            )
 
         if isinstance(streamlines, StatefulTractogram):
             streamlines = streamlines.streamlines
@@ -180,8 +192,9 @@ class FastStreamlineSearch:
                     if ref_ids:
                         s_id = slines_id[s]
                         rs_ids = slines_id_ref[ref_ids]
-                        d = mean_euclidean_distance(q_slines[s_id],
-                                                    self.ref_slines[rs_ids])
+                        d = mean_euclidean_distance(
+                            q_slines[s_id], self.ref_slines[rs_ids]
+                        )
 
                         # Return all pairs within the radius
                         in_dist_max = d < radius
@@ -204,8 +217,9 @@ class FastStreamlineSearch:
                 if use_negative:
                     dist[flipped] *= -1.0
 
-            return coo_matrix((dist, (ids_in, ids_ref)),
-                              shape=(q_nb_slines, self.ref_nb_slines))
+            return coo_matrix(
+                (dist, (ids_in, ids_ref)), shape=(q_nb_slines, self.ref_nb_slines)
+            )
 
         # No results, return an empty sparse matrix
         return coo_matrix((q_nb_slines, self.ref_nb_slines))
@@ -232,8 +246,10 @@ class FastStreamlineSearch:
 
     def _barycenters_binning(self, barycenters):
         """Bin indices in a list according to their barycenter position"""
-        in_bin = np.logical_and(np.all(barycenters >= self.min_box, axis=1),
-                                np.all(barycenters <= self.max_box, axis=1))
+        in_bin = np.logical_and(
+            np.all(barycenters >= self.min_box, axis=1),
+            np.all(barycenters <= self.max_box, axis=1),
+        )
 
         baryc_to_box = barycenters[in_bin] - self.min_box
         baryc_bins_id = (baryc_to_box // self.bin_size).astype(int)

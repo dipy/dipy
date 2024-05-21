@@ -82,19 +82,21 @@ from dipy.viz import actor, colormap, window
 
 
 class ArcLengthFeature(Feature):
-    """ Computes the arc length of a streamline. """
+    """Computes the arc length of a streamline."""
+
     def __init__(self):
         # The arc length stays the same even if the streamline is reversed.
         super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
     def infer_shape(self, streamline):
-        """ Infers the shape of features extracted from `streamline`. """
+        """Infers the shape of features extracted from `streamline`."""
         # Arc length is a scalar
         return 1
 
     def extract(self, streamline):
-        """ Extracts features from `streamline`. """
+        """Extracts features from `streamline`."""
         return length(streamline)
+
 
 ###############################################################################
 # The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's
@@ -104,9 +106,8 @@ class ArcLengthFeature(Feature):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames('fornix')
-fornix = load_tractogram(fname, 'same',
-                         bbox_valid_check=False).streamlines
+fname = get_fnames("fornix")
+fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
 streamlines = Streamlines(fornix)
 
@@ -115,7 +116,7 @@ streamlines = Streamlines(fornix)
 # ``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
 
 metric = SumPointwiseEuclideanMetric(feature=ArcLengthFeature())
-qb = QuickBundles(threshold=2., metric=metric)
+qb = QuickBundles(threshold=2.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 ###############################################################################
@@ -130,7 +131,7 @@ for cluster, color in zip(clusters, cmap):
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='fornix_clusters_arclength.png', size=(600, 600))
+window.record(scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
 
 # Enables/disables interactive visualization
 interactive = False
@@ -165,6 +166,7 @@ if interactive:
 
 class CosineMetric(Metric):
     """Compute the cosine distance between two streamlines."""
+
     def __init__(self):
         # For simplicity, features will be the vector between endpoints of a
         # streamline.
@@ -180,12 +182,15 @@ class CosineMetric(Metric):
 
     def dist(self, v1, v2):
         """Compute a the cosine distance between two vectors."""
-        norm = lambda x: np.sqrt(np.sum(x**2))
-        cos_theta = np.dot(v1, v2.T) / (norm(v1)*norm(v2))
+
+        def norm(x):
+            return np.sqrt(np.sum(x**2))
+
+        cos_theta = np.dot(v1, v2.T) / (norm(v1) * norm(v2))
 
         # Make sure it's in [-1, 1], i.e. within domain of arccosine
-        cos_theta = np.minimum(cos_theta, 1.)
-        cos_theta = np.maximum(cos_theta, -1.)
+        cos_theta = np.minimum(cos_theta, 1.0)
+        cos_theta = np.maximum(cos_theta, -1.0)
         return np.arccos(cos_theta) / np.pi  # Normalized cosine distance
 
 
@@ -197,8 +202,8 @@ class CosineMetric(Metric):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames('fornix')
-fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+fname = get_fnames("fornix")
+fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 streamlines = fornix.streamlines
 
 ###############################################################################
@@ -220,7 +225,7 @@ for cluster, color in zip(clusters, cmap):
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='fornix_clusters_cosine.png', size=(600, 600))
+window.record(scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

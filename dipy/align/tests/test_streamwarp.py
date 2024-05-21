@@ -10,7 +10,6 @@ from dipy.tracking.streamline import Streamlines, set_number_of_points
 
 
 def test_bundlewarp():
-
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
@@ -33,7 +32,6 @@ def test_bundlewarp():
 
 
 def test_bundlewarp_vector_filed():
-
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
@@ -44,8 +42,9 @@ def test_bundlewarp_vector_filed():
 
     deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
 
-    offsets, directions, colors = bundlewarp_vector_filed(affine_bundle,
-                                                          deformed_bundle)
+    offsets, directions, colors = bundlewarp_vector_filed(
+        affine_bundle, deformed_bundle
+    )
 
     assert_equal(len(offsets), len(cb2.get_data()))
     assert_equal(len(directions), len(cb2.get_data()))
@@ -57,7 +56,6 @@ def test_bundlewarp_vector_filed():
 
 
 def test_bundle_shape_profile():
-
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
@@ -69,17 +67,17 @@ def test_bundle_shape_profile():
     deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
 
     n = 10
-    shape_profile, stdv = bundlewarp_shape_analysis(affine_bundle,
-                                                    deformed_bundle,
-                                                    no_disks=n)
+    shape_profile, stdv = bundlewarp_shape_analysis(
+        affine_bundle, deformed_bundle, no_disks=n
+    )
 
     assert_equal(len(shape_profile), n)
     assert_equal(len(stdv), n)
 
     n = 100
-    shape_profile, stdv = bundlewarp_shape_analysis(affine_bundle,
-                                                    deformed_bundle,
-                                                    no_disks=n)
+    shape_profile, stdv = bundlewarp_shape_analysis(
+        affine_bundle, deformed_bundle, no_disks=n
+    )
 
     assert_equal(len(shape_profile), n)
     assert_equal(len(stdv), n)

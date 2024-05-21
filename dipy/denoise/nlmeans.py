@@ -10,9 +10,10 @@ from dipy.denoise.denspeed import nlmeans_3d
 #                         " use module 'dipy.denoise.non_local_means' instead"))
 
 
-def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-            rician=True, num_threads=None):
-    r""" Non-local means for denoising 3D and 4D images
+def nlmeans(
+    arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True, num_threads=None
+):
+    r"""Non-local means for denoising 3D and 4D images
 
     Parameters
     ----------
@@ -56,27 +57,28 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-        return nlmeans_3d(arr, mask, sigma,
-                          patch_radius, block_radius,
-                          rician, num_threads).astype(arr.dtype)
+        return nlmeans_3d(
+            arr, mask, sigma, patch_radius, block_radius, rician, num_threads
+        ).astype(arr.dtype)
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
 
         if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
-            sigma = (np.ones(arr.shape, dtype=np.float64) *
-                     sigma[..., np.newaxis])
+            sigma = np.ones(arr.shape, dtype=np.float64) * sigma[..., np.newaxis]
         else:
             sigma = np.ones(arr.shape, dtype=np.float64) * sigma
 
         for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = nlmeans_3d(arr[..., i],
-                                              mask,
-                                              sigma[..., i],
-                                              patch_radius,
-                                              block_radius,
-                                              rician,
-                                              num_threads).astype(arr.dtype)
+            denoised_arr[..., i] = nlmeans_3d(
+                arr[..., i],
+                mask,
+                sigma[..., i],
+                patch_radius,
+                block_radius,
+                rician,
+                num_threads,
+            ).astype(arr.dtype)
 
         return denoised_arr
 

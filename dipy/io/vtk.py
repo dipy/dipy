@@ -3,7 +3,7 @@ import numpy as np
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package('fury', min_version="0.10.0")
+fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
 if have_fury:
     import fury.io
@@ -38,12 +38,15 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     file_name : string
 
     """
-    fury.io.save_polydata(polydata=polydata, file_name=file_name,
-                          binary=binary, color_array_name=color_array_name)
+    fury.io.save_polydata(
+        polydata=polydata,
+        file_name=file_name,
+        binary=binary,
+        color_array_name=color_array_name,
+    )
 
 
-def save_vtk_streamlines(streamlines, filename,
-                         to_lps=True, binary=False):
+def save_vtk_streamlines(streamlines, filename, to_lps=True, binary=False):
     """Save streamlines as vtk polydata to a supported format file.
 
     File formats can be OBJ, VTK, VTP, FIB, PLY, STL and XML

@@ -6,6 +6,7 @@ Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
 and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
+
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as sps
@@ -57,15 +58,15 @@ def gradient(f):
     """
     f = np.asanyarray(f)
     N = len(f.shape)  # number of dimensions
-    dx = [1.0]*N
+    dx = [1.0] * N
 
     # use central differences on interior and first differences on endpoints
     outvals = []
 
     # create slice objects --- initially all are [:, :, ..., :]
-    slice1 = [slice(None)]*N
-    slice2 = [slice(None)]*N
-    slice3 = [slice(None)]*N
+    slice1 = [slice(None)] * N
+    slice2 = [slice(None)] * N
+    slice3 = [slice(None)] * N
 
     for axis in range(N):
         # select out appropriate parts for this dimension
@@ -75,17 +76,17 @@ def gradient(f):
         slice3[axis] = slice(None, -2)
 
         # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
-        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])/2.0
+        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)]) / 2.0
         slice1[axis] = 0
         slice2[axis] = 1
         slice3[axis] = 0
         # 1D equivalent -- out[0] = (f[1] - f[0])
-        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])
+        out[tuple(slice1)] = f[tuple(slice2)] - f[tuple(slice3)]
         slice1[axis] = -1
         slice2[axis] = -1
         slice3[axis] = -2
         # 1D equivalent -- out[-1] = (f[-1] - f[-2])
-        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])
+        out[tuple(slice1)] = f[tuple(slice2)] - f[tuple(slice3)]
 
         # divide by step size
         outvals.append(out / dx[axis])
@@ -231,8 +232,7 @@ class LifeSignalMaker:
         self.evals = evals
         # Initialize an empty dict to fill with signals for each of the sphere
         # vertices:
-        self.signal = np.empty((self.sphere.vertices.shape[0],
-                                np.sum(~gtab.b0s_mask)))
+        self.signal = np.empty((self.sphere.vertices.shape[0], np.sum(~gtab.b0s_mask)))
         # We'll need to keep track of what we've already calculated:
         self._calculated = []
 
@@ -294,8 +294,7 @@ def voxel2streamline(streamline, affine, unique_idx=None):
         all_coords = np.concatenate(transformed_streamline)
         unique_idx = unique_rows(np.round(all_coords))
 
-    return _voxel2streamline(transformed_streamline,
-                             unique_idx.astype(np.intp))
+    return _voxel2streamline(transformed_streamline, unique_idx.astype(np.intp))
 
 
 class FiberModel(ReconstModel):
@@ -347,9 +346,7 @@ class FiberModel(ReconstModel):
             from :mod:`dipy.data`
         """
         if sphere is not False:
-            SignalMaker = LifeSignalMaker(self.gtab,
-                                          evals=evals,
-                                          sphere=sphere)
+            SignalMaker = LifeSignalMaker(self.gtab, evals=evals, sphere=sphere)
 
         streamline = transform_streamlines(streamline, affine)
         # Assign some local variables, for shorthand:
@@ -358,8 +355,7 @@ class FiberModel(ReconstModel):
         del all_coords
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        v2f, v2fn = voxel2streamline(streamline, np.eye(4),
-                                     unique_idx=vox_coords)
+        v2f, v2fn = voxel2streamline(streamline, np.eye(4), unique_idx=vox_coords)
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
         n_unique_f = len(np.hstack(list(v2f.values())))
@@ -370,7 +366,7 @@ class FiberModel(ReconstModel):
         f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
 
         fiber_signal = []
-        for s_idx, s in enumerate(streamline):
+        for _, s in enumerate(streamline):
             if sphere is not False:
                 fiber_signal.append(SignalMaker.streamline_signal(s))
             else:
@@ -389,22 +385,21 @@ class FiberModel(ReconstModel):
             for f_idx in v2f[v_idx]:
                 # For each fiber-voxel combination, store the row/column
                 # indices in the pre-allocated linear arrays
-                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
-                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
+                f_matrix_row[keep_ct : keep_ct + n_bvecs] = mat_row_idx
+                f_matrix_col[keep_ct : keep_ct + n_bvecs] = f_idx
 
                 vox_fiber_sig = np.zeros(n_bvecs)
                 for node_idx in v2fn[f_idx][v_idx]:
                     # Sum the signal from each node of the fiber in that voxel:
                     vox_fiber_sig += fiber_signal[f_idx][node_idx]
                 # And add the summed thing into the corresponding rows:
-                f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
+                f_matrix_sig[keep_ct : keep_ct + n_bvecs] += vox_fiber_sig
                 keep_ct = keep_ct + n_bvecs
 
         del v2f, v2fn
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format:
-        life_matrix = sps.csr_matrix((f_matrix_sig,
-                                      [f_matrix_row, f_matrix_col]))
+        life_matrix = sps.csr_matrix((f_matrix_sig, [f_matrix_row, f_matrix_col]))
 
         return life_matrix, vox_coords
 
@@ -427,17 +422,15 @@ class FiberModel(ReconstModel):
         vox_data = data[idx_tuple]
         weighted_signal = vox_data[:, ~self.gtab.b0s_mask]
         b0_signal = np.mean(vox_data[:, self.gtab.b0s_mask], -1)
-        relative_signal = (weighted_signal/b0_signal[:, None])
+        relative_signal = weighted_signal / b0_signal[:, None]
 
         # The mean of the relative signal across directions in each voxel:
         mean_sig = np.mean(relative_signal, -1)
         to_fit = (relative_signal - mean_sig[:, None]).ravel()
         to_fit[np.isnan(to_fit)] = 0
-        return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
-                vox_data)
+        return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data)
 
-    def fit(self, data, streamline, affine, evals=(0.001, 0, 0),
-            sphere=None):
+    def fit(self, data, streamline, affine, evals=(0.001, 0, 0), sphere=None):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
         with this data
@@ -469,16 +462,32 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         sl_len = np.array([len(s) for s in streamline])
         if np.any(sl_len < 2):
-            raise ValueError("Input contains streamlines with only one node."
-            " The LiFE model cannot be fit with these streamlines included.")
-        life_matrix, vox_coords = \
-            self.setup(streamline, affine, evals=evals, sphere=sphere)
-        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
-         vox_data) = self._signals(data, vox_coords)
+            raise ValueError(
+                "Input contains streamlines with only one node."
+                " The LiFE model cannot be fit with these streamlines included."
+            )
+        life_matrix, vox_coords = self.setup(
+            streamline, affine, evals=evals, sphere=sphere
+        )
+        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data) = (
+            self._signals(data, vox_coords)
+        )
         beta = opt.sparse_nnls(to_fit, life_matrix)
-        return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
-                        weighted_signal, b0_signal, relative_signal, mean_sig,
-                        vox_data, streamline, affine, evals)
+        return FiberFit(
+            self,
+            life_matrix,
+            vox_coords,
+            to_fit,
+            beta,
+            weighted_signal,
+            b0_signal,
+            relative_signal,
+            mean_sig,
+            vox_data,
+            streamline,
+            affine,
+            evals,
+        )
 
 
 class FiberFit(ReconstFit):
@@ -486,9 +495,22 @@ class FiberFit(ReconstFit):
     A fit of the LiFE model to diffusion data
     """
 
-    def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
-                 weighted_signal, b0_signal, relative_signal, mean_sig,
-                 vox_data, streamline, affine, evals):
+    def __init__(
+        self,
+        fiber_model,
+        life_matrix,
+        vox_coords,
+        to_fit,
+        beta,
+        weighted_signal,
+        b0_signal,
+        relative_signal,
+        mean_sig,
+        vox_data,
+        streamline,
+        affine,
+        evals,
+    ):
         """
         Parameters
         ----------
@@ -536,20 +558,20 @@ class FiberFit(ReconstFit):
             gtab = self.model.gtab
         else:
             _model = FiberModel(gtab)
-            _matrix, _ = _model.setup(self.streamline,
-                                      self.affine,
-                                      self.evals)
+            _matrix, _ = _model.setup(self.streamline, self.affine, self.evals)
 
-        pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
-                                   (self.vox_coords.shape[0],
-                                    np.sum(~gtab.b0s_mask)))
+        pred_weighted = np.reshape(
+            opt.spdot(_matrix, self.beta),
+            (self.vox_coords.shape[0], np.sum(~gtab.b0s_mask)),
+        )
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
         if S0 is None:
             S0 = self.b0_signal
 
         pred[..., gtab.b0s_mask] = S0[:, None]
-        pred[..., ~gtab.b0s_mask] =\
-            (pred_weighted + self.mean_signal[:, None]) * S0[:, None]
+        pred[..., ~gtab.b0s_mask] = (pred_weighted + self.mean_signal[:, None]) * S0[
+            :, None
+        ]
 
         return pred

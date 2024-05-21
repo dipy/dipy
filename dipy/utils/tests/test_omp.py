@@ -1,5 +1,4 @@
-""" Testing OpenMP utilities
-"""
+"""Testing OpenMP utilities"""
 
 import os
 
@@ -37,12 +36,11 @@ def test_set_omp_threads():
         assert_equal(cpu_count(), 1)
 
 
-@pytest.mark.skipif(has_joblib or has_ray,
-                    reason="joblib and/or ray are installed")
+@pytest.mark.skipif(has_joblib or has_ray, reason="joblib and/or ray are installed")
 def test_default_threads():
     if have_openmp:
         try:
-            expected_threads = int(os.environ.get('OMP_NUM_THREADS', None))
+            expected_threads = int(os.environ.get("OMP_NUM_THREADS", None))
             if expected_threads < 1:
                 raise ValueError("invalid number of threads")
         except (ValueError, TypeError):
@@ -70,5 +68,4 @@ def test_determine_num_threads():
 
     # -2 should be one less than -1 (if there are more than 1 cores)
     if determine_num_threads(-1) > 1:
-        assert_equal(determine_num_threads(-1),
-                     determine_num_threads(-2) + 1)
+        assert_equal(determine_num_threads(-1), determine_num_threads(-2) + 1)

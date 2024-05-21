@@ -46,29 +46,29 @@ def create_test_data(test_r, cube_size, mask_size, num_dwi_vols, num_b0s):
     """
 
     if not num_dwi_vols % 2 == 0:
-        raise Exception(
-            "Needs an even number of dwi vols to ensure known neighbors")
+        raise Exception("Needs an even number of dwi vols to ensure known neighbors")
 
     # Create a volume mask
     test_mask = np.zeros((cube_size, cube_size, cube_size))
     test_mask[:mask_size, :mask_size, :mask_size] = 1
-    n_voxels_in_mask = mask_size ** 3
+    n_voxels_in_mask = mask_size**3
 
     # 4D Data array
-    dwi_data = np.zeros(
-        (cube_size, cube_size, cube_size, num_b0s + num_dwi_vols))
+    dwi_data = np.zeros((cube_size, cube_size, cube_size, num_b0s + num_dwi_vols))
 
     # Create a sampling scheme where we know what volumes will be neighbors
     n_known = num_dwi_vols // 2
-    dwi_bvals = np.column_stack(
-        [np.arange(n_known) + 1] * 2).flatten(order="C").tolist()
+    dwi_bvals = (
+        np.column_stack([np.arange(n_known) + 1] * 2).flatten(order="C").tolist()
+    )
     bvals = np.array([0] * num_b0s + dwi_bvals) * 1000
 
     # The bvecs will be a straight line with a minor perturbance every other
-    ref_vec = np.array([1., 0., 0.])
+    ref_vec = np.array([1.0, 0.0, 0.0])
     nbr_vec = normalized_vector(ref_vec + 0.00001)
     bvecs = np.row_stack(
-        [ref_vec] * num_b0s + [np.row_stack([ref_vec, nbr_vec])] * n_known)
+        [ref_vec] * num_b0s + [np.row_stack([ref_vec, nbr_vec])] * n_known
+    )
 
     cor = np.ones((2, 2)) * test_r
     np.fill_diagonal(cor, 1)
@@ -80,7 +80,7 @@ def create_test_data(test_r, cube_size, mask_size, num_dwi_vols, num_b0s):
         correlated = np.dot(L, uncorrelated)
 
         dwi_data[:, :, :, starting_vol][test_mask > 0] = correlated[0]
-        dwi_data[:, :, :, starting_vol+1][test_mask > 0] = correlated[1]
+        dwi_data[:, :, :, starting_vol + 1][test_mask > 0] = correlated[1]
 
         known_correlations += [np.corrcoef(correlated)[0, 1]] * 2
 
@@ -94,11 +94,8 @@ def test_neighboring_dwi_correlation():
 
     # Test data with b=0s, low correlation, using mask
     real_r, dwi_data, mask, gtab = create_test_data(
-        test_r=0.3,
-        cube_size=10,
-        mask_size=6,
-        num_dwi_vols=10,
-        num_b0s=2)
+        test_r=0.3, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=2
+    )
     estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
     assert np.allclose(real_r, estimated_ndc)
 
@@ -107,30 +104,21 @@ def test_neighboring_dwi_correlation():
 
     # Try with no b=0s
     real_r, dwi_data, mask, gtab = create_test_data(
-        test_r=0.3,
-        cube_size=10,
-        mask_size=6,
-        num_dwi_vols=10,
-        num_b0s=0)
+        test_r=0.3, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=0
+    )
     estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
     assert np.allclose(real_r, estimated_ndc)
 
     # Try with realistic correlation value
     real_r, dwi_data, mask, gtab = create_test_data(
-        test_r=0.8,
-        cube_size=10,
-        mask_size=6,
-        num_dwi_vols=10,
-        num_b0s=2)
+        test_r=0.8, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=2
+    )
     estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
     assert np.allclose(real_r, estimated_ndc)
 
     # Try with a bigger volume, lower correlation
     real_r, dwi_data, mask, gtab = create_test_data(
-        test_r=0.5,
-        cube_size=100,
-        mask_size=49,
-        num_dwi_vols=160,
-        num_b0s=2)
+        test_r=0.5, cube_size=100, mask_size=49, num_dwi_vols=160, num_b0s=2
+    )
     estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
     assert np.allclose(real_r, estimated_ndc)

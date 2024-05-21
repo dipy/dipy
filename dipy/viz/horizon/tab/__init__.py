@@ -14,6 +14,16 @@ from dipy.viz.horizon.tab.slice import SlicesTab
 from dipy.viz.horizon.tab.surface import SurfaceTab
 
 __all__ = [
-    'HorizonTab', 'TabManager', 'ClustersTab', 'PeaksTab', 'ROIsTab',
-    'SlicesTab', 'build_label', 'build_slider', 'build_checkbox',
-    'build_switcher', 'SurfaceTab', 'build_radio_button']
+    "HorizonTab",
+    "TabManager",
+    "ClustersTab",
+    "PeaksTab",
+    "ROIsTab",
+    "SlicesTab",
+    "build_label",
+    "build_slider",
+    "build_checkbox",
+    "build_switcher",
+    "SurfaceTab",
+    "build_radio_button",
+]

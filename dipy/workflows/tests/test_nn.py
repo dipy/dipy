@@ -11,25 +11,25 @@ from dipy.nn.evac import EVACPlus
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.nn import EVACPlusFlow
 
-tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 
 
-@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
+@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_evac_plus_flow():
     with TemporaryDirectory() as out_dir:
-        file_path = get_fnames('evac_test_data')
+        file_path = get_fnames("evac_test_data")
 
-        volume = np.load(file_path)['input'][0]
+        volume = np.load(file_path)["input"][0]
         temp_affine = np.eye(4)
-        temp_path = pjoin(out_dir, 'temp.nii.gz')
+        temp_path = pjoin(out_dir, "temp.nii.gz")
         save_nifti(temp_path, volume, temp_affine)
         save_masked = True
 
         evac_flow = EVACPlusFlow()
         evac_flow.run(temp_path, out_dir=out_dir, save_masked=save_masked)
 
-        mask_name = evac_flow.last_generated_outputs['out_mask']
-        masked_name = evac_flow.last_generated_outputs['out_masked']
+        mask_name = evac_flow.last_generated_outputs["out_mask"]
+        masked_name = evac_flow.last_generated_outputs["out_masked"]
 
         evac = EVACPlus()
         mask = evac.predict(volume, temp_affine)

@@ -38,18 +38,33 @@ from dipy.workflows.workflow import Workflow
 class ReconstMAPMRIFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'mapmri'
+        return "mapmri"
 
-    def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
-            b0_threshold=50.0, laplacian=True, positivity=True,
-            bval_threshold=2000, save_metrics=(),
-            laplacian_weighting=0.05, radial_order=6, out_dir='',
-            out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
-            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
-            out_rtap='rtap.nii.gz',
-            out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
-            out_perng='perng.nii.gz',
-            out_parng='parng.nii.gz'):
+    def run(
+        self,
+        data_files,
+        bvals_files,
+        bvecs_files,
+        small_delta,
+        big_delta,
+        b0_threshold=50.0,
+        laplacian=True,
+        positivity=True,
+        bval_threshold=2000,
+        save_metrics=(),
+        laplacian_weighting=0.05,
+        radial_order=6,
+        out_dir="",
+        out_rtop="rtop.nii.gz",
+        out_lapnorm="lapnorm.nii.gz",
+        out_msd="msd.nii.gz",
+        out_qiv="qiv.nii.gz",
+        out_rtap="rtap.nii.gz",
+        out_rtpp="rtpp.nii.gz",
+        out_ng="ng.nii.gz",
+        out_perng="perng.nii.gz",
+        out_parng="parng.nii.gz",
+    ):
         """Workflow for fitting the MAPMRI model (with optional Laplacian
         regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
         non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
@@ -117,10 +132,21 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the Non-Gaussianity parallel to be saved.
         """
         io_it = self.get_io_iterator()
-        for (dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv,
-             out_rtap, out_rtpp, out_ng, out_perng, out_parng) in io_it:
-
-            logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            out_rtop,
+            out_lapnorm,
+            out_msd,
+            out_qiv,
+            out_rtap,
+            out_rtpp,
+            out_ng,
+            out_perng,
+            out_parng,
+        ) in io_it:
+            logging.info(f"Computing MAPMRI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -128,55 +154,73 @@ class ReconstMAPMRIFlow(Workflow):
             # assumed that no thresholding is requested
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
-                    warn("b0_threshold (value: {0}) is too low, increase your "
-                         "b0_threshold. It should be higher than the first b0 "
-                         "value({1}).".format(b0_threshold, bvals.min()))
-            gtab = gradient_table(bvals=bvals, bvecs=bvecs,
-                                  small_delta=small_delta,
-                                  big_delta=big_delta,
-                                  b0_threshold=b0_threshold)
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals=bvals,
+                bvecs=bvecs,
+                small_delta=small_delta,
+                big_delta=big_delta,
+                b0_threshold=b0_threshold,
+            )
 
             if not save_metrics:
-                save_metrics = ['rtop', 'laplacian_signal', 'msd',
-                                'qiv', 'rtap', 'rtpp',
-                                'ng', 'perng', 'parng']
+                save_metrics = [
+                    "rtop",
+                    "laplacian_signal",
+                    "msd",
+                    "qiv",
+                    "rtap",
+                    "rtpp",
+                    "ng",
+                    "perng",
+                    "parng",
+                ]
 
             if laplacian and positivity:
                 map_model_aniso = mapmri.MapmriModel(
-                            gtab,
-                            radial_order=radial_order,
-                            laplacian_regularization=True,
-                            laplacian_weighting=laplacian_weighting,
-                            positivity_constraint=True,
-                            bval_threshold=bval_threshold)
+                    gtab,
+                    radial_order=radial_order,
+                    laplacian_regularization=True,
+                    laplacian_weighting=laplacian_weighting,
+                    positivity_constraint=True,
+                    bval_threshold=bval_threshold,
+                )
 
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif positivity:
                 map_model_aniso = mapmri.MapmriModel(
-                            gtab,
-                            radial_order=radial_order,
-                            laplacian_regularization=False,
-                            positivity_constraint=True,
-                            bval_threshold=bval_threshold)
+                    gtab,
+                    radial_order=radial_order,
+                    laplacian_regularization=False,
+                    positivity_constraint=True,
+                    bval_threshold=bval_threshold,
+                )
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif laplacian:
                 map_model_aniso = mapmri.MapmriModel(
-                            gtab,
-                            radial_order=radial_order,
-                            laplacian_regularization=True,
-                            laplacian_weighting=laplacian_weighting,
-                            bval_threshold=bval_threshold)
+                    gtab,
+                    radial_order=radial_order,
+                    laplacian_regularization=True,
+                    laplacian_weighting=laplacian_weighting,
+                    bval_threshold=bval_threshold,
+                )
                 mapfit_aniso = map_model_aniso.fit(data)
 
             else:
                 map_model_aniso = mapmri.MapmriModel(
-                            gtab,
-                            radial_order=radial_order,
-                            laplacian_regularization=False,
-                            positivity_constraint=False,
-                            bval_threshold=bval_threshold)
+                    gtab,
+                    radial_order=radial_order,
+                    laplacian_regularization=False,
+                    positivity_constraint=False,
+                    bval_threshold=bval_threshold,
+                )
                 mapfit_aniso = map_model_aniso.fit(data)
 
             # for name, fname, func in [('rtop', out_rtop, mapfit_aniso.rtop),
@@ -185,65 +229,84 @@ class ReconstMAPMRIFlow(Workflow):
             #         r = func()
             #         save_nifti(fname, r.astype(np.float32), affine)
 
-            if 'rtop' in save_metrics:
+            if "rtop" in save_metrics:
                 r = mapfit_aniso.rtop()
                 save_nifti(out_rtop, r.astype(np.float32), affine)
 
-            if 'laplacian_signal' in save_metrics:
+            if "laplacian_signal" in save_metrics:
                 ll = mapfit_aniso.norm_of_laplacian_signal()
                 save_nifti(out_lapnorm, ll.astype(np.float32), affine)
 
-            if 'msd' in save_metrics:
+            if "msd" in save_metrics:
                 m = mapfit_aniso.msd()
                 save_nifti(out_msd, m.astype(np.float32), affine)
 
-            if 'qiv' in save_metrics:
+            if "qiv" in save_metrics:
                 q = mapfit_aniso.qiv()
                 save_nifti(out_qiv, q.astype(np.float32), affine)
 
-            if 'rtap' in save_metrics:
+            if "rtap" in save_metrics:
                 r = mapfit_aniso.rtap()
                 save_nifti(out_rtap, r.astype(np.float32), affine)
 
-            if 'rtpp' in save_metrics:
+            if "rtpp" in save_metrics:
                 r = mapfit_aniso.rtpp()
                 save_nifti(out_rtpp, r.astype(np.float32), affine)
 
-            if 'ng' in save_metrics:
+            if "ng" in save_metrics:
                 n = mapfit_aniso.ng()
                 save_nifti(out_ng, n.astype(np.float32), affine)
 
-            if 'perng' in save_metrics:
+            if "perng" in save_metrics:
                 n = mapfit_aniso.ng_perpendicular()
                 save_nifti(out_perng, n.astype(np.float32), affine)
 
-            if 'parng' in save_metrics:
+            if "parng" in save_metrics:
                 n = mapfit_aniso.ng_parallel()
                 save_nifti(out_parng, n.astype(np.float32), affine)
 
-            logging.info('MAPMRI saved in {0}'.
-                         format(os.path.abspath(out_dir)))
+            logging.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
 
 
 class ReconstDtiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'dti'
+        return "dti"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, sigma=None,
-            save_metrics=None, out_dir='', out_tensor='tensors.nii.gz',
-            out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
-            out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
-            out_mode='mode.nii.gz', out_evec='evecs.nii.gz',
-            out_eval='evals.nii.gz', nifti_tensor=True,
-            extract_pam_values=False,
-            parallel=False, num_processes=None,
-            out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Workflow for tensor reconstruction and for computing DTI metrics.
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        fit_method="WLS",
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        sigma=None,
+        save_metrics=None,
+        out_dir="",
+        out_tensor="tensors.nii.gz",
+        out_fa="fa.nii.gz",
+        out_ga="ga.nii.gz",
+        out_rgb="rgb.nii.gz",
+        out_md="md.nii.gz",
+        out_ad="ad.nii.gz",
+        out_rd="rd.nii.gz",
+        out_mode="mode.nii.gz",
+        out_evec="evecs.nii.gz",
+        out_eval="evals.nii.gz",
+        nifti_tensor=True,
+        extract_pam_values=False,
+        parallel=False,
+        num_processes=None,
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
+        """Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified by
@@ -364,11 +427,29 @@ class ReconstDtiFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
-                omode, oevecs, oevals, opam, oshm, opeaks_dir, opeaks_values, \
-                opeaks_indices, ogfa in io_it:
-
-            logging.info('Computing DTI metrics for {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            otensor,
+            ofa,
+            oga,
+            orgb,
+            omd,
+            oad,
+            orad,
+            omode,
+            oevecs,
+            oevals,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
+            logging.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -376,21 +457,38 @@ class ReconstDtiFlow(Workflow):
 
             optional_args = {}
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
-                optional_args['sigma'] = sigma
+                optional_args["sigma"] = sigma
 
             tenfit, tenmodel, _ = self.get_fitted_tensor(
-                data, mask, bval, bvec, b0_threshold, bvecs_tol,
-                fit_method, optional_args)
+                data,
+                mask,
+                bval,
+                bvec,
+                b0_threshold,
+                bvecs_tol,
+                fit_method,
+                optional_args,
+            )
 
             if not save_metrics:
-                save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
-                                'evec', 'eval', 'tensor']
+                save_metrics = [
+                    "fa",
+                    "md",
+                    "rd",
+                    "ad",
+                    "ga",
+                    "rgb",
+                    "mode",
+                    "evec",
+                    "eval",
+                    "tensor",
+                ]
 
             FA = fractional_anisotropy(tenfit.evals)
             FA[np.isnan(FA)] = 0
             FA = np.clip(FA, 0, 1)
 
-            if 'tensor' in save_metrics:
+            if "tensor" in save_metrics:
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
 
                 if nifti_tensor:
@@ -398,49 +496,49 @@ class ReconstDtiFlow(Workflow):
                 else:
                     alt_order = [0, 1, 3, 2, 4, 5]
                     ten_img = nib.Nifti1Image(
-                            tensor_vals[..., alt_order].astype(np.float32),
-                            affine)
+                        tensor_vals[..., alt_order].astype(np.float32), affine
+                    )
 
                 nib.save(ten_img, otensor)
 
-            if 'fa' in save_metrics:
+            if "fa" in save_metrics:
                 save_nifti(ofa, FA.astype(np.float32), affine)
 
-            if 'ga' in save_metrics:
+            if "ga" in save_metrics:
                 GA = geodesic_anisotropy(tenfit.evals)
                 save_nifti(oga, GA.astype(np.float32), affine)
 
-            if 'rgb' in save_metrics:
+            if "rgb" in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, 'uint8'), affine)
+                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
 
-            if 'md' in save_metrics:
+            if "md" in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
                 save_nifti(omd, MD.astype(np.float32), affine)
 
-            if 'ad' in save_metrics:
+            if "ad" in save_metrics:
                 AD = axial_diffusivity(tenfit.evals)
                 save_nifti(oad, AD.astype(np.float32), affine)
 
-            if 'rd' in save_metrics:
+            if "rd" in save_metrics:
                 RD = radial_diffusivity(tenfit.evals)
                 save_nifti(orad, RD.astype(np.float32), affine)
 
-            if 'mode' in save_metrics:
+            if "mode" in save_metrics:
                 MODE = get_mode(tenfit.quadratic_form)
                 save_nifti(omode, MODE.astype(np.float32), affine)
 
-            if 'evec' in save_metrics:
+            if "evec" in save_metrics:
                 save_nifti(oevecs, tenfit.evecs.astype(np.float32), affine)
 
-            if 'eval' in save_metrics:
+            if "eval" in save_metrics:
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
             if save_metrics:
-                msg = f'DTI metrics saved to {os.path.abspath(out_dir)}'
+                msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
                 logging.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs["out_" + metric])
+                    logging.info(self.last_generated_outputs[f"out_{metric}"])
 
             # save peaks
             peaks_dti = peaks_from_model(
@@ -454,24 +552,37 @@ class ReconstDtiFlow(Workflow):
                 sh_order_max=8,
                 normalize_peaks=True,
                 parallel=parallel,
-                num_processes=num_processes
+                num_processes=num_processes,
             )
             peaks_dti.affine = affine
 
             save_peaks(opam, peaks_dti)
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_dti, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    peaks_dti,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          bvecs_tol=0.01, fit_method='WLS',
-                          optional_args=None):
-
-        logging.info('Tensor estimation...')
+    def get_fitted_tensor(
+        self,
+        data,
+        mask,
+        bval,
+        bvec,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        fit_method="WLS",
+        optional_args=None,
+    ):
+        logging.info("Tensor estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
-                              atol=bvecs_tol)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)
 
         tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
         tenfit = tenmodel.fit(data, mask)
@@ -482,17 +593,32 @@ class ReconstDtiFlow(Workflow):
 class ReconstDsiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'dsi'
+        return "dsi"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            qgrid_size=17, r_start=2.1, r_end=6., r_step=0.2, filter_width=32,
-            normalize_peaks=False, extract_pam_values=False, parallel=False,
-            num_processes=None, out_dir='',
-            out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Diffusion Spectrum Imaging (DSI) reconstruction workflow.
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        qgrid_size=17,
+        r_start=2.1,
+        r_end=6.0,
+        r_step=0.2,
+        filter_width=32,
+        normalize_peaks=False,
+        extract_pam_values=False,
+        parallel=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
+        """Diffusion Spectrum Imaging (DSI) reconstruction workflow.
 
         Parameters
         ----------
@@ -550,10 +676,19 @@ class ReconstDsiFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, mask, opam, oshm, opeaks_dir, opeaks_values,
-             opeaks_indices, ogfa) in io_it:
-
-            logging.info('Computing DSI Model for {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
+            logging.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -561,52 +696,81 @@ class ReconstDsiFlow(Workflow):
             mask = load_nifti_data(mask).astype(bool)
 
             dsi_model = DiffusionSpectrumModel(
-                gtab, qgrid_size=qgrid_size, r_start=r_start, r_end=r_end,
-                r_step=r_step, filter_width=filter_width,
-                normalize_peaks=normalize_peaks)
+                gtab,
+                qgrid_size=qgrid_size,
+                r_start=r_start,
+                r_end=r_end,
+                r_step=r_step,
+                filter_width=filter_width,
+                normalize_peaks=normalize_peaks,
+            )
 
             peaks_sphere = default_sphere
 
-            peaks_dsi = peaks_from_model(model=dsi_model,
-                                         data=data,
-                                         sphere=peaks_sphere,
-                                         relative_peak_threshold=0.5,
-                                         min_separation_angle=25,
-                                         mask=mask,
-                                         return_sh=True,
-                                         sh_order_max=8,
-                                         normalize_peaks=normalize_peaks,
-                                         parallel=parallel,
-                                         num_processes=num_processes)
+            peaks_dsi = peaks_from_model(
+                model=dsi_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+                mask=mask,
+                return_sh=True,
+                sh_order_max=8,
+                normalize_peaks=normalize_peaks,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
             peaks_dsi.affine = affine
 
             save_peaks(opam, peaks_dsi)
 
-            logging.info('DSI computation completed.')
+            logging.info("DSI computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_dsi, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    peaks_dsi,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
-            logging.info('DSI metrics saved to {0}'.
-                         format(os.path.abspath(out_dir)))
+            logging.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
 
 
 class ReconstCSDFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'csd'
+        return "csd"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
-            odf_to_sh_order=8, parallel=False, num_processes=None,
-            out_dir='',
-            out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Constrained spherical deconvolution
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        roi_center=None,
+        roi_radii=10,
+        fa_thr=0.7,
+        frf=None,
+        extract_pam_values=False,
+        sh_order=8,
+        odf_to_sh_order=8,
+        parallel=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
+        """Constrained spherical deconvolution
 
         Parameters
         ----------
@@ -677,10 +841,19 @@ class ReconstCSDFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values,
-             opeaks_indices, ogfa) in io_it:
-
-            logging.info('Loading {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -689,84 +862,98 @@ class ReconstCSDFlow(Workflow):
             # assumed that no thresholding is requested
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
-                    warn("b0_threshold (value: {0}) is too low, increase your "
-                         "b0_threshold. It should be higher than the first b0 "
-                         "value ({1}).".format(b0_threshold, bvals.min()))
-            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
-                                  atol=bvecs_tol)
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
             n_params = ((sh_order + 1) * (sh_order + 2)) / 2
             if data.shape[-1] < n_params:
                 raise ValueError(
-                    'You need at least {0} unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {1}'
-                    ' DWI volumes.'.format(n_params, data.shape[-1]))
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
+                )
 
             if frf is None:
-                logging.info('Computing response function')
+                logging.info("Computing response function")
                 if roi_center is not None:
-                    logging.info('Response ROI center:\n{0}'
-                                 .format(roi_center))
-                    logging.info('Response ROI radii:\n{0}'
-                                 .format(roi_radii))
+                    logging.info(f"Response ROI center:\n{roi_center}")
+                    logging.info(f"Response ROI radii:\n{roi_radii}")
                 response, ratio = auto_response_ssst(
-                        gtab, data,
-                        roi_center=roi_center,
-                        roi_radii=roi_radii,
-                        fa_thr=fa_thr)
+                    gtab,
+                    data,
+                    roi_center=roi_center,
+                    roi_radii=roi_radii,
+                    fa_thr=fa_thr,
+                )
                 response = list(response)
 
             else:
-                logging.info('Using response function')
+                logging.info("Using response function")
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
                     l01 = np.array(frf, dtype=np.float64)
 
-                l01 *= 10 ** -4
+                l01 *= 10**-4
                 response = np.array([l01[0], l01[1], l01[1]])
                 ratio = l01[1] / l01[0]
                 response = (response, ratio)
 
-            logging.info("Eigenvalues for the frf of the input"
-                         " data are :{0}".format(response[0]))
-            logging.info('Ratio for smallest to largest eigen value is {0}'
-                         .format(ratio))
+            logging.info(
+                f"Eigenvalues for the frf of the input data are :{response[0]}"
+            )
+            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
 
-            logging.info('CSD computation started.')
-            csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                        sh_order_max=sh_order)
+            logging.info("CSD computation started.")
+            csd_model = ConstrainedSphericalDeconvModel(
+                gtab, response, sh_order_max=sh_order
+            )
 
-            peaks_csd = peaks_from_model(model=csd_model,
-                                         data=data,
-                                         sphere=peaks_sphere,
-                                         relative_peak_threshold=0.5,
-                                         min_separation_angle=25,
-                                         mask=mask_vol,
-                                         return_sh=True,
-                                         sh_order_max=sh_order,
-                                         normalize_peaks=True,
-                                         parallel=parallel,
-                                         num_processes=num_processes)
+            peaks_csd = peaks_from_model(
+                model=csd_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
 
-            logging.info('CSD computation completed.')
+            logging.info("CSD computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    peaks_csd,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
             dname_ = os.path.dirname(opam)
-            if dname_ == '':
-                logging.info('Pam5 file saved in current directory')
+            if dname_ == "":
+                logging.info("Pam5 file saved in current directory")
             else:
-                logging.info(
-                        'Pam5 file saved in {0}'.format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -774,18 +961,30 @@ class ReconstCSDFlow(Workflow):
 class ReconstCSAFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'csa'
+        return "csa"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
-            extract_pam_values=False, parallel=False, num_processes=None,
-            out_dir='',
-            out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz',
-            out_gfa='gfa.nii.gz'):
-        """ Constant Solid Angle.
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        sh_order=6,
+        odf_to_sh_order=8,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        extract_pam_values=False,
+        parallel=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
+        """Constant Solid Angle.
 
         Parameters
         ----------
@@ -843,10 +1042,19 @@ class ReconstCSAFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir,
-             opeaks_values, opeaks_indices, ogfa) in io_it:
-
-            logging.info('Loading {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -854,47 +1062,58 @@ class ReconstCSAFlow(Workflow):
             # assumed that no thresholding is requested
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
-                    warn("b0_threshold (value: {0}) is too low, increase your "
-                         "b0_threshold. It should be higher than the first b0 "
-                         "value ({1}).".format(b0_threshold, bvals.min()))
-            gtab = gradient_table(bvals, bvecs,
-                                  b0_threshold=b0_threshold, atol=bvecs_tol)
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
             peaks_sphere = default_sphere
 
-            logging.info('Starting CSA computations {0}'.format(dwi))
+            logging.info(f"Starting CSA computations {dwi}")
 
             csa_model = CsaOdfModel(gtab, sh_order)
 
-            peaks_csa = peaks_from_model(model=csa_model,
-                                         data=data,
-                                         sphere=peaks_sphere,
-                                         relative_peak_threshold=0.5,
-                                         min_separation_angle=25,
-                                         mask=mask_vol,
-                                         return_sh=True,
-                                         sh_order_max=odf_to_sh_order,
-                                         normalize_peaks=True,
-                                         parallel=parallel,
-                                         num_processes=num_processes)
+            peaks_csa = peaks_from_model(
+                model=csa_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=odf_to_sh_order,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
 
-            logging.info('Finished CSA {0}'.format(dwi))
+            logging.info(f"Finished CSA {dwi}")
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
-                                opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    peaks_csa,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
             dname_ = os.path.dirname(opam)
-            if dname_ == '':
-                logging.info('Pam5 file saved in current directory')
+            if dname_ == "":
+                logging.info("Pam5 file saved in current directory")
             else:
-                logging.info(
-                        'Pam5 file saved in {0}'.format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -902,24 +1121,44 @@ class ReconstCSAFlow(Workflow):
 class ReconstDkiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'dki'
+        return "dki"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=None,
-            out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
-            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
-            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
-            out_dk_tensor="dki_tensors.nii.gz",
-            out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz",
-            extract_pam_values=False,
-            parallel=False, num_processes=None,
-            out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'
-            ):
-        """ Workflow for Diffusion Kurtosis reconstruction and for computing
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        fit_method="WLS",
+        b0_threshold=50.0,
+        sigma=None,
+        save_metrics=None,
+        out_dir="",
+        out_dt_tensor="dti_tensors.nii.gz",
+        out_fa="fa.nii.gz",
+        out_ga="ga.nii.gz",
+        out_rgb="rgb.nii.gz",
+        out_md="md.nii.gz",
+        out_ad="ad.nii.gz",
+        out_rd="rd.nii.gz",
+        out_mode="mode.nii.gz",
+        out_evec="evecs.nii.gz",
+        out_eval="evals.nii.gz",
+        out_dk_tensor="dki_tensors.nii.gz",
+        out_mk="mk.nii.gz",
+        out_ak="ak.nii.gz",
+        out_rk="rk.nii.gz",
+        extract_pam_values=False,
+        parallel=False,
+        num_processes=None,
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
+        """Workflow for Diffusion Kurtosis reconstruction and for computing
         DKI metrics. Performs a DKI reconstruction on the files by 'globing'
         ``input_files`` and saves the DKI metrics in a directory specified by
         ``out_dir``.
@@ -1023,11 +1262,33 @@ class ReconstDkiFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
-             omode, oevecs, oevals, odk_tensor, omk, oak, ork, opam, oshm,
-             opeaks_dir, opeaks_values, opeaks_indices, ogfa) in io_it:
-
-            logging.info('Computing DKI metrics for {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            otensor,
+            ofa,
+            oga,
+            orgb,
+            omd,
+            oad,
+            orad,
+            omode,
+            oevecs,
+            oevals,
+            odk_tensor,
+            omk,
+            oak,
+            ork,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
+            logging.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1035,76 +1296,93 @@ class ReconstDkiFlow(Workflow):
 
             optional_args = {}
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
-                optional_args['sigma'] = sigma
+                optional_args["sigma"] = sigma
 
             dkfit, dkmodel, _ = self.get_fitted_tensor(
-                data, mask, bval, bvec, b0_threshold, fit_method,
-                optional_args=optional_args)
+                data,
+                mask,
+                bval,
+                bvec,
+                b0_threshold,
+                fit_method,
+                optional_args=optional_args,
+            )
 
             if not save_metrics:
-                save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
-                                'rgb', 'mode', 'evec', 'eval', 'dt_tensor',
-                                'dk_tensor']
+                save_metrics = [
+                    "mk",
+                    "rk",
+                    "ak",
+                    "fa",
+                    "md",
+                    "rd",
+                    "ad",
+                    "ga",
+                    "rgb",
+                    "mode",
+                    "evec",
+                    "eval",
+                    "dt_tensor",
+                    "dk_tensor",
+                ]
 
             evals, evecs, kt = split_dki_param(dkfit.model_params)
             FA = fractional_anisotropy(evals)
             FA[np.isnan(FA)] = 0
             FA = np.clip(FA, 0, 1)
 
-            if 'dt_tensor' in save_metrics:
+            if "dt_tensor" in save_metrics:
                 tensor_vals = lower_triangular(dkfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
-                save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
-                           affine)
+                save_nifti(otensor, tensor_vals_reordered.astype(np.float32), affine)
 
-            if 'dk_tensor' in save_metrics:
+            if "dk_tensor" in save_metrics:
                 save_nifti(odk_tensor, dkfit.kt.astype(np.float32), affine)
 
-            if 'fa' in save_metrics:
+            if "fa" in save_metrics:
                 save_nifti(ofa, FA.astype(np.float32), affine)
 
-            if 'ga' in save_metrics:
+            if "ga" in save_metrics:
                 GA = geodesic_anisotropy(dkfit.evals)
                 save_nifti(oga, GA.astype(np.float32), affine)
 
-            if 'rgb' in save_metrics:
+            if "rgb" in save_metrics:
                 RGB = color_fa(FA, dkfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, 'uint8'), affine)
+                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
 
-            if 'md' in save_metrics:
+            if "md" in save_metrics:
                 MD = mean_diffusivity(dkfit.evals)
                 save_nifti(omd, MD.astype(np.float32), affine)
 
-            if 'ad' in save_metrics:
+            if "ad" in save_metrics:
                 AD = axial_diffusivity(dkfit.evals)
                 save_nifti(oad, AD.astype(np.float32), affine)
 
-            if 'rd' in save_metrics:
+            if "rd" in save_metrics:
                 RD = radial_diffusivity(dkfit.evals)
                 save_nifti(orad, RD.astype(np.float32), affine)
 
-            if 'mode' in save_metrics:
+            if "mode" in save_metrics:
                 MODE = get_mode(dkfit.quadratic_form)
                 save_nifti(omode, MODE.astype(np.float32), affine)
 
-            if 'evec' in save_metrics:
+            if "evec" in save_metrics:
                 save_nifti(oevecs, dkfit.evecs.astype(np.float32), affine)
 
-            if 'eval' in save_metrics:
+            if "eval" in save_metrics:
                 save_nifti(oevals, dkfit.evals.astype(np.float32), affine)
 
-            if 'mk' in save_metrics:
+            if "mk" in save_metrics:
                 save_nifti(omk, dkfit.mk().astype(np.float32), affine)
 
-            if 'ak' in save_metrics:
+            if "ak" in save_metrics:
                 save_nifti(oak, dkfit.ak().astype(np.float32), affine)
 
-            if 'rk' in save_metrics:
+            if "rk" in save_metrics:
                 save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
-            logging.info('DKI metrics saved in {0}'.
-                         format(os.path.dirname(oevals)))
+            logging.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
 
             # save peaks
             peaks_dki = peaks_from_model(
@@ -1118,32 +1396,48 @@ class ReconstDkiFlow(Workflow):
                 sh_order_max=8,
                 normalize_peaks=True,
                 parallel=parallel,
-                num_processes=num_processes
+                num_processes=num_processes,
             )
             peaks_dki.affine = affine
 
             save_peaks(opam, peaks_dki)
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_dki, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    peaks_dki,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
-
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          fit_method="WLS", optional_args=None):
-        logging.info('Diffusion kurtosis estimation...')
+    def get_fitted_tensor(
+        self,
+        data,
+        mask,
+        bval,
+        bvec,
+        b0_threshold=50,
+        fit_method="WLS",
+        optional_args=None,
+    ):
+        logging.info("Diffusion kurtosis estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
         if any(mask_non_weighted_bvals(bvals, b0_threshold)):
             if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 "
-                     "value ({1}).".format(b0_threshold, bvals.min()))
+                warn(
+                    f"b0_threshold (value: {b0_threshold}) is too low, "
+                    "increase your b0_threshold. It should be higher than the "
+                    f"first b0 value ({bvals.min()}).",
+                    stacklevel=2,
+                )
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
-        dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method,
-                                         **optional_args)
+        dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method, **optional_args)
         dkfit = dkmodel.fit(data, mask)
 
         return dkfit, dkmodel, gtab
@@ -1152,14 +1446,25 @@ class ReconstDkiFlow(Workflow):
 class ReconstIvimFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'ivim'
+        return "ivim"
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=None,
-            out_dir='', out_S0_predicted='S0_predicted.nii.gz',
-            out_perfusion_fraction='perfusion_fraction.nii.gz',
-            out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
-        """ Workflow for Intra-voxel Incoherent Motion reconstruction and for
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        split_b_D=400,
+        split_b_S0=200,
+        b0_threshold=0,
+        save_metrics=None,
+        out_dir="",
+        out_S0_predicted="S0_predicted.nii.gz",
+        out_perfusion_fraction="perfusion_fraction.nii.gz",
+        out_D_star="D_star.nii.gz",
+        out_D="D.nii.gz",
+    ):
+        """Workflow for Intra-voxel Incoherent Motion reconstruction and for
         computing IVIM metrics. Performs a IVIM reconstruction on the files
         by 'globing' ``input_files`` and saves the IVIM metrics in a directory
         specified by ``out_dir``.
@@ -1216,50 +1521,60 @@ class ReconstIvimFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, mask, oS0_predicted, operfusion_fraction,
-             oD_star, oD) in io_it:
-
-            logging.info('Computing IVIM metrics for {0}'.format(dwi))
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            oS0_predicted,
+            operfusion_fraction,
+            oD_star,
+            oD,
+        ) in io_it:
+            logging.info(f"Computing IVIM metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
-            ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec,
-                                              b0_threshold)
+            ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec, b0_threshold)
 
             if not save_metrics:
-                save_metrics = ['S0_predicted', 'perfusion_fraction', 'D_star',
-                                'D']
+                save_metrics = ["S0_predicted", "perfusion_fraction", "D_star", "D"]
 
-            if 'S0_predicted' in save_metrics:
-                save_nifti(oS0_predicted,
-                           ivimfit.S0_predicted.astype(np.float32), affine)
+            if "S0_predicted" in save_metrics:
+                save_nifti(
+                    oS0_predicted, ivimfit.S0_predicted.astype(np.float32), affine
+                )
 
-            if 'perfusion_fraction' in save_metrics:
-                save_nifti(operfusion_fraction,
-                           ivimfit.perfusion_fraction.astype(np.float32),
-                           affine)
+            if "perfusion_fraction" in save_metrics:
+                save_nifti(
+                    operfusion_fraction,
+                    ivimfit.perfusion_fraction.astype(np.float32),
+                    affine,
+                )
 
-            if 'D_star' in save_metrics:
+            if "D_star" in save_metrics:
                 save_nifti(oD_star, ivimfit.D_star.astype(np.float32), affine)
 
-            if 'D' in save_metrics:
+            if "D" in save_metrics:
                 save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
-            logging.info('IVIM metrics saved in {0}'.
-                         format(os.path.dirname(oD)))
+            logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
 
     def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
-        logging.info('Intra-Voxel Incoherent Motion Estimation...')
+        logging.info("Intra-Voxel Incoherent Motion Estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
         if any(mask_non_weighted_bvals(bvals, b0_threshold)):
             if b0_threshold < bvals.min():
-                warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 "
-                     "value ({1}).".format(b0_threshold, bvals.min()))
+                warn(
+                    f"b0_threshold (value: {b0_threshold}) is too low, "
+                    "increase your b0_threshold. It should be higher than the "
+                    f"first b0 value ({bvals.min()}).",
+                    stacklevel=2,
+                )
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
@@ -1271,21 +1586,46 @@ class ReconstIvimFlow(Workflow):
 class ReconstRUMBAFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'rumba'
+        return "rumba"
 
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
-            fa_thr=0.7, extract_pam_values=False, sh_order_max=8,
-            odf_to_sh_order=8, parallel=True, num_processes=None,
-            gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
-            recon_type='smf', n_coils=1, R=1, voxelwise=True, use_tv=False,
-            sphere_name='repulsion724', verbose=False,
-            relative_peak_threshold=0.5, min_separation_angle=25, npeaks=5,
-            out_dir='', out_pam='peaks.pam5', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
-            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        roi_center=None,
+        roi_radii=10,
+        fa_thr=0.7,
+        extract_pam_values=False,
+        sh_order_max=8,
+        odf_to_sh_order=8,
+        parallel=True,
+        num_processes=None,
+        gm_response=0.8e-3,
+        csf_response=3.0e-3,
+        n_iter=600,
+        recon_type="smf",
+        n_coils=1,
+        R=1,
+        voxelwise=True,
+        use_tv=False,
+        sphere_name="repulsion724",
+        verbose=False,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        npeaks=5,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+    ):
         """Reconstruct the fiber local orientations using the Robust and
         Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_ model. The
         fiber response function (FRF) is computed using the single-shell,
@@ -1403,11 +1743,20 @@ class ReconstRUMBAFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values,
-             opeaks_indices, ogfa) in io_it:
-
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+        ) in io_it:
             # Read the data
-            logging.info('Loading {0}'.format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1418,50 +1767,75 @@ class ReconstRUMBAFlow(Workflow):
             # assumed that no thresholding is requested
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
-                    warn("b0_threshold (value: {0}) is too low, increase your "
-                         "b0_threshold. It should be higher than the first b0 "
-                         "value ({1}).".format(b0_threshold, bvals.min()))
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
 
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)
+                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
 
             sphere = get_sphere(sphere_name)
 
             # Compute the FRF
             wm_response, _ = auto_response_ssst(
-                gtab, data, roi_center=roi_center, roi_radii=roi_radii,
-                fa_thr=fa_thr)
+                gtab, data, roi_center=roi_center, roi_radii=roi_radii, fa_thr=fa_thr
+            )
 
             # Instantiate the RUMBA-SD reconstruction model
             rumba = RumbaSDModel(
-                gtab, wm_response=wm_response[0], gm_response=gm_response,
-                csf_response=csf_response, n_iter=n_iter,
-                recon_type=recon_type, n_coils=n_coils, R=R,
-                voxelwise=voxelwise, use_tv=use_tv, sphere=sphere,
-                verbose=verbose)
+                gtab,
+                wm_response=wm_response[0],
+                gm_response=gm_response,
+                csf_response=csf_response,
+                n_iter=n_iter,
+                recon_type=recon_type,
+                n_coils=n_coils,
+                R=R,
+                voxelwise=voxelwise,
+                use_tv=use_tv,
+                sphere=sphere,
+                verbose=verbose,
+            )
 
             rumba_peaks = peaks_from_model(
-                model=rumba, data=data, sphere=sphere,
+                model=rumba,
+                data=data,
+                sphere=sphere,
                 relative_peak_threshold=relative_peak_threshold,
-                min_separation_angle=min_separation_angle, mask=mask_vol,
-                return_sh=True, sh_order_max=sh_order_max, normalize_peaks=True,
-                parallel=parallel, num_processes=num_processes)
+                min_separation_angle=min_separation_angle,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order_max,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
 
-            logging.info('Peak computation completed.')
+            logging.info("Peak computation completed.")
 
             rumba_peaks.affine = affine
 
             save_peaks(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                peaks_to_niftis(
+                    rumba_peaks,
+                    oshm,
+                    opeaks_dir,
+                    opeaks_values,
+                    opeaks_indices,
+                    ogfa,
+                    reshape_dirs=True,
+                )
 
             dname_ = os.path.dirname(opam)
-            if dname_ == '':
-                logging.info('Pam5 file saved in current directory')
+            if dname_ == "":
+                logging.info("Pam5 file saved in current directory")
             else:
-                logging.info(
-                        'Pam5 file saved in {0}'.format(dname_))
+                logging.info(f"Pam5 file saved in {dname_}")
 
             return io_it

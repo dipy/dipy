@@ -24,7 +24,7 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial and load the raw diffusion data
 # and the affine.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
@@ -36,13 +36,14 @@ gtab = gradient_table(bvals, bvecs)
 # GradientTable object (gradient information e.g. b-values). For example to
 # read the b-values it is possible to write print(gtab.bvals).
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # Remove most of the background using DIPY's mask module.
 
-maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
-                             numpass=1, autocrop=True, dilate=2)
+maskdata, mask = median_otsu(
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+)
 
 ###############################################################################
 # We instantiate our CSA model with spherical harmonic order (l) of 4
@@ -57,18 +58,20 @@ csamodel = CsaOdfModel(gtab, 4)
 # data and a sphere as input. The sphere is an object that represents the
 # spherical discrete grid where the ODF values will be evaluated.
 
-csapeaks = peaks_from_model(model=csamodel,
-                            data=maskdata,
-                            sphere=default_sphere,
-                            relative_peak_threshold=.5,
-                            min_separation_angle=25,
-                            mask=mask,
-                            return_odf=False,
-                            normalize_peaks=True)
+csapeaks = peaks_from_model(
+    model=csamodel,
+    data=maskdata,
+    sphere=default_sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_odf=False,
+    normalize_peaks=True,
+)
 
 GFA = csapeaks.gfa
 
-print('GFA.shape (%d, %d, %d)' % GFA.shape)
+print(f"GFA.shape {GFA.shape}")
 
 ###############################################################################
 # Apart from GFA, csapeaks also has the attributes peak_values, peak_indices
@@ -95,13 +98,14 @@ csaodfs = csamodel.fit(data_small).odf(default_sphere)
 # using ``np.clip``
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
-csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=default_sphere,
-                                  colormap='plasma', scale=0.4)
+csa_odfs_actor = actor.odf_slicer(
+    csaodfs, sphere=default_sphere, colormap="plasma", scale=0.4
+)
 csa_odfs_actor.display(z=0)
 
 scene.add(csa_odfs_actor)
-print('Saving illustration as csa_odfs.png')
-window.record(scene, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+print("Saving illustration as csa_odfs.png")
+window.record(scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

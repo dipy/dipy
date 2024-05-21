@@ -31,18 +31,24 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package('tensorflow', min_version='2.0.0')
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
     from tensorflow.keras.initializers import Orthogonal
     from tensorflow.keras.layers import Activation, Conv1D, Input
     from tensorflow.keras.models import Model
 
-sklearn, have_sklearn, _ = optional_package('sklearn.model_selection')
+sklearn, have_sklearn, _ = optional_package("sklearn.model_selection")
 
 
 class Cnn1DDenoiser:
-    def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error',
-                 metrics=('accuracy',), loss_weights=None):
+    def __init__(
+        self,
+        sig_length,
+        optimizer="adam",
+        loss="mean_squared_error",
+        metrics=("accuracy",),
+        loss_weights=None,
+    ):
         """Initialize the CNN 1D denoiser with the given parameters.
 
         Parameters
@@ -74,32 +80,38 @@ class Cnn1DDenoiser:
 
         """
         if not have_tf:
-            raise ImportError('TensorFlow is not available. Please install '
-                              'TensorFlow 2+.')
+            raise ImportError(
+                "TensorFlow is not available. Please install TensorFlow 2+."
+            )
         if not have_sklearn:
-            raise ImportError('scikit-learn is not available. Please install '
-                              'scikit-learn.')
+            raise ImportError(
+                "scikit-learn is not available. Please install scikit-learn."
+            )
         input_layer = Input(shape=(sig_length, 1))
-        x = Conv1D(filters=16, kernel_size=16, kernel_initializer=Orthogonal(),
-                   padding='same', name='Conv1')(input_layer)
-        x = Activation('relu', name='ReLU1')(x)
-        max_pool_1d = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2,
-                                                   padding='valid')
+        x = Conv1D(
+            filters=16,
+            kernel_size=16,
+            kernel_initializer=Orthogonal(),
+            padding="same",
+            name="Conv1",
+        )(input_layer)
+        x = Activation("relu", name="ReLU1")(x)
+        max_pool_1d = tf.keras.layers.MaxPooling1D(
+            pool_size=2, strides=2, padding="valid"
+        )
         pool1 = max_pool_1d(x)
-        x = Conv1D(filters=32, kernel_size=8, padding='same',
-                   name='Conv2')(pool1)
-        x = Activation('relu', name='ReLU2')(x)
+        x = Conv1D(filters=32, kernel_size=8, padding="same", name="Conv2")(pool1)
+        x = Activation("relu", name="ReLU2")(x)
         pool2 = max_pool_1d(x)
         pool2_flat = tf.keras.layers.Flatten()(pool2)
-        logits = tf.keras.layers.Dense(units=sig_length,
-                                       activation='relu')(pool2_flat)
+        logits = tf.keras.layers.Dense(units=sig_length, activation="relu")(pool2_flat)
         model = Model(inputs=input_layer, outputs=logits)
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
-                      loss_weights=loss_weights)
+        model.compile(
+            optimizer=optimizer, loss=loss, metrics=metrics, loss_weights=loss_weights
+        )
         self.model = model
 
-    def compile(self, optimizer='adam', loss=None, metrics=None,
-                loss_weights=None):
+    def compile(self, optimizer="adam", loss=None, metrics=None, loss_weights=None):
         """Configure the model for training.
 
         Parameters
@@ -123,8 +135,9 @@ class Cnn1DDenoiser:
             coefficients.
 
         """
-        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
-                           loss_weights=loss_weights)
+        self.model.compile(
+            optimizer=optimizer, loss=loss, metrics=metrics, loss_weights=loss_weights
+        )
 
     def summary(self):
         """Get the summary of the model.
@@ -140,8 +153,16 @@ class Cnn1DDenoiser:
         """
         return self.model.summary()
 
-    def train_test_split(self, x, y, test_size=None, train_size=None,
-                         random_state=None, shuffle=True, stratify=None):
+    def train_test_split(
+        self,
+        x,
+        y,
+        test_size=None,
+        train_size=None,
+        random_state=None,
+        shuffle=True,
+        stratify=None,
+    ):
         """Split the input data into random train and test subsets.
 
         Parameters
@@ -179,19 +200,37 @@ class Cnn1DDenoiser:
         """
         sz = x.shape
         if len(sz) == 4:
-            x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
+            x = np.reshape(x, (sz[0] * sz[1] * sz[2], sz[3]))
         sz = y.shape
         if len(sz) == 4:
-            y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
+            y = np.reshape(y, (sz[0] * sz[1] * sz[2], sz[3]))
         return sklearn.train_test_split(
-            x, y, test_size=test_size, train_size=train_size,
-            random_state=random_state, shuffle=shuffle, stratify=stratify)
+            x,
+            y,
+            test_size=test_size,
+            train_size=train_size,
+            random_state=random_state,
+            shuffle=shuffle,
+            stratify=stratify,
+        )
 
-    def fit(self, x, y, batch_size=None, epochs=1, verbose=1,
-            callbacks=None, validation_split=0.0, validation_data=None,
-            shuffle=True, initial_epoch=0, steps_per_epoch=None,
-            validation_steps=None, validation_batch_size=None,
-            validation_freq=1):
+    def fit(
+        self,
+        x,
+        y,
+        batch_size=None,
+        epochs=1,
+        verbose=1,
+        callbacks=None,
+        validation_split=0.0,
+        validation_data=None,
+        shuffle=True,
+        initial_epoch=0,
+        steps_per_epoch=None,
+        validation_steps=None,
+        validation_batch_size=None,
+        validation_freq=1,
+    ):
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed number of epochs
@@ -252,23 +291,37 @@ class Cnn1DDenoiser:
         """
         sz = x.shape
         if len(sz) == 4:
-            x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
+            x = np.reshape(x, (sz[0] * sz[1] * sz[2], sz[3]))
         sz = y.shape
         if len(sz) == 4:
-            y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-        return self.model.fit(x=x, y=y, batch_size=batch_size,
-                              epochs=epochs, verbose=verbose,
-                              callbacks=callbacks,
-                              validation_split=validation_split,
-                              validation_data=validation_data, shuffle=shuffle,
-                              initial_epoch=initial_epoch,
-                              steps_per_epoch=steps_per_epoch,
-                              validation_steps=validation_steps,
-                              validation_batch_size=validation_batch_size,
-                              validation_freq=validation_freq)
+            y = np.reshape(y, (sz[0] * sz[1] * sz[2], sz[3]))
+        return self.model.fit(
+            x=x,
+            y=y,
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=verbose,
+            callbacks=callbacks,
+            validation_split=validation_split,
+            validation_data=validation_data,
+            shuffle=shuffle,
+            initial_epoch=initial_epoch,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            validation_batch_size=validation_batch_size,
+            validation_freq=validation_freq,
+        )
 
-    def evaluate(self, x, y, batch_size=None, verbose=1,
-                 steps=None, callbacks=None, return_dict=False):
+    def evaluate(
+        self,
+        x,
+        y,
+        batch_size=None,
+        verbose=1,
+        steps=None,
+        callbacks=None,
+        return_dict=False,
+    ):
         """Evaluate the model on a test dataset.
 
         Parameters
@@ -308,17 +361,21 @@ class Cnn1DDenoiser:
         """
         sz = x.shape
         if len(sz) == 4:
-            x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
+            x = np.reshape(x, (sz[0] * sz[1] * sz[2], sz[3]))
         sz = y.shape
         if len(sz) == 4:
-            y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-        return self.model.evaluate(x=x, y=y, batch_size=batch_size,
-                                   verbose=verbose, steps=steps,
-                                   callbacks=callbacks,
-                                   return_dict=return_dict)
+            y = np.reshape(y, (sz[0] * sz[1] * sz[2], sz[3]))
+        return self.model.evaluate(
+            x=x,
+            y=y,
+            batch_size=batch_size,
+            verbose=verbose,
+            steps=steps,
+            callbacks=callbacks,
+            return_dict=return_dict,
+        )
 
-    def predict(self, x, batch_size=None, verbose=0,
-                steps=None, callbacks=None):
+    def predict(self, x, batch_size=None, verbose=0, steps=None, callbacks=None):
         """Generate predictions for input samples.
 
         Parameters
@@ -350,12 +407,17 @@ class Cnn1DDenoiser:
 
         """
         sz = x.shape
-        x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
+        x = np.reshape(x, (sz[0] * sz[1] * sz[2], sz[3]))
         predicted_output = self.model.predict(
-            x=x, batch_size=batch_size, verbose=verbose, steps=steps,
-            callbacks=callbacks)
-        predicted_output = np.float32(np.reshape(predicted_output,
-                                                 (sz[0], sz[1], sz[2], sz[3])))
+            x=x,
+            batch_size=batch_size,
+            verbose=verbose,
+            steps=steps,
+            callbacks=callbacks,
+        )
+        predicted_output = np.float32(
+            np.reshape(predicted_output, (sz[0], sz[1], sz[2], sz[3]))
+        )
         return predicted_output
 
     def save_weights(self, filepath, overwrite=True):
@@ -370,8 +432,9 @@ class Cnn1DDenoiser:
             raises an error if the file already exists.
 
         """
-        self.model.save_weights(filepath=filepath, overwrite=overwrite,
-                                save_format=None)
+        self.model.save_weights(
+            filepath=filepath, overwrite=overwrite, save_format=None
+        )
 
     def load_weights(self, filepath):
         """Load the model weights from the specified file path.
