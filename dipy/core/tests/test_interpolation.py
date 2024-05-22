@@ -76,7 +76,7 @@ def test_interpolate_scalar_2d(rng):
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz + 2, sz + 2), dtype=floating)
-    extended_image[1 : sz + 1, 1 : sz + 1] = image[...]
+    extended_image[1: sz + 1, 1: sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 200
@@ -131,7 +131,7 @@ def test_interpolate_scalar_nn_2d(rng):
     # Test the 'inside' flag
     for i in range(nsamples):
         if (locations[i, 0] < 0 or locations[i, 0] > (sz - 1)) or (
-            locations[i, 1] < 0 or locations[i, 1] > (sz - 1)
+                locations[i, 1] < 0 or locations[i, 1] > (sz - 1)
         ):
             npt.assert_equal(inside[i], 0)
         else:
@@ -174,7 +174,7 @@ def test_interpolate_scalar_3d(rng):
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=floating)
-    extended_image[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = image[...]
+    extended_image[1: sz + 1, 1: sz + 1, 1: sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 800
@@ -218,7 +218,7 @@ def test_interpolate_vector_3d(rng):
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (3,))
 
     extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=floating)
-    extended_field[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = field
+    extended_field[1: sz + 1, 1: sz + 1, 1: sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 800
     locations = rng.random(3 * nsamples).reshape((nsamples, 3)) * (sz + 2) - 1.0
@@ -267,7 +267,7 @@ def test_interpolate_vector_2d(rng):
     field = np.empty(target_shape + (2,), dtype=floating)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (2,))
     extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=floating)
-    extended_field[1 : sz + 1, 1 : sz + 1] = field
+    extended_field[1: sz + 1, 1: sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 200
     locations = rng.random(2 * nsamples).reshape((nsamples, 2)) * (sz + 2) - 1.0
@@ -396,15 +396,19 @@ def test_trilinear_interp_cubic_voxels():
 
 
 def test_interp_rbf():
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
+
+    # Test legacy mode
     def data_func(s, a, b):
         return a * np.cos(s.theta) + b * np.sin(s.phi)
 
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = data_func(s0, a, b)
         expected = data_func(s1, a, b)
         interp_data_a = interp_rbf(data, s0, s1, norm="angle")
+        npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+        interp_data_a = interp_rbf(data, s0, s1, norm="angle", epsilon=1)
         npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
 
     # Test that using the euclidean norm raises a warning
@@ -416,3 +420,30 @@ def test_interp_rbf():
         npt.assert_(len(w) == 1)
         npt.assert_(issubclass(w[-1].category, PendingDeprecationWarning))
         npt.assert_("deprecated" in str(w[-1].message))
+
+    # Test new mode
+    def data_func_3d(s, a, b, i, j, k):
+        return data_func(s, a, b) + i + j + k
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, 4, 5, len(s0.vertices)])
+        for i in range(3):
+            for j in range(4):
+                for k in range(5):
+                    data[i, j, k] = data_func_3d(s0, a, b, i, j, k)
+        expected = np.empty([3, 4, 5, len(s1.vertices)])
+        for i in range(3):
+            for j in range(4):
+                for k in range(5):
+                    expected[i, j, k] = data_func_3d(s1, a, b, i, j, k)
+        interp_data = interp_rbf(data, s0, s1, legacy=False, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test that interpolating 3D data when `legacy=False` raises an error
+    with npt.assert_raises(ValueError):
+        interp_rbf(data, s0, s1, legacy=True, epsilon=10)
+
+    # Test that shape mismatch raises an error
+    with npt.assert_raises(ValueError):
+        data = data[:, :, :, :-1]  # Remove one vertex
+        interp_rbf(data, s0, s1, legacy=False, epsilon=10)

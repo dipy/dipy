@@ -57,9 +57,10 @@ def interp_rbf(data, sphere_origin, sphere_target,
     from scipy.interpolate import Rbf, RBFInterpolator
 
     if legacy:
-        assert len(data.shape) == 1, \
-            "The data array must be 1D when using the legacy mode, " \
-            "set `legacy=False` to interpolate tensor-valued spherical functions."
+        if not len(data.shape) == 1:
+            raise ValueError("The data array must be 1D when using the legacy mode, "
+                             "set `legacy=False` to interpolate tensor-valued spherical functions.")
+
         def angle(x1, x2):
             xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
             return np.nan_to_num(xx)
@@ -94,9 +95,9 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     else:
         last_dim_idx = len(data.shape) - 1
-        assert data.shape[last_dim_idx] == sphere_origin.vertices.shape[0], \
-            "The last dimension of `data` must be equal to the number of " \
-            "vertices in `sphere_origin`."
+        if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
+            raise ValueError("The last dimension of `data` must be equal to the number of "
+                             "vertices in `sphere_origin`.")
 
         rbfi = RBFInterpolator(sphere_origin.vertices, np.moveaxis(data, last_dim_idx, 0),
                                smoothing=smooth, kernel=function, epsilon=epsilon)
