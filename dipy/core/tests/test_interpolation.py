@@ -439,7 +439,7 @@ def test_interp_rbf():
         interp_data = interp_rbf(data, s0, s1, legacy=False, epsilon=10)
         npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
 
-    # Test that interpolating 3D data when `legacy=False` raises an error
+    # Test that interpolating 3D data when `legacy=True` raises an error
     with npt.assert_raises(ValueError):
         interp_rbf(data, s0, s1, legacy=True, epsilon=10)
 
