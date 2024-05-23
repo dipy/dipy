@@ -76,7 +76,7 @@ def test_interpolate_scalar_2d(rng):
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz + 2, sz + 2), dtype=floating)
-    extended_image[1: sz + 1, 1: sz + 1] = image[...]
+    extended_image[1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 200
@@ -131,7 +131,7 @@ def test_interpolate_scalar_nn_2d(rng):
     # Test the 'inside' flag
     for i in range(nsamples):
         if (locations[i, 0] < 0 or locations[i, 0] > (sz - 1)) or (
-                locations[i, 1] < 0 or locations[i, 1] > (sz - 1)
+            locations[i, 1] < 0 or locations[i, 1] > (sz - 1)
         ):
             npt.assert_equal(inside[i], 0)
         else:
@@ -174,7 +174,7 @@ def test_interpolate_scalar_3d(rng):
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=floating)
-    extended_image[1: sz + 1, 1: sz + 1, 1: sz + 1] = image[...]
+    extended_image[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 800
@@ -218,7 +218,7 @@ def test_interpolate_vector_3d(rng):
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (3,))
 
     extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=floating)
-    extended_field[1: sz + 1, 1: sz + 1, 1: sz + 1] = field
+    extended_field[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 800
     locations = rng.random(3 * nsamples).reshape((nsamples, 3)) * (sz + 2) - 1.0
@@ -267,7 +267,7 @@ def test_interpolate_vector_2d(rng):
     field = np.empty(target_shape + (2,), dtype=floating)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (2,))
     extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=floating)
-    extended_field[1: sz + 1, 1: sz + 1] = field
+    extended_field[1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 200
     locations = rng.random(2 * nsamples).reshape((nsamples, 2)) * (sz + 2) - 1.0
