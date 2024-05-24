@@ -884,7 +884,7 @@ def test_peaks_from_positions():
     )
     assert_array_almost_equal(peaks_eye, peaks)
 
-    # test with invalid seed coordiantes
+    # test with invalid seed coordinates
     affine = np.eye(4)
     positions = np.array([[0, -1, 0], [0.1, -0.1, 0.1]])
 
