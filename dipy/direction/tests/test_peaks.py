@@ -1,5 +1,4 @@
 from io import BytesIO
-from itertools import product
 import pickle
 from random import randint
 import warnings
@@ -11,7 +10,7 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
-    assert_raises
+    assert_raises,
 )
 
 from dipy.core.gradients import GradientTable, gradient_table
@@ -188,16 +187,14 @@ def test_peak_directions_thorough():
     mevals = np.array([[0.0025, 0.0003, 0.0003], [0.0025, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0)]
     fractions = [50, 50]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two unequal fibers
     fractions = [75, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
@@ -209,8 +206,7 @@ def test_peak_directions_thorough():
     mevals = np.array(([0.0045, 0.0003, 0.0003], [0.0045, 0.0003, 0.0003]))
     fractions = [50, 50]
     angles = [(0, 0), (20, 0)]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
@@ -223,8 +219,7 @@ def test_peak_directions_thorough():
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     fractions = [50, 50]
     angles = [(15, 0), (15, 0)]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 15.0)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
@@ -238,8 +233,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (90, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -250,8 +244,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -262,8 +255,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [40, 40, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -279,8 +271,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [35, 35, 20, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_almost_equal(angular_similarity(directions, sticks), 3, 2)
@@ -296,8 +287,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [25, 25, 25, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.15, 5.0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 2)
@@ -313,8 +303,7 @@ def test_peak_directions_thorough():
     )
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [30, 30, 20, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
@@ -334,8 +323,7 @@ def test_peak_directions_thorough():
     # four peaks and one them quite small
     fractions = [35, 35, 20, 10]
 
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
@@ -351,8 +339,7 @@ def test_peak_directions_thorough():
     mevals = np.array([[0.0015, 0.0015, 0.0015]])
     angles = [(0, 0)]
     fractions = [100.0]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
     assert_equal(len(values) > 10, True)
@@ -373,8 +360,7 @@ def test_difference_with_minmax():
     )
     angles = [(0, 0), (45, 0), (90, 0), (90, 90), (0, 0)]
     fractions = [20, 20, 10, 1, 100 - 20 - 20 - 10 - 1]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
     # We will show that when the minmax normalization is used we can remove
     # the noisy peak using a lower threshold.
@@ -478,8 +464,7 @@ def test_peaksFromModel():
                 message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning,
             )
-            pam = peaks_from_model(model, data, sphere,
-                                   0.5, 45, normalize_peaks=True)
+            pam = peaks_from_model(model, data, sphere, 0.5, 45, normalize_peaks=True)
 
         assert_array_equal(pam.gfa, gfa(_odf))
         assert_array_equal(pam.peak_values[:, 0], 1.0)
@@ -497,8 +482,7 @@ def test_peaksFromModel():
                 message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning,
             )
-            pam = peaks_from_model(model, data, sphere,
-                                   0.5, 45, return_odf=True)
+            pam = peaks_from_model(model, data, sphere, 0.5, 45, return_odf=True)
         expected_shape = (len(data), len(_odf))
         assert_equal(pam.odf.shape, expected_shape)
         assert_((_odf == pam.odf).all())
@@ -567,10 +551,8 @@ def test_peaksFromModel():
                         "B",
                         "odf",
                     ]:
-                        assert_array_equal(
-                            getattr(pam, attr), getattr(new_pam, attr))
-                        assert_array_equal(
-                            pam.sphere.vertices, new_pam.sphere.vertices)
+                        assert_array_equal(getattr(pam, attr), getattr(new_pam, attr))
+                        assert_array_equal(pam.sphere.vertices, new_pam.sphere.vertices)
 
 
 def test_peaksFromModelParallel():
