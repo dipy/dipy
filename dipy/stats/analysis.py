@@ -8,6 +8,7 @@ from scipy.spatial.distance import mahalanobis
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     orient_by_streamline,
@@ -150,7 +151,8 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     return indx
 
 
-def gaussian_weights(bundle, n_points=100, return_mahalnobis=False, stat=np.mean):
+@warning_for_keywords()
+def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.mean):
     """
     Calculate weights for each streamline/node in a bundle, based on a
     Mahalanobis distance from the core the bundle, at that node (mean, per
@@ -228,10 +230,12 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False, stat=np.mean
     return w / np.sum(w, 0)
 
 
+@warning_for_keywords()
 def afq_profile(
     data,
     bundle,
     affine,
+    *,
     n_points=100,
     profile_stat=np.average,
     orient_by=None,
