@@ -484,7 +484,7 @@ class MeanDiffusionKurtosisFit:
     @auto_attr
     def smt2di(self):
         r"""
-        Computes the intrisic diffusivity from the mean signal diffusional
+        Computes the intrinsic diffusivity from the mean signal diffusional
         kurtosis parameters assuming the 2-compartmental spherical mean
         technique model [1]_, [2]_
 

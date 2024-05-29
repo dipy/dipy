@@ -1512,7 +1512,7 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
 
     Returns
     -------
-    out : a float[2] array having the euclidean distance and the fliped euclidean distance
+    out : a float[2] array having the euclidean distance and the flipped euclidean distance
 
     """
 

@@ -24,7 +24,7 @@
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - DTI-style acquistion, multiple b=0, all shells should be within maximum b-value of 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)
+     - DTI-style acquisition, multiple b=0, all shells should be within maximum b-value of 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)
      - `Pasternak 2009 <https://www.ncbi.nlm.nih.gov/pubmed/19623619>`__, `Henriques et al., 2017 <https://github.com/ReScience-Archives/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017/raw/master/article/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017.pdf>`__
    * - :ref:`DKI - Standard <sphx_glr_examples_built_reconstruction_reconst_dki.py>`
      - :bdg-danger:`No`
