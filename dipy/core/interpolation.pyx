@@ -9,16 +9,24 @@ import warnings
 from libc.math cimport floor
 
 from dipy.align.fused_types cimport floating, number
+from dipy.utils.deprecator import deprecate_with_version
 
 
+@deprecate_with_version(
+    "dipy.core.interpolation.interp_rbf is deprecated, "
+    "Please use "
+    "dipy.core.interpolation.rbf_interpolation instead",
+    since="1.9",
+    until="2.0",
+)
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0.1,
-               norm="angle", legacy=True):
+               norm="angle"):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
     ----------
-    data : (..., N) ndarray
+    data : (N,) ndarray
         Function values on the unit sphere.
     sphere_origin : Sphere
         Positions of data values.
@@ -30,6 +38,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
     epsilon : float
         Radial basis function spread parameter. Defaults to approximate average
         distance between nodes.
+    a good start
     smooth : float
         values greater than zero increase the smoothness of the
         approximation with 0 as pure interpolation. Default: 0.1
@@ -37,71 +46,99 @@ def interp_rbf(data, sphere_origin, sphere_target,
         A string indicating the function that returns the
         "distance" between two points.
         'angle' - The angle between two vectors
-        'euclidean_norm' - The Euclidean distance.
-        The value of this option is ignored if `legacy` is False.
-    legacy : bool
-        If True, internally uses scipy.interpolate.Rbf, and
-        if False, internally uses scipy.interpolate.RBFInterpolator.
+        'euclidean_norm' - The Euclidean distance
 
     Returns
     -------
-    v : (..., N) ndarray
+    v : (M,) ndarray
         Interpolated values.
 
     See Also
     --------
     scipy.interpolate.Rbf
+
+    """
+    from scipy.interpolate import Rbf
+
+    def angle(x1, x2):
+        xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
+        return np.nan_to_num(xx)
+
+    def euclidean_norm(x1, x2):
+        return np.sqrt(((x1 - x2)**2).sum(axis=0))
+
+    if norm == "angle":
+        norm = angle
+    elif norm == "euclidean_norm":
+        w_s = "The Euclidean norm used for interpolation is inaccurate "
+        w_s += "and will be deprecated in future versions. Please consider "
+        w_s += "using the 'angle' norm instead"
+        warnings.warn(w_s, PendingDeprecationWarning)
+        norm = euclidean_norm
+
+    # Workaround for bug in older versions of SciPy that don't allow
+    # specification of epsilon None:
+    if epsilon is not None:
+        kwargs = {'function': function,
+                  'epsilon': epsilon,
+                  'smooth': smooth,
+                  'norm': norm}
+    else:
+        kwargs = {'function': function,
+                  'smooth': smooth,
+                  'norm': norm}
+
+    rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
+               **kwargs)
+    return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
+
+
+def rbf_interpolation(data, sphere_origin, sphere_target,
+                      function='multiquadric', epsilon=None, smoothing=0.1):
+    """Interpolate `data` on the sphere, using radial basis functions,
+    where `data` can be scalar- (1D), vector- (2D), or tensor-valued (3D and beyond).
+
+    Parameters
+    ----------
+    data : (..., N) ndarray
+        Values of the spherical function evaluated at the N positions specified by `sphere_origin`.
+    sphere_origin : Sphere
+        N positions on the unit sphere where the spherical function is evaluated.
+    sphere_target : Sphere
+        M positions on the unit sphere where the spherical function is interpolated.
+
+    function : {'linear', 'thin_plate_spline', 'cubic', 'quintic', 'multiquadric', 'inverse_multiquadric',
+    'inverse_quadratic', 'gaussian'}
+        Radial basis function. Default: `thin_plate_spline`.
+    epsilon : float
+        Radial basis function spread parameter.
+        Defaults to 1 when `function` is 'linear', 'thin_plate_spline', 'cubic', or 'quintic'.
+        Otherwise, `epsilon` must be specified.
+    smoothing : float
+        Smoothing parameter. When `smoothing` is 0, the interpolation is exact.
+        As `smoothing` increases, the interpolation approaches a least-squares fit of `data`
+        using the supplied radial basis function. Default: 0.
+
+    Returns
+    -------
+    v : (..., M) ndarray
+        Interpolated values of the spherical function at M positions specified by `sphere_target`.
+
+    See Also
+    --------
     scipy.interpolate.RBFInterpolator
 
     """
-    from scipy.interpolate import Rbf, RBFInterpolator
+    from scipy.interpolate import RBFInterpolator
 
-    if legacy:
-        if not len(data.shape) == 1:
-            raise ValueError("The data array must be 1D when using the legacy mode, "
-                             "set `legacy=False` to interpolate tensor-valued spherical functions.")
+    last_dim_idx = len(data.shape) - 1
+    if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
+        raise ValueError("The last dimension of `data` must be equal to the number of "
+                         "vertices in `sphere_origin`.")
 
-        def angle(x1, x2):
-            xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
-            return np.nan_to_num(xx)
-
-        def euclidean_norm(x1, x2):
-            return np.sqrt(((x1 - x2)**2).sum(axis=0))
-
-        if norm == "angle":
-            norm = angle
-        elif norm == "euclidean_norm":
-            w_s = "The Euclidean norm used for interpolation is inaccurate "
-            w_s += "and will be deprecated in future versions. Please consider "
-            w_s += "using the 'angle' norm instead"
-            warnings.warn(w_s, PendingDeprecationWarning)
-            norm = euclidean_norm
-
-        # Workaround for bug in older versions of SciPy that don't allow
-        # specification of epsilon None:
-        if epsilon is not None:
-            kwargs = {'function': function,
-                      'epsilon': epsilon,
-                      'smooth': smooth,
-                      'norm': norm}
-        else:
-            kwargs = {'function': function,
-                      'smooth': smooth,
-                      'norm': norm}
-
-        rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
-                   **kwargs)
-        return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
-
-    else:
-        last_dim_idx = len(data.shape) - 1
-        if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
-            raise ValueError("The last dimension of `data` must be equal to the number of "
-                             "vertices in `sphere_origin`.")
-
-        rbfi = RBFInterpolator(sphere_origin.vertices, np.moveaxis(data, last_dim_idx, 0),
-                               smoothing=smooth, kernel=function, epsilon=epsilon)
-        return np.moveaxis(rbfi(sphere_target.vertices), 0, last_dim_idx)
+    rbfi = RBFInterpolator(sphere_origin.vertices, np.moveaxis(data, last_dim_idx, 0),
+                           smoothing=smoothing, kernel=function, epsilon=epsilon)
+    return np.moveaxis(rbfi(sphere_target.vertices), 0, last_dim_idx)
 
 
 @cython.cdivision(True)

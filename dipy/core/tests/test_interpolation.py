@@ -17,6 +17,7 @@ from dipy.core.interpolation import (
     interpolate_vector_2d,
     interpolate_vector_3d,
     map_coordinates_trilinear_iso,
+    rbf_interpolation,
     trilinear_interpolate4d,
 )
 from dipy.core.subdivide_octahedron import create_unit_sphere
@@ -396,20 +397,23 @@ def test_trilinear_interp_cubic_voxels():
 
 
 def test_interp_rbf():
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
-
-    # Test legacy mode
     def data_func(s, a, b):
         return a * np.cos(s.theta) + b * np.sin(s.phi)
+
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
 
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = data_func(s0, a, b)
         expected = data_func(s1, a, b)
-        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-        npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-        interp_data_a = interp_rbf(data, s0, s1, norm="angle", epsilon=1)
-        npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            interp_data_a = interp_rbf(data, s0, s1, norm="angle")
+            npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+            npt.assert_(len(w) == 1)
+            npt.assert_(issubclass(w[0].category, DeprecationWarning))
+            npt.assert_("deprecated" in str(w[0].message))
 
     # Test that using the euclidean norm raises a warning
     # (following
@@ -417,13 +421,19 @@ def test_interp_rbf():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         interp_rbf(data, s0, s1, norm="euclidean_norm")
-        npt.assert_(len(w) == 1)
-        npt.assert_(issubclass(w[-1].category, PendingDeprecationWarning))
-        npt.assert_("deprecated" in str(w[-1].message))
+        npt.assert_(len(w) == 2)
+        npt.assert_(issubclass(w[0].category, DeprecationWarning))
+        npt.assert_("deprecated" in str(w[0].message))
+        npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
+        npt.assert_("deprecated" in str(w[1].message))
 
-    # Test new mode
+
+def test_rbf_interpolation():
     def data_func_3d(s, a, b, i, j, k):
-        return data_func(s, a, b) + i + j + k
+        return a * np.cos(s.theta) + b * np.sin(s.phi) + i + j + k
+
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
 
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = np.empty([3, 4, 5, len(s0.vertices)])
@@ -436,14 +446,10 @@ def test_interp_rbf():
             for j in range(4):
                 for k in range(5):
                     expected[i, j, k] = data_func_3d(s1, a, b, i, j, k)
-        interp_data = interp_rbf(data, s0, s1, legacy=False, epsilon=10)
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
         npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
-
-    # Test that interpolating 3D data when `legacy=True` raises an error
-    with npt.assert_raises(ValueError):
-        interp_rbf(data, s0, s1, legacy=True, epsilon=10)
 
     # Test that shape mismatch raises an error
     with npt.assert_raises(ValueError):
         data = data[:, :, :, :-1]  # Remove one vertex
-        interp_rbf(data, s0, s1, legacy=False, epsilon=10)
+        rbf_interpolation(data, s0, s1, epsilon=10)
