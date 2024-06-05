@@ -429,11 +429,49 @@ def test_interp_rbf():
 
 
 def test_rbf_interpolation():
-    def data_func_3d(s, a, b, i, j, k):
-        return a * np.cos(s.theta) + b * np.sin(s.phi) + i + j + k
-
     s0 = create_unit_sphere(3)
     s1 = create_unit_sphere(4)
+
+    def data_func(s, a, b):
+        return a * np.cos(s.theta) + b * np.sin(s.phi)
+
+    # Test 1D case
+    def data_func_1d(s, a, b, i):
+        return data_func(s, a, b) + i
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, len(s0.vertices)])
+        for i in range(3):
+            data[i] = data_func_1d(s0, a, b, i)
+
+        expected = np.empty([3, len(s1.vertices)])
+        for i in range(3):
+            expected[i] = data_func_1d(s1, a, b, i)
+
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test 2D case
+    def data_func_2d(s, a, b, i, j):
+        return data_func(s, a, b) + i + j
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, 4, len(s0.vertices)])
+        for i in range(3):
+            for j in range(4):
+                data[i, j] = data_func_2d(s0, a, b, i, j)
+
+        expected = np.empty([3, 4, len(s1.vertices)])
+        for i in range(3):
+            for j in range(4):
+                expected[i, j] = data_func_2d(s1, a, b, i, j)
+
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test 3D case
+    def data_func_3d(s, a, b, i, j, k):
+        return data_func(s, a, b) + i + j + k
 
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = np.empty([3, 4, 5, len(s0.vertices)])
@@ -441,11 +479,13 @@ def test_rbf_interpolation():
             for j in range(4):
                 for k in range(5):
                     data[i, j, k] = data_func_3d(s0, a, b, i, j, k)
+
         expected = np.empty([3, 4, 5, len(s1.vertices)])
         for i in range(3):
             for j in range(4):
                 for k in range(5):
                     expected[i, j, k] = data_func_3d(s1, a, b, i, j, k)
+
         interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
         npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
 

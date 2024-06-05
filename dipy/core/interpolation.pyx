@@ -16,8 +16,8 @@ from dipy.utils.deprecator import deprecate_with_version
     "dipy.core.interpolation.interp_rbf is deprecated, "
     "Please use "
     "dipy.core.interpolation.rbf_interpolation instead",
-    since="1.9",
-    until="2.0",
+    since="1.10.0",
+    until="1.12.0",
 )
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0.1,
@@ -93,7 +93,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
 
 
-def rbf_interpolation(data, sphere_origin, sphere_target,
+def rbf_interpolation(data, sphere_origin, sphere_target, *,
                       function='multiquadric', epsilon=None, smoothing=0.1):
     """Interpolate `data` on the sphere, using radial basis functions,
     where `data` can be scalar- (1D), vector- (2D), or tensor-valued (3D and beyond).
@@ -107,14 +107,15 @@ def rbf_interpolation(data, sphere_origin, sphere_target,
     sphere_target : Sphere
         M positions on the unit sphere where the spherical function is interpolated.
 
-    function : {'linear', 'thin_plate_spline', 'cubic', 'quintic', 'multiquadric', 'inverse_multiquadric',
-    'inverse_quadratic', 'gaussian'}
-        Radial basis function. Default: `thin_plate_spline`.
-    epsilon : float
+    function: str, optional
+        Radial basis function.
+        Possible values: {'linear', 'thin_plate_spline', 'cubic', 'quintic',
+        'multiquadric', 'inverse_multiquadric', 'inverse_quadratic', 'gaussian'}.
+    epsilon : float, optional
         Radial basis function spread parameter.
         Defaults to 1 when `function` is 'linear', 'thin_plate_spline', 'cubic', or 'quintic'.
         Otherwise, `epsilon` must be specified.
-    smoothing : float
+    smoothing : float, optional
         Smoothing parameter. When `smoothing` is 0, the interpolation is exact.
         As `smoothing` increases, the interpolation approaches a least-squares fit of `data`
         using the supplied radial basis function. Default: 0.
@@ -131,7 +132,7 @@ def rbf_interpolation(data, sphere_origin, sphere_target,
     """
     from scipy.interpolate import RBFInterpolator
 
-    last_dim_idx = len(data.shape) - 1
+    last_dim_idx = data.ndim - 1
     if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
         raise ValueError("The last dimension of `data` must be equal to the number of "
                          "vertices in `sphere_origin`.")
