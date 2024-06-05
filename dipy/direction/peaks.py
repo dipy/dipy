@@ -678,7 +678,7 @@ def peaks_from_positions(
     Parameters
     ----------
     position : array, (N, 3)
-        Voxel coordinates of the N positions.
+        World coordinates of the N positions.
     odfs : array, (X, Y, Z, M)
         Orientation distribution function (spherical function) represented
         on a sphere of M points.
