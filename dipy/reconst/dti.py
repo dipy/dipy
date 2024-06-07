@@ -1632,7 +1632,7 @@ class _NllsHelper:
                 return ans
 
     def jacobian_func(self, tensor, design_matrix, data, weights=None):
-        """The Jacobian is the first derivative of the error function [1]_.
+        r"""The Jacobian is the first derivative of the error function [1]_.
 
         Parameters
         ----------
