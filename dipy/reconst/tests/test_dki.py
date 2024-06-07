@@ -323,7 +323,7 @@ def test_dki_fits():
             gtab_2s, fit_method=fit_method, return_S0_hat=True, **kwargs
         )
         # FIXME: CLS and CWLS generally fail with noisy data - needs fixing
-        #dki_S0F = dki_S0M.fit(DWI + np.random.normal(size=DWI.shape),\
+        # dki_S0F = dki_S0M.fit(DWI + np.random.normal(size=DWI.shape),\
         #                      mask=mask_test)
         dki_S0F = dki_S0M.fit(DWI)
         dki_S0F_S0 = dki_S0F.model_S0
@@ -336,7 +336,7 @@ def test_dki_fits():
     if have_cvxpy:
         tested_methods = ['WLS']
         # FIXME: CWLS generally failing with noisy data, needs fixing
-        #tested_methods = ['WLS', 'CWLS']
+        # tested_methods = ['WLS', 'CWLS']
     else:
         tested_methods = ['WLS']
     for fit_method in tested_methods:
