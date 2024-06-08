@@ -15,6 +15,7 @@ This is an implementation of the sparse fascicle model described in
    Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
    models at multiple b-values with cross-validation. ISMRM 2014.
 """
+
 from collections import OrderedDict
 import gc
 import warnings
@@ -36,14 +37,15 @@ import dipy.sims.voxel as sims
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 
-joblib, has_joblib, _ = optional_package('joblib')
-sklearn, has_sklearn, _ = optional_package('sklearn')
-lm, _, _ = optional_package('sklearn.linear_model')
+joblib, has_joblib, _ = optional_package("joblib")
+sklearn, has_sklearn, _ = optional_package("sklearn")
+lm, _, _ = optional_package("sklearn.linear_model")
 
 
 # Isotropic signal models: these are models of the part of the signal that
 # changes with b-value, but does not change with direction. This collection is
 # extensible, by inheriting from IsotropicModel/IsotropicFit below:
+
 
 # First, a helper function to derive the fit signal for these models:
 def _to_fit_iso(data, gtab, mask=None):
@@ -79,6 +81,7 @@ class IsotropicModel(ReconstModel):
     mean in each voxel as an estimate of the signal that does not depend on
     direction.
     """
+
     def __init__(self, gtab):
         """Initialize an IsotropicModel.
 
@@ -120,6 +123,7 @@ class IsotropicFit(ReconstFit):
     A fit object for representing the isotropic signal as the mean of the
     diffusion-weighted signal.
     """
+
     def __init__(self, model, params):
         """Initialize an IsotropicFit object.
 
@@ -153,11 +157,11 @@ class IsotropicFit(ReconstFit):
         if gtab is None:
             gtab = self.model.gtab
         if len(self.params.shape) == 0:
-            return self.params[..., np.newaxis] + np.zeros(
-                                                        np.sum(~gtab.b0s_mask))
+            return self.params[..., np.newaxis] + np.zeros(np.sum(~gtab.b0s_mask))
         else:
             return self.params[..., np.newaxis] + np.zeros(
-                self.params.shape + (np.sum(~gtab.b0s_mask),))
+                self.params.shape + (np.sum(~gtab.b0s_mask),)
+            )
 
 
 class ExponentialIsotropicModel(IsotropicModel):
@@ -165,6 +169,7 @@ class ExponentialIsotropicModel(IsotropicModel):
     Representing the isotropic signal as a fit to an exponential decay function
     with b-values
     """
+
     def fit(self, data, mask=None, **kwargs):
         """
 
@@ -200,6 +205,7 @@ class ExponentialIsotropicFit(IsotropicFit):
     """
     A fit to the ExponentialIsotropicModel object, based on data.
     """
+
     def predict(self, gtab=None):
         """
         Predict the isotropic signal, based on a gradient table. In this case,
@@ -215,17 +221,21 @@ class ExponentialIsotropicFit(IsotropicFit):
         if gtab is None:
             gtab = self.model.gtab
         if len(self.params.shape) == 0:
-            return np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                          (np.zeros(np.sum(~gtab.b0s_mask)) +
-                          self.params[..., np.newaxis]))
+            return np.exp(
+                -gtab.bvals[~gtab.b0s_mask]
+                * (np.zeros(np.sum(~gtab.b0s_mask)) + self.params[..., np.newaxis])
+            )
         else:
-            return np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                          (np.zeros((self.params.shape[0],
-                                     np.sum(~gtab.b0s_mask))) +
-                          self.params[..., np.newaxis]))
+            return np.exp(
+                -gtab.bvals[~gtab.b0s_mask]
+                * (
+                    np.zeros((self.params.shape[0], np.sum(~gtab.b0s_mask)))
+                    + self.params[..., np.newaxis]
+                )
+            )
 
 
-def sfm_design_matrix(gtab, sphere, response, mode='signal'):
+def sfm_design_matrix(gtab, sphere, response, mode="signal"):
     """
     Construct the SFM design matrix
 
@@ -295,45 +305,50 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
        (2007): Probabilistic diffusion tractography with multiple fibre
        orientations: What can we gain? Neuroimage 34:144-55.
     """
-    if mode == 'signal':
+    if mode == "signal":
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
-                                           gtab.bvecs[~gtab.b0s_mask])
+            mat_gtab = grad.gradient_table(
+                gtab.bvals[~gtab.b0s_mask], gtab.bvecs[~gtab.b0s_mask]
+            )
         # Preallocate:
-        mat = np.empty((np.sum(~gtab.b0s_mask),
-                        sphere.vertices.shape[0]))
-    elif mode == 'odf':
+        mat = np.empty((np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
+    elif mode == "odf":
         mat = np.empty((gtab.x.shape[0], sphere.vertices.shape[0]))
 
     # Calculate column-wise:
     for ii, this_dir in enumerate(sphere.vertices):
         # Rotate the canonical tensor towards this vertex and calculate the
         # signal you would have gotten in the direction
-        if mode == 'signal':
+        if mode == "signal":
             # For regressors based on the single tensor, remove $e^{-bD}$
             mat[:, ii] = sims.single_tensor(
-                mat_gtab,
-                evals=response,
-                evecs=sims.all_tensor_evecs(this_dir)
+                mat_gtab, evals=response, evecs=sims.all_tensor_evecs(this_dir)
             ) - np.exp(-mat_gtab.bvals * np.mean(response))
 
-        elif mode == 'odf':
+        elif mode == "odf":
             # Stick function
             if response[1] == 0 or response[2] == 0:
-                mat[sphere.find_closest(sims.all_tensor_evecs(this_dir)[0]),
-                    ii] = 1
+                mat[sphere.find_closest(sims.all_tensor_evecs(this_dir)[0]), ii] = 1
             else:
                 mat[:, ii] = sims.single_tensor_odf(
-                    gtab.vertices, evals=response,
-                    evecs=sims.all_tensor_evecs(this_dir))
+                    gtab.vertices, evals=response, evecs=sims.all_tensor_evecs(this_dir)
+                )
     return mat
 
 
 class SparseFascicleModel(ReconstModel, Cache):
-    def __init__(self, gtab, sphere=None, response=(0.0015, 0.0005, 0.0005),
-                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001,
-                 isotropic=None, seed=42):
+    def __init__(
+        self,
+        gtab,
+        sphere=None,
+        response=(0.0015, 0.0005, 0.0005),
+        solver="ElasticNet",
+        l1_ratio=0.5,
+        alpha=0.001,
+        isotropic=None,
+        seed=42,
+    ):
         """
         Initialize a Sparse Fascicle Model
 
@@ -400,15 +415,22 @@ class SparseFascicleModel(ReconstModel, Cache):
             isotropic = IsotropicModel
 
         self.isotropic = isotropic
-        if solver == 'ElasticNet':
-            self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
-                                        positive=True, warm_start=False,
-                                        random_state=seed)
-        elif solver in ('NNLS', 'nnls'):
+        if solver == "ElasticNet":
+            self.solver = lm.ElasticNet(
+                l1_ratio=l1_ratio,
+                alpha=alpha,
+                positive=True,
+                warm_start=False,
+                random_state=seed,
+            )
+        elif solver in ("NNLS", "nnls"):
             self.solver = opt.NonNegativeLeastSquares()
 
-        elif (isinstance(solver, opt.SKLearnLinearSolver) or
-              has_sklearn and isinstance(solver, sklearn.base.RegressorMixin)):
+        elif (
+            isinstance(solver, opt.SKLearnLinearSolver)
+            or has_sklearn
+            and isinstance(solver, sklearn.base.RegressorMixin)
+        ):
             self.solver = solver
 
         else:
@@ -417,7 +439,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             if not has_sklearn:
                 w = sklearn._msg + "\nAlternatively, you can use 'nnls' method "
                 w += "to fit the SparseFascicleModel"
-                warnings.warn(w)
+                warnings.warn(w, stacklevel=2)
             e_s = "The `solver` key-word argument needs to be: "
             e_s += "'ElasticNet', 'NNLS', or a "
             e_s += "`dipy.optimize.SKLearnLinearSolver` object"
@@ -434,8 +456,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             The design matrix, where each column is a rotated version of the
             response function.
         """
-        return sfm_design_matrix(self.gtab, self.sphere, self.response,
-                                 'signal')
+        return sfm_design_matrix(self.gtab, self.sphere, self.response, "signal")
 
     def _fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
         # In voxels in which S0 is 0, we just want to keep the
@@ -445,9 +466,11 @@ class SparseFascicleModel(ReconstModel, Cache):
                 warnings.simplefilter("ignore")
 
                 if parallel:
-                    coef = {vox: self.solver.fit(
-                        self.design_matrix, vox_data - isopredict[vox]
-                    ).coef_}
+                    coef = {
+                        vox: self.solver.fit(
+                            self.design_matrix, vox_data - isopredict[vox]
+                        ).coef_
+                    }
                 else:
                     coef = self.solver.fit(
                         self.design_matrix, vox_data - isopredict[vox]
@@ -459,8 +482,7 @@ class SparseFascicleModel(ReconstModel, Cache):
                 return np.zeros(self.design_matrix.shape[-1])
         return coef
 
-    def fit(self, data, mask=None, num_processes=1,
-            parallel_backend='multiprocessing'):
+    def fit(self, data, mask=None, num_processes=1, parallel_backend="multiprocessing"):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -519,11 +541,9 @@ class SparseFascicleModel(ReconstModel, Cache):
         if not flat_S0.size or not flat_S0.max():
             flat_S = np.zeros(data_in_mask[..., ~self.gtab.b0s_mask].shape)
         else:
-            flat_S = (data_in_mask[..., ~self.gtab.b0s_mask] /
-                      flat_S0[..., None])
+            flat_S = data_in_mask[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
         isotropic = self.isotropic(self.gtab).fit(data, mask)
-        flat_params = np.zeros((data_in_mask.shape[0],
-                                self.design_matrix.shape[-1]))
+        flat_params = np.zeros((data_in_mask.shape[0], self.design_matrix.shape[-1]))
         del data_in_mask
         gc.collect()
 
@@ -537,14 +557,15 @@ class SparseFascicleModel(ReconstModel, Cache):
             num_processes = determine_num_processes(num_processes)
 
         if num_processes > 1 and has_joblib:
-            with joblib.Parallel(n_jobs=num_processes,
-                                 backend=parallel_backend,
-                                 mmap_mode='r+') as parallel:
+            with joblib.Parallel(
+                n_jobs=num_processes, backend=parallel_backend, mmap_mode="r+"
+            ) as parallel:
                 out = parallel(
-                    joblib.delayed(self._fit_solver2voxels)(isopredict,
-                                                            vox_data, vox,
-                                                            True) for
-                    vox, vox_data in enumerate(flat_S))
+                    joblib.delayed(self._fit_solver2voxels)(
+                        isopredict, vox_data, vox, True
+                    )
+                    for vox, vox_data in enumerate(flat_S)
+                )
 
             del parallel
 
@@ -552,26 +573,30 @@ class SparseFascicleModel(ReconstModel, Cache):
             for d in out:
                 flat_params_dict.update(d)
             flat_params = np.concatenate(
-                [np.array(i).reshape(1, flat_params.shape[1])
-                 for i in list(OrderedDict(
-                    sorted(flat_params_dict.items(),
-                           key=lambda x: int(x[0]))).values())])
+                [
+                    np.array(i).reshape(1, flat_params.shape[1])
+                    for i in list(
+                        OrderedDict(
+                            sorted(flat_params_dict.items(), key=lambda x: int(x[0]))
+                        ).values()
+                    )
+                ]
+            )
         else:
             for vox, vox_data in enumerate(flat_S):
-                flat_params[vox] = self._fit_solver2voxels(isopredict,
-                                                           vox_data, vox,
-                                                           False)
+                flat_params[vox] = self._fit_solver2voxels(
+                    isopredict, vox_data, vox, False
+                )
 
         del isopredict, flat_S
         gc.collect()
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
+            out_shape = data.shape[:-1] + (-1,)
             beta = flat_params.reshape(out_shape)
             S0 = flat_S0.reshape(data.shape[:-1])
         else:
-            beta = np.zeros(data.shape[:-1] +
-                            (self.design_matrix.shape[-1],))
+            beta = np.zeros(data.shape[:-1] + (self.design_matrix.shape[-1],))
             beta[mask, :] = flat_params
             S0 = np.zeros(data.shape[:-1])
             S0[mask] = flat_S0
@@ -580,7 +605,6 @@ class SparseFascicleModel(ReconstModel, Cache):
 
 
 class SparseFascicleFit(ReconstFit):
-
     def __init__(self, model, beta, S0, iso):
         """
         Initialize a SparseFascicleFit class instance
@@ -621,16 +645,16 @@ class SparseFascicleFit(ReconstFit):
         odf :  ndarray of shape (x, y, z, sphere.vertices.shape[0])
 
         """
-        odf_matrix = self.model.cache_get('odf_matrix', key=sphere)
+        odf_matrix = self.model.cache_get("odf_matrix", key=sphere)
         if odf_matrix is None:
-            odf_matrix = sfm_design_matrix(sphere, self.model.sphere,
-                                           self.model.response, mode='odf')
-            self.model.cache_set('odf_matrix', key=sphere, value=odf_matrix)
+            odf_matrix = sfm_design_matrix(
+                sphere, self.model.sphere, self.model.response, mode="odf"
+            )
+            self.model.cache_set("odf_matrix", key=sphere, value=odf_matrix)
 
-        return np.dot(odf_matrix,
-                      self.beta.reshape(-1,
-                                        self.beta.shape[-1]).T).T.reshape(
-            self.beta.shape[:-1] + (odf_matrix.shape[0], ))
+        return np.dot(
+            odf_matrix, self.beta.reshape(-1, self.beta.shape[-1]).T
+        ).T.reshape(self.beta.shape[:-1] + (odf_matrix.shape[0],))
 
     def predict(self, gtab=None, response=None, S0=None):
         """
@@ -665,19 +689,18 @@ class SparseFascicleFit(ReconstFit):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, response)
         # Get them all at once:
-        pred_weighted = np.dot(_matrix,
-                               self.beta.reshape(
-                                   -1, self.beta.shape[-1]).T).T.reshape(
-            self.beta.shape[:-1] + (_matrix.shape[0],))
+        pred_weighted = np.dot(
+            _matrix, self.beta.reshape(-1, self.beta.shape[-1]).T
+        ).T.reshape(self.beta.shape[:-1] + (_matrix.shape[0],))
 
         if S0 is None:
             S0 = self.S0
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
 
-        pre_pred_sig = S0 * (pred_weighted +
-                             self.iso.predict(gtab).reshape(
-                                 pred_weighted.shape))
+        pre_pred_sig = S0 * (
+            pred_weighted + self.iso.predict(gtab).reshape(pred_weighted.shape)
+        )
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0

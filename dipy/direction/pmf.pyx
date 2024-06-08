@@ -51,20 +51,13 @@ cdef class PmfGen:
                 idx = i
         return idx
 
-    def get_pmf_value(self, double[::1] point, double[::1] xyz,
-                      double[:] pmf_buffer=None):
-        if pmf_buffer is None:
-            pmf_buffer = self.pmf
-        return self.get_pmf_value_c(&point[0], &xyz[0], &pmf_buffer[0])
+    def get_pmf_value(self, double[::1] point, double[::1] xyz):
+        return self.get_pmf_value_c(&point[0], &xyz[0])
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz,
-                                double* pmf_buffer) noexcept nogil:
-        """
-        Return the pmf value corresponding to the closest vertex to the
-        direction xyz.
-        """
-        cdef int idx = self.find_closest(xyz)
-        return self.get_pmf_c(point, pmf_buffer)[idx]
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
+        pass
 
 
 cdef class SimplePmfGen(PmfGen):
@@ -84,22 +77,22 @@ cdef class SimplePmfGen(PmfGen):
             memset(out, 0, self.pmf.shape[0] * sizeof(double))
         return out
 
-    cdef double get_pmf_value_c(self, double* point, double* xyz,
-                                double* pmf_buffer) noexcept nogil:
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
         """
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
         cdef:
             int idx
+            double pmf_value = 0
 
         idx = self.find_closest(xyz)
-
-        if trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
-                                     point,
-                                     pmf_buffer) != 0:
-            memset(pmf_buffer, 0, self.pmf.shape[0] * sizeof(double))
-        return pmf_buffer[0]
+        trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+                                  point,
+                                  &pmf_value)
+        return pmf_value
 
 
 cdef class SHCoeffPmfGen(PmfGen):
@@ -127,8 +120,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp len_B = self.B.shape[1]
             double _sum
-            # TODO: Maybe a better to do this
-            double *coeff = <double*>malloc(self.data.shape[3] * sizeof(double))
+            double *coeff = <double*> malloc(len_B * sizeof(double))
 
         if trilinear_interpolate4d_c(self.data, point, coeff) != 0:
             memset(out, 0, len_pmf * sizeof(double))
@@ -140,3 +132,25 @@ cdef class SHCoeffPmfGen(PmfGen):
                 out[i] = _sum
         free(coeff)
         return out
+
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        cdef:
+            int idx = self.find_closest(xyz)
+            cnp.npy_intp j
+            cnp.npy_intp len_B = self.B.shape[1]
+            double *coeff = <double*> malloc(len_B * sizeof(double))
+            double pmf_value = 0
+
+        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
+            for j in range(len_B):
+                pmf_value = pmf_value + (self.B[idx, j] * coeff[j])
+
+        free(coeff)
+        return pmf_value
+

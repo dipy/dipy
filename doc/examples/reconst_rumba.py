@@ -47,13 +47,13 @@ from dipy.segment.mask import median_otsu
 from dipy.sims.voxel import single_tensor_odf
 from dipy.viz import actor, window
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-sphere = get_sphere('symmetric362')
+sphere = get_sphere("symmetric362")
 
 ###############################################################################
 # Step 1. Estimation of the fiber response function
@@ -72,9 +72,11 @@ sphere = get_sphere('symmetric362')
 # RUMBA-SD is robust against impulse response imprecision [Dell'Acqua2007]_.
 
 rumba = RumbaSDModel(gtab)
-print(f"wm_response: {rumba.wm_response}, " +
-      f"csf_response: {rumba.csf_response}, " +
-      f"gm_response: {rumba.gm_response}")
+print(
+    f"wm_response: {rumba.wm_response}, "
+    + f"csf_response: {rumba.csf_response}, "
+    + f"gm_response: {rumba.gm_response}"
+)
 
 ###############################################################################
 # We can visualize what this default response looks like.
@@ -90,12 +92,11 @@ evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # Transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere,
-                                  colormap='plasma')
+response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma")
 
 scene.add(response_actor)
-print('Saving illustration as default_response.png')
-window.record(scene, out_path='default_response.png', size=(200, 200))
+print("Saving illustration as default_response.png")
+window.record(scene, out_path="default_response.png", size=(200, 200))
 
 if interactive:
     window.show(scene)
@@ -130,11 +131,10 @@ evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere,
-                                  colormap='plasma')
+response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma")
 scene.add(response_actor)
-print('Saving illustration as estimated_response.png')
-window.record(scene, out_path='estimated_response.png', size=(200, 200))
+print("Saving illustration as estimated_response.png")
+window.record(scene, out_path="estimated_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -155,13 +155,21 @@ scene.rm(response_actor)
 #
 # To shorten computation time, a mask can be estimated for the data.
 
-b0_mask, mask = median_otsu(data, median_radius=2,
-                            numpass=1, vol_idx=np.arange(10))
+b0_mask, mask = median_otsu(data, median_radius=2, numpass=1, vol_idx=np.arange(10))
 
-rec_response = recursive_response(gtab, data, mask=mask, sh_order_max=8,
-                                  peak_thr=0.01, init_fa=0.08,
-                                  init_trace=0.0021, iter=4, convergence=0.001,
-                                  parallel=True, num_processes=2)
+rec_response = recursive_response(
+    gtab,
+    data,
+    mask=mask,
+    sh_order_max=8,
+    peak_thr=0.01,
+    init_fa=0.08,
+    init_trace=0.0021,
+    iter=4,
+    convergence=0.001,
+    parallel=True,
+    num_processes=2,
+)
 
 ###############################################################################
 # We can now visualize this response, which will look like a pancake.
@@ -169,12 +177,11 @@ rec_response = recursive_response(gtab, data, mask=mask, sh_order_max=8,
 rec_response_signal = rec_response.on_sphere(sphere)
 # transform our data from 1D to 4D
 rec_response_signal = rec_response_signal[None, None, None, :]
-response_actor = actor.odf_slicer(rec_response_signal, sphere=sphere,
-                                  colormap='plasma')
+response_actor = actor.odf_slicer(rec_response_signal, sphere=sphere, colormap="plasma")
 
 scene.add(response_actor)
-print('Saving illustration as recursive_response.png')
-window.record(scene, out_path='recursive_response.png', size=(200, 200))
+print("Saving illustration as recursive_response.png")
+window.record(scene, out_path="recursive_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -224,8 +231,7 @@ scene.rm(response_actor)
 # the fODF. The default is 'repulsion724' sphere, but this tutorial will use
 # `symmetric362`.
 
-rumba = RumbaSDModel(
-    gtab, wm_response=response[0], gm_response=None, sphere=sphere)
+rumba = RumbaSDModel(gtab, wm_response=response[0], gm_response=None, sphere=sphere)
 
 ###############################################################################
 # For efficiency, we will only fit a small part of the data. This is the same
@@ -260,16 +266,16 @@ f_wm = rumba_fit.f_wm
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
-ax0 = axs[0].imshow(f_wm[..., 0].T, origin='lower')
+ax0 = axs[0].imshow(f_wm[..., 0].T, origin="lower")
 axs[0].set_title("Voxelwise White Matter Volume Fraction")
 
-ax1 = axs[1].imshow(f_iso[..., 0].T, origin='lower')
+ax1 = axs[1].imshow(f_iso[..., 0].T, origin="lower")
 axs[1].set_title("Voxelwise Isotropic Volume Fraction")
 
 plt.colorbar(ax0, ax=axs[0])
 plt.colorbar(ax1, ax=axs[1])
 
-plt.savefig('wm_iso_partition.png')
+plt.savefig("wm_iso_partition.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -286,10 +292,11 @@ plt.savefig('wm_iso_partition.png')
 combined = rumba_fit.combined_odf_iso
 
 fodf_spheres = actor.odf_slicer(
-    combined, sphere=sphere, norm=True, scale=0.5, colormap=None)
+    combined, sphere=sphere, norm=True, scale=0.5, colormap=None
+)
 scene.add(fodf_spheres)
-print('Saving illustration as rumba_odfs.png')
-window.record(scene, out_path='rumba_odfs.png', size=(600, 600))
+print("Saving illustration as rumba_odfs.png")
+window.record(scene, out_path="rumba_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -304,14 +311,16 @@ scene.rm(fodf_spheres)
 # We can extract the peaks from these fODFs using `peaks_from_model`. This
 # will reconstruct the fODFs again, so will take about a minute to run.
 
-rumba_peaks = peaks_from_model(model=rumba,
-                               data=data_small,
-                               sphere=sphere,
-                               relative_peak_threshold=.5,
-                               min_separation_angle=25,
-                               normalize_peaks=False,
-                               parallel=True,
-                               num_processes=4)
+rumba_peaks = peaks_from_model(
+    model=rumba,
+    data=data_small,
+    sphere=sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    normalize_peaks=False,
+    parallel=True,
+    num_processes=4,
+)
 
 ###############################################################################
 # For visualization, we scale up the peak values.
@@ -322,7 +331,7 @@ peak_dirs = rumba_peaks.peak_dirs
 fodf_peaks = actor.peak_slicer(peak_dirs, peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene, out_path='rumba_peaks.png', size=(600, 600))
+window.record(scene, out_path="rumba_peaks.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -350,8 +359,14 @@ scene.rm(fodf_peaks)
 # TV regularization requires a volume without any singleton dimensions, so
 # we'll have to start by expanding our data slice.
 
-rumba = RumbaSDModel(gtab, wm_response=response[0], gm_response=None,
-                     voxelwise=False, use_tv=True, sphere=sphere)
+rumba = RumbaSDModel(
+    gtab,
+    wm_response=response[0],
+    gm_response=None,
+    voxelwise=False,
+    use_tv=True,
+    sphere=sphere,
+)
 data_tv = data[20:50, 55:85, 38:40]
 
 ###############################################################################
@@ -365,12 +380,13 @@ combined = rumba_fit.combined_odf_iso
 ###############################################################################
 # Now we can visualize the combined fODF map as before.
 
-fodf_spheres = actor.odf_slicer(combined, sphere=sphere, norm=True,
-                                scale=0.5, colormap=None)
+fodf_spheres = actor.odf_slicer(
+    combined, sphere=sphere, norm=True, scale=0.5, colormap=None
+)
 
 scene.add(fodf_spheres)
-print('Saving illustration as rumba_global_odfs.png')
-window.record(scene, out_path='rumba_global_odfs.png', size=(600, 600))
+print("Saving illustration as rumba_global_odfs.png")
+window.record(scene, out_path="rumba_global_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -397,9 +413,9 @@ peak_values = np.zeros((shape + (npeaks,)))
 
 for idx in np.ndindex(shape):  # iterate through each voxel
     # Get peaks of odf
-    direction, pk, _ = peak_directions(odf[idx], sphere,
-                                       relative_peak_threshold=0.5,
-                                       min_separation_angle=25)
+    direction, pk, _ = peak_directions(
+        odf[idx], sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
 
     # Calculate peak metrics
     if pk.shape[0] != 0:
@@ -410,12 +426,11 @@ for idx in np.ndindex(shape):  # iterate through each voxel
 # Scale up for visualization
 peak_values = np.clip(peak_values * 15, 0, 1)
 
-fodf_peaks = actor.peak_slicer(peak_dirs[:, :, 0:1, :],
-                               peak_values[:, :, 0:1, :])
+fodf_peaks = actor.peak_slicer(peak_dirs[:, :, 0:1, :], peak_values[:, :, 0:1, :])
 scene.add(fodf_peaks)
 
-print('Saving illustration as rumba_global_peaks.png')
-window.record(scene, out_path='rumba_global_peaks.png', size=(600, 600))
+print("Saving illustration as rumba_global_peaks.png")
+window.record(scene, out_path="rumba_global_peaks.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

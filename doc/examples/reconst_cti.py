@@ -74,7 +74,7 @@ import dipy.reconst.cti as cti
 # The users should also ensure that the data is formatted correctly for the
 # CTI analysis they are performing.
 
-fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames('cti_rat1')
+fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames("cti_rat1")
 data, affine = load_nifti(fdata)
 bvals1, bvecs1 = read_bvals_bvecs(fbvals1, fbvecs1)
 bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
@@ -146,17 +146,18 @@ kmicro_map = ctifit.K_micro
 slice_idx = 0
 fig, axarr = plt.subplots(1, 3, figsize=(15, 5))
 
-axarr[0].imshow(kiso_map[:, :, slice_idx], cmap='gray',
-                origin='lower', vmin=0, vmax=1)
-axarr[0].set_title('Kiso Map')
+axarr[0].imshow(kiso_map[:, :, slice_idx], cmap="gray", origin="lower", vmin=0, vmax=1)
+axarr[0].set_title("Kiso Map")
 
-axarr[1].imshow(kaniso_map[:, :, slice_idx], cmap='gray',
-                origin='lower', vmin=0, vmax=1)
-axarr[1].set_title('Kaniso Map')
+axarr[1].imshow(
+    kaniso_map[:, :, slice_idx], cmap="gray", origin="lower", vmin=0, vmax=1
+)
+axarr[1].set_title("Kaniso Map")
 
-axarr[2].imshow(kmicro_map[:, :, slice_idx], cmap='gray',
-                origin='lower', vmin=0, vmax=1)
-axarr[2].set_title('Kmicro Map')
+axarr[2].imshow(
+    kmicro_map[:, :, slice_idx], cmap="gray", origin="lower", vmin=0, vmax=1
+)
+axarr[2].set_title("Kmicro Map")
 
 plt.tight_layout()
 plt.show()

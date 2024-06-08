@@ -24,9 +24,9 @@ from dipy.core.sphere_stats import random_uniform_on_sphere
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-delaunay, have_delaunay, _ = optional_package('scipy.spatial.Delaunay')
+delaunay, have_delaunay, _ = optional_package("scipy.spatial.Delaunay")
 if have_delaunay:
-    from scipy.spatial import Delaunay
+    pass
 
 
 verts = unit_octahedron.vertices
@@ -45,18 +45,16 @@ def test_sphere_construct_args():
 def test_sphere_edges_faces():
     nt.assert_raises(ValueError, Sphere, xyz=1, edges=1, faces=None)
     Sphere(xyz=[0, 0, 1], faces=[0, 0, 0])
-    Sphere(xyz=[[0, 0, 1],
-                [1, 0, 0],
-                [0, 1, 0]],
-           edges=[[0, 1],
-                  [1, 2],
-                  [2, 0]],
-           faces=[0, 1, 2])
+    Sphere(
+        xyz=[[0, 0, 1], [1, 0, 0], [0, 1, 0]],
+        edges=[[0, 1], [1, 2], [2, 0]],
+        faces=[0, 1, 2],
+    )
 
 
 def test_sphere_not_unit():
     with warnings.catch_warnings():
-        warnings.simplefilter('error')
+        warnings.simplefilter("error")
         nt.assert_raises(UserWarning, Sphere, xyz=[0, 0, 1.5])
 
 
@@ -79,33 +77,25 @@ def test_sphere_construct():
 
 
 def array_to_set(a):
-    return set(frozenset(i) for i in a)
+    return {frozenset(i) for i in a}
 
 
 def test_unique_edges():
-    faces = np.array([[0, 1, 2],
-                      [1, 2, 0]])
-    e = array_to_set([[1, 2],
-                      [0, 1],
-                      [0, 2]])
+    faces = np.array([[0, 1, 2], [1, 2, 0]])
+    e = array_to_set([[1, 2], [0, 1], [0, 2]])
 
     u = unique_edges(faces)
     nt.assert_equal(e, array_to_set(u))
 
     u, m = unique_edges(faces, return_mapping=True)
     nt.assert_equal(e, array_to_set(u))
-    edges = [[[0, 1], [1, 2], [2, 0]],
-             [[1, 2], [2, 0], [0, 1]]]
+    edges = [[[0, 1], [1, 2], [2, 0]], [[1, 2], [2, 0], [0, 1]]]
     nt.assert_equal(np.sort(u[m], -1), np.sort(edges, -1))
 
 
 def test_unique_sets():
-    sets = np.array([[0, 1, 2],
-                     [1, 2, 0],
-                     [0, 2, 1],
-                     [1, 2, 3]])
-    e = array_to_set([[0, 1, 2],
-                      [1, 2, 3]])
+    sets = np.array([[0, 1, 2], [1, 2, 0], [0, 2, 1], [1, 2, 3]])
+    e = array_to_set([[0, 1, 2], [1, 2, 3]])
 
     # Run without inverse
     u = unique_sets(sets)
@@ -119,8 +109,7 @@ def test_unique_sets():
     nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
@@ -136,8 +125,7 @@ def test_sphere_attrs():
     nt.assert_array_almost_equal(s.z, verts[:, 2])
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_edges_faces():
     s = Sphere(xyz=verts)
     faces = oct_faces
@@ -146,17 +134,14 @@ def test_edges_faces():
 
     s = Sphere(xyz=verts, faces=[[0, 1, 2]])
     nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
-    nt.assert_equal(array_to_set(s.edges),
-                    array_to_set([[0, 1], [1, 2], [0, 2]]))
+    nt.assert_equal(array_to_set(s.edges), array_to_set([[0, 1], [1, 2], [0, 2]]))
 
     s = Sphere(xyz=verts, faces=[[0, 1, 2]], edges=[[0, 1]])
     nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
-    nt.assert_equal(array_to_set(s.edges),
-                    array_to_set([[0, 1]]))
+    nt.assert_equal(array_to_set(s.edges), array_to_set([[0, 1]]))
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_sphere_subdivide():
     sphere1 = unit_octahedron.subdivide(4)
     sphere2 = Sphere(xyz=sphere1.vertices)
@@ -182,20 +167,16 @@ def test_hemisphere_find_closest():
     hemisphere1 = hemi_icosahedron.subdivide(4)
     for ii in range(hemisphere1.vertices.shape[0]):
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii]), ii)
-        nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]),
-                        ii)
-        nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2),
-                        ii)
+        nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]), ii)
+        nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2), ii)
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_subdivide():
-
     def flip(vertices):
         x, y, z = vertices.T
         f = (z < 0) | ((z == 0) & (y < 0)) | ((z == 0) & (y == 0) & (x < 0))
-        return 1 - 2*f[:, None]
+        return 1 - 2 * f[:, None]
 
     decimals = 6
     # Test HemiSphere.subdivide
@@ -240,18 +221,12 @@ def test_hemisphere_constructor():
     nt.assert_array_almost_equal(s0.phi, phiU)
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_mirror():
-    verts = [[0, 0, 1],
-             [0, 1, 0],
-             [1, 0, 0],
-             [-1, -1, -1]]
-    verts = np.array(verts, 'float')
+    verts = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [-1, -1, -1]]
+    verts = np.array(verts, "float")
     verts = verts / np.sqrt((verts * verts).sum(-1)[:, None])
-    faces = [[0, 1, 3],
-             [0, 2, 3],
-             [1, 2, 3]]
+    faces = [[0, 1, 3], [0, 2, 3], [1, 2, 3]]
 
     h = HemiSphere(xyz=verts, faces=faces)
     s = h.mirror()
@@ -265,54 +240,58 @@ def test_mirror():
 
     for triangle in s.faces:
         a, b, c = triangle
-        nt.assert_(_angle(verts[a], verts[b]) <= np.pi/2)
-        nt.assert_(_angle(verts[a], verts[c]) <= np.pi/2)
-        nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
+        nt.assert_(_angle(verts[a], verts[b]) <= np.pi / 2)
+        nt.assert_(_angle(verts[a], verts[c]) <= np.pi / 2)
+        nt.assert_(_angle(verts[b], verts[c]) <= np.pi / 2)
 
 
-@pytest.mark.skipif(not have_delaunay,
-                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
+@pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_faces():
-
     t = (1 + np.sqrt(5)) / 2
     vertices = np.array(
-        [[-t, -1, 0],
-         [-t, 1, 0],
-         [1, 0, t],
-         [-1, 0, t],
-         [0, t, 1],
-         [0, -t, 1],
-         ])
+        [
+            [-t, -1, 0],
+            [-t, 1, 0],
+            [1, 0, t],
+            [-1, 0, t],
+            [0, t, 1],
+            [0, -t, 1],
+        ]
+    )
     vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
-        [[0, 1, 2],
-         [0, 1, 3],
-         [0, 2, 4],
-         [1, 3, 4],
-         [2, 3, 4],
-         [1, 2, 5],
-         [0, 3, 5],
-         [2, 3, 5],
-         [0, 4, 5],
-         [1, 4, 5],
-         ])
+        [
+            [0, 1, 2],
+            [0, 1, 3],
+            [0, 2, 4],
+            [1, 3, 4],
+            [2, 3, 4],
+            [1, 2, 5],
+            [0, 3, 5],
+            [2, 3, 5],
+            [0, 4, 5],
+            [1, 4, 5],
+        ]
+    )
     edges = np.array(
-        [(0, 1),
-         (0, 2),
-         (0, 3),
-         (0, 4),
-         (0, 5),
-         (1, 2),
-         (1, 3),
-         (1, 4),
-         (1, 5),
-         (2, 3),
-         (2, 4),
-         (2, 5),
-         (3, 4),
-         (3, 5),
-         (4, 5),
-         ])
+        [
+            (0, 1),
+            (0, 2),
+            (0, 3),
+            (0, 4),
+            (0, 5),
+            (1, 2),
+            (1, 3),
+            (1, 4),
+            (1, 5),
+            (2, 3),
+            (2, 4),
+            (2, 5),
+            (3, 4),
+            (3, 5),
+            (4, 5),
+        ]
+    )
 
     h = HemiSphere(xyz=vertices)
     nt.assert_equal(len(h.edges), len(edges))
@@ -322,61 +301,54 @@ def test_hemisphere_faces():
 
 
 def test_get_force():
-    charges = np.array([[1., 0, 0],
-                        [0, 1., 0],
-                        [0, 0, 1.]])
+    charges = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
     force, pot = _get_forces(charges)
     nt.assert_array_almost_equal(force, 0)
 
-    charges = np.array([[1, -.1, 0],
-                        [1, 0, 0]])
+    charges = np.array([[1, -0.1, 0], [1, 0, 0]])
     force, pot = _get_forces(charges)
     nt.assert_array_almost_equal(force[1, [0, 2]], 0)
     nt.assert_(force[1, 1] > 0)
 
 
 def test_disperse_charges():
-    charges = np.array([[1., 0, 0],
-                        [0, 1., 0],
-                        [0, 0, 1.]])
+    charges = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 10)
     nt.assert_array_almost_equal(charges, d_sphere.vertices)
 
-    charges = np.array([[3./5, 4./5, 0],
-                        [4./5, 3./5, 0]])
-    expected_charges = np.array([[0, 1., 0],
-                                 [1., 0, 0]])
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .2)
+    charges = np.array([[3.0 / 5, 4.0 / 5, 0], [4.0 / 5, 3.0 / 5, 0]])
+    expected_charges = np.array([[0, 1.0, 0], [1.0, 0, 0]])
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 0.2)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.)
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.0)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
     # check that the function seems to work with a larger number of charges
     charges = np.arange(21).reshape(7, 3)
-    norms = np.sqrt((charges*charges).sum(-1))
+    norms = np.sqrt((charges * charges).sum(-1))
     charges = charges / norms[:, None]
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .05)
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 0.05)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
     # check that the resulting charges all lie on the unit sphere
     d_charges = d_sphere.vertices
-    norms = np.sqrt((d_charges*d_charges).sum(-1))
+    norms = np.sqrt((d_charges * d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
 
 
 def test_disperse_charges_alt():
     # Create a random set of points
     num_points = 3
-    init_pointset = random_uniform_on_sphere(n=num_points, coords='xyz')
+    init_pointset = random_uniform_on_sphere(n=num_points, coords="xyz")
 
     # Compute the associated electrostatic potential
     init_pointset = init_pointset.reshape(init_pointset.shape[0] * 3)
@@ -408,8 +380,7 @@ def test_fibonacci_sphere(rng):
         nt.assert_array_equal(points1, points2)
 
     # Check for near closeness to 0
-    nt.assert_almost_equal(
-        np.mean(np.mean(points, axis=0)), 0, decimal=2)
+    nt.assert_almost_equal(np.mean(np.mean(points, axis=0)), 0, decimal=2)
 
 
 @set_random_number_generator()
@@ -419,14 +390,10 @@ def test_fibonacci_hemisphere(rng):
     nt.assert_equal(len(points), 724)
 
     # Test randomization
-    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
-                               rng=rng)
-    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True,
-                               rng=rng)
+    points1 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True, rng=rng)
+    points2 = fibonacci_sphere(n_points=100, hemisphere=True, randomize=True, rng=rng)
     with nt.assert_raises(AssertionError):
         nt.assert_array_equal(points1, points2)
 
     # Check for near closeness to 0
-    nt.assert_almost_equal(
-        np.mean(points, axis=0)[2], 0, decimal=2)
-
+    nt.assert_almost_equal(np.mean(points, axis=0)[2], 0, decimal=2)

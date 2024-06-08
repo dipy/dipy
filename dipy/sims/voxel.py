@@ -3,7 +3,6 @@ from numpy import dot
 from scipy.special import jn
 
 from dipy.core.geometry import sphere2cart, vec2vec_rotmat
-from dipy.core.gradients import GradientTable
 from dipy.reconst.utils import dki_design_matrix
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
@@ -36,8 +35,9 @@ def _check_directions(angles):
     if angles.shape[-1] == 3:
         sticks = angles
     else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
+        sticks = [
+            sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1])) for pair in angles
+        ]
         sticks = np.array(sticks)
 
     return sticks
@@ -60,7 +60,7 @@ def _add_rician(sig, noise1, noise2):
     This does the same as abs(sig + complex(noise1, noise2))
 
     """
-    return np.sqrt((sig + noise1) ** 2 + noise2 ** 2)
+    return np.sqrt((sig + noise1) ** 2 + noise2**2)
 
 
 def _add_rayleigh(sig, noise1, noise2):
@@ -69,11 +69,11 @@ def _add_rayleigh(sig, noise1, noise2):
     The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
 
     """
-    return sig + np.sqrt(noise1 ** 2 + noise2 ** 2)
+    return sig + np.sqrt(noise1**2 + noise2**2)
 
 
-def add_noise(signal, snr, S0, noise_type='rician', rng=None):
-    r""" Add noise of specified distribution to the signal from a single voxel.
+def add_noise(signal, snr, S0, noise_type="rician", rng=None):
+    r"""Add noise of specified distribution to the signal from a single voxel.
 
     Parameters
     ----------
@@ -124,13 +124,15 @@ def add_noise(signal, snr, S0, noise_type='rician', rng=None):
 
     sigma = S0 / snr
 
-    noise_adder = {'gaussian': _add_gaussian,
-                   'rician': _add_rician,
-                   'rayleigh': _add_rayleigh}
+    noise_adder = {
+        "gaussian": _add_gaussian,
+        "rician": _add_rician,
+        "rayleigh": _add_rayleigh,
+    }
 
     noise1 = rng.normal(0, sigma, size=signal.shape)
 
-    if noise_type == 'gaussian':
+    if noise_type == "gaussian":
         noise2 = None
     else:
         noise2 = rng.normal(0, sigma, size=signal.shape)
@@ -138,9 +140,10 @@ def add_noise(signal, snr, S0, noise_type='rician', rng=None):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=1., angles=((0, 0), (90, 0)),
-                    fractions=(35, 35), snr=20):
-    """ Simulate the signal for a Sticks & Ball model.
+def sticks_and_ball(
+    gtab, d=0.0015, S0=1.0, angles=((0, 0), (90, 0)), fractions=(35, 35), snr=20
+):
+    """Simulate the signal for a Sticks & Ball model.
 
     Parameters
     ----------
@@ -174,16 +177,19 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=((0, 0), (90, 0)),
            Neuroimage, 2007.
 
     """
-    fractions = [f / 100. for f in fractions]
+    fractions = [f / 100.0 for f in fractions]
     f0 = 1 - np.sum(fractions)
     S = np.zeros(len(gtab.bvals))
 
     sticks = _check_directions(angles)
 
-    for (i, g) in enumerate(gtab.bvecs[1:]):
-        S[i + 1] = f0*np.exp(-gtab.bvals[i + 1]*d) + \
-            np.sum([fractions[j]*np.exp(-gtab.bvals[i + 1]*d*np.dot(s, g)**2)
-                   for (j, s) in enumerate(sticks)])
+    for i, g in enumerate(gtab.bvecs[1:]):
+        S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + np.sum(
+            [
+                fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                for (j, s) in enumerate(sticks)
+            ]
+        )
 
         S[i + 1] = S0 * S[i + 1]
 
@@ -194,7 +200,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=((0, 0), (90, 0)),
 
 
 def callaghan_perpendicular(q, radius):
-    r""" Calculates the perpendicular diffusion signal E(q) in a cylinder of
+    r"""Calculates the perpendicular diffusion signal E(q) in a cylinder of
     radius R using the Soderman model [1]_. Assumes that the pulse length
     is infinitely short and the diffusion time is infinitely long.
 
@@ -226,7 +232,7 @@ def callaghan_perpendicular(q, radius):
 
 
 def gaussian_parallel(q, tau, D=0.7e-3):
-    r""" Calculates the parallel Gaussian diffusion signal.
+    r"""Calculates the parallel Gaussian diffusion signal.
 
     Parameters
     ----------
@@ -243,13 +249,20 @@ def gaussian_parallel(q, tau, D=0.7e-3):
         signal attenuation
 
     """
-    return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
+    return np.exp(-((2 * np.pi * q) ** 2) * tau * D)
 
 
-def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
-                                S0=1., angles=((0, 0), (90, 0)),
-                                fractions=(35, 35), snr=20):
-    r""" Calculates the three-dimensional signal attenuation E(q) originating
+def cylinders_and_ball_soderman(
+    gtab,
+    tau,
+    radii=(5e-3, 5e-3),
+    D=0.7e-3,
+    S0=1.0,
+    angles=((0, 0), (90, 0)),
+    fractions=(35, 35),
+    snr=20,
+):
+    r"""Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation [1]_.
     The diffusion signal is assumed to be separable perpendicular and parallel
     to the cylinder axis [2]_.
@@ -295,9 +308,9 @@ def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
     """
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     qvecs = qvals[:, None] * gtab.bvecs
-    q_norm = np.sqrt(np.einsum('ij,ij->i', qvecs, qvecs))
+    q_norm = np.sqrt(np.einsum("ij,ij->i", qvecs, qvecs))
 
-    fractions = [f / 100. for f in fractions]
+    fractions = [f / 100.0 for f in fractions]
     f0 = 1 - np.sum(fractions)
 
     S = np.zeros(len(gtab.bvals))
@@ -305,9 +318,10 @@ def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
 
     for i, f in enumerate(fractions):
         q_par = abs(np.dot(qvecs, sticks[i]))
-        q_perp = np.sqrt(q_norm ** 2 - q_par ** 2)
-        S_cylinder = (callaghan_perpendicular(q_perp, radii[i]) *
-                      gaussian_parallel(q_par, tau, D=D))
+        q_perp = np.sqrt(q_norm**2 - q_par**2)
+        S_cylinder = callaghan_perpendicular(q_perp, radii[i]) * gaussian_parallel(
+            q_par, tau, D=D
+        )
         S += f * S_cylinder
 
     S += f0 * np.exp(-gtab.bvals * D)
@@ -319,7 +333,7 @@ def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
 
 
 def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
-    """ Simulate diffusion-weighted signals with a single tensor.
+    """Simulate diffusion-weighted signals with a single tensor.
 
     Parameters
     ----------
@@ -366,7 +380,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
     if evecs is None:
         evecs = np.eye(3)
 
-    out_shape = gtab.bvecs.shape[:gtab.bvecs.ndim - 1]
+    out_shape = gtab.bvecs.shape[: gtab.bvecs.ndim - 1]
     gradients = gtab.bvecs.reshape(-1, 3)
 
     R = np.asarray(evecs)
@@ -374,20 +388,21 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
     D = dot(dot(R, np.diag(evals)), R.T)
 
     if gtab.btens is None:
-        for (i, g) in enumerate(gradients):
+        for i, g in enumerate(gradients):
             S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
     else:
-        for (i, b) in enumerate(gtab.btens):
-            S[i] = S0 * np.exp(- np.sum(b * D))
+        for i, b in enumerate(gtab.btens):
+            S[i] = S0 * np.exp(-np.sum(b * D))
 
     S = add_noise(S, snr, S0, rng=rng)
 
     return S.reshape(out_shape)
 
 
-def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
-                 fractions=(50, 50), snr=20, rng=None):
-    r""" Simulate a Multi-Tensor signal.
+def multi_tensor(
+    gtab, mevals, S0=1.0, angles=((0, 0), (90, 0)), fractions=(50, 50), snr=20, rng=None
+):
+    r"""Simulate a Multi-Tensor signal.
 
     Parameters
     ----------
@@ -436,25 +451,26 @@ def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
         rng = np.random.default_rng()
 
     if np.round(np.sum(fractions), 2) != 100.0:
-        raise ValueError('Fractions should sum to 100')
+        raise ValueError("Fractions should sum to 100")
 
-    fractions = [f / 100. for f in fractions]
+    fractions = [f / 100.0 for f in fractions]
 
     S = np.zeros(len(gtab.bvals))
 
     sticks = _check_directions(angles)
 
     for i in range(len(fractions)):
-            S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                                 evecs=all_tensor_evecs(
-                                                     sticks[i]), snr=None)
+        S = S + fractions[i] * single_tensor(
+            gtab, S0=S0, evals=mevals[i], evecs=all_tensor_evecs(sticks[i]), snr=None
+        )
 
     return add_noise(S, snr, S0, rng=rng), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),
-                     fractions=(50, 50), snr=20):
-    r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
+def multi_tensor_dki(
+    gtab, mevals, S0=1.0, angles=((90.0, 0.0), (90.0, 0.0)), fractions=(50, 50), snr=20
+):
+    r"""Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
     Parameters
@@ -515,9 +531,9 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),
 
     """
     if np.round(np.sum(fractions), 2) != 100.0:
-        raise ValueError('Fractions should sum to 100')
+        raise ValueError("Fractions should sum to 100")
 
-    fractions = [f / 100. for f in fractions]
+    fractions = [f / 100.0 for f in fractions]
 
     # S = np.zeros(len(gtab.bvals))
 
@@ -532,7 +548,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),
     # compute voxel's DT
     DT = np.zeros((3, 3))
     for i in range(len(fractions)):
-        DT = DT + fractions[i]*D_comps[i]
+        DT = DT + fractions[i] * D_comps[i]
     dt = np.array([DT[0][0], DT[0][1], DT[1][1], DT[0][2], DT[1][2], DT[2][2]])
 
     # compute voxel's MD
@@ -562,9 +578,8 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),
     return S, dt, kt
 
 
-def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
-                     MD=None):
-    r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
+def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
+    r"""Computes the diffusion kurtosis tensor element (with indexes i, j, k
     and l) based on the individual diffusion tensor components of a
     multicompartmental model.
 
@@ -609,7 +624,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     if DT is None:
         DT = np.zeros((3, 3))
         for i in range(len(frac)):
-            DT = DT + frac[i]*D_comps[i]
+            DT = DT + frac[i] * D_comps[i]
 
     if MD is None:
         MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
@@ -618,19 +633,23 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
 
     for f in range(len(frac)):
         wijkl = wijkl + frac[f] * (
-                D_comps[f][ind_i][ind_j]*D_comps[f][ind_k][ind_l] +
-                D_comps[f][ind_i][ind_k]*D_comps[f][ind_j][ind_l] +
-                D_comps[f][ind_i][ind_l]*D_comps[f][ind_j][ind_k])
+            D_comps[f][ind_i][ind_j] * D_comps[f][ind_k][ind_l]
+            + D_comps[f][ind_i][ind_k] * D_comps[f][ind_j][ind_l]
+            + D_comps[f][ind_i][ind_l] * D_comps[f][ind_j][ind_k]
+        )
 
-    wijkl = (wijkl - DT[ind_i][ind_j]*DT[ind_k][ind_l] -
-             DT[ind_i][ind_k]*DT[ind_j][ind_l] -
-             DT[ind_i][ind_l]*DT[ind_j][ind_k]) / (MD**2)
+    wijkl = (
+        wijkl
+        - DT[ind_i][ind_j] * DT[ind_k][ind_l]
+        - DT[ind_i][ind_k] * DT[ind_j][ind_l]
+        - DT[ind_i][ind_l] * DT[ind_j][ind_k]
+    ) / (MD**2)
 
     return wijkl
 
 
 def dki_signal(gtab, dt, kt, S0=150, snr=None):
-    r""" Simulated signal based on the diffusion and diffusion kurtosis
+    r"""Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are performed assuming the DKI
     model.
 
@@ -671,7 +690,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
     # define vector of DKI parameters
     MD = (dt[0] + dt[2] + dt[5]) / 3
-    X = np.concatenate((dt, kt*MD*MD, np.array([-np.log(S0)])), axis=0)
+    X = np.concatenate((dt, kt * MD * MD, np.array([-np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
     S = np.exp(dot(A, X))
@@ -682,7 +701,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
-    """ Simulated ODF with a single tensor.
+    """Simulated ODF with a single tensor.
 
     Parameters
     ----------
@@ -715,14 +734,14 @@ def single_tensor_odf(r, evals=None, evecs=None):
     if evecs is None:
         evecs = np.eye(3)
 
-    out_shape = r.shape[:r.ndim - 1]
+    out_shape = r.shape[: r.ndim - 1]
 
     R = np.asarray(evecs)
     D = dot(dot(R, np.diag(evals)), R.T)
     Di = np.linalg.inv(D)
     r = r.reshape(-1, 3)
     P = np.zeros(len(r))
-    for (i, u) in enumerate(r):
+    for i, u in enumerate(r):
         P[i] = (dot(dot(u.T, Di), u)) ** (3 / 2)
 
     return (1 / (4 * np.pi * np.prod(evals) ** (1 / 2) * P)).reshape(out_shape)
@@ -785,7 +804,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
     """
-    mf = [f / 100. for f in fractions]
+    mf = [f / 100.0 for f in fractions]
 
     sticks = _check_directions(angles)
 
@@ -795,13 +814,12 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     for s in sticks:
         mevecs += [all_tensor_evecs(s)]
 
-    for (j, f) in enumerate(mf):
-        odf += f * single_tensor_odf(odf_verts,
-                                     evals=mevals[j], evecs=mevecs[j])
+    for j, f in enumerate(mf):
+        odf += f * single_tensor_odf(odf_verts, evals=mevals[j], evecs=mevecs[j])
     return odf
 
 
-def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
+def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi**2)):
     """Simulate a Single-Tensor rtop.
 
     Parameters
@@ -830,7 +848,7 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
     return rtop
 
 
-def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
+def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -857,14 +875,16 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     rtop = 0
 
     if mevals is None:
-        mevals = [None, ] * len(mf)
+        mevals = [
+            None,
+        ] * len(mf)
 
     for j, f in enumerate(mf):
         rtop += f * single_tensor_rtop(mevals[j], tau=tau)
     return rtop
 
 
-def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
+def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     """Simulated ODF with a single tensor.
 
     Parameters
@@ -899,14 +919,14 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
     if evecs is None:
         evecs = np.eye(3)
 
-    out_shape = r.shape[:r.ndim - 1]
+    out_shape = r.shape[: r.ndim - 1]
 
     R = np.asarray(evecs)
     D = dot(dot(R, np.diag(evals)), R.T)
     Di = np.linalg.inv(D)
     r = r.reshape(-1, 3)
     P = np.zeros(len(r))
-    for (i, u) in enumerate(r):
+    for i, u in enumerate(r):
         P[i] = (-dot(dot(u.T, Di), u)) / (4 * tau)
 
     pdf = (1 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))) * np.exp(P)
@@ -914,8 +934,7 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
     return pdf.reshape(out_shape)
 
 
-def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
-                     tau=1 / (4 * np.pi ** 2)):
+def multi_tensor_pdf(pdf_points, mevals, angles, fractions, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor ODF.
 
     Parameters
@@ -944,7 +963,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
            and its Features in Diffusion MRI", PhD Thesis, 2012.
 
     """
-    mf = [f / 100. for f in fractions]
+    mf = [f / 100.0 for f in fractions]
 
     sticks = _check_directions(angles)
 
@@ -955,12 +974,13 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
         mevecs += [all_tensor_evecs(s)]
 
     for j, f in enumerate(mf):
-        pdf += f * single_tensor_pdf(pdf_points,
-                                     evals=mevals[j], evecs=mevecs[j], tau=tau)
+        pdf += f * single_tensor_pdf(
+            pdf_points, evals=mevals[j], evecs=mevecs[j], tau=tau
+        )
     return pdf
 
 
-def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
+def single_tensor_msd(evals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -989,7 +1009,7 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
     return msd
 
 
-def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
+def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -1016,7 +1036,9 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     msd = 0
 
     if mevals is None:
-        mevals = [None, ] * len(mf)
+        mevals = [
+            None,
+        ] * len(mf)
 
     for j, f in enumerate(mf):
         msd += f * single_tensor_msd(mevals[j], tau=tau)

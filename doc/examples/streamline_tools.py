@@ -44,9 +44,9 @@ from dipy.viz import actor, colormap as cmap, window
 # same space as the T1. We'll use the ``get_fnames`` function to download the
 # files we need and set the file names to variables.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
-t1_fname = get_fnames('stanford_t1')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
+t1_fname = get_fnames("stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -65,12 +65,14 @@ gtab = gradient_table(bvals, bvecs)
 
 white_matter = binary_dilation((labels == 1) | (labels == 2))
 csamodel = shm.CsaOdfModel(gtab, 6)
-csapeaks = peaks.peaks_from_model(model=csamodel,
-                                  data=data,
-                                  sphere=peaks.default_sphere,
-                                  relative_peak_threshold=.8,
-                                  min_separation_angle=45,
-                                  mask=white_matter)
+csapeaks = peaks.peaks_from_model(
+    model=csamodel,
+    data=data,
+    sphere=peaks.default_sphere,
+    relative_peak_threshold=0.8,
+    min_separation_angle=45,
+    mask=white_matter,
+)
 
 ###############################################################################
 # Now we can use EuDX to track all of the white matter. To keep things
@@ -82,8 +84,9 @@ affine = np.eye(4)
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
 stopping_criterion = BinaryStoppingCriterion(white_matter)
 
-streamline_generator = LocalTracking(csapeaks, stopping_criterion, seeds,
-                                     affine=affine, step_size=0.5)
+streamline_generator = LocalTracking(
+    csapeaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+)
 streamlines = Streamlines(streamline_generator)
 
 ###############################################################################
@@ -103,8 +106,7 @@ cc_slice = labels == 2
 cc_streamlines = utils.target(streamlines, affine, cc_slice)
 cc_streamlines = Streamlines(cc_streamlines)
 
-other_streamlines = utils.target(streamlines, affine, cc_slice,
-                                 include=False)
+other_streamlines = utils.target(streamlines, affine, cc_slice, include=False)
 other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
@@ -118,10 +120,8 @@ interactive = False
 
 # Make display objects
 color = cmap.line_colors(cc_streamlines)
-cc_streamlines_actor = actor.line(cc_streamlines,
-                                  cmap.line_colors(cc_streamlines))
-cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
-                                      opacity=0.5)
+cc_streamlines_actor = actor.line(cc_streamlines, cmap.line_colors(cc_streamlines))
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
 
@@ -137,13 +137,13 @@ scene.add(cc_streamlines_actor)
 scene.add(cc_ROI_actor)
 
 # Save figures
-window.record(scene, n_frames=1, out_path='corpuscallosum_axial.png',
-              size=(800, 800))
+window.record(scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800))
 if interactive:
     window.show(scene)
 scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
-window.record(scene, n_frames=1, out_path='corpuscallosum_sagittal.png',
-              size=(800, 800))
+window.record(
+    scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
+)
 if interactive:
     window.show(scene)
 
@@ -162,10 +162,13 @@ if interactive:
 # streamlines grouped by their endpoints. Notice that this function only
 # considers the endpoints of each streamline.
 
-M, grouping = utils.connectivity_matrix(cc_streamlines, affine,
-                                        labels.astype(np.uint8),
-                                        return_mapping=True,
-                                        mapping_as_streamlines=True)
+M, grouping = utils.connectivity_matrix(
+    cc_streamlines,
+    affine,
+    labels.astype(np.uint8),
+    return_mapping=True,
+    mapping_as_streamlines=True,
+)
 M[:3, :] = 0
 M[:, :3] = 0
 
@@ -182,7 +185,7 @@ M[:, :3] = 0
 # We can now display this matrix using matplotlib. We display it using a log
 # scale to make small values in the matrix easier to see.
 
-plt.imshow(np.log1p(M), interpolation='nearest')
+plt.imshow(np.log1p(M), interpolation="nearest")
 plt.savefig("connectivity.png")
 
 ###############################################################################

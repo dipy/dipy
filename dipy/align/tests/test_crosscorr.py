@@ -11,8 +11,8 @@ def test_cc_factors_2d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20*20), dtype=floating).reshape(20, 20)
-    b = np.array(range(20*20)[::-1], dtype=floating).reshape(20, 20)
+    a = np.array(range(20 * 20), dtype=floating).reshape(20, 20)
+    b = np.array(range(20 * 20)[::-1], dtype=floating).reshape(20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -27,8 +27,8 @@ def test_cc_factors_3d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20*20*20), dtype=floating).reshape(20, 20, 20)
-    b = np.array(range(20*20*20)[::-1], dtype=floating).reshape(20, 20, 20)
+    a = np.array(range(20 * 20 * 20), dtype=floating).reshape(20, 20, 20)
+    b = np.array(range(20 * 20 * 20)[::-1], dtype=floating).reshape(20, 20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -44,16 +44,16 @@ def test_compute_cc_steps_2d(rng):
     radius = 2
 
     # Select arbitrary centers
-    c_f = (np.asarray(sh)/2) + 1.25
+    c_f = (np.asarray(sh) / 2) + 1.25
     c_g = c_f + 2.5
 
     # Compute the identity vector field I(x) = x in R^2
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     X = np.ndarray(sh + (2,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None] * O
-    X[..., 1] = x_1[None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None] * _O
+    X[..., 1] = x_1[None, :] * _O
 
     # Compute the gradient fields of F and G
     gradF = np.array(X - c_f, dtype=floating)
@@ -71,8 +71,8 @@ def test_compute_cc_steps_2d(rng):
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5*np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5*sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
@@ -87,15 +87,15 @@ def test_compute_cc_steps_2d(rng):
     factors = np.array(factors, dtype=floating)
 
     # test the forward step against the exact expression
-    I = factors[..., 0]
-    J = factors[..., 1]
+    _I = factors[..., 0]
+    _J = factors[..., 1]
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
     expected = np.ndarray(shape=sh + (2,), dtype=floating)
-    factor = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I)
+    factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
-    factor = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I)
+    factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 1] = factor * gradF[..., 1]
     actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, 0)
     assert_array_almost_equal(actual, expected)
@@ -108,9 +108,9 @@ def test_compute_cc_steps_2d(rng):
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
-    factor = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J)
+    factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 0] = factor * gradG[..., 0]
-    factor = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J)
+    factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 1] = factor * gradG[..., 1]
     actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, 0)
     assert_array_almost_equal(actual, expected)
@@ -129,7 +129,7 @@ def test_compute_cc_steps_3d(rng):
     radius = 2
 
     # Select arbitrary centers
-    c_f = (np.asarray(sh)/2) + 1.25
+    c_f = (np.asarray(sh) / 2) + 1.25
     c_g = c_f + 2.5
 
     # Compute the identity vector field I(x) = x in R^2
@@ -137,10 +137,10 @@ def test_compute_cc_steps_3d(rng):
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
     X = np.ndarray(sh + (3,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None, None] * O
-    X[..., 1] = x_1[None, :, None] * O
-    X[..., 2] = x_2[None, None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None, None] * _O
+    X[..., 1] = x_1[None, :, None] * _O
+    X[..., 2] = x_2[None, None, :] * _O
 
     # Compute the gradient fields of F and G
     gradF = np.array(X - c_f, dtype=floating)
@@ -158,8 +158,8 @@ def test_compute_cc_steps_3d(rng):
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5*np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5*sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
@@ -174,13 +174,13 @@ def test_compute_cc_steps_3d(rng):
     factors = np.array(factors, dtype=floating)
 
     # test the forward step against the exact expression
-    I = factors[..., 0]
-    J = factors[..., 1]
+    _I = factors[..., 0]
+    _J = factors[..., 1]
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
     expected = np.ndarray(shape=sh + (3,), dtype=floating)
-    factor = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I)
+    factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
     expected[..., 1] = factor * gradF[..., 1]
     expected[..., 2] = factor * gradF[..., 2]
@@ -197,7 +197,7 @@ def test_compute_cc_steps_3d(rng):
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
-    factor = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J)
+    factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 0] = factor * gradG[..., 0]
     expected[..., 1] = factor * gradG[..., 1]
     expected[..., 2] = factor * gradG[..., 2]

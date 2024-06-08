@@ -20,7 +20,7 @@ def test_mask():
     vol = np.zeros((30, 30, 30))
     vol[15, 15, 15] = 1
     struct = generate_binary_structure(3, 1)
-    voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
+    voln = binary_dilation(vol, structure=struct, iterations=4).astype("f4")
     initial = np.sum(voln > 0)
     mask = voln.copy()
     thresh = otsu(mask)
@@ -86,31 +86,31 @@ def test_bounding_box():
 
 
 def test_median_otsu():
-    fname = get_fnames('S0_10')
+    fname = get_fnames("S0_10")
     data = load_nifti_data(fname)
-    data = np.squeeze(data.astype('f8'))
+    data = np.squeeze(data.astype("f8"))
     dummy_mask = data > data.mean()
-    data_masked, mask = median_otsu(data, median_radius=3, numpass=2,
-                                    autocrop=False, vol_idx=None,
-                                    dilate=None)
+    data_masked, mask = median_otsu(
+        data, median_radius=3, numpass=2, autocrop=False, vol_idx=None, dilate=None
+    )
     assert_equal(mask.sum() < dummy_mask.sum(), True)
     data2 = np.zeros(data.shape + (2,))
     data2[..., 0] = data
     data2[..., 1] = data
 
-    data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
-                                      autocrop=False, vol_idx=[0, 1],
-                                      dilate=None)
+    data2_masked, mask2 = median_otsu(
+        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=None
+    )
     assert_almost_equal(mask.sum(), mask2.sum())
 
-    _, mask3 = median_otsu(data2, median_radius=3, numpass=2,
-                           autocrop=False, vol_idx=[0, 1],
-                           dilate=1)
+    _, mask3 = median_otsu(
+        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=1
+    )
     assert_equal(mask2.sum() < mask3.sum(), True)
 
-    _, mask4 = median_otsu(data2, median_radius=3, numpass=2,
-                           autocrop=False, vol_idx=[0, 1],
-                           dilate=2)
+    _, mask4 = median_otsu(
+        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=2
+    )
     assert_equal(mask3.sum() < mask4.sum(), True)
 
     # For 4D volumes, can't call without vol_idx input:

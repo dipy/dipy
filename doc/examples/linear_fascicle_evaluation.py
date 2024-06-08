@@ -19,6 +19,7 @@ first, by importing it. This provides us with all of the variables that were
 created in that example:
 
 """
+
 from os.path import join as pjoin
 
 import matplotlib
@@ -36,9 +37,9 @@ from dipy.io.streamline import load_trk
 import dipy.tracking.life as life
 from dipy.viz import actor, colormap as cmap, window
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
-t1_fname = get_fnames('stanford_t1')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
+t1_fname = get_fnames("stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -53,10 +54,9 @@ cc_slice = labels == 2
 # Read the candidates from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()
-lr_superiorfrontal_path = pjoin(streamlines_files[1],
-                                'hardi-lr-superiorfrontal.trk')
+lr_superiorfrontal_path = pjoin(streamlines_files[1], "hardi-lr-superiorfrontal.trk")
 
-candidate_sl_sft = load_trk(lr_superiorfrontal_path, 'same')
+candidate_sl_sft = load_trk(lr_superiorfrontal_path, "same")
 candidate_sl_sft.to_vox()
 candidate_sl = candidate_sl_sft.streamlines
 
@@ -71,10 +71,10 @@ candidate_sl = candidate_sl_sft.streamlines
 # Enables/disables interactive visualization
 interactive = False
 
-candidate_streamlines_actor = actor.streamtube(candidate_sl,
-                                               cmap.line_colors(candidate_sl))
-cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
-                                      opacity=0.5)
+candidate_streamlines_actor = actor.streamtube(
+    candidate_sl, cmap.line_colors(candidate_sl)
+)
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
 
@@ -88,9 +88,7 @@ scene.add(candidate_streamlines_actor)
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
 scene.add(vol_actor2)
-window.record(scene, n_frames=1,
-              out_path='life_candidates.png',
-              size=(800, 800))
+window.record(scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -149,10 +147,10 @@ fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
 # redundant streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 fig, ax = plt.subplots(1)
-ax.hist(fiber_fit.beta, bins=100, histtype='step')
-ax.set_xlabel('Fiber weights')
-ax.set_ylabel('# fibers')
-fig.savefig('beta_histogram.png')
+ax.hist(fiber_fit.beta, bins=100, histtype="step")
+ax.set_xlabel("Fiber weights")
+ax.set_ylabel("# fibers")
+fig.savefig("beta_histogram.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -169,8 +167,7 @@ scene = window.Scene()
 scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
-window.record(scene, n_frames=1, out_path='life_optimized.png',
-              size=(800, 800))
+window.record(scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -213,9 +210,10 @@ model_rmse = np.sqrt(np.mean(model_error[:, 10:] ** 2, -1))
 # voxel.
 
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
-pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
-                           (fiber_fit.vox_coords.shape[0],
-                            np.sum(~gtab.b0s_mask)))
+pred_weighted = np.reshape(
+    opt.spdot(fiber_fit.life_matrix, beta_baseline),
+    (fiber_fit.vox_coords.shape[0], np.sum(~gtab.b0s_mask)),
+)
 mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
 S0 = fiber_fit.b0_signal
 
@@ -224,10 +222,11 @@ S0 = fiber_fit.b0_signal
 # to add back the mean and then multiply by S0 in every voxel:
 
 mean_pred[..., gtab.b0s_mask] = S0[:, None]
-mean_pred[..., ~gtab.b0s_mask] =\
-    (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
+mean_pred[..., ~gtab.b0s_mask] = (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[
+    :, None
+]
 mean_error = mean_pred - fiber_fit.data
-mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
+mean_rmse = np.sqrt(np.mean(mean_error**2, -1))
 
 ###############################################################################
 # First, we can compare the overall distribution of errors between these two
@@ -237,18 +236,26 @@ mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 # to without the model fit.
 
 fig, ax = plt.subplots(1)
-ax.hist(mean_rmse - model_rmse, bins=100, histtype='step')
-ax.text(0.2, 0.9, 'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
-        horizontalalignment='left',
-        verticalalignment='center',
-        transform=ax.transAxes)
-ax.text(0.2, 0.8, 'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
-        horizontalalignment='left',
-        verticalalignment='center',
-        transform=ax.transAxes)
-ax.set_xlabel('RMS Error')
-ax.set_ylabel('# voxels')
-fig.savefig('error_histograms.png')
+ax.hist(mean_rmse - model_rmse, bins=100, histtype="step")
+ax.text(
+    0.2,
+    0.9,
+    f"Median RMSE, mean model: {np.median(mean_rmse):.2f}",
+    horizontalalignment="left",
+    verticalalignment="center",
+    transform=ax.transAxes,
+)
+ax.text(
+    0.2,
+    0.8,
+    f"Median RMSE, LiFE: {np.median(model_rmse):.2f}",
+    horizontalalignment="left",
+    verticalalignment="center",
+    transform=ax.transAxes,
+)
+ax.set_xlabel("RMS Error")
+ax.set_ylabel("# voxels")
+fig.savefig("error_histograms.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -263,28 +270,31 @@ fig.savefig('error_histograms.png')
 # and of the improvement with the model fit:
 
 vol_model = np.ones(data.shape[:3]) * np.nan
-vol_model[fiber_fit.vox_coords[:, 0],
-          fiber_fit.vox_coords[:, 1],
-          fiber_fit.vox_coords[:, 2]] = model_rmse
+vol_model[
+    fiber_fit.vox_coords[:, 0], fiber_fit.vox_coords[:, 1], fiber_fit.vox_coords[:, 2]
+] = model_rmse
 vol_mean = np.ones(data.shape[:3]) * np.nan
-vol_mean[fiber_fit.vox_coords[:, 0],
-         fiber_fit.vox_coords[:, 1],
-         fiber_fit.vox_coords[:, 2]] = mean_rmse
+vol_mean[
+    fiber_fit.vox_coords[:, 0], fiber_fit.vox_coords[:, 1], fiber_fit.vox_coords[:, 2]
+] = mean_rmse
 vol_improve = np.ones(data.shape[:3]) * np.nan
-vol_improve[fiber_fit.vox_coords[:, 0],
-            fiber_fit.vox_coords[:, 1],
-            fiber_fit.vox_coords[:, 2]] = mean_rmse - model_rmse
+vol_improve[
+    fiber_fit.vox_coords[:, 0], fiber_fit.vox_coords[:, 1], fiber_fit.vox_coords[:, 2]
+] = mean_rmse - model_rmse
 sl_idx = 49
 fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
-ax = AxesGrid(fig, 111,
-              nrows_ncols=(1, 3),
-              label_mode="1",
-              share_all=True,
-              cbar_location="top",
-              cbar_mode="each",
-              cbar_size="10%",
-              cbar_pad="5%")
+ax = AxesGrid(
+    fig,
+    111,
+    nrows_ncols=(1, 3),
+    label_mode="1",
+    share_all=True,
+    cbar_location="top",
+    cbar_mode="each",
+    cbar_size="10%",
+    cbar_pad="5%",
+)
 ax[0].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[0].matshow(np.rot90(vol_model[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[0].colorbar(im)
@@ -292,8 +302,7 @@ ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[1].matshow(np.rot90(vol_mean[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
-im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]),
-                   cmap=matplotlib.cm.RdBu)
+im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
 for lax in ax:
     lax.set_xticks([])

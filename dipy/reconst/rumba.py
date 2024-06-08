@@ -1,4 +1,5 @@
 """Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)"""
+
 import logging
 import warnings
 
@@ -21,11 +22,21 @@ logger = logging.getLogger(__name__)
 
 
 class RumbaSDModel(OdfModel):
-
-    def __init__(self, gtab, wm_response=np.array([1.7e-3, 0.2e-3, 0.2e-3]),
-                 gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
-                 recon_type='smf', n_coils=1, R=1, voxelwise=True,
-                 use_tv=False, sphere=None, verbose=False):
+    def __init__(
+        self,
+        gtab,
+        wm_response=(1.7e-3, 0.2e-3, 0.2e-3),
+        gm_response=0.8e-3,
+        csf_response=3.0e-3,
+        n_iter=600,
+        recon_type="smf",
+        n_coils=1,
+        R=1,
+        voxelwise=True,
+        use_tv=False,
+        sphere=None,
+        verbose=False,
+    ):
         """
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
 
@@ -129,6 +140,9 @@ class RumbaSDModel(OdfModel):
         # Initialize self.gtab
         OdfModel.__init__(self, gtab_cor)
 
+        if isinstance(wm_response, tuple):
+            wm_response = np.asarray(wm_response)
+
         # Store responses
         self.wm_response = wm_response
         self.gm_response = gm_response
@@ -136,8 +150,10 @@ class RumbaSDModel(OdfModel):
 
         # Initializing remaining parameters
         if R < 1 or n_iter < 1 or n_coils < 1:
-            raise ValueError(f"R, n_iter, and n_coils must be >= 1, but R={R},"
-                             + f"n_iter={n_iter}, and n_coils={n_coils} ")
+            raise ValueError(
+                f"R, n_iter, and n_coils must be >= 1, but R={R},"
+                + f"n_iter={n_iter}, and n_coils={n_coils} "
+            )
 
         self.R = R
         self.n_iter = n_iter
@@ -147,8 +163,9 @@ class RumbaSDModel(OdfModel):
         if voxelwise and use_tv:
             raise ValueError("Total variation has no effect in voxelwise fit")
         if voxelwise and verbose:
-            warnings.warn("Verbosity has no effect in voxelwise fit",
-                          UserWarning)
+            warnings.warn(
+                "Verbosity has no effect in voxelwise fit", UserWarning, stacklevel=2
+            )
 
         self.voxelwise = voxelwise
         self.use_tv = use_tv
@@ -156,7 +173,7 @@ class RumbaSDModel(OdfModel):
         self.verbose = verbose
 
         if sphere is None:
-            self.sphere = get_sphere('repulsion724')
+            self.sphere = get_sphere("repulsion724")
         else:
             self.sphere = sphere
 
@@ -190,16 +207,17 @@ class RumbaSDModel(OdfModel):
 
         # Checking data and mask shapes
         if len(data.shape) != 4:
-            raise ValueError(
-                f"Data should be 4D, received shape f{data.shape}")
+            raise ValueError(f"Data should be 4D, received shape f{data.shape}")
 
         if mask is None:  # default mask includes all voxels
             mask = np.ones(data.shape[:3])
 
         if data.shape[:3] != mask.shape:
-            raise ValueError("Mask shape should match first 3 dimensions of "
-                             + f"data, but data dimensions are f{data.shape} "
-                             + f"while mask dimensions are f{mask.shape}")
+            raise ValueError(
+                "Mask shape should match first 3 dimensions of "
+                + f"data, but data dimensions are f{data.shape} "
+                + f"while mask dimensions are f{mask.shape}"
+            )
 
         # Signal repair, normalization
 
@@ -207,24 +225,34 @@ class RumbaSDModel(OdfModel):
         data = normalize_data(data, self.where_b0s, _EPS)
         # Rearrange data to match corrected gradient table
         data = np.concatenate(
-            (np.ones([*data.shape[:3], 1]), data[..., self.where_dwi]), axis=3)
+            (np.ones([*data.shape[:3], 1]), data[..., self.where_dwi]), axis=3
+        )
         data[data > 1] = 1  # clip values between 0 and 1
 
         # All arrays are converted to float32 to reduce memory load
         data = data.astype(np.float32)
 
         # Generate kernel
-        self.kernel = generate_kernel(self.gtab, self.sphere, self.wm_response,
-                                      self.gm_response, self.csf_response
-                                      ).astype(np.float32)
+        self.kernel = generate_kernel(
+            self.gtab,
+            self.sphere,
+            self.wm_response,
+            self.gm_response,
+            self.csf_response,
+        ).astype(np.float32)
 
         # Fit fODF
-        model_params = rumba_deconv_global(data, self.kernel, mask,
-                                           self.n_iter,
-                                           self.recon_type,
-                                           self.n_coils,
-                                           self.R, self.use_tv,
-                                           self.verbose)
+        model_params = rumba_deconv_global(
+            data,
+            self.kernel,
+            mask,
+            self.n_iter,
+            self.recon_type,
+            self.n_coils,
+            self.R,
+            self.use_tv,
+            self.verbose,
+        )
 
         model_fit = RumbaFit(self, model_params)
         return model_fit
@@ -253,36 +281,35 @@ class RumbaSDModel(OdfModel):
             mask = np.ones(data.shape[:-1])
 
         if data.shape[:-1] != mask.shape:
-            raise ValueError("Mask shape should match first dimensions of "
-                             + f"data, but data dimensions are f{data.shape} "
-                             + f"while mask dimensions are f{mask.shape}")
+            raise ValueError(
+                "Mask shape should match first dimensions of "
+                + f"data, but data dimensions are f{data.shape} "
+                + f"while mask dimensions are f{mask.shape}"
+            )
 
-        self.kernel = generate_kernel(self.gtab,
-                                      self.sphere,
-                                      self.wm_response,
-                                      self.gm_response,
-                                      self.csf_response)
+        self.kernel = generate_kernel(
+            self.gtab,
+            self.sphere,
+            self.wm_response,
+            self.gm_response,
+            self.csf_response,
+        )
 
-        model_params = np.zeros(
-            data.shape[:-1] + (len(self.sphere.vertices) + 2,))
+        model_params = np.zeros(data.shape[:-1] + (len(self.sphere.vertices) + 2,))
 
         for ijk in np.ndindex(data.shape[:-1]):
             if mask[ijk]:
-
                 vox_data = data[ijk]
                 # Normalize data to mean b0 image
-                vox_data = normalize_data(vox_data, self.where_b0s,
-                                          min_signal=_EPS)
+                vox_data = normalize_data(vox_data, self.where_b0s, min_signal=_EPS)
                 # Rearrange data to match corrected gradient table
                 vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
                 vox_data[vox_data > 1] = 1  # clip values between 0 and 1
 
                 # Fitting
-                model_param = rumba_deconv(vox_data,
-                                           self.kernel,
-                                           self.n_iter,
-                                           self.recon_type,
-                                           self.n_coils)
+                model_param = rumba_deconv(
+                    vox_data, self.kernel, self.n_iter, self.recon_type, self.n_coils
+                )
 
                 model_params[ijk] = model_param
 
@@ -291,7 +318,6 @@ class RumbaSDModel(OdfModel):
 
 
 class RumbaFit(OdfFit):
-
     def __init__(self, model, model_params):
         """
         Constructs fODF, GM/CSF volume fractions, and other derived results.
@@ -328,8 +354,10 @@ class RumbaFit(OdfFit):
 
         """
         if sphere is not None and sphere != self.model.sphere:
-            raise ValueError("Reconstruction sphere must be the same as used"
-                             + " in the RUMBA-SD model.")
+            raise ValueError(
+                "Reconstruction sphere must be the same as used"
+                + " in the RUMBA-SD model."
+            )
 
         odf = self.model_params[..., :-2]
         return odf
@@ -439,11 +467,13 @@ class RumbaFit(OdfFit):
         if gtab is None:
             gtab = self.model.gtab_orig
 
-        pred_kernel = generate_kernel(gtab,
-                                      self.model.sphere,
-                                      self.model.wm_response,
-                                      self.model.gm_response,
-                                      self.model.csf_response)
+        pred_kernel = generate_kernel(
+            gtab,
+            self.model.sphere,
+            self.model.wm_response,
+            self.model.gm_response,
+            self.model.csf_response,
+        )
 
         if S0 is None:
             S0 = np.ones(model_params.shape[:-1] + (1,))
@@ -459,7 +489,7 @@ class RumbaFit(OdfFit):
         return pred_sig
 
 
-def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
+def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
     r"""
     Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
 
@@ -589,8 +619,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     elif recon_type == "sos":
         n_order = n_coils  # Noncentral Chi noise (order = # of coils)
     else:
-        raise ValueError("Invalid recon_type. Should be 'smf' or 'sos', " +
-                         f"received {recon_type}")
+        raise ValueError(
+            f"Invalid recon_type. Should be 'smf' or 'sos', received {recon_type}"
+        )
 
     data = data.reshape(-1, 1)
     reblurred = np.matmul(kernel, fodf)
@@ -608,8 +639,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     for _ in range(n_iter):
         fodf_i = fodf
         ratio = mbessel_ratio(n_order, reblurred_s)
-        rl_factor = np.matmul(kernel_t, data * ratio) / \
-            (np.matmul(kernel_t, reblurred) + _EPS)
+        rl_factor = np.matmul(kernel_t, data * ratio) / (
+            np.matmul(kernel_t, reblurred) + _EPS
+        )
 
         fodf = fodf_i * rl_factor  # result of iteration
         fodf = np.maximum(f_zero, fodf)  # apply positivity constraint
@@ -619,11 +651,10 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         reblurred_s = data * reblurred / sigma2
 
         # Iterate variance
-        sigma2_i = (1 / (n_grad * n_order)) * \
-            np.sum((data**2 + reblurred**2) / 2 -
-                   (sigma2 * reblurred_s) * ratio,
-                   axis=0)
-        sigma2_i = np.minimum((1 / 8)**2, np.maximum(sigma2_i, (1 / 80)**2))
+        sigma2_i = (1 / (n_grad * n_order)) * np.sum(
+            (data**2 + reblurred**2) / 2 - (sigma2 * reblurred_s) * ratio, axis=0
+        )
+        sigma2_i = np.minimum((1 / 8) ** 2, np.maximum(sigma2_i, (1 / 80) ** 2))
         sigma2 = sigma2_i * np.ones(data.shape)  # Expand into vector
 
     # Normalize final result
@@ -663,9 +694,25 @@ def mbessel_ratio(n, x):
            doi: 10.1090/S0025-5718-1978-0470267-9
     """
 
-    y = x / ((2 * n + x) - (2 * x * (n + 1 / 2) / (2 * n + 1 + 2 * x - (
-        2 * x * (n + 3 / 2) / (2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (
-            2 * n + 3 + 2 * x)))))))
+    y = x / (
+        (2 * n + x)
+        - (
+            2
+            * x
+            * (n + 1 / 2)
+            / (
+                2 * n
+                + 1
+                + 2 * x
+                - (
+                    2
+                    * x
+                    * (n + 3 / 2)
+                    / (2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (2 * n + 3 + 2 * x)))
+                )
+            )
+        )
+    )
 
     return y
 
@@ -746,9 +793,9 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
 
             for i in range(n_wm_comp):
                 # Signal generated by WM-fiber for each gradient direction
-                S = single_tensor(gtab_sub,
-                                  evals=wm_response[n],
-                                  evecs=all_tensor_evecs(sticks[i]))
+                S = single_tensor(
+                    gtab_sub, evals=wm_response[n], evecs=all_tensor_evecs(sticks[i])
+                )
                 kernel[indices, i] = S
 
         # Set b0 components
@@ -759,8 +806,9 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
         # Single-shell response
         for i in range(n_wm_comp):
             # Signal generated by WM-fiber for each gradient direction
-            S = single_tensor(gtab, evals=wm_response,
-                              evecs=all_tensor_evecs(sticks[i]))
+            S = single_tensor(
+                gtab, evals=wm_response, evecs=all_tensor_evecs(sticks[i])
+            )
             kernel[:, i] = S
 
         # Set b0 components
@@ -770,16 +818,16 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     if gm_response is None:
         S_gm = np.zeros(n_grad)
     else:
-        S_gm = \
-            single_tensor(gtab, evals=np.array(
-                [gm_response, gm_response, gm_response]))
+        S_gm = single_tensor(
+            gtab, evals=np.array([gm_response, gm_response, gm_response])
+        )
 
     if csf_response is None:
         S_csf = np.zeros(n_grad)
     else:
-        S_csf = \
-            single_tensor(gtab, evals=np.array(
-                [csf_response, csf_response, csf_response]))
+        S_csf = single_tensor(
+            gtab, evals=np.array([csf_response, csf_response, csf_response])
+        )
 
     kernel[:, n_comp - 2] = S_gm
     kernel[:, n_comp - 1] = S_csf
@@ -787,8 +835,17 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     return kernel
 
 
-def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
-                        n_coils=1, R=1, use_tv=True, verbose=False):
+def rumba_deconv_global(
+    data,
+    kernel,
+    mask,
+    n_iter=600,
+    recon_type="smf",
+    n_coils=1,
+    R=1,
+    use_tv=True,
+    verbose=False,
+):
     r"""
     Fit fODF for all voxels simultaneously using RUMBA-SD.
 
@@ -894,9 +951,11 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     mask = crop(mask, ixmin, ixmax)
 
     if np.any(np.array(data.shape[:3]) == 1) and use_tv:
-        raise ValueError("Cannot use TV regularization if any spatial" +
-                         "dimensions are 1; " +
-                         f"provided dimensions were {data.shape[:3]}")
+        raise ValueError(
+            "Cannot use TV regularization if any spatial"
+            + "dimensions are 1; "
+            + f"provided dimensions were {data.shape[:3]}"
+        )
 
     epsilon = 1e-7
 
@@ -914,8 +973,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     elif recon_type == "sos":
         n_order = n_coils  # Noncentral Chi noise (order = # of coils)
     else:
-        raise ValueError("Invalid recon_type. Should be 'smf' or 'sos', " +
-                         f"received f{recon_type}")
+        raise ValueError(
+            f"Invalid recon_type. Should be 'smf' or 'sos', received f{recon_type}"
+        )
 
     mask_vec = np.ravel(mask)
     # Indices of target voxels
@@ -925,7 +985,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     data_2d = np.zeros((n_v_true, n_grad), dtype=np.float32)
     for i in range(n_grad):
         data_2d[:, i] = np.ravel(data[:, :, :, i])[
-            index_mask]  # only keep voxels of interest
+            index_mask
+        ]  # only keep voxels of interest
 
     data_2d = data_2d.T
     fodf = np.tile(fodf0, (1, n_v_true))
@@ -949,8 +1010,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     for i in range(n_iter):
         fodf_i = fodf
         ratio = mbessel_ratio(n_order, reblurred_s).astype(np.float32)
-        rl_factor = np.matmul(kernel_t, data_2d * ratio) / \
-            (np.matmul(kernel_t, reblurred) + _EPS)
+        rl_factor = np.matmul(kernel_t, data_2d * ratio) / (
+            np.matmul(kernel_t, reblurred) + _EPS
+        )
 
         if use_tv:  # apply TV regularization
             tv_factor = np.ones(fodf_i.shape, dtype=np.float32)
@@ -958,7 +1020,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             # Compute gradient, divergence
             gr = _grad(fodf_4d)
             d_inv = 1 / np.sqrt(epsilon**2 + np.sum(gr**2, axis=3))
-            gr_norm = (gr * d_inv[:, :, :, None, :])
+            gr_norm = gr * d_inv[:, :, :, None, :]
             div_f = _divergence(gr_norm)
             g0 = np.abs(1 - tv_lambda * div_f)
             tv_factor_4d = 1 / (g0 + _EPS)
@@ -978,10 +1040,10 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         reblurred_s = data_2d * reblurred / sigma2
 
         # Iterate variance
-        sigma2_i = (1 / (n_grad * n_order)) * \
-            np.sum((data_2d**2 + reblurred**2) / 2 - (
-                sigma2 * reblurred_s) * ratio, axis=0)
-        sigma2_i = np.minimum((1 / 8)**2, np.maximum(sigma2_i, (1 / 80)**2))
+        sigma2_i = (1 / (n_grad * n_order)) * np.sum(
+            (data_2d**2 + reblurred**2) / 2 - (sigma2 * reblurred_s) * ratio, axis=0
+        )
+        sigma2_i = np.minimum((1 / 8) ** 2, np.maximum(sigma2_i, (1 / 80) ** 2))
 
         if verbose:
             logger.info("Iteration %d of %d", i + 1, n_iter)
@@ -989,8 +1051,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             snr_mean = np.mean(1 / np.sqrt(sigma2_i))
             snr_std = np.std(1 / np.sqrt(sigma2_i))
             logger.info(
-                "Mean SNR (S0/sigma) estimated to be %.3f +/- %.3f",
-                snr_mean, snr_std)
+                "Mean SNR (S0/sigma) estimated to be %.3f +/- %.3f", snr_mean, snr_std
+            )
         # Expand into matrix
         sigma2 = np.tile(sigma2_i[None, :], (data_2d.shape[0], 1))
 
@@ -999,8 +1061,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             if R == 1:
                 tv_lambda = np.mean(sigma2_i)
 
-                if tv_lambda < (1 / 30)**2:
-                    tv_lambda = (1 / 30)**2
+                if tv_lambda < (1 / 30) ** 2:
+                    tv_lambda = (1 / 30) ** 2
             else:  # different factor for each voxel
                 tv_lambda_aux[index_mask] = sigma2_i
                 tv_lambda = np.reshape(tv_lambda_aux, (*dim[:3], 1))
@@ -1010,9 +1072,11 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     # Extract compartments
     fit_array = np.zeros((*dim_orig[:3], n_comp))
-    _reshape_2d_4d(fodf.T, mask, out=fit_array[ixmin[0]:ixmax[0],
-                                               ixmin[1]:ixmax[1],
-                                               ixmin[2]:ixmax[2]])
+    _reshape_2d_4d(
+        fodf.T,
+        mask,
+        out=fit_array[ixmin[0] : ixmax[0], ixmin[1] : ixmax[1], ixmin[2] : ixmax[2]],
+    )
 
     return fit_array
 

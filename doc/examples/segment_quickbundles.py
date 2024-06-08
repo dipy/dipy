@@ -21,12 +21,12 @@ from dipy.viz import actor, colormap, window
 # For educational purposes we will try to cluster a small streamline bundle
 # known from neuroanatomy as the fornix.
 
-fname = get_fnames('fornix')
+fname = get_fnames("fornix")
 
 ###############################################################################
 # Load fornix streamlines.
 
-fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 streamlines = fornix.streamlines
 
 ###############################################################################
@@ -37,7 +37,7 @@ streamlines = fornix.streamlines
 # downsampled/upsampled so they have only 12 points (To set manually the
 # number of points, see :ref:`clustering-examples-ResampleFeature`).
 
-qb = QuickBundles(threshold=10.)
+qb = QuickBundles(threshold=10.0)
 clusters = qb.cluster(streamlines)
 
 ###############################################################################
@@ -63,7 +63,7 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, window.colors.white))
-window.record(scene, out_path='fornix_initial.png', size=(600, 600))
+window.record(scene, out_path="fornix_initial.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -81,7 +81,7 @@ scene.clear()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
 scene.add(actor.streamtube(clusters.centroids, colormap, linewidth=0.4))
-window.record(scene, out_path='fornix_centroids.png', size=(600, 600))
+window.record(scene, out_path="fornix_centroids.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -100,7 +100,7 @@ for cluster, color in zip(clusters, colormap):
 scene.clear()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='fornix_clusters.png', size=(600, 600))
+window.record(scene, out_path="fornix_clusters.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -112,7 +112,7 @@ if interactive:
 #
 # It is also possible to save the complete `ClusterMap` object with pickling.
 
-save_pickle('QB.pkl', clusters)
+save_pickle("QB.pkl", clusters)
 
 ###############################################################################
 # Finally, here is a video of QuickBundles applied on a larger dataset.

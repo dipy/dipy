@@ -9,8 +9,8 @@ import dipy.sims.voxel as vox
 from dipy.sims.voxel import diffusion_evals, single_tensor
 
 
-def add_noise(vol, snr=1.0, S0=None, noise_type='rician', rng=None):
-    """ Add noise of specified distribution to a 4D array.
+def add_noise(vol, snr=1.0, S0=None, noise_type="rician", rng=None):
+    """Add noise of specified distribution to a 4D array.
 
     Parameters
     ----------
@@ -60,18 +60,18 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician', rng=None):
         S0 = np.max(vol)
 
     for vox_idx, signal in enumerate(vol_flat):
-        vol_flat[vox_idx] = vox.add_noise(signal, snr=snr, S0=S0,
-                                          noise_type=noise_type, rng=rng)
+        vol_flat[vox_idx] = vox.add_noise(
+            signal, snr=snr, S0=S0, noise_type=noise_type, rng=rng
+        )
 
     return np.reshape(vol_flat, orig_shape)
 
 
 def diff2eigenvectors(dx, dy, dz):
-    """ numerical derivatives 2 eigenvectors
-    """
+    """numerical derivatives 2 eigenvectors"""
     basis = np.eye(3)
     u = np.array([dx, dy, dz])
-    u = u/np.linalg.norm(u)
+    u = u / np.linalg.norm(u)
     R = vec2vec_rotmat(basis[:, 0], u)
     eig0 = u
     eig1 = np.dot(R, basis[:, 1])
@@ -83,18 +83,20 @@ def diff2eigenvectors(dx, dy, dz):
     return eigs, R
 
 
-def orbital_phantom(gtab=None,
-                    evals=diffusion_evals,
-                    func=None,
-                    t=np.linspace(0, 2 * np.pi, 1000),
-                    datashape=(64, 64, 64, 65),
-                    origin=(32, 32, 32),
-                    scale=(25, 25, 25),
-                    angles=np.linspace(0, 2 * np.pi, 32),
-                    radii=np.linspace(0.2, 2, 6),
-                    S0=100.,
-                    snr=None,
-                    rng=None):
+def orbital_phantom(
+    gtab=None,
+    evals=diffusion_evals,
+    func=None,
+    t=None,
+    datashape=(64, 64, 64, 65),
+    origin=(32, 32, 32),
+    scale=(25, 25, 25),
+    angles=None,
+    radii=None,
+    S0=100.0,
+    snr=None,
+    rng=None,
+):
     """Create a phantom based on a 3-D orbit ``f(t) -> (x,y,z)``.
 
     Parameters
@@ -151,8 +153,17 @@ def orbital_phantom(gtab=None,
 
     """
 
+    if t is None:
+        t = np.linspace(0, 2 * np.pi, 1000)
+
+    if angles is None:
+        angles = np.linspace(0, 2 * np.pi, 32)
+
+    if radii is None:
+        radii = np.linspace(0.2, 2, 6)
+
     if gtab is None:
-        fimg, fbvals, fbvecs = get_fnames('small_64D')
+        fimg, fbvals, fbvecs = get_fnames("small_64D")
         gtab = gradient_table(fbvals, fbvecs)
 
     if func is None:
@@ -198,13 +209,12 @@ def orbital_phantom(gtab=None,
     vol *= S0
 
     if snr is not None:
-        vol = add_noise(vol, snr, S0=S0, noise_type='rician', rng=rng)
+        vol = add_noise(vol, snr, S0=S0, noise_type="rician", rng=rng)
 
     return vol
 
 
 if __name__ == "__main__":
-
     # TODO: this can become a nice tutorial for generating phantoms
 
     def f(t):

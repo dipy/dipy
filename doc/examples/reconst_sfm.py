@@ -28,8 +28,7 @@ from dipy.viz import actor, window
 # run this example. The data will be stored for subsequent runs, and for use
 # with other examples.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(
-    'stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
@@ -64,7 +63,7 @@ interactive = False
 #
 # .. math::
 #
-#     \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}
+#     \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}  # noqa: E501
 #
 # where $\hat{y}$ is the signal predicted for a particular setting of $\beta$,
 # such that the left part of this expression is the squared loss function;
@@ -99,9 +98,9 @@ print(response)
 # in the model
 
 sphere = dpd.get_sphere()
-sf_model = sfm.SparseFascicleModel(gtab, sphere=sphere,
-                                   l1_ratio=0.5, alpha=0.001,
-                                   response=response[0])
+sf_model = sfm.SparseFascicleModel(
+    gtab, sphere=sphere, l1_ratio=0.5, alpha=0.001, response=response[0]
+)
 
 ###############################################################################
 # For the purpose of the example, we will consider a small volume of data
@@ -116,32 +115,33 @@ data_small = data[20:50, 55:85, 38:39]
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8,
-                                colormap='plasma')
+fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap="plasma")
 
 scene = window.Scene()
 scene.add(fodf_spheres)
 
-window.record(scene, out_path='sf_odfs.png', size=(1000, 1000))
+window.record(scene, out_path="sf_odfs.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
 ###############################################################################
 # We can extract the peaks from the ODF, and plot these as well
 
-sf_peaks = dpp.peaks_from_model(sf_model,
-                                data_small,
-                                sphere,
-                                relative_peak_threshold=.5,
-                                min_separation_angle=25,
-                                return_sh=False)
+sf_peaks = dpp.peaks_from_model(
+    sf_model,
+    data_small,
+    sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    return_sh=False,
+)
 
 
 scene.clear()
 fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene, out_path='sf_peaks.png', size=(1000, 1000))
+window.record(scene, out_path="sf_peaks.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -151,7 +151,7 @@ if interactive:
 fodf_spheres.GetProperty().SetOpacity(0.4)
 scene.add(fodf_spheres)
 
-window.record(scene, out_path='sf_both.png', size=(1000, 1000))
+window.record(scene, out_path="sf_both.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 

@@ -22,9 +22,10 @@ from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
-SH_CONST = .5 / np.sqrt(np.pi)
+SH_CONST = 0.5 / np.sqrt(np.pi)
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     """
     Builds a basis for multi-shell multi-tissue CSD model.
@@ -52,9 +53,10 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
     m_values, l_values = shm.sph_harm_ind_list(sh_order_max)
-    B = shm.real_sh_descoteaux_from_index(m_values, l_values,
-                                          theta[:, None], phi[:, None])
-    B[np.ix_(gtab.b0s_mask, l_values > 0)] = 0.
+    B = shm.real_sh_descoteaux_from_index(
+        m_values, l_values, theta[:, None], phi[:, None]
+    )
+    B[np.ix_(gtab.b0s_mask, l_values > 0)] = 0.0
 
     iso = np.empty([B.shape[0], iso_comp])
     iso[:] = SH_CONST
@@ -64,9 +66,9 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
 
 
 class MultiShellResponse:
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
     def __init__(self, response, sh_order_max, shells, S0=None):
-        """ Estimate Multi Shell response function for multiple tissues and
+        """Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
         The method `multi_shell_fiber_response` allows to create a multi-shell
@@ -100,7 +102,8 @@ class MultiShellResponse:
     def iso(self):
         return self.response.shape[1] - (self.sh_order_max // 2) - 1
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
@@ -112,8 +115,10 @@ def _inflate_response(response, gtab, sh_order_max, delta):
         The maximal order (l) of the harmonic.
     delta : Delta generated from `_basic_delta`
     """
-    if any((sh_order_max % 2) != 0) or \
-        (sh_order_max.max() // 2) >= response.sh_order_max:
+    if (
+        any((sh_order_max % 2) != 0)
+        or (sh_order_max.max() // 2) >= response.sh_order_max
+    ):
         raise ValueError("Response and n do not match")
 
     iso = response.iso
@@ -150,9 +155,10 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def __init__(self, gtab, response, reg_sphere=default_sphere,
-                 sh_order_max=8, iso=2, tol=20):
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def __init__(
+        self, gtab, response, reg_sphere=default_sphere, sh_order_max=8, iso=2, tol=20
+    ):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -219,20 +225,23 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                 msg = """Too many compartments for this kind of response
                 input. It must be two tissue compartments."""
                 raise ValueError(msg)
-            if response.shape != (3, len(bvals)-1, 4):
+            if response.shape != (3, len(bvals) - 1, 4):
                 msg = """Response must be of shape (3, len(bvals)-1, 4) or be a
                 MultiShellResponse object."""
                 raise ValueError(msg)
-            response = multi_shell_fiber_response(sh_order_max,
-                                                  bvals=bvals,
-                                                  wm_rf=response[0],
-                                                  gm_rf=response[1],
-                                                  csf_rf=response[2])
+            response = multi_shell_fiber_response(
+                sh_order_max,
+                bvals=bvals,
+                wm_rf=response[0],
+                gm_rf=response[1],
+                csf_rf=response[2],
+            )
 
         B, m_values, l_values = multi_tissue_basis(gtab, sh_order_max, iso)
 
-        delta = _basic_delta(response.iso, response.m_values,
-                             response.l_values, 0., 0.)
+        delta = _basic_delta(
+            response.iso, response.m_values, response.l_values, 0.0, 0.0
+        )
         self.delta = delta
         multiplier_matrix = _inflate_response(response, gtab, l_values, delta)
 
@@ -273,17 +282,14 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             X = self._X
         else:
             iso = self.response.iso
-            B, m_values, l_values = multi_tissue_basis(gtab,
-                                                       self.sh_order_max,
-                                                       iso)
-            multiplier_matrix = _inflate_response(self.response,
-                                                  gtab,
-                                                  l_values,
-                                                  self.delta)
+            B, m_values, l_values = multi_tissue_basis(gtab, self.sh_order_max, iso)
+            multiplier_matrix = _inflate_response(
+                self.response, gtab, l_values, self.delta
+            )
             X = B * multiplier_matrix
 
-        scaling = 1.
-        if S0 and S0 != 1.:     # The S0=1. case comes from fit.predict().
+        scaling = 1.0
+        if S0 and S0 != 1.0:  # The S0=1. case comes from fit.predict().
             raise NotImplementedError
             # This case is not implemented yet because it would require to have
             # access to volume fractions (vf) from the fit. The following code
@@ -326,13 +332,12 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                 msg = """Voxel could not be solved properly and ended up with a
                 SolverError. Proceeding to fill it with NaN values.
                 """
-                warnings.warn(msg, UserWarning)
+                warnings.warn(msg, UserWarning, stacklevel=2)
 
         return MSDeconvFit(self, coeff, None)
 
 
 class MSDeconvFit(shm.SphHarmFit):
-
     def __init__(self, model, coeff, mask):
         """
         Abstract class which holds the fit result of MultiShellDeconvModel.
@@ -354,7 +359,7 @@ class MSDeconvFit(shm.SphHarmFit):
 
     @property
     def shm_coeff(self):
-        return self._shm_coef[..., self.model.response.iso:]
+        return self._shm_coef[..., self.model.response.iso :]
 
     @property
     def all_shm_coeff(self):
@@ -409,7 +414,6 @@ def solve_qp(P, Q, G, H):
 
 
 class QpFitter:
-
     def __init__(self, X, reg):
         r"""
         Makes use of the quadratic programming solver `solve_qp` to fit the
@@ -438,9 +442,11 @@ class QpFitter:
         fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
-                               sphere=None, tol=20, btens=None):
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def multi_shell_fiber_response(
+    sh_order_max, bvals, wm_rf, gm_rf, csf_rf, sphere=None, tol=20, btens=None
+):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
@@ -486,7 +492,7 @@ def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
         msg = """bvals and btens parameters must have the same dimension."""
         raise ValueError(msg)
     evecs = np.zeros((3, 3))
-    z = np.array([0, 0, 1.])
+    z = np.array([0, 0, 1.0])
     evecs[:, 0] = z
     evecs[:2, 1:] = np.eye(2)
 
@@ -499,43 +505,43 @@ def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
     big_sphere = sphere.subdivide()
     theta, phi = big_sphere.theta, big_sphere.phi
 
-    B = shm.real_sh_descoteaux_from_index(m_values, l_values,
-                                          theta[:, None], phi[:, None])
+    B = shm.real_sh_descoteaux_from_index(
+        m_values, l_values, theta[:, None], phi[:, None]
+    )
     A = shm.real_sh_descoteaux_from_index(0, 0, 0, 0)
 
     response = np.empty([len(bvals), len(l_values) + 2])
 
     if bvals[0] < tol:
         gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
-        wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs,
-                                    snr=None)
+        wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
         response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         response[0, 1] = gm_rf[0, 3] / A
         response[0, 0] = csf_rf[0, 3] / A
 
         for i, bvalue in enumerate(bvals[1:]):
-            gtab = GradientTable(big_sphere.vertices * bvalue,
-                                 btens=btens[i + 1])
-            wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
-                                        snr=None)
-            response[i+1, 2:] = np.linalg.lstsq(B, wm_response,
-                                                rcond=None)[0]
+            gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i + 1])
+            wm_response = single_tensor(
+                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+            )
+            response[i + 1, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
-            response[i+1, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
-            response[i+1, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
+            response[i + 1, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
+            response[i + 1, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
 
         S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
     else:
-        warnings.warn("""No b0 given. Proceeding either way.""", UserWarning)
+        warnings.warn(
+            """No b0 given. Proceeding either way.""", UserWarning, stacklevel=2
+        )
         for i, bvalue in enumerate(bvals):
-            gtab = GradientTable(big_sphere.vertices * bvalue,
-                                 btens=btens[i])
-            wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
-                                        snr=None)
-            response[i, 2:] = np.linalg.lstsq(B, wm_response,
-                                              rcond=None)[0]
+            gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i])
+            wm_response = single_tensor(
+                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+            )
+            response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
             response[i, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
             response[i, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
@@ -545,10 +551,18 @@ def multi_shell_fiber_response(sh_order_max, bvals, wm_rf, gm_rf, csf_rf,
     return MultiShellResponse(response, sh_order_max, bvals, S0=S0)
 
 
-def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
-                           wm_fa_thr=0.7, gm_fa_thr=0.2, csf_fa_thr=0.1,
-                           gm_md_thr=0.0007, csf_md_thr=0.002):
-    """ Computation of masks for multi-shell multi-tissue (msmt) response
+def mask_for_response_msmt(
+    gtab,
+    data,
+    roi_center=None,
+    roi_radii=10,
+    wm_fa_thr=0.7,
+    gm_fa_thr=0.2,
+    csf_fa_thr=0.1,
+    gm_md_thr=0.0007,
+    csf_md_thr=0.002,
+):
+    """Computation of masks for multi-shell multi-tissue (msmt) response
         function using FA and MD.
 
     Parameters
@@ -607,8 +621,9 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     if roi_center is None:
         roi_center = np.array(data.shape[:3]) // 2
 
-    roi_radii = _roi_in_volume(data.shape, np.asarray(roi_center),
-                               np.asarray(roi_radii))
+    roi_radii = _roi_in_volume(
+        data.shape, np.asarray(roi_center), np.asarray(roi_radii)
+    )
 
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
@@ -616,7 +631,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200.
         The DTI fit might be affected."""
-        warnings.warn(msg_bvals, UserWarning)
+        warnings.warn(msg_bvals, UserWarning, stacklevel=2)
 
     ten = TensorModel(gtab)
     tenfit = ten.fit(data, mask=roi_mask)
@@ -651,26 +666,26 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     Try a larger roi or a {2} threshold for {3}."""
 
     if np.sum(mask_wm) == 0:
-        msg_fa = msg.format('FA higher', str(wm_fa_thr), 'lower FA', 'WM')
-        warnings.warn(msg_fa, UserWarning)
+        msg_fa = msg.format("FA higher", str(wm_fa_thr), "lower FA", "WM")
+        warnings.warn(msg_fa, UserWarning, stacklevel=2)
 
     if np.sum(mask_gm) == 0:
-        msg_fa = msg.format('FA lower', str(gm_fa_thr), 'higher FA', 'GM')
-        msg_md = msg.format('MD lower', str(gm_md_thr), 'higher MD', 'GM')
-        warnings.warn(msg_fa, UserWarning)
-        warnings.warn(msg_md, UserWarning)
+        msg_fa = msg.format("FA lower", str(gm_fa_thr), "higher FA", "GM")
+        msg_md = msg.format("MD lower", str(gm_md_thr), "higher MD", "GM")
+        warnings.warn(msg_fa, UserWarning, stacklevel=2)
+        warnings.warn(msg_md, UserWarning, stacklevel=2)
 
     if np.sum(mask_csf) == 0:
-        msg_fa = msg.format('FA lower', str(csf_fa_thr), 'higher FA', 'CSF')
-        msg_md = msg.format('MD lower', str(csf_md_thr), 'higher MD', 'CSF')
-        warnings.warn(msg_fa, UserWarning)
-        warnings.warn(msg_md, UserWarning)
+        msg_fa = msg.format("FA lower", str(csf_fa_thr), "higher FA", "CSF")
+        msg_md = msg.format("MD lower", str(csf_md_thr), "higher MD", "CSF")
+        warnings.warn(msg_fa, UserWarning, stacklevel=2)
+        warnings.warn(msg_md, UserWarning, stacklevel=2)
 
     return mask_wm, mask_gm, mask_csf
 
 
 def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
-    """ Computation of multi-shell multi-tissue (msmt) response
+    """Computation of multi-shell multi-tissue (msmt) response
         functions from given tissues masks.
 
     Parameters
@@ -729,8 +744,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
         for bval in list_bvals[1:]:
             indices = get_bval_indices(bvals, bval, tol)
 
-            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]],
-                                       bvecs[indices]])
+            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
             if btens is not None:
                 btens_b0 = btens[b0_indices[0]].reshape((1, 3, 3))
@@ -753,10 +767,19 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     return wm_response, gm_response, csf_response
 
 
-def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
-                       wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
-                       gm_md_thr=0.001, csf_md_thr=0.0032):
-    """ Automatic estimation of multi-shell multi-tissue (msmt) response
+def auto_response_msmt(
+    gtab,
+    data,
+    tol=20,
+    roi_center=None,
+    roi_radii=10,
+    wm_fa_thr=0.7,
+    gm_fa_thr=0.3,
+    csf_fa_thr=0.15,
+    gm_md_thr=0.001,
+    csf_md_thr=0.0032,
+):
+    """Automatic estimation of multi-shell multi-tissue (msmt) response
         functions using FA and MD.
 
     Parameters
@@ -810,18 +833,20 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
         The DTI fit might be affected. It is advised to use
         mask_for_response_msmt with bvalues lower than 1200, followed by
         response_from_mask_msmt with all bvalues to overcome this."""
-        warnings.warn(msg_bvals, UserWarning)
-    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
-                                                        roi_center,
-                                                        roi_radii,
-                                                        wm_fa_thr,
-                                                        gm_fa_thr,
-                                                        csf_fa_thr,
-                                                        gm_md_thr,
-                                                        csf_md_thr)
+        warnings.warn(msg_bvals, UserWarning, stacklevel=2)
+    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(
+        gtab,
+        data,
+        roi_center,
+        roi_radii,
+        wm_fa_thr,
+        gm_fa_thr,
+        csf_fa_thr,
+        gm_md_thr,
+        csf_md_thr,
+    )
     response_wm, response_gm, response_csf = response_from_mask_msmt(
-                                                        gtab, data,
-                                                        mask_wm, mask_gm,
-                                                        mask_csf, tol)
+        gtab, data, mask_wm, mask_gm, mask_csf, tol
+    )
 
     return response_wm, response_gm, response_csf

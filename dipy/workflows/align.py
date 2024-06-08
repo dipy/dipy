@@ -44,22 +44,33 @@ def check_dimensions(static, moving):
 
     """
     if len(static.shape) != len(moving.shape):
-        raise ValueError('Dimension mismatch: The input images must '
-                         'have same number of dimensions.')
+        raise ValueError(
+            "Dimension mismatch: The input images must "
+            "have same number of dimensions."
+        )
 
     if len(static.shape) > 3 and len(moving.shape) > 3:
-        raise ValueError('Dimension mismatch: One of the input should '
-                         'be 2D or 3D dimensions.')
+        raise ValueError(
+            "Dimension mismatch: One of the input should be 2D or 3D dimensions."
+        )
 
 
 class ResliceFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'reslice'
+        return "reslice"
 
-    def run(self, input_files, new_vox_size, order=1, mode='constant', cval=0,
-            num_processes=1, out_dir='', out_resliced='resliced.nii.gz'):
+    def run(
+        self,
+        input_files,
+        new_vox_size,
+        order=1,
+        mode="constant",
+        cval=0,
+        num_processes=1,
+        out_dir="",
+        out_resliced="resliced.nii.gz",
+    ):
         """Reslice data with new voxel resolution defined by ``new_vox_sz``
 
         Parameters
@@ -94,36 +105,46 @@ class ResliceFlow(Workflow):
 
         for inputfile, outpfile in io_it:
             data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
-            logging.info('Processing {0}'.format(inputfile))
-            new_data, new_affine = reslice(data, affine, vox_sz, new_vox_size,
-                                           order, mode=mode, cval=cval,
-                                           num_processes=num_processes)
+            logging.info(f"Processing {inputfile}")
+            new_data, new_affine = reslice(
+                data,
+                affine,
+                vox_sz,
+                new_vox_size,
+                order,
+                mode=mode,
+                cval=cval,
+                num_processes=num_processes,
+            )
             save_nifti(outpfile, new_data, new_affine)
-            logging.info('Resliced file save in {0}'.format(outpfile))
+            logging.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'slrwithqbx'
+        return "slrwithqbx"
 
-    def run(self, static_files, moving_files,
-            x0='affine',
-            rm_small_clusters=50,
-            qbx_thr=(40, 30, 20, 15),
-            num_threads=None,
-            greater_than=50,
-            less_than=250,
-            nb_pts=20,
-            progressive=True,
-            out_dir='',
-            out_moved='moved.trk',
-            out_affine='affine.txt',
-            out_stat_centroids='static_centroids.trk',
-            out_moving_centroids='moving_centroids.trk',
-            out_moved_centroids='moved_centroids.trk'):
-        """ Streamline-based linear registration.
+    def run(
+        self,
+        static_files,
+        moving_files,
+        x0="affine",
+        rm_small_clusters=50,
+        qbx_thr=(40, 30, 20, 15),
+        num_threads=None,
+        greater_than=50,
+        less_than=250,
+        nb_pts=20,
+        progressive=True,
+        out_dir="",
+        out_moved="moved.trk",
+        out_affine="affine.txt",
+        out_stat_centroids="static_centroids.trk",
+        out_moving_centroids="moving_centroids.trk",
+        out_moved_centroids="moved_centroids.trk",
+    ):
+        """Streamline-based linear registration.
 
         For efficiency we apply the registration on cluster centroids and
         remove small clusters.
@@ -190,14 +211,19 @@ class SlrWithQbxFlow(Workflow):
         io_it = self.get_io_iterator()
 
         logging.info("QuickBundlesX clustering is in use")
-        logging.info('QBX thresholds {0}'.format(qbx_thr))
+        logging.info(f"QBX thresholds {qbx_thr}")
 
-        for static_file, moving_file, out_moved_file, out_affine_file, \
-                static_centroids_file, moving_centroids_file, \
-                moved_centroids_file in io_it:
-
-            logging.info('Loading static file {0}'.format(static_file))
-            logging.info('Loading moving file {0}'.format(moving_file))
+        for (
+            static_file,
+            moving_file,
+            out_moved_file,
+            out_affine_file,
+            static_centroids_file,
+            moving_centroids_file,
+            moved_centroids_file,
+        ) in io_it:
+            logging.info(f"Loading static file {static_file}")
+            logging.info(f"Loading moving file {moving_file}")
 
             static_obj = nib.streamlines.load(static_file)
             moving_obj = nib.streamlines.load(moving_file)
@@ -205,44 +231,51 @@ class SlrWithQbxFlow(Workflow):
             static, static_header = static_obj.streamlines, static_obj.header
             moving, moving_header = moving_obj.streamlines, moving_obj.header
 
-            moved, affine, centroids_static, centroids_moving = \
-                slr_with_qbx(
-                    static, moving, x0, rm_small_clusters=rm_small_clusters,
-                    greater_than=greater_than, less_than=less_than,
-                    qbx_thr=qbx_thr)
+            moved, affine, centroids_static, centroids_moving = slr_with_qbx(
+                static,
+                moving,
+                x0,
+                rm_small_clusters=rm_small_clusters,
+                greater_than=greater_than,
+                less_than=less_than,
+                qbx_thr=qbx_thr,
+            )
 
-            logging.info('Saving output file {0}'.format(out_moved_file))
-            new_tractogram = nib.streamlines.Tractogram(moved,
-                                                        affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, out_moved_file,
-                                 header=moving_header)
+            logging.info(f"Saving output file {out_moved_file}")
+            new_tractogram = nib.streamlines.Tractogram(
+                moved, affine_to_rasmm=np.eye(4)
+            )
+            nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
 
-            logging.info('Saving output file {0}'.format(out_affine_file))
+            logging.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
-            logging.info('Saving output file {0}'
-                         .format(static_centroids_file))
-            new_tractogram = nib.streamlines.Tractogram(centroids_static,
-                                                        affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, static_centroids_file,
-                                 header=static_header)
+            logging.info(f"Saving output file {static_centroids_file}")
+            new_tractogram = nib.streamlines.Tractogram(
+                centroids_static, affine_to_rasmm=np.eye(4)
+            )
+            nib.streamlines.save(
+                new_tractogram, static_centroids_file, header=static_header
+            )
 
-            logging.info('Saving output file {0}'
-                         .format(moving_centroids_file))
-            new_tractogram = nib.streamlines.Tractogram(centroids_moving,
-                                                        affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, moving_centroids_file,
-                                 header=moving_header)
+            logging.info(f"Saving output file {moving_centroids_file}")
+            new_tractogram = nib.streamlines.Tractogram(
+                centroids_moving, affine_to_rasmm=np.eye(4)
+            )
+            nib.streamlines.save(
+                new_tractogram, moving_centroids_file, header=moving_header
+            )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            logging.info('Saving output file {0}'
-                         .format(moved_centroids_file))
+            logging.info(f"Saving output file {moved_centroids_file}")
 
-            new_tractogram = nib.streamlines.Tractogram(centroids_moved,
-                                                        affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, moved_centroids_file,
-                                 header=moving_header)
+            new_tractogram = nib.streamlines.Tractogram(
+                centroids_moved, affine_to_rasmm=np.eye(4)
+            )
+            nib.streamlines.save(
+                new_tractogram, moved_centroids_file, header=moving_header
+            )
 
 
 class ImageRegistrationFlow(Workflow):
@@ -260,13 +293,26 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
-    def run(self, static_image_files, moving_image_files, transform='affine',
-            nbins=32, sampling_prop=None, metric='mi',
-            level_iters=(10000, 1000, 100), sigmas=(3.0, 1.0, 0.0),
-            factors=(4, 2, 1), progressive=True, save_metric=False,
-            static_vol_idx=None, moving_vol_idx=None,
-            out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
-            out_quality='quality_metric.txt'):
+    def run(
+        self,
+        static_image_files,
+        moving_image_files,
+        transform="affine",
+        nbins=32,
+        sampling_prop=None,
+        metric="mi",
+        level_iters=(10000, 1000, 100),
+        sigmas=(3.0, 1.0, 0.0),
+        factors=(4, 2, 1),
+        progressive=True,
+        save_metric=False,
+        static_vol_idx=None,
+        moving_vol_idx=None,
+        out_dir="",
+        out_moved="moved.nii.gz",
+        out_affine="affine.txt",
+        out_quality="quality_metric.txt",
+    ):
         """
         Parameters
         ----------
@@ -343,20 +389,24 @@ class ImageRegistrationFlow(Workflow):
         io_it = self.get_io_iterator()
         transform = transform.lower()
         metric = metric.upper()
-        if metric != 'MI':
-            raise ValueError("Invalid similarity metric: Please provide a"
-                             "valid metric.")
+        if metric != "MI":
+            raise ValueError(
+                "Invalid similarity metric: Please provide a" "valid metric."
+            )
 
         if progressive:
             pipeline_opt = {
                 "com": ["center_of_mass"],
                 "trans": ["center_of_mass", "translation"],
                 "rigid": ["center_of_mass", "translation", "rigid"],
-                "rigid_isoscaling": ["center_of_mass", "translation",
-                                     "rigid_isoscaling"],
-                "rigid_scaling": ["center_of_mass", "translation",
-                                  "rigid_scaling"],
-                "affine": ["center_of_mass", "translation", "rigid", "affine"]}
+                "rigid_isoscaling": [
+                    "center_of_mass",
+                    "translation",
+                    "rigid_isoscaling",
+                ],
+                "rigid_scaling": ["center_of_mass", "translation", "rigid_scaling"],
+                "affine": ["center_of_mass", "translation", "rigid", "affine"],
+            }
         else:
             pipeline_opt = {
                 "com": ["center_of_mass"],
@@ -364,7 +414,8 @@ class ImageRegistrationFlow(Workflow):
                 "rigid": ["center_of_mass", "rigid"],
                 "rigid_isoscaling": ["center_of_mass", "rigid_isoscaling"],
                 "rigid_scaling": ["center_of_mass", "rigid_scaling"],
-                "affine": ["center_of_mass", "affine"]}
+                "affine": ["center_of_mass", "affine"],
+            }
 
         static_vol_idx = handle_vol_idx(static_vol_idx)
 
@@ -373,14 +424,14 @@ class ImageRegistrationFlow(Workflow):
         pipeline = pipeline_opt.get(transform)
 
         if pipeline is None:
-            raise ValueError('Invalid transformation:'
-                             ' Please see program\'s help'
-                             ' for allowed values of'
-                             ' transformation.')
+            raise ValueError(
+                "Invalid transformation:"
+                " Please see program's help"
+                " for allowed values of"
+                " transformation."
+            )
 
-        for static_img, mov_img, moved_file, affine_matrix_file, \
-                qual_val_file in io_it:
-
+        for static_img, mov_img, moved_file, affine_matrix_file, qual_val_file in io_it:
             # Load the data from the input files and store into objects.
             static, static_grid2world = load_nifti(static_img)
             moving, moving_grid2world = load_nifti(mov_img)
@@ -396,40 +447,42 @@ class ImageRegistrationFlow(Workflow):
 
             # If only center of mass is selected do not return metric
             if pipeline == ["center_of_mass"]:
-                moved_image, affine_matrix = \
-                    affine_registration(moving,
-                                        static,
-                                        moving_grid2world,
-                                        static_grid2world,
-                                        pipeline,
-                                        starting_affine,
-                                        metric,
-                                        level_iters,
-                                        sigmas,
-                                        factors,
-                                        nbins=nbins,
-                                        sampling_proportion=sampling_prop)
+                moved_image, affine_matrix = affine_registration(
+                    moving,
+                    static,
+                    moving_grid2world,
+                    static_grid2world,
+                    pipeline,
+                    starting_affine,
+                    metric,
+                    level_iters,
+                    sigmas,
+                    factors,
+                    nbins=nbins,
+                    sampling_proportion=sampling_prop,
+                )
             else:
-                moved_image, affine_matrix, xopt, fopt = \
-                    affine_registration(moving,
-                                        static,
-                                        moving_grid2world,
-                                        static_grid2world,
-                                        pipeline,
-                                        starting_affine,
-                                        metric,
-                                        level_iters,
-                                        sigmas,
-                                        factors,
-                                        ret_metric=True,
-                                        nbins=nbins,
-                                        sampling_proportion=sampling_prop)
+                moved_image, affine_matrix, xopt, fopt = affine_registration(
+                    moving,
+                    static,
+                    moving_grid2world,
+                    static_grid2world,
+                    pipeline,
+                    starting_affine,
+                    metric,
+                    level_iters,
+                    sigmas,
+                    factors,
+                    ret_metric=True,
+                    nbins=nbins,
+                    sampling_proportion=sampling_prop,
+                )
 
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logging.info("Optimal parameters: {0}".format(str(xopt)))
-                logging.info("Similarity metric: {0}".format(str(fopt)))
+                logging.info(f"Optimal parameters: {str(xopt)}")
+                logging.info(f"Similarity metric: {str(fopt)}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -439,10 +492,15 @@ class ImageRegistrationFlow(Workflow):
 
 
 class ApplyTransformFlow(Workflow):
-
-    def run(self, static_image_files, moving_image_files, transform_map_file,
-            transform_type='affine', out_dir='',
-            out_file='transformed.nii.gz'):
+    def run(
+        self,
+        static_image_files,
+        moving_image_files,
+        transform_map_file,
+        transform_type="affine",
+        out_dir="",
+        out_file="transformed.nii.gz",
+    ):
         """
         Parameters
         ----------
@@ -472,16 +530,16 @@ class ApplyTransformFlow(Workflow):
             prevent the output files from being overwritten.
 
         """
-        if transform_type.lower() not in ['affine', 'diffeomorphic']:
-            raise ValueError("Invalid transformation type: Please"
-                             " provide a valid transform like 'affine'"
-                             " or 'diffeomorphic'")
+        if transform_type.lower() not in ["affine", "diffeomorphic"]:
+            raise ValueError(
+                "Invalid transformation type: Please"
+                " provide a valid transform like 'affine'"
+                " or 'diffeomorphic'"
+            )
 
         io = self.get_io_iterator()
 
-        for static_image_file, moving_image_file, transform_file, \
-                out_file in io:
-
+        for static_image_file, moving_image_file, transform_file, out_file in io:
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_image_file)
             moving_image, moving_grid2world = load_nifti(moving_image_file)
@@ -497,7 +555,7 @@ class ApplyTransformFlow(Workflow):
                 moving_image_full = None
             check_dimensions(static_image, moving_image)
 
-            if transform_type.lower() == 'affine':
+            if transform_type.lower() == "affine":
                 # Loading the affine matrix.
                 affine_matrix = np.loadtxt(transform_file)
 
@@ -507,19 +565,22 @@ class ApplyTransformFlow(Workflow):
                     domain_grid_shape=static_image.shape,
                     domain_grid2world=static_grid2world,
                     codomain_grid_shape=moving_image.shape,
-                    codomain_grid2world=moving_grid2world)
+                    codomain_grid2world=moving_grid2world,
+                )
 
-            elif transform_type.lower() == 'diffeomorphic':
+            elif transform_type.lower() == "diffeomorphic":
                 # Loading the diffeomorphic map.
                 disp_data, disp_affine = load_nifti(transform_file)
 
                 mapping = DiffeomorphicMap(
-                    3, disp_data.shape[:3],
+                    3,
+                    disp_data.shape[:3],
                     disp_grid2world=np.linalg.inv(disp_affine),
                     domain_shape=static_image.shape,
                     domain_grid2world=static_grid2world,
                     codomain_shape=moving_image.shape,
-                    codomain_grid2world=moving_grid2world)
+                    codomain_grid2world=moving_grid2world,
+                )
 
                 mapping.forward = disp_data[..., 0]
                 mapping.backward = disp_data[..., 1]
@@ -530,25 +591,42 @@ class ApplyTransformFlow(Workflow):
                 transformed = mapping.transform(moving_image)
             else:
                 transformed = np.concatenate(
-                    [mapping.transform(moving_image)[..., None]
-                     for moving_image in moving_image_full],
-                    axis=-1
+                    [
+                        mapping.transform(moving_image)[..., None]
+                        for moving_image in moving_image_full
+                    ],
+                    axis=-1,
                 )
 
             save_nifti(out_file, transformed, affine=static_grid2world)
 
 
 class SynRegistrationFlow(Workflow):
-
-    def run(self, static_image_files, moving_image_files, prealign_file='',
-            inv_static=False, level_iters=(10, 10, 5), metric="cc",
-            mopt_sigma_diff=2.0, mopt_radius=4, mopt_smooth=0.0,
-            mopt_inner_iter=0, mopt_q_levels=256, mopt_double_gradient=True,
-            mopt_step_type='', step_length=0.25,
-            ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
-            inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
-            out_inv_static='inc_static.nii.gz',
-            out_field='displacement_field.nii.gz'):
+    def run(
+        self,
+        static_image_files,
+        moving_image_files,
+        prealign_file="",
+        inv_static=False,
+        level_iters=(10, 10, 5),
+        metric="cc",
+        mopt_sigma_diff=2.0,
+        mopt_radius=4,
+        mopt_smooth=0.0,
+        mopt_inner_iter=0,
+        mopt_q_levels=256,
+        mopt_double_gradient=True,
+        mopt_step_type="",
+        step_length=0.25,
+        ss_sigma_factor=0.2,
+        opt_tol=1e-5,
+        inv_iter=20,
+        inv_tol=1e-3,
+        out_dir="",
+        out_warped="warped_moved.nii.gz",
+        out_inv_static="inc_static.nii.gz",
+        out_field="displacement_field.nii.gz",
+    ):
         """
         Parameters
         ----------
@@ -653,43 +731,56 @@ class SynRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
-        if metric not in ['ssd', 'cc', 'em']:
-            raise ValueError("Invalid similarity metric: Please"
-                             " provide a valid metric like 'ssd', 'cc', 'em'")
+        if metric not in ["ssd", "cc", "em"]:
+            raise ValueError(
+                "Invalid similarity metric: Please"
+                " provide a valid metric like 'ssd', 'cc', 'em'"
+            )
 
         logging.info("Starting Diffeomorphic Registration")
-        logging.info('Using {0} Metric'.format(metric.upper()))
+        logging.info(f"Using {metric.upper()} Metric")
 
         # Init parameter if they are not setup
-        init_param = {'ssd': {'mopt_smooth': 4.0,
-                              'mopt_inner_iter': 10,
-                              'mopt_step_type': 'demons'
-                              },
-                      'em': {'mopt_smooth': 1.0,
-                             'mopt_inner_iter': 5,
-                             'mopt_step_type': 'gauss_newton'
-                             }
-                      }
+        init_param = {
+            "ssd": {
+                "mopt_smooth": 4.0,
+                "mopt_inner_iter": 10,
+                "mopt_step_type": "demons",
+            },
+            "em": {
+                "mopt_smooth": 1.0,
+                "mopt_inner_iter": 5,
+                "mopt_step_type": "gauss_newton",
+            },
+        }
 
-        mopt_smooth = mopt_smooth \
-            if mopt_smooth or metric == 'cc' \
-            else init_param[metric]['mopt_smooth']
-        mopt_inner_iter = mopt_inner_iter \
-            if mopt_inner_iter or metric == 'cc' \
-            else init_param[metric]['mopt_inner_iter']
+        mopt_smooth = (
+            mopt_smooth
+            if mopt_smooth or metric == "cc"
+            else init_param[metric]["mopt_smooth"]
+        )
+        mopt_inner_iter = (
+            mopt_inner_iter
+            if mopt_inner_iter or metric == "cc"
+            else init_param[metric]["mopt_inner_iter"]
+        )
 
         # If using the 'cc' metric, force the `mopt_step_type` parameter to an
         # empty value since the 'cc' metric does not use it; for the rest of
         # the metrics, the `step_type` parameter will be initialized to their
         # corresponding default values in `init_param`.
-        if metric == 'cc':
-            mopt_step_type = ''
+        if metric == "cc":
+            mopt_step_type = ""
 
-        for (static_file, moving_file, owarped_file, oinv_static_file,
-             omap_file) in io_it:
-
-            logging.info('Loading static file {0}'.format(static_file))
-            logging.info('Loading moving file {0}'.format(moving_file))
+        for (
+            static_file,
+            moving_file,
+            owarped_file,
+            _,
+            omap_file,
+        ) in io_it:
+            logging.info(f"Loading static file {static_file}")
+            logging.info(f"Loading moving file {moving_file}")
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -706,25 +797,26 @@ class SynRegistrationFlow(Workflow):
             # parameter or if the `mopt_step_type` is empty.
             l_metric = {
                 "ssd": SSDMetric(
-                    static_image.ndim, smooth=mopt_smooth,
+                    static_image.ndim,
+                    smooth=mopt_smooth,
                     inner_iter=mopt_inner_iter,
                     step_type=mopt_step_type
-                    if(mopt_step_type and mopt_step_type.strip())
-                    and metric == 'ssd'
-                    else init_param['ssd']['mopt_step_type']
+                    if (mopt_step_type and mopt_step_type.strip()) and metric == "ssd"
+                    else init_param["ssd"]["mopt_step_type"],
                 ),
                 "cc": CCMetric(
-                    static_image.ndim, sigma_diff=mopt_sigma_diff,
-                    radius=mopt_radius),
+                    static_image.ndim, sigma_diff=mopt_sigma_diff, radius=mopt_radius
+                ),
                 "em": EMMetric(
-                    static_image.ndim, smooth=mopt_smooth,
+                    static_image.ndim,
+                    smooth=mopt_smooth,
                     inner_iter=mopt_inner_iter,
                     step_type=mopt_step_type
-                    if (mopt_step_type and mopt_step_type.strip())
-                    and metric == 'em'
-                    else init_param['em']['mopt_step_type'],
+                    if (mopt_step_type and mopt_step_type.strip()) and metric == "em"
+                    else init_param["em"]["mopt_step_type"],
                     q_levels=mopt_q_levels,
-                    double_gradient=mopt_double_gradient)
+                    double_gradient=mopt_double_gradient,
+                ),
             }
 
             current_metric = l_metric.get(metric.lower())
@@ -736,12 +828,16 @@ class SynRegistrationFlow(Workflow):
                 ss_sigma_factor=ss_sigma_factor,
                 opt_tol=opt_tol,
                 inv_iter=inv_iter,
-                inv_tol=inv_tol
+                inv_tol=inv_tol,
             )
 
-            mapping = sdr.optimize(static_image, moving_image,
-                                   static_grid2world, moving_grid2world,
-                                   prealign)
+            mapping = sdr.optimize(
+                static_image,
+                moving_image,
+                static_grid2world,
+                moving_grid2world,
+                prealign,
+            )
 
             mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
             warped_moving = mapping.transform(moving_image)
@@ -749,11 +845,11 @@ class SynRegistrationFlow(Workflow):
             inv_static = mapping.transform(static_image)
 
             # Saving
-            logging.info('Saving warped {0}'.format(owarped_file))
+            logging.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info('Saving inverse transformes static {0}'.format(out_inv_static))
+            logging.info(f"Saving inverse transformes static {out_inv_static}")
             save_nifti(out_inv_static, inv_static, static_grid2world)
-            logging.info('Saving Diffeomorphic map {0}'.format(omap_file))
+            logging.info(f"Saving Diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -763,9 +859,17 @@ class MotionCorrectionFlow(Workflow):
     DWI dataset.
     """
 
-    def run(self, input_files, bvalues_files, bvectors_files, b0_threshold=50,
-            bvecs_tol=0.01, out_dir='', out_moved='moved.nii.gz',
-            out_affine='affine.txt'):
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        out_dir="",
+        out_moved="moved.nii.gz",
+        out_affine="affine.txt",
+    ):
         """
         Parameters
         ----------
@@ -795,9 +899,8 @@ class MotionCorrectionFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
-
             # Load the data from the input files and store into objects.
-            logging.info('Loading {0}'.format(dwi))
+            logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -805,41 +908,53 @@ class MotionCorrectionFlow(Workflow):
             # assumed that no thresholding is requested
             if any(mask_non_weighted_bvals(bvals, b0_threshold)):
                 if b0_threshold < bvals.min():
-                    warn("b0_threshold (value: {0}) is too low, increase your "
-                         "b0_threshold. It should be higher than the lowest "
-                         "b0 value ({1}).".format(b0_threshold, bvals.min()))
-            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
-                                  atol=bvecs_tol)
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"lowest b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
 
-            reg_img, reg_affines = motion_correction(data=data, gtab=gtab,
-                                                     affine=affine)
+            reg_img, reg_affines = motion_correction(
+                data=data, gtab=gtab, affine=affine
+            )
 
             # Saving the corrected image file
             save_nifti(omoved, reg_img.get_fdata(), affine)
             # Write the affine matrix array to disk
-            with open(oafffine, 'w') as outfile:
-                outfile.write('# Array shape: {0}\n'.format(reg_affines.shape))
+            with open(oafffine, "w") as outfile:
+                outfile.write(f"# Array shape: {reg_affines.shape}\n")
                 for affine_slice in reg_affines:
-                    np.savetxt(outfile, affine_slice, fmt='%-7.2f')
-                    outfile.write('# New slice\n')
+                    np.savetxt(outfile, affine_slice, fmt="%-7.2f")
+                    outfile.write("# New slice\n")
 
 
 class BundleWarpFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'bundlewarp'
+        return "bundlewarp"
 
-    def run(self, static_file, moving_file, dist=None, alpha=0.3, beta=20,
-            max_iter=15, affine=True,
-            out_dir='',
-            out_linear_moved='linearly_moved.trk',
-            out_nonlinear_moved='nonlinearly_moved.trk',
-            out_warp_transform='warp_transform.npy',
-            out_warp_kernel='warp_kernel.npy',
-            out_dist='distance_matrix.npy',
-            out_matched_pairs='matched_pairs.npy'):
-        """ BundleWarp: streamline-based nonlinear registration.
+    def run(
+        self,
+        static_file,
+        moving_file,
+        dist=None,
+        alpha=0.3,
+        beta=20,
+        max_iter=15,
+        affine=True,
+        out_dir="",
+        out_linear_moved="linearly_moved.trk",
+        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_warp_transform="warp_transform.npy",
+        out_warp_kernel="warp_kernel.npy",
+        out_dist="distance_matrix.npy",
+        out_matched_pairs="matched_pairs.npy",
+    ):
+        """BundleWarp: streamline-based nonlinear registration.
 
         BundleWarp is nonrigid registration method for deformable registration
         of white matter tracts.
@@ -889,45 +1004,54 @@ class BundleWarpFlow(Workflow):
             registration of white matter tracts." bioRxiv (2023): 2023-01.
         """
 
-        logging.info('Loading static file {0}'.format(static_file))
-        logging.info('Loading moving file {0}'.format(moving_file))
+        logging.info(f"Loading static file {static_file}")
+        logging.info(f"Loading moving file {moving_file}")
 
         static_obj = nib.streamlines.load(static_file)
         moving_obj = nib.streamlines.load(moving_file)
 
-        static, static_header = static_obj.streamlines, static_obj.header
+        static, _ = static_obj.streamlines, static_obj.header
         moving, moving_header = moving_obj.streamlines, moving_obj.header
 
         static = set_number_of_points(static, 20)
         moving = set_number_of_points(moving, 20)
 
-        deformed_bundle, affine_bundle, dists, mp, warp = \
-            bundlewarp(static, moving, dist=dist, alpha=alpha, beta=beta,
-                       max_iter=max_iter, affine=affine)
+        deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
+            static,
+            moving,
+            dist=dist,
+            alpha=alpha,
+            beta=beta,
+            max_iter=max_iter,
+            affine=affine,
+        )
 
-        logging.info('Saving output file {0}'.format(out_linear_moved))
-        new_tractogram = nib.streamlines.Tractogram(affine_bundle,
-                                                    affine_to_rasmm=np.eye(4))
-        nib.streamlines.save(new_tractogram, pjoin(out_dir, out_linear_moved),
-                             header=moving_header)
+        logging.info(f"Saving output file {out_linear_moved}")
+        new_tractogram = nib.streamlines.Tractogram(
+            affine_bundle, affine_to_rasmm=np.eye(4)
+        )
+        nib.streamlines.save(
+            new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
+        )
 
-        logging.info('Saving output file {0}'.format(out_nonlinear_moved))
-        new_tractogram = nib.streamlines.Tractogram(deformed_bundle,
-                                                    affine_to_rasmm=np.eye(4))
-        nib.streamlines.save(new_tractogram, pjoin(out_dir, out_nonlinear_moved),
-                             header=moving_header)
+        logging.info(f"Saving output file {out_nonlinear_moved}")
+        new_tractogram = nib.streamlines.Tractogram(
+            deformed_bundle, affine_to_rasmm=np.eye(4)
+        )
+        nib.streamlines.save(
+            new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
+        )
 
-        df = pd.DataFrame(warp, columns=['transforms', 'gaussian_kernel'])
+        df = pd.DataFrame(warp, columns=["transforms", "gaussian_kernel"])
 
-        logging.info('Saving output file {0}'.format(out_warp_transform))
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df['transforms']))
+        logging.info(f"Saving output file {out_warp_transform}")
+        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
 
-        logging.info('Saving output file {0}'.format(out_warp_kernel))
-        np.save(pjoin(out_dir, out_warp_kernel),
-                np.array(df['gaussian_kernel']))
+        logging.info(f"Saving output file {out_warp_kernel}")
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
 
-        logging.info('Saving output file {0}'.format(out_dist))
+        logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)
 
-        logging.info('Saving output file {0}'.format(out_matched_pairs))
+        logging.info(f"Saving output file {out_matched_pairs}")
         np.save(pjoin(out_dir, out_matched_pairs), mp)

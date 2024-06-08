@@ -9,8 +9,8 @@ from dipy.testing.decorators import doctest_skip_parser
 def test_skipper():
     def f():
         pass
-    docstring = \
-        """ Header
+
+    docstring = """ Header
 
         >>> something # skip if not HAVE_AMODULE
         >>> something + else
@@ -23,27 +23,31 @@ def test_skipper():
     HAVE_BMODULE = True
     f2 = doctest_skip_parser(f)
     assert_true(f is f2)
-    assert_equal(f2.__doc__,
+    assert_equal(
+        f2.__doc__,
         """ Header
 
         >>> something # doctest: +SKIP
         >>> something + else
         >>> a = 1
         >>> something2
-        """)
+        """,
+    )
     HAVE_AMODULE = True
     HAVE_BMODULE = False
     f.__doc__ = docstring
     f2 = doctest_skip_parser(f)
     assert_true(f is f2)
-    assert_equal(f2.__doc__,
+    assert_equal(
+        f2.__doc__,
         """ Header
 
         >>> something
         >>> something + else
         >>> a = 1 # doctest: +SKIP
         >>> something2   # doctest: +SKIP
-        """)
+        """,
+    )
     del HAVE_AMODULE
     f.__doc__ = docstring
     assert_raises(NameError, doctest_skip_parser, f)

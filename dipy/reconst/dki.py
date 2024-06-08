@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Classes and functions for fitting the diffusion kurtosis model """
+"""Classes and functions for fitting the diffusion kurtosis model"""
 
 import warnings
 
@@ -31,7 +31,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
-    """ Helper function that identifies which voxels in a array have all
+    """Helper function that identifies which voxels in a array have all
     eigenvalues significantly larger than zero
 
     Parameters
@@ -58,7 +58,7 @@ def _positive_evals(L1, L2, L3, er=2e-7):
 
 
 def carlson_rf(x, y, z, errtol=3e-4):
-    r""" Compute the Carlson's incomplete elliptic integral of the first kind
+    r"""Compute the Carlson's incomplete elliptic integral of the first kind
 
     Carlson's incomplete elliptic integral of the first kind is defined as:
 
@@ -98,14 +98,15 @@ def carlson_rf(x, y, z, errtol=3e-4):
     yn = y.copy()
     zn = z.copy()
     An = (xn + yn + zn) / 3.0
-    Q = (3. * errtol) ** (-1 / 6.) * \
-        np.max(np.abs([An - xn, An - yn, An - zn]), axis=0)
+    Q = (3.0 * errtol) ** (-1 / 6.0) * np.max(
+        np.abs([An - xn, An - yn, An - zn]), axis=0
+    )
     # Convergence has to be done voxel by voxel
     index = ndindex(x.shape)
     for v in index:
         n = 0
         # Convergence condition
-        while 4.**(-n) * Q[v] > abs(An[v]):
+        while 4.0 ** (-n) * Q[v] > abs(An[v]):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
@@ -117,19 +118,20 @@ def carlson_rf(x, y, z, errtol=3e-4):
             An[v] = (An[v] + lamda) * 0.250
 
     # post convergence calculation
-    X = 1. - xn / An
-    Y = 1. - yn / An
-    Z = - X - Y
+    X = 1.0 - xn / An
+    Y = 1.0 - yn / An
+    Z = -X - Y
     E2 = X * Y - Z * Z
     E3 = X * Y * Z
-    RF = An**(-1 / 2.) * \
-        (1 - E2 / 10. + E3 / 14. + (E2**2) / 24. - 3 / 44. * E2 * E3)
+    RF = An ** (-1 / 2.0) * (
+        1 - E2 / 10.0 + E3 / 14.0 + (E2**2) / 24.0 - 3 / 44.0 * E2 * E3
+    )
 
     return RF
 
 
 def carlson_rd(x, y, z, errtol=1e-4):
-    r""" Compute the Carlson's incomplete elliptic integral of the second kind
+    r"""Compute the Carlson's incomplete elliptic integral of the second kind
 
     Carlson's incomplete elliptic integral of the second kind is defined as:
 
@@ -168,10 +170,11 @@ def carlson_rd(x, y, z, errtol=1e-4):
     xn = x.copy()
     yn = y.copy()
     zn = z.copy()
-    A0 = (xn + yn + 3. * zn) / 5.0
+    A0 = (xn + yn + 3.0 * zn) / 5.0
     An = A0.copy()
-    Q = (errtol / 4.) ** (-1 / 6.) * \
-        np.max(np.abs([An - xn, An - yn, An - zn]), axis=0)
+    Q = (errtol / 4.0) ** (-1 / 6.0) * np.max(
+        np.abs([An - xn, An - yn, An - zn]), axis=0
+    )
     sum_term = np.zeros(x.shape, dtype=x.dtype)
     n = np.zeros(x.shape)
 
@@ -179,13 +182,12 @@ def carlson_rd(x, y, z, errtol=1e-4):
     index = ndindex(x.shape)
     for v in index:
         # Convergence condition
-        while 4.**(-n[v]) * Q[v] > abs(An[v]):
+        while 4.0 ** (-n[v]) * Q[v] > abs(An[v]):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
             lamda = xnroot * (ynroot + znroot) + ynroot * znroot
-            sum_term[v] = sum_term[v] + \
-                4.**(-n[v]) / (znroot * (zn[v] + lamda))
+            sum_term[v] = sum_term[v] + 4.0 ** (-n[v]) / (znroot * (zn[v] + lamda))
             n[v] = n[v] + 1
             xn[v] = (xn[v] + lamda) * 0.250
             yn[v] = (yn[v] + lamda) * 0.250
@@ -193,18 +195,27 @@ def carlson_rd(x, y, z, errtol=1e-4):
             An[v] = (An[v] + lamda) * 0.250
 
     # post convergence calculation
-    X = (A0 - x) / (4.**n * An)
-    Y = (A0 - y) / (4.**n * An)
-    Z = - (X + Y) / 3.
-    E2 = X * Y - 6. * Z * Z
-    E3 = (3. * X * Y - 8. * Z * Z) * Z
-    E4 = 3. * (X * Y - Z * Z) * Z**2.
-    E5 = X * Y * Z**3.
-    RD = \
-        4**(-n) * An**(-3 / 2.) * \
-        (1 - 3 / 14. * E2 + 1 / 6. * E3 +
-         9 / 88. * (E2**2) - 3 / 22. * E4 - 9 / 52. * E2 * E3 +
-         3 / 26. * E5) + 3 * sum_term
+    X = (A0 - x) / (4.0**n * An)
+    Y = (A0 - y) / (4.0**n * An)
+    Z = -(X + Y) / 3.0
+    E2 = X * Y - 6.0 * Z * Z
+    E3 = (3.0 * X * Y - 8.0 * Z * Z) * Z
+    E4 = 3.0 * (X * Y - Z * Z) * Z**2.0
+    E5 = X * Y * Z**3.0
+    RD = (
+        4 ** (-n)
+        * An ** (-3 / 2.0)
+        * (
+            1
+            - 3 / 14.0 * E2
+            + 1 / 6.0 * E3
+            + 9 / 88.0 * (E2**2)
+            - 3 / 22.0 * E4
+            - 9 / 52.0 * E2 * E3
+            + 3 / 26.0 * E5
+        )
+        + 3 * sum_term
+    )
 
     return RD
 
@@ -262,40 +273,51 @@ def _F1m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plausible cases, i.e. a!=b and a!=c
-    cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) >= a * er,
-                                                 abs(a - c) >= a * er))
+    cond1 = np.logical_and(
+        cond0, np.logical_and(abs(a - b) >= a * er, abs(a - c) >= a * er)
+    )
     if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
         RFm = carlson_rf(L1 / L2, L1 / L3, np.ones(len(L1)))
         RDm = carlson_rd(L1 / L2, L1 / L3, np.ones(len(L1)))
-        F1[cond1] = ((L1 + L2 + L3) ** 2) / (18 * (L1 - L2) * (L1 - L3)) * \
-                    (np.sqrt(L2 * L3) / L1 * RFm +
-                     (3 * L1**2 - L1 * L2 - L1 * L3 - L2 * L3) /
-                     (3 * L1 * np.sqrt(L2 * L3)) * RDm - 1)
+        F1[cond1] = (
+            ((L1 + L2 + L3) ** 2)
+            / (18 * (L1 - L2) * (L1 - L3))
+            * (
+                np.sqrt(L2 * L3) / L1 * RFm
+                + (3 * L1**2 - L1 * L2 - L1 * L3 - L2 * L3)
+                / (3 * L1 * np.sqrt(L2 * L3))
+                * RDm
+                - 1
+            )
+        )
 
     # Resolve possible singularity a==b
-    cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < a * er,
-                                                 abs(a - c) > a * er))
+    cond2 = np.logical_and(
+        cond0, np.logical_and(abs(a - b) < a * er, abs(a - c) > a * er)
+    )
     if np.sum(cond2) != 0:
-        L1 = (a[cond2] + b[cond2]) / 2.
+        L1 = (a[cond2] + b[cond2]) / 2.0
         L3 = c[cond2]
-        F1[cond2] = _F2m(L3, L1, L1) / 2.
+        F1[cond2] = _F2m(L3, L1, L1) / 2.0
 
     # Resolve possible singularity a==c
-    cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
-                                                 abs(a - b) > a * er))
+    cond3 = np.logical_and(
+        cond0, np.logical_and(abs(a - c) < a * er, abs(a - b) > a * er)
+    )
     if np.sum(cond3) != 0:
-        L1 = (a[cond3] + c[cond3]) / 2.
+        L1 = (a[cond3] + c[cond3]) / 2.0
         L2 = b[cond3]
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
     # Resolve possible singularity a==b and a==c
-    cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
-                                                 abs(a - b) < a * er))
+    cond4 = np.logical_and(
+        cond0, np.logical_and(abs(a - c) < a * er, abs(a - b) < a * er)
+    )
     if np.sum(cond4) != 0:
-        F1[cond4] = 1 / 5.
+        F1[cond4] = 1 / 5.0
 
     return F1
 
@@ -358,41 +380,48 @@ def _F2m(a, b, c):
         L3 = c[cond1]
         RF = carlson_rf(L1 / L2, L1 / L3, np.ones(len(L1)))
         RD = carlson_rd(L1 / L2, L1 / L3, np.ones(len(L1)))
-        F2[cond1] = (((L1 + L2 + L3) ** 2) / (3. * (L2 - L3) ** 2)) * \
-                    (((L2 + L3) / (np.sqrt(L2 * L3))) * RF +
-                     ((2. * L1 - L2 - L3) / (3. * np.sqrt(L2 * L3))) * RD - 2.)
+        F2[cond1] = (((L1 + L2 + L3) ** 2) / (3.0 * (L2 - L3) ** 2)) * (
+            ((L2 + L3) / (np.sqrt(L2 * L3))) * RF
+            + ((2.0 * L1 - L2 - L3) / (3.0 * np.sqrt(L2 * L3))) * RD
+            - 2.0
+        )
 
     # Resolve possible singularity b==c
-    cond2 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
-                                                 abs(a - b) > b * er))
+    cond2 = np.logical_and(
+        cond0, np.logical_and(abs(b - c) < b * er, abs(a - b) > b * er)
+    )
     if np.sum(cond2) != 0:
         L1 = a[cond2]
-        L3 = (c[cond2] + b[cond2]) / 2.
+        L3 = (c[cond2] + b[cond2]) / 2.0
 
         # Compute alfa [1]_
-        x = 1. - (L1 / L3)
+        x = 1.0 - (L1 / L3)
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
             if x[i] > 0:
-                alpha[i] = 1. / np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
+                alpha[i] = 1.0 / np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
             else:
-                alpha[i] = 1. / np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
+                alpha[i] = 1.0 / np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
 
-        F2[cond2] = \
-            6. * ((L1 + 2. * L3)**2) / (144. * L3**2 * (L1 - L3)**2) * \
-            (L3 * (L1 + 2. * L3) + L1 * (L1 - 4. * L3) * alpha)
+        F2[cond2] = (
+            6.0
+            * ((L1 + 2.0 * L3) ** 2)
+            / (144.0 * L3**2 * (L1 - L3) ** 2)
+            * (L3 * (L1 + 2.0 * L3) + L1 * (L1 - 4.0 * L3) * alpha)
+        )
 
     # Resolve possible singularity a==b and a==c
-    cond3 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
-                                                 abs(a - b) < b * er))
+    cond3 = np.logical_and(
+        cond0, np.logical_and(abs(b - c) < b * er, abs(a - b) < b * er)
+    )
     if np.sum(cond3) != 0:
-        F2[cond3] = 6 / 15.
+        F2[cond3] = 6 / 15.0
 
     return F2
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r""" Calculate the apparent diffusion coefficient (adc) in each direction
+    r"""Calculate the apparent diffusion coefficient (adc) in each direction
     of a sphere for a single voxel [1]_
 
     Parameters
@@ -428,21 +457,22 @@ def directional_diffusion(dt, V, min_diffusivity=0):
            Impact on the development of robust tractography procedures and
            novel biomarkers, NeuroImage 111: 85-99
     """
-    adc = \
-        V[:, 0] * V[:, 0] * dt[0] + \
-        2 * V[:, 0] * V[:, 1] * dt[1] + \
-        V[:, 1] * V[:, 1] * dt[2] + \
-        2 * V[:, 0] * V[:, 2] * dt[3] + \
-        2 * V[:, 1] * V[:, 2] * dt[4] + \
-        V[:, 2] * V[:, 2] * dt[5]
+    adc = (
+        V[:, 0] * V[:, 0] * dt[0]
+        + 2 * V[:, 0] * V[:, 1] * dt[1]
+        + V[:, 1] * V[:, 1] * dt[2]
+        + 2 * V[:, 0] * V[:, 2] * dt[3]
+        + 2 * V[:, 1] * V[:, 2] * dt[4]
+        + V[:, 2] * V[:, 2] * dt[5]
+    )
 
     if min_diffusivity is not None:
         adc = adc.clip(min=min_diffusivity)
     return adc
 
 
-def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
-    r""" Calculate the apparent diffusion variance (adv) in each direction of a
+def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
+    r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
     Parameters
@@ -488,29 +518,31 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
            Impact on the development of robust tractography procedures and
            novel biomarkers, NeuroImage 111: 85-99
     """
-    adv = \
-        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
-        V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
-        V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
-        4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
-        4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
-        4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
-        4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
-        6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
-        12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+    adv = (
+        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0]
+        + V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1]
+        + V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2]
+        + 4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3]
+        + 4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4]
+        + 4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5]
+        + 4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6]
+        + 4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7]
+        + 4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8]
+        + 6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9]
+        + 6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10]
+        + 6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11]
+        + 12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12]
+        + 12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13]
+        + 12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+    )
 
     return adv
 
 
-def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
-                         adc=None, adv=None):
-    r""" Calculate the apparent kurtosis coefficient (akc) in each direction of
+def directional_kurtosis(
+    dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3 / 7, adc=None, adv=None
+):
+    r"""Calculate the apparent kurtosis coefficient (akc) in each direction of
     a sphere for a single voxel [1]_,[2]_
 
     Parameters
@@ -577,9 +609,10 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
     return akc
 
 
-def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
-                           min_kurtosis=-3./7):
-    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+def apparent_kurtosis_coef(
+    dki_params, sphere, min_diffusivity=0, min_kurtosis=-3.0 / 7
+):
+    r"""Calculate the apparent kurtosis coefficient (AKC) in each direction
     of a sphere [1]_,[2]_
 
     Parameters
@@ -670,9 +703,14 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     # loop over all relevant voxels
     for vox in range(len(kt)):
-        akci[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox], V,
-                                         min_diffusivity=min_diffusivity,
-                                         min_kurtosis=min_kurtosis)
+        akci[vox] = directional_kurtosis(
+            dt[vox],
+            md[vox],
+            kt[vox],
+            V,
+            min_diffusivity=min_diffusivity,
+            min_kurtosis=min_kurtosis,
+        )
 
     # reshape data according to input data
     akc[rel_i] = akci
@@ -680,8 +718,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     return akc.reshape((outshape + (len(V),)))
 
 
-def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
-                  analytical=True):
+def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True):
     r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_,[2]_
 
     Parameters
@@ -801,13 +838,14 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
         Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
         # Compute MK
-        MK = \
-            _F1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wxxxx + \
-            _F1m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wyyyy + \
-            _F1m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wzzzz + \
-            _F2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz + \
-            _F2m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wxxzz + \
-            _F2m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wxxyy
+        MK = (
+            _F1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wxxxx
+            + _F1m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wyyyy
+            + _F1m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wzzzz
+            + _F2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz
+            + _F2m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wxxzz
+            + _F2m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wxxyy
+        )
 
     else:
         # Numerical Solution using t-design of 45 directions
@@ -826,7 +864,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
 
 
 def _G1m(a, b, c):
-    r""" Helper function that computes function $G_1$ which is required to
+    r"""Helper function that computes function $G_1$ which is required to
     compute the analytical solution of the Radial kurtosis
 
     Parameters
@@ -878,22 +916,24 @@ def _G1m(a, b, c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        G1[cond1] = \
-            (L1 + L2 + L3)**2 / (18 * L2 * (L2 - L3)**2) * \
-            (2. * L2 + (L3**2 - 3 * L2 * L3) / np.sqrt(L2 * L3))
+        G1[cond1] = (
+            (L1 + L2 + L3) ** 2
+            / (18 * L2 * (L2 - L3) ** 2)
+            * (2.0 * L2 + (L3**2 - 3 * L2 * L3) / np.sqrt(L2 * L3))
+        )
 
     # Resolve possible singularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
-        G1[cond2] = (L1 + 2. * L2)**2 / (24. * L2**2)
+        G1[cond2] = (L1 + 2.0 * L2) ** 2 / (24.0 * L2**2)
 
     return G1
 
 
 def _G2m(a, b, c):
-    r""" Helper function that computes function $G_2$ which is required to
+    r"""Helper function that computes function $G_2$ which is required to
     compute the analytical solution of the Radial kurtosis
 
     Parameters
@@ -943,23 +983,26 @@ def _G2m(a, b, c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        G2[cond1] = \
-            (L1 + L2 + L3)**2 / (3 * (L2 - L3)**2) * \
-            ((L2 + L3) / np.sqrt(L2 * L3) - 2)
+        G2[cond1] = (
+            (L1 + L2 + L3) ** 2
+            / (3 * (L2 - L3) ** 2)
+            * ((L2 + L3) / np.sqrt(L2 * L3) - 2)
+        )
 
     # Resolve possible singularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
-        G2[cond2] = (L1 + 2. * L2)**2 / (12. * L2**2)
+        G2[cond2] = (L1 + 2.0 * L2) ** 2 / (12.0 * L2**2)
 
     return G2
 
 
-def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
-                    analytical=True):
-    r""" Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_,[2]_
+def radial_kurtosis(
+    dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
+):
+    r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_,[2]_
 
     Parameters
     ----------
@@ -1058,10 +1101,11 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
         # Compute RK
-        RK = \
-            _G1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyyy + \
-            _G1m(evals[..., 0], evals[..., 2], evals[..., 1]) * Wzzzz + \
-            _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz
+        RK = (
+            _G1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyyy
+            + _G1m(evals[..., 0], evals[..., 2], evals[..., 1]) * Wzzzz
+            + _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz
+        )
 
     else:
         # Numerical Solution using 10 perpendicular directions samples
@@ -1079,11 +1123,11 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         # loop over all voxels
         KV = np.zeros((dki_params.shape[0], npa))
         for vox in range(len(dki_params)):
-            V = perpendicular_directions(np.array(evecs[vox, :, 0]), num=npa,
-                                         half=True)
+            V = perpendicular_directions(np.array(evecs[vox, :, 0]), num=npa, half=True)
             sph = dps.Sphere(xyz=V)
-            KV[vox, :] = apparent_kurtosis_coef(dki_params[vox], sph,
-                                                min_kurtosis=min_kurtosis)
+            KV[vox, :] = apparent_kurtosis_coef(
+                dki_params[vox], sph, min_kurtosis=min_kurtosis
+            )
         RKi = np.mean(KV, axis=-1)
 
         RK[rel_i] = RKi
@@ -1097,9 +1141,8 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
-                   analytical=True):
-    r"""  Compute axial kurtosis (AK) from the kurtosis tensor [1]_, [2]_
+def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+    r"""Compute axial kurtosis (AK) from the kurtosis tensor [1]_, [2]_
 
     Parameters
     ----------
@@ -1191,14 +1234,15 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         # system to another coordinate system in which the 3 orthonormal
         # eigenvectors of DT are the base coordinate
         Wxxxx = Wrotate_element(kt, 0, 0, 0, 0, evecs)
-        AKi = Wxxxx * (md ** 2) / (evals[..., 0] ** 2)
+        AKi = Wxxxx * (md**2) / (evals[..., 0] ** 2)
 
     else:
         # Compute apparent directional kurtosis along evecs[0]
         dt = lower_triangular(vec_val_vect(evecs, evals))
         for vox in range(len(kt)):
-            AKi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox],
-                                            np.array([evecs[vox, :, 0]])).item()
+            AKi[vox] = directional_kurtosis(
+                dt[vox], md[vox], kt[vox], np.array([evecs[vox, :, 0]])
+            ).item()
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -1213,7 +1257,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
 
 
 def _kt_maximum_converge(ang, dt, md, kt):
-    """ Helper function that computes the inverse of the directional kurtosis
+    """Helper function that computes the inverse of the directional kurtosis
     of a voxel along a given direction in polar coordinates
 
     Parameters
@@ -1242,11 +1286,11 @@ def _kt_maximum_converge(ang, dt, md, kt):
 
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
-    return -1. * directional_kurtosis(dt, md, kt, n)
+    return -1.0 * directional_kurtosis(dt, md, kt, n)
 
 
 def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
-    """ Compute the maximum value of a single voxel kurtosis tensor
+    """Compute the maximum value of a single voxel kurtosis tensor
 
     Parameters
     ----------
@@ -1292,13 +1336,17 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     # refine maximum direction
     if gtol is not None:
         for p in range(n):
-            r, theta, phi = cart2sphere(max_dir[p, 0], max_dir[p, 1],
-                                        max_dir[p, 2])
+            r, theta, phi = cart2sphere(max_dir[p, 0], max_dir[p, 1], max_dir[p, 2])
             ang = np.array([theta, phi])
-            ang[:] = opt.fmin_bfgs(_kt_maximum_converge, ang,
-                                   args=(dt, md, kt), disp=False,
-                                   retall=False, gtol=gtol)
-            k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
+            ang[:] = opt.fmin_bfgs(
+                _kt_maximum_converge,
+                ang,
+                args=(dt, md, kt),
+                disp=False,
+                retall=False,
+                gtol=gtol,
+            )
+            k_dir = np.array([sphere2cart(1.0, ang[0], ang[1])])
             k_val = directional_kurtosis(dt, md, kt, k_dir)
             if k_val > max_value:
                 max_value = k_val
@@ -1307,9 +1355,8 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     return max_value.item(), max_direction
 
 
-def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
-                     mask=None):
-    """ Compute kurtosis maximum value [1]_
+def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
+    """Compute kurtosis maximum value [1]_
 
     Parameters
     ----------
@@ -1352,11 +1399,11 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere('repulsion100')
+        sphere = get_sphere("repulsion100")
 
     # select voxels where to find fiber directions
     if mask is None:
-        mask = np.ones(shape, dtype='bool')
+        mask = np.ones(shape, dtype="bool")
     else:
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
@@ -1374,14 +1421,15 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-        kt_max[idx], da = _voxel_kurtosis_maximum(dt[idx], md[idx], kt[idx],
-                                                  sphere, gtol=gtol)
+        kt_max[idx], da = _voxel_kurtosis_maximum(
+            dt[idx], md[idx], kt[idx], sphere, gtol=gtol
+        )
 
     return kt_max
 
 
-def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
-    r""" Compute mean of the kurtosis tensor (MKT) [1]_
+def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+    r"""Compute mean of the kurtosis tensor (MKT) [1]_
 
     Parameters
     ----------
@@ -1435,9 +1483,18 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
            Resonance in Medicine 53(6): 1432-1440
 
     """
-    MKT = 1/5 * (dki_params[..., 12] + dki_params[..., 13] +
-                 dki_params[..., 14] + 2 * dki_params[..., 21] +
-                 2 * dki_params[..., 22] + 2 * dki_params[..., 23])
+    MKT = (
+        1
+        / 5
+        * (
+            dki_params[..., 12]
+            + dki_params[..., 13]
+            + dki_params[..., 14]
+            + 2 * dki_params[..., 21]
+            + 2 * dki_params[..., 22]
+            + 2 * dki_params[..., 23]
+        )
+    )
 
     if min_kurtosis is not None:
         MKT = MKT.clip(min=min_kurtosis)
@@ -1448,9 +1505,8 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     return MKT
 
 
-def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3./7,
-                           max_kurtosis=10):
-    r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
+def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+    r"""Compute the rescaled radial tensor kurtosis (RTK) [1]_
 
     Parameters
     ----------
@@ -1517,12 +1573,12 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3./7,
     Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
     # Compute radial kurtois tensor
-    WTK = 3/8 * (Wyyyy + Wzzzz + 2 * Wyyzz)
+    WTK = 3 / 8 * (Wyyyy + Wzzzz + 2 * Wyyzz)
 
     # Rescaling radial kurtosis tensor
     md = mean_diffusivity(evals)
     rd = radial_diffusivity(evals)
-    RTK[rel_i] = WTK * md ** 2 / rd ** 2
+    RTK[rel_i] = WTK * md**2 / rd**2
 
     if min_kurtosis is not None:
         RTK = RTK.clip(min=min_kurtosis)
@@ -1534,7 +1590,7 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3./7,
 
 
 def kurtosis_fractional_anisotropy(dki_params):
-    r""" Compute the anisotropy of the kurtosis tensor (KFA) [1]_,[2]_
+    r"""Compute the anisotropy of the kurtosis tensor (KFA) [1]_,[2]_
 
     Parameters
     ----------
@@ -1590,43 +1646,27 @@ def kurtosis_fractional_anisotropy(dki_params):
     Wxyyz = dki_params[..., 25]
     Wxyzz = dki_params[..., 26]
 
-    W = 1.0/5.0 * (Wxxxx + Wyyyy + Wzzzz + 2*Wxxyy + 2*Wxxzz + 2*Wyyzz)
+    W = 1.0 / 5.0 * (Wxxxx + Wyyyy + Wzzzz + 2 * Wxxyy + 2 * Wxxzz + 2 * Wyyzz)
 
     # Compute's equation numerator
-    A = ((Wxxxx - W) ** 2 +
-         (Wyyyy - W) ** 2 +
-         (Wzzzz - W) ** 2 +
-         4 * (Wxxxy ** 2 +
-              Wxxxz ** 2 +
-              Wxyyy ** 2 +
-              Wyyyz ** 2 +
-              Wxzzz ** 2 +
-              Wyzzz ** 2) +
-         6 * ((Wxxyy - W/3) ** 2 +
-              (Wxxzz - W/3) ** 2 +
-              (Wyyzz - W/3) ** 2) +
-         12 * (Wxxyz ** 2 +
-               Wxyyz ** 2 +
-               Wxyzz ** 2)
-         )
+    A = (
+        (Wxxxx - W) ** 2
+        + (Wyyyy - W) ** 2
+        + (Wzzzz - W) ** 2
+        + 4 * (Wxxxy**2 + Wxxxz**2 + Wxyyy**2 + Wyyyz**2 + Wxzzz**2 + Wyzzz**2)
+        + 6 * ((Wxxyy - W / 3) ** 2 + (Wxxzz - W / 3) ** 2 + (Wyyzz - W / 3) ** 2)
+        + 12 * (Wxxyz**2 + Wxyyz**2 + Wxyzz**2)
+    )
 
     # Compute's equation denominator
-    B = (Wxxxx ** 2 +
-         Wyyyy ** 2 +
-         Wzzzz ** 2 +
-         4 * (Wxxxy ** 2 +
-              Wxxxz ** 2 +
-              Wxyyy ** 2 +
-              Wyyyz ** 2 +
-              Wxzzz ** 2 +
-              Wyzzz ** 2) +
-         6 * (Wxxyy ** 2 +
-              Wxxzz ** 2 +
-              Wyyzz ** 2) +
-         12 * (Wxxyz ** 2 +
-               Wxyyz ** 2 +
-               Wxyzz ** 2)
-         )
+    B = (
+        Wxxxx**2
+        + Wyyyy**2
+        + Wzzzz**2
+        + 4 * (Wxxxy**2 + Wxxxz**2 + Wxyyy**2 + Wyyyz**2 + Wxzzz**2 + Wyzzz**2)
+        + 6 * (Wxxyy**2 + Wxxzz**2 + Wyyzz**2)
+        + 12 * (Wxxyz**2 + Wxyyz**2 + Wxyzz**2)
+    )
 
     # Compute KFA
     KFA = np.zeros(A.shape)
@@ -1634,13 +1674,13 @@ def kurtosis_fractional_anisotropy(dki_params):
     # Avoiding overestimating KFA for small MKT values (KFA=0, MKT < tol)
     cond2 = W > 1e-8
     cond = np.logical_and(cond1, cond2)
-    KFA[cond] = np.sqrt(A[cond]/B[cond])
+    KFA[cond] = np.sqrt(A[cond] / B[cond])
 
     return KFA
 
 
-def dki_prediction(dki_params, gtab, S0=1.):
-    """ Predict a signal given diffusion kurtosis imaging parameters
+def dki_prediction(dki_params, gtab, S0=1.0):
+    """Predict a signal given diffusion kurtosis imaging parameters
 
     Parameters
     ----------
@@ -1701,9 +1741,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
             this_S0 = S0_vol[v]
         else:
             this_S0 = S0_vol
-        X = np.concatenate((dt, fkt[v] * MD * MD,
-                            np.array([-np.log(this_S0)])),
-                           axis=0)
+        X = np.concatenate((dt, fkt[v] * MD * MD, np.array([-np.log(this_S0)])), axis=0)
         pred_sig[v] = np.exp(np.dot(A, X))
 
     # Reshape data according to the shape of dki_params
@@ -1713,12 +1751,10 @@ def dki_prediction(dki_params, gtab, S0=1.):
 
 
 class DiffusionKurtosisModel(ReconstModel):
-    """ Class for the Diffusion Kurtosis Model
-    """
+    """Class for the Diffusion Kurtosis Model"""
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False,
-                 *args, **kwargs):
-        """ Diffusion Kurtosis Tensor Model _[1], _[2]
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
+        """Diffusion Kurtosis Tensor Model _[1], _[2]
 
         Parameters
         ----------
@@ -1767,18 +1803,18 @@ class DiffusionKurtosisModel(ReconstModel):
         if self.common_fit_method:
             try:
                 self.fit_method = common_fit_methods[fit_method]
-            except KeyError:
+            except KeyError as e:
                 msg = '"' + str(fit_method) + '" is not a known fit method. '
-                msg += ' The fit method should either be a function or one of '
-                msg += ' thecommon fit methods.'
+                msg += " The fit method should either be a function or one of "
+                msg += " thecommon fit methods."
 
-                raise ValueError(msg)
+                raise ValueError(msg) from e
 
         self.return_S0_hat = return_S0_hat
         self.args = args
         self.kwargs = kwargs
 
-        self.min_signal = self.kwargs.pop('min_signal', None)
+        self.min_signal = self.kwargs.pop("min_signal", None)
         if self.min_signal is None:
             self.min_signal = MIN_POSITIVE_SIGNAL
         elif self.min_signal <= 0:
@@ -1792,14 +1828,14 @@ class DiffusionKurtosisModel(ReconstModel):
         tol = 1e-6
         self.min_diffusivity = tol / -self.design_matrix.min()
 
-        self.convexity_constraint = fit_method in {'CLS', 'CWLS', 'NLS'}
+        self.convexity_constraint = fit_method in {"CLS", "CWLS", "NLS"}
         if self.convexity_constraint:
-            self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
-            self.convexity_level = self.kwargs.pop('convexity_level', 'full')
+            self.cvxpy_solver = self.kwargs.pop("cvxpy_solver", None)
+            self.convexity_level = self.kwargs.pop("convexity_level", "full")
             msg = "convexity_level must be a positive, even number, or 'full'."
             if isinstance(self.convexity_level, str):
-                if self.convexity_level == 'full':
-                    self.sdp_constraints = load_sdp_constraints('dki')
+                if self.convexity_level == "full":
+                    self.sdp_constraints = load_sdp_constraints("dki")
                 else:
                     raise ValueError(msg)
             elif self.convexity_level < 0 or self.convexity_level % 2:
@@ -1807,18 +1843,25 @@ class DiffusionKurtosisModel(ReconstModel):
             else:
                 if self.convexity_level > 4:
                     msg = "Maximum convexity_level supported is 4."
-                    warnings.warn(msg)
+                    warnings.warn(msg, stacklevel=2)
                     self.convexity_level = 4
-                self.sdp_constraints = load_sdp_constraints(
-                    'dki', self.convexity_level)
+                self.sdp_constraints = load_sdp_constraints("dki", self.convexity_level)
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
-        self.weights = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
-        self.is_multi_method = fit_method in ['WLS', 'OLS', 'UWLLS', 'ULLS',
-                                              'WLLS', 'OLLS', 'CLS', 'CWLS']
+        self.weights = fit_method in {"WLS", "WLLS", "UWLLS", "CWLS"}
+        self.is_multi_method = fit_method in [
+            "WLS",
+            "OLS",
+            "UWLLS",
+            "ULLS",
+            "WLLS",
+            "OLLS",
+            "CLS",
+            "CWLS",
+        ]
 
     def fit(self, data, mask=None):
-        """ Fit method of the DKI model.
+        """Fit method of the DKI model.
 
         Parameters
         ----------
@@ -1835,9 +1878,13 @@ class DiffusionKurtosisModel(ReconstModel):
 
         S0_params = None
         if data.ndim == 1:
-            params, extra = self.fit_method(self.design_matrix, data_thres,
-                                            return_S0_hat=self.return_S0_hat,
-                                            *self.args, **self.kwargs)
+            params, extra = self.fit_method(
+                self.design_matrix,
+                data_thres,
+                return_S0_hat=self.return_S0_hat,
+                *self.args,
+                **self.kwargs,
+            )
             if self.return_S0_hat:
                 params, S0_params = params
             return DiffusionKurtosisFit(self, params, model_S0=S0_params)
@@ -1851,15 +1898,19 @@ class DiffusionKurtosisModel(ReconstModel):
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
         data_in_mask = np.maximum(data_in_mask, self.min_signal)
 
-        params, extra = self.fit_method(self.design_matrix, data_in_mask,
-                                        return_S0_hat=self.return_S0_hat,
-                                        *self.args, **self.kwargs)
+        params, extra = self.fit_method(
+            self.design_matrix,
+            data_in_mask,
+            return_S0_hat=self.return_S0_hat,
+            *self.args,
+            **self.kwargs,
+        )
 
         if self.return_S0_hat:
             params, S0_params = params
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
+            out_shape = data.shape[:-1] + (-1,)
             dki_params = params.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = S0_params.reshape(out_shape).squeeze()
@@ -1875,16 +1926,23 @@ class DiffusionKurtosisModel(ReconstModel):
 
     @multi_voxel_fit
     def multi_fit(self, data_thres, mask=None):
-        extra_args = {} if not self.convexity_constraint else {
-            'cvxpy_solver': self.cvxpy_solver,
-            'sdp': self.sdp,
+        extra_args = (
+            {}
+            if not self.convexity_constraint
+            else {
+                "cvxpy_solver": self.cvxpy_solver,
+                "sdp": self.sdp,
             }
-        params, extra = self.fit_method(self.design_matrix, data_thres,
-                                        self.inverse_design_matrix,
-                                        return_S0_hat=self.return_S0_hat,
-                                        weights=self.weights,
-                                        min_diffusivity=self.min_diffusivity,
-                                        **extra_args)
+        )
+        params, extra = self.fit_method(
+            self.design_matrix,
+            data_thres,
+            self.inverse_design_matrix,
+            return_S0_hat=self.return_S0_hat,
+            weights=self.weights,
+            min_diffusivity=self.min_diffusivity,
+            **extra_args,
+        )
 
         S0_params = None
         if self.return_S0_hat:
@@ -1892,8 +1950,8 @@ class DiffusionKurtosisModel(ReconstModel):
 
         return DiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, dki_params, S0=1.):
-        """ Predict a signal for this DKI model class instance given parameters
+    def predict(self, dki_params, S0=1.0):
+        """Predict a signal for this DKI model class instance given parameters
 
         Parameters
         ----------
@@ -1927,10 +1985,10 @@ class DiffusionKurtosisModel(ReconstModel):
 
 
 class DiffusionKurtosisFit(TensorFit):
-    """ Class for fitting the Diffusion Kurtosis Model"""
+    """Class for fitting the Diffusion Kurtosis Model"""
 
     def __init__(self, model, model_params, model_S0=None):
-        """ Initialize a DiffusionKurtosisFit class instance
+        """Initialize a DiffusionKurtosisFit class instance
 
         Since DKI is an extension of DTI, class instance is defined as subclass
         of the TensorFit from dti.py
@@ -1962,7 +2020,7 @@ class DiffusionKurtosisFit(TensorFit):
         return self.model_params[..., 12:27]
 
     def akc(self, sphere):
-        r""" Calculate the apparent kurtosis coefficient (AKC) in each
+        r"""Calculate the apparent kurtosis coefficient (AKC) in each
         direction on the sphere for each voxel in the data
 
         Parameters
@@ -1997,7 +2055,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
+    def mk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_, [2]_
 
         Parameters
@@ -2090,10 +2148,9 @@ class DiffusionKurtosisFit(TensorFit):
                and Computational Geometry 15, 429-441.
 
         """
-        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
-                             analytical)
+        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
 
-    def ak(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
+    def ak(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r"""
         Compute axial kurtosis (AK) of a diffusion kurtosis tensor [1]_, [2]_
 
@@ -2155,11 +2212,10 @@ class DiffusionKurtosisFit(TensorFit):
                Resonance in Medicine 53(6): 1432-1440
 
         """
-        return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
-                              analytical)
+        return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
 
-    def rk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
-        r""" Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_
+    def rk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+        r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_
 
         Parameters
         ----------
@@ -2238,11 +2294,12 @@ class DiffusionKurtosisFit(TensorFit):
                Resonance in Medicine 53(6): 1432-1440
 
         """
-        return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
-                               analytical)
+        return radial_kurtosis(
+            self.model_params, min_kurtosis, max_kurtosis, analytical
+        )
 
-    def kmax(self, sphere='repulsion100', gtol=1e-5, mask=None):
-        r""" Compute the maximum value of a single voxel kurtosis tensor
+    def kmax(self, sphere="repulsion100", gtol=1e-5, mask=None):
+        r"""Compute the maximum value of a single voxel kurtosis tensor
 
         Parameters
         ----------
@@ -2271,8 +2328,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
 
-    def mkt(self, min_kurtosis=-3./7, max_kurtosis=10):
-        r""" Compute mean of the kurtosis tensor (MKT) [1]_
+    def mkt(self, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+        r"""Compute mean of the kurtosis tensor (MKT) [1]_
 
         Parameters
         ----------
@@ -2319,11 +2376,10 @@ class DiffusionKurtosisFit(TensorFit):
                water diffusion by means of magnetic resonance imaging. Magnetic
                Resonance in Medicine 53(6): 1432-1440
         """
-        return mean_kurtosis_tensor(self.model_params, min_kurtosis,
-                                    max_kurtosis)
+        return mean_kurtosis_tensor(self.model_params, min_kurtosis, max_kurtosis)
 
-    def rtk(self, *, min_kurtosis=-3./7, max_kurtosis=10):
-        r""" Compute the rescaled radial tensor kurtosis (RTK) [1]_
+    def rtk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+        r"""Compute the rescaled radial tensor kurtosis (RTK) [1]_
 
         Parameters
         ----------
@@ -2360,13 +2416,13 @@ class DiffusionKurtosisFit(TensorFit):
                Neuroimage 142,  381–393.
                doi:10.1016/j.neuroimage.2016.08.022
         """
-        return radial_tensor_kurtosis(self.model_params,
-                                      min_kurtosis=min_kurtosis,
-                                      max_kurtosis=max_kurtosis)
+        return radial_tensor_kurtosis(
+            self.model_params, min_kurtosis=min_kurtosis, max_kurtosis=max_kurtosis
+        )
 
     @property
     def kfa(self):
-        r""" Return the kurtosis tensor (KFA) [1]_
+        r"""Return the kurtosis tensor (KFA) [1]_
 
         Notes
         -----
@@ -2390,8 +2446,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_fractional_anisotropy(self.model_params)
 
-    def predict(self, gtab, S0=1.):
-        r""" Given a DKI model fit, predict the signal on the vertices of a
+    def predict(self, gtab, S0=1.0):
+        r"""Given a DKI model fit, predict the signal on the vertices of a
         gradient table
 
         Parameters
@@ -2445,7 +2501,7 @@ class DiffusionKurtosisFit(TensorFit):
 
 
 def params_to_dki_params(result, min_diffusivity=0):
-    r""" Convert the 21 unique elements of the diffusion and kurtosis tensors
+    r"""Convert the 21 unique elements of the diffusion and kurtosis tensors
     to the parameter format adopted in DIPY
 
     Parameters
@@ -2474,25 +2530,32 @@ def params_to_dki_params(result, min_diffusivity=0):
 
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
-                                    min_diffusivity=min_diffusivity)
+    evals, evecs = decompose_tensor(
+        from_lower_triangular(DT_elements), min_diffusivity=min_diffusivity
+    )
 
     # Extracting kurtosis tensor parameters from solution
-    MD_square = evals.mean(0)**2
-    KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
+    MD_square = evals.mean(0) ** 2
+    KT_elements = result[6:21] / MD_square if MD_square else 0.0 * result[6:21]
     S0 = np.exp(-result[[-1]])
 
     # Write output
-    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements, S0), axis=0)
+    dki_params = np.concatenate(
+        (evals, evecs[0], evecs[1], evecs[2], KT_elements, S0), axis=0
+    )
 
     return dki_params
 
 
-def ls_fit_dki(design_matrix, data, inverse_design_matrix,
-               return_S0_hat=False, weights=True,
-               min_diffusivity=0):
-    r""" Compute the diffusion and kurtosis tensors using an ordinary or
+def ls_fit_dki(
+    design_matrix,
+    data,
+    inverse_design_matrix,
+    return_S0_hat=False,
+    weights=True,
+    min_diffusivity=0,
+):
+    r"""Compute the diffusion and kurtosis tensors using an ordinary or
     weighted linear least squares approach [1]_
 
     Parameters
@@ -2556,10 +2619,17 @@ def ls_fit_dki(design_matrix, data, inverse_design_matrix,
         return dki_params[..., 0:-1], None
 
 
-def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp,
-                return_S0_hat=False, weights=True,
-                min_diffusivity=0, cvxpy_solver=None):
-    r""" Compute the diffusion and kurtosis tensors using a constrained
+def cls_fit_dki(
+    design_matrix,
+    data,
+    inverse_design_matrix,
+    sdp,
+    return_S0_hat=False,
+    weights=True,
+    min_diffusivity=0,
+    cvxpy_solver=None,
+):
+    r"""Compute the diffusion and kurtosis tensors using a constrained
     ordinary or weighted linear least squares approach [1]_
 
     Parameters
@@ -2669,17 +2739,32 @@ def Wrotate(kt, Basis):
         analysis. Neuroimage 42(1): 122-34
 
     """
-    inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
-                     [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
-                     [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
-                     [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
-                     [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
+    inds = np.array(
+        [
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [2, 2, 2, 2],
+            [0, 0, 0, 1],
+            [0, 0, 0, 2],
+            [0, 1, 1, 1],
+            [1, 1, 1, 2],
+            [0, 2, 2, 2],
+            [1, 2, 2, 2],
+            [0, 0, 1, 1],
+            [0, 0, 2, 2],
+            [1, 1, 2, 2],
+            [0, 0, 1, 2],
+            [0, 1, 1, 2],
+            [0, 1, 2, 2],
+        ]
+    )
 
     Wrot = np.zeros(kt.shape)
 
     for e in range(len(inds)):
-        Wrot[..., e] = Wrotate_element(kt, inds[e][0], inds[e][1], inds[e][2],
-                                       inds[e][3], Basis)
+        Wrot[..., e] = Wrotate_element(
+            kt, inds[e][0], inds[e][1], inds[e][2], inds[e][3], Basis
+        )
 
     return Wrot
 
@@ -2692,12 +2777,27 @@ def Wrotate(kt, Basis):
 # 2, 3, 8, 24 27, 54, 4, 9, 36, 6, 12, 18) are used to point each element of
 # the kurtosis tensor on the format of a vector containing the 15 independent
 # elements.
-ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
-           9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
+ind_ele = {
+    1: 0,
+    16: 1,
+    81: 2,
+    2: 3,
+    3: 4,
+    8: 5,
+    24: 6,
+    27: 7,
+    54: 8,
+    4: 9,
+    9: 10,
+    36: 11,
+    6: 12,
+    12: 13,
+    18: 14,
+}
 
 
 def Wrotate_element(kt, indi, indj, indk, indl, B):
-    r""" Compute the the specified index element of a kurtosis tensor rotated
+    r"""Compute the the specified index element of a kurtosis tensor rotated
     to the coordinate system basis B
 
     Parameters
@@ -2740,9 +2840,12 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
             for kl in xyz:
                 for ll in xyz:
                     key = (il + 1) * (jl + 1) * (kl + 1) * (ll + 1)
-                    multiplyB = \
-                        B[..., il, indi] * B[..., jl, indj] * \
-                        B[..., kl, indk] * B[..., ll, indl]
+                    multiplyB = (
+                        B[..., il, indi]
+                        * B[..., jl, indj]
+                        * B[..., kl, indk]
+                        * B[..., ll, indl]
+                    )
                     Wre = Wre + multiplyB * kt[..., ind_ele[key]]
     return Wre
 
@@ -2785,7 +2888,7 @@ def Wcons(k_elements):
 
 
 def split_dki_param(dki_params):
-    r""" Extract the diffusion tensor eigenvalues, the diffusion tensor
+    r"""Extract the diffusion tensor eigenvalues, the diffusion tensor
     eigenvector matrix, and the 15 independent elements of the kurtosis tensor
     from the model parameters estimated from the DKI model
 
@@ -2818,17 +2921,18 @@ def split_dki_param(dki_params):
     return evals, evecs, kt
 
 
-common_fit_methods = {'WLS': ls_fit_dki,
-                      'OLS': ls_fit_dki,
-                      'NLS': nlls_fit_tensor,
-                      'UWLLS': ls_fit_dki,
-                      'ULLS': ls_fit_dki,
-                      'WLLS': ls_fit_dki,
-                      'OLLS': ls_fit_dki,
-                      'NLLS': nlls_fit_tensor,
-                      'RT': restore_fit_tensor,
-                      'restore': restore_fit_tensor,
-                      'RESTORE': restore_fit_tensor,
-                      'CLS': cls_fit_dki,
-                      'CWLS': cls_fit_dki
-                      }
+common_fit_methods = {
+    "WLS": ls_fit_dki,
+    "OLS": ls_fit_dki,
+    "NLS": nlls_fit_tensor,
+    "UWLLS": ls_fit_dki,
+    "ULLS": ls_fit_dki,
+    "WLLS": ls_fit_dki,
+    "OLLS": ls_fit_dki,
+    "NLLS": nlls_fit_tensor,
+    "RT": restore_fit_tensor,
+    "restore": restore_fit_tensor,
+    "RESTORE": restore_fit_tensor,
+    "CLS": cls_fit_dki,
+    "CWLS": cls_fit_dki,
+}

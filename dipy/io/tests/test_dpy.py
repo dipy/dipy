@@ -9,8 +9,8 @@ from dipy.io.dpy import Dpy, Streamlines
 
 def test_dpy():
     with TemporaryDirectory() as tmpdir:
-        fname = pjoin(tmpdir, 'test.bin')
-        dpw = Dpy(fname, 'w')
+        fname = pjoin(tmpdir, "test.bin")
+        dpw = Dpy(fname, "w")
         A = np.ones((5, 3))
         B = 2 * A.copy()
         C = 3 * A.copy()
@@ -23,8 +23,8 @@ def test_dpy():
         npt.assert_array_equal(all_tracks, dpw.tracks[:])
         dpw.close()
 
-        dpr = Dpy(fname, 'r')
-        npt.assert_equal(dpr.version() == '0.0.1', True)
+        dpr = Dpy(fname, "r")
+        npt.assert_equal(dpr.version() == "0.0.1", True)
         T = dpr.read_tracksi([0, 1, 2, 0, 0, 2])
         T2 = dpr.read_tracks()
         npt.assert_equal(len(T2), 6)

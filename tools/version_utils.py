@@ -112,7 +112,7 @@ def git_version(cwd):
         # count since the previous branch point from the current branch
         # (assuming a full `git clone`, it may be less if `--depth` was
         # used - commonly the default in CI):
-        prev_version_tag = '^{}.{}.0'.format(MAJOR, MINOR - 2)
+        prev_version_tag = f'^{MAJOR}.{MINOR - 2}.0'
         out = _minimal_ext_cmd(['git', '--git-dir', git_dir,
                                 'rev-list', 'HEAD', prev_version_tag,
                                 '--count'])

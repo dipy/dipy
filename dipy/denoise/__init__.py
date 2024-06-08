@@ -1,1 +1,1 @@
-#init for denoise aka the denoising module
+# init for denoise aka the denoising module

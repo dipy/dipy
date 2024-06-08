@@ -261,7 +261,7 @@ Issues (194):
 * :ghissue:`1620`: 3.7 wheels
 * :ghissue:`1598`: Apply Transform workflow for transforming a collection of moving images.
 * :ghissue:`1595`: Workflow for visualizing the quality of the registered data with DIPY
-* :ghissue:`1581`: Image registration Workflow with quality metrices
+* :ghissue:`1581`: Image registration Workflow with quality metrics
 * :ghissue:`1588`: Dipy.reconst.shm.calculate_max_order only works on specific cases.
 * :ghissue:`1608`: Parallelized affine registration
 * :ghissue:`1610`: Tortoise - sub

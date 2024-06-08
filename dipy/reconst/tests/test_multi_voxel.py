@@ -37,23 +37,56 @@ def test_squash():
     # Check dtypes for arrays and scalars
     arr_arr = np.zeros((2,), dtype=object)
     scalar_arr = np.zeros((2,), dtype=object)
-    numeric_types = [getattr(np, dtype) for dtype in (
-        'int8', 'byte', 'int16', 'short', 'int32', 'intc', 'int_', 'int64',
-        'longlong', 'uint8', 'ubyte', 'uint16', 'ushort', 'uint32', 'uintc',
-        'uint', 'uint64', 'ulonglong', 'float16', 'half', 'float32', 'single',
-        'float64', 'double', 'float96', 'float128', 'longdouble', 'complex64',
-        'csingle', 'complex128', 'cdouble', 'complex192', 'complex256',
-        'clongdouble') if hasattr(np, dtype)] + [bool]
+    numeric_types = [
+        getattr(np, dtype)
+        for dtype in (
+            "int8",
+            "byte",
+            "int16",
+            "short",
+            "int32",
+            "intc",
+            "int_",
+            "int64",
+            "longlong",
+            "uint8",
+            "ubyte",
+            "uint16",
+            "ushort",
+            "uint32",
+            "uintc",
+            "uint",
+            "uint64",
+            "ulonglong",
+            "float16",
+            "half",
+            "float32",
+            "single",
+            "float64",
+            "double",
+            "float96",
+            "float128",
+            "longdouble",
+            "complex64",
+            "csingle",
+            "complex128",
+            "cdouble",
+            "complex192",
+            "complex256",
+            "clongdouble",
+        )
+        if hasattr(np, dtype)
+    ] + [bool]
     for dt0 in numeric_types:
         arr_arr[0] = np.zeros((3,), dtype=dt0)
         scalar_arr[0] = dt0(0)
         for dt1 in numeric_types:
             arr_arr[1] = np.zeros((3,), dtype=dt1)
-            npt.assert_equal(_squash(arr_arr).dtype,
-                             reduce(np.add, arr_arr).dtype)
+            npt.assert_equal(_squash(arr_arr).dtype, reduce(np.add, arr_arr).dtype)
             scalar_arr[1] = dt0(1)
-            npt.assert_equal(_squash(scalar_arr).dtype,
-                             reduce(np.add, scalar_arr).dtype)
+            npt.assert_equal(
+                _squash(scalar_arr).dtype, reduce(np.add, scalar_arr).dtype
+            )
 
     # Check masks and Nones
     arr = np.ones((3, 4), dtype=float)
@@ -82,11 +115,9 @@ def test_squash():
     obj_masked[1] = None
     arr_masked = arr_arrs.copy()
     arr_masked[1] = 99
-    npt.assert_array_equal(_squash(obj_masked, mask=None, fill=99),
-                           arr_masked)
+    npt.assert_array_equal(_squash(obj_masked, mask=None, fill=99), arr_masked)
     msk = np.array([1, 0, 1], dtype=bool)  # explicit mask
-    npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
-                           arr_masked)
+    npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99), arr_masked)
 
 
 def test_CallableArray():
@@ -106,9 +137,7 @@ def test_CallableArray():
 
 @set_random_number_generator()
 def test_multi_voxel_fit(rng):
-
     class SillyModel:
-
         @multi_voxel_fit
         def fit(self, data, mask=None):
             return SillyFit(model, data)
@@ -117,12 +146,11 @@ def test_multi_voxel_fit(rng):
             return np.ones(10) * S0
 
     class SillyFit:
-
         def __init__(self, model, data):
             self.model = model
             self.data = data
 
-        model_attr = 2.
+        model_attr = 2.0
 
         def odf(self, sphere):
             return np.ones(len(sphere.phi))
@@ -145,16 +173,16 @@ def test_multi_voxel_fit(rng):
     many_voxels = np.zeros((2, 3, 4, 64))
     fit = model.fit(many_voxels)
     expected = np.empty((2, 3, 4))
-    expected[:] = 2.
+    expected[:] = 2.0
     npt.assert_array_equal(fit.model_attr, expected)
     expected = np.ones((2, 3, 4, 12))
     npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
     npt.assert_equal(fit.directions.shape, (2, 3, 4))
-    S0 = 100.
+    S0 = 100.0
     npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
-    mask = np.zeros((3, 3, 3)).astype('bool')
+    mask = np.zeros((3, 3, 3)).astype("bool")
     mask[0, 0] = 1
     mask[1, 1] = 1
     mask[2, 2] = 1

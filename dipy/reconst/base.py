@@ -12,8 +12,7 @@ particular set of data (different voxels, for example).
 
 
 class ReconstModel:
-    """ Abstract class for signal reconstruction models
-    """
+    """Abstract class for signal reconstruction models"""
 
     def __init__(self, gtab):
         """Initialization of the abstract class for signal reconstruction models
@@ -30,7 +29,7 @@ class ReconstModel:
 
 
 class ReconstFit:
-    """ Abstract class which holds the fit result of ReconstModel
+    """Abstract class which holds the fit result of ReconstModel
 
     For example that could be holding FA or GFA etc.
     """

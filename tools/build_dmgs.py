@@ -36,22 +36,21 @@ def main():
     args = parser.parse_args()
     globber = args.globber
     out_path = args.out_path
-    address = "{0}:{1}{2}".format(BUILDBOT_LOGIN, BUILDBOT_HTML, globber)
+    address = f"{BUILDBOT_LOGIN}:{BUILDBOT_HTML}{globber}"
     if isdir(out_path):
         if not args.clobber:
-            raise RuntimeError('Path {0} exists and "clobber" not set'.format(
-                out_path))
+            raise RuntimeError(f'Path {out_path} exists and "clobber" not set')
         shutil.rmtree(out_path)
     os.mkdir(out_path)
     cwd = os.path.abspath(os.getcwd())
     os.chdir(out_path)
     try:
-        my_call('scp -r {0} .'.format(address))
+        my_call(f'scp -r {address} .')
         found_mpkgs = sorted(glob('*.mpkg'))
         for mpkg in found_mpkgs:
             pkg_name, ext = os.path.splitext(mpkg)
             assert ext == '.mpkg'
-            my_call('sudo reown_mpkg {0} root admin'.format(mpkg))
+            my_call(f'sudo reown_mpkg {mpkg} root admin')
             os.mkdir(pkg_name)
             pkg_moved = pjoin(pkg_name, mpkg)
             os.rename(mpkg, pkg_moved)
@@ -59,7 +58,7 @@ def main():
             if isfile(readme):
                 shutil.copy(readme, pkg_name)
             else:
-                warnings.warn("Could not find readme with " + readme)
+                warnings.warn(f"Could not find readme with {readme}")
             my_call('sudo hdiutil create {0}.dmg -srcfolder ./{0}/ -ov'.format(pkg_name))
     finally:
         os.chdir(cwd)

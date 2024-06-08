@@ -1,6 +1,6 @@
 #!/usr/bin/python
-""" Classes and functions for fitting the mean signal diffusion kurtosis
-model """
+"""Classes and functions for fitting the mean signal diffusion kurtosis
+model"""
 
 import numpy as np
 import scipy.optimize as opt
@@ -83,15 +83,15 @@ def msk_from_awf(f):
            encoding MRI. Magnetic Resonance in Medicine (In press).
            doi: 10.1002/mrm.27606
     """
-    msk_num = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4
-    msk_den = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4
+    msk_num = 216 * f - 504 * f**2 + 504 * f**3 - 180 * f**4
+    msk_den = 135 - 360 * f + 420 * f**2 - 240 * f**3 + 60 * f**4
     msk = msk_num / msk_den
 
     return msk
 
 
 def _msk_from_awf_error(f, msk):
-    """ Helper function that calculates the error of a predicted mean signal
+    """Helper function that calculates the error of a predicted mean signal
     kurtosis from the axonal water fraction of SMT2 model and a measured
     mean signal kurtosis
 
@@ -143,13 +143,13 @@ def _diff_msk_from_awf(f, msk):
            encoding MRI. Magnetic Resonance in Medicine (In press).
            doi: 10.1002/mrm.27606
     """
-    F = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4  # Numerator
-    G = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4  # Denominator
+    F = 216 * f - 504 * f**2 + 504 * f**3 - 180 * f**4  # Numerator
+    G = 135 - 360 * f + 420 * f**2 - 240 * f**3 + 60 * f**4  # Denominator
 
     dF = 216 - 1008 * f + 1512 * f**2 - 720 * f**3  # Num. differential
     dG = -360 + 840 * f - 720 * f**2 + 240 * f**3  # Den. differential
 
-    return (G * dF - F * dG) / (G ** 2)
+    return (G * dF - F * dG) / (G**2)
 
 
 def awf_from_msk(msk, mask=None):
@@ -216,7 +216,7 @@ def awf_from_msk(msk, mask=None):
                     fini,
                     args=(mski,),
                     fprime=_diff_msk_from_awf,
-                    col_deriv=True
+                    col_deriv=True,
                 ).item()
 
     return awf
@@ -271,11 +271,10 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 
 
 class MeanDiffusionKurtosisModel(ReconstModel):
-    """ Mean signal Diffusion Kurtosis Model
-    """
+    """Mean signal Diffusion Kurtosis Model"""
 
     def __init__(self, gtab, bmag=None, return_S0_hat=False, *args, **kwargs):
-        """ Mean Signal Diffusion Kurtosis Model [1]_.
+        """Mean Signal Diffusion Kurtosis Model [1]_.
 
         Parameters
         ----------
@@ -308,7 +307,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         self.bmag = bmag
         self.args = args
         self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', MIN_POSITIVE_SIGNAL)
+        self.min_signal = self.kwargs.pop("min_signal", MIN_POSITIVE_SIGNAL)
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
@@ -321,7 +320,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             raise ValueError(mes)
 
     def fit(self, data, mask=None):
-        """ Fit method of the MSDKI model class
+        """Fit method of the MSDKI model class
 
         Parameters
         ----------
@@ -340,15 +339,21 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         # Remove mdata zeros
         mdata = np.maximum(mdata, self.min_signal)
 
-        params = wls_fit_msdki(self.design_matrix, mdata, ng, mask=mask,
-                               return_S0_hat=self.return_S0_hat, *self.args,
-                               **self.kwargs)
+        params = wls_fit_msdki(
+            self.design_matrix,
+            mdata,
+            ng,
+            mask=mask,
+            return_S0_hat=self.return_S0_hat,
+            *self.args,
+            **self.kwargs,
+        )
         if self.return_S0_hat:
             params, S0_params = params
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, msdki_params, S0=1.):
+    def predict(self, msdki_params, S0=1.0):
         """
         Predict a signal for this MeanDiffusionKurtosisModel class instance
         given parameters.
@@ -384,10 +389,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
 
 class MeanDiffusionKurtosisFit:
-
     def __init__(self, model, model_params, model_S0=None):
-        """ Initialize a MeanDiffusionKurtosisFit class instance.
-        """
+        """Initialize a MeanDiffusionKurtosisFit class instance."""
         self.model = model
         self.model_params = model_params
         self.model_S0 = model_S0
@@ -403,8 +406,9 @@ class MeanDiffusionKurtosisFit:
         index = index + (slice(None),) * (N - len(index))
         if model_S0 is not None:
             model_S0 = model_S0[index[:-1]]
-        return MeanDiffusionKurtosisFit(self.model, model_params[index],
-                                        model_S0=model_S0)
+        return MeanDiffusionKurtosisFit(
+            self.model, model_params[index], model_S0=model_S0
+        )
 
     @property
     def S0_hat(self):
@@ -480,7 +484,7 @@ class MeanDiffusionKurtosisFit:
     @auto_attr
     def smt2di(self):
         r"""
-        Computes the intrisic diffusivity from the mean signal diffusional
+        Computes the intrinsic diffusivity from the mean signal diffusional
         kurtosis parameters assuming the 2-compartmental spherical mean
         technique model [1]_, [2]_
 
@@ -502,7 +506,7 @@ class MeanDiffusionKurtosisFit:
         .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
                microscopic diffusion imaging. Neuroimage 139:346–359.
         """
-        return 3 * self.msd / (1 + 2 * (1 - self.smt2f)**2)
+        return 3 * self.msd / (1 + 2 * (1 - self.smt2f) ** 2)
 
     @auto_attr
     def smt2uFA(self):
@@ -530,12 +534,12 @@ class MeanDiffusionKurtosisFit:
         .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
                microscopic diffusion imaging. Neuroimage 139:346–359.
         """
-        fe = (1 - self.smt2f)
-        num = 3 * (1 - 2 * fe ** 2 + fe ** 3)
-        den = 3 + 2 * fe ** 3 + 4 * fe ** 4
-        return np.sqrt(num/den)
+        fe = 1 - self.smt2f
+        num = 3 * (1 - 2 * fe**2 + fe**3)
+        den = 3 + 2 * fe**3 + 4 * fe**4
+        return np.sqrt(num / den)
 
-    def predict(self, gtab, S0=1.):
+    def predict(self, gtab, S0=1.0):
         r"""
         Given a mean signal diffusion kurtosis model fit, predict the signal
         on the vertices of a sphere
@@ -571,8 +575,14 @@ class MeanDiffusionKurtosisFit:
         return msdki_prediction(self.model_params, gtab, S0=S0)
 
 
-def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
-                  min_signal=MIN_POSITIVE_SIGNAL, return_S0_hat=False):
+def wls_fit_msdki(
+    design_matrix,
+    msignal,
+    ng,
+    mask=None,
+    min_signal=MIN_POSITIVE_SIGNAL,
+    return_S0_hat=False,
+):
     r"""
     Fits the mean signal diffusion kurtosis imaging based on a weighted
     least square solution [1]_.
@@ -630,7 +640,7 @@ def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
         if np.mean(msignal[v]) <= min_signal:
             continue
         # Define weights as diag(ng * yn**2)
-        W = np.diag(ng * msignal[v]**2)
+        W = np.diag(ng * msignal[v] ** 2)
 
         # WLS fitting
         BTW = np.dot(design_matrix.T, W)
@@ -638,7 +648,7 @@ def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
         p = np.linalg.multi_dot([inv_BT_W_B, BTW, np.log(msignal[v])])
 
         # Process parameters
-        p[1] = p[1] / (p[0]**2)
+        p[1] = p[1] / (p[0] ** 2)
         p[2] = np.exp(p[2])
         params[v] = p
 
@@ -649,7 +659,7 @@ def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
 
 
 def design_matrix(ubvals):
-    """  Constructs design matrix for the mean signal diffusion kurtosis model
+    """Constructs design matrix for the mean signal diffusion kurtosis model
 
     Parameters
     ----------
@@ -666,6 +676,6 @@ def design_matrix(ubvals):
     nb = ubvals.shape
     B = np.zeros(nb + (3,))
     B[:, 0] = -ubvals
-    B[:, 1] = 1.0/6.0 * ubvals**2
+    B[:, 1] = 1.0 / 6.0 * ubvals**2
     B[:, 2] = np.ones(nb)
     return B

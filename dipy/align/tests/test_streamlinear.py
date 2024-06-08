@@ -53,10 +53,9 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
 
 
 def fornix_streamlines(no_pts=12):
-    fname = get_fnames('fornix')
+    fname = get_fnames("fornix")
 
-    fornix = load_tractogram(fname, 'same',
-                             bbox_valid_check=False).streamlines
+    fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
     fornix_streamlines = Streamlines(fornix)
     streamlines = set_number_of_points(fornix_streamlines, no_pts)
@@ -70,7 +69,6 @@ def evaluate_convergence(bundle, new_bundle2):
 
 
 def test_rigid_parallel_lines():
-
     bundle_initial = simulated_bundle()
     bundle, shift = center_streamlines(bundle_initial)
     mat = compose_matrix44([20, 0, 10, 0, 40, 0])
@@ -78,55 +76,56 @@ def test_rigid_parallel_lines():
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
-    options = {'maxcor': 100, 'ftol': 1e-9, 'gtol': 1e-16, 'eps': 1e-3}
-    srr = StreamlineLinearRegistration(metric=bundle_sum_distance,
-                                       x0=np.zeros(6),
-                                       method='L-BFGS-B',
-                                       bounds=None,
-                                       options=options)
+    options = {"maxcor": 100, "ftol": 1e-9, "gtol": 1e-16, "eps": 1e-3}
+    srr = StreamlineLinearRegistration(
+        metric=bundle_sum_distance,
+        x0=np.zeros(6),
+        method="L-BFGS-B",
+        bounds=None,
+        options=options,
+    )
 
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
 
 
 def test_rigid_real_bundles():
-
     bundle_initial = fornix_streamlines()[:20]
     bundle, shift = center_streamlines(bundle_initial)
 
-    mat = compose_matrix44([0, 0, 20, 45., 0, 0])
+    mat = compose_matrix44([0, 0, 20, 45.0, 0, 0])
 
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
-    srr = StreamlineLinearRegistration(bundle_sum_distance,
-                                       x0=np.zeros(6),
-                                       method='Powell')
+    srr = StreamlineLinearRegistration(
+        bundle_sum_distance, x0=np.zeros(6), method="Powell"
+    )
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
 
     bundle_min_distance = BundleMinDistanceMatrixMetric()
-    srr = StreamlineLinearRegistration(bundle_min_distance,
-                                       x0=np.zeros(6),
-                                       method='Powell')
+    srr = StreamlineLinearRegistration(
+        bundle_min_distance, x0=np.zeros(6), method="Powell"
+    )
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
 
-    assert_raises(ValueError, StreamlineLinearRegistration, method='Whatever')
+    assert_raises(ValueError, StreamlineLinearRegistration, method="Whatever")
 
 
 def test_rigid_partial_real_bundles():
-
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
     static_center, shift = center_streamlines(static)
     moving_center, shift2 = center_streamlines(moving)
 
     print(shift2)
-    mat = compose_matrix(translate=np.array([0, 0, 0.]),
-                         angles=np.deg2rad([40, 0, 0.]))
+    mat = compose_matrix(
+        translate=np.array([0, 0, 0.0]), angles=np.deg2rad([40, 0, 0.0])
+    )
     moved = transform_streamlines(moving_center, mat)
 
     srr = StreamlineLinearRegistration()
@@ -164,7 +163,6 @@ def test_rigid_partial_real_bundles():
 
 
 def test_stream_rigid():
-
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
     center_streamlines(static)
@@ -186,12 +184,11 @@ def test_stream_rigid():
 
 
 def test_min_vs_min_fast_precision():
-
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[:20]
 
-    static = [s.astype('f8') for s in static]
-    moving = [m.astype('f8') for m in moving]
+    static = [s.astype("f8") for s in static]
+    moving = [m.astype("f8") for m in moving]
 
     bmd = BundleMinDistanceMatrixMetric()
     bmd.setup(static, moving)
@@ -220,10 +217,7 @@ def test_same_number_of_points(rng):
 
 
 def test_efficient_bmd():
-
-    a = np.array([[1, 1, 1],
-                  [2, 2, 2],
-                  [3, 3, 3]])
+    a = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
 
     streamlines = [a, a + 2, a + 4]
 
@@ -231,19 +225,19 @@ def test_efficient_bmd():
     points = points.astype(np.double)
     points2 = points.copy()
 
-    D = np.zeros((len(offsets), len(offsets)), dtype='f8')
+    D = np.zeros((len(offsets), len(offsets)), dtype="f8")
 
-    _bundle_minimum_distance_matrix(points, points2,
-                                    len(offsets), len(offsets),
-                                    a.shape[0], D)
+    _bundle_minimum_distance_matrix(
+        points, points2, len(offsets), len(offsets), a.shape[0], D
+    )
 
     assert_equal(np.sum(np.diag(D)), 0)
 
     points2 += 2
 
-    _bundle_minimum_distance_matrix(points, points2,
-                                    len(offsets), len(offsets),
-                                    a.shape[0], D)
+    _bundle_minimum_distance_matrix(
+        points, points2, len(offsets), len(offsets), a.shape[0], D
+    )
 
     streamlines2 = relist_streamlines(points2, offsets)
     D2 = distance_matrix_mdf(streamlines, streamlines2)
@@ -253,12 +247,18 @@ def test_efficient_bmd():
     cols = D2.shape[1]
     rows = D2.shape[0]
 
-    dist = 0.25 * (np.sum(np.min(D2, axis=0)) / float(cols) +
-                   np.sum(np.min(D2, axis=1)) / float(rows)) ** 2
+    dist = (
+        0.25
+        * (
+            np.sum(np.min(D2, axis=0)) / float(cols)
+            + np.sum(np.min(D2, axis=1)) / float(rows)
+        )
+        ** 2
+    )
 
-    dist2 = _bundle_minimum_distance(points, points2,
-                                     len(offsets), len(offsets),
-                                     a.shape[0])
+    dist2 = _bundle_minimum_distance(
+        points, points2, len(offsets), len(offsets), a.shape[0]
+    )
     assert_almost_equal(dist, dist2)
 
 
@@ -268,7 +268,7 @@ def test_openmp_locks(rng):
     moving = []
     pts = 20
 
-    for i in range(1000):
+    for _ in range(1000):
         s = rng.random((pts, 3))
         static.append(s)
         moving.append(s + 2)
@@ -278,31 +278,34 @@ def test_openmp_locks(rng):
     points, offsets = unlist_streamlines(static)
     points2, offsets2 = unlist_streamlines(moving)
 
-    D = np.zeros((len(offsets), len(offsets2)), dtype='f8')
+    D = np.zeros((len(offsets), len(offsets2)), dtype="f8")
 
-    _bundle_minimum_distance_matrix(points, points2,
-                                    len(offsets), len(offsets2),
-                                    pts, D)
+    _bundle_minimum_distance_matrix(
+        points, points2, len(offsets), len(offsets2), pts, D
+    )
 
-    dist1 = 0.25 * (np.sum(np.min(D, axis=0)) / float(D.shape[1]) +
-                    np.sum(np.min(D, axis=1)) / float(D.shape[0])) ** 2
+    dist1 = (
+        0.25
+        * (
+            np.sum(np.min(D, axis=0)) / float(D.shape[1])
+            + np.sum(np.min(D, axis=1)) / float(D.shape[0])
+        )
+        ** 2
+    )
 
-    dist2 = _bundle_minimum_distance(points, points2,
-                                     len(offsets), len(offsets2),
-                                     pts)
+    dist2 = _bundle_minimum_distance(points, points2, len(offsets), len(offsets2), pts)
 
     assert_almost_equal(dist1, dist2, 6)
 
 
 def test_from_to_rigid():
-
-    t = np.array([10, 2, 3, 0.1, 20., 30.])
+    t = np.array([10, 2, 3, 0.1, 20.0, 30.0])
     mat = compose_matrix44(t)
     vec = decompose_matrix44(mat, 6)
 
     assert_array_almost_equal(t, vec)
 
-    t = np.array([0, 0, 0, 180, 0., 0.])
+    t = np.array([0, 0, 0, 180, 0.0, 0.0])
 
     mat = np.eye(4)
     mat[0, 0] = -1
@@ -313,26 +316,24 @@ def test_from_to_rigid():
 
 
 def test_matrix44():
-
     assert_raises(ValueError, compose_matrix44, np.ones(5))
     assert_raises(ValueError, compose_matrix44, np.ones(13))
     assert_raises(ValueError, compose_matrix44, np.ones(16))
 
 
 def test_abstract_metric_class():
-
     class DummyStreamlineMetric(StreamlineDistanceMetric):
         def test(self):
             pass
+
     assert_raises(TypeError, DummyStreamlineMetric)
 
 
 def test_evolution_of_previous_iterations():
-
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[:20]
 
-    moving = [m + np.array([10., 0., 0.]) for m in moving]
+    moving = [m + np.array([10.0, 0.0, 0.0]) for m in moving]
 
     slr = StreamlineLinearRegistration(evolution=True)
 
@@ -342,7 +343,6 @@ def test_evolution_of_previous_iterations():
 
 
 def test_similarity_real_bundles():
-
     bundle_initial = fornix_streamlines()
     bundle_initial, shift = center_streamlines(bundle_initial)
     bundle = bundle_initial[:20]
@@ -351,13 +351,11 @@ def test_similarity_real_bundles():
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
     metric = BundleMinDistanceMatrixMetric()
-    x0 = np.array([0, 0, 0, 0, 0, 0, 1], 'f8')
+    x0 = np.array([0, 0, 0, 0, 0, 0, 1], "f8")
 
-    slr = StreamlineLinearRegistration(metric=metric,
-                                       x0=x0,
-                                       method='Powell',
-                                       bounds=None,
-                                       verbose=False)
+    slr = StreamlineLinearRegistration(
+        metric=metric, x0=x0, method="Powell", bounds=None, verbose=False
+    )
 
     slm = slr.optimize(bundle, bundle2)
     new_bundle2 = slm.transform(bundle2)
@@ -365,43 +363,51 @@ def test_similarity_real_bundles():
 
 
 def test_affine_real_bundles():
-
     bundle_initial = fornix_streamlines()
     bundle_initial, shift = center_streamlines(bundle_initial)
     bundle = bundle_initial[:20]
-    xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1., 0., 0.2, 0.]
+    xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1.0, 0.0, 0.2, 0.0]
     mat = compose_matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
-    x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+    x0 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 0, 0, 0])
 
     x = 25
 
-    bounds = [(-x, x), (-x, x), (-x, x),
-              (-x, x), (-x, x), (-x, x),
-              (0.1, 1.5), (0.1, 1.5), (0.1, 1.5),
-              (-1, 1), (-1, 1), (-1, 1)]
+    bounds = [
+        (-x, x),
+        (-x, x),
+        (-x, x),
+        (-x, x),
+        (-x, x),
+        (-x, x),
+        (0.1, 1.5),
+        (0.1, 1.5),
+        (0.1, 1.5),
+        (-1, 1),
+        (-1, 1),
+        (-1, 1),
+    ]
 
-    options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5, 'eps': 1e-8}
+    options = {"maxcor": 10, "ftol": 1e-7, "gtol": 1e-5, "eps": 1e-8}
 
     metric = BundleMinDistanceMatrixMetric()
 
-    slr = StreamlineLinearRegistration(metric=metric,
-                                       x0=x0,
-                                       method='L-BFGS-B',
-                                       bounds=bounds,
-                                       verbose=True,
-                                       options=options)
+    slr = StreamlineLinearRegistration(
+        metric=metric,
+        x0=x0,
+        method="L-BFGS-B",
+        bounds=bounds,
+        verbose=True,
+        options=options,
+    )
     slm = slr.optimize(bundle, bundle2)
 
     new_bundle2 = slm.transform(bundle2)
 
-    slr2 = StreamlineLinearRegistration(metric=metric,
-                                        x0=x0,
-                                        method='Powell',
-                                        bounds=None,
-                                        verbose=True,
-                                        options=None)
+    slr2 = StreamlineLinearRegistration(
+        metric=metric, x0=x0, method="Powell", bounds=None, verbose=True, options=None
+    )
 
     slm2 = slr2.optimize(bundle, new_bundle2)
 
@@ -411,7 +417,6 @@ def test_affine_real_bundles():
 
 
 def test_vectorize_streamlines():
-
     cingulum_bundles = two_cingulum_bundles()
 
     cb_subj1 = cingulum_bundles[0]
@@ -423,7 +428,7 @@ def test_vectorize_streamlines():
 
 @set_random_number_generator()
 def test_x0_input(rng):
-    for x0 in [6, 7, 12, "Rigid", 'rigid', "similarity", "Affine"]:
+    for x0 in [6, 7, 12, "Rigid", "rigid", "similarity", "Affine"]:
         StreamlineLinearRegistration(x0=x0)
 
     for x0 in [rng.random(6), rng.random(7), rng.random(12)]:
@@ -436,8 +441,8 @@ def test_x0_input(rng):
     assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
     x0_6 = np.zeros(6)
-    x0_7 = np.array([0, 0, 0, 0, 0, 0, 1.])
-    x0_12 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+    x0_7 = np.array([0, 0, 0, 0, 0, 0, 1.0])
+    x0_12 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 0, 0, 0])
 
     x0_s = [x0_6, x0_7, x0_12, x0_6, x0_7, x0_12]
 
@@ -448,7 +453,7 @@ def test_x0_input(rng):
 
 @set_random_number_generator()
 def test_compose_decompose_matrix44(rng):
-    for i in range(20):
+    for _ in range(20):
         x0 = rng.random(12)
         mat = compose_matrix44(x0[:6])
         assert_array_almost_equal(x0[:6], decompose_matrix44(mat, size=6))
@@ -461,29 +466,28 @@ def test_compose_decompose_matrix44(rng):
 
 
 def test_cascade_of_optimizations_and_threading():
-
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = cingulum_bundles[0]
     cb1 = set_number_of_points(cb1, 20)
 
-    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1.5, 1.5, 1.5, 0., 0.2, 0])
+    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1.5, 1.5, 1.5, 0.0, 0.2, 0])
 
-    cb2 = transform_streamlines(cingulum_bundles[0],
-                                compose_matrix44(test_x0))
+    cb2 = transform_streamlines(cingulum_bundles[0], compose_matrix44(test_x0))
     cb2 = set_number_of_points(cb2, 20)
 
-    print('first rigid')
+    print("first rigid")
     slr = StreamlineLinearRegistration(x0=6, num_threads=1)
     slm = slr.optimize(cb1, cb2)
 
-    print('then similarity')
+    print("then similarity")
     slr2 = StreamlineLinearRegistration(x0=7, num_threads=2)
     slm2 = slr2.optimize(cb1, cb2, slm.matrix)
 
-    print('then affine')
-    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50},
-                                        num_threads=None)
+    print("then affine")
+    slr3 = StreamlineLinearRegistration(
+        x0=12, options={"maxiter": 50}, num_threads=None
+    )
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
 
     assert_(slm2.fopt < slm.fopt)
@@ -500,7 +504,6 @@ def test_wrong_num_threads(rng):
 
 
 def test_get_unique_pairs():
-
     # Regular case
     pairs, exclude = get_unique_pairs(6)
     assert_equal(len(np.unique(pairs)), 6)
@@ -522,7 +525,6 @@ def test_get_unique_pairs():
 
 
 def test_groupwise_slr():
-
     bundles = read_five_af_bundles()
 
     # Test regular use case with convergence
@@ -534,5 +536,4 @@ def test_groupwise_slr():
     assert_equal(type(T), list)
 
     # Test regular use case without convergence (few iterations)
-    new_bundles, T, d = groupwise_slr(bundles, max_iter=3, tol=-10,
-                                      verbose=True)
+    new_bundles, T, d = groupwise_slr(bundles, max_iter=3, tol=-10, verbose=True)
