@@ -7,7 +7,6 @@ import numpy as np
 import scipy.optimize as opt
 from scipy.optimize import minimize
 
-from dipy.utils.deprecator import deprecate_with_version
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -202,11 +201,6 @@ class Optimizer:
             return None
 
 
-@deprecate_with_version(
-    "dipy.core.optimize.spdot is deprecated, " "Please use the @ operator instead",
-    since="1.9",
-    until="2.0",
-)
 def spdot(A, B):
     """The same as np.dot(A, B), except it works even if A or B or both
     are sparse matrices.
