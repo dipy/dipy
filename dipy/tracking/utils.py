@@ -1060,7 +1060,7 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
     Parameters
     ----------
     positions : array, (N, 3)
-        Voxel coordinates of the N positions.
+        Coordinates of the N positions.
     peaks : array (N, M, 3)
         Peaks at each position
     max_cross : int, optional

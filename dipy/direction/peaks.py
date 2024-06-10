@@ -665,6 +665,7 @@ def peaks_from_positions(
     positions,
     odfs,
     sphere,
+    affine,
     *,
     relative_peak_threshold=0.5,
     min_separation_angle=25,
@@ -677,13 +678,15 @@ def peaks_from_positions(
     Parameters
     ----------
     position : array, (N, 3)
-        Voxel coordinates of the N positions.
+        World coordinates of the N positions.
     odfs : array, (X, Y, Z, M)
-        Orientation distribution function (sphericla function) represented
+        Orientation distribution function (spherical function) represented
         on a sphere of M points.
     sphere : Sphere
         A discrete Sphere. The M points on the sphere correspond to the points
         of the odfs.
+    affine : array (4, 4)
+        The mapping between voxel indices and the point space for positions.
     relative_peak_threshold : float, optional
         Only peaks greater than ``min + relative_peak_threshold * scale`` are
         kept, where ``min = max(0, odf.min())`` and
@@ -703,12 +706,16 @@ def peaks_from_positions(
     peaks_arr : array (N, npeaks, 3)
     """
 
+    inv_affine = np.linalg.inv(affine)
+    vox_positions = np.dot(positions, inv_affine[:3, :3].T.copy())
+    vox_positions += inv_affine[:3, 3]
+
     peaks_arr = np.zeros((len(positions), npeaks, 3))
 
-    if positions.dtype not in [np.float64, float]:
-        positions = positions.astype(float)
+    if vox_positions.dtype not in [np.float64, float]:
+        vox_positions = vox_positions.astype(float)
 
-    for i, s in enumerate(positions):
+    for i, s in enumerate(vox_positions):
         odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(
             odf, sphere, relative_peak_threshold, min_separation_angle, is_symmetric
