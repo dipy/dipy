@@ -703,7 +703,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
 def dwi_multicompart_signals(
         gtab, tessellation, fiber_indices, S0,
-        D_water, D_a, D_e, D_r, f_in, fiber_fractions, f_water):
+        D_water, D_a, D_e, D_r, f_in, fiber_fractions,snr = None):
     r"""Simulate DWI signals based on the model parameters for each 
     gradient direction with multi-compartment model method.
 
@@ -731,6 +731,9 @@ def dwi_multicompart_signals(
         List of fractions of intracellular space for each fiber.
     fiber_fractions : list of float
         List of volume fractions for each fiber.
+    snr : float, optional
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
 
     Returns
     -------
@@ -742,7 +745,7 @@ def dwi_multicompart_signals(
     [1] Novikov, Dmitry S., et al. "Quantifying brain microstructure with diffusion MRI:
     Theory and parameter estimation." NMR in Biomedicine 32.4 (2019): e3998.
     """
-    if np.sum(fiber_fractions) + f_water > 1:
+    if np.sum(fiber_fractions) > 1:
         raise ValueError("Sum of fractions for components cannot exceed 1.")
 
     if len(fiber_indices) != len(D_a) or len(fiber_indices) != len(D_e) or \
@@ -753,12 +756,13 @@ def dwi_multicompart_signals(
     bvals = gtab.bvals
     bvecs = gtab.bvecs
     signals = np.zeros(len(bvecs))
-
+    f_water = 1 - np.sum(fiber_fractions)
     # Compute the diffusion signal for free water
     signals += f_water * np.exp(-bvals * D_water)
 
     # Use the number of specified indices
     num_fibers = len(fiber_indices)
+
     for i in range(num_fibers):
         fiber_direction = tessellation[fiber_indices[i]]
         dot_product_squared = (np.dot(bvecs, fiber_direction) ** 2)
@@ -766,11 +770,10 @@ def dwi_multicompart_signals(
         extra_signal = np.exp(-bvals *
                               (D_e[i] * dot_product_squared + D_r[i] *
                                (1 - dot_product_squared)))
-
         signals += fiber_fractions[i] * \
             (f_in[i] * intra_signal + (1 - f_in[i]) * extra_signal)
 
-    return S0 * signals
+    return add_noise(S0 * signals,snr, S0)
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
