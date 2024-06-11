@@ -11,7 +11,7 @@ To begin, let us import the relevant functions and load a data consisting of 10
 b0s and 150 non-b0s with a b-value of 2000s/mm2.
 """
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, get_sphere
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.csdeconv import (auto_response_ssst,
@@ -19,6 +19,7 @@ from dipy.reconst.csdeconv import (auto_response_ssst,
 from dipy.direction.bingham import sf_to_bingham, sh_to_bingham
 from dipy.viz import window, actor
 from dipy.viz.plotting import image_mosaic
+from dipy.core.sphere import unit_icosahedron
 
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -29,12 +30,11 @@ gtab = gradient_table(bvals, bvecs)
 
 ###############################################################################
 # To properly fit Bingham functions, we recommend the use of a larger number of
-# directions to sample the ODFs. For this, we load a `sphere` class instance
-# containing 724 directions sampling a 3D sphere. We further subdivide the
-# faces of this `sphere` representation into 2, to get 11554 directions.
+# directions to sample the ODFs. For this, we load a `sphere` object with 12
+# vertices sampling a 3D sphere (the icosahedron). We further subdivide the
+# faces of this `sphere` representation into 5, to get 10242 directions.
 
-sphere = get_sphere('repulsion724')
-sphere = sphere.subdivide(2)
+sphere = unit_icosahedron.subdivide(5)
 
 nd = sphere.vertices.shape[0]
 print('The number of directions on the sphere is {}'.format(nd))
