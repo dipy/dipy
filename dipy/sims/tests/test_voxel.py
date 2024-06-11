@@ -433,22 +433,22 @@ def test_multi_tensor_btens():
     assert_array_almost_equal(S, Ssingle)
 
 
-    def test_dwi_multicompart_signals():
-        bvals = np.array([0, 1000, 2000])
-        bvecs = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
-        gtab = gradient_table(bvals, bvecs)
-        tessellation = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        fiber_indices = [0, 1]
-        S0 = 100
-        D_water = 3e-3
-        D_a = [1.5e-3, 1.8e-3]
-        D_e = [0.2e-3, 0.2e-3]
-        D_r = [0.1e-3, 0.1e-3]
-        f_in = [0.6, 0.4]
-        fiber_fractions = [0.5, 0.5]
-        signals = dwi_multicompart_signals(
-            gtab, tessellation, fiber_indices, S0,
-            D_water, D_a, D_e, D_r, f_in, fiber_fractions
-        )
-        assert signals.shape == (3,)
-        assert np.all(signals >= 0)
+def test_dwi_multicompart_signals():
+    bvals = np.array([0, 1000, 2000])
+    bvecs = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    gtab = gradient_table(bvals, bvecs)
+    tessellation = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    fiber_indices = [0, 1]
+    S0 = 100
+    D_water = 3e-3
+    D_a = [1.5e-3, 1.8e-3]
+    D_e = [0.2e-3, 0.2e-3]
+    D_r = [0.1e-3, 0.1e-3]
+    f_in = [0.6, 0.4]
+    fiber_fractions = [0.5, 0.5]
+    signals = dwi_multicompart_signals(
+        gtab, tessellation, fiber_indices, S0,
+        D_water, D_a, D_e, D_r, f_in, fiber_fractions
+    )
+    assert signals.shape == (3,)
+    assert np.all(signals >= 0)

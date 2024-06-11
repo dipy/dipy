@@ -703,8 +703,8 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
 def dwi_multicompart_signals(
         gtab, tessellation, fiber_indices, S0,
-        D_water, D_a, D_e, D_r, f_in, fiber_fractions,snr = None):
-    r"""Simulate DWI signals based on the model parameters for each 
+        D_water, D_a, D_e, D_r, f_in, fiber_fractions, snr=None):
+    r"""Simulate DWI signals based on the model parameters for each
     gradient direction with multi-compartment model method.
 
     Parameters
@@ -773,7 +773,7 @@ def dwi_multicompart_signals(
         signals += fiber_fractions[i] * \
             (f_in[i] * intra_signal + (1 - f_in[i]) * extra_signal)
 
-    return add_noise(S0 * signals,snr, S0)
+    return add_noise(S0 * signals, snr, S0)
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
