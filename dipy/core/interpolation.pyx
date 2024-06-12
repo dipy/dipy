@@ -8,6 +8,8 @@ import warnings
 
 from libc.math cimport floor
 
+from scipy.interpolate import Rbf, RBFInterpolator
+
 from dipy.align.fused_types cimport floating, number
 from dipy.utils.deprecator import deprecate_with_version
 
@@ -58,8 +60,6 @@ def interp_rbf(data, sphere_origin, sphere_target,
     scipy.interpolate.Rbf
 
     """
-    from scipy.interpolate import Rbf
-
     def angle(x1, x2):
         xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
         return np.nan_to_num(xx)
@@ -130,8 +130,6 @@ def rbf_interpolation(data, sphere_origin, sphere_target, *,
     scipy.interpolate.RBFInterpolator
 
     """
-    from scipy.interpolate import RBFInterpolator
-
     last_dim_idx = data.ndim - 1
     if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
         raise ValueError("The last dimension of `data` must be equal to the number of "
