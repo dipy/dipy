@@ -129,7 +129,7 @@ def test_fss_single_point_slines():
     res = fss.radius_search(slines, radius=4.0)
     # 2x2 matrix with 4 element
     assert_true(res.nnz == 4)
-    mat = res.A
+    mat = res.toarray()
     dist = mean_euclidean_distance(slines[0], slines[1])
     assert_almost_equal(mat[0, 0], 0.0)
     assert_almost_equal(mat[1, 1], 0.0)
