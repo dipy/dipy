@@ -13,6 +13,7 @@ from dipy.align import (
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 
 class SimilarityMetric:
@@ -200,7 +201,8 @@ class SimilarityMetric:
 
 
 class CCMetric(SimilarityMetric):
-    def __init__(self, dim, sigma_diff=2.0, radius=4):
+    @warning_for_keywords()
+    def __init__(self, dim, *, sigma_diff=2.0, radius=4):
         r"""Normalized Cross-Correlation Similarity metric.
 
         Parameters
@@ -346,9 +348,11 @@ class CCMetric(SimilarityMetric):
 
 
 class EMMetric(SimilarityMetric):
+    @warning_for_keywords()
     def __init__(
         self,
         dim,
+        *,
         smooth=1.0,
         inner_iter=5,
         q_levels=256,
@@ -528,7 +532,8 @@ class EMMetric(SimilarityMetric):
         """
         return self.compute_step(False)
 
-    def compute_gauss_newton_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_gauss_newton_step(self, *, forward_step=True):
         r"""Computes the Gauss-Newton energy minimization step
 
         Computes the Newton step to minimize this energy, i.e., minimizes the
@@ -595,7 +600,8 @@ class EMMetric(SimilarityMetric):
             )
         return displacement
 
-    def compute_demons_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_demons_step(self, *, forward_step=True):
         r"""Demons step for EM metric
 
         Parameters
@@ -700,7 +706,8 @@ class EMMetric(SimilarityMetric):
 
 
 class SSDMetric(SimilarityMetric):
-    def __init__(self, dim, smooth=4, inner_iter=10, step_type="demons"):
+    @warning_for_keywords()
+    def __init__(self, dim, *, smooth=4, inner_iter=10, step_type="demons"):
         r"""Sum of Squared Differences (SSD) Metric
 
         Similarity metric for (mono-modal) nonlinear image registration defined
@@ -798,7 +805,8 @@ class SSDMetric(SimilarityMetric):
         """
         return self.compute_step(False)
 
-    def compute_gauss_newton_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_gauss_newton_step(self, *, forward_step=True):
         r"""Computes the Gauss-Newton energy minimization step
 
         Minimizes the linearized energy function (Newton step) defined by the
@@ -854,7 +862,8 @@ class SSDMetric(SimilarityMetric):
             )
         return displacement
 
-    def compute_demons_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_demons_step(self, *, forward_step=True):
         r"""Demons step for SSD metric
 
         Computes the demons step proposed by Vercauteren et al.[Vercauteren09]
@@ -915,6 +924,7 @@ class SSDMetric(SimilarityMetric):
         pass
 
 
+@warning_for_keywords()
 def v_cycle_2d(
     n,
     k,
@@ -924,6 +934,7 @@ def v_cycle_2d(
     target,
     lambda_param,
     displacement,
+    *,
     depth=0,
 ):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles
@@ -1040,6 +1051,7 @@ def v_cycle_2d(
     return energy
 
 
+@warning_for_keywords()
 def v_cycle_3d(
     n,
     k,
@@ -1049,6 +1061,7 @@ def v_cycle_3d(
     target,
     lambda_param,
     displacement,
+    *,
     depth=0,
 ):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles

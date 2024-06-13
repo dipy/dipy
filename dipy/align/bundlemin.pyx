@@ -13,6 +13,7 @@ from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
@@ -69,12 +70,14 @@ cdef double min_direct_flip_dist(double *a,double *b,
     return distf
 
 
+@warning_for_keywords()
 def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     double [:, ::1] moving,
                                     cnp.npy_intp static_size,
                                     cnp.npy_intp moving_size,
                                     cnp.npy_intp rows,
                                     double [:, ::1] D,
+                                    *,
                                     num_threads=None):
     """ MDF-based pairwise distance optimization function
 
@@ -129,11 +132,13 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     return np.asarray(D)
 
 
+@warning_for_keywords()
 def _bundle_minimum_distance(double [:, ::1] static,
                              double [:, ::1] moving,
                              cnp.npy_intp static_size,
                              cnp.npy_intp moving_size,
                              cnp.npy_intp rows,
+                             *,
                              num_threads=None):
     """ MDF-based pairwise distance optimization function
 
