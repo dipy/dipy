@@ -20,6 +20,7 @@ cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
 from libc.stdlib cimport malloc, free
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter
 from dipy.utils.fast_numpy cimport (copy_point, cross, normalize, random,
@@ -62,7 +63,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double[3]    inv_voxel_size
 
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
+    @warning_for_keywords()
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=None,
                  double probe_length=0.5, double probe_radius=0,
                  int probe_quality=3, int probe_count=1,
                  double data_support_exponent=1, **kwargs):
