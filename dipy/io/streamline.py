@@ -13,9 +13,11 @@ from dipy.io.dpy import Dpy
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.utils import create_tractogram_header, is_header_compatible
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
+from dipy.testing.decorators import warning_for_keywords
 
 
-def save_tractogram(sft, filename, bbox_valid_check=True):
+@warning_for_keywords()
+def save_tractogram(sft, filename, *, bbox_valid_check=True):
     """Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
@@ -91,9 +93,11 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     return True
 
 
+@warning_for_keywords()
 def load_tractogram(
     filename,
     reference,
+    *,
     to_space=Space.RASMM,
     to_origin=Origin.NIFTI,
     bbox_valid_check=True,
@@ -218,9 +222,11 @@ def load_generator(ttype):
         Function (load_tractogram) that handle only one file format
     """
 
+    @warning_for_keywords()
     def f_gen(
         filename,
         reference,
+        *,
         to_space=Space.RASMM,
         to_origin=Origin.NIFTI,
         bbox_valid_check=True,
