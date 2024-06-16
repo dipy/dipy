@@ -2135,7 +2135,11 @@ def generalized_crossvalidation_array(data, M, LR, *, weights_array=None):
 
 @warning_for_keywords()
 def generalized_crossvalidation(data, M, LR, *, gcv_startpoint=5e-2):
+<<<<<<< HEAD
     """Generalized Cross Validation Function.
+=======
+    """Generalized Cross Validation Function [1]_ eq. (15).
+>>>>>>> 981987f2b (NF: Decorator Implementation)
 
     Finds optimal regularization weight based on generalized cross-validation.
 

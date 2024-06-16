@@ -1574,7 +1574,8 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+    @warning_for_keywords()
+    def err_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1670,9 +1671,15 @@ class _NllsHelper:
                 self.sqrt_w = np.sqrt(w)[:, None]
             return ans
 
+<<<<<<< HEAD
     def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         """The Jacobian is the first derivative of the error function
         :footcite:p:`Koay2006c`.
+=======
+    @warning_for_keywords()
+    def jacobian_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
+        """The Jacobian is the first derivative of the error function [1]_.
+>>>>>>> 981987f2b (NF: Decorator Implementation)
 
         Parameters
         ----------

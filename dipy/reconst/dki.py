@@ -466,7 +466,8 @@ def directional_diffusion(dt, V, *, min_diffusivity=0):
     return adc
 
 
-def directional_diffusion_variance(kt, V):
+@warning_for_keywords()
+def directional_diffusion_variance(kt, V, *, min_kurtosis=-3 / 7):
     r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
@@ -2336,6 +2337,7 @@ class DiffusionKurtosisFit(TensorFit):
             self.model_params, min_kurtosis=min_kurtosis, max_kurtosis=max_kurtosis
         )
 
+    @warning_for_keywords()
     def rtk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
         r"""Compute the rescaled radial tensor kurtosis (RTK).
 
