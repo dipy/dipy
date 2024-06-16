@@ -1,5 +1,7 @@
 """A simple graph class"""
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 class Graph:
     """A simple graph class"""
@@ -35,12 +37,14 @@ class Graph:
         self.pred = {}
         self.succ = {}
 
-    def add_node(self, n, attr=None):
+    @warning_for_keywords()
+    def add_node(self, n, *, attr=None):
         self.succ[n] = {}
         self.pred[n] = {}
         self.node[n] = attr
 
-    def add_edge(self, n, m, ws=True, wp=True):
+    @warning_for_keywords()
+    def add_edge(self, n, m, *, ws=True, wp=True):
         self.succ[n][m] = ws
         self.pred[m][n] = wp
 
@@ -62,7 +66,8 @@ class Graph:
     def down_short(self, n):
         return self.shortest_path(self.succ, n)
 
-    def all_paths(self, graph, start, end=None, path=None):
+    @warning_for_keywords()
+    def all_paths(self, graph, start, *, end=None, path=None):
         path = path or []
         path = path + [start]
         if start == end or graph[start] == {}:
@@ -77,7 +82,8 @@ class Graph:
                     paths.append(newpath)
         return paths
 
-    def shortest_path(self, graph, start, end=None, path=None):
+    @warning_for_keywords()
+    def shortest_path(self, graph, start, *, end=None, path=None):
         path = path or []
         path = path + [start]
         if graph[start] == {} or start == end:
