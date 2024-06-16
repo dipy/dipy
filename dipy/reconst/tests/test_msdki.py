@@ -129,7 +129,7 @@ def test_msdki_predict():
 
     # SO volume
     dkiF = dkiM.fit(DWI)
-    pred_multi = dkiF.predict(gtab_3s, 100 * np.ones(DWI.shape[:-1]))
+    pred_multi = dkiF.predict(gtab_3s, S0=100 * np.ones(DWI.shape[:-1]))
     assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
 
@@ -285,7 +285,7 @@ def test_smt2_metrics():
 
     # Check if awf_from_msk when mask is given
     mask = MKgt_multi > 0
-    AWF = awf_from_msk(MKgt_multi, mask)
+    AWF = awf_from_msk(MKgt_multi, mask=mask)
     assert_array_almost_equal(AWF, AWFgt)
 
 

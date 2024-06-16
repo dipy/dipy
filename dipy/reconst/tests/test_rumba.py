@@ -67,8 +67,8 @@ def test_rumba():
         model_fit = model.fit(data)
 
         # Verify only works on original sphere
-        assert_raises(ValueError, model_fit.odf, sphere2)
-        odf = model_fit.odf(sphere)
+        assert_raises(ValueError, model_fit.odf, sphere=sphere2)
+        odf = model_fit.odf(sphere=sphere)
 
         directions, _, _ = peak_directions(
             odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
@@ -82,7 +82,7 @@ def test_rumba():
         for sbd in sb_dummies:
             data, golden_directions = sb_dummies[sbd]
             model_fit = model.fit(data)
-            odf = model_fit.odf(sphere)
+            odf = model_fit.odf(sphere=sphere)
             directions, _, _ = peak_directions(
                 odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
             )
@@ -132,7 +132,7 @@ def test_recursive_rumba():
         480,
         np.array([570.35065982, -262.81741086, 80.23104069, -16.93940972, 2.57628738]),
     )
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSDModel(gtab, wm_response=wm_response, n_iter=20, sphere=sphere)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -142,7 +142,7 @@ def test_recursive_rumba():
         model_fit = model.fit(data)
 
     # Test peaks
-    odf = model_fit.odf(sphere)
+    odf = model_fit.odf(sphere=sphere)
     directions, _, _ = peak_directions(
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
@@ -165,11 +165,11 @@ def test_multishell_rumba():
 
     ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
     wm_response = np.tile(np.array([1.7e-3, 0.2e-3, 0.2e-3]), (ms_eigenval_count, 1))
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSDModel(gtab, wm_response=wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
     # Test peaks
-    odf = model_fit.odf(sphere)
+    odf = model_fit.odf(sphere=sphere)
     directions, _, _ = peak_directions(
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
@@ -196,7 +196,7 @@ def test_mvoxel_rumba():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             model_fit = model.fit(data)
 
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
         f_gm = model_fit.f_gm
@@ -292,7 +292,7 @@ def test_global_fit():
         else:
             model_fit = model.fit(data)
 
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
 
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
@@ -307,7 +307,7 @@ def test_global_fit():
         data = data[None, None, None, :]  # make 4D
 
         rumba_fit = rumba.fit(data)
-        odf = rumba_fit.odf(sphere)
+        odf = rumba_fit.odf(sphere=sphere)
         f_iso = rumba_fit.f_iso
 
         directions, _, _ = peak_directions(
@@ -370,7 +370,7 @@ def test_mvoxel_global_fit():
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             model_fit = model.fit(data)
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
         f_gm = model_fit.f_gm

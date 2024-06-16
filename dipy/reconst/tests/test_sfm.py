@@ -24,7 +24,7 @@ def test_design_matrix():
     data, gtab = dpd.dsi_voxels()
     sphere = dpd.get_sphere()
     # Make it with NNLS, so that it gets tested regardless of sklearn
-    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere, solver="NNLS")
+    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere=sphere, solver="NNLS")
     npt.assert_equal(
         sparse_fascicle_model.design_matrix.shape,
         (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]),
@@ -42,13 +42,13 @@ def test_sfm():
             sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_procs)
             sphere = dpd.get_sphere()
             odf1 = sffit1.odf(sphere)
-            pred1 = sffit1.predict(gtab)
+            pred1 = sffit1.predict(gtab=gtab)
             mask = np.ones(data.shape[:-1])
-            sffit2 = sfmodel.fit(data, mask, num_processes=n_procs)
-            pred2 = sffit2.predict(gtab)
+            sffit2 = sfmodel.fit(data, mask=mask, num_processes=n_procs)
+            pred2 = sffit2.predict(gtab=gtab)
             odf2 = sffit2.odf(sphere)
             sffit3 = sfmodel.fit(data, num_processes=n_procs)
-            pred3 = sffit3.predict(gtab)
+            pred3 = sffit3.predict(gtab=gtab)
             odf3 = sffit3.odf(sphere)
             npt.assert_almost_equal(pred3, pred2, decimal=2)
             npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
@@ -81,14 +81,14 @@ def test_predict():
 
     # Should be possible to predict using a different gtab:
     new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
     npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
 
     # Should be possible to predict for a single direction:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
         new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
 
     # Fitting and predicting with a volume of data:
     fdata, fbval, fbvec = dpd.get_fnames(name="small_25")
@@ -100,7 +100,7 @@ def test_predict():
 
     # Should be possible to predict using a different gtab:
     new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
     npt.assert_equal(
         new_pred.shape,
         data.shape[:-1] + bvals[::2].shape,
@@ -110,7 +110,7 @@ def test_predict():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
         new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
 
     # Fitting and predicting with masked data:
@@ -122,7 +122,7 @@ def test_predict():
 
     # Should be possible to predict using a different gtab:
     new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
     npt.assert_equal(
         new_pred.shape,
         data.shape[:-1] + bvals[::2].shape,
@@ -133,7 +133,7 @@ def test_predict():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
         new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
-    new_pred = sffit.predict(new_gtab)
+    new_pred = sffit.predict(gtab=new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
     npt.assert_equal(new_pred[0, 0, 0], 0)
 
@@ -157,7 +157,7 @@ def test_sfm_stick():
     sffit1 = sfmodel.fit(data[0, 0, 0])
     sphere = dpd.get_sphere()
     sffit1.odf(sphere)
-    sffit1.predict(gtab)
+    sffit1.predict(gtab=gtab)
 
     SNR = 1000
     S0 = 100
@@ -206,14 +206,14 @@ def test_exponential_iso():
         sffit1 = sfmodel.fit(data[0, 0, 0])
         sphere = dpd.get_sphere()
         odf = sffit1.odf(sphere)
-        pred = sffit1.predict(gtab)
+        pred = sffit1.predict(gtab=gtab)
         npt.assert_equal(pred.shape, data[0, 0, 0].shape)
         npt.assert_equal(odf.shape, data[0, 0, 0].shape[:-1] + (sphere.x.shape[0],))
 
         sffit2 = sfmodel.fit(data)
         sphere = dpd.get_sphere()
         odf = sffit2.odf(sphere)
-        pred = sffit2.predict(gtab)
+        pred = sffit2.predict(gtab=gtab)
         npt.assert_equal(pred.shape, data.shape)
         npt.assert_equal(odf.shape, data.shape[:-1] + (sphere.x.shape[0],))
 
@@ -222,7 +222,7 @@ def test_exponential_iso():
         sffit3 = sfmodel.fit(data, mask=mask)
         sphere = dpd.get_sphere()
         odf = sffit3.odf(sphere)
-        pred = sffit3.predict(gtab)
+        pred = sffit3.predict(gtab=gtab)
         npt.assert_equal(pred.shape, data.shape)
         npt.assert_equal(odf.shape, data.shape[:-1] + (sphere.x.shape[0],))
 

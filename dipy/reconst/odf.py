@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.testing.decorators import warning_for_keywords
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
@@ -69,7 +70,8 @@ def gfa(samples):
     return result.squeeze()
 
 
-def minmax_normalize(samples, out=None):
+@warning_for_keywords()
+def minmax_normalize(samples, *, out=None):
     """Min-max normalization of a function evaluated on the unit sphere
 
     Normalizes samples to ``(samples - min(samples)) / (max(samples) -

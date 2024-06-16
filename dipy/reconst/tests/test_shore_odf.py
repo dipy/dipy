@@ -43,7 +43,9 @@ def test_shore_odf():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None, legacy=True)
+        odf_from_sh = sh_to_sf(
+            odf_sh, sphere, sh_order_max=6, basis_type=None, legacy=True
+        )
     npt.assert_almost_equal(odf, odf_from_sh, 10)
 
     with warnings.catch_warnings():

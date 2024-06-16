@@ -132,12 +132,12 @@ def test_single_fiber_model():
 
     # Axonal Water Fraction
     AWF = dki_micro.axonal_water_fraction(
-        dkiF.model_params, default_sphere, mask=None, gtol=1e-5
+        dkiF.model_params, sphere=default_sphere, mask=None, gtol=1e-5
     )
     assert_almost_equal(AWF, fie)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, default_sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=default_sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 
@@ -207,12 +207,12 @@ def test_wmti_model_multi_voxel():
     # Axonal Water Fraction
     sphere = get_sphere()
     AWF = dki_micro.axonal_water_fraction(
-        dkiF.model_params, sphere, mask=None, gtol=1e-5
+        dkiF.model_params, sphere=sphere, mask=None, gtol=1e-5
     )
     assert_almost_equal(AWF, FIE)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 
@@ -244,11 +244,11 @@ def test_wmti_model_multi_voxel():
     mask[0, 0, 0] = 0
 
     dkiF = dkiM.fit(DWIsimc)
-    awf = dki_micro.axonal_water_fraction(dkiF.model_params, sphere, gtol=1e-5)
+    awf = dki_micro.axonal_water_fraction(dkiF.model_params, sphere=sphere, gtol=1e-5)
     assert_almost_equal(awf, FIEc)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere, awf=awf)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=sphere, awf=awf)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
     assert_array_almost_equal(EDT[..., 0], ADEc, decimal=3)
@@ -261,13 +261,13 @@ def test_wmti_model_multi_voxel():
     # Check when mask is given
     dkiF = dkiM.fit(DWIsim)
     awf = dki_micro.axonal_water_fraction(
-        dkiF.model_params, sphere, gtol=1e-5, mask=mask
+        dkiF.model_params, sphere=sphere, gtol=1e-5, mask=mask
     )
     assert_almost_equal(awf, FIEc, decimal=3)
 
     # Extra-cellular and intra-cellular components
     edt, idt = dki_micro.diffusion_components(
-        dkiF.model_params, sphere, awf=awf, mask=mask
+        dkiF.model_params, sphere=sphere, awf=awf, mask=mask
     )
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)

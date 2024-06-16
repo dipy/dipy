@@ -18,6 +18,7 @@ from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
 from dipy.data import load_sdp_constraints
 import dipy.reconst.dti as dti
 from dipy.reconst.shm import real_sh_descoteaux_from_index, sph_harm_ind_list
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -52,9 +53,11 @@ class MapmriModel(ReconstModel, Cache):
 
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         radial_order=6,
         laplacian_regularization=True,
         laplacian_weighting=0.2,
@@ -342,7 +345,7 @@ class MapmriModel(ReconstModel, Cache):
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
-                return MapmriFit(self, coef, self.mu, R, lopt, errorcode)
+                return MapmriFit(self, coef, self.mu, R, lopt, errorcode=errorcode)
             except AttributeError:
                 try:
                     M = self.M
@@ -377,7 +380,7 @@ class MapmriModel(ReconstModel, Cache):
                 lopt = self.laplacian_weighting
             else:
                 lopt = generalized_crossvalidation_array(
-                    data, M, laplacian_matrix, self.laplacian_weighting
+                    data, M, laplacian_matrix, weights_array=self.laplacian_weighting
                 )
 
         else:
@@ -436,7 +439,7 @@ class MapmriModel(ReconstModel, Cache):
                     except np.linalg.linalg.LinAlgError:
                         errorcode = 3
                         coef = np.zeros(M.shape[1])
-                        return MapmriFit(self, coef, mu, R, lopt, errorcode)
+                        return MapmriFit(self, coef, mu, R, lopt, errorcode=errorcode)
         else:
             try:
                 pseudoInv = np.dot(
@@ -446,15 +449,16 @@ class MapmriModel(ReconstModel, Cache):
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
                 coef = np.zeros(M.shape[1])
-                return MapmriFit(self, coef, mu, R, lopt, errorcode)
+                return MapmriFit(self, coef, mu, R, lopt, errorcode=errorcode)
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, lopt, errorcode)
+        return MapmriFit(self, coef, mu, R, lopt, errorcode=errorcode)
 
 
 class MapmriFit(ReconstFit):
-    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0):
+    @warning_for_keywords()
+    def __init__(self, model, mapmri_coef, mu, R, lopt, *, errorcode=0):
         """Calculates diffusion properties for a single voxel
 
         Parameters
@@ -501,7 +505,8 @@ class MapmriFit(ReconstFit):
         """The MAPMRI coefficients"""
         return self._mapmri_coef
 
-    def odf(self, sphere, s=2):
+    @warning_for_keywords()
+    def odf(self, sphere, *, s=2):
         """Calculates the analytical Orientation Distribution Function (ODF)
         from the signal.
 
@@ -536,7 +541,8 @@ class MapmriFit(ReconstFit):
 
         return odf
 
-    def odf_sh(self, s=2):
+    @warning_for_keywords()
+    def odf_sh(self, *, s=2):
         """Calculates the real analytical odf for a given discrete sphere.
 
         Computes the design matrix of the ODF for the given sphere vertices
@@ -933,7 +939,8 @@ class MapmriFit(ReconstFit):
         )
         return norm_of_laplacian
 
-    def fitted_signal(self, gtab=None):
+    @warning_for_keywords()
+    def fitted_signal(self, *, gtab=None):
         """Recovers the fitted signal for the given gradient table. If no
         gradient table is given it recovers the signal for the gtab of the model
         object.
@@ -944,7 +951,8 @@ class MapmriFit(ReconstFit):
             E = self.predict(gtab, S0=1.0)
         return E
 
-    def predict(self, qvals_or_gtab, S0=100.0):
+    @warning_for_keywords()
+    def predict(self, qvals_or_gtab, *, S0=100.0):
         """Recovers the reconstructed signal for any qvalue array or gradient
         table.
         """
@@ -2078,7 +2086,8 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     return LR
 
 
-def generalized_crossvalidation_array(data, M, LR, weights_array=None):
+@warning_for_keywords()
+def generalized_crossvalidation_array(data, M, LR, *, weights_array=None):
     """Generalized Cross Validation Function.
 
     See :footcite:p:`Fick2016b` eq. (15).
@@ -2124,7 +2133,8 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     return lopt
 
 
-def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
+@warning_for_keywords()
+def generalized_crossvalidation(data, M, LR, *, gcv_startpoint=5e-2):
     """Generalized Cross Validation Function.
 
     Finds optimal regularization weight based on generalized cross-validation.

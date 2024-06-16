@@ -61,7 +61,7 @@ def test_mvoxel_gqi():
     data, gtab = dsi_voxels()
     sphere = get_sphere(name="symmetric724")
 
-    gq = GeneralizedQSamplingModel(gtab, "standard")
+    gq = GeneralizedQSamplingModel(gtab, method="standard")
     gqfit = gq.fit(data)
     all_odfs = gqfit.odf(sphere)
 

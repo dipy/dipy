@@ -26,6 +26,7 @@ from dipy.reconst.shm import (
 )
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 
@@ -36,9 +37,11 @@ from dipy.utils.deprecator import deprecate_with_version, deprecated_params
     since="1.2",
     until="1.4",
 )
+@warning_for_keywords()
 def auto_response(
     gtab,
     data,
+    *,
     roi_center=None,
     roi_radius=10,
     fa_thr=0.7,
@@ -161,7 +164,8 @@ class AxSymShResponse:
 
     """
 
-    def __init__(self, S0, dwi_response, bvalue=None):
+    @warning_for_keywords()
+    def __init__(self, S0, dwi_response, *, bvalue=None):
         self.S0 = S0
         self.dwi_response = dwi_response
         self.bvalue = bvalue
@@ -183,10 +187,12 @@ class AxSymShResponse:
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
         response,
+        *,
         reg_sphere=None,
         sh_order_max=8,
         lambda_=1,
@@ -310,13 +316,14 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             dwi_data,
             self._X,
             self.B_reg,
-            self.tau,
+            tau=self.tau,
             convergence=self.convergence,
             P=self._P,
         )
         return SphHarmFit(self, shm_coeff, None)
 
-    def predict(self, sh_coeff, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, sh_coeff, *, gtab=None, S0=1.0):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -362,8 +369,9 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 class ConstrainedSDTModel(SphHarmModel):
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, ratio, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
+        self, gtab, ratio, *, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
     ):
         r"""Spherical Deconvolution Transform (SDT)
         :footcite:p:`Descoteaux2009`.
@@ -457,7 +465,7 @@ class ConstrainedSDTModel(SphHarmModel):
             # normalize ODF
             odf_sh /= Z
             shm_coeff, num_it = odf_deconv(
-                odf_sh, self.R, self.B_reg, self.lambda_, self.tau
+                odf_sh, self.R, self.B_reg, lambda_=self.lambda_, tau=self.tau
             )
             # print 'SDT CSD converged after %d iterations' % num_it
 
@@ -487,7 +495,8 @@ def estimate_response(gtab, evals, S0):
 
 
 @deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
-def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
+@warning_for_keywords()
+def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
     r"""Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
@@ -569,7 +578,8 @@ def _solve_cholesky(Q, z):
     return f
 
 
-def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
+@warning_for_keywords()
+def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
     r"""Constrained-regularized spherical deconvolution (CSD).
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -737,7 +747,8 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     return fodf_sh, _num_it
 
 
-def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
+@warning_for_keywords()
+def odf_deconv(odf_sh, R, B_reg, *, lambda_=1.0, tau=0.1, r2_term=False):
     r"""ODF constrained-regularized spherical deconvolution using
     the Sharpening Deconvolution Transform (SDT).
 
@@ -840,9 +851,11 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def odf_sh_to_sharp(
     odfs_sh,
     sphere,
+    *,
     basis=None,
     ratio=3 / 15.0,
     sh_order_max=8,
@@ -925,7 +938,8 @@ def odf_sh_to_sharp(
     return fodf_sh
 
 
-def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+@warning_for_keywords()
+def mask_for_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=0.7):
     """Computation of mask for single-shell single-tissue (ssst) response
         function using FA.
 
@@ -1055,7 +1069,8 @@ def response_from_mask_ssst(gtab, data, mask):
     return _get_response(S0s, lambdas)
 
 
-def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+@warning_for_keywords()
+def auto_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=0.7):
     """Automatic estimation of single-shell single-tissue (ssst) response
         function using FA.
 
@@ -1093,7 +1108,9 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     `ratio` (more details are available in the description of the function).
     """
 
-    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
+    mask = mask_for_response_ssst(
+        gtab, data, roi_center=roi_center, roi_radii=roi_radii, fa_thr=fa_thr
+    )
     response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio
@@ -1114,9 +1131,11 @@ def _get_response(S0s, lambdas):
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def recursive_response(
     gtab,
     data,
+    *,
     mask=None,
     sh_order_max=8,
     peak_thr=0.01,

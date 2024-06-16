@@ -540,7 +540,11 @@ def peaks_from_model(
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order_max, sh_basis_type, return_inv=True, legacy=legacy
+            sphere,
+            sh_order_max=sh_order_max,
+            basis_type=sh_basis_type,
+            return_inv=True,
+            legacy=legacy,
         )
 
     num_processes = determine_num_processes(num_processes)
@@ -597,7 +601,7 @@ def peaks_from_model(
         if not mask[idx]:
             continue
 
-        odf = model.fit(data[idx]).odf(sphere)
+        odf = model.fit(data[idx]).odf(sphere=sphere)
 
         if return_sh:
             shm_coeff[idx] = np.dot(odf, invB)
