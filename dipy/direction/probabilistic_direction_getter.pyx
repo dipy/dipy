@@ -12,6 +12,7 @@ from random import random
 import numpy as np
 cimport numpy as cnp
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                      where_to_insert)
@@ -28,7 +29,8 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     set to 0 and the result is normalized.
     """
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @warning_for_keywords()
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -129,7 +131,8 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @warning_for_keywords()
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold, **kwargs)
 
