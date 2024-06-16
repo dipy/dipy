@@ -70,6 +70,7 @@ from dipy.data.fetcher import (
     read_tissue_data,
 )
 from dipy.io.image import load_nifti
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import relist_streamlines
 from dipy.utils.arrfuncs import as_native_array
 
@@ -153,7 +154,8 @@ class DataError(Exception):
     pass
 
 
-def get_sim_voxels(name="fib1"):
+@warning_for_keywords()
+def get_sim_voxels(*, name="fib1"):
     """provide some simulated voxel data
 
     Parameters
@@ -200,7 +202,8 @@ def get_sim_voxels(name="fib1"):
     return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_skeleton(name="C1"):
+@warning_for_keywords()
+def get_skeleton(*, name="C1"):
     """Provide skeletons generated from Local Skeleton Clustering (LSC).
 
     Parameters
@@ -229,7 +232,8 @@ def get_skeleton(name="C1"):
     return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_sphere(name="symmetric362"):
+@warning_for_keywords()
+def get_sphere(*, name="symmetric362"):
     """provide triangulated spheres
 
     Parameters
@@ -398,7 +402,8 @@ def matlab_life_results():
     return matlab_rmse, matlab_weights
 
 
-def load_sdp_constraints(model_name, order=None):
+@warning_for_keywords()
+def load_sdp_constraints(model_name, *, order=None):
     """Import semidefinite programming constraint matrices for different models,
     generated as described for example in [1]_.
 
