@@ -99,12 +99,10 @@ cdef class SimplePmfGen(PmfGen):
 
 cdef class SHCoeffPmfGen(PmfGen):
 
-    @warning_for_keywords()
     def __init__(self,
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type,
-                 *,
                  legacy=True):
         cdef:
             int sh_order

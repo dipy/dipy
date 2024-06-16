@@ -74,8 +74,8 @@ cdef class BootDirectionGetter(DirectionGetter):
 
     @classmethod
     @warning_for_keywords()
-    def from_data(cls, data, model, max_angle, sphere=default_sphere,
-                  *, sh_order=0, max_attempts=5, b_tol=20, **kwargs):
+    def from_data(cls, data, model, max_angle, *, sphere=default_sphere,
+                  sh_order=0, max_attempts=5, b_tol=20, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
         Parameters

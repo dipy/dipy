@@ -29,8 +29,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     set to 0 and the result is normalized.
     """
 
-    @warning_for_keywords()
-    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1 , **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -131,8 +130,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
-    @warning_for_keywords()
-    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold, **kwargs)
 
