@@ -15,6 +15,7 @@ from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
@@ -41,7 +42,8 @@ class HistoResDNN:
 
     @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
     @doctest_skip_parser
-    def __init__(self, sh_order_max=8, basis_type="tournier07", verbose=False):
+    @warning_for_keywords()
+    def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in [1, 2].
@@ -169,7 +171,8 @@ class HistoResDNN:
 
         return self.model.predict(x_test)
 
-    def predict(self, data, gtab, mask=None, chunk_size=1000):
+    @warning_for_keywords()
+    def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.

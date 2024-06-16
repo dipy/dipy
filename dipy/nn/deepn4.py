@@ -12,6 +12,7 @@ from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 tf, have_tf, _ = optional_package("tensorflow")
 if have_tf:
@@ -138,7 +139,8 @@ class DeepN4:
     """
 
     @doctest_skip_parser
-    def __init__(self, verbose=False):
+    @warning_for_keywords()
+    def __init__(self, *, verbose=False):
         r"""
 
         To obtain the pre-trained model, use fetch_default_weights() like:
