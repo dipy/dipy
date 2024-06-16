@@ -2,8 +2,11 @@ from warnings import warn
 
 import nibabel as nib
 
+from dipy.testing.decorators import warning_for_keywords
 
-def load_pial(fname, return_meta=False):
+
+@warning_for_keywords()
+def load_pial(fname, *, return_meta=False):
     """Load pial file.
 
     Parameters
