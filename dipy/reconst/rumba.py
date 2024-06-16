@@ -15,6 +15,7 @@ from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
 from dipy.sims.voxel import all_tensor_evecs, single_tensor
+from dipy.testing.decorators import warning_for_keywords
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
@@ -22,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 class RumbaSDModel(OdfModel):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         wm_response=(1.7e-3, 0.2e-3, 0.2e-3),
         gm_response=0.8e-3,
         csf_response=3.0e-3,
@@ -185,7 +188,8 @@ class RumbaSDModel(OdfModel):
         # Fitting parameters
         self.kernel = None
 
-    def _global_fit(self, data, mask=None):
+    @warning_for_keywords()
+    def _global_fit(self, data, *, mask=None):
         """
         Fit fODF and GM/CSF volume fractions globally.
 
@@ -257,7 +261,8 @@ class RumbaSDModel(OdfModel):
         model_fit = RumbaFit(self, model_params)
         return model_fit
 
-    def _voxelwise_fit(self, data, mask=None):
+    @warning_for_keywords()
+    def _voxelwise_fit(self, data, *, mask=None):
         """
         Fit fODF and GM/CSF volume fractions voxelwise.
 
@@ -337,7 +342,8 @@ class RumbaFit(OdfFit):
         self.model = model
         self.model_params = model_params
 
-    def odf(self, sphere=None):
+    @warning_for_keywords()
+    def odf(self, *, sphere=None):
         """
         Constructs fODF at discrete vertices on model sphere for each voxel.
 
@@ -441,7 +447,8 @@ class RumbaFit(OdfFit):
         combined = odf + self.f_iso[..., None] / odf.shape[-1]
         return combined
 
-    def predict(self, gtab=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=None):
         """
         Compute signal prediction on model gradient table given given fODF
         and GM/CSF volume fractions for each voxel.
@@ -489,7 +496,8 @@ class RumbaFit(OdfFit):
         return pred_sig
 
 
-def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
+@warning_for_keywords()
+def rumba_deconv(data, kernel, *, n_iter=600, recon_type="smf", n_coils=1):
     r"""
     Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
 
@@ -835,10 +843,12 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     return kernel
 
 
+@warning_for_keywords()
 def rumba_deconv_global(
     data,
     kernel,
     mask,
+    *,
     n_iter=600,
     recon_type="smf",
     n_coils=1,
@@ -1125,7 +1135,8 @@ def _divergence(F):
     return fx + fy + fz
 
 
-def _reshape_2d_4d(M, mask, out=None):
+@warning_for_keywords()
+def _reshape_2d_4d(M, mask, *, out=None):
     """
     Faster reshape from 2D to 4D.
     """

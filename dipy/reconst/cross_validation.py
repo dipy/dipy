@@ -5,9 +5,11 @@ Cross-validation analysis of diffusion models.
 import numpy as np
 
 import dipy.core.gradients as gt
+from dipy.testing.decorators import warning_for_keywords
 
 
-def coeff_of_determination(data, model, axis=-1):
+@warning_for_keywords()
+def coeff_of_determination(data, model, *, axis=-1):
     """Calculate the coefficient of determination for a model prediction,
     relative to data.
 
