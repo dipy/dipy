@@ -446,12 +446,14 @@ def _peaks_from_model_parallel_sub(args):
 
 
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def peaks_from_model(
     model,
     data,
     sphere,
     relative_peak_threshold,
     min_separation_angle,
+    *,
     mask=None,
     return_odf=False,
     return_sh=True,
