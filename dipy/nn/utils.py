@@ -2,9 +2,11 @@ import numpy as np
 from scipy.ndimage import affine_transform, label
 
 from dipy.align.reslice import reslice
+from dipy.testing.decorators import warning_for_keywords
 
 
-def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
+@warning_for_keywords()
+def normalize(image, *, min_v=None, max_v=None, new_min=-1, new_max=1):
     r"""
     normalization function
 
@@ -76,7 +78,8 @@ def set_logger_level(log_level, logger):
     logger.setLevel(level=log_level)
 
 
-def transform_img(image, affine, voxsize=None, init_shape=(256, 256, 256), scale=2):
+@warning_for_keywords()
+def transform_img(image, affine, *, voxsize=None, init_shape=(256, 256, 256), scale=2):
     r"""
     Function to reshape image as an input to the model
 
@@ -115,11 +118,13 @@ def transform_img(image, affine, voxsize=None, init_shape=(256, 256, 256), scale
     return transformed_img, affine2, ori_shape
 
 
+@warning_for_keywords()
 def recover_img(
     image,
     affine,
     ori_shape,
     image_shape,
+    *,
     init_shape=(256, 256, 256),
     voxsize=None,
     scale=2,

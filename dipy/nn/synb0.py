@@ -9,7 +9,7 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, set_logger_level, unnormalize
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -135,7 +135,8 @@ class Synb0:
     """
 
     @doctest_skip_parser
-    def __init__(self, verbose=False):
+    @warning_for_keywords()
+    def __init__(self, *, verbose=False):
         r"""
         The model was pre-trained for usage on pre-processed images
         following the synb0-disco pipeline.
@@ -224,7 +225,8 @@ class Synb0:
 
         return self.model.predict(x_test)
 
-    def predict(self, b0, T1, batch_size=None, average=True):
+    @warning_for_keywords()
+    def predict(self, b0, T1, *, batch_size=None, average=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
         The function will pad the data to meet the required shape of image.
