@@ -11,6 +11,7 @@ from libc.math cimport floor
 from scipy.interpolate import Rbf, RBFInterpolator
 
 from dipy.align.fused_types cimport floating, number
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
 
 
@@ -21,7 +22,8 @@ from dipy.utils.deprecator import deprecate_with_version
     since="1.10.0",
     until="1.12.0",
 )
-def interp_rbf(data, sphere_origin, sphere_target,
+@warning_for_keywords()
+def interp_rbf(data, sphere_origin, sphere_target, *,
                function='multiquadric', epsilon=None, smooth=0.1,
                norm="angle"):
     """Interpolate data on the sphere, using radial basis functions.
@@ -404,8 +406,9 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
     return 0
 
 
+@warning_for_keywords()
 def trilinear_interpolate4d(floating[:, :, :, :] data,
-                            floating[:] point,
+                            floating[:] point, *,
                             floating[:] out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 

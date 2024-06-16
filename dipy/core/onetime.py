@@ -54,6 +54,8 @@ Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 [2] Python data model, https://docs.python.org/reference/datamodel.html
 """
 
+from dipy.testing.decorators import warning_for_keywords
+
 # ----------------------------------------------------------------------------
 # Classes and Functions
 # ----------------------------------------------------------------------------
@@ -161,7 +163,8 @@ class OneTimeProperty:
         self.getter = func
         self.name = func.__name__
 
-    def __get__(self, obj, type=None):
+    @warning_for_keywords()
+    def __get__(self, obj, *, type=None):
         """This will be called on attribute access on the class or instance."""
 
         if obj is None:

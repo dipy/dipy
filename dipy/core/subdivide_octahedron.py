@@ -12,9 +12,11 @@ produced by 2d (lon-lat) parameterization methods.
 """
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
+from dipy.testing.decorators import warning_for_keywords
 
 
-def create_unit_sphere(recursion_level=2):
+@warning_for_keywords()
+def create_unit_sphere(*, recursion_level=2):
     """Creates a unit sphere by subdividing a unit octahedron.
 
     Starts with a unit octahedron and subdivides the faces, projecting the
@@ -41,7 +43,8 @@ def create_unit_sphere(recursion_level=2):
     return unit_octahedron.subdivide(recursion_level - 1)
 
 
-def create_unit_hemisphere(recursion_level=2):
+@warning_for_keywords()
+def create_unit_hemisphere(*, recursion_level=2):
     """Creates a unit sphere by subdividing a unit octahedron, returns half
     the sphere.
 
