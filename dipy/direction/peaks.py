@@ -20,10 +20,13 @@ from dipy.reconst.recspeed import (
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
+from dipy.testing.decorators import warning_for_keywords
 
 
+@warning_for_keywords()
 def peak_directions_nl(
     sphere_eval,
+    *,
     relative_peak_threshold=0.25,
     min_separation_angle=25,
     sphere=default_sphere,
@@ -95,8 +98,14 @@ def peak_directions_nl(
     return directions, values
 
 
+@warning_for_keywords()
 def peak_directions(
-    odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25, is_symmetric=True
+    odf,
+    sphere,
+    *,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    is_symmetric=True
 ):
     """Get the directions of odf peaks.
 

@@ -9,6 +9,7 @@ from dipy.direction.closest_peak_direction_getter cimport closest_peak
 from dipy.direction.peaks import peak_directions
 from dipy.reconst import shm
 from dipy.tracking.direction_getter cimport DirectionGetter
+from dipy.testing.decorators import warning_for_keywords
 
 
 cdef class BootDirectionGetter(DirectionGetter):
@@ -72,8 +73,9 @@ cdef class BootDirectionGetter(DirectionGetter):
 
 
     @classmethod
+    @warning_for_keywords()
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
-                  sh_order=0, max_attempts=5, b_tol=20, **kwargs):
+                  *, sh_order=0, max_attempts=5, b_tol=20, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
         Parameters
