@@ -18,6 +18,7 @@ import random
 
 from scipy.optimize import fmin_l_bfgs_b
 
+from dipy.testing.decorators import warning_for_keywords
 import dipy.reconst.dti as dti
 from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.utils.optpkg import optional_package
@@ -121,9 +122,11 @@ class QtdmriModel(Cache):
        Information Processing in Medical Imaging. Springer, Cham, 2015.
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         radial_order=6,
         time_order=2,
         laplacian_regularization=False,
@@ -589,7 +592,8 @@ class QtdmriFit:
         mapmri_coef = np.dot(II, self._qtdmri_coef)
         return mapmri_coef
 
-    def sparsity_abs(self, threshold=0.99):
+    @warning_for_keywords()
+    def sparsity_abs(self, *, threshold=0.99):
         """As a measure of sparsity, calculates the number of largest
         coefficients needed to absolute sum up to 99% of the total absolute sum
         of all coefficients"""
@@ -607,7 +611,8 @@ class QtdmriFit:
             counter += 1
         return counter
 
-    def sparsity_density(self, threshold=0.99):
+    @warning_for_keywords()
+    def sparsity_density(self, *, threshold=0.99):
         """As a measure of sparsity, calculates the number of largest
         coefficients needed to squared sum up to 99% of the total squared sum
         of all coefficients"""
@@ -625,7 +630,8 @@ class QtdmriFit:
             counter += 1
         return counter
 
-    def odf(self, sphere, tau, s=2):
+    @warning_for_keywords()
+    def odf(self, sphere, tau, *, s=2):
         r"""Calculates the analytical Orientation Distribution Function (ODF)
         for a given diffusion time tau from the signal, [1]_ Eq. (32). The
         qtdmri coefficients are first converted to mapmri coefficients
@@ -666,7 +672,8 @@ class QtdmriFit:
             odf = self.us[0] ** s * np.dot(II, mapmri_coef)
         return odf
 
-    def odf_sh(self, tau, s=2):
+    @warning_for_keywords()
+    def odf_sh(self, tau, *, s=2):
         r"""Calculates the real analytical odf for a given discrete sphere.
         Computes the design matrix of the ODF for the given sphere vertices
         and radial moment [1]_ eq. (32). The radial moment s acts as a
@@ -1013,7 +1020,8 @@ class QtdmriFit:
             qiv = qiv.sum()
         return qiv
 
-    def fitted_signal(self, gtab=None):
+    @warning_for_keywords()
+    def fitted_signal(self, *, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
         table is given it recovers the signal for the gtab of the model object.
@@ -1024,7 +1032,8 @@ class QtdmriFit:
             E = self.predict(gtab)
         return E
 
-    def predict(self, qvals_or_gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, qvals_or_gtab, *, S0=1.0):
         r"""Recovers the reconstructed signal for any qvalue array or
         gradient table.
         """
@@ -1287,8 +1296,9 @@ def qtdmri_mapmri_isotropic_normalization(j, ell, u0):
     return sqrtC
 
 
+@warning_for_keywords()
 def qtdmri_signal_matrix_(
-    radial_order, time_order, us, ut, q, tau, normalization=False
+    radial_order, time_order, us, ut, q, tau, *, normalization=False
 ):
     """Function to generate the qtdmri signal basis."""
     M = qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau)
@@ -1376,8 +1386,9 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     return K
 
 
+@warning_for_keywords()
 def qtdmri_isotropic_signal_matrix_(
-    radial_order, time_order, us, ut, q, tau, normalization=False
+    radial_order, time_order, us, ut, q, tau, *, normalization=False
 ):
     M = qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
     if normalization:
@@ -1434,7 +1445,8 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     return M
 
 
-def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=False):
+@warning_for_keywords()
+def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, *, normalization=False):
     sqrtCut = 1.0
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
@@ -1444,8 +1456,9 @@ def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=Fal
     return K_tau
 
 
+@warning_for_keywords()
 def qtdmri_isotropic_eap_matrix_(
-    radial_order, time_order, us, ut, grid, normalization=False
+    radial_order, time_order, us, ut, grid, *, normalization=False
 ):
     K = qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)
     if normalization:
@@ -1584,10 +1597,12 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
     return np.array(index_matrix)
 
 
+@warning_for_keywords()
 def qtdmri_laplacian_reg_matrix(
     ind_mat,
     us,
     ut,
+    *,
     S_mat=None,
     T_mat=None,
     U_mat=None,
@@ -1641,10 +1656,12 @@ def qtdmri_laplacian_reg_matrix(
     return regularization_matrix
 
 
+@warning_for_keywords()
 def qtdmri_isotropic_laplacian_reg_matrix(
     ind_mat,
     us,
     ut,
+    *,
     part1_uq_iso_precomp=None,
     part1_ut_precomp=None,
     part23_ut_precomp=None,
@@ -1937,7 +1954,8 @@ def H(value):
     return 0
 
 
-def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
+@warning_for_keywords()
+def generalized_crossvalidation(data, M, LR, *, startpoint=5e-4):
     r"""Generalized Cross Validation Function [1].
 
     References
@@ -2084,7 +2102,8 @@ def qtdmri_number_of_coefficients(radial_order, time_order):
     return M_total
 
 
-def l1_crossvalidation(b0s_mask, E, M, weight_array=None):
+@warning_for_keywords()
+def l1_crossvalidation(b0s_mask, E, M, *, weight_array=None):
     """cross-validation function to find the optimal weight of alpha for
     sparsity regularization"""
 
@@ -2147,7 +2166,8 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=None):
     return optimal_alpha
 
 
-def elastic_crossvalidation(b0s_mask, E, M, L, lopt, weight_array=None):
+@warning_for_keywords()
+def elastic_crossvalidation(b0s_mask, E, M, L, lopt, *, weight_array=None):
     """cross-validation function to find the optimal weight of alpha for
     sparsity regularization when also Laplacian regularization is used."""
 
@@ -2213,8 +2233,10 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt, weight_array=None):
     return optimal_alpha
 
 
+@warning_for_keywords()
 def visualise_gradient_table_G_Delta_rainbow(
     gtab,
+    *,
     big_delta_start=None,
     big_delta_end=None,
     G_start=None,

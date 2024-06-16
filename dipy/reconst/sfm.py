@@ -36,6 +36,7 @@ from dipy.reconst.cache import Cache
 import dipy.sims.voxel as sims
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 joblib, has_joblib, _ = optional_package("joblib")
 sklearn, has_sklearn, _ = optional_package("sklearn")
@@ -48,7 +49,8 @@ lm, _, _ = optional_package("sklearn.linear_model")
 
 
 # First, a helper function to derive the fit signal for these models:
-def _to_fit_iso(data, gtab, mask=None):
+@warning_for_keywords()
+def _to_fit_iso(data, gtab, *, mask=None):
     if mask is None:
         mask = np.ones(data.shape[:-1], dtype=bool)
     # Turn it into a 2D thing:
@@ -92,7 +94,8 @@ class IsotropicModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """Fit an IsotropicModel.
 
         This boils down to finding the mean diffusion-weighted signal in each
@@ -141,7 +144,8 @@ class IsotropicFit(ReconstFit):
         self.model = model
         self.params = params
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """Predict the isotropic signal.
 
         Based on a gradient table. In this case, the (naive!) prediction will
@@ -170,7 +174,8 @@ class ExponentialIsotropicModel(IsotropicModel):
     with b-values
     """
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """
 
         Parameters
@@ -206,7 +211,8 @@ class ExponentialIsotropicFit(IsotropicFit):
     A fit to the ExponentialIsotropicModel object, based on data.
     """
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """
         Predict the isotropic signal, based on a gradient table. In this case,
         the prediction will be for an exponential decay with the mean
@@ -235,7 +241,8 @@ class ExponentialIsotropicFit(IsotropicFit):
             )
 
 
-def sfm_design_matrix(gtab, sphere, response, mode="signal"):
+@warning_for_keywords()
+def sfm_design_matrix(gtab, sphere, response, *, mode="signal"):
     """
     Construct the SFM design matrix
 
@@ -338,9 +345,11 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
 
 
 class SparseFascicleModel(ReconstModel, Cache):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         sphere=None,
         response=(0.0015, 0.0005, 0.0005),
         solver="ElasticNet",
@@ -458,7 +467,8 @@ class SparseFascicleModel(ReconstModel, Cache):
         """
         return sfm_design_matrix(self.gtab, self.sphere, self.response, "signal")
 
-    def _fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
+    @warning_for_keywords()
+    def _fit_solver2voxels(self, isopredict, vox_data, vox, *, parallel=False):
         # In voxels in which S0 is 0, we just want to keep the
         # parameters at all-zeros, and avoid nasty sklearn errors:
         if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
@@ -482,7 +492,8 @@ class SparseFascicleModel(ReconstModel, Cache):
                 return np.zeros(self.design_matrix.shape[-1])
         return coef
 
-    def fit(self, data, mask=None, num_processes=1, parallel_backend="multiprocessing"):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, num_processes=1, parallel_backend="multiprocessing"):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -656,7 +667,8 @@ class SparseFascicleFit(ReconstFit):
             odf_matrix, self.beta.reshape(-1, self.beta.shape[-1]).T
         ).T.reshape(self.beta.shape[:-1] + (odf_matrix.shape[0],))
 
-    def predict(self, gtab=None, response=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, response=None, S0=None):
         """
         Predict the signal based on the SFM parameters
 

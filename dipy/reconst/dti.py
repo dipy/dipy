@@ -14,13 +14,15 @@ from dipy.data import get_sphere
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.utils.volume import adjacency_calc
+from dipy.testing.decorators import warning_for_keywords
 
 MIN_POSITIVE_SIGNAL = 0.0001
 
 ols_resort_msg = "Resorted to OLS solution in some voxels"
 
 
-def _roll_evals(evals, axis=-1):
+@warning_for_keywords()
+def _roll_evals(evals, *, axis=-1):
     """Check evals shape.
 
     Helper function to check that the evals provided to functions calculating
@@ -50,7 +52,8 @@ def _roll_evals(evals, axis=-1):
     return evals
 
 
-def fractional_anisotropy(evals, axis=-1):
+@warning_for_keywords()
+def fractional_anisotropy(evals, *, axis=-1):
     r"""Return Fractional anisotropy (FA) of a diffusion tensor.
 
     Parameters
@@ -89,7 +92,8 @@ def fractional_anisotropy(evals, axis=-1):
     return fa
 
 
-def geodesic_anisotropy(evals, axis=-1):
+@warning_for_keywords()
+def geodesic_anisotropy(evals, *, axis=-1):
     r"""
     Geodesic anisotropy (GA) of a diffusion tensor.
 
@@ -169,7 +173,8 @@ def geodesic_anisotropy(evals, axis=-1):
     return ga
 
 
-def mean_diffusivity(evals, axis=-1):
+@warning_for_keywords()
+def mean_diffusivity(evals, *, axis=-1):
     r"""
     Mean Diffusivity (MD) of a diffusion tensor.
 
@@ -198,7 +203,8 @@ def mean_diffusivity(evals, axis=-1):
     return evals.mean(0)
 
 
-def axial_diffusivity(evals, axis=-1):
+@warning_for_keywords()
+def axial_diffusivity(evals, *, axis=-1):
     r"""
     Axial Diffusivity (AD) of a diffusion tensor.
     Also called parallel diffusivity.
@@ -230,7 +236,8 @@ def axial_diffusivity(evals, axis=-1):
     return ev1
 
 
-def radial_diffusivity(evals, axis=-1):
+@warning_for_keywords()
+def radial_diffusivity(evals, *, axis=-1):
     r"""
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
@@ -261,7 +268,8 @@ def radial_diffusivity(evals, axis=-1):
     return evals[1:].mean(0)
 
 
-def trace(evals, axis=-1):
+@warning_for_keywords()
+def trace(evals, *, axis=-1):
     r"""
     Trace of a diffusion tensor.
 
@@ -507,7 +515,8 @@ def mode(q_form):
     return mode
 
 
-def linearity(evals, axis=-1):
+@warning_for_keywords()
+def linearity(evals, *, axis=-1):
     r"""
     The linearity of the tensor [1]_
 
@@ -543,7 +552,8 @@ def linearity(evals, axis=-1):
     return (ev1 - ev2) / evals.sum(0)
 
 
-def planarity(evals, axis=-1):
+@warning_for_keywords()
+def planarity(evals, *, axis=-1):
     r"""
     The planarity of the tensor [1]_
 
@@ -580,7 +590,8 @@ def planarity(evals, axis=-1):
     return 2 * (ev2 - ev3) / evals.sum(0)
 
 
-def sphericity(evals, axis=-1):
+@warning_for_keywords()
+def sphericity(evals, *, axis=-1):
     r"""
     The sphericity of the tensor [1]_
 
@@ -689,7 +700,8 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
+    @warning_for_keywords()
+    def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
@@ -769,7 +781,8 @@ class TensorModel(ReconstModel):
             raise ValueError(e_s)
         self.extra = {}
 
-    def fit(self, data, mask=None, adjacency=False):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, adjacency=False):
         """Fit method of the DTI model class
 
         Parameters
@@ -865,7 +878,8 @@ class TensorModel(ReconstModel):
 
         return TensorFit(self, dti_params, model_S0=S0_params)
 
-    def predict(self, dti_params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, dti_params, *, S0=1.0):
         """
         Predict a signal for this TensorModel class instance given parameters.
 
@@ -884,7 +898,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
-    def __init__(self, model, model_params, model_S0=None):
+    @warning_for_keywords()
+    def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
         self.model = model
         self.model_params = model_params
@@ -941,7 +956,8 @@ class TensorFit:
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
 
-    def lower_triangular(self, b0=None):
+    @warning_for_keywords()
+    def lower_triangular(self, *, b0=None):
         return lower_triangular(self.quadratic_form, b0)
 
     @auto_attr
@@ -1214,7 +1230,8 @@ class TensorFit:
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=None, step=None):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=None, step=None):
         """
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1280,7 +1297,8 @@ class TensorFit:
         return predict.reshape(shape + (gtab.bvals.shape[0],))
 
 
-def iter_fit_tensor(step=1e4):
+@warning_for_keywords()
+def iter_fit_tensor(*, step=1e4):
     """Wrap a fit_tensor func and iterate over chunks of data with given length
 
     Splits data into a number of chunks of specified size and iterates the
@@ -1315,8 +1333,9 @@ def iter_fit_tensor(step=1e4):
         """
 
         @functools.wraps(fit_tensor)
+        @warning_for_keywords()
         def wrapped_fit_tensor(
-            design_matrix, data, return_S0_hat=False, step=step, *args, **kwargs
+            design_matrix, data, *args, return_S0_hat=False, step=step, **kwargs
         ):
             """Iterate fit_tensor function over the data chunks
 
@@ -1393,7 +1412,8 @@ def iter_fit_tensor(step=1e4):
 
 
 @iter_fit_tensor()
-def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
+@warning_for_keywords()
+def wls_fit_tensor(design_matrix, data, *, return_S0_hat=False):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1479,8 +1499,9 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
 
 
 @iter_fit_tensor()
+@warning_for_keywords()
 def ols_fit_tensor(
-    design_matrix, data, return_S0_hat=False, return_lower_triangular=False
+    design_matrix, data, *, return_S0_hat=False, return_lower_triangular=False
 ):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
@@ -1570,7 +1591,8 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+    @warning_for_keywords()
+    def err_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1666,7 +1688,8 @@ class _NllsHelper:
                 self.sqrt_w = np.sqrt(w)[:, None]
             return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+    @warning_for_keywords()
+    def jacobian_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
         """The Jacobian is the first derivative of the error function [1]_.
 
         Parameters
@@ -1711,7 +1734,8 @@ class _NllsHelper:
             return -self.y[:, None] * design_matrix * self.sqrt_w
 
 
-def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
+@warning_for_keywords()
+def _decompose_tensor_nan(tensor, tensor_alternative, *, min_diffusivity=0):
     """Helper function that expands the function decompose_tensor to deal
     with tensor with nan elements.
 
@@ -1756,9 +1780,11 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
     return evals, evecs
 
 
+@warning_for_keywords()
 def nlls_fit_tensor(
     design_matrix,
     data,
+    *,
     weighting=None,
     sigma=None,
     jac=True,
@@ -1892,8 +1918,15 @@ def nlls_fit_tensor(
         return params, None
 
 
+@warning_for_keywords()
 def restore_fit_tensor(
-    design_matrix, data, sigma=None, jac=True, return_S0_hat=False, fail_is_nan=False
+    design_matrix,
+    data,
+    *,
+    sigma=None,
+    jac=True,
+    return_S0_hat=False,
+    fail_is_nan=False
 ):
     """
     Use the RESTORE algorithm [1]_ to calculate a robust tensor fit
@@ -2144,7 +2177,8 @@ _lt_rows = np.array([0, 1, 1, 2, 2, 2])
 _lt_cols = np.array([0, 0, 1, 0, 1, 2])
 
 
-def lower_triangular(tensor, b0=None):
+@warning_for_keywords()
+def lower_triangular(tensor, *, b0=None):
     """
     Returns the six lower triangular values of the tensor ordered as
     (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz) and a dummy variable if b0 is not None.
@@ -2173,7 +2207,8 @@ def lower_triangular(tensor, b0=None):
         return D
 
 
-def decompose_tensor(tensor, min_diffusivity=0):
+@warning_for_keywords()
+def decompose_tensor(tensor, *, min_diffusivity=0):
     """Returns eigenvalues and eigenvectors given a diffusion tensor
 
     Computes tensor eigen decomposition to calculate eigenvalues and
@@ -2228,7 +2263,8 @@ def decompose_tensor(tensor, min_diffusivity=0):
     return eigenvals, eigenvecs
 
 
-def design_matrix(gtab, dtype=None):
+@warning_for_keywords()
+def design_matrix(gtab, *, dtype=None):
     """Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
@@ -2268,7 +2304,8 @@ def design_matrix(gtab, dtype=None):
     return -B
 
 
-def quantize_evecs(evecs, odf_vertices=None):
+@warning_for_keywords()
+def quantize_evecs(evecs, *, odf_vertices=None):
     """Find the closest orientation of an evenly distributed sphere
 
     Parameters
@@ -2293,7 +2330,8 @@ def quantize_evecs(evecs, odf_vertices=None):
     return IN
 
 
-def eig_from_lo_tri(data, min_diffusivity=0):
+@warning_for_keywords()
+def eig_from_lo_tri(data, *, min_diffusivity=0):
     """
     Calculates tensor eigenvalues/eigenvectors from an array containing the
     lower diagonal form of the six unique tensor elements.

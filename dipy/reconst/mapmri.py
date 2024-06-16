@@ -12,6 +12,7 @@ except ImportError:
 from math import factorial as mfactorial
 from warnings import warn
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.core.geometry import cart2sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
@@ -75,9 +76,11 @@ class MapmriModel(ReconstModel, Cache):
            NeuroImage 209, 2020, 116405.
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         radial_order=6,
         laplacian_regularization=True,
         laplacian_weighting=0.2,
@@ -492,7 +495,8 @@ class MapmriModel(ReconstModel, Cache):
 
 
 class MapmriFit(ReconstFit):
-    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0):
+    @warning_for_keywords()
+    def __init__(self, model, mapmri_coef, mu, R, lopt, *, errorcode=0):
         """Calculates diffusion properties for a single voxel
 
         Parameters
@@ -539,7 +543,8 @@ class MapmriFit(ReconstFit):
         """The MAPMRI coefficients"""
         return self._mapmri_coef
 
-    def odf(self, sphere, s=2):
+    @warning_for_keywords()
+    def odf(self, sphere, *, s=2):
         r"""Calculates the analytical Orientation Distribution Function (ODF)
         from the signal [1]_ Eq. (32).
 
@@ -574,7 +579,8 @@ class MapmriFit(ReconstFit):
 
         return odf
 
-    def odf_sh(self, s=2):
+    @warning_for_keywords()
+    def odf_sh(self, *, s=2):
         r"""Calculates the real analytical odf for a given discrete sphere.
         Computes the design matrix of the ODF for the given sphere vertices
         and radial moment [1]_ eq. (32). The radial moment s acts as a
@@ -1006,7 +1012,8 @@ class MapmriFit(ReconstFit):
         )
         return norm_of_laplacian
 
-    def fitted_signal(self, gtab=None):
+    @warning_for_keywords()
+    def fitted_signal(self, *, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
         table is given it recovers the signal for the gtab of the model object.
@@ -1017,7 +1024,8 @@ class MapmriFit(ReconstFit):
             E = self.predict(gtab, S0=1.0)
         return E
 
-    def predict(self, qvals_or_gtab, S0=100.0):
+    @warning_for_keywords()
+    def predict(self, qvals_or_gtab, *, S0=100.0):
         r"""Recovers the reconstructed signal for any qvalue array or
         gradient table.
         """
@@ -2161,7 +2169,8 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     return LR
 
 
-def generalized_crossvalidation_array(data, M, LR, weights_array=None):
+@warning_for_keywords()
+def generalized_crossvalidation_array(data, M, LR, *, weights_array=None):
     """Generalized Cross Validation Function [1]_ eq. (15).
 
     Here weights_array is a numpy array with all values that should be
@@ -2202,7 +2211,8 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     return lopt
 
 
-def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
+@warning_for_keywords()
+def generalized_crossvalidation(data, M, LR, *, gcv_startpoint=5e-2):
     """Generalized Cross Validation Function [1]_ eq. (15).
 
     Finds optimal regularization weight based on generalized cross-validation.
