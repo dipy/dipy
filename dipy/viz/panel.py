@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
@@ -12,7 +13,8 @@ if have_fury:
     from dipy.viz import actor, colormap, ui
 
 
-def build_label(text, font_size=18, bold=False):
+@warning_for_keywords()
+def build_label(text, *, font_size=18, bold=False):
     """Simple utility function to build labels
 
     Parameters
@@ -56,9 +58,11 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
+@warning_for_keywords()
 def slicer_panel(
     scene,
     iren,
+    *,
     data=None,
     affine=None,
     world_coords=False,

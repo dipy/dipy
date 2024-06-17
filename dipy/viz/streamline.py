@@ -1,5 +1,6 @@
 import warnings
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
@@ -13,8 +14,15 @@ sagittal_deprecation_warning_msg = (
 )  # codespell:ignore sagital
 
 
+@warning_for_keywords()
 def show_bundles(
-    bundles, interactive=True, view="sagittal", colors=None, linewidth=0.3, save_as=None
+    bundles,
+    *,
+    interactive=True,
+    view="sagittal",
+    colors=None,
+    linewidth=0.3,
+    save_as=None,
 ):
     """Render bundles to visualize them interactively or save them into a png.
 
@@ -78,7 +86,8 @@ def show_bundles(
         window.record(scene, n_frames=1, out_path=save_as, size=(900, 900))
 
 
-def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0), interactive=False):
+@warning_for_keywords()
+def viz_two_bundles(b1, b2, fname, *, c1=(1, 0, 0), c2=(0, 1, 0), interactive=False):
     """Render and plot two bundles to visualize them.
 
     Parameters
@@ -130,8 +139,16 @@ def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0), interactive=False
         plt.imshow(im)
 
 
+@warning_for_keywords()
 def viz_vector_field(
-    points_aligned, directions, colors, offsets, fname, bundle=None, interactive=False
+    points_aligned,
+    directions,
+    colors,
+    offsets,
+    fname,
+    *,
+    bundle=None,
+    interactive=False,
 ):
     """Render and plot vector field.
 
@@ -176,7 +193,8 @@ def viz_vector_field(
         plt.imshow(im)
 
 
-def viz_displacement_mag(bundle, offsets, fname, interactive=False):
+@warning_for_keywords()
+def viz_displacement_mag(bundle, offsets, fname, *, interactive=False):
     """Render and plot displacement magnitude over the bundle.
 
     Parameters

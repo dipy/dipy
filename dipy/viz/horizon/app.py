@@ -6,6 +6,7 @@ from packaging.version import Version
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
@@ -55,8 +56,10 @@ HELP_MESSAGE = """
 
 
 class Horizon:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         tractograms=None,
         images=None,
         pams=None,
@@ -723,7 +726,9 @@ class Horizon:
             )
 
 
+@warning_for_keywords()
 def horizon(
+    *,
     tractograms=None,
     images=None,
     pams=None,
