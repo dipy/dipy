@@ -57,6 +57,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
@@ -107,10 +108,12 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
+@warning_for_keywords()
 def connectivity_matrix(
     streamlines,
     affine,
     label_volume,
+    *,
     inclusive=False,
     symmetric=True,
     return_mapping=False,
@@ -215,7 +218,8 @@ def connectivity_matrix(
         return matrix
 
 
-def ndbincount(x, weights=None, shape=None):
+@warning_for_keywords()
+def ndbincount(x, *, weights=None, shape=None):
     """Like bincount, but for nd-indices.
 
     Parameters
@@ -341,7 +345,8 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, affine, density=(1, 1, 1)):
+@warning_for_keywords()
+def seeds_from_mask(mask, affine, *, density=(1, 1, 1)):
     """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
@@ -414,8 +419,9 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     return seeds
 
 
+@warning_for_keywords()
 def random_seeds_from_mask(
-    mask, affine, seeds_count=1, seed_count_per_voxel=True, random_seed=None
+    mask, affine, *, seeds_count=1, seed_count_per_voxel=True, random_seed=None
 ):
     """Create randomly placed seeds for fiber tracking from a binary mask.
 
@@ -546,7 +552,8 @@ def _with_initialize(generator):
 
 
 @_with_initialize
-def target(streamlines, affine, target_mask, include=True):
+@warning_for_keywords()
+def target(streamlines, affine, target_mask, *, include=True):
     """Filter streamlines based on whether or not they pass through an ROI.
 
     Parameters
@@ -596,7 +603,8 @@ def target(streamlines, affine, target_mask, include=True):
 
 
 @_with_initialize
-def target_line_based(streamlines, affine, target_mask, include=True):
+@warning_for_keywords()
+def target_line_based(streamlines, affine, target_mask, *, include=True):
     """Filter streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
@@ -647,7 +655,8 @@ def target_line_based(streamlines, affine, target_mask, include=True):
         yield streamlines[idx]
 
 
-def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
+@warning_for_keywords()
+def streamline_near_roi(streamline, roi_coords, tol, *, mode="any"):
     """Is a streamline near an ROI.
 
     Implements the inner loops of the :func:`near_roi` function.
@@ -702,7 +711,8 @@ def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
         return np.all(np.min(dist, -1) <= tol)
 
 
-def near_roi(streamlines, affine, region_of_interest, tol=None, mode="any"):
+@warning_for_keywords()
+def near_roi(streamlines, affine, region_of_interest, *, tol=None, mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
     they fall within a tolerance distance from an ROI.
 
@@ -788,7 +798,8 @@ def length(streamlines):
     return map(metrics.length, streamlines)
 
 
-def unique_rows(in_array, dtype="f4"):
+@warning_for_keywords()
+def unique_rows(in_array, *, dtype="f4"):
     """Find the unique rows in an array.
 
     Parameters
@@ -821,7 +832,8 @@ def unique_rows(in_array, dtype="f4"):
 
 
 @_with_initialize
-def transform_tracking_output(tracking_output, affine, save_seeds=False):
+@warning_for_keywords()
+def transform_tracking_output(tracking_output, affine, *, save_seeds=False):
     """Apply a linear transformation, given by affine, to streamlines.
 
     Parameters
@@ -923,7 +935,8 @@ except AttributeError:
     minimum_at = _min_at
 
 
-def path_length(streamlines, affine, aoi, fill_value=-1):
+@warning_for_keywords()
+def path_length(streamlines, affine, aoi, *, fill_value=-1):
     """Compute the shortest path, along any streamline, between aoi and
     each voxel.
 

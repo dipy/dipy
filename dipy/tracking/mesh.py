@@ -1,8 +1,11 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 
+
+@warning_for_keywords()
 def random_coordinates_from_surface(
-    nb_triangles, nb_seed, triangles_mask=None, triangles_weight=None, rand_gen=None
+    nb_triangles, nb_seed, *, triangles_mask=None, triangles_weight=None, rand_gen=None
 ):
     """Generate random triangles_indices and trilinear_coord
 
