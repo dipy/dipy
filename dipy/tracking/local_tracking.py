@@ -11,6 +11,7 @@ from dipy.tracking.stopping_criterion import (
     StreamlineStatus,
 )
 from dipy.utils import fast_numpy
+from dipy.testing.decorators import warning_for_keywords
 
 
 class LocalTracking:
@@ -34,12 +35,14 @@ class LocalTracking:
             raise ValueError(msg)
         return np.sqrt(dotlin.diagonal())
 
+    @warning_for_keywords()
     def __init__(
         self,
         direction_getter,
         stopping_criterion,
         seeds,
         affine,
+        *,
         step_size,
         max_cross=None,
         maxlen=500,
@@ -268,6 +271,7 @@ class LocalTracking:
 
 
 class ParticleFilteringTracking(LocalTracking):
+    @warning_for_keywords()
     def __init__(
         self,
         direction_getter,
@@ -275,6 +279,7 @@ class ParticleFilteringTracking(LocalTracking):
         seeds,
         affine,
         step_size,
+        *,
         max_cross=None,
         maxlen=500,
         minlen=2,
