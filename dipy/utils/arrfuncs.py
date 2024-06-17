@@ -3,6 +3,8 @@
 from nibabel.volumeutils import endian_codes, native_code
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def as_native_array(arr):
     """Return `arr` as native byteordered array
@@ -26,7 +28,8 @@ def as_native_array(arr):
     return arr.view(arr.dtype.newbyteorder()).byteswap()
 
 
-def pinv(a, rcond=1e-15):
+@warning_for_keywords()
+def pinv(a, *, rcond=1e-15):
     """Vectorized version of `numpy.linalg.pinv`
 
     If numpy version is less than 1.8, it falls back to iterating over

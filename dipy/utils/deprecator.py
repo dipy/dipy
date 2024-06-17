@@ -14,6 +14,7 @@ import re
 import warnings
 
 from packaging.version import parse as version_cmp
+from dipy.testing.decorators import warning_for_keywords
 
 from dipy import __version__
 
@@ -85,7 +86,8 @@ def _add_dep_doc(old_doc, dep_doc):
     return "\n".join(new_lines + dep_lines + old_lines[next_line:]) + "\n"
 
 
-def cmp_pkg_version(version_str, pkg_version_str=__version__):
+@warning_for_keywords()
+def cmp_pkg_version(version_str, *, pkg_version_str=__version__):
     """Compare `version_str` to current package version.
 
     Parameters
@@ -120,13 +122,16 @@ def cmp_pkg_version(version_str, pkg_version_str=__version__):
         return -1
 
 
-def is_bad_version(version_str, version_comparator=cmp_pkg_version):
+@warning_for_keywords()
+def is_bad_version(version_str, *, version_comparator=cmp_pkg_version):
     """Return True if `version_str` is too high."""
     return version_comparator(version_str) == -1
 
 
+@warning_for_keywords()
 def deprecate_with_version(
     message,
+    *,
     since="",
     until="",
     version_comparator=cmp_pkg_version,
@@ -195,8 +200,10 @@ def deprecate_with_version(
     return deprecator
 
 
+@warning_for_keywords()
 def deprecated_params(
     old_name,
+    *,
     new_name=None,
     since="",
     until="",
