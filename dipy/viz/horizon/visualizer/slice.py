@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 from scipy import stats
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
@@ -13,11 +14,13 @@ if has_fury:
 
 
 class SlicesVisualizer:
+    @warning_for_keywords()
     def __init__(
         self,
         interactor,
         scene,
         data,
+        *,
         affine=None,
         world_coords=False,
         percentiles=(2, 98),
