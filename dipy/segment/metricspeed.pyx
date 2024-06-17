@@ -7,6 +7,7 @@ from libc.math cimport sqrt, acos
 
 from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, same_shape
 from dipy.segment.featurespeed cimport IdentityFeature
+from dipy.testing.decorators import warning_for_keywords
 
 DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
 
@@ -32,7 +33,8 @@ cdef class Metric:
     When subclassing `Metric`, one only needs to override the `dist` and
     `are_compatible` methods.
     """
-    def __init__(Metric self, Feature feature=IdentityFeature()):
+    @warning_for_keywords()
+    def __init__(Metric self, *, Feature feature=IdentityFeature()):
         self.feature = feature
         self.is_order_invariant = self.feature.is_order_invariant
 
