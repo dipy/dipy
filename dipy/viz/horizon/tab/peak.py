@@ -9,6 +9,7 @@ from dipy.viz.horizon.tab import (
     build_radio_button,
     build_slider,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 
 class PeaksTab(HorizonTab):
@@ -180,7 +181,8 @@ class PeaksTab(HorizonTab):
             self._range_z.selected_value[1],
         )
 
-    def _change_slice(self, slider, selected_slice, sync_slice=False):
+    @warning_for_keywords()
+    def _change_slice(self, slider, selected_slice, *, sync_slice=False):
         """Update the slice value of peaks actor by adjusting the slider. Only
         usable in Cross Section view mode.
 

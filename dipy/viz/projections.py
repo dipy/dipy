@@ -11,6 +11,7 @@ import scipy.interpolate as interp
 import dipy.core.geometry as geo
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
@@ -19,9 +20,11 @@ bm, has_basemap, _ = optional_package("mpl_toolkits.basemap")
 
 
 @doctest_skip_parser
+@warning_for_keywords()
 def sph_project(
     vertices,
     val,
+    *,
     ax=None,
     vmin=None,
     vmax=None,

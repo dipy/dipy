@@ -32,6 +32,7 @@ from dipy.viz.horizon.visualizer import (
     SlicesVisualizer,
     SurfaceVisualizer,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
@@ -55,8 +56,10 @@ HELP_MESSAGE = """
 
 
 class Horizon:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         tractograms=None,
         images=None,
         pams=None,
@@ -723,7 +726,9 @@ class Horizon:
             )
 
 
+@warning_for_keywords()
 def horizon(
+    *,
     tractograms=None,
     images=None,
     pams=None,
