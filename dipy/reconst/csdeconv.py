@@ -450,8 +450,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
-                               rcond=-1)[0]
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi], rcond=-1)[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_reg, odf_sh)
