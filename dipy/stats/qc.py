@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.core.geometry import cart_distance
+from dipy.testing.decorators import warning_for_keywords
 
 
 def find_qspace_neighbors(gtab):
@@ -65,7 +66,8 @@ def find_qspace_neighbors(gtab):
     return dwi_neighbors
 
 
-def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
+@warning_for_keywords()
+def neighboring_dwi_correlation(dwi_data, gtab, *, mask=None):
     """Calculate the Neighboring DWI Correlation (NDC) from dMRI data.
 
     Using a mask is highly recommended, otherwise the FOV will influence the
