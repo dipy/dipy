@@ -1,7 +1,10 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 
-def otsu(image, nbins=256):
+
+@warning_for_keywords()
+def otsu(image, *, nbins=256):
     """
     Return threshold value based on Otsu's method.
     Copied from scikit-image to remove dependency.
@@ -40,7 +43,8 @@ def otsu(image, nbins=256):
     return threshold
 
 
-def upper_bound_by_rate(data, rate=0.05):
+@warning_for_keywords()
+def upper_bound_by_rate(data, *, rate=0.05):
     r"""Adjusts upper intensity boundary using rates
 
     It calculates the image intensity histogram, and based on the rate value it
@@ -87,7 +91,8 @@ def upper_bound_by_rate(data, rate=0.05):
     return high
 
 
-def upper_bound_by_percent(data, percent=1):
+@warning_for_keywords()
+def upper_bound_by_percent(data, *, percent=1):
     """Find the upper bound for visualization of medical images
 
     Calculate the histogram of the image and go right to left until you find

@@ -5,6 +5,7 @@ cimport numpy as cnp
 
 from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
+from dipy.testing.decorators import warning_for_keywords
 
 
 cdef class Feature:
@@ -25,7 +26,8 @@ cdef class Feature:
     When subclassing `Feature`, one only needs to override the `extract` and
     `infer_shape` methods.
     """
-    def __init__(Feature self, is_order_invariant=True):
+    @warning_for_keywords()
+    def __init__(Feature self, *, is_order_invariant=True):
         # By default every feature is order invariant.
         self.is_order_invariant = is_order_invariant
 

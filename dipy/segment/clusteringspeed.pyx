@@ -5,6 +5,7 @@ cimport numpy as cnp
 
 from dipy.segment.clustering import ClusterCentroid, ClusterMapCentroid
 from dipy.segment.clustering import TreeCluster, TreeClusterMap
+from dipy.testing.decorators import warning_for_keywords
 
 
 from libc.math cimport fabs
@@ -377,7 +378,8 @@ cdef class ClustersCentroid(Clusters):
         Consider the centroid has not changed if the changes per dimension
         are less than this epsilon. (Default: 1e-6)
     """
-    def __init__(ClustersCentroid self, centroid_shape, float eps=1e-6, *args, **kwargs):
+    @warning_for_keywords()
+    def __init__(ClustersCentroid self, centroid_shape, *args, float eps=1e-6, **kwargs):
         Clusters.__init__(self, *args, **kwargs)
         if isinstance(centroid_shape, int):
             centroid_shape = (1, centroid_shape)
@@ -491,8 +493,9 @@ cdef class ClustersCentroid(Clusters):
 
 
 cdef class QuickBundles:
+    @warning_for_keywords()
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
-                 int max_nb_clusters=BIGGEST_INT):
+                 *, int max_nb_clusters=BIGGEST_INT):
         self.metric = metric
         self.features_shape = tuple2shape(features_shape)
         self.threshold = threshold
