@@ -12,6 +12,7 @@ from dipy.denoise.patch2self import patch2self
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
@@ -20,10 +21,12 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return "patch2self"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bval_files,
+        *,
         model="ols",
         b0_threshold=50,
         alpha=1.0,
@@ -121,9 +124,11 @@ class NLMeansFlow(Workflow):
     def get_short_name(cls):
         return "nlmeans"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         sigma=0,
         patch_radius=1,
         block_radius=5,
@@ -195,11 +200,13 @@ class LPCAFlow(Workflow):
     def get_short_name(cls):
         return "lpca"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
+        *,
         sigma=0,
         b0_threshold=50,
         bvecs_tol=0.01,
@@ -309,9 +316,11 @@ class MPPCAFlow(Workflow):
     def get_short_name(cls):
         return "mppca"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         patch_radius=2,
         pca_method="eig",
         return_sigma=False,
@@ -385,9 +394,11 @@ class GibbsRingingFlow(Workflow):
     def get_short_name(cls):
         return "gibbs_ringing"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         slice_axis=2,
         n_points=3,
         num_processes=1,

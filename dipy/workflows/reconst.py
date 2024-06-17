@@ -31,6 +31,7 @@ from dipy.reconst.dti import (
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.shm import CsaOdfModel
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.workflows.workflow import Workflow
 
@@ -40,6 +41,7 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return "mapmri"
 
+    @warning_for_keywords()
     def run(
         self,
         data_files,
@@ -47,6 +49,7 @@ class ReconstMAPMRIFlow(Workflow):
         bvecs_files,
         small_delta,
         big_delta,
+        *,
         b0_threshold=50.0,
         laplacian=True,
         positivity=True,
@@ -273,12 +276,14 @@ class ReconstDtiFlow(Workflow):
     def get_short_name(cls):
         return "dti"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         fit_method="WLS",
         b0_threshold=50,
         bvecs_tol=0.01,
@@ -569,12 +574,14 @@ class ReconstDtiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
+    @warning_for_keywords()
     def get_fitted_tensor(
         self,
         data,
         mask,
         bval,
         bvec,
+        *,
         b0_threshold=50,
         bvecs_tol=0.01,
         fit_method="WLS",
@@ -595,12 +602,14 @@ class ReconstDsiFlow(Workflow):
     def get_short_name(cls):
         return "dsi"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         qgrid_size=17,
         r_start=2.1,
         r_end=6.0,
@@ -745,12 +754,14 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return "csd"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
@@ -963,12 +974,14 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return "csa"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         sh_order=6,
         odf_to_sh_order=8,
         b0_threshold=50.0,
@@ -1123,12 +1136,14 @@ class ReconstDkiFlow(Workflow):
     def get_short_name(cls):
         return "dki"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         fit_method="WLS",
         b0_threshold=50.0,
         sigma=None,
@@ -1413,12 +1428,14 @@ class ReconstDkiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
+    @warning_for_keywords()
     def get_fitted_tensor(
         self,
         data,
         mask,
         bval,
         bvec,
+        *,
         b0_threshold=50,
         fit_method="WLS",
         optional_args=None,
@@ -1448,12 +1465,14 @@ class ReconstIvimFlow(Workflow):
     def get_short_name(cls):
         return "ivim"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         split_b_D=400,
         split_b_S0=200,
         b0_threshold=0,
@@ -1562,7 +1581,8 @@ class ReconstIvimFlow(Workflow):
 
             logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
 
-    def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
+    @warning_for_keywords()
+    def get_fitted_ivim(self, data, mask, bval, bvec, *, b0_threshold=50):
         logging.info("Intra-Voxel Incoherent Motion Estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
@@ -1589,12 +1609,14 @@ class ReconstRUMBAFlow(Workflow):
         return "rumba"
 
     @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
