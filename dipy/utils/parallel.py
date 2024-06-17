@@ -6,6 +6,7 @@ import tempfile
 import numpy as np
 from tqdm.auto import tqdm
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 ray, has_ray, _ = optional_package("ray")
@@ -13,9 +14,11 @@ joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
 
 
+@warning_for_keywords()
 def paramap(
     func,
     in_list,
+    *,
     out_shape=None,
     n_jobs=-1,
     engine="ray",
