@@ -8,14 +8,23 @@ from tqdm.auto import tqdm
 
 from dipy.utils.optpkg import optional_package
 
-ray, has_ray, _ = optional_package('ray')
-joblib, has_joblib, _ = optional_package('joblib')
-dask, has_dask, _ = optional_package('dask')
+ray, has_ray, _ = optional_package("ray")
+joblib, has_joblib, _ = optional_package("joblib")
+dask, has_dask, _ = optional_package("dask")
 
 
-def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="ray",
-            backend=None, func_args=None, clean_spill=True, func_kwargs=None,
-            **kwargs):
+def paramap(
+    func,
+    in_list,
+    out_shape=None,
+    n_jobs=-1,
+    engine="ray",
+    backend=None,
+    func_args=None,
+    clean_spill=True,
+    func_kwargs=None,
+    **kwargs,
+):
     """
     Maps a function to a list of inputs in parallel.
 
@@ -106,16 +115,21 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="ray",
             tmp_dir = tempfile.TemporaryDirectory()
 
             if not ray.is_initialized():
-                ray.init(_system_config={
-                    "object_spilling_config": json.dumps(
-                        {"type": "filesystem", "params": {"directory_path":
-                         tmp_dir.name}},
-                    )
-                },)
+                ray.init(
+                    _system_config={
+                        "object_spilling_config": json.dumps(
+                            {
+                                "type": "filesystem",
+                                "params": {"directory_path": tmp_dir.name},
+                            },
+                        )
+                    },
+                )
 
         func = ray.remote(func)
-        results = ray.get([func.remote(ii, *func_args, **func_kwargs)
-                          for ii in in_list])
+        results = ray.get(
+            [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
+        )
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)

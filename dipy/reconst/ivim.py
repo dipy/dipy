@@ -298,7 +298,7 @@ class IvimModelTRR(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
-        """ Fit method of the IvimModelTRR class.
+        """Fit method of the IvimModelTRR class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
@@ -576,7 +576,7 @@ class IvimModelVP(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data, bounds_de=None, **kwargs):
-        r""" Fit method of the IvimModelVP model class
+        r"""Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro)[1]_.
 

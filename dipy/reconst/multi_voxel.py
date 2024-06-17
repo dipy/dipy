@@ -1,4 +1,5 @@
 """Tools to easily make multi voxel models"""
+
 from functools import partial
 import multiprocessing
 
@@ -31,6 +32,7 @@ def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition
     """
+
     def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
         # If only one voxel just return a normal fit
@@ -49,10 +51,12 @@ def multi_voxel_fit(single_voxel_fit):
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
         if engine == "serial":
-            bar = tqdm(total=np.sum(mask), position=0,
-                       disable=kwargs.get("verbose", True))
-            bar.set_description("Fitting reconstruction model",
-                                "using serial execution")
+            bar = tqdm(
+                total=np.sum(mask), position=0, disable=kwargs.get("verbose", True)
+            )
+            bar.set_description(
+                "Fitting reconstruction model", "using serial execution"
+            )
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
                     fit_array[ijk] = single_voxel_fit(self, data[ijk])
@@ -63,17 +67,22 @@ def multi_voxel_fit(single_voxel_fit):
             single_voxel_with_self = partial(single_voxel_fit, self)
             n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
             vox_per_chunk = kwargs.get(
-                "vox_per_chunk",
-                np.max([data_to_fit.shape[0] // n_jobs, 1]))
-            chunks = [data_to_fit[ii:ii + vox_per_chunk]
-                      for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
-            fit_array[np.where(mask)] = np.concatenate((
-                paramap(
-                    _parallel_fit_worker,
-                    chunks,
-                    func_args=[single_voxel_with_self],
-                    **kwargs)
-                    ))
+                "vox_per_chunk", np.max([data_to_fit.shape[0] // n_jobs, 1])
+            )
+            chunks = [
+                data_to_fit[ii : ii + vox_per_chunk]
+                for ii in range(0, data_to_fit.shape[0], vox_per_chunk)
+            ]
+            fit_array[np.where(mask)] = np.concatenate(
+                (
+                    paramap(
+                        _parallel_fit_worker,
+                        chunks,
+                        func_args=[single_voxel_with_self],
+                        **kwargs,
+                    )
+                )
+            )
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit

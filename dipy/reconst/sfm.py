@@ -482,8 +482,7 @@ class SparseFascicleModel(ReconstModel, Cache):
                 return np.zeros(self.design_matrix.shape[-1])
         return coef
 
-    def fit(self, data, mask=None, num_processes=1,
-            parallel_backend='multiprocessing'):
+    def fit(self, data, mask=None, num_processes=1, parallel_backend="multiprocessing"):
         """
         Fit the SparseFascicleModel object to data.
 
