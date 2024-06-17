@@ -140,7 +140,7 @@ class FreeWaterTensorModel(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data, mask=None, **kwargs):
-        """ Fit method of the free water elimination DTI model class
+        """Fit method of the free water elimination DTI model class
 
         Parameters
         ----------
