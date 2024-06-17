@@ -4,12 +4,14 @@ from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 import dipy.sims.voxel as vox
+from dipy.testing.decorators import warning_for_keywords
 
 # import scipy.stats as stats
 from dipy.sims.voxel import diffusion_evals, single_tensor
 
 
-def add_noise(vol, snr=1.0, S0=None, noise_type="rician", rng=None):
+@warning_for_keywords()
+def add_noise(vol, *, snr=1.0, S0=None, noise_type="rician", rng=None):
     """Add noise of specified distribution to a 4D array.
 
     Parameters
@@ -83,7 +85,9 @@ def diff2eigenvectors(dx, dy, dz):
     return eigs, R
 
 
+@warning_for_keywords()
 def orbital_phantom(
+    *,
     gtab=None,
     evals=diffusion_evals,
     func=None,
