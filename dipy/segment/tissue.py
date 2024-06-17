@@ -2,6 +2,7 @@ import numpy as np
 
 from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
 from dipy.sims.voxel import add_noise
+from dipy.testing.decorators import warning_for_keywords
 
 
 class TissueClassifierHMRF:
@@ -10,7 +11,8 @@ class TissueClassifierHMRF:
     Markov Random Fields modeling approach.
     """
 
-    def __init__(self, save_history=False, verbose=True):
+    @warning_for_keywords()
+    def __init__(self, *, save_history=False, verbose=True):
         self.save_history = save_history
         self.segmentations = []
         self.pves = []
@@ -18,7 +20,8 @@ class TissueClassifierHMRF:
         self.energies_sum = []
         self.verbose = verbose
 
-    def classify(self, image, nclasses, beta, tolerance=1e-05, max_iter=100):
+    @warning_for_keywords()
+    def classify(self, image, nclasses, beta, *, tolerance=1e-05, max_iter=100):
         """
         This method uses the Maximum a posteriori - Markov Random Field
         approach for segmentation by using the Iterative Conditional Modes

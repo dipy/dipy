@@ -12,6 +12,8 @@ except Exception:
 
 from scipy.ndimage import binary_dilation, generate_binary_structure
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def multi_median(data, median_radius, numpass):
     """Applies median filter multiple times on input data.
@@ -126,8 +128,15 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
+@warning_for_keywords()
 def median_otsu(
-    input_volume, vol_idx=None, median_radius=4, numpass=4, autocrop=False, dilate=None
+    input_volume,
+    *,
+    vol_idx=None,
+    median_radius=4,
+    numpass=4,
+    autocrop=False,
+    dilate=None,
 ):
     """Simple brain extraction tool method for images from DWI data.
 
@@ -226,7 +235,8 @@ def median_otsu(
     return maskedvolume, mask
 
 
-def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
+@warning_for_keywords()
+def segment_from_cfa(tensor_fit, roi, threshold, *, return_cfa=False):
     """
     Segment the cfa inside roi using the values from threshold as bounds.
 
