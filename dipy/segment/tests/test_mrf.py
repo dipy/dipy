@@ -374,7 +374,7 @@ def test_icm_square(rng):
         initial_segmentation = final_segmentation_2
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
-    npt.assert_(np.abs(np.sum(difference_map)) != 0)
+    npt.assert_(not np.isclose(np.abs(np.sum(difference_map)), 0))
 
 
 def test_classify():
