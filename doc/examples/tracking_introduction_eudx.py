@@ -50,8 +50,8 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -79,10 +79,14 @@ white_matter = (labels == 1) | (labels == 2)
 # the fiber directions in all voxels of the white matter.
 
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
-csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                             relative_peak_threshold=.8,
-                             min_separation_angle=45,
-                             mask=white_matter)
+csa_peaks = peaks_from_model(
+    csa_model,
+    data,
+    default_sphere,
+    relative_peak_threshold=0.8,
+    min_separation_angle=45,
+    mask=white_matter,
+)
 
 ###############################################################################
 # For quality assurance we can also visualize a slice from the direction field
@@ -91,11 +95,11 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.peak_slicer(csa_peaks.peak_dirs,
-                                csa_peaks.peak_values,
-                                colors=None))
+    scene.add(
+        actor.peak_slicer(csa_peaks.peak_dirs, csa_peaks.peak_values, colors=None)
+    )
 
-    window.record(scene, out_path='csa_direction_field.png', size=(900, 900))
+    window.record(scene, out_path="csa_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
@@ -114,21 +118,21 @@ if has_fury:
 # the ODF shows significant restricted diffusion by thresholding on
 # the generalized fractional anisotropy (GFA).
 
-stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 
 ###############################################################################
 # Again, for quality assurance, we can also visualize a slice of the GFA and
 # the resulting tracking mask.
 
 sli = csa_peaks.gfa.shape[2] // 2
-plt.figure('GFA')
+plt.figure("GFA")
 plt.subplot(1, 2, 1).set_axis_off()
-plt.imshow(csa_peaks.gfa[:, :, sli].T, cmap='gray', origin='lower')
+plt.imshow(csa_peaks.gfa[:, :, sli].T, cmap="gray", origin="lower")
 
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow((csa_peaks.gfa[:, :, sli] > 0.25).T, cmap='gray', origin='lower')
+plt.imshow((csa_peaks.gfa[:, :, sli] > 0.25).T, cmap="gray", origin="lower")
 
-plt.savefig('gfa_tracking_mask.png')
+plt.savefig("gfa_tracking_mask.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -147,7 +151,7 @@ plt.savefig('gfa_tracking_mask.png')
 # corpus callosum. Tracking from this region will give us a model of the
 # corpus callosum tract. This slice has label value ``2`` in the label's image.
 
-seed_mask = (labels == 2)
+seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 ###############################################################################
@@ -158,8 +162,9 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 # in LocalTracking.
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(csa_peaks, stopping_criterion, seeds,
-                                      affine=affine, step_size=.5)
+streamlines_generator = LocalTracking(
+    csa_peaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+)
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
 
@@ -171,15 +176,14 @@ if has_fury:
     # Prepare the display objects.
     color = colormap.line_colors(streamlines)
 
-    streamlines_actor = actor.line(streamlines,
-                                   colormap.line_colors(streamlines))
+    streamlines_actor = actor.line(streamlines, colormap.line_colors(streamlines))
 
     # Create the 3D display.
     scene = window.Scene()
     scene.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(scene, out_path='tractogram_EuDX.png', size=(800, 800))
+    window.record(scene, out_path="tractogram_EuDX.png", size=(800, 800))
     if interactive:
         window.show(scene)
 

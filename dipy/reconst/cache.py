@@ -87,7 +87,5 @@ class Cache:
         return self._cache.get((tag, key), default)
 
     def cache_clear(self):
-        """Clear the cache.
-
-        """
+        """Clear the cache."""
         self._cache = {}

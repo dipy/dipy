@@ -10,12 +10,34 @@ from dipy.tracking.mesh import (
 
 
 def create_cube():
-    cube_tri = np.array([[0, 6, 4], [0, 2, 6], [0, 3, 2], [0, 1, 3],
-                         [2, 7, 6], [2, 3, 7], [4, 6, 7], [4, 7, 5],
-                         [0, 4, 5], [0, 5, 1], [1, 5, 7], [1, 7, 3]])
-    cube_vts = np.array([[0., 0., 0.], [0., 0., 1.], [0., 1., 0.],
-                         [0., 1., 1.], [1., 0., 0.], [1., 0., 1.],
-                         [1., 1., 0.], [1., 1., 1.]])
+    cube_tri = np.array(
+        [
+            [0, 6, 4],
+            [0, 2, 6],
+            [0, 3, 2],
+            [0, 1, 3],
+            [2, 7, 6],
+            [2, 3, 7],
+            [4, 6, 7],
+            [4, 7, 5],
+            [0, 4, 5],
+            [0, 5, 1],
+            [1, 5, 7],
+            [1, 7, 3],
+        ]
+    )
+    cube_vts = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 1.0, 1.0],
+        ]
+    )
     return cube_tri, cube_vts
 
 
@@ -43,8 +65,7 @@ def test_surface_seeds():
     npt.assert_array_less(-eps, trilin_coord)
     npt.assert_array_less(trilin_coord, 1.0 + eps)
 
-    seed_pts = seeds_from_surface_coordinates(cube_tri, cube_vts,
-                                              tri_idx, trilin_coord)
+    seed_pts = seeds_from_surface_coordinates(cube_tri, cube_vts, tri_idx, trilin_coord)
 
     # test min-max seeds positions
     npt.assert_array_less(-eps, seed_pts)
@@ -54,11 +75,13 @@ def test_surface_seeds():
         tri_mask = np.zeros([len(cube_tri)])
         tri_mask[i] = 1.0
         tri_maskb = tri_mask.astype(bool)
-        t_idx, _ = random_coordinates_from_surface(nb_tri, nb_seed,
-                                                   triangles_mask=tri_maskb)
+        t_idx, _ = random_coordinates_from_surface(
+            nb_tri, nb_seed, triangles_mask=tri_maskb
+        )
         npt.assert_array_equal(t_idx, i)
-        t_idx, _ = random_coordinates_from_surface(nb_tri, nb_seed,
-                                                   triangles_weight=tri_mask)
+        t_idx, _ = random_coordinates_from_surface(
+            nb_tri, nb_seed, triangles_weight=tri_mask
+        )
         npt.assert_array_equal(t_idx, i)
 
 

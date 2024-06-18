@@ -50,9 +50,9 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-label_fname = get_fnames('stanford_labels')
-_, _, f_pve_wm = get_fnames('stanford_pve_maps')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+label_fname = get_fnames("stanford_labels")
+_, _, f_pve_wm = get_fnames("stanford_pve_maps")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
@@ -61,7 +61,7 @@ gtab = gradient_table(bvals, bvecs)
 
 white_matter = load_nifti_data(f_pve_wm)
 
-seed_mask = (labels == 2)
+seed_mask = labels == 2
 seed_mask[white_matter < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
@@ -69,9 +69,9 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
-                                                      max_angle=30.,
-                                                      sphere=default_sphere)
+dg = DeterministicMaximumDirectionGetter.from_shcoeff(
+    csd_fit.shm_coeff, max_angle=30.0, sphere=default_sphere
+)
 
 ###############################################################################
 # Threshold Stopping Criterion
@@ -103,29 +103,30 @@ tensor_model = TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
 FA = fractional_anisotropy(tenfit.evals)
 
-threshold_criterion = ThresholdStoppingCriterion(FA, .2)
+threshold_criterion = ThresholdStoppingCriterion(FA, 0.2)
 
 fig = plt.figure()
 mask_fa = FA.copy()
 mask_fa[mask_fa < 0.2] = 0
 plt.xticks([])
 plt.yticks([])
-plt.imshow(mask_fa[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(
+    mask_fa[:, :, data.shape[2] // 2].T,
+    cmap="gray",
+    origin="lower",
+    interpolation="nearest",
+)
 fig.tight_layout()
-fig.savefig('threshold_fa.png')
+fig.savefig("threshold_fa.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Thresholded fractional anisotropy map.
 
-streamline_generator = LocalTracking(dg,
-                                     threshold_criterion,
-                                     seeds,
-                                     affine,
-                                     step_size=.5,
-                                     return_all=True)
+streamline_generator = LocalTracking(
+    dg, threshold_criterion, seeds, affine, step_size=0.5, return_all=True
+)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
@@ -133,8 +134,9 @@ save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_deterministic_thresh_all.png',
-                  size=(800, 800))
+    window.record(
+        scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 
@@ -175,22 +177,23 @@ fig = plt.figure()
 plt.xticks([])
 plt.yticks([])
 fig.tight_layout()
-plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray',
-           origin='lower', interpolation='nearest')
+plt.imshow(
+    white_matter[:, :, data.shape[2] // 2].T,
+    cmap="gray",
+    origin="lower",
+    interpolation="nearest",
+)
 
-fig.savefig('white_matter_mask.png')
+fig.savefig("white_matter_mask.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # White matter binary mask.
 
-streamline_generator = LocalTracking(dg,
-                                     binary_criterion,
-                                     seeds,
-                                     affine,
-                                     step_size=.5,
-                                     return_all=True)
+streamline_generator = LocalTracking(
+    dg, binary_criterion, seeds, affine, step_size=0.5, return_all=True
+)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_deterministic_binary_all.trk")
@@ -198,8 +201,9 @@ save_trk(sft, "tractogram_deterministic_binary_all.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_deterministic_binary_all.png',
-                  size=(800, 800))
+    window.record(
+        scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 
@@ -241,7 +245,7 @@ if has_fury:
 # - 'INVALIDPOINT': ``exclude_map`` > 0.5; the streamline reach a position
 # which is anatomically not plausible.
 
-f_pve_csf, f_pve_gm, f_pve_wm = get_fnames('stanford_pve_maps')
+f_pve_csf, f_pve_gm, f_pve_wm = get_fnames("stanford_pve_maps")
 pve_csf_data = load_nifti_data(f_pve_csf)
 pve_gm_data = load_nifti_data(f_pve_gm)
 pve_wm_data = load_nifti_data(f_pve_wm)
@@ -259,29 +263,34 @@ fig = plt.figure()
 plt.subplot(121)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray',
-           origin='lower', interpolation='nearest')
+plt.imshow(
+    include_map[:, :, data.shape[2] // 2].T,
+    cmap="gray",
+    origin="lower",
+    interpolation="nearest",
+)
 
 plt.subplot(122)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray',
-           origin='lower', interpolation='nearest')
+plt.imshow(
+    exclude_map[:, :, data.shape[2] // 2].T,
+    cmap="gray",
+    origin="lower",
+    interpolation="nearest",
+)
 
 fig.tight_layout()
-fig.savefig('act_maps.png')
+fig.savefig("act_maps.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Include (left) and exclude (right) maps for ACT.
 
-streamline_generator = LocalTracking(dg,
-                                     act_criterion,
-                                     seeds,
-                                     affine,
-                                     step_size=.5,
-                                     return_all=True)
+streamline_generator = LocalTracking(
+    dg, act_criterion, seeds, affine, step_size=0.5, return_all=True
+)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_deterministic_act_all.trk")
@@ -289,8 +298,9 @@ save_trk(sft, "tractogram_deterministic_act_all.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_deterministic_act_all.png',
-                  size=(800, 800))
+    window.record(
+        scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 
@@ -300,12 +310,9 @@ if has_fury:
 # Corpus Callosum using deterministic tractography with ACT stopping
 #  criterion.
 
-streamline_generator = LocalTracking(dg,
-                                     act_criterion,
-                                     seeds,
-                                     affine,
-                                     step_size=.5,
-                                     return_all=False)
+streamline_generator = LocalTracking(
+    dg, act_criterion, seeds, affine, step_size=0.5, return_all=False
+)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_deterministic_act_valid.trk")
@@ -313,8 +320,9 @@ save_trk(sft, "tractogram_deterministic_act_valid.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_deterministic_act_valid.png',
-                  size=(800, 800))
+    window.record(
+        scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 

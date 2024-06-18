@@ -66,10 +66,12 @@ raf_sft = load_tractogram(bundles_filename[3], reference_anatomy)
 # This is not considered a valid tractography file, but it is possible to load
 # it anyway.
 
-lpt_sft = load_tractogram(bundles_filename[2], reference_anatomy,
-                          bbox_valid_check=False)
-rpt_sft = load_tractogram(bundles_filename[4], reference_anatomy,
-                          bbox_valid_check=False)
+lpt_sft = load_tractogram(
+    bundles_filename[2], reference_anatomy, bbox_valid_check=False
+)
+rpt_sft = load_tractogram(
+    bundles_filename[4], reference_anatomy, bbox_valid_check=False
+)
 
 ###############################################################################
 # The function ``load_tractogram`` requires a reference, any of the following
@@ -85,8 +87,7 @@ rpt_sft = load_tractogram(bundles_filename[4], reference_anatomy,
 # The reason why this parameter is required is to guarantee all information
 # related to space attributes is always present.
 
-affine, dimensions, voxel_sizes, voxel_order = get_reference_info(
-    reference_anatomy)
+affine, dimensions, voxel_sizes, voxel_order = get_reference_info(reference_anatomy)
 print(affine)
 print(dimensions)
 print(voxel_sizes)
@@ -109,8 +110,7 @@ print(is_header_compatible(reference_anatomy, bundles_filename[0]))
 # create a valid header using create_tractogram_header
 
 nifti_header = create_nifti_header(affine, dimensions, voxel_sizes)
-nib.save(nib.Nifti1Image(np.zeros(dimensions), affine, nifti_header),
-         'fake.nii.gz')
+nib.save(nib.Nifti1Image(np.zeros(dimensions), affine, nifti_header), "fake.nii.gz")
 nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
 
 ###############################################################################
@@ -122,19 +122,19 @@ nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
 # However, when loaded the lpt and rpt files contain invalid streamlines and
 # for particular operations/tools/functions it is safer to remove them
 
-save_tractogram(cc_sft, 'cc.trk')
-save_tractogram(laf_sft, 'laf.trk')
-save_tractogram(raf_sft, 'raf.trk')
+save_tractogram(cc_sft, "cc.trk")
+save_tractogram(laf_sft, "laf.trk")
+save_tractogram(raf_sft, "raf.trk")
 
 print(lpt_sft.is_bbox_in_vox_valid())
 lpt_sft.remove_invalid_streamlines()
 print(lpt_sft.is_bbox_in_vox_valid())
-save_tractogram(lpt_sft, 'lpt.trk')
+save_tractogram(lpt_sft, "lpt.trk")
 
 print(rpt_sft.is_bbox_in_vox_valid())
 rpt_sft.remove_invalid_streamlines()
 print(rpt_sft.is_bbox_in_vox_valid())
-save_tractogram(rpt_sft, 'rpt.trk')
+save_tractogram(rpt_sft, "rpt.trk")
 
 ###############################################################################
 # Some functions in DIPY require streamlines to be in voxel space so
@@ -175,16 +175,11 @@ raf_sft.to_corner()
 lpt_sft.to_corner()
 rpt_sft.to_corner()
 
-cc_streamlines_vox = select_random_set_of_streamlines(cc_sft.streamlines,
-                                                      1000)
-laf_streamlines_vox = select_random_set_of_streamlines(laf_sft.streamlines,
-                                                       1000)
-raf_streamlines_vox = select_random_set_of_streamlines(raf_sft.streamlines,
-                                                       1000)
-lpt_streamlines_vox = select_random_set_of_streamlines(lpt_sft.streamlines,
-                                                       1000)
-rpt_streamlines_vox = select_random_set_of_streamlines(rpt_sft.streamlines,
-                                                       1000)
+cc_streamlines_vox = select_random_set_of_streamlines(cc_sft.streamlines, 1000)
+laf_streamlines_vox = select_random_set_of_streamlines(laf_sft.streamlines, 1000)
+raf_streamlines_vox = select_random_set_of_streamlines(raf_sft.streamlines, 1000)
+lpt_streamlines_vox = select_random_set_of_streamlines(lpt_sft.streamlines, 1000)
+rpt_streamlines_vox = select_random_set_of_streamlines(rpt_sft.streamlines, 1000)
 
 # Same dimensions for every stateful tractogram, can be reused
 affine, dimensions, voxel_sizes, voxel_order = cc_sft.space_attributes
@@ -219,19 +214,14 @@ lpt_sft = StatefulTractogram(lpt_streamlines_vox, reference_anatomy, Space.VOX)
 rpt_sft = StatefulTractogram(rpt_streamlines_vox, reference_anatomy, Space.VOX)
 
 print(len(cc_sft), len(laf_sft), len(raf_sft), len(lpt_sft), len(rpt_sft))
-save_tractogram(cc_sft, 'cc_1000.trk')
-save_tractogram(laf_sft, 'laf_1000.trk')
-save_tractogram(raf_sft, 'raf_1000.trk')
-save_tractogram(lpt_sft, 'lpt_1000.trk')
-save_tractogram(rpt_sft, 'rpt_1000.trk')
+save_tractogram(cc_sft, "cc_1000.trk")
+save_tractogram(laf_sft, "laf_1000.trk")
+save_tractogram(raf_sft, "raf_1000.trk")
+save_tractogram(lpt_sft, "lpt_1000.trk")
+save_tractogram(rpt_sft, "rpt_1000.trk")
 
-nib.save(nib.Nifti1Image(cc_density, affine, nifti_header),
-         'cc_density.nii.gz')
-nib.save(nib.Nifti1Image(laf_density, affine, nifti_header),
-         'laf_density.nii.gz')
-nib.save(nib.Nifti1Image(raf_density, affine, nifti_header),
-         'raf_density.nii.gz')
-nib.save(nib.Nifti1Image(lpt_density, affine, nifti_header),
-         'lpt_density.nii.gz')
-nib.save(nib.Nifti1Image(rpt_density, affine, nifti_header),
-         'rpt_density.nii.gz')
+nib.save(nib.Nifti1Image(cc_density, affine, nifti_header), "cc_density.nii.gz")
+nib.save(nib.Nifti1Image(laf_density, affine, nifti_header), "laf_density.nii.gz")
+nib.save(nib.Nifti1Image(raf_density, affine, nifti_header), "raf_density.nii.gz")
+nib.save(nib.Nifti1Image(lpt_density, affine, nifti_header), "lpt_density.nii.gz")
+nib.save(nib.Nifti1Image(rpt_density, affine, nifti_header), "rpt_density.nii.gz")

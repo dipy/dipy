@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Classes and functions for fitting tensors """
+"""Classes and functions for fitting tensors"""
+
 import functools
 import warnings
 
@@ -41,7 +42,7 @@ def _roll_evals(evals, axis=-1):
 
     """
     if evals.shape[-1] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[-1])
+        msg = f"Expecting 3 eigenvalues, got {evals.shape[-1]}"
         raise ValueError(msg)
 
     evals = np.rollaxis(evals, axis)
@@ -79,10 +80,11 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 +
-                        (ev2 - ev3) ** 2 +
-                        (ev3 - ev1) ** 2) /
-                 ((evals * evals).sum(0) + all_zero))
+    fa = np.sqrt(
+        0.5
+        * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
+        / ((evals * evals).sum(0) + all_zero)
+    )
 
     return fa
 
@@ -157,12 +159,12 @@ def geodesic_anisotropy(evals, axis=-1):
     idx = np.nonzero(ev1)
 
     # this is the definition in [1]_
-    detD = np.power(ev1 * ev2 * ev3, 1 / 3.)
+    detD = np.power(ev1 * ev2 * ev3, 1 / 3.0)
     log1[idx] = np.log(ev1[idx] / detD[idx])
     log2[idx] = np.log(ev2[idx] / detD[idx])
     log3[idx] = np.log(ev3[idx] / detD[idx])
 
-    ga = np.sqrt(log1 ** 2 + log2 ** 2 + log3 ** 2)
+    ga = np.sqrt(log1**2 + log2**2 + log3**2)
 
     return ga
 
@@ -289,7 +291,7 @@ def trace(evals, axis=-1):
 
 
 def color_fa(fa, evecs):
-    r""" Color fractional anisotropy of diffusion tensor
+    r"""Color fractional anisotropy of diffusion tensor
 
     Parameters
     ----------
@@ -382,7 +384,7 @@ def isotropic(q_form):
     """
     tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
     my_I = np.eye(3)
-    tr_AI = (tr_A.reshape(tr_A.shape + (1, 1)) * my_I)
+    tr_AI = tr_A.reshape(tr_A.shape + (1, 1)) * my_I
     return (1 / 3.0) * tr_AI
 
 
@@ -451,7 +453,7 @@ def norm(q_form):
     np.linalg.norm
 
     """
-    return np.sqrt(np.sum(np.sum(np.abs(q_form ** 2), -1), -1))
+    return np.sqrt(np.sum(np.sum(np.abs(q_form**2), -1), -1))
 
 
 def mode(q_form):
@@ -499,8 +501,7 @@ def mode(q_form):
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle
     A_s_norm_nonzero = A_s_norm[nonzero].reshape(-1, 1, 1)
 
-    mode_nonzero = 3 * np.sqrt(6) * determinant(A_squiggle_nonzero /
-                                                A_s_norm_nonzero)
+    mode_nonzero = 3 * np.sqrt(6) * determinant(A_squiggle_nonzero / A_s_norm_nonzero)
     mode[nonzero] = mode_nonzero
 
     return mode
@@ -686,12 +687,10 @@ def tensor_prediction(dti_params, gtab, S0):
 
 
 class TensorModel(ReconstModel):
-    """ Diffusion Tensor
-    """
+    """Diffusion Tensor"""
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args,
-                 **kwargs):
-        """ A Diffusion Tensor Model [1]_, [2]_.
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
+        """A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
         ----------
@@ -753,17 +752,17 @@ class TensorModel(ReconstModel):
         if not callable(fit_method):
             try:
                 fit_method = common_fit_methods[fit_method]
-            except KeyError:
+            except KeyError as e:
                 e_s = '"' + str(fit_method) + '" is not a known fit '
-                e_s += 'method, the fit method should either be a '
-                e_s += 'function or one of the common fit methods'
-                raise ValueError(e_s)
+                e_s += "method, the fit method should either be a "
+                e_s += "function or one of the common fit methods"
+                raise ValueError(e_s) from e
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
+        self.min_signal = self.kwargs.pop("min_signal", None)
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
@@ -771,7 +770,7 @@ class TensorModel(ReconstModel):
         self.extra = {}
 
     def fit(self, data, mask=None, adjacency=False):
-        """ Fit method of the DTI model class
+        """Fit method of the DTI model class
 
         Parameters
         ----------
@@ -798,8 +797,7 @@ class TensorModel(ReconstModel):
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if adjacency > 0:
-            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask,
-                                                      adjacency)
+            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask, adjacency)
 
         if "sigma" in self.kwargs:
             sigma = self.kwargs["sigma"]
@@ -811,15 +809,19 @@ class TensorModel(ReconstModel):
                     if sigma.ndim > 1:  # spatially varying
                         sigma_in_mask = np.reshape(sigma[mask], (-1, 1))
                         if sigma_in_mask.size != data_in_mask.shape[0]:
-                            raise ValueError("ValueError: sigma size must\
+                            raise ValueError(
+                                "ValueError: sigma size must\
                                               equal number of voxels for\
-                                              spatial variation")
+                                              spatial variation"
+                            )
                     else:  # image varying
                         sigma_in_mask = sigma
                         if sigma_in_mask.size != data_in_mask.shape[-1]:
-                            raise ValueError("ValueError: sigma size must\
+                            raise ValueError(
+                                "ValueError: sigma size must\
                                               equal number of images for\
-                                              image variation")
+                                              image variation"
+                            )
             else:  # sigma passed as scalar
                 sigma_in_mask = sigma
 
@@ -833,16 +835,17 @@ class TensorModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         params_in_mask, extra = self.fit_method(
-                self.design_matrix,
-                data_in_mask,
-                return_S0_hat=self.return_S0_hat,
-                *self.args,
-                **self.kwargs)
+            self.design_matrix,
+            data_in_mask,
+            return_S0_hat=self.return_S0_hat,
+            *self.args,
+            **self.kwargs,
+        )
         if self.return_S0_hat:
             params_in_mask, model_S0 = params_in_mask
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
+            out_shape = data.shape[:-1] + (-1,)
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
@@ -862,7 +865,7 @@ class TensorModel(ReconstModel):
 
         return TensorFit(self, dti_params, model_S0=S0_params)
 
-    def predict(self, dti_params, S0=1.):
+    def predict(self, dti_params, S0=1.0):
         """
         Predict a signal for this TensorModel class instance given parameters.
 
@@ -881,10 +884,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
-
     def __init__(self, model, model_params, model_S0=None):
-        """ Initialize a TensorFit class instance.
-        """
+        """Initialize a TensorFit class instance."""
         self.model = model
         self.model_params = model_params
         self.model_S0 = model_S0
@@ -1165,9 +1166,11 @@ class TensorFit:
         """
         odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
         if len(self.evals.shape) > 1:
-            mask = np.where((self.evals[..., 0] > 0) &
-                            (self.evals[..., 1] > 0) &
-                            (self.evals[..., 2] > 0))
+            mask = np.where(
+                (self.evals[..., 0] > 0)
+                & (self.evals[..., 1] > 0)
+                & (self.evals[..., 2] > 0)
+            )
             evals = self.evals[mask]
             evecs = self.evecs[mask]
         else:
@@ -1255,26 +1258,26 @@ class TensorFit:
         if S0 is None:
             S0 = self.model_S0
             if S0 is None:  # if we didn't input or estimate S0 just use 1
-                S0 = 1.
+                S0 = 1.0
         shape = self.model_params.shape[:-1]
         size = np.prod(shape)
         if step is None:
-            step = self.model.kwargs.get('step', size)
+            step = self.model.kwargs.get("step", size)
         if step >= size:
             return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
-        params = np.reshape(self.model_params,
-                            (-1, self.model_params.shape[-1]))
+        params = np.reshape(self.model_params, (-1, self.model_params.shape[-1]))
         predict = np.empty((size, gtab.bvals.shape[0]))
         if isinstance(S0, np.ndarray):
             S0 = S0.ravel()
         for i in range(0, size, step):
             if isinstance(S0, np.ndarray):
-                this_S0 = S0[i:i + step]
+                this_S0 = S0[i : i + step]
             else:
                 this_S0 = S0
-            predict[i:i + step] = tensor_prediction(params[i:i + step], gtab,
-                                                    S0=this_S0)
-        return predict.reshape(shape + (gtab.bvals.shape[0], ))
+            predict[i : i + step] = tensor_prediction(
+                params[i : i + step], gtab, S0=this_S0
+            )
+        return predict.reshape(shape + (gtab.bvals.shape[0],))
 
 
 def iter_fit_tensor(step=1e4):
@@ -1312,8 +1315,9 @@ def iter_fit_tensor(step=1e4):
         """
 
         @functools.wraps(fit_tensor)
-        def wrapped_fit_tensor(design_matrix, data, return_S0_hat=False,
-                               step=step, *args, **kwargs):
+        def wrapped_fit_tensor(
+            design_matrix, data, return_S0_hat=False, step=step, *args, **kwargs
+        ):
             """Iterate fit_tensor function over the data chunks
 
             Parameters
@@ -1340,45 +1344,48 @@ def iter_fit_tensor(step=1e4):
             size = np.prod(shape)
             step = int(step) or size
             if step >= size:
-                return fit_tensor(design_matrix, data,
-                                  return_S0_hat=return_S0_hat,
-                                  *args, **kwargs)
+                return fit_tensor(
+                    design_matrix, data, return_S0_hat=return_S0_hat, *args, **kwargs
+                )
             data = data.reshape(-1, data.shape[-1])
-            sz = 7 if kwargs.get('return_lower_triangular', False) else 12
+            sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             extra = {}
             for i in range(0, size, step):
                 if return_S0_hat:
-                    (dtiparams[i:i + step], S0params[i:i + step]), extra_i\
-                        = fit_tensor(design_matrix,
-                                     data[i:i + step],
-                                     return_S0_hat=return_S0_hat,
-                                     *args, **kwargs)
+                    (dtiparams[i : i + step], S0params[i : i + step]), extra_i = (
+                        fit_tensor(
+                            design_matrix,
+                            data[i : i + step],
+                            return_S0_hat=return_S0_hat,
+                            *args,
+                            **kwargs,
+                        )
+                    )
                 else:
-                    dtiparams[i:i + step], extra_i\
-                        = fit_tensor(design_matrix,
-                                     data[i:i + step],
-                                     *args, **kwargs)
+                    dtiparams[i : i + step], extra_i = fit_tensor(
+                        design_matrix, data[i : i + step], *args, **kwargs
+                    )
 
                 if extra_i is not None:
                     for key in extra_i:
                         if i == 0:
                             extra[key] = np.empty(data.shape)
-                        extra[key][i:i + step] = extra_i[key]
-                else:
-                    extra == i or None
+                        extra[key][i : i + step] = extra_i[key]
 
             if extra is not None:
                 for key in extra:
                     extra[key] = extra[key].reshape(shape + (-1,))
 
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (sz, )),
-                        S0params.reshape(shape + (1, ))), extra
+                return (
+                    dtiparams.reshape(shape + (sz,)),
+                    S0params.reshape(shape + (1,)),
+                ), extra
             else:
-                return dtiparams.reshape(shape + (sz, )), extra
+                return dtiparams.reshape(shape + (sz,)), extra
 
         return wrapped_fit_tensor
 
@@ -1452,27 +1459,29 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     log_s = np.log(data)
 
     # calculate weights
-    fit_result, _ = ols_fit_tensor(design_matrix, data,
-                                   return_lower_triangular=True)
+    fit_result, _ = ols_fit_tensor(design_matrix, data, return_lower_triangular=True)
     w = np.exp(fit_result @ design_matrix.T)
 
     # the weighted problem design_matrix * w is much larger (differs per voxel)
-    fit_result = np.einsum('...ij,...j',
-                           np.linalg.pinv(design_matrix * w[..., None]),
-                           w * log_s)
+    fit_result = np.einsum(
+        "...ij,...j", np.linalg.pinv(design_matrix * w[..., None]), w * log_s
+    )
 
     if return_S0_hat:
-        return (eig_from_lo_tri(fit_result,
-                                min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1])), None
+        return (
+            eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min()),
+            np.exp(-fit_result[:, -1]),
+        ), None
     else:
         return eig_from_lo_tri(
-            fit_result, min_diffusivity=tol / -design_matrix.min()), None
+            fit_result, min_diffusivity=tol / -design_matrix.min()
+        ), None
 
 
 @iter_fit_tensor()
-def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
-                   return_lower_triangular=False):
+def ols_fit_tensor(
+    design_matrix, data, return_S0_hat=False, return_lower_triangular=False
+):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1522,19 +1531,20 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix),
-                           np.log(data))
+    fit_result = np.einsum("...ij,...j", np.linalg.pinv(design_matrix), np.log(data))
 
     if return_lower_triangular:
         return fit_result, None
 
     if return_S0_hat:
-        return (eig_from_lo_tri(fit_result,
-                                min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1])), None
+        return (
+            eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min()),
+            np.exp(-fit_result[:, -1]),
+        ), None
     else:
         return eig_from_lo_tri(
-            fit_result, min_diffusivity=tol / -design_matrix.min()), None
+            fit_result, min_diffusivity=tol / -design_matrix.min()
+        ), None
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1557,12 +1567,10 @@ def _ols_fit_matrix(design_matrix):
     return np.dot(U, U.T)
 
 
-class _NllsHelper():
-    r"""Class with member functions to return nlls error and derivative.
-    """
+class _NllsHelper:
+    r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weighting=None,
-                 sigma=None):
+    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1628,14 +1636,16 @@ class _NllsHelper():
             # And we return the SSE:
             return residuals
 
-        if weighting == 'sigma':
+        if weighting == "sigma":
             if sigma is None:
-                e_s = ("Must provide sigma float / array as input to use this "
-                       " weighting method")
+                e_s = (
+                    "Must provide sigma float / array as input to use this "
+                    " weighting method"
+                )
                 raise ValueError(e_s)
             w = 1 / (sigma**2)
 
-        elif weighting == 'gmm':
+        elif weighting == "gmm":
             # We use the Geman-McClure M-estimator to compute the weights
             if sigma is None:
                 e_s = "Must provide Geman-McClure M-estimator weights for"
@@ -1656,8 +1666,7 @@ class _NllsHelper():
                 self.sqrt_w = np.sqrt(w)[:, None]
             return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weighting=None,
-                      sigma=None):
+    def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         """The Jacobian is the first derivative of the error function [1]_.
 
         Parameters
@@ -1703,7 +1712,7 @@ class _NllsHelper():
 
 
 def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
-    """ Helper function that expands the function decompose_tensor to deal
+    """Helper function that expands the function decompose_tensor to deal
     with tensor with nan elements.
 
     Computes tensor eigen decomposition to calculate eigenvalues and
@@ -1738,18 +1747,24 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
     """
     try:
-        evals, evecs = decompose_tensor(tensor[:6],
-                                        min_diffusivity=min_diffusivity)
+        evals, evecs = decompose_tensor(tensor[:6], min_diffusivity=min_diffusivity)
 
     except np.linalg.LinAlgError:
-        evals, evecs = decompose_tensor(tensor_alternative[:6],
-                                        min_diffusivity=min_diffusivity)
+        evals, evecs = decompose_tensor(
+            tensor_alternative[:6], min_diffusivity=min_diffusivity
+        )
     return evals, evecs
 
 
-def nlls_fit_tensor(design_matrix, data, weighting=None,
-                    sigma=None, jac=True, return_S0_hat=False,
-                    fail_is_nan=False):
+def nlls_fit_tensor(
+    design_matrix,
+    data,
+    weighting=None,
+    sigma=None,
+    jac=True,
+    return_S0_hat=False,
+    fail_is_nan=False,
+):
     """
     Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
     least-squares.
@@ -1795,14 +1810,13 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     npa = design_matrix.shape[-1] + 5
 
     # Detect if number of parameters corresponds to dti
-    dti = (npa == 12)
+    dti = npa == 12
 
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
 
     # Use the OLS method parameters as the starting point for the optimization:
-    D, _ = ols_fit_tensor(design_matrix, flat_data,
-                          return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -1825,25 +1839,23 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
         start_params = ols_params[vox]
 
         try:
-
             # Do the optimization in this voxel:
             if jac:
-                this_param, status = opt.leastsq(nlls.err_func, start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       weighting,
-                                                       sigma),
-                                                 Dfun=nlls.jacobian_func)
+                this_param, status = opt.leastsq(
+                    nlls.err_func,
+                    start_params,
+                    args=(design_matrix, flat_data[vox], weighting, sigma),
+                    Dfun=nlls.jacobian_func,
+                )
             else:
-                this_param, status = opt.leastsq(nlls.err_func, start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       weighting,
-                                                       sigma))
+                this_param, status = opt.leastsq(
+                    nlls.err_func,
+                    start_params,
+                    args=(design_matrix, flat_data[vox], weighting, sigma),
+                )
 
             # Convert diffusion tensor parameters to the evals and the evecs:
-            evals, evecs = decompose_tensor(
-                from_lower_triangular(this_param[:6]))
+            evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
 
@@ -1855,8 +1867,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
             if not fail_is_nan:
                 # Convert diffusion tensor parameters to evals and evecs
-                evals, evecs = decompose_tensor(
-                    from_lower_triangular(this_param[:6]))
+                evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
                 params[vox, :3] = evals
                 params[vox, 3:12] = evecs.ravel()
             else:
@@ -1871,7 +1882,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn(ols_resort_msg, UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
@@ -1881,9 +1892,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
         return params, None
 
 
-def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
-                       return_S0_hat=False,
-                       fail_is_nan=False):
+def restore_fit_tensor(
+    design_matrix, data, sigma=None, jac=True, return_S0_hat=False, fail_is_nan=False
+):
     """
     Use the RESTORE algorithm [1]_ to calculate a robust tensor fit
 
@@ -1932,7 +1943,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     npa = design_matrix.shape[-1] + 5
 
     # Detect if number of parameters corresponds to dti
-    dti = (npa == 12)
+    dti = npa == 12
 
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
@@ -1941,8 +1952,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             sigma = np.reshape(sigma, (-1, 1))
 
     # calculate OLS solution
-    D, _ = ols_fit_tensor(design_matrix, flat_data,
-                          return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -1974,21 +1984,20 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             sigma_vox = sigma
 
         try:
-
             # Do nlls using sigma weighting in this voxel:
             if jac:
-                this_param, status = opt.leastsq(nlls.err_func, start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       'sigma',
-                                                       sigma_vox),
-                                                 Dfun=nlls.jacobian_func)
+                this_param, status = opt.leastsq(
+                    nlls.err_func,
+                    start_params,
+                    args=(design_matrix, flat_data[vox], "sigma", sigma_vox),
+                    Dfun=nlls.jacobian_func,
+                )
             else:
-                this_param, status = opt.leastsq(nlls.err_func, start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       'sigma',
-                                                       sigma_vox))
+                this_param, status = opt.leastsq(
+                    nlls.err_func,
+                    start_params,
+                    args=(design_matrix, flat_data[vox], "sigma", sigma_vox),
+                )
 
             # Get the residuals:
             pred_sig = np.exp(np.dot(design_matrix, this_param))
@@ -1997,35 +2006,40 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             # If any of the residuals are outliers (using 3 sigma as a
             # criterion following Chang et al., e.g page 1089):
             if np.any(np.abs(residuals) > 3 * sigma_vox):
-
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
-                    C = 1.4826 * np.median(np.abs(
-                        residuals - np.median(residuals)))
-                    denominator = (C**2 + residuals**2)**2
-                    gmm = np.divide(C**2, denominator,
-                                    out=np.zeros_like(denominator),
-                                    where=denominator != 0)
+                    C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+                    denominator = (C**2 + residuals**2) ** 2
+                    gmm = np.divide(
+                        C**2,
+                        denominator,
+                        out=np.zeros_like(denominator),
+                        where=denominator != 0,
+                    )
 
                     # Do nlls with GMM-weighting:
                     if jac:
                         this_param, status = opt.leastsq(
-                            nlls.err_func, start_params,
-                            args=(design_matrix, flat_data[vox], 'gmm', gmm),
-                            Dfun=nlls.jacobian_func)
+                            nlls.err_func,
+                            start_params,
+                            args=(design_matrix, flat_data[vox], "gmm", gmm),
+                            Dfun=nlls.jacobian_func,
+                        )
                     else:
-                        this_param, status = opt.leastsq(nlls.err_func,
-                                                         start_params,
-                                                         args=(design_matrix,
-                                                               flat_data[vox],
-                                                               'gmm',
-                                                               gmm))
+                        this_param, status = opt.leastsq(
+                            nlls.err_func,
+                            start_params,
+                            args=(design_matrix, flat_data[vox], "gmm", gmm),
+                        )
 
                     # Recalculate residuals given gmm fit
                     pred_sig = np.exp(np.dot(design_matrix, this_param))
                     residuals = flat_data[vox] - pred_sig
-                    perc = 100 * np.linalg.norm(this_param - start_params)  \
+                    perc = (
+                        100
+                        * np.linalg.norm(this_param - start_params)
                         / np.linalg.norm(this_param)
+                    )
                     start_params = this_param
                     if perc < 0.1:
                         break
@@ -2037,11 +2051,12 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                     non_outlier_idx = np.where(np.logical_not(cond))
                     clean_design = design_matrix[non_outlier_idx]
                     clean_data = flat_data[vox][non_outlier_idx]
-                    robust[vox] = (np.logical_not(cond))
+                    robust[vox] = np.logical_not(cond)
 
                     # recalculate OLS solution with clean data
-                    new_start, _ = ols_fit_tensor(clean_design, clean_data,
-                                                  return_lower_triangular=True)
+                    new_start, _ = ols_fit_tensor(
+                        clean_design, clean_data, return_lower_triangular=True
+                    )
 
                     if np.iterable(sigma_vox):
                         this_sigma = sigma_vox[non_outlier_idx]
@@ -2050,20 +2065,20 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
                     if jac:
                         this_param, status = opt.leastsq(
-                            nlls.err_func, new_start, args=(
-                                clean_design, clean_data, 'sigma', this_sigma),
-                            Dfun=nlls.jacobian_func)
+                            nlls.err_func,
+                            new_start,
+                            args=(clean_design, clean_data, "sigma", this_sigma),
+                            Dfun=nlls.jacobian_func,
+                        )
                     else:
-                        this_param, status = opt.leastsq(nlls.err_func,
-                                                         new_start,
-                                                         args=(clean_design,
-                                                               clean_data,
-                                                               'sigma',
-                                                               this_sigma))
+                        this_param, status = opt.leastsq(
+                            nlls.err_func,
+                            new_start,
+                            args=(clean_design, clean_data, "sigma", this_sigma),
+                        )
 
             # Convert diffusion tensor parameters to the evals and the evecs:
-            evals, evecs = decompose_tensor(
-                from_lower_triangular(this_param[:6]))
+            evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
 
@@ -2075,8 +2090,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
             if not fail_is_nan:
                 # Convert diffusion tensor parameters to evals and evecs:
-                evals, evecs = decompose_tensor(
-                    from_lower_triangular(this_param[:6]))
+                evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
                 params[vox, :3] = evals
                 params[vox, 3:12] = evecs.ravel()
             else:
@@ -2091,7 +2105,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn(ols_resort_msg, UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
     params.shape = data.shape[:-1] + (npa,)
     extra = {"robust": robust}
@@ -2102,13 +2116,11 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         return params, extra
 
 
-_lt_indices = np.array([[0, 1, 3],
-                        [1, 2, 4],
-                        [3, 4, 5]])
+_lt_indices = np.array([[0, 1, 3], [1, 2, 4], [3, 4, 5]])
 
 
 def from_lower_triangular(D):
-    """ Returns a tensor given the six unique tensor elements
+    """Returns a tensor given the six unique tensor elements
 
     Given the six unique tensor elements (in the order: Dxx, Dxy, Dyy, Dxz,
     Dyz, Dzz) returns a 3 by 3 tensor. All elements after the sixth are
@@ -2162,7 +2174,7 @@ def lower_triangular(tensor, b0=None):
 
 
 def decompose_tensor(tensor, min_diffusivity=0):
-    """ Returns eigenvalues and eigenvectors given a diffusion tensor
+    """Returns eigenvalues and eigenvectors given a diffusion tensor
 
     Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors (Basser et al., 1994a).
@@ -2209,7 +2221,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
         xi = np.ogrid[:size, :3][0]
         eigenvals = eigenvals[xi, order]
         eigenvecs = eigenvecs.reshape(shape + (3, 3))
-        eigenvals = eigenvals.reshape(shape + (3, ))
+        eigenvals = eigenvals.reshape(shape + (3,))
     eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
 
@@ -2217,7 +2229,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
 
 def design_matrix(gtab, dtype=None):
-    """  Constructs design matrix for DTI weighted least squares or
+    """Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
@@ -2236,28 +2248,28 @@ def design_matrix(gtab, dtype=None):
     """
     if gtab.btens is None:
         B = np.zeros((gtab.gradients.shape[0], 7))
-        B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
-        B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
-        B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
-        B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
-        B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
-        B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
+        B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1.0 * gtab.bvals  # Bxx
+        B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2.0 * gtab.bvals  # Bxy
+        B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1.0 * gtab.bvals  # Byy
+        B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2.0 * gtab.bvals  # Bxz
+        B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2.0 * gtab.bvals  # Byz
+        B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1.0 * gtab.bvals  # Bzz
         B[:, 6] = np.ones(gtab.gradients.shape[0])
     else:
         B = np.zeros((gtab.gradients.shape[0], 7))
-        B[:, 0] = gtab.btens[:, 0, 0]   # Bxx
+        B[:, 0] = gtab.btens[:, 0, 0]  # Bxx
         B[:, 1] = gtab.btens[:, 0, 1] * 2  # Bxy
-        B[:, 2] = gtab.btens[:, 1, 1]   # Byy
+        B[:, 2] = gtab.btens[:, 1, 1]  # Byy
         B[:, 3] = gtab.btens[:, 0, 2] * 2  # Bxz
         B[:, 4] = gtab.btens[:, 1, 2] * 2  # Byz
-        B[:, 5] = gtab.btens[:, 2, 2]   # Bzz
+        B[:, 5] = gtab.btens[:, 2, 2]  # Bzz
         B[:, 6] = np.ones(gtab.gradients.shape[0])
 
     return -B
 
 
 def quantize_evecs(evecs, odf_vertices=None):
-    """ Find the closest orientation of an evenly distributed sphere
+    """Find the closest orientation of an evenly distributed sphere
 
     Parameters
     ----------
@@ -2273,7 +2285,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     """
     max_evecs = evecs[..., :, 0]
     if odf_vertices is None:
-        odf_vertices = get_sphere('symmetric362').vertices
+        odf_vertices = get_sphere("symmetric362").vertices
     tup = max_evecs.shape[:-1]
     mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
     IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
@@ -2300,17 +2312,19 @@ def eig_from_lo_tri(data, min_diffusivity=0):
 
     """
     data = np.asarray(data)
-    evals, evecs = decompose_tensor(from_lower_triangular(data),
-                                    min_diffusivity=min_diffusivity)
+    evals, evecs = decompose_tensor(
+        from_lower_triangular(data), min_diffusivity=min_diffusivity
+    )
     dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
-    return dti_params.reshape(data.shape[:-1] + (12, ))
+    return dti_params.reshape(data.shape[:-1] + (12,))
 
 
-common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor,
-                      'OLS': ols_fit_tensor,
-                      'NLLS': nlls_fit_tensor,
-                      'RT': restore_fit_tensor,
-                      'restore': restore_fit_tensor,
-                      'RESTORE': restore_fit_tensor
-                      }
+common_fit_methods = {
+    "WLS": wls_fit_tensor,
+    "LS": ols_fit_tensor,
+    "OLS": ols_fit_tensor,
+    "NLLS": nlls_fit_tensor,
+    "RT": restore_fit_tensor,
+    "restore": restore_fit_tensor,
+    "RESTORE": restore_fit_tensor,
+}

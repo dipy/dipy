@@ -37,14 +37,14 @@ from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def test_unique_bvals_deprecated():
-    npt.assert_raises(ExpiredDeprecationError, unique_bvals,
-                      np.array([0, 800, 1400, 1401, 1405]))
+    npt.assert_raises(
+        ExpiredDeprecationError, unique_bvals, np.array([0, 800, 1400, 1401, 1405])
+    )
 
 
 def test_mask_non_weighted_bvals():
-
-    bvals = np.array([0., 100., 200., 300., 400.])
-    b0_threshold = 0.
+    bvals = np.array([0.0, 100.0, 200.0, 300.0, 400.0])
+    b0_threshold = 0.0
     expected_val = np.asarray([True, False, False, False, False])
     obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
     assert np.array_equal(obtained_val, expected_val)
@@ -53,28 +53,31 @@ def test_mask_non_weighted_bvals():
     obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
     assert np.array_equal(obtained_val, expected_val)
 
-    b0_threshold = 200.
+    b0_threshold = 200.0
     expected_val = np.asarray([True, True, True, False, False])
     obtained_val = mask_non_weighted_bvals(bvals, b0_threshold)
     assert np.array_equal(obtained_val, expected_val)
 
 
 def test_btable_prepare():
-
-    sq2 = np.sqrt(2) / 2.
+    sq2 = np.sqrt(2) / 2.0
     bvals = 1500 * np.ones(7)
     bvals[0] = 0
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
     # bt.info
-    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    fimg, fbvals, fbvecs = get_fnames("small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bt = gradient_table(bvals, bvecs)
@@ -93,19 +96,16 @@ def test_btable_prepare():
 
 
 def test_GradientTable():
-
-    gradients = np.array([[0, 0, 0],
-                          [1, 0, 0],
-                          [0, 0, 1],
-                          [3, 4, 0],
-                          [5, 0, 12]], 'float')
+    gradients = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 0, 1], [3, 4, 0], [5, 0, 12]], "float"
+    )
 
     expected_bvals = np.array([0, 1, 1, 5, 13])
     expected_b0s_mask = expected_bvals == 0
     expected_bvecs = gradients / (expected_bvals + expected_b0s_mask)[:, None]
 
     gt = GradientTable(gradients, b0_threshold=0)
-    npt.assert_('B-values shape (5,)' in gt.__str__())
+    npt.assert_("B-values shape (5,)" in gt.__str__())
     npt.assert_array_almost_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
     npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
@@ -122,33 +122,27 @@ def test_GradientTable():
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
 
     with warnings.catch_warnings(record=True) as l_warns:
-        bad_gt = gradient_table(expected_bvals, expected_bvecs,
-                                b0_threshold=200)
+        _ = gradient_table(expected_bvals, expected_bvecs, b0_threshold=200)
 
         # Select only UserWarning
-        selected_w = [w for w in l_warns
-                      if issubclass(w.category, UserWarning)]
+        selected_w = [w for w in l_warns if issubclass(w.category, UserWarning)]
         assert len(selected_w) >= 1
         msg = [str(m.message) for m in selected_w]
-        npt.assert_equal('b0_threshold has a value > 199' in msg, True)
+        npt.assert_equal("b0_threshold has a value > 199" in msg, True)
 
 
 def test_GradientTable_btensor_calculation():
-
     # Generate a gradient table without specifying b-tensors
-    gradients = np.array([[0, 0, 0],
-                          [1, 0, 0],
-                          [0, 1, 0],
-                          [0, 0, 1],
-                          [3, 4, 0],
-                          [5, 0, 12]], 'float')
+    gradients = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [3, 4, 0], [5, 0, 12]], "float"
+    )
 
     # Check that when btens attribute not specified it takes the value of None
     gt = GradientTable(gradients)
     npt.assert_equal(gt.btens, None)
 
     # Check that btens are correctly created if specified
-    gt = GradientTable(gradients, btens='LTE')
+    gt = GradientTable(gradients, btens="LTE")
 
     # Check that the number of b tensors is correct
     npt.assert_equal(gt.btens.shape[0], gt.bvals.shape[0])
@@ -162,44 +156,40 @@ def test_GradientTable_btensor_calculation():
             npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 1
-    for btens in ['LTE', 'PTE', 'STE', 'CTE']:
+    for btens in ["LTE", "PTE", "STE", "CTE"]:
         gt = GradientTable(gradients, btens=btens)
         # Check that the number of b tensors is correct
         npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
-        for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs,
-                                                   gt.btens)):
+        for bval, bvec, bten in zip(gt.bvals, gt.bvecs, gt.btens):
             # Check that the b tensor magnitude is correct
             npt.assert_almost_equal(np.trace(bten), bval)
             # Check that the b tensor orientation is correct
-            if btens == ('LTE' or 'CTE'):
+            if btens == ("LTE" or "CTE"):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]),
-                                      bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
-            elif btens == 'PTE':
+            elif btens == "PTE":
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]),
-                                      bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 2
-    btens = np.array(['LTE', 'PTE', 'STE', 'CTE', 'LTE', 'PTE'])
+    btens = np.array(["LTE", "PTE", "STE", "CTE", "LTE", "PTE"])
     gt = GradientTable(gradients, btens=btens)
     # Check that the number of b tensors is correct
     npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
-    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs,
-                                               gt.btens)):
+    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, gt.btens)):
         # Check that the b tensor magnitude is correct
         npt.assert_almost_equal(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
-        if btens[i] == ('LTE' or 'CTE'):
+        if btens[i] == ("LTE" or "CTE"):
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
                 npt.assert_almost_equal(np.abs(dot_prod), 1)
-        elif btens[i] == 'PTE':
+        elif btens[i] == "PTE":
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
@@ -212,72 +202,88 @@ def test_GradientTable_btensor_calculation():
     npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
 
     # Check invalid input
-    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
-                      btens='PPP')
-    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
-                      btens=np.array([np.eye(3, 3) for i in range(10)]))
-    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
-                      btens=np.zeros((10, 10)))
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients, btens="PPP")
+    npt.assert_raises(
+        ValueError,
+        GradientTable,
+        gradients=gradients,
+        btens=np.array([np.eye(3, 3) for i in range(10)]),
+    )
+    npt.assert_raises(
+        ValueError, GradientTable, gradients=gradients, btens=np.zeros((10, 10))
+    )
 
 
 def test_gradient_table_from_qvals_bvecs():
-    qvals = 30. * np.ones(7)
-    big_delta = .03  # pulse separation of 30ms
+    qvals = 30.0 * np.ones(7)
+    big_delta = 0.03  # pulse separation of 30ms
     small_delta = 0.01  # pulse duration of 10ms
     qvals[0] = 0
     sq2 = np.sqrt(2) / 2
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
-    gt = gradient_table_from_qvals_bvecs(qvals, bvecs,
-                                         big_delta, small_delta)
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
+    gt = gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta)
 
-    bvals_expected = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
-    gradient_strength_expected = qvals * 2 * np.pi /\
-        (small_delta * WATER_GYROMAGNETIC_RATIO)
+    bvals_expected = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.0)
+    gradient_strength_expected = (
+        qvals * 2 * np.pi / (small_delta * WATER_GYROMAGNETIC_RATIO)
+    )
     npt.assert_almost_equal(gt.gradient_strength, gradient_strength_expected)
     npt.assert_almost_equal(gt.bvals, bvals_expected)
 
 
 def test_gradient_table_from_gradient_strength_bvecs():
-    gradient_strength = .03e-3 * np.ones(7)  # clinical strength at 30 mT/m
-    big_delta = .03  # pulse separation of 30ms
+    gradient_strength = 0.03e-3 * np.ones(7)  # clinical strength at 30 mT/m
+    big_delta = 0.03  # pulse separation of 30ms
     small_delta = 0.01  # pulse duration of 10ms
     gradient_strength[0] = 0
     sq2 = np.sqrt(2) / 2
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
-    gt = gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
-                                                     big_delta, small_delta)
-    qvals_expected = (gradient_strength * WATER_GYROMAGNETIC_RATIO *
-                      small_delta / (2 * np.pi))
-    bvals_expected = (qvals_expected * 2 * np.pi) ** 2 *\
-                     (big_delta - small_delta / 3.)
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
+    gt = gradient_table_from_gradient_strength_bvecs(
+        gradient_strength, bvecs, big_delta, small_delta
+    )
+    qvals_expected = (
+        gradient_strength * WATER_GYROMAGNETIC_RATIO * small_delta / (2 * np.pi)
+    )
+    bvals_expected = (qvals_expected * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.0)
     npt.assert_almost_equal(gt.qvals, qvals_expected)
     npt.assert_almost_equal(gt.bvals, bvals_expected)
 
 
 def test_gradient_table_from_bvals_bvecs():
-
     sq2 = np.sqrt(2) / 2
     bvals = [0, 1, 2, 3, 4, 5, 6, 0]
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2],
-                      [0, 0, 0]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+            [0, 0, 0],
+        ]
+    )
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
@@ -293,72 +299,80 @@ def test_gradient_table_from_bvals_bvecs():
 
     # b-value > 0 for non-unit vector
     bad_bvals = [2, 1, 2, 3, 4, 5, 6, 0]
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bad_bvals, bvecs, b0_threshold=0.0
+    )
     # num_gard inconsistent bvals, bvecs
     bad_bvals = np.ones(7)
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bad_bvals, bvecs, b0_threshold=0.0
+    )
     # negative bvals
     bad_bvals = [-1, -1, -1, -5, -6, -10]
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bad_bvals, bvecs, b0_threshold=0.0
+    )
     # bvals not 1d
     bad_bvals = np.ones((1, 8))
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bad_bvals, bvecs, b0_threshold=0.0
+    )
     # bvec not 2d
     bad_bvecs = np.ones((1, 8, 3))
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bvals, bad_bvecs, b0_threshold=0.0
+    )
     # bvec not (N, 3)
     bad_bvecs = np.ones((8, 2))
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bvals, bad_bvecs, b0_threshold=0.0
+    )
     # bvecs not unit vectors
     bad_bvecs = bvecs * 2
-    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=0.)
+    npt.assert_raises(
+        ValueError, gradient_table_from_bvals_bvecs, bvals, bad_bvecs, b0_threshold=0.0
+    )
 
     # Test **kargs get passed along
-    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0,
-                                         big_delta=5, small_delta=2)
+    gt = gradient_table_from_bvals_bvecs(
+        bvals, bvecs, b0_threshold=0, big_delta=5, small_delta=2
+    )
     npt.assert_equal(gt.big_delta, 5)
     npt.assert_equal(gt.small_delta, 2)
 
 
 def test_gradient_table_special_bvals_bvecs_case():
     bvals = [0, 1]
-    bvecs = np.array(
-        [[0, 0, 0],
-         [0, 0, 1]]
-    )
+    bvecs = np.array([[0, 0, 0], [0, 0, 1]])
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
     npt.assert_array_equal(gt.bvals, bvals)
 
 
 def test_b0s():
-
-    sq2 = np.sqrt(2) / 2.
+    sq2 = np.sqrt(2) / 2.0
     bvals = 1500 * np.ones(8)
     bvals[0] = 0
     bvals[7] = 0
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2],
-                      [0, 0, 0]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+            [0, 0, 0],
+        ]
+    )
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(np.where(bt.b0s_mask > 0)[0], np.array([0, 7]))
     npt.assert_array_equal(np.where(bt.b0s_mask == 0)[0], np.arange(1, 7))
 
 
 def test_gtable_from_files():
-    fimg, fbvals, fbvecs = get_fnames('small_101D')
+    fimg, fbvals, fbvecs = get_fnames("small_101D")
     gt = gradient_table(fbvals, fbvecs)
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     npt.assert_array_equal(gt.bvals, bvals)
@@ -366,32 +380,40 @@ def test_gtable_from_files():
 
 
 def test_deltas():
-    sq2 = np.sqrt(2) / 2.
+    sq2 = np.sqrt(2) / 2.0
     bvals = 1500 * np.ones(7)
     bvals[0] = 0
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
     bt = gradient_table(bvals, bvecs, big_delta=5, small_delta=2)
     npt.assert_equal(bt.big_delta, 5)
     npt.assert_equal(bt.small_delta, 2)
 
 
 def test_qvalues():
-    sq2 = np.sqrt(2) / 2.
+    sq2 = np.sqrt(2) / 2.0
     bvals = 1500 * np.ones(7)
     bvals[0] = 0
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
     qvals = np.sqrt(bvals / 6) / (2 * np.pi)
     bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
     npt.assert_almost_equal(bt.qvals, qvals)
@@ -401,13 +423,17 @@ def test_qvalues():
 def test_reorient_bvecs(rng):
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     # The simple case: all affines are identity
@@ -426,26 +452,29 @@ def test_reorient_bvecs(rng):
         rot_ang = rng.random()
         cos_rot = np.cos(rot_ang)
         sin_rot = np.sin(rot_ang)
-        rotation_affines.append(np.array([[1, 0, 0, 0],
-                                          [0, cos_rot, -sin_rot, 0],
-                                          [0, sin_rot, cos_rot, 0],
-                                          [0, 0, 0, 1]]))
-        rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3],
-                                  bvecs[i])
+        rotation_affines.append(
+            np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, cos_rot, -sin_rot, 0],
+                    [0, sin_rot, cos_rot, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
+        )
+        rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3], bvecs[i])
 
     rotation_affines = np.stack(rotation_affines, axis=-1)
     # Copy over the rotation affines
     full_affines = rotation_affines[:]
     # And add some scaling and translation to each one to make this harder
     for i in range(full_affines.shape[-1]):
-        full_affines[..., i] = np.dot(full_affines[..., i],
-                                      np.array([[2.5, 0, 0, -10],
-                                                [0, 2.2, 0, 20],
-                                                [0, 0, 1, 0],
-                                                [0, 0, 0, 1]]))
+        full_affines[..., i] = np.dot(
+            full_affines[..., i],
+            np.array([[2.5, 0, 0, -10], [0, 2.2, 0, 20], [0, 0, 1, 0], [0, 0, 0, 1]]),
+        )
 
-    gt_rot = gradient_table_from_bvals_bvecs(bvals,
-                                             rotated_bvecs, b0_threshold=0)
+    gt_rot = gradient_table_from_bvals_bvecs(bvals, rotated_bvecs, b0_threshold=0)
     new_gt = reorient_bvecs(gt_rot, full_affines)
     # At the end of all this, we should be able to recover the original
     # vectors
@@ -463,11 +492,10 @@ def test_reorient_bvecs(rng):
     # Shear components in the matrix need to be decomposed into rotation only,
     # and should not lead to scaling of the bvecs
     shear_affines = []
-    for i in np.where(~gt.b0s_mask)[0]:
-        shear_affines.append(np.array([[1, 0, 1, 0],
-                                       [0, 1, 0, 0],
-                                       [0, 0, 1, 0],
-                                       [0, 0, 0, 1]]))
+    for _ in np.where(~gt.b0s_mask)[0]:
+        shear_affines.append(
+            np.array([[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        )
     shear_affines = np.stack(shear_affines, axis=-1)
     # atol is set to 1 here to do the scaling verification here,
     # so that the reorient_bvecs function does not throw an error itself
@@ -488,15 +516,13 @@ def test_nan_bvecs():
     with warnings.catch_warnings(record=True) as l_warns:
         gradient_table(fbvals, fbvecs)
         # Select only UserWarning
-        selected_w = [w for w in l_warns
-                      if issubclass(w.category, UserWarning)]
+        selected_w = [w for w in l_warns if issubclass(w.category, UserWarning)]
         npt.assert_(len(selected_w) == 0)
 
 
 @set_random_number_generator()
 def test_generate_bvecs(rng):
-    """Tests whether we have properly generated bvecs.
-    """
+    """Tests whether we have properly generated bvecs."""
     # Test if the generated b-vectors are unit vectors
     bvecs = generate_bvecs(100, rng=rng)
     norm = [np.linalg.norm(v) for v in bvecs]
@@ -505,12 +531,12 @@ def test_generate_bvecs(rng):
     # Test if two generated vectors are almost orthogonal
     bvecs_2 = generate_bvecs(2, rng=rng)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
-    npt.assert_almost_equal(cos_theta, 0., decimal=6)
+    npt.assert_almost_equal(cos_theta, 0.0, decimal=6)
 
 
 def test_getitem_idx():
     # Create a GradientTable object with some test b-values and b-vectors
-    bvals = np.array([0., 100., 200., 300., 400.])
+    bvals = np.array([0.0, 100.0, 200.0, 300.0, 400.0])
     # value should be in increasing order as b-value affects the diffusion
     # weighting of the image, and the amount of diffusion weighting increases
     # with increasing b-value.
@@ -526,14 +552,15 @@ def test_getitem_idx():
     with pytest.raises(ValueError) as excinfo:
         _ = gtab[idx]
         assert str(excinfo.value) == b0_threshold_empty_gradient_message(
-            bvals, [idx], b0_threshold)
+            bvals, [idx], b0_threshold
+        )
 
     gtab = GradientTable(gradients)
 
     # Test with a single index
     gtab_slice1 = gtab[1]
-    assert np.array_equal(gtab_slice1.bvals, np.array([100.]))
-    assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
+    assert np.array_equal(gtab_slice1.bvals, np.array([100.0]))
+    assert np.array_equal(gtab_slice1.bvecs, np.array([[1.0, 0.0, 0.0]]))
 
     # Test with a range of indices
     gtab = GradientTable(gradients)
@@ -541,13 +568,16 @@ def test_getitem_idx():
     idx_end = 5
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=b0_threshold_update_slicing_message(idx_start),
-            category=UserWarning)
+            "ignore",
+            message=b0_threshold_update_slicing_message(idx_start),
+            category=UserWarning,
+        )
         gtab_slice2 = gtab[idx_start:idx_end]
-        assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
-        assert np.array_equal(gtab_slice2.bvecs,
-                              np.array([[0., 1., 0.], [0., 0., 1.],
-                                        [1., 0., 0.]]))
+        assert np.array_equal(gtab_slice2.bvals, np.array([200.0, 300.0, 400.0]))
+        assert np.array_equal(
+            gtab_slice2.bvecs,
+            np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]),
+        )
 
 
 def test_round_bvals():
@@ -565,8 +595,7 @@ def test_round_bvals():
     npt.assert_array_almost_equal(bvals, b)
 
     # Case that b-values are in ms/um2
-    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
-                      0])
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = round_bvals(bvals)
     bvals_gt = np.array([1, 1, 1, 1, 2, 2, 2, 2, 0])
     npt.assert_array_almost_equal(bvals_gt, b)
@@ -591,8 +620,7 @@ def test_unique_bvals_tolerance():
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # Case that b-values are in ms/um2
-    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
-                      0])
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = unique_bvals_tolerance(bvals, 0.5)
     ubvals_gt = np.array([0, 0.995, 2.005])
     npt.assert_array_almost_equal(ubvals_gt, b)
@@ -623,8 +651,7 @@ def test_get_bval_indices():
     npt.assert_array_almost_equal(indices_gt, indices)
 
     # Case that b-values are in ms/um2
-    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
-                      0])
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     indices_gt = np.array([0, 1, 2, 3])
     indices = get_bval_indices(bvals, 0.995, 0.5)
     npt.assert_array_almost_equal(indices_gt, indices)
@@ -647,8 +674,7 @@ def test_unique_bvals_magnitude():
     npt.assert_array_almost_equal(b, np.array([0, 995, 2005]))
 
     # Case that b-values are in ms/um2
-    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
-                      0])
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = unique_bvals_magnitude(bvals)
     ubvals_gt = np.array([0, 1, 2])
     npt.assert_array_almost_equal(ubvals_gt, b)
@@ -681,8 +707,7 @@ def test_check_multi_b():
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
     # Case that b-values are in ms/um2 (this should successfully pass)
-    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
-                      0])
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
     gtab = gradient_table(bvals, bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
@@ -706,21 +731,12 @@ def test_btens_to_params(rng):
     expected_b_etas = np.array([0, 0, 0, 0])
 
     # Baseline tensors to test
-    linear_tensor = np.array([[1, 0, 0],
-                              [0, 0, 0],
-                              [0, 0, 0]])
-    planar_tensor = np.array([[0, 0, 0],
-                              [0, 1, 0],
-                              [0, 0, 1]]) / 2
-    spherical_tensor = np.array([[1, 0, 0],
-                                 [0, 1, 0],
-                                 [0, 0, 1]]) / 3
-    cigar_tensor = np.array([[2, 0, 0],
-                             [0, .5, 0],
-                             [0, 0, .5]]) / 3
+    linear_tensor = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    planar_tensor = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1]]) / 2
+    spherical_tensor = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) / 3
+    cigar_tensor = np.array([[2, 0, 0], [0, 0.5, 0], [0, 0, 0.5]]) / 3
 
-    base_tensors = [linear_tensor, planar_tensor,
-                    spherical_tensor, cigar_tensor]
+    base_tensors = [linear_tensor, planar_tensor, spherical_tensor, cigar_tensor]
 
     # ---------------------------------
     # Test function on baseline tensors
@@ -754,34 +770,31 @@ def test_btens_to_params(rng):
     scales = np.concatenate((np.array([1]), rng.random(n_scales)))
 
     for scale in scales:
-
-        ebs = expected_bvals*scale
+        ebs = expected_bvals * scale
 
         # Generate `n_rotations` random 3-element vectors of norm 1
         v = rng.random((n_rotations, 3)) - 0.5
-        u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
+        u = np.apply_along_axis(lambda w: w / np.linalg.norm(w), axis=1, arr=v)
 
         for rot_idx in range(n_rotations):
-
             # Get rotation matrix for current iteration
             u_i = u[rot_idx, :]
             R_i = vec2vec_rotmat(np.array([1, 0, 0]), u_i)
 
             # Rotate each of the baseline test tensors and check results
             for i, tensor in enumerate(base_tensors):
-
                 tensor_rot_i = np.matmul(np.matmul(R_i, tensor), R_i.T)
-                i_bval, i_bdelta, i_b_eta = btens_to_params(tensor_rot_i*scale)
+                i_bval, i_bdelta, i_b_eta = btens_to_params(tensor_rot_i * scale)
 
                 npt.assert_array_almost_equal(i_bval, ebs[i])
                 npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
                 npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
 
     # Input can't be string
-    npt.assert_raises(ValueError, btens_to_params, 'LTE')
+    npt.assert_raises(ValueError, btens_to_params, "LTE")
 
     # Input can't be list of strings
-    npt.assert_raises(ValueError, btens_to_params, ['LTE', 'LTE'])
+    npt.assert_raises(ValueError, btens_to_params, ["LTE", "LTE"])
 
     # Input can't be 1D nor 4D
     npt.assert_raises(ValueError, btens_to_params, np.zeros((3,)))
@@ -807,7 +820,7 @@ def test_params_to_btens():
         np.eye(3) / 3,
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]]) / 2,
         np.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 2]]) / 3,
-        np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]])
+        np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]]),
     ]
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
@@ -820,15 +833,9 @@ def test_params_to_btens():
     b_etas = [0.3, 0.8, 0.7]
 
     expected_btens = [
-        np.array([[0.12466667, 0, 0],
-                  [0, 0.32866667, 0],
-                  [0, 0, 1.24666667]]),
-        np.array([[0.18133333, 0, 0],
-                  [0, 0.13866667, 0],
-                  [0, 0, 0.08]]),
-        np.array([[0.76666667, 0, 0],
-                  [0, 0.76666667, 0],
-                  [0, 0, 0.76666667]])
+        np.array([[0.12466667, 0, 0], [0, 0.32866667, 0], [0, 0, 1.24666667]]),
+        np.array([[0.18133333, 0, 0], [0, 0.13866667, 0], [0, 0, 0.08]]),
+        np.array([[0.76666667, 0, 0], [0, 0.76666667, 0], [0, 0, 0.76666667]]),
     ]
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
@@ -844,7 +851,7 @@ def test_params_to_btens():
     bdeltas = [0, 0, -1, 1]
     b_etas = [0, 0, 0, -1]
 
-    for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
+    for bval, bdelta, b_eta in zip(bvals, bdeltas, b_etas):
         npt.assert_raises(ValueError, params_to_btens, bval, bdelta, b_eta)
 
 
@@ -853,62 +860,61 @@ def test_orientation_from_to_string():
         ras = np.array(((0, 1), (1, 1), (2, 1)))
         lps = np.array(((0, -1), (1, -1), (2, 1)))
         asl = np.array(((1, 1), (2, 1), (0, -1)))
-        npt.assert_array_equal(orientation_from_string('ras'), ras)
-        npt.assert_array_equal(orientation_from_string('lps'), lps)
-        npt.assert_array_equal(orientation_from_string('asl'), asl)
-        npt.assert_raises(ValueError, orientation_from_string, 'aasl')
+        npt.assert_array_equal(orientation_from_string("ras"), ras)
+        npt.assert_array_equal(orientation_from_string("lps"), lps)
+        npt.assert_array_equal(orientation_from_string("asl"), asl)
+        npt.assert_raises(ValueError, orientation_from_string, "aasl")
 
-        assert orientation_to_string(ras) == 'ras'
-        assert orientation_to_string(lps) == 'lps'
-        assert orientation_to_string(asl) == 'asl'
+        assert orientation_to_string(ras) == "ras"
+        assert orientation_to_string(lps) == "lps"
+        assert orientation_to_string(asl) == "asl"
 
 
 def test_reorient_vectors():
     with clear_and_catch_warnings():
         bvec = np.arange(12).reshape((3, 4))
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'ras'), bvec)
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'lpi'), -bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "ras"), bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "lpi"), -bvec)
         result = bvec[[1, 2, 0]]
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'asr'), result)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "asr"), result)
         bvec = result
         result = bvec[[1, 0, 2]] * [[-1], [1], [-1]]
-        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'ial'), result)
+        npt.assert_array_equal(reorient_vectors(bvec, "asr", "ial"), result)
         result = bvec[[1, 0, 2]] * [[-1], [1], [1]]
-        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'iar'), result)
-        npt.assert_raises(ValueError, reorient_vectors, bvec, 'ras', 'ra')
+        npt.assert_array_equal(reorient_vectors(bvec, "asr", "iar"), result)
+        npt.assert_raises(ValueError, reorient_vectors, bvec, "ras", "ra")
 
         bvec = np.arange(12).reshape((3, 4))
         bvec = bvec.T
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'ras', axis=1),
-                               bvec)
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'lpi', axis=1),
-                               -bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "ras", axis=1), bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "lpi", axis=1), -bvec)
         result = bvec[:, [1, 2, 0]]
-        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'asr', axis=1),
-                               result)
+        npt.assert_array_equal(reorient_vectors(bvec, "ras", "asr", axis=1), result)
         bvec = result
         result = bvec[:, [1, 0, 2]] * [-1, 1, -1]
-        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'ial', axis=1),
-                               result)
+        npt.assert_array_equal(reorient_vectors(bvec, "asr", "ial", axis=1), result)
         result = bvec[:, [1, 0, 2]] * [-1, 1, 1]
-        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'iar', axis=1),
-                               result)
+        npt.assert_array_equal(reorient_vectors(bvec, "asr", "iar", axis=1), result)
     bvec = np.arange(12).reshape((3, 4))
 
 
 def test_affine_input_change():
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
-    bvecs = np.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1],
-                      [sq2, sq2, 0],
-                      [sq2, 0, sq2],
-                      [0, sq2, sq2]])
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
-    
+
     # Wrong affine dimension
     affs = np.zeros((6, 4, 4))
     for i in range(4):

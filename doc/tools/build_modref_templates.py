@@ -17,7 +17,7 @@ from packaging.version import Version
 
 
 def abort(error):
-    print('*WARNING* API documentation not generated: %s' % error)
+    print(f'*WARNING* API documentation not generated: {error}')
     exit()
 
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     try:
         __import__(package)
     except ImportError as e:
-        abort("Can not import " + package)
+        abort(f"Can not import {package}")
 
     # NOTE: with the new versioning scheme, this check is not needed anymore
     # Also, this might be needed if we do not use spin to generate the docs
@@ -81,4 +81,4 @@ if __name__ == '__main__':
     ]
     docwriter.write_api_docs(outdir)
     docwriter.write_index(outdir, 'index', relative_to=outdir)
-    print('%d files written' % len(docwriter.written_modules))
+    print(f'{len(docwriter.written_modules)} files written')

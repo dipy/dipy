@@ -58,7 +58,7 @@ def sh3(cmd):
 
 
 def abort(error):
-    print('*WARNING* Command line API documentation not generated: %s' % error)
+    print(f'*WARNING* Command line API documentation not generated: {error}')
     exit()
 
 
@@ -69,7 +69,7 @@ def get_help_string(class_obj):
         parser = ia_module.IntrospectiveArgumentParser()
         parser.add_workflow(class_obj())
     except Exception as e:
-        abort("Error on {0}: {1}".format(class_obj.__name__, e))
+        abort(f"Error on {class_obj.__name__}: {e}")
 
     return parser.format_help()
 
@@ -77,7 +77,7 @@ def get_help_string(class_obj):
 def format_title(text):
     text = text.title()
     line = '-' * len(text)
-    return '{0}\n{1}\n\n'.format(text, line)
+    return f'{text}\n{line}\n\n'
 
 
 if __name__ == '__main__':
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     try:
         __import__(package)
     except ImportError:
-        abort("Cannot import " + package)
+        abort(f"Can not import {package}")
 
     # NOTE: with the new versioning scheme, this check is not needed anymore
     # Also, this might be needed if we do not use spin to generate the docs
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         if module_name is None:
             continue
 
-        module = importlib.import_module("dipy.workflows." + module_name)
+        module = importlib.import_module(f"dipy.workflows.{module_name}")
         members = inspect.getmembers(module)
         d_wkflw = {name: {"module": obj, "help": get_help_string(obj)}
                    for name, obj in members
@@ -145,11 +145,11 @@ if __name__ == '__main__':
     for fname, wflw_value in workflows_dict.items():
         flow_module_name, flow_name = wflw_value
 
-        print("Generating docs for: {0} ({1})".format(fname, flow_name))
+        print(f"Generating docs for: {fname} ({flow_name})")
         out_fname = fname + ".rst"
         with open(pjoin(outdir, out_fname), "w", encoding="utf-8") as fp:
             dashes = "=" * len(fname)
-            fp.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
+            fp.write("\n{dashes}\n{fname}\n{dashes}\n\n")
             # Trick to avoid docgen_cmd.py as cmd line
             help_txt = workflow_desc[flow_name]["help"]
             help_txt = help_txt.replace("docgen_cmd.py", fname)
@@ -177,6 +177,6 @@ if __name__ == '__main__':
         index.write("================================\n\n")
         index.write(".. toctree::\n\n")
         for cmd in cmd_list:
-            index.write("   " + cmd)
+            index.write(f"   {cmd}")
             index.write("\n")
     print("Done")

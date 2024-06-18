@@ -20,7 +20,6 @@ def test_ProbabilisticDirectionGetter():
     # Test the constructors and errors of the ProbabilisticDirectionGetter
 
     class SillyModel(SphHarmModel):
-
         sh_order = 4
 
         def fit(self, data, mask=None):
@@ -41,10 +40,13 @@ def test_ProbabilisticDirectionGetter():
         # make a dg from a fit
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
             dg = ProbabilisticDirectionGetter.from_shcoeff(
-                fit.shm_coeff, 90, unit_octahedron)
+                fit.shm_coeff, 90, unit_octahedron
+            )
 
         state = dg.get_direction(point, direction)
         npt.assert_equal(state, 1)
@@ -52,10 +54,13 @@ def test_ProbabilisticDirectionGetter():
         # make a dg from a fit (using sh_to_pmf=True)
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning)
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
             dg = ProbabilisticDirectionGetter.from_shcoeff(
-                fit.shm_coeff, 90, unit_octahedron, sh_to_pmf=True)
+                fit.shm_coeff, 90, unit_octahedron, sh_to_pmf=True
+            )
 
         state = dg.get_direction(point, direction)
         npt.assert_equal(state, 1)
@@ -69,31 +74,49 @@ def test_ProbabilisticDirectionGetter():
 
         # pmf shape must match sphere
         bad_pmf = pmf[..., 1:]
-        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
-                          bad_pmf, 90, unit_octahedron)
+        npt.assert_raises(
+            ValueError,
+            ProbabilisticDirectionGetter.from_pmf,
+            bad_pmf,
+            90,
+            unit_octahedron,
+        )
 
         # pmf must have 4 dimensions
         bad_pmf = pmf[0, ...]
-        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
-                          bad_pmf, 90, unit_octahedron)
+        npt.assert_raises(
+            ValueError,
+            ProbabilisticDirectionGetter.from_pmf,
+            bad_pmf,
+            90,
+            unit_octahedron,
+        )
         # pmf cannot have negative values
         pmf[0, 0, 0, 0] = -1
-        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
-                          pmf, 90, unit_octahedron)
+        npt.assert_raises(
+            ValueError, ProbabilisticDirectionGetter.from_pmf, pmf, 90, unit_octahedron
+        )
 
         # Check basis_type keyword
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", message=tournier07_legacy_msg,
-                category=PendingDeprecationWarning)
+                "ignore",
+                message=tournier07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
 
             dg = ProbabilisticDirectionGetter.from_shcoeff(
-                fit.shm_coeff, 90, unit_octahedron, basis_type="tournier07")
+                fit.shm_coeff, 90, unit_octahedron, basis_type="tournier07"
+            )
 
-        npt.assert_raises(ValueError,
-                          ProbabilisticDirectionGetter.from_shcoeff,
-                          fit.shm_coeff, 90, unit_octahedron,
-                          basis_type="not a basis")
+        npt.assert_raises(
+            ValueError,
+            ProbabilisticDirectionGetter.from_shcoeff,
+            fit.shm_coeff,
+            90,
+            unit_octahedron,
+            basis_type="not a basis",
+        )
 
 
 def test_DeterministicMaximumDirectionGetter():
@@ -105,15 +128,13 @@ def test_DeterministicMaximumDirectionGetter():
 
     # No valid direction
     pmf = np.zeros((3, 3, 3, N))
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90,
-                                                      unit_octahedron)
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, unit_octahedron)
     state = dg.get_direction(point, direction)
     npt.assert_equal(state, 1)
 
     # Test BF #1566 - bad condition in DeterministicMaximumDirectionGetter
     pmf = np.zeros((3, 3, 3, N))
     pmf[0, 0, 0, 0] = 1
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 0,
-                                                      unit_octahedron)
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 0, unit_octahedron)
     state = dg.get_direction(point, direction)
     npt.assert_equal(state, 1)

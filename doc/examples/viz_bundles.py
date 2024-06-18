@@ -14,23 +14,24 @@ from dipy.tracking.streamline import length, transform_streamlines
 from dipy.viz import actor, window
 
 fetch_bundles_2_subjects()
-dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
-                              bundles=['cg.left', 'cst.right'])
+dix = read_bundles_2_subjects(
+    subj_id="subj_1", metrics=["fa"], bundles=["cg.left", "cst.right"]
+)
 
 ###############################################################################
 # Store fractional anisotropy.
 
-fa = dix['fa']
+fa = dix["fa"]
 
 ###############################################################################
 # Store grid to world transformation matrix.
 
-affine = dix['affine']
+affine = dix["affine"]
 
 ###############################################################################
 # Store the cingulum bundle. A bundle is a list of streamlines.
 
-bundle = dix['cg.left']
+bundle = dix["cg.left"]
 
 ###############################################################################
 # It happened that this bundle is in world coordinates and therefore we need
@@ -49,15 +50,17 @@ scene = window.Scene()
 
 stream_actor = actor.line(bundle_native)
 
-scene.set_camera(position=(-176.42, 118.52, 128.20),
-                 focal_point=(113.30, 128.31, 76.56),
-                 view_up=(0.18, 0.00, 0.98))
+scene.set_camera(
+    position=(-176.42, 118.52, 128.20),
+    focal_point=(113.30, 128.31, 76.56),
+    view_up=(0.18, 0.00, 0.98),
+)
 
 scene.add(stream_actor)
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle1.png', size=(600, 600))
+window.record(scene, out_path="bundle1.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -90,7 +93,7 @@ scene.add(stream_actor2)
 scene.add(bar)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle2.png', size=(600, 600))
+window.record(scene, out_path="bundle2.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -108,18 +111,16 @@ scene.clear()
 hue = (0.0, 0.0)  # red only
 saturation = (0.0, 1.0)  # white to red
 
-lut_cmap = actor.colormap_lookup_table(hue_range=hue,
-                                       saturation_range=saturation)
+lut_cmap = actor.colormap_lookup_table(hue_range=hue, saturation_range=saturation)
 
-stream_actor3 = actor.line(bundle_native, fa, linewidth=0.1,
-                           lookup_colormap=lut_cmap)
+stream_actor3 = actor.line(bundle_native, fa, linewidth=0.1, lookup_colormap=lut_cmap)
 bar2 = actor.scalar_bar(lut_cmap)
 
 scene.add(stream_actor3)
 scene.add(bar2)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle3.png', size=(600, 600))
+window.record(scene, out_path="bundle3.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -134,12 +135,12 @@ window.record(scene, out_path='bundle3.png', size=(600, 600))
 # orange.
 
 scene.clear()
-stream_actor4 = actor.line(bundle_native, (1., 0.5, 0), linewidth=0.1)
+stream_actor4 = actor.line(bundle_native, (1.0, 0.5, 0), linewidth=0.1)
 
 scene.add(stream_actor4)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle4.png', size=(600, 600))
+window.record(scene, out_path="bundle4.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -163,10 +164,12 @@ saturation = (0.0, 1.0)  # black to white
 lut_cmap = actor.colormap_lookup_table(
     scale_range=(lengths.min(), lengths.max()),
     hue_range=hue,
-    saturation_range=saturation)
+    saturation_range=saturation,
+)
 
-stream_actor5 = actor.line(bundle_native, lengths, linewidth=0.1,
-                           lookup_colormap=lut_cmap)
+stream_actor5 = actor.line(
+    bundle_native, lengths, linewidth=0.1, lookup_colormap=lut_cmap
+)
 
 scene.add(stream_actor5)
 bar3 = actor.scalar_bar(lut_cmap)
@@ -174,7 +177,7 @@ bar3 = actor.scalar_bar(lut_cmap)
 scene.add(bar3)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle5.png', size=(600, 600))
+window.record(scene, out_path="bundle5.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -195,13 +198,14 @@ rng = np.random.default_rng()
 
 colors = [rng.random(streamline.shape) for streamline in bundle_native]
 
-stream_actor6 = actor.line(bundle_native, np.asarray(colors, dtype=object),
-                           linewidth=0.2)
+stream_actor6 = actor.line(
+    bundle_native, np.asarray(colors, dtype=object), linewidth=0.2
+)
 
 scene.add(stream_actor6)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='bundle6.png', size=(600, 600))
+window.record(scene, out_path="bundle6.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

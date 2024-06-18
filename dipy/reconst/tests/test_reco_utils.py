@@ -7,9 +7,7 @@ from dipy.reconst.recspeed import adj_to_countarrs, argmax_from_countarrs
 
 
 def test_adj_countarrs():
-    adj = [[0, 1, 2],
-           [2, 3],
-           [4, 5, 6, 7]]
+    adj = [[0, 1, 2], [2, 3], [4, 5, 6, 7]]
     counts, inds = adj_to_countarrs(adj)
     assert_array_equal(counts, [3, 2, 4])
     assert_equal(counts.dtype.type, np.uint32)

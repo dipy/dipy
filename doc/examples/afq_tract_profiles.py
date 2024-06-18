@@ -21,8 +21,7 @@ import os.path as op
 import matplotlib.pyplot as plt
 import numpy as np
 
-import dipy.data as dpd
-from dipy.data.fetcher import get_two_hcp842_bundles
+from dipy.data.fetcher import fetch_hbn, get_two_hcp842_bundles
 from dipy.io.image import load_nifti
 from dipy.io.streamline import load_trk
 from dipy.segment.clustering import QuickBundles
@@ -32,45 +31,59 @@ import dipy.stats.analysis as dsa
 import dipy.tracking.streamline as dts
 
 ###############################################################################
-# To get started, we will grab the bundles.
+# To demonstrate this, we will use data from the Healthy Brain Network (HBN)
+# study [Alexander2017]_ that has already been processed [RichieHalford2022]_.
+# For this demonstration, we will use only the left arcuate fasciculus (ARC)
+# and the left corticospinal tract (CST) from the subject NDARAA948VFH.
 
-bundles_path = dpd.fetch_bundles_2_subjects()
-bundles_folder = bundles_path[1]
+subject = "NDARAA948VFH"
+session = "HBNsiteRU"
 
-cst_l_file = op.join(bundles_folder, "bundles_2_subjects", "subj_2", "bundles",
-                     "bundles_cst.left.trk")
-af_l_file = op.join(bundles_folder, "bundles_2_subjects", "subj_2", "bundles",
-                    "bundles_af.left.trk")
+fdict, path = fetch_hbn([subject], include_afq=True)
 
+afq_path = op.join(path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
 
 ###############################################################################
-# Either way, we can use the `dipy.io` API to read in the bundles from file.
-# `load_trk` returns both the streamlines, as well as header information.
+# We can use the `dipy.io` API to read in the bundles from file.
+# `load_trk` returns both the streamlines, as well as header information, and
+# the `streamlines` attribute will give us access to the sequence of arrays
+# that contain the streamline coordinates.
+
+cst_l_file = op.join(
+    afq_path,
+    "clean_bundles",
+    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+    "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk",
+)
+
+arc_l_file = op.join(
+    afq_path,
+    "clean_bundles",
+    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+    "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
+)
 
 cst_l = load_trk(cst_l_file, "same", bbox_valid_check=False).streamlines
-af_l = load_trk(af_l_file, "same", bbox_valid_check=False).streamlines
+arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 
 ###############################################################################
 # In the next step, we need to make sure that all the streamlines in each
 # bundle are oriented the same way. For example, for the CST, we want to make
 # sure that all the bundles have their cortical termination at one end of the
-# streamline.
-# This is that when we later extract values from a volume, we won't have
-# different streamlines going in opposite directions.
+# streamline. This is so that when we later extract values from a volume,
+# we will not have different streamlines going in opposite directions.
 #
 # To orient all the streamlines in each bundles, we will create standard
-# streamlines, by finding the centroids of the left AF and CST bundle models.
+# streamlines, by finding the centroids of the left ARC and CST bundle models.
 #
 # The advantage of using the model bundles is that we can use the same
-# standard for different subjects, which means that we'll get roughly the
-# same orientation
+# standard for different subjects, which means that we'll get the same
+# orientation of the streamlines in all subjects.
 
-model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
+model_arc_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_af_l = load_trk(model_af_l_file, "same",
-                      bbox_valid_check=False).streamlines
-model_cst_l = load_trk(model_cst_l_file, "same",
-                       bbox_valid_check=False).streamlines
+model_arc_l = load_trk(model_arc_l_file, "same", bbox_valid_check=False).streamlines
+model_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False).streamlines
 
 
 feature = ResampleFeature(nb_points=100)
@@ -86,7 +99,7 @@ qb = QuickBundles(np.inf, metric=metric)
 cluster_cst_l = qb.cluster(model_cst_l)
 standard_cst_l = cluster_cst_l.centroids[0]
 
-cluster_af_l = qb.cluster(model_af_l)
+cluster_af_l = qb.cluster(model_arc_l)
 standard_af_l = cluster_af_l.centroids[0]
 
 ###############################################################################
@@ -97,33 +110,35 @@ standard_af_l = cluster_af_l.centroids[0]
 # space of the individual, and not relative to the atlas space.
 
 oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l)
-oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l)
+oriented_arc_l = dts.orient_by_streamline(arc_l, standard_af_l)
 
 ###############################################################################
-# Read volumetric data from an image corresponding to this subject.
-#
-# For the purpose of this, we've extracted only the FA within the bundles in
-# question, but in real use, this is where you would add the FA map of your
-# subject.
+# Tract profiles are created from a scalar property of the volume. Here, we
+# read volumetric data from an image corresponding to the FA calculated in
+# this subject with the diffusion tensor imaging (DTI) model.
 
-files, folder = dpd.fetch_bundle_fa_hcp()
-
-fa, fa_affine = load_nifti(op.join(folder, "hcp_bundle_fa.nii.gz"))
+fa, fa_affine = load_nifti(
+    op.join(
+        afq_path,
+        f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
+        "-preproc_dwi_model-DTI_FA.nii.gz",
+    )
+)
 
 ###############################################################################
-# Calculate weights for each bundle:
+# As mentioned at the outset, we would like to downweight the streamlines that
+# are far from the core trajectory of the tracts. We calculate
+# weights for each bundle:
 
 w_cst_l = dsa.gaussian_weights(oriented_cst_l)
-w_af_l = dsa.gaussian_weights(oriented_af_l)
+w_arc_l = dsa.gaussian_weights(oriented_arc_l)
 
 ###############################################################################
 # And then use the weights to calculate the tract profiles for each bundle
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine,
-                                weights=w_cst_l)
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine, weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_af_l, fa_affine,
-                               weights=w_af_l)
+profile_af_l = dsa.afq_profile(fa, oriented_arc_l, fa_affine, weights=w_arc_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
@@ -131,7 +146,7 @@ ax1.plot(profile_cst_l)
 ax1.set_ylabel("Fractional anisotropy")
 ax1.set_xlabel("Node along CST")
 ax2.plot(profile_af_l)
-ax2.set_xlabel("Node along AF")
+ax2.set_xlabel("Node along ARC")
 fig.savefig("tract_profiles")
 
 ###############################################################################
@@ -141,7 +156,6 @@ fig.savefig("tract_profiles")
 # left AF (right).
 #
 #
-#
 # References
 # ----------
 #
@@ -149,6 +163,14 @@ fig.savefig("tract_profiles")
 #     Brian A. Wandell, and Heidi M. Feldman. 2012. "Tract Profiles of White
 #     Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
 #     (11): e49790.
+#
+# .. [Alexander2017] Alexander LM, Escalera J, Ai L, et al. An open resource
+#     for transdiagnostic research in pediatric mental health and learning
+#     disorders. Sci Data. 2017;4:170181.
+#
+# .. [RichieHalford2022] Richie-Halford A, Cieslak M, Ai L, et al. An
+#     analysis-ready and quality controlled resource for pediatric brain
+#     white-matter research. Scientific Data. 2022;9(1):1-27.
 #
 # .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles
 #    using local and global streamline-based registration and clustering,

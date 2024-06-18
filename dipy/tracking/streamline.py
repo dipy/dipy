@@ -15,7 +15,7 @@ import dipy.tracking.utils as ut
 
 
 def unlist_streamlines(streamlines):
-    """ Return the streamlines not as a list but as an array and an offset
+    """Return the streamlines not as a list but as an array and an offset
 
     Parameters
     ----------
@@ -29,11 +29,10 @@ def unlist_streamlines(streamlines):
     """
 
     points = np.concatenate(streamlines, axis=0)
-    offsets = np.zeros(len(streamlines), dtype='i8')
+    offsets = np.zeros(len(streamlines), dtype="i8")
 
     curr_pos = 0
-    for (i, s) in enumerate(streamlines):
-
+    for i, s in enumerate(streamlines):
         prev_pos = curr_pos
         curr_pos += s.shape[0]
         points[prev_pos:curr_pos] = s
@@ -43,7 +42,7 @@ def unlist_streamlines(streamlines):
 
 
 def relist_streamlines(points, offsets):
-    """ Given a representation of a set of streamlines as a large array and
+    """Given a representation of a set of streamlines as a large array and
     an offsets array return the streamlines as a list of shorter arrays.
 
     Parameters
@@ -56,16 +55,16 @@ def relist_streamlines(points, offsets):
     streamlines: sequence
     """
 
-    streamlines = [points[0: offsets[0]]]
+    streamlines = [points[0 : offsets[0]]]
 
     for i in range(len(offsets) - 1):
-        streamlines.append(points[offsets[i]: offsets[i + 1]])
+        streamlines.append(points[offsets[i] : offsets[i + 1]])
 
     return streamlines
 
 
 def center_streamlines(streamlines):
-    """ Move streamlines to the origin
+    """Move streamlines to the origin
 
     Parameters
     ----------
@@ -84,13 +83,15 @@ def center_streamlines(streamlines):
     return [s - center for s in streamlines], center
 
 
-def deform_streamlines(streamlines,
-                       deform_field,
-                       stream_to_current_grid,
-                       current_grid_to_world,
-                       stream_to_ref_grid,
-                       ref_grid_to_world):
-    """ Apply deformation field to streamlines
+def deform_streamlines(
+    streamlines,
+    deform_field,
+    stream_to_current_grid,
+    current_grid_to_world,
+    stream_to_ref_grid,
+    ref_grid_to_world,
+):
+    """Apply deformation field to streamlines
 
     Parameters
     ----------
@@ -116,23 +117,23 @@ def deform_streamlines(streamlines,
     if deform_field.shape[-1] != 3:
         raise ValueError("Last dimension of deform_field needs shape==3")
 
-    stream_in_curr_grid = transform_streamlines(streamlines,
-                                                stream_to_current_grid)
-    displacements = values_from_volume(deform_field, stream_in_curr_grid,
-                                       np.eye(4))
-    stream_in_world = transform_streamlines(stream_in_curr_grid,
-                                            current_grid_to_world)
-    new_streams_in_world = [np.add(d, s) for d, s in zip(displacements,
-                                                      stream_in_world)]
-    new_streams_grid = transform_streamlines(new_streams_in_world,
-                                             np.linalg.inv(ref_grid_to_world))
-    new_streamlines = transform_streamlines(new_streams_grid,
-                                            np.linalg.inv(stream_to_ref_grid))
+    stream_in_curr_grid = transform_streamlines(streamlines, stream_to_current_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid, np.eye(4))
+    stream_in_world = transform_streamlines(stream_in_curr_grid, current_grid_to_world)
+    new_streams_in_world = [
+        np.add(d, s) for d, s in zip(displacements, stream_in_world)
+    ]
+    new_streams_grid = transform_streamlines(
+        new_streams_in_world, np.linalg.inv(ref_grid_to_world)
+    )
+    new_streamlines = transform_streamlines(
+        new_streams_grid, np.linalg.inv(stream_to_ref_grid)
+    )
     return new_streamlines
 
 
 def transform_streamlines(streamlines, mat, in_place=False):
-    """ Apply affine transformation to streamlines
+    """Apply affine transformation to streamlines
 
     Parameters
     ----------
@@ -154,22 +155,23 @@ def transform_streamlines(streamlines, mat, in_place=False):
         old_data_dtype = streamlines._data.dtype
         old_offsets_dtype = streamlines._offsets.dtype
         if in_place:
-            streamlines._data = apply_affine(
-                mat, streamlines._data).astype(old_data_dtype)
+            streamlines._data = apply_affine(mat, streamlines._data).astype(
+                old_data_dtype
+            )
             return streamlines
         new_streamlines = streamlines.copy()
-        new_streamlines._offsets = new_streamlines._offsets.astype(
-            old_offsets_dtype)
+        new_streamlines._offsets = new_streamlines._offsets.astype(old_offsets_dtype)
         if new_streamlines._data.size:
-            new_streamlines._data = apply_affine(
-                mat, new_streamlines._data).astype(old_data_dtype)
+            new_streamlines._data = apply_affine(mat, new_streamlines._data).astype(
+                old_data_dtype
+            )
         return new_streamlines
     # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]
 
 
 def select_random_set_of_streamlines(streamlines, select, rng=None):
-    """ Select a random set of streamlines
+    """Select a random set of streamlines
 
     Parameters
     ----------
@@ -200,8 +202,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
     return [streamlines[i] for i in index]
 
 
-def select_by_rois(streamlines, affine, rois, include, mode=None,
-                   tol=None):
+def select_by_rois(streamlines, affine, rois, include, mode=None, tol=None):
     """Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
     but only if they do not pass near ROI2.
@@ -307,8 +308,8 @@ def select_by_rois(streamlines, affine, rois, include, mode=None,
         tol = dtc
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
-        w_s += " inclusion ROI. Setting to: %s" % dist_to_corner
-        warn(w_s)
+        w_s += f" inclusion ROI. Setting to: {dist_to_corner}"
+        warn(w_s, stacklevel=2)
         tol = dtc
     include_roi, exclude_roi = ut.reduce_rois(rois, include)
     include_roi_coords = np.array(np.where(include_roi)).T
@@ -319,17 +320,14 @@ def select_by_rois(streamlines, affine, rois, include, mode=None,
     if mode is None:
         mode = "any"
     for sl in streamlines:
-        include = ut.streamline_near_roi(sl, x_include_roi_coords, tol=tol,
-                                         mode=mode)
-        exclude = ut.streamline_near_roi(sl, x_exclude_roi_coords, tol=tol,
-                                         mode=mode)
+        include = ut.streamline_near_roi(sl, x_include_roi_coords, tol=tol, mode=mode)
+        exclude = ut.streamline_near_roi(sl, x_exclude_roi_coords, tol=tol, mode=mode)
         if include and not exclude:
             yield sl
 
 
-def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
-                       override=False):
-    """ Computes the cluster confidence index (cci), which is an
+def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1, override=False):
+    """Computes the cluster confidence index (cci), which is an
     estimation of the support a set of streamlines gives to
     a particular pathway.
 
@@ -383,20 +381,22 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
     # error if any streamlines are shorter than 20mm
     lengths = list(length(streamlines))
     if min(lengths) < 20 and not override:
-        raise ValueError('Short streamlines found. We recommend removing them.'
-                         ' To continue without removing short streamlines set'
-                         ' override=True')
+        raise ValueError(
+            "Short streamlines found. We recommend removing them."
+            " To continue without removing short streamlines set"
+            " override=True"
+        )
 
     # calculate the pairwise MDF distance between all streamlines in dataset
     subsamp_sls = set_number_of_points(streamlines, subsample)
 
     cci_score_mtrx = np.zeros([len(subsamp_sls)])
 
-    for i, sl in enumerate(subsamp_sls):
+    for i, _ in enumerate(subsamp_sls):
         mdf_mx = bundles_distances_mdf([subsamp_sls[i]], subsamp_sls)
         if (mdf_mx == 0).sum() > 1:
-            raise ValueError('Identical streamlines. CCI calculation invalid')
-        mdf_mx_oi = (mdf_mx > 0) & (mdf_mx < max_mdf) & ~ np.isnan(mdf_mx)
+            raise ValueError("Identical streamlines. CCI calculation invalid")
+        mdf_mx_oi = (mdf_mx > 0) & (mdf_mx < max_mdf) & ~np.isnan(mdf_mx)
         mdf_mx_oi_only = mdf_mx[mdf_mx_oi]
         cci_score = np.sum(np.divide(1, np.power(mdf_mx_oi_only, power)))
         cci_score_mtrx[i] = cci_score
@@ -411,9 +411,9 @@ def _orient_by_roi_generator(out, roi1, roi2):
     Performs the inner loop separately. This is needed, because functions with
     `yield` always return a generator
     """
-    for idx, sl in enumerate(out):
-        dist1 = cdist(sl, roi1, 'euclidean')
-        dist2 = cdist(sl, roi2, 'euclidean')
+    for sl in out:
+        dist1 = cdist(sl, roi1, "euclidean")
+        dist2 = cdist(sl, roi2, "euclidean")
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
@@ -433,8 +433,8 @@ def _orient_by_roi_list(out, roi1, roi2):
     updated list.
     """
     for idx, sl in enumerate(out):
-        dist1 = cdist(sl, roi1, 'euclidean')
-        dist2 = cdist(sl, roi2, 'euclidean')
+        dist1 = cdist(sl, roi1, "euclidean")
+        dist2 = cdist(sl, roi2, "euclidean")
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
@@ -444,8 +444,7 @@ def _orient_by_roi_list(out, roi1, roi2):
     return out
 
 
-def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False,
-                   as_generator=False):
+def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False, as_generator=False):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -523,7 +522,7 @@ def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False,
 
 
 def _orient_by_sl_generator(out, std_array, fgarray):
-    """Helper function that implements the generator version of this """
+    """Helper function that implements the generator version of this"""
     for idx, sl in enumerate(fgarray):
         dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
         dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
@@ -545,8 +544,9 @@ def _orient_by_sl_list(out, std_array, fgarray):
     return out
 
 
-def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
-                         as_generator=False):
+def orient_by_streamline(
+    streamlines, standard, n_points=12, in_place=False, as_generator=False
+):
     """
     Orient a bundle of streamlines to a standard streamline.
 
@@ -574,8 +574,8 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
 
     """
     # Start by resampling, so that distance calculation is easy:
-    fgarray = set_number_of_points(streamlines,  n_points)
-    std_array = set_number_of_points([standard],  n_points)
+    fgarray = set_number_of_points(streamlines, n_points)
+    std_array = set_number_of_points([standard], n_points)
 
     if as_generator:
         if in_place:
@@ -630,25 +630,20 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
     """
     data = data.astype(float)
     if isinstance(streamlines, (list, types.GeneratorType, Streamlines)):
-        streamlines = transform_streamlines(streamlines,
-                                            np.linalg.inv(affine))
+        streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
         vals = []
         for sl in streamlines:
             if threedvec:
-                vals.append(list(interpolate_vector_3d(
-                    data, sl.astype(float))[0]))
+                vals.append(list(interpolate_vector_3d(data, sl.astype(float))[0]))
             else:
-                vals.append(list(interpolate_scalar_3d(
-                    data, sl.astype(float))[0]))
+                vals.append(list(interpolate_scalar_3d(data, sl.astype(float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
-        sl_cat = streamlines.reshape(sl_shape[0] *
-                                     sl_shape[1], 3).astype(float)
+        sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3).astype(float)
 
         inv_affine = np.linalg.inv(affine)
-        sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
-                  inv_affine[:3, 3])
+        sl_cat = np.dot(sl_cat, inv_affine[:3, :3]) + inv_affine[:3, 3]
 
         # So that we can index in one operation:
         if threedvec:
@@ -659,9 +654,11 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
         if vals.shape[-1] == 1:
             vals = np.reshape(vals, vals.shape[:-1])
     else:
-        raise RuntimeError("Extracting values from a volume ",
-                           "requires streamlines input as an array, ",
-                           "a list of arrays, or a streamline generator.")
+        raise RuntimeError(
+            "Extracting values from a volume ",
+            "requires streamlines input as an array, ",
+            "a list of arrays, or a streamline generator.",
+        )
 
     return vals
 
@@ -726,4 +723,4 @@ def values_from_volume(data, streamlines, affine):
 
 
 def nbytes(streamlines):
-    return streamlines._data.nbytes / 1024. ** 2
+    return streamlines._data.nbytes / 1024.0**2

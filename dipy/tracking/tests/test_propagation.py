@@ -7,7 +7,7 @@ from dipy.tracking.propspeed import eudx_both_directions, ndarray_offset
 
 def stepped_1d(arr_1d):
     # Make a version of `arr_1d` which is not contiguous
-    return np.vstack((arr_1d, arr_1d)).ravel(order='F')[::2]
+    return np.vstack((arr_1d, arr_1d)).ravel(order="F")[::2]
 
 
 def test_offset():
@@ -21,10 +21,8 @@ def test_offset():
         assert_equal(A.ravel()[4], A[1, 1])
         # Index and strides arrays must be C-continuous. Test this is enforced
         # by using non-contiguous versions of the input arrays.
-        assert_raises(ValueError, ndarray_offset,
-                      stepped_1d(index), strides, 2, i_size)
-        assert_raises(ValueError, ndarray_offset,
-                      index, stepped_1d(strides), 2, i_size)
+        assert_raises(ValueError, ndarray_offset, stepped_1d(index), strides, 2, i_size)
+        assert_raises(ValueError, ndarray_offset, index, stepped_1d(strides), 2, i_size)
 
 
 def test_eudx_both_directions_errors():
@@ -35,15 +33,59 @@ def test_eudx_both_directions_errors():
     ind = qa.copy()
     # All of seed, qa, ind, odf_vertices must be C-contiguous.  Check by
     # passing in versions that aren't C contiguous
-    assert_raises(ValueError, eudx_both_directions,
-                  stepped_1d(seed), 0, qa, ind, sphere.vertices, 0.5, 0.1,
-                  1., 1., 2)
-    assert_raises(ValueError, eudx_both_directions,
-                  seed, 0, qa[..., ::2], ind, sphere.vertices, 0.5, 0.1,
-                  1., 1., 2)
-    assert_raises(ValueError, eudx_both_directions,
-                  seed, 0, qa, ind[..., ::2], sphere.vertices, 0.5, 0.1,
-                  1., 1., 2)
-    assert_raises(ValueError, eudx_both_directions,
-                  seed, 0, qa, ind, sphere.vertices[::2], 0.5, 0.1,
-                  1., 1., 2)
+    assert_raises(
+        ValueError,
+        eudx_both_directions,
+        stepped_1d(seed),
+        0,
+        qa,
+        ind,
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa[..., ::2],
+        ind,
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa,
+        ind[..., ::2],
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa,
+        ind,
+        sphere.vertices[::2],
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )

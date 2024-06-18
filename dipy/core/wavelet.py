@@ -100,12 +100,12 @@ def afb3D_A(x, af, d):
     hi = np.zeros((L + n1Half, N2, N3))
     for k in range(N3):
         lo[:, :, k] = nlmeans_block.firdn(x[:, :, k], lpf)
-    lo[:L] = lo[:L] + lo[n1Half:n1Half + L, :, :]
+    lo[:L] = lo[:L] + lo[n1Half : n1Half + L, :, :]
     lo = lo[:n1Half, :, :]
 
     for k in range(N3):
         hi[:, :, k] = nlmeans_block.firdn(x[:, :, k], hpf)
-    hi[:L] = hi[:L] + hi[n1Half:n1Half + L, :, :]
+    hi[:L] = hi[:L] + hi[n1Half : n1Half + L, :, :]
     hi = hi[:n1Half, :, :]
     # permute dimensions of x (inverse permutation)
     q = permutationinverse(p)
@@ -147,9 +147,10 @@ def sfb3D_A(lo, hi, sf, d):
     L = sf.shape[0]
     y = np.zeros((N + L - 2, N2, N3))
     for k in range(N3):
-        y[:, :, k] = (np.array(nlmeans_block.upfir(lo[:, :, k], lpf)) +
-                      np.array(nlmeans_block.upfir(hi[:, :, k], hpf)))
-    y[:(L - 2), :, :] = y[:(L - 2), :, :] + y[N:(N + L - 2), :, :]
+        y[:, :, k] = np.array(nlmeans_block.upfir(lo[:, :, k], lpf)) + np.array(
+            nlmeans_block.upfir(hi[:, :, k], hpf)
+        )
+    y[: (L - 2), :, :] = y[: (L - 2), :, :] + y[N : (N + L - 2), :, :]
     y = y[:N, :, :]
     y = cshift3D(y, 1 - L / 2, 0)
     # permute dimensions of y (inverse permutation)

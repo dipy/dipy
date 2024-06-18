@@ -6,7 +6,6 @@ from dipy.segment.threshold import upper_bound_by_percent, upper_bound_by_rate
 
 
 def test_adjustment():
-
     imga = zeros([128, 128])
 
     for y in range(128):
@@ -50,7 +49,6 @@ def test_adjustment():
                 count2_upper_test = count2_upper_test + 1
             if vol2[i][j] > 0:
                 count1_upper_test = count1_upper_test + 1
-
 
     assert_equal(count2, count2_test)
     assert_equal(count1, count1_test)

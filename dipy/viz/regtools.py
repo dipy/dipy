@@ -21,7 +21,7 @@ def _tile_plot(imgs, titles, **kwargs):
 
 
 def simple_plot(file_name, title, x, y, xlabel, ylabel):
-    """ Saves the simple plot with given x and y values
+    """Saves the simple plot with given x and y values
 
     Parameters
     ----------
@@ -51,8 +51,10 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     plt.clf()
 
 
-def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None, **fig_kwargs):
-    r""" Plot two images one on top of the other using red and green channels.
+def overlay_images(
+    img0, img1, title0="", title_mid="", title1="", fname=None, **fig_kwargs
+):
+    r"""Plot two images one on top of the other using red and green channels.
 
     Creates a figure containing three images: the first image to the left
     plotted on the red channel of a color image, the second to the right
@@ -99,12 +101,11 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None, *
     overlay[..., 0] = img0
     overlay[..., 1] = img1
 
-    fig = _tile_plot([img0_red, overlay, img1_green],
-                     [title0, title_mid, title1])
+    fig = _tile_plot([img0_red, overlay, img1_green], [title0, title_mid, title1])
 
     # If a file name was given, save the figure
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
+        fig.savefig(fname, bbox_inches="tight", **fig_kwargs)
 
     return fig
 
@@ -134,9 +135,9 @@ def draw_lattice_2d(nrows, ncols, delta):
         R = 1 + (delta + 1) * nrows
         C = 1 + (delta + 1) * ncols
     """
-    lattice = np.ndarray((1 + (delta + 1) * nrows,
-                          1 + (delta + 1) * ncols),
-                         dtype=np.float64)
+    lattice = np.ndarray(
+        (1 + (delta + 1) * nrows, 1 + (delta + 1) * ncols), dtype=np.float64
+    )
 
     # Fill the lattice with "white"
     lattice[...] = 127
@@ -152,10 +153,17 @@ def draw_lattice_2d(nrows, ncols, delta):
     return lattice
 
 
-def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
-                              direct_grid_shape=None, direct_grid2world=-1,
-                              inverse_grid_shape=None, inverse_grid2world=-1,
-                              show_figure=True, **fig_kwargs):
+def plot_2d_diffeomorphic_map(
+    mapping,
+    delta=10,
+    fname=None,
+    direct_grid_shape=None,
+    direct_grid2world=-1,
+    inverse_grid_shape=None,
+    inverse_grid2world=-1,
+    show_figure=True,
+    **fig_kwargs,
+):
     r"""Draw the effect of warping a regular lattice by a diffeomorphic map.
 
     Draws a diffeomorphic map by showing the effect of the deformation on a
@@ -259,12 +267,14 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
     lattice_out = draw_lattice_2d(
         (inverse_grid_shape[0] + delta) // (delta + 1),
         (inverse_grid_shape[1] + delta) // (delta + 1),
-        delta)
-    lattice_out = lattice_out[0:inverse_grid_shape[0], 0:inverse_grid_shape[1]]
+        delta,
+    )
+    lattice_out = lattice_out[0 : inverse_grid_shape[0], 0 : inverse_grid_shape[1]]
 
     # Warp in the forward direction (sampling it on the input grid)
-    warped_forward = mapping.transform(lattice_out, 'linear', world_to_image,
-                                       direct_grid_shape, direct_grid2world)
+    warped_forward = mapping.transform(
+        lattice_out, "linear", world_to_image, direct_grid_shape, direct_grid2world
+    )
 
     # Now, the world-to-image (image = drawn lattice on the input grid)
     # transformation is the inverse of the input affine
@@ -273,15 +283,17 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         world_to_image = np.linalg.inv(direct_grid2world)
 
     # Draw the squares on the input grid
-    lattice_in = draw_lattice_2d((direct_grid_shape[0] + delta) // (delta + 1),
-                                 (direct_grid_shape[1] + delta) // (delta + 1),
-                                 delta)
-    lattice_in = lattice_in[0:direct_grid_shape[0], 0:direct_grid_shape[1]]
+    lattice_in = draw_lattice_2d(
+        (direct_grid_shape[0] + delta) // (delta + 1),
+        (direct_grid_shape[1] + delta) // (delta + 1),
+        delta,
+    )
+    lattice_in = lattice_in[0 : direct_grid_shape[0], 0 : direct_grid_shape[1]]
 
     # Warp in the backward direction (sampling it on the output grid)
     warped_backward = mapping.transform_inverse(
-        lattice_in, 'linear', world_to_image, inverse_grid_shape,
-        inverse_grid2world)
+        lattice_in, "linear", world_to_image, inverse_grid_shape, inverse_grid2world
+    )
 
     # Now plot the grids
     if show_figure:
@@ -289,15 +301,15 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
 
         plt.subplot(1, 2, 1).set_axis_off()
         plt.imshow(warped_forward, cmap=plt.cm.gray)
-        plt.title('Direct transform')
+        plt.title("Direct transform")
 
         plt.subplot(1, 2, 2).set_axis_off()
         plt.imshow(warped_backward, cmap=plt.cm.gray)
-        plt.title('Inverse transform')
+        plt.title("Inverse transform")
 
         # Finally, save the figure to disk
         if fname is not None:
-            plt.savefig(fname, bbox_inches='tight', **fig_kwargs)
+            plt.savefig(fname, bbox_inches="tight", **fig_kwargs)
 
     # Return the deformed grids
     return warped_forward, warped_backward
@@ -336,19 +348,30 @@ def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     coronal = np.asarray(V[:, slice_indices[1], :]).astype(np.uint8).T
     sagittal = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
 
-    fig = _tile_plot([axial, coronal, sagittal],
-                     ['Axial', 'Coronal', 'Sagittal'],
-                     cmap=plt.cm.gray, origin='lower')
+    fig = _tile_plot(
+        [axial, coronal, sagittal],
+        ["Axial", "Coronal", "Sagittal"],
+        cmap=plt.cm.gray,
+        origin="lower",
+    )
 
     # Save the figure if requested
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
+        fig.savefig(fname, bbox_inches="tight", **fig_kwargs)
 
     return fig
 
 
-def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
-                   rtitle='Right', fname=None, **fig_kwargs):
+def overlay_slices(
+    L,
+    R,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Left",
+    rtitle="Right",
+    fname=None,
+    **fig_kwargs,
+):
     r"""Plot three overlaid slices from the given volumes.
 
     Creates a figure containing three images: the gray scale k-th slice of
@@ -421,12 +444,15 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     colorImage[..., 0] = ll * (ll > ll[0, 0])
     colorImage[..., 1] = rr * (rr > rr[0, 0])
 
-    fig = _tile_plot([ll, colorImage, rr],
-                     [ltitle, 'Overlay', rtitle],
-                     cmap=plt.cm.gray, origin='lower')
+    fig = _tile_plot(
+        [ll, colorImage, rr],
+        [ltitle, "Overlay", rtitle],
+        cmap=plt.cm.gray,
+        origin="lower",
+    )
 
     # Save the figure to disk, if requested
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
+        fig.savefig(fname, bbox_inches="tight", **fig_kwargs)
 
     return fig

@@ -1,5 +1,4 @@
-""" Testing multiproc utilities
-"""
+"""Testing multiproc utilities"""
 
 from numpy.testing import assert_equal, assert_raises
 
@@ -29,5 +28,4 @@ def test_determine_num_processes():
 
     # -2 should be one less than -1 (if there are more than 1 cores)
     if determine_num_processes(-1) > 1:
-        assert_equal(determine_num_processes(-1),
-                     determine_num_processes(-2) + 1)
+        assert_equal(determine_num_processes(-1), determine_num_processes(-2) + 1)

@@ -46,15 +46,18 @@ class ForecastModel(OdfModel, Cache):
     -----
     The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def __init__(self,
-                 gtab,
-                 sh_order_max=8,
-                 lambda_lb=1e-3,
-                 dec_alg='CSD',
-                 sphere=None,
-                 lambda_csd=1.0):
-        r""" Analytical and continuous modeling of the diffusion signal with
+
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def __init__(
+        self,
+        gtab,
+        sh_order_max=8,
+        lambda_lb=1e-3,
+        dec_alg="CSD",
+        sphere=None,
+        lambda_csd=1.0,
+    ):
+        r"""Analytical and continuous modeling of the diffusion signal with
         respect to the FORECAST basis [1,2,3]_.
         This implementation is a modification of the original FORECAST
         model presented in [1]_ adapted for multi-shell data as in [2,3]_ .
@@ -81,7 +84,7 @@ class ForecastModel(OdfModel, Cache):
         gtab : GradientTable,
             gradient directions and bvalues container class.
         sh_order_max : unsigned int,
-            an even integer that represent the maximal SH order (l) of the 
+            an even integer that represent the maximal SH order (l) of the
             basis (max 12)
         lambda_lb: float,
             Laplace-Beltrami regularization weight.
@@ -144,7 +147,7 @@ class ForecastModel(OdfModel, Cache):
         ...         "ignore", message=descoteaux07_legacy_msg,
         ...         category=PendingDeprecationWarning)
         ...     fodf = f_fit.odf(default_sphere)
-        """
+        """  # noqa: E501
         OdfModel.__init__(self, gtab)
 
         # round the bvals in order to avoid numerical errors
@@ -160,16 +163,16 @@ class ForecastModel(OdfModel, Cache):
 
         if sphere is None:
             sphere = default_sphere
-            self.vertices = sphere.vertices[
-                0:int(sphere.vertices.shape[0]/2), :]
+            self.vertices = sphere.vertices[0 : int(sphere.vertices.shape[0] / 2), :]
 
         else:
             self.vertices = sphere
 
         self.b0s_mask = self.bvals == 0
         self.one_0_bvals = np.r_[0, self.bvals[~self.b0s_mask]]
-        self.one_0_bvecs = np.r_[np.array([0, 0, 0]).reshape(
-            1, 3), self.bvecs[~self.b0s_mask, :]]
+        self.one_0_bvecs = np.r_[
+            np.array([0, 0, 0]).reshape(1, 3), self.bvecs[~self.b0s_mask, :]
+        ]
 
         self.rho = rho_matrix(self.sh_order_max, self.one_0_bvecs)
 
@@ -182,14 +185,14 @@ class ForecastModel(OdfModel, Cache):
         self.csd = False
         self.pos = False
 
-        if dec_alg.upper() == 'POS':
+        if dec_alg.upper() == "POS":
             if not have_cvxpy:
                 cvxpy.import_error()
 
             self.wls = False
             self.pos = True
 
-        if dec_alg.upper() == 'CSD':
+        if dec_alg.upper() == "CSD":
             self.csd = True
 
         self.lb_matrix = lb_forecast(self.sh_order_max)
@@ -199,71 +202,70 @@ class ForecastModel(OdfModel, Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-
         data_b0 = data[self.b0s_mask].mean()
         data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]] / data_b0
 
         # calculates the mean signal at each b_values
-        means = find_signal_means(self.b_unique,
-                                  data_single_b0,
-                                  self.one_0_bvals,
-                                  self.srm,
-                                  self.lb_matrix_signal)
+        means = find_signal_means(
+            self.b_unique,
+            data_single_b0,
+            self.one_0_bvals,
+            self.srm,
+            self.lb_matrix_signal,
+        )
 
         # average diffusivity initialization
         x = np.array([np.pi / 4, np.pi / 4])
 
-        x, status = leastsq(forecast_error_func, x,
-                            args=(self.b_unique, means))
+        x, status = leastsq(forecast_error_func, x, args=(self.b_unique, means))
 
         # transform to bound the diffusivities from 0 to 3e-03
-        d_par = np.cos(x[0])**2 * 3e-03
-        d_perp = np.cos(x[1])**2 * 3e-03
+        d_par = np.cos(x[0]) ** 2 * 3e-03
+        d_perp = np.cos(x[1]) ** 2 * 3e-03
 
         if d_perp >= d_par:
             d_par, d_perp = d_perp, d_par
 
         # round to avoid memory explosion
-        diff_key = str(int(np.round(d_par * 1e05))) + \
-            str(int(np.round(d_perp * 1e05)))
+        diff_key = str(int(np.round(d_par * 1e05))) + str(int(np.round(d_perp * 1e05)))
 
-        M_diff = self.cache_get('forecast_matrix', key=diff_key)
+        M_diff = self.cache_get("forecast_matrix", key=diff_key)
         if M_diff is None:
-            M_diff = forecast_matrix(
-                self.sh_order_max, d_par, d_perp, self.one_0_bvals)
-            self.cache_set('forecast_matrix', key=diff_key, value=M_diff)
+            M_diff = forecast_matrix(self.sh_order_max, d_par, d_perp, self.one_0_bvals)
+            self.cache_set("forecast_matrix", key=diff_key, value=M_diff)
 
         M = M_diff * self.rho
         M0 = M[:, 0]
-        c0 = np.sqrt(1.0/(4*np.pi))
+        c0 = np.sqrt(1.0 / (4 * np.pi))
 
         # coefficients vector initialization
-        n_c = int((self.sh_order_max + 1)*(self.sh_order_max + 2)/2)
+        n_c = int((self.sh_order_max + 1) * (self.sh_order_max + 2) / 2)
         coef = np.zeros(n_c)
         coef[0] = c0
-        if int(np.round(d_par*1e05)) > int(np.round(d_perp*1e05)):
+        if int(np.round(d_par * 1e05)) > int(np.round(d_perp * 1e05)):
             if self.wls:
-                data_r = data_single_b0 - M0*c0
+                data_r = data_single_b0 - M0 * c0
 
                 Mr = M[:, 1:]
                 Lr = self.lb_matrix[1:, 1:]
 
-                pseudo_inv = np.dot(np.linalg.inv(
-                    np.dot(Mr.T, Mr) + self.lambda_lb*Lr), Mr.T)
+                pseudo_inv = np.dot(
+                    np.linalg.inv(np.dot(Mr.T, Mr) + self.lambda_lb * Lr), Mr.T
+                )
                 coef = np.dot(pseudo_inv, data_r)
                 coef = np.r_[c0, coef]
 
             if self.csd:
-                coef, _ = csdeconv(data_single_b0, M, self.fod, tau=0.1,
-                                   convergence=50)
+                coef, _ = csdeconv(data_single_b0, M, self.fod, tau=0.1, convergence=50)
                 coef = coef / coef[0] * c0
 
             if self.pos:
                 c = cvxpy.Variable(M.shape[1])
                 design_matrix = cvxpy.Constant(M) @ c
                 objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix - data_single_b0) +
-                    self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
+                    cvxpy.sum_squares(design_matrix - data_single_b0)
+                    + self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix)
+                )
 
                 constraints = [c[0] == c0, self.fod @ c >= 0]
                 prob = cvxpy.Problem(objective, constraints)
@@ -271,7 +273,7 @@ class ForecastModel(OdfModel, Cache):
                     prob.solve(solver=cvxpy.OSQP, eps_abs=1e-05, eps_rel=1e-05)
                     coef = np.asarray(c.value).squeeze()
                 except Exception:
-                    warn('Optimization did not find a solution')
+                    warn("Optimization did not find a solution", stacklevel=2)
                     coef = np.zeros(M.shape[1])
                     coef[0] = c0
 
@@ -279,9 +281,8 @@ class ForecastModel(OdfModel, Cache):
 
 
 class ForecastFit(OdfFit):
-
     def __init__(self, model, data, sh_coef, d_par, d_perp):
-        """ Calculates diffusion properties for a single voxel
+        """Calculates diffusion properties for a single voxel
 
         Parameters
         ----------
@@ -307,7 +308,7 @@ class ForecastFit(OdfFit):
         self.rho = None
 
     def odf(self, sphere, clip_negative=True):
-        r""" Calculates the fODF for a given discrete sphere.
+        r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
         ----------
@@ -327,20 +328,21 @@ class ForecastFit(OdfFit):
         return odf
 
     def fractional_anisotropy(self):
-        r""" Calculates the fractional anisotropy.
-        """
-        fa = np.sqrt(0.5 * (2*(self.d_par - self.d_perp)**2) /
-                     (self.d_par**2 + 2*self.d_perp**2))
+        r"""Calculates the fractional anisotropy."""
+        fa = np.sqrt(
+            0.5
+            * (2 * (self.d_par - self.d_perp) ** 2)
+            / (self.d_par**2 + 2 * self.d_perp**2)
+        )
         return fa
 
     def mean_diffusivity(self):
-        r""" Calculates the mean diffusivity.
-        """
-        md = (self.d_par + 2*self.d_perp)/3.0
+        r"""Calculates the mean diffusivity."""
+        md = (self.d_par + 2 * self.d_perp) / 3.0
         return md
 
     def predict(self, gtab=None, S0=1.0):
-        r""" Calculates the fODF for a given discrete sphere.
+        r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
         ----------
@@ -353,10 +355,7 @@ class ForecastFit(OdfFit):
         if gtab is None:
             gtab = self.gtab
 
-        M_diff = forecast_matrix(self.sh_order_max,
-                                 self.d_par,
-                                 self.d_perp,
-                                 gtab.bvals)
+        M_diff = forecast_matrix(self.sh_order_max, self.d_par, self.d_perp, gtab.bvals)
 
         rho = rho_matrix(self.sh_order_max, gtab.bvecs)
         M = M_diff * rho
@@ -366,20 +365,17 @@ class ForecastFit(OdfFit):
 
     @property
     def sh_coeff(self):
-        """The FORECAST SH coefficients
-        """
+        """The FORECAST SH coefficients"""
         return self._sh_coef
 
     @property
     def dpar(self):
-        """The parallel diffusivity
-        """
+        """The parallel diffusivity"""
         return self.d_par
 
     @property
     def dperp(self):
-        """The perpendicular diffusivity
-        """
+        """The perpendicular diffusivity"""
         return self.d_perp
 
 
@@ -414,10 +410,11 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
         shell = data_norm[ind]
         if np.sum(ind) > 20:
             M = rho[ind, :]
-            coef = np.linalg.multi_dot([np.linalg.inv(
-                np.dot(M.T, M) + w*lb_matrix), M.T, shell])
+            coef = np.linalg.multi_dot(
+                [np.linalg.inv(np.dot(M.T, M) + w * lb_matrix), M.T, shell]
+            )
 
-            means[u] = coef[0] / np.sqrt(4*np.pi)
+            means[u] = coef[0] / np.sqrt(4 * np.pi)
         else:
             means[u] = shell.mean()
 
@@ -425,46 +422,52 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
 
 
 def forecast_error_func(x, b_unique, E):
-    r""" Calculates the difference between the mean signal calculated using
+    r"""Calculates the difference between the mean signal calculated using
     the parameter vector x and the average signal E using FORECAST and SMT
     """
-    d_par = np.cos(x[0])**2 * 3e-03
-    d_perp = np.cos(x[1])**2 * 3e-03
+    d_par = np.cos(x[0]) ** 2 * 3e-03
+    d_perp = np.cos(x[1]) ** 2 * 3e-03
 
     if d_perp >= d_par:
         d_par, d_perp = d_perp, d_par
 
-    E_reconst = 0.5 * np.exp(-b_unique * d_perp) * psi_l(0, (b_unique * (d_par - d_perp)))
+    E_reconst = (
+        0.5 * np.exp(-b_unique * d_perp) * psi_l(0, (b_unique * (d_par - d_perp)))
+    )
 
-    v = E-E_reconst
+    v = E - E_reconst
     return v
 
 
-def psi_l(l, b):
-    n = l//2
-    v = (-b)**n
-    v *= gamma(n + 1./2) / gamma(2*n + 3./2)
-    v *= hyp1f1(n + 1./2, 2*n + 3./2, -b)
+def psi_l(ell, b):
+    n = ell // 2
+    v = (-b) ** n
+    v *= gamma(n + 1.0 / 2) / gamma(2 * n + 3.0 / 2)
+    v *= hyp1f1(n + 1.0 / 2, 2 * n + 3.0 / 2, -b)
     return v
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
-    r"""Compute the FORECAST radial matrix
-    """
+    r"""Compute the FORECAST radial matrix"""
     n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
     M = np.zeros((bvals.shape[0], n_c))
     counter = 0
-    for l in range(0, sh_order_max + 1, 2):
-        for m in range(-l, l + 1):
-            M[:, counter] = 2 * np.pi * \
-                np.exp(-bvals * d_perp) * psi_l(l, bvals * (d_par - d_perp))
+    for ell in range(0, sh_order_max + 1, 2):
+        for _ in range(-ell, ell + 1):
+            M[:, counter] = (
+                2
+                * np.pi
+                * np.exp(-bvals * d_perp)
+                * psi_l(ell, bvals * (d_par - d_perp))
+            )
             counter += 1
     return M
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def rho_matrix(sh_order_max, vecs):
-    r"""Compute the SH matrix $\rho$
-    """
+    r"""Compute the SH matrix $\rho$"""
 
     r, theta, phi = cart2sphere(vecs[:, 0], vecs[:, 1], vecs[:, 2])
     theta[np.isnan(theta)] = 0
@@ -475,15 +478,16 @@ def rho_matrix(sh_order_max, vecs):
     for l_values in range(0, sh_order_max + 1, 2):
         for m_values in range(-l_values, l_values + 1):
             rho[:, counter] = real_sh_descoteaux_from_index(
-                m_values, l_values, theta, phi)
+                m_values, l_values, theta, phi
+            )
             counter += 1
     return rho
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def lb_forecast(sh_order_max):
-    r"""Returns the Laplace-Beltrami regularization matrix for FORECAST
-    """
-    n_c = int((sh_order_max + 1)*(sh_order_max + 2)/2)
+    r"""Returns the Laplace-Beltrami regularization matrix for FORECAST"""
+    n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
     diag_lb = np.zeros(n_c)
     counter = 0
     for j in range(0, sh_order_max + 1, 2):

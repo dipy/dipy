@@ -29,13 +29,23 @@ from dipy.sims.voxel import single_tensor
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 
-@deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
-                        "Please use "
-                        "dipy.reconst.csdeconv.auto_response_ssst instead",
-                        since='1.2', until='1.4')
-def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  fa_callable=None, return_number_of_voxels=None):
-    """ Automatic estimation of ssst response function using FA.
+@deprecate_with_version(
+    "dipy.reconst.csdeconv.auto_response is deprecated, "
+    "Please use "
+    "dipy.reconst.csdeconv.auto_response_ssst instead",
+    since="1.2",
+    until="1.4",
+)
+def auto_response(
+    gtab,
+    data,
+    roi_center=None,
+    roi_radius=10,
+    fa_thr=0.7,
+    fa_callable=None,
+    return_number_of_voxels=None,
+):
+    """Automatic estimation of ssst response function using FA.
 
     Parameters
     ----------
@@ -79,16 +89,19 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     msg = """Parameter `roi_radius` is now called `roi_radii` and can be an
     array-like (3,). Parameters `fa_callable` and `return_number_of_voxels`
     are not used anymore."""
-    warnings.warn(msg, UserWarning)
+    warnings.warn(msg, UserWarning, stacklevel=2)
     return auto_response_ssst(gtab, data, roi_center, roi_radius, fa_thr)
 
 
-@deprecate_with_version("dipy.reconst.csdeconv.response_from_mask is "
-                        "deprecated, Please use "
-                        "dipy.reconst.csdeconv.response_from_mask_ssst instead",
-                        since='1.2', until='1.4')
+@deprecate_with_version(
+    "dipy.reconst.csdeconv.response_from_mask is "
+    "deprecated, Please use "
+    "dipy.reconst.csdeconv.response_from_mask_ssst instead",
+    since="1.2",
+    until="1.4",
+)
 def response_from_mask(gtab, data, mask):
-    """ Computation of single-shell single-tissue (ssst) response
+    """Computation of single-shell single-tissue (ssst) response
         function from a given mask.
 
     Parameters
@@ -169,10 +182,18 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def __init__(self, gtab, response, reg_sphere=None, sh_order_max=8,
-                 lambda_=1, tau=0.1, convergence=50):
-        r""" Constrained Spherical Deconvolution (CSD) [1]_.
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def __init__(
+        self,
+        gtab,
+        response,
+        reg_sphere=None,
+        sh_order_max=8,
+        lambda_=1,
+        tau=0.1,
+        convergence=50,
+    ):
+        r"""Constrained Spherical Deconvolution (CSD) [1]_.
 
         Spherical deconvolution computes a fiber orientation distribution
         (FOD), also called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF
@@ -239,24 +260,22 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
-            warnings.warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
         self.B_dwi = real_sh_descoteaux_from_index(
-            m_values, l_values, theta[:, None], phi[:, None])
+            m_values, l_values, theta[:, None], phi[:, None]
+        )
 
         # for the sphere used in the regularization positivity constraint
         self.sphere = reg_sphere or small_sphere
 
-        r, theta, phi = cart2sphere(
-            self.sphere.x,
-            self.sphere.y,
-            self.sphere.z
-        )
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sh_descoteaux_from_index(
-            m_values, l_values, theta[:, None], phi[:, None])
+            m_values, l_values, theta[:, None], phi[:, None]
+        )
 
         self.response = response
         if isinstance(response, AxSymShResponse):
@@ -265,10 +284,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             l_response = response.l_values
             m_response = response.m_values
         else:
-            self.S_r = estimate_response(gtab, self.response[0],
-                                         self.response[1])
-            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi],
-                                   rcond=-1)[0]
+            self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi], rcond=-1)[0]
             l_response = l_values
             m_response = m_values
             self.response_scaling = response[1]
@@ -278,8 +295,12 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        lambda_ = (lambda_ * self.R.shape[0] * r_rh[0] /
-                   (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
+        lambda_ = (
+            lambda_
+            * self.R.shape[0]
+            * r_rh[0]
+            / (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.0))
+        )
         self.B_reg *= lambda_
         self.sh_order_max = sh_order_max
         self.tau = tau
@@ -290,11 +311,17 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
-                                convergence=self.convergence, P=self._P)
+        shm_coeff, _ = csdeconv(
+            dwi_data,
+            self._X,
+            self.B_reg,
+            self.tau,
+            convergence=self.convergence,
+            P=self._P,
+        )
         return SphHarmFit(self, shm_coeff, None)
 
-    def predict(self, sh_coeff, gtab=None, S0=1.):
+    def predict(self, sh_coeff, gtab=None, S0=1.0):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -321,9 +348,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             x, y, z = gtab.gradients[~gtab.b0s_mask].T
             r, theta, phi = cart2sphere(x, y, z)
-            SH_basis, _, _ = real_sh_descoteaux(self.sh_order_max,
-                                                theta,
-                                                phi)
+            SH_basis, _, _ = real_sh_descoteaux(self.sh_order_max, theta, phi)
 
         # Because R is diagonal, the matrix multiply is written as a multiply
         predict_matrix = SH_basis * self.R.diagonal()
@@ -341,11 +366,11 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
-    @deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-    def __init__(self, gtab, ratio, reg_sphere=None,
-                 sh_order_max=8, lambda_=1.,
-                 tau=0.1):
-        r""" Spherical Deconvolution Transform (SDT) [1]_.
+    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    def __init__(
+        self, gtab, ratio, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
+    ):
+        r"""Spherical Deconvolution Transform (SDT) [1]_.
 
         The SDT computes a fiber orientation distribution (FOD) as opposed to a
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
@@ -395,41 +420,37 @@ class ConstrainedSDTModel(SphHarmModel):
         if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
-            warnings.warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
         self.B_dwi = real_sh_descoteaux_from_index(
-            m_values, l_values, theta[:, None], phi[:, None])
+            m_values, l_values, theta[:, None], phi[:, None]
+        )
 
         # for the odf sphere
         if reg_sphere is None:
-            self.sphere = get_sphere('symmetric362')
+            self.sphere = get_sphere("symmetric362")
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(
-            self.sphere.x,
-            self.sphere.y,
-            self.sphere.z
-        )
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sh_descoteaux_from_index(
-            m_values, l_values, theta[:, None], phi[:, None])
+            m_values, l_values, theta[:, None], phi[:, None]
+        )
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, l_values)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        self.lambda_ = (lambda_ * self.R.shape[0] * self.R[0, 0] /
-                        self.B_reg.shape[0])
+        self.lambda_ = lambda_ * self.R.shape[0] * self.R[0, 0] / self.B_reg.shape[0]
         self.tau = tau
         self.sh_order_max = sh_order_max
 
     @multi_voxel_fit
     def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
-                               rcond=-1)[0]
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi], rcond=-1)[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_reg, odf_sh)
@@ -439,15 +460,16 @@ class ConstrainedSDTModel(SphHarmModel):
         if Z:
             # normalize ODF
             odf_sh /= Z
-            shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
-                                           self.lambda_, self.tau)
+            shm_coeff, num_it = odf_deconv(
+                odf_sh, self.R, self.B_reg, self.lambda_, self.tau
+            )
             # print 'SDT CSD converged after %d iterations' % num_it
 
         return SphHarmFit(self, shm_coeff, None)
 
 
 def estimate_response(gtab, evals, S0):
-    """ Estimate single fiber response function
+    """Estimate single fiber response function
 
     Parameters
     ----------
@@ -461,16 +483,14 @@ def estimate_response(gtab, evals, S0):
     S : estimated signal
 
     """
-    evecs = np.array([[0, 0, 1],
-                      [0, 1, 0],
-                      [1, 0, 0]])
+    evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
     return single_tensor(gtab, S0, evals, evecs, snr=None)
 
 
-@deprecated_params('n', 'l_values', since='1.9', until='2.0')
+@deprecated_params("n", "l_values", since="1.9", until="2.0")
 def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
-    r""" Build forward sharpening deconvolution transform (SDT) matrix
+    r"""Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
     ----------
@@ -507,12 +527,21 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
 
     for j in np.arange(0, n_orders * 2, 2):
         if r2_term:
-            sharp = quad(lambda z: lpn(j, z)[0][-1] * gamma(1.5) *
-                         np.sqrt(ratio / (4 * np.pi ** 3)) /
-                         np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
+            sharp = quad(
+                lambda z, j=j: lpn(j, z)[0][-1]
+                * gamma(1.5)
+                * np.sqrt(ratio / (4 * np.pi**3))
+                / np.power((1 - (1 - ratio) * z**2), 1.5),
+                -1.0,
+                1.0,
+            )
         else:
-            sharp = quad(lambda z: lpn(j, z)[0][-1] *
-                         np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
+            sharp = quad(
+                lambda z, j=j: lpn(j, z)[0][-1]
+                * np.sqrt(1 / (1 - (1 - ratio) * z * z)),
+                -1.0,
+                1.0,
+            )
 
         sdt[j // 2] = sharp[0]
         frt[j // 2] = 2 * np.pi * lpn(j, 0)[0][-1]
@@ -523,26 +552,26 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-potrf, potrs = ll.get_lapack_funcs(('potrf', 'potrs'))
+potrf, potrs = ll.get_lapack_funcs(("potrf", "potrs"))
 
 
 def _solve_cholesky(Q, z):
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
     if info > 0:
-        msg = "%d-th leading minor not positive definite" % info
+        msg = f"{info}-th leading minor not positive definite"
         raise la.LinAlgError(msg)
     if info < 0:
-        msg = 'illegal value in %d-th argument of internal potrf' % -info
+        msg = f"illegal value in {-info}-th argument of internal potrf"
         raise ValueError(msg)
     f, info = potrs(L, z, lower=False, overwrite_b=False)
     if info != 0:
-        msg = 'illegal value in %d-th argument of internal potrs' % -info
+        msg = f"illegal value in {-info}-th argument of internal potrs"
         raise ValueError(msg)
     return f
 
 
 def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
-    r""" Constrained-regularized spherical deconvolution (CSD) [1]_
+    r"""Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
     rotational harmonics coefficients from the diffusion weighted signal in
@@ -579,7 +608,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     fodf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
          ODF.
-    num_it : int
+    _num_it : int
          Number of iterations in the constrained-regularization used for
          convergence.
 
@@ -680,7 +709,8 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         if len(where_fodf_small) == 0:
             return fodf_sh, 0
 
-    for num_it in range(1, convergence + 1):
+    _num_it = 0
+    for _num_it in range(1, convergence + 1):
         # This is the super-resolved trick.  Wherever there is a negative
         # amplitude value on the fODF, it concatenates a value to the S vector
         # so that the estimation can focus on trying to eliminate it. In a
@@ -698,18 +728,20 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         where_fodf_small_last = where_fodf_small
         where_fodf_small = (fodf < threshold).nonzero()[0]
 
-        if (len(where_fodf_small) == len(where_fodf_small_last) and
-                (where_fodf_small == where_fodf_small_last).all()):
+        if (
+            len(where_fodf_small) == len(where_fodf_small_last)
+            and (where_fodf_small == where_fodf_small_last).all()
+        ):
             break
     else:
-        msg = 'maximum number of iterations exceeded - failed to converge'
-        warnings.warn(msg)
+        msg = "maximum number of iterations exceeded - failed to converge"
+        warnings.warn(msg, stacklevel=2)
 
-    return fodf_sh, num_it
+    return fodf_sh, _num_it
 
 
-def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
-    r""" ODF constrained-regularized spherical deconvolution using
+def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
+    r"""ODF constrained-regularized spherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
     Parameters
@@ -785,7 +817,9 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
             warnings.warn(
-                'too few negative directions identified - failed to converge')
+                "too few negative directions identified - failed to converge",
+                stacklevel=2,
+            )
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -802,13 +836,24 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
             # voxel. Proceeding with initial SH estimate for this voxel.
             pass
 
-    warnings.warn('maximum number of iterations exceeded - failed to converge')
+    warnings.warn(
+        "maximum number of iterations exceeded - failed to converge", stacklevel=2
+    )
     return fodf_sh, num_it
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order_max=8,
-                    lambda_=1., tau=0.1, r2_term=False):
-    r""" Sharpen odfs using the sharpening deconvolution transform [2]_
+
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def odf_sh_to_sharp(
+    odfs_sh,
+    sphere,
+    basis=None,
+    ratio=3 / 15.0,
+    sh_order_max=8,
+    lambda_=1.0,
+    tau=0.1,
+    r2_term=False,
+):
+    r"""Sharpen odfs using the sharpening deconvolution transform [2]_
 
     This function can be used to sharpen any smooth ODF spherical function. In
     theory, this should only be used to sharpen QballModel ODFs, but in
@@ -883,16 +928,15 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order_max=8,
     fodf_sh = np.zeros(odfs_sh.shape)
 
     for index in ndindex(odfs_sh.shape[:-1]):
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg,
-                                            lambda_=lambda_, tau=tau,
-                                            r2_term=r2_term)
+        fodf_sh[index], num_it = odf_deconv(
+            odfs_sh[index], R, B_reg, lambda_=lambda_, tau=tau, r2_term=r2_term
+        )
 
     return fodf_sh
 
 
-def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
-                           fa_thr=0.7):
-    """ Computation of mask for single-shell single-tissue (ssst) response
+def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+    """Computation of mask for single-shell single-tissue (ssst) response
         function using FA.
 
     Parameters
@@ -941,8 +985,9 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     if roi_center is None:
         roi_center = np.array(data.shape[:3]) // 2
 
-    roi_radii = _roi_in_volume(data.shape, np.asarray(roi_center),
-                               np.asarray(roi_radii))
+    roi_radii = _roi_in_volume(
+        data.shape, np.asarray(roi_center), np.asarray(roi_radii)
+    )
 
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
@@ -955,15 +1000,15 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = """No voxel with a FA higher than {} were found.
-        Try a larger roi or a lower threshold.""".format(str(fa_thr))
-        warnings.warn(msg, UserWarning)
+        msg = f"""No voxel with a FA higher than {str(fa_thr)} were found.
+        Try a larger roi or a lower threshold."""
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     return mask
 
 
 def response_from_mask_ssst(gtab, data, mask):
-    """ Computation of single-shell single-tissue (ssst) response
+    """Computation of single-shell single-tissue (ssst) response
         function from a given mask.
 
     Parameters
@@ -1012,7 +1057,7 @@ def response_from_mask_ssst(gtab, data, mask):
 
     if indices[0].size == 0:
         msg = "No voxel in mask with value > 0 were found."
-        warnings.warn(msg, UserWarning)
+        warnings.warn(msg, UserWarning, stacklevel=2)
         return (np.nan, np.nan), np.nan
 
     tenfit = ten.fit(data[indices])
@@ -1023,7 +1068,7 @@ def response_from_mask_ssst(gtab, data, mask):
 
 
 def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
-    """ Automatic estimation of single-shell single-tissue (ssst) response
+    """Automatic estimation of single-shell single-tissue (ssst) response
         function using FA.
 
     Parameters
@@ -1079,13 +1124,22 @@ def _get_response(S0s, lambdas):
     return response, ratio
 
 
-
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
-def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
-                       init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001, parallel=False, num_processes=None,
-                       sphere=default_sphere):
-    """ Recursive calibration of response function using peak threshold
+@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+def recursive_response(
+    gtab,
+    data,
+    mask=None,
+    sh_order_max=8,
+    peak_thr=0.01,
+    init_fa=0.08,
+    init_trace=0.0021,
+    iter=8,
+    convergence=0.001,
+    parallel=False,
+    num_processes=None,
+    sphere=default_sphere,
+):
+    """Recursive calibration of response function using peak threshold
 
     Parameters
     ----------
@@ -1141,7 +1195,7 @@ def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
            the fiber response function for spherical deconvolution of
            diffusion MRI data.
     """
-    S0 = 1.
+    S0 = 1.0
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     res_obj = (evals, S0)
 
@@ -1156,16 +1210,19 @@ def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
 
     for _ in range(iter):
         r_sh_all = np.zeros(len(n))
-        csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
-                                                    sh_order_max=sh_order_max)
+        csd_model = ConstrainedSphericalDeconvModel(
+            gtab, res_obj, sh_order_max=sh_order_max
+        )
 
-        csd_peaks = peaks_from_model(model=csd_model,
-                                     data=data,
-                                     sphere=sphere,
-                                     relative_peak_threshold=peak_thr,
-                                     min_separation_angle=25,
-                                     parallel=parallel,
-                                     num_processes=num_processes)
+        csd_peaks = peaks_from_model(
+            model=csd_model,
+            data=data,
+            sphere=sphere,
+            relative_peak_threshold=peak_thr,
+            min_separation_angle=25,
+            parallel=parallel,
+            num_processes=num_processes,
+        )
 
         dirs = csd_peaks.peak_dirs
         vals = csd_peaks.peak_values
@@ -1181,10 +1238,8 @@ def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
             x, y, z = rot_gradients[where_dwi].T
             r, theta, phi = cart2sphere(x, y, z)
             # for the gradient sphere
-            B_dwi = real_sh_descoteaux_from_index(
-                0, n, theta[:, None], phi[:, None])
-            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi],
-                                        rcond=-1)[0]
+            B_dwi = real_sh_descoteaux_from_index(0, n, theta[:, None], phi[:, None])
+            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi], rcond=-1)[0]
 
         response = r_sh_all / data.shape[0]
         res_obj = AxSymShResponse(data[:, gtab.b0s_mask].mean(), response)
@@ -1199,7 +1254,7 @@ def recursive_response(gtab, data, mask=None, sh_order_max=8, peak_thr=0.01,
 
 
 def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
-    lambda1 = (trace / 3.) * (1 + 2 * fa / (3 - 2 * fa ** 2) ** (1 / 2.))
-    lambda2 = (trace / 3.) * (1 - fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    lambda1 = (trace / 3.0) * (1 + 2 * fa / (3 - 2 * fa**2) ** (1 / 2.0))
+    lambda2 = (trace / 3.0) * (1 - fa / (3 - 2 * fa**2) ** (1 / 2.0))
     evals = np.array([lambda1, lambda2, lambda2])
     return evals

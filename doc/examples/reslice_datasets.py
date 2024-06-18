@@ -1,4 +1,3 @@
-
 """
 
 ==========================
@@ -23,7 +22,7 @@ from dipy.io.image import load_nifti, save_nifti
 # We use here a very small dataset to show the basic principles but you can
 # replace the following line with the path of your image.
 
-fimg = get_fnames('aniso_vox')
+fimg = get_fnames("aniso_vox")
 
 ###############################################################################
 # We load the image, the affine of the image and the voxel size. The affine is
@@ -38,7 +37,7 @@ print(f"Voxel size: {voxel_size}")
 ###############################################################################
 # Set the required new voxel size.
 
-new_voxel_size = (3., 3., 3.)
+new_voxel_size = (3.0, 3.0, 3.0)
 print(f"New Voxel size: {new_voxel_size}")
 
 ###############################################################################
@@ -50,13 +49,13 @@ print(f"New data size: {data2.shape}")
 ###############################################################################
 # Save the result as a new Nifti file.
 
-save_nifti('iso_vox.nii.gz', data2, affine2)
+save_nifti("iso_vox.nii.gz", data2, affine2)
 
 ###############################################################################
 # Or as analyze format or any other supported format.
 
 img3 = nib.Spm2AnalyzeImage(data2, affine2)
-nib.save(img3, 'iso_vox.img')
+nib.save(img3, "iso_vox.img")
 
 ###############################################################################
 # Done. Check your datasets. As you may have already realized the same code

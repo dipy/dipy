@@ -1,13 +1,21 @@
+import warnings
+
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
-fury, has_fury, _ = optional_package('fury', min_version="0.10.0")
+fury, has_fury, _ = optional_package("fury", min_version="0.10.0")
 if has_fury:
     from dipy.viz import actor, window
 
+sagittal_deprecation_warning_msg = (
+    "The view argument value `sagital` is deprecated and its support will be"
+    " removed in a future version. Please, use `sagittal` instead."
+)  # codespell:ignore sagital
 
-def show_bundles(bundles, interactive=True, view='sagital', colors=None,
-                 linewidth=0.3, save_as=None):
+
+def show_bundles(
+    bundles, interactive=True, view="sagittal", colors=None, linewidth=0.3, save_as=None
+):
     """Render bundles to visualize them interactively or save them into a png.
 
     The function allows to just render the bundles in an interactive plot or
@@ -20,8 +28,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
     interactive : boolean, optional
         If True a 3D interactive rendering is created. Default is True.
     view : str, optional
-        Viewing angle. Supported options: 'sagital','axial' and 'coronal'.
-        Default is 'sagital'.
+        Viewing angle. Supported options: 'sagittal', 'axial' and 'coronal'.
     colors : list, optional
        Colors to be used for each bundle. If None default colors are used.
     linewidth : float, optional
@@ -31,25 +38,36 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         Default is None.
 
     """
+
+    if view == "sagital":  # codespell:ignore sagital
+        warnings.warn(
+            sagittal_deprecation_warning_msg,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        view = "sagittal"
+
     scene = window.Scene()
-    scene.SetBackground(1., 1, 1)
+    scene.SetBackground(1.0, 1, 1)
 
     for i, bundle in enumerate(bundles):
         if colors is None:
             lines_actor = actor.streamtube(bundle, linewidth=linewidth)
         else:
-            lines_actor = actor.streamtube(bundle, linewidth=linewidth,
-                                           colors=colors[i])
-        if view == 'sagital':
+            lines_actor = actor.streamtube(
+                bundle, linewidth=linewidth, colors=colors[i]
+            )
+        if view == "sagittal":
             lines_actor.RotateX(-90)
             lines_actor.RotateZ(90)
-        elif view == 'axial':
+        elif view == "axial":
             pass
-        elif view == 'coronal':
+        elif view == "coronal":
             lines_actor.RotateX(-90)
         else:
-            raise ValueError("Invalid view argument value. Use 'sagital'," +
-                             "'axial' or 'coronal'.")
+            raise ValueError(
+                "Invalid view argument value. Use 'sagittal', 'axial' or 'coronal'."
+            )
 
         scene.add(lines_actor)
 
@@ -60,8 +78,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         window.record(scene, n_frames=1, out_path=save_as, size=(900, 900))
 
 
-def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0),
-                    interactive=False):
+def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0), interactive=False):
     """Render and plot two bundles to visualize them.
 
     Parameters
@@ -113,8 +130,9 @@ def viz_two_bundles(b1, b2, fname, c1=(1, 0, 0), c2=(0, 1, 0),
         plt.imshow(im)
 
 
-def viz_vector_field(points_aligned, directions, colors, offsets, fname,
-                     bundle=None, interactive=False):
+def viz_vector_field(
+    points_aligned, directions, colors, offsets, fname, bundle=None, interactive=False
+):
     """Render and plot vector field.
 
     Parameters
@@ -136,7 +154,7 @@ def viz_vector_field(points_aligned, directions, colors, offsets, fname,
 
     """
     scene = window.Scene()
-    scene.SetBackground(1., 1, 1)
+    scene.SetBackground(1.0, 1, 1)
     arrows = actor.arrow(points_aligned, directions, colors, scales=offsets)
     arrows.RotateX(-70)
     arrows.RotateZ(90)
@@ -181,10 +199,10 @@ def viz_displacement_mag(bundle, offsets, fname, interactive=False):
     lut_cmap = actor.colormap_lookup_table(
         scale_range=(offsets.min(), offsets.max()),
         hue_range=hue,
-        saturation_range=saturation)
+        saturation_range=saturation,
+    )
 
-    stream_actor = actor.line(bundle, offsets, linewidth=7,
-                              lookup_colormap=lut_cmap)
+    stream_actor = actor.line(bundle, offsets, linewidth=7, lookup_colormap=lut_cmap)
 
     stream_actor.RotateX(-70)
     stream_actor.RotateZ(90)

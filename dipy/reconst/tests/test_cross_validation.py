@@ -17,7 +17,7 @@ import dipy.sims.voxel as sims
 from dipy.testing.decorators import set_random_number_generator
 
 # We'll set these globally:
-fdata, fbval, fbvec = dpd.get_fnames('small_64D')
+fdata, fbval, fbvec = dpd.get_fnames("small_64D")
 
 
 @set_random_number_generator()
@@ -32,22 +32,24 @@ def test_coeff_of_determination(rng):
 def test_dti_xval():
     data = load_nifti_data(fdata)
     gtab = gt.gradient_table(fbval, fbvec)
-    dm = dti.TensorModel(gtab, 'LS')
+    dm = dti.TensorModel(gtab, "LS")
     # The data has 102 directions, so will not divide neatly into 10 bits
     npt.assert_raises(ValueError, xval.kfold_xval, dm, data, 10)
 
     # In simulation with no noise, COD should be perfect:
-    psphere = dpd.get_sphere('symmetric362')
+    psphere = dpd.get_sphere("symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
     gtab = gt.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
-    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
+    mevecs = [
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+        np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
+    ]
     S = sims.single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, 'LS')
+    dm = dti.TensorModel(gtab, "LS")
     kf_xval = xval.kfold_xval(dm, S, 2)
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1]) * 100)
@@ -70,26 +72,32 @@ def test_csd_xval(rng):
     response = ([0.0015, 0.0003, 0.0001], S0)
 
     # In simulation, it should work rather well (high COD):
-    psphere = dpd.get_sphere('symmetric362')
+    psphere = dpd.get_sphere("symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
     gtab = gt.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
-    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
+    mevecs = [
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+        np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
+    ]
     S0 = 100
     S = sims.single_tensor(gtab, S0, mevals[0], mevecs[0], snr=None)
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
         sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     response = ([0.0015, 0.0003, 0.0001], S0)
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
         kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order_max=2, rng=rng)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
@@ -104,10 +112,13 @@ def test_csd_xval(rng):
     mask[1, 1] = 0
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message=descoteaux07_legacy_msg,
-            category=PendingDeprecationWarning)
-        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order_max=2,
-                                  mask=mask, rng=rng)
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        kf_xval = xval.kfold_xval(
+            sm, S, 2, response, sh_order_max=2, mask=mask, rng=rng
+        )
 
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(np.round(cod[0]), csd_cod)
@@ -131,4 +142,4 @@ def test_no_predict():
     my_model = NoPredictModel(gtab)
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Whatever
 
-    npt.assert_raises(ValueError,  xval.kfold_xval, my_model, data, 2)
+    npt.assert_raises(ValueError, xval.kfold_xval, my_model, data, 2)

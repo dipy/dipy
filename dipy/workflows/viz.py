@@ -13,7 +13,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
 
-fury, has_fury, setup_module = optional_package('fury', min_version="0.10.0")
+fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
 
 if has_fury:
@@ -23,19 +23,35 @@ if has_fury:
 
 
 class HorizonFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'horizon'
+        return "horizon"
 
-    def run(self, input_files, cluster=False, rgb=False, cluster_thr=15.,
-            random_colors=None, length_gt=0, length_lt=1000,
-            clusters_gt=0, clusters_lt=10**8, native_coords=False,
-            stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
-            disable_order_transparency=False, buan=False, buan_thr=0.5,
-            buan_highlight=(1, 0, 0), roi_images=False, roi_colors=(1, 0, 0),
-            out_dir='', out_stealth_png='tmp.png'):
-        """ Interactive medical visualization - Invert the Horizon!
+    def run(
+        self,
+        input_files,
+        cluster=False,
+        rgb=False,
+        cluster_thr=15.0,
+        random_colors=None,
+        length_gt=0,
+        length_lt=1000,
+        clusters_gt=0,
+        clusters_lt=10**8,
+        native_coords=False,
+        stealth=False,
+        emergency_header="icbm_2009a",
+        bg_color=(0, 0, 0),
+        disable_order_transparency=False,
+        buan=False,
+        buan_thr=0.5,
+        buan_highlight=(1, 0, 0),
+        roi_images=False,
+        roi_colors=(1, 0, 0),
+        out_dir="",
+        out_stealth_png="tmp.png",
+    ):
+        """Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
@@ -122,103 +138,105 @@ class HorizonFlow(Workflow):
         world_coords = not native_coords
         bundle_colors = None
 
-        mni_2009a = dict()
-        mni_2009a['affine'] = np.array([[1., 0., 0., -98.],
-                                        [0., 1., 0., -134.],
-                                        [0., 0., 1., -72.],
-                                        [0., 0., 0., 1.]])
-        mni_2009a['dims'] = (197, 233, 189)
-        mni_2009a['vox_size'] = (1., 1., 1.)
-        mni_2009a['vox_space'] = 'RAS'
+        # mni_2009a = {
+        #    "affine": np.array(
+        #        [
+        #            [1.0, 0.0, 0.0, -98.0],
+        #            [0.0, 1.0, 0.0, -134.0],
+        #            [0.0, 0.0, 1.0, -72.0],
+        #            [0.0, 0.0, 0.0, 1.0],
+        #        ]
+        #    ),
+        #    "dims": (197, 233, 189),
+        #    "vox_size": (1.0, 1.0, 1.0),
+        #    "vox_space": "RAS",
+        # }
 
-        mni_2009c = dict()
-        mni_2009c['affine'] = np.array([[1., 0., 0., -96.],
-                                        [0., 1., 0., -132.],
-                                        [0., 0., 1., -78.],
-                                        [0., 0., 0., 1.]])
-        mni_2009c['dims'] = (193, 229, 193)
-        mni_2009c['vox_size'] = (1., 1., 1.)
-        mni_2009c['vox_space'] = 'RAS'
+        mni_2009c = {
+            "affine": np.array(
+                [
+                    [1.0, 0.0, 0.0, -96.0],
+                    [0.0, 1.0, 0.0, -132.0],
+                    [0.0, 0.0, 1.0, -78.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            ),
+            "dims": (193, 229, 193),
+            "vox_size": (1.0, 1.0, 1.0),
+            "vox_space": "RAS",
+        }
 
-        if emergency_header == 'icbm_2009a':
+        if emergency_header == "icbm_2009a":
             hdr = mni_2009c
         else:
             hdr = mni_2009c
-        emergency_ref = create_nifti_header(hdr['affine'], hdr['dims'],
-                                            hdr['vox_size'])
+        emergency_ref = create_nifti_header(hdr["affine"], hdr["dims"], hdr["vox_size"])
 
         io_it = self.get_io_iterator()
 
         for input_output in io_it:
-
             fname = input_output[0]
 
             if verbose:
-                print('Loading file ...')
+                print("Loading file ...")
                 print(fname)
-                print('\n')
+                print("\n")
 
             fl = fname.lower()
             ends = fl.endswith
 
-            if ends('.trk') or ends('.trx'):
-
-                sft = load_tractogram(fname, 'same',
-                                      bbox_valid_check=False)
+            if ends(".trk") or ends(".trx"):
+                sft = load_tractogram(fname, "same", bbox_valid_check=False)
                 tractograms.append(sft)
 
-            if ends(('.dpy', '.tck', '.vtk', '.vtp', '.fib')):
+            if ends((".dpy", ".tck", ".vtk", ".vtp", ".fib")):
                 sft = load_tractogram(fname, emergency_ref)
                 tractograms.append(sft)
 
-            if ends('.nii.gz') or ends('.nii'):
-
+            if ends(".nii.gz") or ends(".nii"):
                 data, affine = load_nifti(fname)
                 images.append((data, affine, fname))
                 if verbose:
-                    print('Affine to RAS')
+                    print("Affine to RAS")
                     np.set_printoptions(3, suppress=True)
                     print(affine)
                     np.set_printoptions()
 
-            if ends('.pial'):
+            if ends(".pial"):
                 surface = load_pial(fname)
                 if surface:
                     vertices, faces = surface
                     surfaces.append((vertices, faces, fname))
 
-            if ends('.gii.gz') or ends('.gii'):
+            if ends(".gii.gz") or ends(".gii"):
                 surface = load_gifti(fname)
                 vertices, faces = surface
                 if len(vertices) and len(faces):
                     vertices, faces = surface
                     surfaces.append((vertices, faces, fname))
                 else:
-                    warn(f'{fname} does not have any surface geometry.')
+                    warn(f"{fname} does not have any surface geometry.", stacklevel=2)
 
             if ends(".pam5"):
-
                 pam = load_peaks(fname)
                 pams.append(pam)
 
                 if verbose:
-                    print('Peak_dirs shape')
+                    print("Peak_dirs shape")
                     print(pam.peak_dirs.shape)
 
             if ends(".npy"):
-
                 data = np.load(fname)
                 numpy_files.append(data)
 
                 if verbose:
-                    print('numpy array length')
+                    print("numpy array length")
                     print(len(data))
 
         if buan:
             bundle_colors = []
 
             for i in range(len(numpy_files)):
-
                 n = len(numpy_files[i])
                 pvalues = numpy_files[i]
                 bundle = tractograms[i].streamlines
@@ -235,10 +253,9 @@ class HorizonFlow(Workflow):
                 colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
                 colors = numpy_support.vtk_to_numpy(vtk_colors)
-                colors = (colors - np.min(colors))/np.ptp(colors)
+                colors = (colors - np.min(colors)) / np.ptp(colors)
 
                 for j in range(n):
-
                     if pvalues[j] < buan_thr:
                         colors[ind == j] = buan_highlight
 
@@ -247,23 +264,40 @@ class HorizonFlow(Workflow):
         if len(bg_color) == 1:
             bg_color *= 3
         elif len(bg_color) != 3:
-            raise ValueError('You need 3 values to set up background color. '
-                             'e.g --bg_color 0.5 0.5 0.5')
+            raise ValueError(
+                "You need 3 values to set up background color. "
+                "e.g --bg_color 0.5 0.5 0.5"
+            )
 
         if len(roi_colors) == 1:
             roi_colors *= 3
         elif len(roi_colors) != 3:
-            raise ValueError('You need 3 values to set up ROI color. '
-                             'e.g. --roi_colors 0.5 0.5 0.5')
+            raise ValueError(
+                "You need 3 values to set up ROI color. "
+                "e.g. --roi_colors 0.5 0.5 0.5"
+            )
 
         order_transparent = not disable_order_transparency
-        horizon(tractograms=tractograms, images=images, pams=pams,
-                surfaces=surfaces, cluster=cluster, rgb=rgb,
-                cluster_thr=cluster_thr, random_colors=random_colors,
-                bg_color=bg_color, order_transparent=order_transparent,
-                length_gt=length_gt, length_lt=length_lt,
-                clusters_gt=clusters_gt, clusters_lt=clusters_lt,
-                world_coords=world_coords,
-                interactive=interactive, buan=buan, buan_colors=bundle_colors,
-                roi_images=roi_images, roi_colors=roi_colors,
-                out_png=pjoin(out_dir, out_stealth_png))
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            pams=pams,
+            surfaces=surfaces,
+            cluster=cluster,
+            rgb=rgb,
+            cluster_thr=cluster_thr,
+            random_colors=random_colors,
+            bg_color=bg_color,
+            order_transparent=order_transparent,
+            length_gt=length_gt,
+            length_lt=length_lt,
+            clusters_gt=clusters_gt,
+            clusters_lt=clusters_lt,
+            world_coords=world_coords,
+            interactive=interactive,
+            buan=buan,
+            buan_colors=bundle_colors,
+            roi_images=roi_images,
+            roi_colors=roi_colors,
+            out_png=pjoin(out_dir, out_stealth_png),
+        )

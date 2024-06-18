@@ -16,28 +16,28 @@ def setup_module():
     # Produce a 2D image
     Nori = 32
     image = np.zeros((6 * Nori, 6 * Nori))
-    image[Nori: 2 * Nori, Nori: 2 * Nori] = 1
-    image[Nori: 2 * Nori, 4 * Nori: 5 * Nori] = 1
-    image[2 * Nori: 3 * Nori, Nori: 3 * Nori] = 1
-    image[3 * Nori: 4 * Nori, 2 * Nori: 3 * Nori] = 2
-    image[3 * Nori: 4 * Nori, 4 * Nori: 5 * Nori] = 1
-    image[4 * Nori: 5 * Nori, 3 * Nori: 5 * Nori] = 3
+    image[Nori : 2 * Nori, Nori : 2 * Nori] = 1
+    image[Nori : 2 * Nori, 4 * Nori : 5 * Nori] = 1
+    image[2 * Nori : 3 * Nori, Nori : 3 * Nori] = 1
+    image[3 * Nori : 4 * Nori, 2 * Nori : 3 * Nori] = 2
+    image[3 * Nori : 4 * Nori, 4 * Nori : 5 * Nori] = 1
+    image[4 * Nori : 5 * Nori, 3 * Nori : 5 * Nori] = 3
 
     # Corrupt image with gibbs ringing
     c = np.fft.fft2(image)
     c = np.fft.fftshift(c)
     c_crop = c[48:144, 48:144]
-    image_gibbs = abs(np.fft.ifft2(c_crop)/4)
+    image_gibbs = abs(np.fft.ifft2(c_crop) / 4)
 
     # Produce ground truth
     Nre = 16
     image_gt = np.zeros((6 * Nre, 6 * Nre))
-    image_gt[Nre: 2 * Nre, Nre: 2 * Nre] = 1
-    image_gt[Nre: 2 * Nre, 4 * Nre: 5 * Nre] = 1
-    image_gt[2 * Nre: 3 * Nre, Nre: 3 * Nre] = 1
-    image_gt[3 * Nre: 4 * Nre, 2 * Nre: 3 * Nre] = 2
-    image_gt[3 * Nre: 4 * Nre, 4 * Nre: 5 * Nre] = 1
-    image_gt[4 * Nre: 5 * Nre, 3 * Nre: 5 * Nre] = 3
+    image_gt[Nre : 2 * Nre, Nre : 2 * Nre] = 1
+    image_gt[Nre : 2 * Nre, 4 * Nre : 5 * Nre] = 1
+    image_gt[2 * Nre : 3 * Nre, Nre : 3 * Nre] = 1
+    image_gt[3 * Nre : 4 * Nre, 2 * Nre : 3 * Nre] = 2
+    image_gt[3 * Nre : 4 * Nre, 4 * Nre : 5 * Nre] = 1
+    image_gt[4 * Nre : 5 * Nre, 3 * Nre : 5 * Nre] = 3
 
     # Suppressing gibbs artefacts
     image_cor = _gibbs_removal_2d(image_gibbs)
@@ -52,25 +52,17 @@ def test_parallel():
     input_4d = np.stack([input_3d, input_3d], axis=3)
 
     # Test 3d case
-    output_3d_parallel = gibbs_removal(input_3d, inplace=False,
-                                       num_processes=2)
-    output_3d_no_parallel = gibbs_removal(
-        input_3d, inplace=False, num_processes=1
-    )
+    output_3d_parallel = gibbs_removal(input_3d, inplace=False, num_processes=2)
+    output_3d_no_parallel = gibbs_removal(input_3d, inplace=False, num_processes=1)
     assert_array_almost_equal(output_3d_parallel, output_3d_no_parallel)
 
     # Test 4d case
-    output_4d_parallel = gibbs_removal(input_4d, inplace=False,
-                                       num_processes=2)
-    output_4d_no_parallel = gibbs_removal(
-        input_4d, inplace=False, num_processes=1
-    )
+    output_4d_parallel = gibbs_removal(input_4d, inplace=False, num_processes=2)
+    output_4d_no_parallel = gibbs_removal(input_4d, inplace=False, num_processes=1)
     assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
 
     # Test num_processes=None case
-    output_4d_all_cpu = gibbs_removal(
-        input_4d, inplace=False, num_processes=None
-    )
+    output_4d_all_cpu = gibbs_removal(input_4d, inplace=False, num_processes=None)
     assert_array_almost_equal(output_4d_all_cpu, output_4d_no_parallel)
 
 
@@ -82,33 +74,27 @@ def test_inplace():
 
     # Test 2d cases
     output_2d = gibbs_removal(input_2d, inplace=False)
-    assert_raises(
-        AssertionError, assert_array_almost_equal, input_2d, output_2d
-    )
+    assert_raises(AssertionError, assert_array_almost_equal, input_2d, output_2d)
 
     output_2d = gibbs_removal(input_2d, inplace=True)
     assert_array_almost_equal(input_2d, output_2d)
 
     # Test 3d case
     output_3d = gibbs_removal(input_3d, inplace=False)
-    assert_raises(
-        AssertionError, assert_array_almost_equal, input_3d, output_3d
-    )
+    assert_raises(AssertionError, assert_array_almost_equal, input_3d, output_3d)
 
     output_3d = gibbs_removal(input_3d, inplace=True)
     assert_array_almost_equal(input_3d, output_3d)
 
     # Test 4d case
     output_4d = gibbs_removal(input_4d, inplace=False)
-    assert_raises(
-        AssertionError, assert_array_almost_equal, input_4d, output_4d
-    )
+    assert_raises(AssertionError, assert_array_almost_equal, input_4d, output_4d)
 
     output_4d = gibbs_removal(input_4d, inplace=True)
     assert_array_almost_equal(input_4d, output_4d)
 
-def test_gibbs_2d():
 
+def test_gibbs_2d():
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(image_gibbs - image_gt))
     diff_cor = np.mean(abs(image_cor - image_gt))
@@ -120,7 +106,6 @@ def test_gibbs_2d():
 
 
 def test_gibbs_3d():
-
     image3d = np.zeros((6 * Nre, 6 * Nre, 2))
     image3d[:, :, 0] = image_gibbs
     image3d[:, :, 1] = image_gibbs
@@ -131,7 +116,6 @@ def test_gibbs_3d():
 
 
 def test_gibbs_4d():
-
     image4d = np.zeros((6 * Nre, 6 * Nre, 2, 2))
     image4d[:, :, 0, 0] = image_gibbs
     image4d[:, :, 1, 0] = image_gibbs
@@ -196,12 +180,8 @@ def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
     # Test for valid num_processes
-    assert_raises(
-        TypeError, gibbs_removal, image_gibbs.copy(), num_processes="1"
-    )
-    assert_raises(
-        ValueError, gibbs_removal, image_gibbs.copy(), num_processes=0
-    )
+    assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), num_processes="1")
+    assert_raises(ValueError, gibbs_removal, image_gibbs.copy(), num_processes=0)
     # Test for valid input dimensionality
     assert_raises(ValueError, gibbs_removal, np.ones(2))  # 1D
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))  # 5D
@@ -242,24 +222,24 @@ def test_non_square_image():
     # Produce non-square 2D image
     Nori = 32
     img = np.zeros((6 * Nori, 6 * Nori))
-    img[Nori: 2 * Nori, Nori: 2 * Nori] = 1
-    img[2 * Nori: 3 * Nori, Nori: 3 * Nori] = 1
-    img[3 * Nori: 4 * Nori, 2 * Nori: 3 * Nori] = 2
-    img[4 * Nori: 5 * Nori, 3 * Nori: 5 * Nori] = 3
+    img[Nori : 2 * Nori, Nori : 2 * Nori] = 1
+    img[2 * Nori : 3 * Nori, Nori : 3 * Nori] = 1
+    img[3 * Nori : 4 * Nori, 2 * Nori : 3 * Nori] = 2
+    img[4 * Nori : 5 * Nori, 3 * Nori : 5 * Nori] = 3
 
     # Corrupt image with gibbs ringing
     c = np.fft.fft2(img)
     c = np.fft.fftshift(c)
     c_crop = c[48:144, :]
-    img_gibbs = abs(np.fft.ifft2(c_crop)/2)
+    img_gibbs = abs(np.fft.ifft2(c_crop) / 2)
 
     # Produce ground truth
     Nre = 16
     img_gt = np.zeros((6 * Nre, 6 * Nori))
-    img_gt[Nre: 2 * Nre, Nori: 2 * Nori] = 1
-    img_gt[2 * Nre: 3 * Nre, Nori: 3 * Nori] = 1
-    img_gt[3 * Nre: 4 * Nre, 2 * Nori: 3 * Nori] = 2
-    img_gt[4 * Nre: 5 * Nre, 3 * Nori: 5 * Nori] = 3
+    img_gt[Nre : 2 * Nre, Nori : 2 * Nori] = 1
+    img_gt[2 * Nre : 3 * Nre, Nori : 3 * Nori] = 1
+    img_gt[3 * Nre : 4 * Nre, 2 * Nori : 3 * Nori] = 2
+    img_gt[4 * Nre : 5 * Nre, 3 * Nori : 5 * Nori] = 3
 
     # Suppressing gibbs artefacts
     img_cor = gibbs_removal(img_gibbs, inplace=False)

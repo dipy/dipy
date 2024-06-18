@@ -43,7 +43,7 @@ from dipy.io.image import load_nifti, save_nifti
 # Load one of the datasets. These data were acquired with 63 gradients and 1
 # non-diffusion (b=0) image.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('isbi2013_2shell')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("isbi2013_2shell")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
@@ -100,16 +100,16 @@ den = denoised_arr[:, :, sli, gra]
 rms_diff = np.sqrt((orig - den) ** 2)
 
 fig, ax = plt.subplots(1, 3)
-ax[0].imshow(orig, cmap='gray', origin='lower', interpolation='none')
-ax[0].set_title('Original')
+ax[0].imshow(orig, cmap="gray", origin="lower", interpolation="none")
+ax[0].set_title("Original")
 ax[0].set_axis_off()
-ax[1].imshow(den, cmap='gray', origin='lower', interpolation='none')
-ax[1].set_title('Denoised Output')
+ax[1].imshow(den, cmap="gray", origin="lower", interpolation="none")
+ax[1].set_title("Denoised Output")
 ax[1].set_axis_off()
-ax[2].imshow(rms_diff, cmap='gray', origin='lower', interpolation='none')
-ax[2].set_title('Residual')
+ax[2].imshow(rms_diff, cmap="gray", origin="lower", interpolation="none")
+ax[2].set_title("Residual")
 ax[2].set_axis_off()
-plt.savefig('denoised_localpca.png', bbox_inches='tight')
+plt.savefig("denoised_localpca.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -119,7 +119,7 @@ plt.savefig('denoised_localpca.png', bbox_inches='tight')
 #
 # The denoised data is saved in the same format as the input data.
 
-save_nifti('denoised_localpca.nii.gz', denoised_arr, affine)
+save_nifti("denoised_localpca.nii.gz", denoised_arr, affine)
 
 ###############################################################################
 # References

@@ -15,12 +15,15 @@ WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
 logger = logging.getLogger(__name__)
 
 
-@deprecate_with_version("dipy.core.gradients.unique_bvals is deprecated, "
-                        "Please use "
-                        "dipy.core.gradients.unique_bvals_magnitude instead",
-                        since='1.2', until='1.4')
+@deprecate_with_version(
+    "dipy.core.gradients.unique_bvals is deprecated, "
+    "Please use "
+    "dipy.core.gradients.unique_bvals_magnitude instead",
+    since="1.2",
+    until="1.4",
+)
 def unique_bvals(bvals, bmag=None, rbvals=False):
-    """ This function gives the unique rounded b-values of the data
+    """This function gives the unique rounded b-values of the data
 
     Parameters
     ----------
@@ -74,7 +77,8 @@ def b0_threshold_empty_gradient_message(bvals, idx, b0_threshold):
         f"of {b0_threshold} results in no gradients being "
         f"selected for the b-values ({bvals[idx]}) corresponding "
         f"to the requested indices ({idx}). Lower the b0 threshold "
-        "value.")
+        "value."
+    )
 
 
 def b0_threshold_update_slicing_message(slice_start):
@@ -111,7 +115,7 @@ def mask_non_weighted_bvals(bvals, b0_threshold):
     ndarray
         Gradient-weighting mask: True for all b-value indices whose value is
         smaller or equal to ``b0_threshold``; False otherwise.
-     """
+    """
 
     return bvals <= b0_threshold
 
@@ -159,87 +163,90 @@ class GradientTable:
     using the factory function gradient_table
 
     """
-    def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=50, btens=None):
+
+    def __init__(
+        self, gradients, big_delta=None, small_delta=None, b0_threshold=50, btens=None
+    ):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
             raise ValueError("gradients should be an (N, 3) array")
         self.gradients = gradients
         # Avoid nan gradients. Set these to 0 instead:
-        self.gradients = np.where(np.isnan(gradients), 0., gradients)
+        self.gradients = np.where(np.isnan(gradients), 0.0, gradients)
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
         if btens is not None:
-            linear_tensor = np.array([[1, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-            planar_tensor = np.array([[0, 0, 0],
-                                      [0, 1, 0],
-                                      [0, 0, 1]]) / 2
-            spherical_tensor = np.array([[1, 0, 0],
-                                         [0, 1, 0],
-                                         [0, 0, 1]]) / 3
-            cigar_tensor = np.array([[2, 0, 0],
-                                     [0, .5, 0],
-                                     [0, 0, .5]]) / 3
+            linear_tensor = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+            planar_tensor = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1]]) / 2
+            spherical_tensor = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) / 3
+            cigar_tensor = np.array([[2, 0, 0], [0, 0.5, 0], [0, 0, 0.5]]) / 3
             if isinstance(btens, str):
                 b_tensors = np.zeros((len(self.bvals), 3, 3))
-                if btens == 'LTE':
+                if btens == "LTE":
                     b_tensor = linear_tensor
-                elif btens == 'PTE':
+                elif btens == "PTE":
                     b_tensor = planar_tensor
-                elif btens == 'STE':
+                elif btens == "STE":
                     b_tensor = spherical_tensor
-                elif btens == 'CTE':
+                elif btens == "CTE":
                     b_tensor = cigar_tensor
                 else:
-                    raise ValueError("%s is an invalid value for btens. "%btens
-                                     + "Please provide one of the following: "
-                                     + "'LTE', 'PTE', 'STE', 'CTE'.")
+                    raise ValueError(
+                        f"{btens} is an invalid value for btens. "
+                        + "Please provide one of the following: "
+                        + "'LTE', 'PTE', 'STE', 'CTE'."
+                    )
                 for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
-                    if btens == 'STE':
+                    if btens == "STE":
                         b_tensors[i] = b_tensor * bval
                     else:
                         R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-                        b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
-                                        * bval)
+                        b_tensors[i] = np.matmul(np.matmul(R, b_tensor), R.T) * bval
                 self.btens = b_tensors
-            elif (isinstance(btens, np.ndarray)
-                  and btens.shape in ((gradients.shape[0],),
-                                      (gradients.shape[0], 1),
-                                      (1, gradients.shape[0]))):
+            elif isinstance(btens, np.ndarray) and btens.shape in (
+                (gradients.shape[0],),
+                (gradients.shape[0], 1),
+                (1, gradients.shape[0]),
+            ):
                 b_tensors = np.zeros((len(self.bvals), 3, 3))
                 if btens.shape == (1, gradients.shape[0]):
                     btens = btens.reshape((gradients.shape[0], 1))
                 for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                     R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-                    if btens[i] == 'LTE':
-                        b_tensors[i] = (np.matmul(np.matmul(R, linear_tensor),
-                                        R.T) * bval)
-                    elif btens[i] == 'PTE':
-                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
-                                        R.T) * bval)
-                    elif btens[i] == 'STE':
+                    if btens[i] == "LTE":
+                        b_tensors[i] = (
+                            np.matmul(np.matmul(R, linear_tensor), R.T) * bval
+                        )
+                    elif btens[i] == "PTE":
+                        b_tensors[i] = (
+                            np.matmul(np.matmul(R, planar_tensor), R.T) * bval
+                        )
+                    elif btens[i] == "STE":
                         b_tensors[i] = spherical_tensor * bval
-                    elif btens[i] == 'CTE':
-                        b_tensors[i] = (np.matmul(np.matmul(R, cigar_tensor),
-                                        R.T) * bval)
+                    elif btens[i] == "CTE":
+                        b_tensors[i] = np.matmul(np.matmul(R, cigar_tensor), R.T) * bval
                     else:
                         raise ValueError(
-                                "%s is an invalid value in btens. "%btens[i]
-                                + "Array element options: 'LTE', 'PTE', 'STE', "
-                                + "'CTE'.")
+                            f"{btens[i]} is an invalid value in btens. "
+                            + "Array element options: 'LTE', 'PTE', 'STE', "
+                            + "'CTE'."
+                        )
                 self.btens = b_tensors
-            elif (isinstance(btens, np.ndarray) and btens.shape ==
-                    (gradients.shape[0], 3, 3)):
+            elif isinstance(btens, np.ndarray) and btens.shape == (
+                gradients.shape[0],
+                3,
+                3,
+            ):
                 self.btens = btens
             else:
-                raise ValueError("%s is an invalid value for btens. "%btens
-                                 + "Please provide a string, an array of "
-                                 + "strings, or an array of exact b-tensors. "
-                                 + "String options: 'LTE', 'PTE', 'STE', 'CTE'")
+                raise ValueError(
+                    f"{btens} is an invalid value for btens. "
+                    + "Please provide a string, an array of "
+                    + "strings, or an array of exact b-tensors. "
+                    + "String options: 'LTE', 'PTE', 'STE', 'CTE'"
+                )
         else:
             self.btens = None
 
@@ -260,8 +267,9 @@ class GradientTable:
     def gradient_strength(self):
         tau = self.big_delta - self.small_delta / 3.0
         qvals = np.sqrt(self.bvals / tau) / (2 * np.pi)
-        gradient_strength = (qvals * (2 * np.pi) /
-                             (self.small_delta * WATER_GYROMAGNETIC_RATIO))
+        gradient_strength = (
+            qvals * (2 * np.pi) / (self.small_delta * WATER_GYROMAGNETIC_RATIO)
+        )
         return gradient_strength
 
     @auto_attr
@@ -287,16 +295,19 @@ class GradientTable:
             if slice_start != self.b0_threshold:
                 # Update b0_threshold and warn the user
                 self.b0_threshold = slice_start
-                warn(b0_threshold_update_slicing_message(slice_start),
-                     UserWarning, stacklevel=2)
+                warn(
+                    b0_threshold_update_slicing_message(slice_start),
+                    UserWarning,
+                    stacklevel=2,
+                )
                 idx = range(*idx.indices(len(self.bvals)))
 
         mask = np.logical_not(
-            mask_non_weighted_bvals(self.bvals[idx], self.b0_threshold))
+            mask_non_weighted_bvals(self.bvals[idx], self.b0_threshold)
+        )
         if not any(mask):
             raise ValueError(
-                b0_threshold_empty_gradient_message(
-                    self.bvals, idx, self.b0_threshold)
+                b0_threshold_empty_gradient_message(self.bvals, idx, self.b0_threshold)
             )
 
         # Apply the mask to select the desired b-values and b-vectors
@@ -305,12 +316,14 @@ class GradientTable:
 
         # Create a new MyGradientTable object with the selected b-values
         # and b-vectors
-        return gradient_table_from_bvals_bvecs(bvals_selected,
-                                               bvecs_selected,
-                                               big_delta=self.big_delta,
-                                               small_delta=self.small_delta,
-                                               b0_threshold=self.b0_threshold,
-                                               btens=self.btens)
+        return gradient_table_from_bvals_bvecs(
+            bvals_selected,
+            bvecs_selected,
+            big_delta=self.big_delta,
+            small_delta=self.small_delta,
+            b0_threshold=self.b0_threshold,
+            btens=self.btens,
+        )
         # removing atol parameter as it's not in the constructor
         # of GradientTable.
 
@@ -320,17 +333,18 @@ class GradientTable:
         show(self.__str__())
 
     def __str__(self):
-        msg = 'B-values shape {}\n'.format(self.bvals.shape)
-        msg += '         min {:f}\n'.format(self.bvals.min())
-        msg += '         max {:f}\n'.format(self.bvals.max())
-        msg += 'B-vectors shape {}\n'.format(self.bvecs.shape)
-        msg += '          min {:f}\n'.format(self.bvecs.min())
-        msg += '          max {:f}\n'.format(self.bvecs.max())
+        msg = f"B-values shape {self.bvals.shape}\n"
+        msg += f"         min {self.bvals.min():f}\n"
+        msg += f"         max {self.bvals.max():f}\n"
+        msg += f"B-vectors shape {self.bvecs.shape}\n"
+        msg += f"          min {self.bvecs.min():f}\n"
+        msg += f"          max {self.bvecs.max():f}\n"
         return msg
 
 
-def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
-                                    btens=None, **kwargs):
+def gradient_table_from_bvals_bvecs(
+    bvals, bvecs, b0_threshold=50, atol=1e-2, btens=None, **kwargs
+):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -389,40 +403,48 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
 
     # check that bvals is (N,) array and bvecs is (N, 3) unit vectors
     if bvals.ndim != 1 or bvecs.ndim != 2 or bvecs.shape[0] != bvals.shape[0]:
-        raise ValueError("bvals and bvecs should be (N,) and (N, 3) arrays "
-                         "respectively, where N is the number of diffusion "
-                         "gradients")
+        raise ValueError(
+            "bvals and bvecs should be (N,) and (N, 3) arrays "
+            "respectively, where N is the number of diffusion "
+            "gradients"
+        )
     # checking for negative bvals
     if b0_threshold < 0:
         raise ValueError("Negative bvals in the data are not feasible")
 
     # Upper bound for the b0_threshold
     if b0_threshold >= 200:
-        warn("b0_threshold has a value > 199")
+        warn("b0_threshold has a value > 199", stacklevel=2)
 
     # If all b-values are smaller or equal to the b0 threshold, it is assumed
     # that no thresholding is requested
     if any(mask_non_weighted_bvals(bvals, b0_threshold)):
         # checking for the correctness of bvals
         if b0_threshold < bvals.min():
-            warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should be higher than the lowest b0 value "
-                 "({1}).".format(b0_threshold, bvals.min()))
+            warn(
+                f"b0_threshold (value: {b0_threshold}) is too low, increase your "
+                "b0_threshold. It should be higher than the lowest b0 value "
+                f"({bvals.min()}).",
+                stacklevel=2,
+            )
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
     if bvecs.shape[1] != 3:
         raise ValueError("bvecs should be (N, 3)")
     if not np.all(bvecs_close_to_1[dwi_mask]):
-        raise ValueError("The vectors in bvecs should be unit (The tolerance "
-                         "can be modified as an input parameter)")
+        raise ValueError(
+            "The vectors in bvecs should be unit (The tolerance "
+            "can be modified as an input parameter)"
+        )
 
     bvecs = np.where(bvecs_close_to_1[:, None], bvecs, 0)
     bvals = bvals * bvecs_close_to_1
     gradients = bvals[:, None] * bvecs
 
-    grad_table = GradientTable(gradients, b0_threshold=b0_threshold,
-                               btens=btens, **kwargs)
+    grad_table = GradientTable(
+        gradients, b0_threshold=b0_threshold, btens=btens, **kwargs
+    )
     grad_table.bvals = bvals
     grad_table.bvecs = bvecs
     grad_table.b0s_mask = ~dwi_mask
@@ -430,8 +452,9 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     return grad_table
 
 
-def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
-                                    b0_threshold=50, atol=1e-2):
+def gradient_table_from_qvals_bvecs(
+    qvals, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -499,16 +522,20 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
 
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
-    bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
-    return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
-                                           small_delta=small_delta,
-                                           b0_threshold=b0_threshold,
-                                           atol=atol)
+    bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.0)
+    return gradient_table_from_bvals_bvecs(
+        bvals,
+        bvecs,
+        big_delta=big_delta,
+        small_delta=small_delta,
+        b0_threshold=b0_threshold,
+        atol=atol,
+    )
 
 
-def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
-                                                big_delta, small_delta,
-                                                b0_threshold=50, atol=1e-2):
+def gradient_table_from_gradient_strength_bvecs(
+    gradient_strength, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -576,17 +603,27 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
     bvecs = np.asarray(bvecs)
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
-    qvals = gradient_strength * small_delta * WATER_GYROMAGNETIC_RATIO /\
-        (2 * np.pi)
-    bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
-    return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
-                                           small_delta=small_delta,
-                                           b0_threshold=b0_threshold,
-                                           atol=atol)
+    qvals = gradient_strength * small_delta * WATER_GYROMAGNETIC_RATIO / (2 * np.pi)
+    bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.0)
+    return gradient_table_from_bvals_bvecs(
+        bvals,
+        bvecs,
+        big_delta=big_delta,
+        small_delta=small_delta,
+        b0_threshold=b0_threshold,
+        atol=atol,
+    )
 
 
-def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=50, atol=1e-2, btens=None):
+def gradient_table(
+    bvals,
+    bvecs=None,
+    big_delta=None,
+    small_delta=None,
+    b0_threshold=50,
+    atol=1e-2,
+    btens=None,
+):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -698,16 +735,23 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
             bvecs = bvals[1:, :].T
             bvals = np.squeeze(bvals[0, :])
         else:
-            raise ValueError("input should be bvals and bvecs OR an (N, 4)"
-                             " array containing both bvals and bvecs")
+            raise ValueError(
+                "input should be bvals and bvecs OR an (N, 4)"
+                " array containing both bvals and bvecs"
+            )
     else:
         bvecs = np.asarray(bvecs)
         if bvecs.shape[1] != 3 and bvecs.shape[0] > 1:
             bvecs = bvecs.T
-    return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
-                                           small_delta=small_delta,
-                                           b0_threshold=b0_threshold,
-                                           atol=atol, btens=btens)
+    return gradient_table_from_bvals_bvecs(
+        bvals,
+        bvecs,
+        big_delta=big_delta,
+        small_delta=small_delta,
+        b0_threshold=b0_threshold,
+        atol=atol,
+        btens=btens,
+    )
 
 
 def reorient_bvecs(gtab, affines, atol=1e-2):
@@ -745,10 +789,10 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
         affines = np.stack(affines, axis=-1)
 
     if affines.shape[0] != affines.shape[1]:
-        msg = '''reorient_bvecs has changed to require affines as
+        msg = """reorient_bvecs has changed to require affines as
         (4, 4, n) or (3, 3, n). Shape of (n, 4, 4) or (n, 3, 3)
-        is deprecated and will fail in the future.'''
-        warn(msg, UserWarning)
+        is deprecated and will fail in the future."""
+        warn(msg, UserWarning, stacklevel=2)
         affines = np.moveaxis(affines, 0, -1)
 
     new_bvecs = gtab.bvecs[~gtab.b0s_mask]
@@ -775,9 +819,14 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
 
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
-    return gradient_table(gtab.bvals, return_bvecs, big_delta=gtab.big_delta,
-                          small_delta=gtab.small_delta,
-                          b0_threshold=gtab.b0_threshold, atol=atol)
+    return gradient_table(
+        gtab.bvals,
+        return_bvecs,
+        big_delta=gtab.big_delta,
+        small_delta=gtab.small_delta,
+        b0_threshold=gtab.b0_threshold,
+        atol=atol,
+    )
 
 
 def generate_bvecs(N, iters=5000, rng=None):
@@ -814,7 +863,7 @@ def generate_bvecs(N, iters=5000, rng=None):
 
 
 def round_bvals(bvals, bmag=None):
-    """"This function rounds the b-values
+    """ "This function rounds the b-values
 
     Parameters
     ----------
@@ -835,12 +884,12 @@ def round_bvals(bvals, bmag=None):
     if bmag is None:
         bmag = int(np.log10(np.max(bvals))) - 1
 
-    b = bvals / (10 ** bmag)  # normalize b units
-    return b.round() * (10 ** bmag)
+    b = bvals / (10**bmag)  # normalize b units
+    return b.round() * (10**bmag)
 
 
 def unique_bvals_tolerance(bvals, tol=20):
-    """ Gives the unique b-values of the data, within a tolerance gap
+    """Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a
     distance greater than the tolerance gap. If all the b-values of a
@@ -864,18 +913,21 @@ def unique_bvals_tolerance(bvals, tol=20):
     b = np.unique(bvals)
     ubvals = []
     lower_part = np.where(b <= b[0] + tol)[0]
-    upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
-                                         b > b[lower_part[-1]]))[0]
+    upper_part = np.where(
+        np.logical_and(b <= b[lower_part[-1]] + tol, b > b[lower_part[-1]])
+    )[0]
     ubvals.append(b[lower_part[-1]])
     if len(upper_part) != 0:
         b_index = upper_part[-1] + 1
     else:
         b_index = lower_part[-1] + 1
     while b_index != len(b):
-        lower_part = np.where(np.logical_and(b <= b[b_index] + tol,
-                                             b > b[b_index-1]))[0]
-        upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
-                                             b > b[lower_part[-1]]))[0]
+        lower_part = np.where(
+            np.logical_and(b <= b[b_index] + tol, b > b[b_index - 1])
+        )[0]
+        upper_part = np.where(
+            np.logical_and(b <= b[lower_part[-1]] + tol, b > b[lower_part[-1]])
+        )[0]
         ubvals.append(b[lower_part[-1]])
         if len(upper_part) != 0:
             b_index = upper_part[-1] + 1
@@ -885,11 +937,11 @@ def unique_bvals_tolerance(bvals, tol=20):
     # Checking for overlap with get_bval_indices
     for i, ubval in enumerate(ubvals[:-1]):
         indices_1 = get_bval_indices(bvals, ubval, tol)
-        indices_2 = get_bval_indices(bvals, ubvals[i+1], tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol)
         if len(np.intersect1d(indices_1, indices_2)) != 0:
-            msg = '''There is overlap in clustering of b-values.
-            The tolerance factor might be too high.'''
-            warn(msg, UserWarning)
+            msg = """There is overlap in clustering of b-values.
+            The tolerance factor might be too high."""
+            warn(msg, UserWarning, stacklevel=2)
 
     return np.asarray(ubvals)
 
@@ -914,12 +966,11 @@ def get_bval_indices(bvals, bval, tol=20):
     -------
     Array of indices where the b-value is `bval`
     """
-    return np.where(np.logical_and(bvals <= bval + tol,
-                                   bvals >= bval - tol))[0]
+    return np.where(np.logical_and(bvals <= bval + tol, bvals >= bval - tol))[0]
 
 
 def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
-    """ This function gives the unique rounded b-values of the data
+    """This function gives the unique rounded b-values of the data
 
     Parameters
     ----------
@@ -1031,7 +1082,7 @@ def _btens_to_params_2d(btens_2d, ztol):
         bdelta = 0
         b_eta = 0
     else:
-        lambda_iso = (1/3)*bval
+        lambda_iso = (1 / 3) * bval
 
         diff_lambdas = np.abs(evals - lambda_iso)
         evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
@@ -1040,16 +1091,16 @@ def _btens_to_params_2d(btens_2d, ztol):
         lambda_xx = evals_zzxxyy[1]
         lambda_yy = evals_zzxxyy[2]
 
-        bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
+        bdelta = (1 / (3 * lambda_iso)) * (lambda_zz - ((lambda_yy + lambda_xx) / 2))
 
         if np.abs(bdelta) <= ztol:
             bdelta = 0
 
-        yyxx_diff = lambda_yy-lambda_xx
+        yyxx_diff = lambda_yy - lambda_xx
         if abs(yyxx_diff) <= np.spacing(1):
             yyxx_diff = 0
 
-        b_eta = yyxx_diff/(2*lambda_iso*bdelta+np.spacing(1))
+        b_eta = yyxx_diff / (2 * lambda_iso * bdelta + np.spacing(1))
 
         if np.abs(b_eta) <= b_eta:
             b_eta = 0
@@ -1090,9 +1141,11 @@ def btens_to_params(btens, ztol=1e-10):
 
     """
     # Bad input checks
-    value_error_msg = "`btens` must be a 2D or 3D numpy array, respectively" \
-                      " with (3, 3) or (N, 3, 3) shape, where N corresponds" \
-                      " to the number of b-tensors"
+    value_error_msg = (
+        "`btens` must be a 2D or 3D numpy array, respectively"
+        " with (3, 3) or (N, 3, 3) shape, where N corresponds"
+        " to the number of b-tensors"
+    )
     if not isinstance(btens, np.ndarray):
         raise ValueError(value_error_msg)
 
@@ -1160,13 +1213,15 @@ def params_to_btens(bval, bdelta, b_eta):
 
     # Check input times are OK
     expected_input_types = (float, int)
-    input_types_all_ok = (isinstance(bval, expected_input_types) and
-                          isinstance(bdelta, expected_input_types) and
-                          isinstance(b_eta, expected_input_types))
+    input_types_all_ok = (
+        isinstance(bval, expected_input_types)
+        and isinstance(bdelta, expected_input_types)
+        and isinstance(b_eta, expected_input_types)
+    )
 
     if not input_types_all_ok:
         s = [x.__name__ for x in expected_input_types]
-        it_msg = "All input types should any of: {}".format(s)
+        it_msg = f"All input types should any of: {s}"
         raise ValueError(it_msg)
 
     # Check input values within expected ranges
@@ -1181,7 +1236,7 @@ def params_to_btens(bval, bdelta, b_eta):
 
     m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
     m2 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
-    btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
+    btens = bval / 3 * (np.eye(3) + bdelta * (m1 + b_eta * m2))
 
     return btens
 
@@ -1189,7 +1244,7 @@ def params_to_btens(bval, bdelta, b_eta):
 def ornt_mapping(ornt1, ornt2):
     """Calculate the mapping needing to get from orn1 to orn2."""
 
-    mapping = np.empty((len(ornt1), 2), 'int')
+    mapping = np.empty((len(ornt1), 2), "int")
     mapping[:, 0] = -1
     A = ornt1[:, 0].argsort()
     B = ornt2[:, 0].argsort()
@@ -1255,8 +1310,14 @@ def reorient_on_axis(bvecs, current_ornt, new_ornt, axis=0):
 
 def orientation_from_string(string_ornt):
     """Return an array representation of an ornt string."""
-    orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
-                            p=(1, -1), s=(2, 1), i=(2, -1))
+    orientation_dict = {
+        "r": (0, 1),
+        "l": (0, -1),
+        "a": (1, 1),
+        "p": (1, -1),
+        "s": (2, 1),
+        "i": (2, -1),
+    }
     ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
     ornt = np.array(ornt)
     if _check_ornt(ornt):
@@ -1270,9 +1331,15 @@ def orientation_to_string(ornt):
     if _check_ornt(ornt):
         msg = repr(ornt) + " does not seem to be a valid orientation"
         raise ValueError(msg)
-    orientation_dict = {(0, 1): 'r', (0, -1): 'l', (1, 1): 'a',
-                        (1, -1): 'p', (2, 1): 's', (2, -1): 'i'}
-    ornt_string = ''
+    orientation_dict = {
+        (0, 1): "r",
+        (0, -1): "l",
+        (1, 1): "a",
+        (1, -1): "p",
+        (2, 1): "s",
+        (2, -1): "i",
+    }
+    ornt_string = ""
     for ii in ornt:
         ornt_string += orientation_dict[(ii[0], ii[1])]
     return ornt_string

@@ -6,8 +6,9 @@ from dipy.workflows.multi_io import io_iterator_
 
 
 class Workflow:
-    def __init__(self, output_strategy='absolute', mix_names=False,
-                 force=False, skip=False):
+    def __init__(
+        self, output_strategy="absolute", mix_names=False, force=False, skip=False
+    ):
         """Initialize the basic workflow object.
 
         This object takes care of any workflow operation that is common to all
@@ -33,17 +34,18 @@ class Workflow:
         else:
             frame = frame.frame
 
-        io_it = io_iterator_(frame, self.run,
-                             output_strategy=self._output_strategy,
-                             mix_names=self._mix_names)
+        io_it = io_iterator_(
+            frame,
+            self.run,
+            output_strategy=self._output_strategy,
+            mix_names=self._mix_names,
+        )
 
         # Make a list out of a list of lists
-        self.flat_outputs = [item for sublist in io_it.outputs for item
-                             in sublist]
+        self.flat_outputs = [item for sublist in io_it.outputs for item in sublist]
 
         if io_it.out_keys:
-            self.last_generated_outputs = dict(zip(io_it.out_keys,
-                                                   self.flat_outputs))
+            self.last_generated_outputs = dict(zip(io_it.out_keys, self.flat_outputs))
         else:
             self.last_generated_outputs = self.flat_outputs
 
@@ -67,14 +69,17 @@ class Workflow:
 
         if len(duplicates) > 0:
             if self._force_overwrite:
-                logging.info('The following output files are about to be'
-                             ' overwritten.')
+                logging.info(
+                    "The following output files are about to be" " overwritten."
+                )
 
             else:
-                logging.info('The following output files already exist, the '
-                             'workflow will not continue processing any '
-                             'further. Add the --force flag to allow output '
-                             'files overwrite.')
+                logging.info(
+                    "The following output files already exist, the "
+                    "workflow will not continue processing any "
+                    "further. Add the --force flag to allow output "
+                    "files overwrite."
+                )
 
             for dup in duplicates:
                 logging.info(dup)
@@ -90,8 +95,7 @@ class Workflow:
         reached (not implemented in child class or literally called on this
         class)
         """
-        raise Exception('Error: {} does not have a run method.'.
-                        format(self.__class__))
+        raise Exception(f"Error: {self.__class__} does not have a run method.")
 
     def get_sub_runs(self):
         """Return No sub runs since this is a simple workflow."""

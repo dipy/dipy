@@ -45,10 +45,9 @@ bundle2 = select_random_set_of_streamlines(cb_subj1, 60, rng=None)
 
 
 def show_both_bundles(bundles, colors=None, show=True, fname=None):
-
     scene = window.Scene()
-    scene.SetBackground(1., 1, 1)
-    for (i, bundle) in enumerate(bundles):
+    scene.SetBackground(1.0, 1, 1)
+    for i, bundle in enumerate(bundles):
         color = colors[i]
         streamtube_actor = actor.streamtube(bundle, color, linewidth=0.3)
         streamtube_actor.RotateX(-90)
@@ -60,8 +59,12 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
         window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
-show_both_bundles([bundle1, bundle2], colors=[(1, 0, 0), (0, 1, 0)],
-                  show=False, fname="two_bundles.png")
+show_both_bundles(
+    [bundle1, bundle2],
+    colors=[(1, 0, 0), (0, 1, 0)],
+    show=False,
+    fname="two_bundles.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

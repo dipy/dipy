@@ -1,8 +1,9 @@
 import numpy as np
 
 
-def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
-                                    triangles_weight=None, rand_gen=None):
+def random_coordinates_from_surface(
+    nb_triangles, nb_seed, triangles_mask=None, triangles_weight=None, rand_gen=None
+):
     """Generate random triangles_indices and trilinear_coord
 
     Triangles_indices probability are weighted by triangles_weight,
@@ -47,21 +48,21 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     rng = np.random.default_rng(rand_gen)
 
     # Choose random triangles
-    triangles_idx = \
-        rng.choice(nb_triangles, size=nb_seed, p=triangles_weight)
+    triangles_idx = rng.choice(nb_triangles, size=nb_seed, p=triangles_weight)
 
     # Choose random trilinear coordinates
     # https://mathworld.wolfram.com/TrianglePointPicking.html
     trilin_coord = rng.random((nb_seed, 3))
-    is_upper = (trilin_coord[:, 1:].sum(axis=-1) > 1.0)
+    is_upper = trilin_coord[:, 1:].sum(axis=-1) > 1.0
     trilin_coord[is_upper] = 1.0 - trilin_coord[is_upper]
     trilin_coord[:, 0] = 1.0 - (trilin_coord[:, 1] + trilin_coord[:, 2])
 
     return triangles_idx, trilin_coord
 
 
-def seeds_from_surface_coordinates(triangles, vts_values,
-                                   triangles_idx, trilinear_coord):
+def seeds_from_surface_coordinates(
+    triangles, vts_values, triangles_idx, trilinear_coord
+):
     """Compute points from triangles_indices and trilinear_coord
 
     Parameters
@@ -92,7 +93,7 @@ def seeds_from_surface_coordinates(triangles, vts_values,
     tris_vals = vts_values[triangles[triangles_idx]]
 
     # Interpolate values for each trilinear coordinates
-    return np.squeeze(np.einsum('ijk,ij...->ik', tris_vals, trilinear_coord))
+    return np.squeeze(np.einsum("ijk,ij...->ik", tris_vals, trilinear_coord))
 
 
 def triangles_area(triangles, vts):

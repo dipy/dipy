@@ -9,16 +9,16 @@ from dipy.testing import assert_false, assert_true
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.arrfuncs import as_native_array, pinv
 
-NATIVE_ORDER = '<' if sys.byteorder == 'little' else '>'
-SWAPPED_ORDER = '>' if sys.byteorder == 'little' else '<'
+NATIVE_ORDER = "<" if sys.byteorder == "little" else ">"
+SWAPPED_ORDER = ">" if sys.byteorder == "little" else "<"
 
 
 def test_as_native():
     arr = np.arange(5)  # native
-    assert_equal(arr.dtype.byteorder, '=')
+    assert_equal(arr.dtype.byteorder, "=")
     narr = as_native_array(arr)
     assert_true(arr is narr)
-    sdt = arr.view(arr.dtype.newbyteorder('s'))
+    sdt = arr.view(arr.dtype.newbyteorder("s"))
     barr = arr.astype(sdt.dtype)
     assert_equal(barr.dtype.byteorder, SWAPPED_ORDER)
     narr = as_native_array(barr)
@@ -34,5 +34,4 @@ def test_pinv(rng):
     for i in range(4):
         for j in range(4):
             for k in range(4):
-                assert_array_almost_equal(_pinv[i, j, k],
-                                          np.linalg.pinv(arr[i, j, k]))
+                assert_array_almost_equal(_pinv[i, j, k], np.linalg.pinv(arr[i, j, k]))

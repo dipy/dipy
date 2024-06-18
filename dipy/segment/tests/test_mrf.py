@@ -10,7 +10,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 def create_image():
     # Load a coronal slice from a T1-weighted MRI
-    fname = get_fnames('t1_coronal_slice')
+    fname = get_fnames("t1_coronal_slice")
     single_slice = np.load(fname)
 
     # Stack a few copies to form a 3D volume
@@ -32,8 +32,7 @@ def create_square():
 
 def create_square_uniform(rng):
     square_1 = np.zeros((256, 256, 3)) + 0.001
-    square_1 = add_noise(square_1, 10000, 1,
-                         noise_type='gaussian', rng=rng)
+    square_1 = add_noise(square_1, 10000, 1, noise_type="gaussian", rng=rng)
     temp_1 = rng.integers(1, 21, size=(171, 171, 3))
     temp_1 = np.where(temp_1 < 20, 1, 3)
     square_1[42:213, 42:213, :] = temp_1
@@ -49,26 +48,21 @@ def create_square_uniform(rng):
 
 def create_square_gauss(rng):
     square_gauss = np.zeros((256, 256, 3)) + 0.001
-    square_gauss = add_noise(square_gauss, 10000, 1,
-                             noise_type='gaussian', rng=rng)
+    square_gauss = add_noise(square_gauss, 10000, 1, noise_type="gaussian", rng=rng)
     square_gauss[42:213, 42:213, :] = 1
-    noise_1 = rng.normal(1.001, 0.0001,
-                         size=square_gauss[42:213, 42:213, :].shape)
+    noise_1 = rng.normal(1.001, 0.0001, size=square_gauss[42:213, 42:213, :].shape)
     square_gauss[42:213, 42:213, :] = square_gauss[42:213, 42:213, :] + noise_1
     square_gauss[71:185, 71:185, :] = 2
-    noise_2 = rng.normal(2.001, 0.0001,
-                         size=square_gauss[71:185, 71:185, :].shape)
+    noise_2 = rng.normal(2.001, 0.0001, size=square_gauss[71:185, 71:185, :].shape)
     square_gauss[71:185, 71:185, :] = square_gauss[71:185, 71:185, :] + noise_2
     square_gauss[99:157, 99:157, :] = 3
-    noise_3 = rng.normal(3.001, 0.0001,
-                         size=square_gauss[99:157, 99:157, :].shape)
+    noise_3 = rng.normal(3.001, 0.0001, size=square_gauss[99:157, 99:157, :].shape)
     square_gauss[99:157, 99:157, :] = square_gauss[99:157, 99:157, :] + noise_3
 
     return square_gauss
 
 
 def test_grayscale_image():
-
     nclasses = 4
     beta = np.float64(0.0)
 
@@ -77,7 +71,7 @@ def test_grayscale_image():
     icm = IteratedConditionalModes()
 
     mu, sigmasq = com.initialize_param_uniform(image, nclasses)
-    npt.assert_array_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
+    npt.assert_array_almost_equal(mu, np.array([0.0, 0.25, 0.5, 0.75]))
     npt.assert_array_almost_equal(sigmasq, np.array([1.0, 1.0, 1.0, 1.0]))
 
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
@@ -130,15 +124,13 @@ def test_grayscale_image():
     npt.assert_(sigmasq_upd[2] != sigmasq[2])
     npt.assert_(sigmasq_upd[3] != sigmasq[3])
 
-    icm_segmentation, energy = icm.icm_ising(neglogl, beta,
-                                             initial_segmentation)
+    icm_segmentation, energy = icm.icm_ising(neglogl, beta, initial_segmentation)
     npt.assert_(np.abs(np.sum(icm_segmentation)) != 0)
     npt.assert_(icm_segmentation.max() == nclasses - 1)
     npt.assert_(icm_segmentation.min() == 0)
 
 
 def test_grayscale_iter():
-
     nclasses = 4
     beta = np.float64(0.1)
     max_iter = 15
@@ -166,7 +158,7 @@ def test_grayscale_iter():
 
     if background_noise:
         zero = np.zeros_like(image) + 0.001
-        zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
+        zero_noise = add_noise(zero, 10000, 1, noise_type="gaussian")
         image_gauss = np.where(image == 0, zero_noise, image)
     else:
         image_gauss = image
@@ -175,14 +167,11 @@ def test_grayscale_iter():
     seg_init = initial_segmentation
     energies = []
 
-    for i in range(max_iter):
-
-        PLN = icm.prob_neighborhood(initial_segmentation, beta,
-                                    nclasses)
+    for _ in range(max_iter):
+        PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
         npt.assert_(np.all((PLN >= 0) & (PLN <= 1.0)))
 
         if beta == 0.0:
-
             npt.assert_almost_equal(PLN[50, 50, 1, 0], 0.25, True)
             npt.assert_almost_equal(PLN[50, 50, 1, 1], 0.25, True)
             npt.assert_almost_equal(PLN[50, 50, 1, 2], 0.25, True)
@@ -219,8 +208,7 @@ def test_grayscale_iter():
         npt.assert_(sigmasq_upd[2] >= 0.0)
         npt.assert_(sigmasq_upd[3] >= 0.0)
 
-        negll = com.negloglikelihood(image_gauss,
-                                     mu_upd, sigmasq_upd, nclasses)
+        negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 1])
         npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 2])
         npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 3])
@@ -228,8 +216,7 @@ def test_grayscale_iter():
         npt.assert_(negll[100, 100, 1, 3] < negll[100, 100, 1, 1])
         npt.assert_(negll[100, 100, 1, 3] < negll[100, 100, 1, 2])
 
-        final_segmentation, energy = icm.icm_ising(negll, beta,
-                                                   initial_segmentation)
+        final_segmentation, energy = icm.icm_ising(negll, beta, initial_segmentation)
         print(energy[energy > -np.inf].sum())
         energies.append(energy[energy > -np.inf].sum())
 
@@ -245,7 +232,6 @@ def test_grayscale_iter():
 
 @set_random_number_generator()
 def test_square_iter(rng):
-
     nclasses = 4
     beta = np.float64(0.0)
     max_iter = 10
@@ -256,8 +242,7 @@ def test_square_iter(rng):
     initial_segmentation = create_square()
     square_gauss = create_square_gauss(rng)
 
-    mu, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
-                                nclasses)
+    mu, sigmasq = com.seg_stats(square_gauss, initial_segmentation, nclasses)
     npt.assert_(mu[0] >= 0.0)
     npt.assert_(mu[1] >= 0.0)
     npt.assert_(mu[2] >= 0.0)
@@ -272,17 +257,14 @@ def test_square_iter(rng):
     energies = []
 
     for i in range(max_iter):
+        print("\n")
+        print(f">> Iteration: {i}")
+        print("\n")
 
-        print('\n')
-        print('>> Iteration: ' + str(i))
-        print('\n')
-
-        PLN = icm.prob_neighborhood(initial_segmentation, beta,
-                                    nclasses)
+        PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
         npt.assert_(np.all((PLN >= 0) & (PLN <= 1.0)))
 
         if beta == 0.0:
-
             npt.assert_(PLN[25, 25, 1, 0] == 0.25)
             npt.assert_(PLN[25, 25, 1, 1] == 0.25)
             npt.assert_(PLN[25, 25, 1, 2] == 0.25)
@@ -319,8 +301,7 @@ def test_square_iter(rng):
         npt.assert_(sigmasq_upd[2] >= 0.0)
         npt.assert_(sigmasq_upd[3] >= 0.0)
 
-        negll = com.negloglikelihood(square_gauss,
-                                     mu_upd, sigmasq_upd, nclasses)
+        negll = com.negloglikelihood(square_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 1])
         npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 2])
         npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 3])
@@ -328,8 +309,7 @@ def test_square_iter(rng):
         npt.assert_(negll[100, 100, 1, 3] < negll[125, 125, 1, 1])
         npt.assert_(negll[100, 100, 1, 3] < negll[125, 125, 1, 2])
 
-        final_segmentation, energy = icm.icm_ising(negll, beta,
-                                                   initial_segmentation)
+        final_segmentation, energy = icm.icm_ising(negll, beta, initial_segmentation)
 
         energies.append(energy[energy > -np.inf].sum())
 
@@ -343,7 +323,6 @@ def test_square_iter(rng):
 
 @set_random_number_generator()
 def test_icm_square(rng):
-
     nclasses = 4
     max_iter = 10
 
@@ -353,9 +332,8 @@ def test_icm_square(rng):
     initial_segmentation = create_square()
     square_1 = create_square_uniform(rng)
 
-    mu, sigma = com.seg_stats(square_1, initial_segmentation,
-                              nclasses)
-    sigmasq = sigma ** 2
+    mu, sigma = com.seg_stats(square_1, initial_segmentation, nclasses)
+    sigmasq = sigma**2
     npt.assert_(mu[0] >= 0.0)
     npt.assert_(mu[1] >= 0.0)
     npt.assert_(mu[2] >= 0.0)
@@ -373,26 +351,26 @@ def test_icm_square(rng):
     beta = 0.0
 
     for i in range(max_iter):
+        print("\n")
+        print(f">> Iteration: {i}")
+        print("\n")
 
-        print('\n')
-        print('>> Iteration: ' + str(i))
-        print('\n')
-
-        final_segmentation_1, energy_1 = icm.icm_ising(negll, beta,
-                                                       initial_segmentation)
+        final_segmentation_1, energy_1 = icm.icm_ising(
+            negll, beta, initial_segmentation
+        )
         initial_segmentation = final_segmentation_1
 
     beta = 2
     initial_segmentation = create_square()
 
     for j in range(max_iter):
+        print("\n")
+        print(f">> Iteration: {j}")
+        print("\n")
 
-        print('\n')
-        print('>> Iteration: ' + str(j))
-        print('\n')
-
-        final_segmentation_2, energy_2 = icm.icm_ising(negll, beta,
-                                                       initial_segmentation)
+        final_segmentation_2, energy_2 = icm.icm_ising(
+            negll, beta, initial_segmentation
+        )
         initial_segmentation = final_segmentation_2
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
@@ -400,7 +378,6 @@ def test_icm_square(rng):
 
 
 def test_classify():
-
     imgseg = TissueClassifierHMRF()
 
     nclasses = 4
@@ -420,8 +397,7 @@ def test_classify():
     npt.assert_(seg_final.min() == 0.0)
 
     # Second we test it with just changing the tolerance
-    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta,
-                                               tolerance)
+    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, tolerance)
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
@@ -435,8 +411,7 @@ def test_classify():
     # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)
 
-    seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
-                                               beta, tolerance)
+    seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses, beta, tolerance)
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)

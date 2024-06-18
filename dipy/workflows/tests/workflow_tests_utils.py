@@ -3,13 +3,12 @@ from dipy.workflows.workflow import Workflow
 
 
 class DummyWorkflow1(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'dwf1'
+        return "dwf1"
 
-    def run(self, inputs, param1=1, out_dir='', output_1='out1.txt'):
-        """ Workflow used to test combined workflows in general.
+    def run(self, inputs, param1=1, out_dir="", output_1="out1.txt"):
+        """Workflow used to test combined workflows in general.
 
         Parameters
         ----------
@@ -30,13 +29,12 @@ class DummyWorkflow1(Workflow):
 
 
 class DummyWorkflow2(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'dwf2'
+        return "dwf2"
 
-    def run(self, inputs, param2=2, out_dir='', output_1='out2.txt'):
-        """ Workflow used to test combined workflows in general.
+    def run(self, inputs, param2=2, out_dir="", output_1="out2.txt"):
+        """Workflow used to test combined workflows in general.
 
         Parameters
         ----------
@@ -56,9 +54,10 @@ class DummyCombinedWorkflow(CombinedWorkflow):
     def _get_sub_flows(self):
         return [DummyWorkflow1, DummyWorkflow2]
 
-    def run(self, inputs, param_combined=3, out_dir='',
-            out_combined='out_combined.txt'):
-        """ Workflow used to test combined workflows in general.
+    def run(
+        self, inputs, param_combined=3, out_dir="", out_combined="out_combined.txt"
+    ):
+        """Workflow used to test combined workflows in general.
 
         Parameters
         ----------
@@ -81,12 +80,22 @@ class DummyCombinedWorkflow(CombinedWorkflow):
 
 
 class DummyFlow(Workflow):
-
-    def run(self, positional_str, positional_bool, positional_int,
-            positional_float, optional_str='default', optional_bool=False,
-            optional_int=0, optional_float=1.0, optional_float_2=2.0,
-            optional_int_2=5, optional_float_3=2.0, out_dir=''):
-        """ Workflow used to test the introspective argument parser.
+    def run(
+        self,
+        positional_str,
+        positional_bool,
+        positional_int,
+        positional_float,
+        optional_str="default",
+        optional_bool=False,
+        optional_int=0,
+        optional_float=1.0,
+        optional_float_2=2.0,
+        optional_int_2=5,
+        optional_float_3=2.0,
+        out_dir="",
+    ):
+        """Workflow used to test the introspective argument parser.
 
         Parameters
         ----------
@@ -115,15 +124,24 @@ class DummyFlow(Workflow):
         out_dir : string
             output directory (default '')
         """
-        return (positional_str, positional_bool, positional_int,
-                positional_float, optional_str, optional_bool,
-                optional_int, optional_float, optional_int_2, optional_float_2,
-                optional_float_3)
+        return (
+            positional_str,
+            positional_bool,
+            positional_int,
+            positional_float,
+            optional_str,
+            optional_bool,
+            optional_int,
+            optional_float,
+            optional_int_2,
+            optional_float_2,
+            optional_float_3,
+        )
 
 
 class DummyWorkflowOptionalStr(Workflow):
-    def run(self, optional_str_1=None, optional_str_2='default'):
-        """ Workflow used to test optional string parameters in the
+    def run(self, optional_str_1=None, optional_str_2="default"):
+        """Workflow used to test optional string parameters in the
         introspective argument parser.
 
         Parameters
@@ -137,14 +155,12 @@ class DummyWorkflowOptionalStr(Workflow):
 
 
 class DummyVariableTypeWorkflow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'tvtwf'
+        return "tvtwf"
 
-    def run(self, positional_variable_str, positional_int,
-            out_dir=''):
-        """ Workflow used to test variable string in general.
+    def run(self, positional_variable_str, positional_int, out_dir=""):
+        """Workflow used to test variable string in general.
 
         Parameters
         ----------
@@ -164,14 +180,12 @@ class DummyVariableTypeWorkflow(Workflow):
 
 
 class DummyVariableTypeErrorWorkflow(Workflow):
-
     @classmethod
     def get_short_name(cls):
-        return 'tvtwfe'
+        return "tvtwfe"
 
-    def run(self, positional_variable_str, positional_variable_int,
-            out_dir=''):
-        """ Workflow used to test variable string error.
+    def run(self, positional_variable_str, positional_variable_int, out_dir=""):
+        """Workflow used to test variable string error.
 
         Parameters
         ----------

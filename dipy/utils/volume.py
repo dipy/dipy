@@ -1,4 +1,4 @@
-""" Utilities for calculating voxel adjacencies and neighbourhoods """
+"""Utilities for calculating voxel adjacencies and neighbourhoods"""
 
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
@@ -32,10 +32,10 @@ def adjacency_calc(img_shape, mask=None, cutoff=1.99):
     """
 
     # Image-space coordinates of voxels, flattened
-    XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing='ij')
+    XYZ = np.meshgrid(*[range(ds) for ds in img_shape], indexing="ij")
     XYZ = np.column_stack([xyz.ravel() for xyz in XYZ])
     dists = squareform(pdist(XYZ))
-    dists = (dists < cutoff)  # adjacency list contains current voxel
+    dists = dists < cutoff  # adjacency list contains current voxel
     adj = []
     if mask is not None:
         flat_mask = mask.reshape(-1)
@@ -51,4 +51,3 @@ def adjacency_calc(img_shape, mask=None, cutoff=1.99):
             adj.append(np.argwhere(cond).flatten().tolist())
 
     return adj
-

@@ -11,8 +11,7 @@ cli_flows = {
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
-    "dipy_buan_profiles": ("dipy.workflows.stats",
-                           "BundleAnalysisTractometryFlow"),
+    "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
@@ -34,8 +33,7 @@ cli_flows = {
     "dipy_gibbs_ringing": ("dipy.workflows.denoise", "GibbsRingingFlow"),
     "dipy_horizon": ("dipy.workflows.viz", "HorizonFlow"),
     "dipy_info": ("dipy.workflows.io", "IoInfoFlow"),
-    "dipy_concatenate_tractograms": ("dipy.workflows.io",
-                                     "ConcatenateTractogramFlow"),
+    "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
     "dipy_labelsbundles": ("dipy.workflows.segment", "LabelsBundlesFlow"),
     "dipy_median_otsu": ("dipy.workflows.segment", "MedianOtsuFlow"),
     "dipy_recobundles": ("dipy.workflows.segment", "RecoBundlesFlow"),
@@ -55,7 +53,7 @@ def run():
     mod_name, flow_name = cli_flows.get(script_name, (None, None))
     if mod_name is None:
         print(f"Flow: {script_name} not Found in DIPY")
-        print("Available flows: %s" % ", ".join(cli_flows.keys()))
+        print(f"Available flows: {', '.join(cli_flows.keys())}")
         sys.exit(1)
     mod, _, _ = optional_package(mod_name)
     run_flow(getattr(mod, flow_name)())

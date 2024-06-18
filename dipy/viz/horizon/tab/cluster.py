@@ -17,35 +17,46 @@ class ClustersTab(HorizonTab):
 
         self._visualizer = clusters_visualizer
 
-        self._name = 'Clusters'
+        self._name = "Clusters"
 
         self._tab_id = 0
 
         sizes = self._visualizer.sizes
         self._size_slider_label, self._size_slider = build_slider(
-            initial_value=np.percentile(sizes, 50), min_value=np.min(sizes),
-            max_value=np.percentile(sizes, 98), text_template='{value:.0f}',
-            label='Size', on_change=self._change_size
+            initial_value=np.percentile(sizes, 50),
+            min_value=np.min(sizes),
+            max_value=np.percentile(sizes, 98),
+            text_template="{value:.0f}",
+            label="Size",
+            on_change=self._change_size,
         )
 
         lengths = self._visualizer.lengths
         self._length_slider_label, self._length_slider = build_slider(
             initial_value=np.percentile(lengths, 25),
-            min_value=np.min(lengths), max_value=np.percentile(lengths, 98),
-            text_template='{value:.0f}', label='Length',
-            on_change=self._change_length
+            min_value=np.min(lengths),
+            max_value=np.percentile(lengths, 98),
+            text_template="{value:.0f}",
+            label="Length",
+            on_change=self._change_length,
         )
 
         self._threshold_slider_label, self._threshold_slider = build_slider(
-            initial_value=threshold, min_value=5, max_value=25,
-            text_template='{value:.0f}', label='Threshold',
-            on_handle_released=self._change_threshold
+            initial_value=threshold,
+            min_value=5,
+            max_value=25,
+            text_template="{value:.0f}",
+            label="Threshold",
+            on_handle_released=self._change_threshold,
         )
 
         self._register_elements(
-            self._size_slider_label, self._size_slider,
-            self._length_slider_label, self._length_slider,
-            self._threshold_slider_label, self._threshold_slider
+            self._size_slider_label,
+            self._size_slider,
+            self._length_slider_label,
+            self._length_slider,
+            self._threshold_slider_label,
+            self._threshold_slider,
         )
 
     def _change_length(self, slider):
@@ -109,23 +120,19 @@ class ClustersTab(HorizonTab):
             self._threshold_slider.selected_value = value
 
     def _update_clusters(self):
-        """Updates the clusters according to set size and length.
-        """
+        """Updates the clusters according to set size and length."""
         for k, cluster in self.cluster_actors.items():
+            length_validation = cluster["length"] < self._length_slider.selected_value
 
-            length_validation = (
-                cluster['length'] < self._length_slider.selected_value)
+            size_validation = cluster["size"] < self._size_slider.selected_value
 
-            size_validation = (
-                cluster['size'] < self._size_slider.selected_value)
-
-            if (length_validation or size_validation):
-                cluster['actor'].SetVisibility(False)
+            if length_validation or size_validation:
+                cluster["actor"].SetVisibility(False)
 
                 if k.GetVisibility():
                     k.SetVisibility(False)
             else:
-                cluster['actor'].SetVisibility(True)
+                cluster["actor"].SetVisibility(True)
 
     def build(self, tab_id):
         """Position the elements in the tab.
@@ -137,17 +144,17 @@ class ClustersTab(HorizonTab):
         """
         self._tab_id = tab_id
 
-        x_pos = .02
+        x_pos = 0.02
 
-        self._size_slider_label.position = (x_pos, .85)
-        self._length_slider_label.position = (x_pos, .62)
-        self._threshold_slider_label.position = (x_pos, .38)
+        self._size_slider_label.position = (x_pos, 0.85)
+        self._length_slider_label.position = (x_pos, 0.62)
+        self._threshold_slider_label.position = (x_pos, 0.38)
 
-        x_pos = .12
+        x_pos = 0.12
 
-        self._size_slider.position = (x_pos, .85)
-        self._length_slider.position = (x_pos, .62)
-        self._threshold_slider.position = (x_pos, .38)
+        self._size_slider.position = (x_pos, 0.85)
+        self._length_slider.position = (x_pos, 0.62)
+        self._threshold_slider.position = (x_pos, 0.38)
 
     @property
     def name(self):
@@ -191,7 +198,7 @@ class ClustersTab(HorizonTab):
         """
         actors = []
         for cluster_actor in self.cluster_actors.values():
-            actors.append(cluster_actor['actor'])
+            actors.append(cluster_actor["actor"])
         for centroid_actor in self.centroid_actors.values():
-            actors.append(centroid_actor['actor'])
+            actors.append(centroid_actor["actor"])
         return actors

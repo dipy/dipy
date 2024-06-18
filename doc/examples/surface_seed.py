@@ -45,12 +45,11 @@ scene = window.Scene()
 surface_actor = get_actor_from_polydata(polydata)
 
 scene.add(surface_actor)
-scene.set_camera(position=(-500, 0, 0),
-                 view_up=(0.0, 0.0, 1))
+scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='surface_seed1.png', size=(600, 600))
+window.record(scene, out_path="surface_seed1.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -108,12 +107,11 @@ scene.add(surface_actor)
 scene.add(seed_actors)
 scene.add(normal_in_actor)
 scene.add(normal_out_actor)
-scene.set_camera(position=(-500, 0, 0),
-                 view_up=(0.0, 0.0, 1))
+scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path='surface_seed2.png', size=(600, 600))
+window.record(scene, out_path="surface_seed2.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

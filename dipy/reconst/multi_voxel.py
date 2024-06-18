@@ -1,4 +1,5 @@
 """Tools to easily make multi voxel models"""
+
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from tqdm import tqdm
@@ -12,6 +13,7 @@ def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition
     """
+
     def new_fit(self, data, mask=None):
         """Fit method for every voxel in data"""
         # If only one voxel just return a normal fit
@@ -36,12 +38,14 @@ def multi_voxel_fit(single_voxel_fit):
                 bar.update()
         bar.close()
         return MultiVoxelFit(self, fit_array, mask)
+
     return new_fit
 
 
 class MultiVoxelFit(ReconstFit):
     """Holds an array of fits and allows access to their attributes and
     methods"""
+
     def __init__(self, model, fit_array, mask):
         self.model = model
         self.fit_array = fit_array
@@ -70,7 +74,7 @@ class MultiVoxelFit(ReconstFit):
         Predict for the multi-voxel object using each single-object's
         prediction API, with S0 provided from an array.
         """
-        S0 = kwargs.get('S0', np.ones(self.fit_array.shape))
+        S0 = kwargs.get("S0", np.ones(self.fit_array.shape))
         idx = ndindex(self.fit_array.shape)
         ijk = next(idx)
 
@@ -80,12 +84,12 @@ class MultiVoxelFit(ReconstFit):
             else:
                 return S0
 
-        kwargs['S0'] = gimme_S0(S0, ijk)
+        kwargs["S0"] = gimme_S0(S0, ijk)
         # If we have a mask, we might have some Nones up front, skip those:
         while self.fit_array[ijk] is None:
             ijk = next(idx)
 
-        if not hasattr(self.fit_array[ijk], 'predict'):
+        if not hasattr(self.fit_array[ijk], "predict"):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
 
@@ -93,7 +97,7 @@ class MultiVoxelFit(ReconstFit):
         result = np.zeros(self.fit_array.shape + (first_pred.shape[-1],))
         result[ijk] = first_pred
         for ijk in idx:
-            kwargs['S0'] = gimme_S0(S0, ijk)
+            kwargs["S0"] = gimme_S0(S0, ijk)
             # If it's masked, we predict a 0:
             if self.fit_array[ijk] is None:
                 result[ijk] *= 0
@@ -105,6 +109,7 @@ class MultiVoxelFit(ReconstFit):
 
 class CallableArray(np.ndarray):
     """An array which can be called like a function"""
+
     def __call__(self, *args, **kwargs):
         result = np.empty(self.shape, dtype=object)
         for ijk in ndindex(self.shape):

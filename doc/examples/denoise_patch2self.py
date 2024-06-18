@@ -25,7 +25,7 @@ distribution).
 The Patch2Self Framework:
 
 .. _patch2self:
-.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true  # noqa E501
+.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
    :scale: 60 %
    :align: center
 
@@ -54,7 +54,7 @@ phase. But is not used in the training set for (A) nor is used to predict the
 denoised output in (B).
 
 Let's load the necessary modules:
-"""
+"""  # noqa: E501
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -68,11 +68,17 @@ from dipy.io.image import load_nifti, save_nifti
 # does not require noise estimation and should work with any kind of diffusion
 # data.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
-denoised_arr = patch2self(data, bvals, model='ols', shift_intensity=True,
-                          clip_negative_vals=False, b0_threshold=50)
+denoised_arr = patch2self(
+    data,
+    bvals,
+    model="ols",
+    shift_intensity=True,
+    clip_negative_vals=False,
+    b0_threshold=50,
+)
 
 ###############################################################################
 # The above parameters should give optimal denoising performance for
@@ -117,22 +123,18 @@ den = denoised_arr[:, :, sli, gra]
 # computes the residuals
 rms_diff = np.sqrt((orig - den) ** 2)
 
-fig1, ax = plt.subplots(1, 3, figsize=(12, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
+fig1, ax = plt.subplots(1, 3, figsize=(12, 6), subplot_kw={"xticks": [], "yticks": []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(orig.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[0].set_title('Original')
-ax.flat[1].imshow(den.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[1].set_title('Denoised Output')
-ax.flat[2].imshow(rms_diff.T, cmap='gray', interpolation='none',
-                  origin='lower')
-ax.flat[2].set_title('Residuals')
+ax.flat[0].imshow(orig.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[0].set_title("Original")
+ax.flat[1].imshow(den.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[1].set_title("Denoised Output")
+ax.flat[2].imshow(rms_diff.T, cmap="gray", interpolation="none", origin="lower")
+ax.flat[2].set_title("Residuals")
 
-fig1.savefig('denoised_patch2self.png')
+fig1.savefig("denoised_patch2self.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -145,7 +147,7 @@ fig1.savefig('denoised_patch2self.png')
 #
 # Below we show how the denoised data can be saved.
 
-save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
+save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 
 ###############################################################################
 # Lastly, one can also use Patch2Self in batches if the number of gradient
