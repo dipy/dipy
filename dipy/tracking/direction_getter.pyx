@@ -11,6 +11,8 @@ from dipy.utils.fast_numpy cimport copy_point
 
 cimport numpy as cnp
 
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     int dpy_signbit(double x)
     double dpy_rint(double x)

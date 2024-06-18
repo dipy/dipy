@@ -4,6 +4,8 @@ from libc.math cimport sqrt, exp
 import numpy as np
 cimport numpy as cnp
 
+cnp.import_array()
+
 __all__ = ['firdn', 'upfir', 'nlmeans_block']
 
 cdef inline int _int_max(int a, int b):

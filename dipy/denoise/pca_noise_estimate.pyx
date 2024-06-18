@@ -22,6 +22,8 @@ except ImportError:
     from scipy.linalg import svd
     svd_args = [False]
 
+cnp.import_array()
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

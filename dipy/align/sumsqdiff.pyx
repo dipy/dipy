@@ -4,6 +4,9 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from dipy.align.fused_types cimport floating
+
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     int dpy_isinf(double)
     double sqrt(double)

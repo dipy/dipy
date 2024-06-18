@@ -10,6 +10,8 @@ from libc.math cimport floor
 
 from dipy.align.fused_types cimport floating, number
 
+cnp.import_array()
+
 
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0.1,

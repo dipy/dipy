@@ -3,6 +3,8 @@
 import numpy as np
 cimport numpy as cnp
 
+cnp.import_array()
+
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
     void free(void *ptr)

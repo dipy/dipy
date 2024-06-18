@@ -6,6 +6,8 @@ cimport numpy as cnp
 from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
 
+cnp.import_array()
+
 
 cdef class Feature:
     """ Extracts features from a sequential datum.

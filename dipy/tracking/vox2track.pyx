@@ -12,6 +12,8 @@ import numpy as np
 cimport numpy as cnp
 from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 
+cnp.import_array()
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

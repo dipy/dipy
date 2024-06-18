@@ -16,6 +16,8 @@ from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                      where_to_insert)
 
+cnp.import_array()
+
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass

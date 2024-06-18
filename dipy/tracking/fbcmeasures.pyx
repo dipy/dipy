@@ -11,6 +11,8 @@ from scipy.interpolate import interp1d
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
+cnp.import_array()
+
 cdef class FBCMeasures:
 
     cdef int [:] streamline_length

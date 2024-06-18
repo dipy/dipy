@@ -12,6 +12,8 @@ cimport numpy as cnp
 
 from dipy.core.interpolation cimport _trilinear_interpolation_iso, offset
 
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     float fabs(float x)

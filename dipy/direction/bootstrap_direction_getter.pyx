@@ -10,6 +10,7 @@ from dipy.direction.peaks import peak_directions
 from dipy.reconst import shm
 from dipy.tracking.direction_getter cimport DirectionGetter
 
+cnp.import_array()
 
 cdef class BootDirectionGetter(DirectionGetter):
 

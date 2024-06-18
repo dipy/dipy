@@ -5,6 +5,9 @@
 import numpy as np
 
 cimport numpy as cnp
+
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     cdef double NPY_PI
     cdef double NPY_INFINITY

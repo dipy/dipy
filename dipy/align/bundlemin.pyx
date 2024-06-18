@@ -18,6 +18,8 @@ from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
+cnp.import_array()
+
 
 cdef double min_direct_flip_dist(double *a,double *b,
                                  cnp.npy_intp rows) noexcept nogil:

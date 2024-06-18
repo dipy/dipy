@@ -8,6 +8,8 @@ cimport numpy as cnp
 
 from dipy.tracking import Streamlines
 
+cnp.import_array()
+
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)

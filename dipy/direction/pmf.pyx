@@ -10,6 +10,8 @@ from dipy.reconst import shm
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from libc.stdlib cimport malloc, free
 
+cnp.import_array()
+
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
 

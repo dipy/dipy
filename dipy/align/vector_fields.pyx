@@ -14,6 +14,7 @@ from dipy.core.interpolation cimport (_interpolate_scalar_2d,
                                       _interpolate_scalar_nn_2d,
                                       _interpolate_scalar_nn_3d)
 
+cnp.import_array()
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)

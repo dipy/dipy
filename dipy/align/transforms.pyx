@@ -6,6 +6,8 @@
 import numpy as np
 cimport numpy as cnp
 
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     double cos(double)
     double sin(double)

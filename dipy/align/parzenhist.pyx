@@ -17,6 +17,8 @@ from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
 
 from dipy.align.transforms cimport (Transform)
 
+cnp.import_array()
+
 cdef extern from "dpy_math.h" nogil:
     double cos(double)
     double sin(double)

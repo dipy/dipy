@@ -10,6 +10,8 @@ from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
 
+cnp.import_array()
+
 logger = logging.getLogger(__name__)
 
 

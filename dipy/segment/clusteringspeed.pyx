@@ -11,6 +11,8 @@ from libc.math cimport fabs
 from dipy.segment.cythonutils cimport Data2D, Shape,\
     tuple2shape, same_shape, create_memview_2d, free_memview_2d
 
+cnp.import_array()
+
 cdef extern from "math.h" nogil:
     double fabs(double x)
 

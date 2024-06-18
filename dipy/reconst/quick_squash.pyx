@@ -7,6 +7,8 @@ cimport cython
 
 import numpy as np
 
+cnp.import_array()
+
 cdef enum:
     SCALAR, ARRAY
 

@@ -12,6 +12,8 @@ from dipy.reconst import shm
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
+cnp.import_array()
+
 
 cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
                       double[::1] direction, double cos_similarity):

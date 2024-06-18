@@ -13,6 +13,8 @@ import numpy as np
 from warnings import warn
 cimport numpy as cnp
 
+cnp.import_array()
+
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
