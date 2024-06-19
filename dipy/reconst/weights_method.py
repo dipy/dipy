@@ -6,9 +6,28 @@ import numpy as np
 MIN_POSITIVE_SIGNAL = 0.0001
 
 
+def two_eyes_cutoff(residuals, log_residuals, pred_sig, leverages, C, cutoff):
+    """ Two-eyes approach to define outliers, see [1]_.
+
+    References
+    ----------
+    .. [1] Collier, Q., Veraart, J., Jeurissen, B., den Dekker, A., Sijbers,
+       J., 2015. Iterative reweighted linear least squares for accurate, fast,
+       and robust estimation of diffusion magnetic resonance parameters: IRLLS
+       for Estimation of Diffusion MR Parameters. Magnetic Resonance in
+       Medicine 73, 2174-2184.
+    """
+    leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
+    HAT_factor = np.sqrt(1 - leverages)
+    cond = (residuals > +cutoff*C*HAT_factor) |\
+           (log_residuals < -cutoff*C*HAT_factor/pred_sig)
+    return cond
+
+
 def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
                              idx, total_idx, last_robust,
-                             m_est="gm", cutoff=3):
+                             m_est="gm", cutoff=3,
+                             outlier_condition_func=two_eyes_cutoff):
     """ Calculate M-estimator weights for WLS model.
 
     Parameters
@@ -80,11 +99,10 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
     robust = None
 
     if idx == total_idx - 1:  # OLS without outliers
-        leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
-        HAT_factor = np.sqrt(1 - leverages)
-        cond = (residuals > +cutoff*C*HAT_factor) |\
-               (log_residuals < -cutoff*C*HAT_factor/pred_sig)
+        cond = outlier_condition_func(residuals, log_residuals, pred_sig,
+                                      leverages, C, cutoff)
         robust = np.logical_not(cond)
+
         w[robust == 0] = 0.0
         w[robust == 1] = 1.0
 
@@ -101,7 +119,8 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
 
 def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
                               idx, total_idx, last_robust,
-                              m_est="gm", cutoff=3):
+                              m_est="gm", cutoff=3,
+                              outlier_condition_func=two_eyes_cutoff):
     """ Calculate M-estimator weights for NLLS model.
 
     Parameters
@@ -170,11 +189,8 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
     robust = None
 
     if idx == total_idx:
-
-        leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
-        HAT_factor = np.sqrt(1 - leverages)
-        cond = (residuals > +cutoff*C*HAT_factor) |\
-               (log_residuals < -cutoff*C*HAT_factor/pred_sig)
+        cond = outlier_condition_func(residuals, log_residuals, pred_sig,
+                                      leverages, C, cutoff)
         robust = np.logical_not(cond)
 
         w[robust == 0] = 0.0
@@ -191,23 +207,27 @@ def weights_method_wls_gm(*args):
     """ return weights_method_wls_m_est(*args, m_est="gm", cutoff=3),
         where "gm" stands for Geman-McClure
     """
-    return weights_method_wls_m_est(*args, m_est="gm", cutoff=3)
+    return weights_method_wls_m_est(*args, m_est="gm", cutoff=3,
+                                    outlier_condition_func=two_eyes_cutoff)
 
 
 def weights_method_nlls_gm(*args):
     """ return weights_method_nlls_m_est(*args, m_est="gm", cutoff=3),
         where "gm" stands for Geman-McClure
     """
-    return weights_method_nlls_m_est(*args, m_est="gm", cutoff=3)
+    return weights_method_nlls_m_est(*args, m_est="gm", cutoff=3,
+                                     outlier_condition_func=two_eyes_cutoff)
 
 
 def weights_method_wls_cauchy(*args):
     """ return weights_method_wls_m_est(*args, m_est="cauchy", cutoff=3)
     """
-    return weights_method_wls_m_est(*args, m_est="cauchy", cutoff=3)
+    return weights_method_wls_m_est(*args, m_est="cauchy", cutoff=3,
+                                    outlier_condition_func=two_eyes_cutoff)
 
 
 def weights_method_nlls_cauchy(*args):
     """ return weights_method_nlls_m_est(*args, m_est="cauchy", cutoff=3)
     """
-    return weights_method_nlls_m_est(*args, m_est="cauchy", cutoff=3)
+    return weights_method_nlls_m_est(*args, m_est="cauchy", cutoff=3,
+                                     outlier_condition_func=two_eyes_cutoff)
