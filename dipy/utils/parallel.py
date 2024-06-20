@@ -43,10 +43,10 @@ def paramap(
     n_jobs : integer, optional
         The number of jobs to perform in parallel. -1 to use all but one cpu.
         Default: -1.
-    engine : str
+    engine : str, optional
         {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
-        parallelization. Default: "ray"
+        parallelization.
     backend : str, optional
         What joblib or dask backend to use. For joblib, the default is "loky".
         For dask the default is "threading".
