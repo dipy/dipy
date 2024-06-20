@@ -99,7 +99,7 @@ dev = [
     'setuptools>=67',
     'packaging>=21',
     'ninja',
-    'Cython>=0.29.35',
+    'Cython>=3.0.4',
     'numpy>=1.22',
     # Developer UI
     'spin>=0.5',
@@ -137,7 +137,7 @@ tracker = "https://github.com/dipy/dipy/issues"
 build-backend = "mesonpy"
 requires = [
     "meson-python>=0.13.1",
-    "Cython>=0.29.35",
+    "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
     "numpy==1.19.5; python_version=='3.8' and platform_python_implementation != 'PyPy'",
