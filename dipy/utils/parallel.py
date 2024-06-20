@@ -41,8 +41,8 @@ def paramap(
          The shape of the output array. If not specified, the output shape will
          be `(len(in_list),)`.
     n_jobs : integer, optional
-        The number of jobs to perform in parallel. -1 to use all but one cpu.
-        Default: -1.
+        The number of jobs to perform in parallel.
+        -1 (default) to use all but one cpu.
     engine : str, optional
         {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
@@ -53,7 +53,6 @@ def paramap(
     clean_spill : bool, optional
         If True, clean up the spill directory after the computation is done.
         Only applies to "ray" engine. Otherwise has no effect.
-        Default: True.
     func_args : list, optional
         Positional arguments to `func`.
     func_kwargs : dict, optional
@@ -61,7 +60,6 @@ def paramap(
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute, or ray.remote depending on the engine used.
-        Default: {}
 
     Returns
     -------
