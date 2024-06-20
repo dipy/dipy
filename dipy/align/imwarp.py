@@ -1582,7 +1582,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         x = np.asarray(x)
         y = np.asarray(y)
-        X = np.row_stack((x**2, x, np.ones_like(x)))
+        X = np.vstack((x**2, x, np.ones_like(x)))
         XX = X.dot(X.T)
         b = X.dot(y)
         beta = npl.solve(XX, b)
