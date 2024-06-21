@@ -1126,7 +1126,7 @@ class TriLinearInterpolator(Interpolator):
                              "of a 3d voxel")
 
     def __getitem__(self, index):
-        index = np.array(index, copy=False, dtype="float")
+        index = np.asarray(index, dtype="float")
         try:
             return trilinear_interp(self.data, index, self.voxel_size)
         except IndexError:

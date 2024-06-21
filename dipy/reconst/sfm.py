@@ -533,7 +533,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         # Fitting is done on the relative signal (S/S0):

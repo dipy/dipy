@@ -379,7 +379,9 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     array([[ 0.,  0.,  0.]])
 
     """
-    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim < 1:
+        mask = np.reshape(mask, (3,))
     if mask.ndim != 3:
         raise ValueError("mask cannot be more than 3d")
 
@@ -477,7 +479,9 @@ def random_seeds_from_mask(
            [-0.41435083, -0.26318949,  0.30127447]])
 
     """
-    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim < 1:
+        mask = np.reshape(mask, (3,))
     if mask.ndim != 3:
         raise ValueError("mask cannot be more than 3d")
 

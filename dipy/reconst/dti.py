@@ -793,7 +793,7 @@ class TensorModel(ReconstModel):
             # Check for valid shape of the mask
             if mask.shape != img_shape:
                 raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if adjacency > 0:
