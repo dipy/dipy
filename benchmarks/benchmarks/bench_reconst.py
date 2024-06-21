@@ -44,7 +44,7 @@ class BenchVecValSum:
 
 #         labels = labels_img.get_fdata()
 #         shape = labels.shape
-#         mask = np.in1d(labels, [1, 2])
+#         mask = np.isin(labels, [1, 2])
 #         mask.shape = shape
 
 #         center = (50, 40, 40)
