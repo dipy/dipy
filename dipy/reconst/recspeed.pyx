@@ -10,6 +10,8 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
+from dipy.testing.decorators import warning_for_keywords
+
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     double fabs(double x)
@@ -33,9 +35,11 @@ cdef inline double* asdp(cnp.ndarray pt):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@warning_for_keywords()
 def remove_similar_vertices(
     cython.floating[:, :] vertices,
     double theta,
+    *,
     bint return_mapping=False,
     bint return_index=False,
     bint remove_antipodal=True):

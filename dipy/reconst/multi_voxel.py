@@ -7,6 +7,7 @@ from tqdm import tqdm
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.testing.decorators import warning_for_keywords
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -14,7 +15,8 @@ def multi_voxel_fit(single_voxel_fit):
     definition into a multi voxel model fit definition
     """
 
-    def new_fit(self, data, mask=None):
+    @warning_for_keywords()
+    def new_fit(self, data, *, mask=None):
         """Fit method for every voxel in data"""
         # If only one voxel just return a normal fit
         if data.ndim == 1:

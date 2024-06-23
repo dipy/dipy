@@ -5,12 +5,15 @@ from scipy.ndimage import map_coordinates
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         qgrid_size=17,
         r_start=2.1,
         r_end=6.0,
@@ -152,7 +155,8 @@ class DiffusionSpectrumFit(OdfFit):
         self._peak_values = None
         self._peak_indices = None
 
-    def pdf(self, normalized=True):
+    @warning_for_keywords()
+    def pdf(self, *, normalized=True):
         """Applies the 3D FFT in the q-space grid to generate
         the diffusion propagator
         """
@@ -175,7 +179,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         return Pr
 
-    def rtop_signal(self, filtering=True):
+    @warning_for_keywords()
+    def rtop_signal(self, *, filtering=True):
         """Calculates the return to origin probability (rtop) from the signal
         rtop equals to the sum of all signal values
 
@@ -199,7 +204,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         return rtop
 
-    def rtop_pdf(self, normalized=True):
+    @warning_for_keywords()
+    def rtop_pdf(self, *, normalized=True):
         r"""Calculates the return to origin probability from the propagator, which is
         the propagator evaluated at zero (see Descoteaux et Al. [1]_,
         Tuch [2]_, Wu et al. [3]_)
@@ -237,7 +243,8 @@ class DiffusionSpectrumFit(OdfFit):
         rtop = Pr[center, center, center]
         return rtop
 
-    def msd_discrete(self, normalized=True):
+    @warning_for_keywords()
+    def msd_discrete(self, *, normalized=True):
         r"""Calculates the mean squared displacement on the discrete propagator
 
         ..math::
@@ -494,9 +501,11 @@ def project_hemisph_bvecs(gtab):
 
 
 class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         qgrid_size=35,
         r_start=4.1,
         r_end=13.0,
@@ -597,7 +606,8 @@ class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
         return Pr
 
 
-def threshold_propagator(P, estimated_snr=15.0):
+@warning_for_keywords()
+def threshold_propagator(P, *, estimated_snr=15.0):
     """
     Applies hard threshold on the propagator to remove background noise for the
     deconvolution.
@@ -621,7 +631,8 @@ def gen_PSF(qgrid_sampling, siz_x, siz_y, siz_z):
     return Sq * np.real(np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(Sq))))
 
 
-def LR_deconv(prop, psf, numit=5, acc_factor=1):
+@warning_for_keywords()
+def LR_deconv(prop, psf, *, numit=5, acc_factor=1):
     r"""
     Perform Lucy-Richardson deconvolution algorithm on a 3D array.
 

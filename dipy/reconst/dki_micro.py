@@ -27,9 +27,11 @@ from dipy.reconst.dti import (
     trace,
 )
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.testing.decorators import warning_for_keywords
 
 
-def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
+@warning_for_keywords()
+def axonal_water_fraction(dki_params, *, sphere="repulsion100", gtol=1e-2, mask=None):
     """Computes the axonal water fraction from DKI [1]_.
 
     Parameters
@@ -72,7 +74,8 @@ def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=Non
     return awf
 
 
-def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None):
+@warning_for_keywords()
+def diffusion_components(dki_params, *, sphere="repulsion100", awf=None, mask=None):
     """Extracts the restricted and hindered diffusion tensors of well aligned
     fibers from diffusion kurtosis imaging parameters [1]_.
 
@@ -184,7 +187,8 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
     return edt_all, idt_all
 
 
-def dkimicro_prediction(params, gtab, S0=1):
+@warning_for_keywords()
+def dkimicro_prediction(params, gtab, *, S0=1):
     r"""Signal prediction given the DKI microstructure model parameters.
 
     Parameters
@@ -313,7 +317,8 @@ def _compartments_eigenvalues(cdt):
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """Class for the Diffusion Kurtosis Microstructural Model"""
 
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    @warning_for_keywords()
+    def __init__(self, gtab, *args, fit_method="WLS", **kwargs):
         """Initialize a KurtosisMicrostrutureModel class instance [1]_.
 
         Parameters
@@ -343,7 +348,8 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         """
         DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args, **kwargs)
 
-    def fit(self, data, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
         """Fit method of the Diffusion Kurtosis Microstructural Model
 
         Parameters
@@ -411,7 +417,8 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
 
         return KurtosisMicrostructuralFit(self, params)
 
-    def predict(self, params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, params, *, S0=1.0):
         """Predict a signal for the DKI microstructural model class instance
         given parameters.
 
@@ -611,7 +618,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                 "with input parameter awf_only set to False"
             )
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""Given a DKI microstructural model fit, predict the signal on the
         vertices of a gradient table
 

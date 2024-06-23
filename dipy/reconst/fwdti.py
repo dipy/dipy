@@ -20,9 +20,11 @@ from dipy.reconst.dti import (
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.testing.decorators import warning_for_keywords
 
 
-def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
+@warning_for_keywords()
+def fwdti_prediction(params, gtab, *, S0=1, Diso=3.0e-3):
     r"""Signal prediction given the free water DTI model parameters.
 
     Parameters
@@ -89,7 +91,7 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
 class FreeWaterTensorModel(ReconstModel):
     """Class for the Free Water Elimination Diffusion Tensor Model"""
 
-    def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
+    def __init__(self, gtab, *args, fit_method="NLS", **kwargs):
         """Free Water Diffusion Tensor Model [1]_.
 
         Parameters
@@ -139,7 +141,8 @@ class FreeWaterTensorModel(ReconstModel):
             raise ValueError(mes)
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the free water elimination DTI model class
 
         Parameters
@@ -213,7 +216,8 @@ class FreeWaterTensorFit(TensorFit):
         """Returns the free water diffusion volume fraction f"""
         return self.model_params[..., 12]
 
-    def predict(self, gtab, S0=1):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1):
         r"""Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
 
@@ -234,8 +238,9 @@ class FreeWaterTensorFit(TensorFit):
         return fwdti_prediction(self.model_params, gtab, S0=S0)
 
 
+@warning_for_keywords()
 def wls_iter(
-    design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3, min_signal=1.0e-6, piterations=3
+    design_matrix, sig, S0, *, Diso=3e-3, mdreg=2.7e-3, min_signal=1.0e-6, piterations=3
 ):
     """Applies weighted linear least squares fit of the water free elimination
     model to single voxel signals.
@@ -341,8 +346,9 @@ def wls_iter(
     return fw_params
 
 
+@warning_for_keywords()
 def wls_fit_tensor(
-    gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6, piterations=3, mdreg=2.7e-3
+    gtab, data, *, Diso=3e-3, mask=None, min_signal=1.0e-6, piterations=3, mdreg=2.7e-3
 ):
     r"""Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -423,10 +429,12 @@ def wls_fit_tensor(
     return fw_params
 
 
+@warning_for_keywords()
 def _nls_err_func(
     tensor_elements,
     design_matrix,
     data,
+    *,
     Diso=3e-3,
     weighting=None,
     sigma=None,
@@ -520,6 +528,7 @@ def _nls_err_func(
         return np.sqrt(w * se)
 
 
+@warning_for_keywords()
 def _nls_jacobian_func(
     tensor_elements,
     design_matrix,
@@ -571,10 +580,12 @@ def _nls_jacobian_func(
     return np.concatenate((T - S, df[:, None]), axis=1)
 
 
+@warning_for_keywords()
 def nls_iter(
     design_matrix,
     sig,
     S0,
+    *,
     Diso=3e-3,
     mdreg=2.7e-3,
     min_signal=1.0e-6,
@@ -714,9 +725,11 @@ def nls_iter(
     return params
 
 
+@warning_for_keywords()
 def nls_fit_tensor(
     gtab,
     data,
+    *,
     mask=None,
     Diso=3e-3,
     mdreg=2.7e-3,

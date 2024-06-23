@@ -9,6 +9,7 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -60,9 +61,11 @@ class ShoreModel(Cache):
     The implementation of SHORE depends on CVXPY (https://www.cvxpy.org/).
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         radial_order=6,
         zeta=700,
         lambdaN=1e-8,
@@ -499,7 +502,8 @@ class ShoreFit:
         return self._shore_coef
 
 
-def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def shore_matrix(radial_order, zeta, gtab, *, tau=1 / (4 * np.pi**2)):
     r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
 
     ..math::

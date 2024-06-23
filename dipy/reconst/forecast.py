@@ -13,6 +13,7 @@ from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
+from dipy.testing.decorators import warning_for_keywords
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -48,9 +49,11 @@ class ForecastModel(OdfModel, Cache):
     """
 
     @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         sh_order_max=8,
         lambda_lb=1e-3,
         dec_alg="CSD",
@@ -307,7 +310,8 @@ class ForecastFit(OdfFit):
 
         self.rho = None
 
-    def odf(self, sphere, clip_negative=True):
+    @warning_for_keywords()
+    def odf(self, sphere, *, clip_negative=True):
         r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
@@ -341,7 +345,8 @@ class ForecastFit(OdfFit):
         md = (self.d_par + 2 * self.d_perp) / 3.0
         return md
 
-    def predict(self, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=1.0):
         r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
@@ -379,7 +384,8 @@ class ForecastFit(OdfFit):
         return self.d_perp
 
 
-def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
+@warning_for_keywords()
+def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, *, w=1e-03):
     r"""Calculate the mean signal for each shell.
 
     Parameters
