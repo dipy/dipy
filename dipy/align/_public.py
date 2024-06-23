@@ -334,14 +334,14 @@ def resample(
         Containing the data for the moving object, or full path to a nifti file
         with the moving data.
 
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
     moving_affine : 4x4 array, optional
         An affine transformation associated with the moving object. Required if
         data is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
 
     static_affine : 4x4 array, optional
         An affine transformation associated with the static object. Required if
