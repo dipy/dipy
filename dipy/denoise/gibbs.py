@@ -226,7 +226,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
            doi: 10.1002/mrm.26054.
 
     """
-    if np.any(G0) is None or np.any(G1) is None:
+    if G0 is None or G1 is None:
         G0, G1 = _weights(image.shape)
 
     img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
