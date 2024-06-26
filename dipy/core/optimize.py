@@ -6,7 +6,6 @@ import warnings
 import numpy as np
 import scipy.optimize as opt
 from scipy.optimize import minimize
-import scipy.sparse as sps
 
 from dipy.utils.optpkg import optional_package
 
@@ -219,14 +218,7 @@ def spdot(A, B):
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
 
     """
-    if sps.issparse(A) and sps.issparse(B):
-        return A * B
-    elif sps.issparse(A) and not sps.issparse(B):
-        return (A * B).view(type=B.__class__)
-    elif not sps.issparse(A) and sps.issparse(B):
-        return (B.T * A.T).T.view(type=A.__class__)
-    else:
-        return np.dot(A, B)
+    return A @ B
 
 
 def sparse_nnls(

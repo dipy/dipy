@@ -399,7 +399,7 @@ class FiberModel(ReconstModel):
         del v2f, v2fn
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format:
-        life_matrix = sps.csr_matrix((f_matrix_sig, [f_matrix_row, f_matrix_col]))
+        life_matrix = sps.csr_array((f_matrix_sig, [f_matrix_row, f_matrix_col]))
 
         return life_matrix, vox_coords
 
