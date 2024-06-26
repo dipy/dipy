@@ -66,8 +66,8 @@ def create_test_data(test_r, cube_size, mask_size, num_dwi_vols, num_b0s):
     # The bvecs will be a straight line with a minor perturbance every other
     ref_vec = np.array([1.0, 0.0, 0.0])
     nbr_vec = normalized_vector(ref_vec + 0.00001)
-    bvecs = np.row_stack(
-        [ref_vec] * num_b0s + [np.row_stack([ref_vec, nbr_vec])] * n_known
+    bvecs = np.vstack(
+        [ref_vec] * num_b0s + [np.vstack([ref_vec, nbr_vec])] * n_known
     )
 
     cor = np.ones((2, 2)) * test_r
