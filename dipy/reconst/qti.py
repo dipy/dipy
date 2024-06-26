@@ -788,7 +788,7 @@ class QtiModel(ReconstModel):
         else:
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
         if self.fit_method_name == "SDPdc":
             params = self.fit_method(data, mask, self.X, self.cvxpy_solver)
         else:

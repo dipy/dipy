@@ -129,7 +129,7 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
         else:
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
 
     # check or compute awf values
     if awf is None:
@@ -374,7 +374,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:

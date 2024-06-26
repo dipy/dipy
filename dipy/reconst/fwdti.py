@@ -401,7 +401,7 @@ def wls_fit_tensor(
     else:
         if mask.shape != data.shape[:-1]:
             raise ValueError("Mask is not the same shape as data.")
-        mask = np.array(mask, dtype=bool, copy=False)
+        mask = np.asarray(mask, dtype=bool)
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
@@ -794,7 +794,7 @@ def nls_fit_tensor(
     else:
         if mask.shape != data.shape[:-1]:
             raise ValueError("Mask is not the same shape as data.")
-        mask = np.array(mask, dtype=bool, copy=False)
+        mask = np.asarray(mask, dtype=bool)
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
