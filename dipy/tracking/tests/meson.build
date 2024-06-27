@@ -1,5 +1,8 @@
 cython_sources = [
   'test_fast_tracking',
+  'test_tracker_deterministic',
+  'test_tracker_probabilistic',
+  'test_tracker_ptt',
   ]
 
 foreach ext: cython_sources
