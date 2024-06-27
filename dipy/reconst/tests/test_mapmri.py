@@ -863,16 +863,23 @@ def test_positivity_constraint(radial_order=6, rng=None):
 
     # Set the cvxpy solver to CLARABEL as the one picked otherwise for this
     # problem (OSQP) triggers a `Solution may be inaccurate` UserWarning
-    mapmod_constraint = MapmriModel(
-        gtab,
-        radial_order=radial_order,
-        laplacian_regularization=False,
-        positivity_constraint=True,
-        pos_grid=gridsize,
-        pos_radius="adaptive",
-        cvxpy_solver=mapmri.cvxpy.CLARABEL,
-    )
-    mapfit_constraint = mapmod_constraint.fit(S_noise)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*Solution may be inaccurate.*",
+            category=UserWarning,
+        )
+        mapmod_constraint = MapmriModel(
+            gtab,
+            radial_order=radial_order,
+            laplacian_regularization=False,
+            positivity_constraint=True,
+            pos_grid=gridsize,
+            pos_radius="adaptive",
+            cvxpy_solver=mapmri.cvxpy.CLARABEL,
+        )
+        mapfit_constraint = mapmod_constraint.fit(S_noise)
+
     pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()
 
