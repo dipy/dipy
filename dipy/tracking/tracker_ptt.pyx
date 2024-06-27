@@ -49,7 +49,7 @@ cdef int parallel_transport_tracker(double* point,
     params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
-        Streamline data persitant accros tracking steps.
+        Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
 
@@ -134,7 +134,7 @@ cdef int initialize(TrackerParameters params,
         params : TrackerParameters
             PTT tracking parameters.
         stream_data : double*
-            Streamline data persitant accros tracking steps.
+            Streamline data persitant across tracking steps.
         pmf_gen : PmfGen
             Orientation data.
         seed_point : double[3]
@@ -194,7 +194,7 @@ cdef void initialize_candidate(TrackerParameters params,
     params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
-        Streamline data persitant accros tracking steps.
+        Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
     init_dir : double[3]
@@ -252,7 +252,7 @@ cdef void prepare_propagator(TrackerParameters params,
     params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
-        Streamline data persitant accros tracking steps.
+        Streamline data persitant across tracking steps.
     arclength : double
         Arclenth, which is equivalent to step size along the arc
 
@@ -303,7 +303,7 @@ cdef double calculate_data_support(TrackerParameters params,
     params : TrackerParameters
         PTT tracking parameters.
     stream_data : double*
-        Streamline data persitant accros tracking steps.
+        Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
     """

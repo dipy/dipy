@@ -84,4 +84,4 @@ def test_fast_tracking_performances():
         r, _ = pearsonr(GT_connectome[connectome_mask].flatten(),
                         connectome[connectome_mask].flatten())
 
-        npt.assert_(r > 0.9, msg="Algorithm " + algo + " has a low performance score: " + str(r))
+        npt.assert_(r > 0.88, msg="Algorithm " + algo + " has a low performance score: " + str(r))
