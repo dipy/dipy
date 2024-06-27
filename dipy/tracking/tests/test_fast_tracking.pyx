@@ -17,10 +17,10 @@ from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_directions_pairs)
 
 
-def test_fast_tracking_performances():
+def get_fast_tracking_performances(params):
     """
-    This test the performance of the fast tracking module
-    on the DiSCo dataset
+    Return the performance of the fast tracking module
+    using the tracking params, on the DiSCo dataset
     """
     # fetch the disco data
     fnames = get_fnames("disco1")
@@ -55,33 +55,16 @@ def test_fast_tracking_performances():
     # stopping criterion
     sc = BinaryStoppingCriterion(mask)
 
-    # TEST fast probabilistic tracking
+    streamlines = generate_tractogram(seeds,
+                                      initial_directions,
+                                      sc,
+                                      params,
+                                      pmf_gen)
+    connectome = connectivity_matrix(streamlines, affine, labels)[1:,1:]
 
-    params_prob = generate_tracking_parameters("prob",
-                                               max_len=500,
-                                               step_size=0.2,
-                                               voxel_size=np.ones(3),
-                                               max_angle=20)
-    params_det = generate_tracking_parameters("det",
-                                              max_len=500,
-                                              step_size=0.2,
-                                              voxel_size=np.ones(3),
-                                              max_angle=20)
-    params_ptt = generate_tracking_parameters("ptt",
-                                               max_len=500,
-                                               step_size=0.2,
-                                               voxel_size=np.ones(3),
-                                               max_angle=15,
-                                               probe_quality=4)
-    for algo, params in [("prob", params_prob), ("det", params_det), ("ptt", params_ptt)]:
-        streamlines = generate_tractogram(seeds,
-                                          initial_directions,
-                                          sc,
-                                          params,
-                                          pmf_gen)
-        connectome = connectivity_matrix(streamlines, affine, labels)[1:,1:]
+    r, _ = pearsonr(GT_connectome[connectome_mask].flatten(),
+                    connectome[connectome_mask].flatten())
 
-        r, _ = pearsonr(GT_connectome[connectome_mask].flatten(),
-                        connectome[connectome_mask].flatten())
+    return r
 
-        npt.assert_(r > 0.88, msg="Algorithm " + algo + " has a low performance score: " + str(r))
+
