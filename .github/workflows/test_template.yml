@@ -97,7 +97,7 @@ jobs:
         channels: defaults, conda-forge
         use-only-tar-bz2: true
     - name: Install HDF5 and pytables on macOS
-      if: runner.os == 'macOS'
+      if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
       run: |
         pip install cython
         brew install hdf5
