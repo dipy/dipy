@@ -37,7 +37,7 @@ classifiers = [
 ]
 dynamic = ['version']
 dependencies = [
-    "numpy>=1.22.4, <2.0",
+    "numpy>=1.22.4",
     "scipy>=1.8",
     "nibabel>=3.0.0",
     "h5py>=3.1.0",
