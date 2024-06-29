@@ -100,7 +100,7 @@ dev = [
     'packaging>=21',
     'ninja',
     'Cython>=0.29.35',
-    'numpy<=2.0.0',
+    'numpy>=1.22.4',
     # Developer UI
     'spin>=0.5',
     'build',
