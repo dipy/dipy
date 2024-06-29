@@ -307,7 +307,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data, verbose=True):
+    def fit(self, data, verbose=True, **kwargs):
         """Fits the model to diffusion data and returns the model fit.
 
         Sometimes the solving process of some voxels can end in a SolverError

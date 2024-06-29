@@ -96,11 +96,11 @@ dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
     'wheel',
-    'setuptools>=67',
+    'setuptools~=69.5',
     'packaging>=21',
     'ninja',
     'Cython>=0.29.35',
-    'numpy>=1.22',
+    'numpy>=1.22.4',
     # Developer UI
     'spin>=0.5',
     'build',

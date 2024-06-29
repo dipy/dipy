@@ -201,7 +201,7 @@ class ForecastModel(OdfModel, Cache):
         self.fod = rho_matrix(sh_order_max, self.vertices)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         data_b0 = data[self.b0s_mask].mean()
         data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]] / data_b0
 

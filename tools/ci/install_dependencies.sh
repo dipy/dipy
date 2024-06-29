@@ -7,7 +7,7 @@ set -ex
 
 echo "Display Python version"
 python -c "import sys; print(sys.version)"
-python -m pip install -U pip setuptools>=30.3.0 wheel
+python -m pip install -U pip 'setuptools~=69.5' wheel
 
 
 echo "Install Dependencies"

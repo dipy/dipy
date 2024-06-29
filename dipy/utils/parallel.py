@@ -1,13 +1,16 @@
+import json
 import multiprocessing
+import shutil
+import tempfile
 
 import numpy as np
 from tqdm.auto import tqdm
 
 from dipy.utils.optpkg import optional_package
 
+ray, has_ray, _ = optional_package("ray")
 joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
-ray, has_ray, _ = optional_package("ray")
 
 
 def paramap(
@@ -15,9 +18,10 @@ def paramap(
     in_list,
     out_shape=None,
     n_jobs=-1,
-    engine="joblib",
+    engine="ray",
     backend=None,
     func_args=None,
+    clean_spill=True,
     func_kwargs=None,
     **kwargs,
 ):
@@ -37,23 +41,25 @@ def paramap(
          The shape of the output array. If not specified, the output shape will
          be `(len(in_list),)`.
     n_jobs : integer, optional
-        The number of jobs to perform in parallel. -1 to use all but one cpu.
-        Default: -1.
-    engine : str
+        The number of jobs to perform in parallel.
+        -1 (default) to use all but one cpu.
+    engine : str, optional
         {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
-        parallelization. Default: "joblib"
+        parallelization.
     backend : str, optional
         What joblib or dask backend to use. For joblib, the default is "loky".
         For dask the default is "threading".
+    clean_spill : bool, optional
+        If True, clean up the spill directory after the computation is done.
+        Only applies to "ray" engine. Otherwise has no effect.
     func_args : list, optional
         Positional arguments to `func`.
     func_kwargs : dict, optional
         Keyword arguments to `func`.
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
-        or dask.compute depending on the engine used.
-        Default: {}
+        or dask.compute, or ray.remote depending on the engine used.
 
     Returns
     -------
@@ -99,19 +105,39 @@ def paramap(
         else:
             raise ValueError(f"{backend} is not a backend for dask")
 
-    if engine == "ray":
+    elif engine == "ray":
         if not has_ray:
             raise ray()
+
+        if clean_spill:
+            tmp_dir = tempfile.TemporaryDirectory()
+
+            if not ray.is_initialized():
+                ray.init(
+                    _system_config={
+                        "object_spilling_config": json.dumps(
+                            {
+                                "type": "filesystem",
+                                "params": {"directory_path": tmp_dir.name},
+                            },
+                        )
+                    },
+                )
 
         func = ray.remote(func)
         results = ray.get(
             [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
         )
 
+        if clean_spill:
+            shutil.rmtree(tmp_dir.name)
+
     elif engine == "serial":
         results = []
         for in_element in in_list:
             results.append(func(in_element, *func_args, **func_kwargs))
+    else:
+        raise ValueError("%s is not a valid engine" % engine)
 
     if out_shape is not None:
         return np.array(results).reshape(out_shape)
