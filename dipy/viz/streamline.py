@@ -9,9 +9,9 @@ if has_fury:
     from dipy.viz import actor, window
 
 sagittal_deprecation_warning_msg = (
-    "The view argument value `sagital` is deprecated and its support will be"
-    " removed in a future version. Please, use `sagittal` instead."
-)  # codespell:ignore sagital
+    "The view argument value `sagital` is deprecated and "  # codespell:ignore sagital
+    "its support will be removed in a future version. Please, use `sagittal` instead."
+)
 
 
 @warning_for_keywords()
