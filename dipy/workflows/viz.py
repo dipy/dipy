@@ -12,6 +12,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
+from dipy.testing.decorators import warning_for_keywords
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
@@ -27,9 +28,11 @@ class HorizonFlow(Workflow):
     def get_short_name(cls):
         return "horizon"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         cluster=False,
         rgb=False,
         cluster_thr=15.0,

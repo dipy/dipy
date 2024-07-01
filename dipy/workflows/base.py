@@ -2,6 +2,7 @@ import argparse
 import inspect
 
 from dipy.workflows.docstring_parser import NumpyDocString
+from dipy.testing.decorators import warning_for_keywords
 
 
 def get_args_default(func):
@@ -28,8 +29,10 @@ def none_or_dtype(dtype):
 
 
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
+    @warning_for_keywords
     def __init__(
         self,
+        *,
         prog=None,
         usage=None,
         description=None,
@@ -316,7 +319,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         return arg_type, is_nargs
 
-    def get_flow_args(self, args=None, namespace=None):
+    
+    @warning_for_keywords
+    def get_flow_args(self, *, args=None, namespace=None):
         """Return the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
         """

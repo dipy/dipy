@@ -19,6 +19,7 @@ from dipy.tracking.stopping_criterion import (
     ThresholdStoppingCriterion,
 )
 from dipy.workflows.workflow import Workflow
+from dipy.testing.decorators import warning_for_keywords
 
 
 class LocalFiberTrackingPAMFlow(Workflow):
@@ -132,11 +133,13 @@ class LocalFiberTrackingPAMFlow(Workflow):
         save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info(f"Saved {out_tract}")
 
+    @warning_for_keywords()
     def run(
         self,
         pam_files,
         stopping_files,
         seeding_files,
+        *,
         use_binary_mask=False,
         stopping_thr=0.2,
         seed_density=1,
@@ -231,6 +234,7 @@ class PFTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return "track_pft"
 
+    @warning_for_keywords()
     def run(
         self,
         pam_files,
@@ -238,6 +242,7 @@ class PFTrackingPAMFlow(Workflow):
         gm_files,
         csf_files,
         seeding_files,
+        *,
         step_size=0.2,
         seed_density=1,
         pmf_threshold=0.1,
