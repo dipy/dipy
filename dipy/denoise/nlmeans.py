@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.denoise.denspeed import nlmeans_3d
+from dipy.testing.decorators import warning_for_keywords
 
 # from warnings import warn
 # import warnings
@@ -10,8 +11,16 @@ from dipy.denoise.denspeed import nlmeans_3d
 #                         " use module 'dipy.denoise.non_local_means' instead"))
 
 
+@warning_for_keywords()
 def nlmeans(
-    arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True, num_threads=None
+    arr,
+    sigma,
+    *,
+    mask=None,
+    patch_radius=1,
+    block_radius=5,
+    rician=True,
+    num_threads=None,
 ):
     r"""Non-local means for denoising 3D and 4D images
 

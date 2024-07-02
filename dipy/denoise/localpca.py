@@ -6,6 +6,7 @@ from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as svd
 
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
+from dipy.testing.decorators import warning_for_keywords
 
 
 def dimensionality_problem_message(arr, num_samples, spr):
@@ -178,8 +179,10 @@ def compute_suggested_patch_radius(arr, patch_size):
     return int((root - 1) / 2)
 
 
+@warning_for_keywords()
 def genpca(
     arr,
+    *,
     sigma=None,
     mask=None,
     patch_radius=2,
@@ -397,8 +400,10 @@ def genpca(
         return denoised_arr.astype(out_dtype)
 
 
+@warning_for_keywords()
 def localpca(
     arr,
+    *,
     sigma=None,
     mask=None,
     patch_radius=2,
@@ -509,8 +514,10 @@ def localpca(
     )
 
 
+@warning_for_keywords()
 def mppca(
     arr,
+    *,
     mask=None,
     patch_radius=2,
     pca_method="eig",
