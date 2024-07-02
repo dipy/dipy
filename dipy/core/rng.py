@@ -5,8 +5,11 @@ from platform import architecture
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 
-def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
+
+@warning_for_keywords()
+def WichmannHill2006(*, ix=100001, iy=200002, iz=300003, it=400004):
     """Wichmann Hill (2006) random number generator.
 
     B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
@@ -73,7 +76,8 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
     return W - floor(W)
 
 
-def WichmannHill1982(ix=100001, iy=200002, iz=300003):
+@warning_for_keywords()
+def WichmannHill1982(*, ix=100001, iy=200002, iz=300003):
     """Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2.
 
     Returns a pseudo-random number rectangularly distributed
@@ -133,7 +137,8 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
     )
 
 
-def LEcuyer(s1=100001, s2=200002):
+@warning_for_keywords()
+def LEcuyer(*, s1=100001, s2=200002):
     """Return a LEcuyer random number generator.
 
     Generate uniformly distributed random numbers using the 32-bit
