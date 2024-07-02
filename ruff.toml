@@ -31,7 +31,6 @@ ignore = [
 [lint.extend-per-file-ignores]
 "dipy/align/__init__.py" = ["E402"]
 "dipy/reconst/*.py" = ["B026"]
-"dipy/testing/tests/test_testing.py" = ["B028"]
 "dipy/viz/__init__.py" = ["F401"]
 "doc/examples/**" = ["E402"]
 "doc/conf.py" = ["E402"]
