@@ -9,6 +9,7 @@ cimport cython
 from dipy.align.fused_types cimport floating
 from dipy.align import vector_fields as vf
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
                                       _apply_affine_3d_x2,
@@ -77,7 +78,8 @@ class ParzenJointHistogram:
         self.padding = 2
         self.setup_called = False
 
-    def setup(self, static, moving, smask=None, mmask=None):
+    @warning_for_keywords()
+    def setup(self, static, moving, *, smask=None, mmask=None):
         r""" Compute histogram settings to store the PDF of input images
 
         Parameters
@@ -185,7 +187,8 @@ class ParzenJointHistogram:
         """
         return _bin_index(xnorm, self.nbins, self.padding)
 
-    def update_pdfs_dense(self, static, moving, smask=None, mmask=None):
+    @warning_for_keywords()
+    def update_pdfs_dense(self, static, moving, *, smask=None, mmask=None):
         r""" Computes the Probability Density Functions of two images
 
         The joint PDF is stored in self.joint. The marginal distributions
@@ -1288,7 +1291,8 @@ def compute_parzen_mi(double[:, :] joint,
     return metric_value
 
 
-def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
+@warning_for_keywords()
+def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world, *,
                           double sigma=0.25, object rng=None):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 

@@ -13,6 +13,7 @@ from dipy.align.bundlemin import (
 from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
 from dipy.core.optimize import Optimizer
 from dipy.segment.clustering import qbx_and_merge
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     center_streamlines,
@@ -42,7 +43,8 @@ logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
-    def __init__(self, num_threads=None):
+    @warning_for_keywords()
+    def __init__(self, *, num_threads=None):
         """An abstract class for the metric used for streamline registration.
 
         If the two sets of streamlines match exactly then method ``distance``
@@ -300,8 +302,10 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
 
 
 class StreamlineLinearRegistration:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         metric=None,
         x0="rigid",
         method="L-BFGS-B",
@@ -411,7 +415,8 @@ class StreamlineLinearRegistration:
         self.options = options
         self.evolution = evolution
 
-    def optimize(self, static, moving, mat=None):
+    @warning_for_keywords()
+    def optimize(self, static, moving, *, mat=None):
         """Find the minimum of the provided metric.
 
         Parameters
@@ -691,7 +696,8 @@ class JointStreamlineRegistrationMap:
         return static, moving
 
 
-def bundle_sum_distance(t, static, moving, num_threads=None):
+@warning_for_keywords()
+def bundle_sum_distance(t, static, moving, *, num_threads=None):
     """MDF distance optimization function (SUM).
 
     We minimize the distance between moving streamlines as they align
@@ -773,7 +779,8 @@ def bundle_min_distance(t, static, moving):
     )
 
 
-def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
+@warning_for_keywords()
+def bundle_min_distance_fast(t, static, moving, block_size, *, num_threads=None):
     """MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
@@ -891,12 +898,14 @@ def remove_clusters_by_size(clusters, min_size=0):
     return centroids
 
 
+@warning_for_keywords()
 def progressive_slr(
     static,
     moving,
     metric,
     x0,
     bounds,
+    *,
     method="L-BFGS-B",
     verbose=False,
     num_threads=None,
@@ -1019,9 +1028,11 @@ def progressive_slr(
     return slm
 
 
+@warning_for_keywords()
 def slr_with_qbx(
     static,
     moving,
+    *,
     x0="affine",
     rm_small_clusters=50,
     maxiter=100,
@@ -1203,8 +1214,10 @@ def slr_with_qbx(
 whole_brain_slr = slr_with_qbx
 
 
+@warning_for_keywords()
 def groupwise_slr(
     bundles,
+    *,
     x0="affine",
     tol=0,
     max_iter=20,
@@ -1378,7 +1391,8 @@ def groupwise_slr(
     return bundles, aff_list, d
 
 
-def get_unique_pairs(n_bundle, pairs=None):
+@warning_for_keywords()
+def get_unique_pairs(n_bundle, *, pairs=None):
     """Make unique pairs from n_bundle bundles.
 
     The function allows to input a previous pairs assignment so that the new
@@ -1434,7 +1448,8 @@ def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def compose_matrix44(t, dtype=np.double):
+@warning_for_keywords()
+def compose_matrix44(t, *, dtype=np.double):
     """Compose a 4x4 transformation matrix.
 
     Parameters
@@ -1478,7 +1493,8 @@ def compose_matrix44(t, dtype=np.double):
     return compose_matrix(scale=scale, shear=shear, angles=angles, translate=translate)
 
 
-def decompose_matrix44(mat, size=12):
+@warning_for_keywords()
+def decompose_matrix44(mat, *, size=12):
     """Given a 4x4 homogeneous matrix return the parameter vector.
 
     Parameters
