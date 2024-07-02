@@ -8,17 +8,17 @@ from numpy.testing import (
 )
 
 from dipy.align import (
-    VerbosityLevels,
-    floating,
     imwarp as imwarp,
     metrics as metrics,
     vector_fields as vfu,
 )
 from dipy.align.imwarp import DiffeomorphicMap
+from dipy.align.utils import floating
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.data import get_fnames
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import deform_streamlines
+from dipy.utils import VerbosityLevels
 
 
 def test_mult_aff():

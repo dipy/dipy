@@ -6,7 +6,8 @@ from numpy.testing import (
     assert_equal,
 )
 
-from dipy.align import floating, sumsqdiff as ssd
+from dipy.align import sumsqdiff as ssd
+from dipy.align.utils import floating
 from dipy.testing.decorators import set_random_number_generator
 
 
