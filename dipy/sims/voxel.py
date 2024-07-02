@@ -186,7 +186,8 @@ def sticks_and_ball(
     for i, g in enumerate(gtab.bvecs[1:]):
         S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + np.sum(
             [
-                fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                fractions[j] * np.exp(-gtab.bvals[i + 1]
+                                      * d * np.dot(s, g) ** 2)
                 for (j, s) in enumerate(sticks)
             ]
         )
@@ -700,6 +701,81 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
     return S
 
 
+def dwi_multicompart_signals(
+        gtab, tessellation, fiber_indices, S0,
+        D_water, D_a, D_e, D_r, f_in, fiber_fractions, snr=None):
+    r"""Simulate DWI signals based on the model parameters for each
+    gradient direction with multi-compartment model method.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Gradient table with attributes 'bvals' and 'bvecs'.
+    tessellation : (N, 3) ndarray
+        Array of unit vectors representing potential fiber directions.
+    fiber_indices : array_like
+        Indices of the tessellation to use as the actual fiber directions.
+    S0 : float
+        Base non-diffusion-weighted signal.
+    f_water : float
+        Fractional volume of free water.
+    D_water : float
+        Diffusivity of free water.
+    D_a : list of float
+        List of axial diffusivities for fibers.
+    D_e : list of float
+        List of radial diffusivities perpendicular to the fibers.
+    D_r : list of float
+        List of radial diffusivities for restricted diffusion within fibers.
+    f_in : list of float
+        List of fractions of intracellular space for each fiber.
+    fiber_fractions : list of float
+        List of volume fractions for each fiber.
+    snr : float, optional
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
+
+    Returns
+    -------
+    S : (N,) ndarray
+        Simulated DWI signals as a numpy array.
+
+    References
+    ----------
+    [1] Novikov, Dmitry S., et al. "Quantifying brain microstructure with diffusion MRI:
+    Theory and parameter estimation." NMR in Biomedicine 32.4 (2019): e3998.
+    """
+    if np.sum(fiber_fractions) > 1:
+        raise ValueError("Sum of fractions for components cannot exceed 1.")
+
+    if len(fiber_indices) != len(D_a) or len(fiber_indices) != len(D_e) or \
+            len(fiber_indices) != len(D_r) or len(fiber_indices) != len(f_in):
+        raise ValueError(
+            "Number of fibers must match the number of fiber parameters.")
+
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
+    signals = np.zeros(len(bvecs))
+    f_water = 1 - np.sum(fiber_fractions)
+    # Compute the diffusion signal for free water
+    signals += f_water * np.exp(-bvals * D_water)
+
+    # Use the number of specified indices
+    num_fibers = len(fiber_indices)
+
+    for i in range(num_fibers):
+        fiber_direction = tessellation[fiber_indices[i]]
+        dot_product_squared = (np.dot(bvecs, fiber_direction) ** 2)
+        intra_signal = np.exp(-bvals * D_a[i] * dot_product_squared)
+        extra_signal = np.exp(-bvals *
+                              (D_e[i] * dot_product_squared + D_r[i] *
+                               (1 - dot_product_squared)))
+        signals += fiber_fractions[i] * \
+            (f_in[i] * intra_signal + (1 - f_in[i]) * extra_signal)
+
+    return add_noise(S0 * signals, snr, S0)
+
+
 def single_tensor_odf(r, evals=None, evecs=None):
     """Simulated ODF with a single tensor.
 
@@ -815,7 +891,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
         mevecs += [all_tensor_evecs(s)]
 
     for j, f in enumerate(mf):
-        odf += f * single_tensor_odf(odf_verts, evals=mevals[j], evecs=mevecs[j])
+        odf += f * single_tensor_odf(odf_verts,
+                                     evals=mevals[j], evecs=mevecs[j])
     return odf
 
 
