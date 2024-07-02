@@ -1,3 +1,5 @@
+import threading
+from threading import Thread
 from os.path import join as pjoin
 from warnings import warn
 
@@ -170,13 +172,13 @@ class HorizonFlow(Workflow):
             hdr = mni_2009c
         else:
             hdr = mni_2009c
-        emergency_ref = create_nifti_header(hdr["affine"], hdr["dims"], hdr["vox_size"])
+        emergency_ref = create_nifti_header(
+            hdr["affine"], hdr["dims"], hdr["vox_size"])
 
         io_it = self.get_io_iterator()
 
-        for input_output in io_it:
-            fname = input_output[0]
-
+        def read_file(fname):
+            print(threading.get_ident())
             if verbose:
                 print("Loading file ...")
                 print(fname)
@@ -215,7 +217,8 @@ class HorizonFlow(Workflow):
                     vertices, faces = surface
                     surfaces.append((vertices, faces, fname))
                 else:
-                    warn(f"{fname} does not have any surface geometry.", stacklevel=2)
+                    warn(f"{fname} does not have any surface geometry.",
+                         stacklevel=2)
 
             if ends(".pam5"):
                 pam = load_peaks(fname)
@@ -232,6 +235,19 @@ class HorizonFlow(Workflow):
                 if verbose:
                     print("numpy array length")
                     print(len(data))
+
+        def file_reader(paths):
+            threads = []
+
+            for path in paths:
+                thread = Thread(target=read_file, args=(path[0],))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+
+        file_reader(io_it)
 
         if buan:
             bundle_colors = []
@@ -278,6 +294,7 @@ class HorizonFlow(Workflow):
             )
 
         order_transparent = not disable_order_transparency
+
         horizon(
             tractograms=tractograms,
             images=images,
