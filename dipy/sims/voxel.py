@@ -4,6 +4,7 @@ from scipy.special import jn
 
 from dipy.core.geometry import sphere2cart, vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
+from dipy.testing.decorators import warning_for_keywords
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
@@ -72,7 +73,8 @@ def _add_rayleigh(sig, noise1, noise2):
     return sig + np.sqrt(noise1**2 + noise2**2)
 
 
-def add_noise(signal, snr, S0, noise_type="rician", rng=None):
+@warning_for_keywords()
+def add_noise(signal, snr, S0, *, noise_type="rician", rng=None):
     r"""Add noise of specified distribution to the signal from a single voxel.
 
     Parameters
@@ -140,8 +142,9 @@ def add_noise(signal, snr, S0, noise_type="rician", rng=None):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
+@warning_for_keywords()
 def sticks_and_ball(
-    gtab, d=0.0015, S0=1.0, angles=((0, 0), (90, 0)), fractions=(35, 35), snr=20
+    gtab, *, d=0.0015, S0=1.0, angles=((0, 0), (90, 0)), fractions=(35, 35), snr=20
 ):
     """Simulate the signal for a Sticks & Ball model.
 
@@ -231,7 +234,8 @@ def callaghan_perpendicular(q, radius):
     return E
 
 
-def gaussian_parallel(q, tau, D=0.7e-3):
+@warning_for_keywords()
+def gaussian_parallel(q, tau, *, D=0.7e-3):
     r"""Calculates the parallel Gaussian diffusion signal.
 
     Parameters
@@ -252,9 +256,11 @@ def gaussian_parallel(q, tau, D=0.7e-3):
     return np.exp(-((2 * np.pi * q) ** 2) * tau * D)
 
 
+@warning_for_keywords()
 def cylinders_and_ball_soderman(
     gtab,
     tau,
+    *,
     radii=(5e-3, 5e-3),
     D=0.7e-3,
     S0=1.0,
@@ -332,7 +338,8 @@ def cylinders_and_ball_soderman(
     return S, sticks
 
 
-def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
+@warning_for_keywords()
+def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
     """Simulate diffusion-weighted signals with a single tensor.
 
     Parameters
@@ -399,8 +406,16 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None, rng=None):
     return S.reshape(out_shape)
 
 
+@warning_for_keywords()
 def multi_tensor(
-    gtab, mevals, S0=1.0, angles=((0, 0), (90, 0)), fractions=(50, 50), snr=20, rng=None
+    gtab,
+    mevals,
+    *,
+    S0=1.0,
+    angles=((0, 0), (90, 0)),
+    fractions=(50, 50),
+    snr=20,
+    rng=None,
 ):
     r"""Simulate a Multi-Tensor signal.
 
@@ -467,8 +482,15 @@ def multi_tensor(
     return add_noise(S, snr, S0, rng=rng), sticks
 
 
+@warning_for_keywords()
 def multi_tensor_dki(
-    gtab, mevals, S0=1.0, angles=((90.0, 0.0), (90.0, 0.0)), fractions=(50, 50), snr=20
+    gtab,
+    mevals,
+    *,
+    S0=1.0,
+    angles=((90.0, 0.0), (90.0, 0.0)),
+    fractions=(50, 50),
+    snr=20,
 ):
     r"""Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
@@ -578,7 +600,8 @@ def multi_tensor_dki(
     return S, dt, kt
 
 
-def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
+@warning_for_keywords()
+def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=None):
     r"""Computes the diffusion kurtosis tensor element (with indexes i, j, k
     and l) based on the individual diffusion tensor components of a
     multicompartmental model.
@@ -648,7 +671,8 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None
     return wijkl
 
 
-def dki_signal(gtab, dt, kt, S0=150, snr=None):
+@warning_for_keywords()
+def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
     r"""Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are performed assuming the DKI
     model.
@@ -700,7 +724,8 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
     return S
 
 
-def single_tensor_odf(r, evals=None, evecs=None):
+@warning_for_keywords()
+def single_tensor_odf(r, *, evals=None, evecs=None):
     """Simulated ODF with a single tensor.
 
     Parameters
@@ -819,7 +844,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     return odf
 
 
-def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi**2)):
+@warning_for_keywords()
+def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
     """Simulate a Single-Tensor rtop.
 
     Parameters
@@ -848,7 +874,8 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi**2)):
     return rtop
 
 
-def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -884,7 +911,8 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi**2)):
     return rtop
 
 
-def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     """Simulated ODF with a single tensor.
 
     Parameters
@@ -934,7 +962,8 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     return pdf.reshape(out_shape)
 
 
-def multi_tensor_pdf(pdf_points, mevals, angles, fractions, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor ODF.
 
     Parameters
@@ -980,7 +1009,8 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, tau=1 / (4 * np.pi**
     return pdf
 
 
-def single_tensor_msd(evals=None, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -1009,7 +1039,8 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi**2)):
     return msd
 
 
-def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi**2)):
+@warning_for_keywords()
+def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
     Parameters
