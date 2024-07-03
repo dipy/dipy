@@ -12,12 +12,15 @@ import h5py
 from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 # Make sure not to carry across setup module from * import
 __all__ = ["Dpy"]
 
 
 class Dpy:
-    def __init__(self, fname, mode="r", compression=0):
+    @warning_for_keywords()
+    def __init__(self, fname, *, mode="r", compression=0):
         """Advanced storage system for tractography based on HDF5
 
         Parameters
