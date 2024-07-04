@@ -80,7 +80,7 @@ cdef class EnhancementKernel:
         if isinstance(orientations, Sphere):
             # use the sphere defined by the user
             sphere = orientations
-        elif isinstance(orientations, (int, long, float)):
+        elif isinstance(orientations, (int, float)):
             # electrostatic repulsion based on number of orientations
             n_pts = int(orientations)
             if n_pts == 0:
