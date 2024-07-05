@@ -43,7 +43,7 @@ def get_fast_tracking_performances(params):
     seed_mask = binary_erosion(seed_mask * mask, iterations=1)
     seeds_positions = random_seeds_from_mask(seed_mask,
                                              affine,
-                                             seeds_count=5000,
+                                             seeds_count=2500,
                                              seed_count_per_voxel=False)
 
     pmf_gen = SimplePmfGen(np.asarray(GT_ODF, dtype=float), sphere)
