@@ -57,7 +57,7 @@ def multi_voxel_fit(single_voxel_fit):
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
-                    fit_array[ijk] = single_voxel_fit(self, data[ijk])
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **kwargs)
                 bar.update()
             bar.close()
         else:
