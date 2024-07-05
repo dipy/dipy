@@ -134,8 +134,8 @@ def multi_voxel_fit(single_voxel_fit):
                 fit_array[np.where(mask)], extra_list = tmp_fit_array, None
 
         # Redefine extra to be a single dictionary
-        import IPython as ipy
-        ipy.embed()
+#        import IPython as ipy
+#        ipy.embed()
         if return_extra:
             if extra_list[0] is not None:
                 extra_mask = {key: np.vstack([e[key] for e in extra_list])
