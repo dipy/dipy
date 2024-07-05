@@ -825,7 +825,10 @@ class TensorModel(ReconstModel):
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
-                S0_params[mask] = model_S0.squeeze()
+                try:
+                    S0_params[mask] = model_S0.squeeze(axis=-1)
+                except:
+                    S0_params[mask] = model_S0
             if extra is not None:
                 for key in extra:
                     self.extra[key] = np.zeros(data.shape)

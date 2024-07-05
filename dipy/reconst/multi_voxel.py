@@ -59,15 +59,15 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
-        extra_list = []
-#<<<<<<< HEAD
+        return_extra = False
+
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
-        #if engine == "serial":
-        if False:  # FIXME
-            print("running serial?") # FIXME
+        if engine == "serial":
+            extra_list = []
             bar = tqdm(
-                total=np.sum(mask), position=0, disable=kwargs.get("verbose", True)
+                total=np.sum(mask), position=0,
+                disable=kwargs.get("verbose", True)
             )
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
@@ -77,15 +77,15 @@ def multi_voxel_fit(single_voxel_fit):
 
                     svf = single_voxel_fit(self, data[ijk], **kwargs)
 
-                    # Not all fit methods return extra, handle this here for now
+                    # Not all fit methods return extra, handle this here
                     if isinstance(svf, tuple):
                         fit_array[ijk], extra = svf
+                        return_extra = True
                     else:
                         fit_array[ijk], extra = svf, None
 
                     extra_list.append(extra)
 
-                    fit_array[ijk] = single_voxel_fit(self, data[ijk])
                 bar.update()
             bar.close()
         else:
@@ -99,72 +99,43 @@ def multi_voxel_fit(single_voxel_fit):
                 data_to_fit[ii : ii + vox_per_chunk]
                 for ii in range(0, data_to_fit.shape[0], vox_per_chunk)
             ]
-            # NOTE: where do weights come in here now?
-            # NOTE: can't concat, might contain fit array and extra...
-            #mvf = np.concatenate(
-            #    (
             mvf = paramap(
                     _parallel_fit_worker,
                     chunks,
                     func_args=[single_voxel_with_self],
                     **kwargs,
                   )
-            # NOTE: trying to see what the mvf return looks like...
-            print("should be doing mvf fit")
-            import IPython as ipy
-            ipy.embed()
-            #    )
-            #)
- 
-            # NOTE: borrowed from original, how to make it work with the new code
-            #       especially since it's apparently alread returning a tuple
-            # Not all fit methods return extra, handle this here for now
-            if isinstance(svf, tuple):
-                fit_array[np.where(mask)], extra = mvf
+
+            if isinstance(mvf[0][0], tuple):
+                tmp_fit_array = np.concatenate(
+                    [[svf[0] for svf in mvf_ch] for mvf_ch in mvf]
+                )
+                tmp_extra = np.concatenate(
+                    [[svf[1] for svf in mvf_ch] for mvf_ch in mvf]
+                ).tolist()
+                fit_array[np.where(mask)], extra_list = tmp_fit_array, tmp_extra
+                return_extra = True
             else:
-                fit_array[ijk], extra = svf, None
+                tmp_fit_array = np.concatenate(mvf)
+                fit_array[np.where(mask)], extra_list = tmp_fit_array, None
 
-            extra_list.append(extra)
+        # Redefine extra to be a single dictionary
+        if return_extra:
+            if extra_list[0] is not None:
+                extra_mask = {key: np.vstack([e[key] for e in extra_list])
+                              for key in extra_list[0]}
+                extra = {}
+                for key in extra_mask:
+                    extra[key] = np.zeros(data.shape)
+                    extra[key][mask == 1] = extra_mask[key]
+            else:
+                extra = None
 
-        return MultiVoxelFit(self, fit_array, mask)  # NOTE: replace with the new stuff
-#=======
-#        extra_list = []
-#        bar = tqdm(total=np.sum(mask), position=0)
-#        for ijk in ndindex(data.shape[:-1]):
-#            if mask[ijk]:
-#
-#                if weights_is_array:
-#                    kwargs["weights"] = weights[ijk]
-#
-#                svf = single_voxel_fit(self, data[ijk], **kwargs)
-#
-#                # Not all fit methods return extra, handle this here for now
-#                if isinstance(svf, tuple):
-#                    fit_array[ijk], extra = svf
-#                else:
-#                    fit_array[ijk], extra = svf, None
-#
-#                extra_list.append(extra)
-#
-#                bar.update()
-#        bar.close()
-#
-#        # NOTE: should still need this at the end of the new code
-#        # Redefine extra to be a single dictionary
-#        if extra is not None:
-#            extra_mask = {key: np.vstack([e[key] for e in extra_list])
-#                          for key in extra_list[0]}
-#            extra = {}
-#            for key in extra_mask:
-#                extra[key] = np.zeros(data.shape)
-#                extra[key][mask == 1] = extra_mask[key]
-#
-#        # If fit method does not return extra, assume we cannot return extra
-#        if isinstance(svf, tuple):
-#            return MultiVoxelFit(self, fit_array, mask), extra
-#        else:
-#            return MultiVoxelFit(self, fit_array, mask)
-#>>>>>>> robust algorithm
+        # If fit method does not return extra, assume we cannot return extra
+        if return_extra:
+            return MultiVoxelFit(self, fit_array, mask), extra
+        else:
+            return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
 

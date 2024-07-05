@@ -1946,7 +1946,7 @@ class DiffusionKurtosisModel(ReconstModel):
             out_shape = data.shape[:-1] + (-1,)
             dki_params = params.reshape(out_shape)
             if self.return_S0_hat:
-                S0_params = S0_params.reshape(out_shape).squeeze()
+                S0_params = S0_params.reshape(out_shape).squeeze(axis=-1)
             if extra is not None:
                 for key in extra:
                     self.extra[key] = extra[key].reshape(data.shape)
@@ -1955,7 +1955,7 @@ class DiffusionKurtosisModel(ReconstModel):
             dki_params[mask, :] = params
             if self.return_S0_hat:
                 S0_params_in_mask = np.zeros(data.shape[:-1])
-                S0_params_in_mask[mask] = S0_params.squeeze()
+                S0_params_in_mask[mask] = S0_params.squeeze(axis=-1)
                 S0_params = S0_params_in_mask
             if extra is not None:
                 for key in extra:
