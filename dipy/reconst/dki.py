@@ -2056,6 +2056,7 @@ class DiffusionKurtosisModel(ReconstModel):
                                      self.design_matrix, leverages,
                                      rdx, TDX, robust)
 
+            print(rdx, TDX + 1)  # FIXME: leverages is not getting returned
             tmp, extra = self.multi_fit(data_thres, mask=mask,
                                         weights=w, return_leverages=True)
             leverages = extra["leverages"]
@@ -2833,6 +2834,8 @@ def cls_fit_dki(
            constraints for common diffusion MRI models using sum of squares
            programming. NeuroImage 209: 116405.
     """
+    print("running cls")
+    return_leverages = True  # NOTE: forcing this, because multi-voxel not passing it
     # Set up least squares problem
     A = design_matrix
     y = np.log(data)
@@ -2857,6 +2860,7 @@ def cls_fit_dki(
     # Solve sdp
     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
 
+    print(return_leverages) # FIXME: multi_voxel parallel should be passing this
     if return_leverages:
         leverages = {"leverages": leverages}
     else:

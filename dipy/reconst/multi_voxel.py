@@ -63,7 +63,8 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
-        if engine == "serial":
+        #if engine == "serial":
+        if False:#engine == "serial":
             extra_list = []
             bar = tqdm(
                 total=np.sum(mask), position=0,
@@ -99,6 +100,19 @@ def multi_voxel_fit(single_voxel_fit):
                 data_to_fit[ii : ii + vox_per_chunk]
                 for ii in range(0, data_to_fit.shape[0], vox_per_chunk)
             ]
+            # FIXME: weights are now broken, DUE TO PULL REQUEST MADE WHILE MINE WAS WAITING
+            #        I was passing weights as a kwarg to make it work,
+            #        I don't think it will be possible to do in the way they have set-up here
+            #        thanks, DiPy team, you really do go above and beyond to make things difficult
+            print("in multi_voxel here are the keywords")
+            print(kwargs)
+            print(weights_is_array)
+            # FIXME: despite "return_leverages: True" being in kwargs, mvf does not have leverages,
+            #        so something is broken AND I AM BEING FORCED TO REBASE ON THIS BROKEN CODE
+            #        I have tested, and return_leverages is coming out as false, so clearly
+            #        there is a bug here in the code THAT I AM BEING FORCE TO REBASE ON
+            if weights_is_array:
+                raise ValueError("Cannot handle custom weights here at the moment")
             mvf = paramap(
                     _parallel_fit_worker,
                     chunks,
@@ -120,6 +134,8 @@ def multi_voxel_fit(single_voxel_fit):
                 fit_array[np.where(mask)], extra_list = tmp_fit_array, None
 
         # Redefine extra to be a single dictionary
+        import IPython as ipy
+        ipy.embed()
         if return_extra:
             if extra_list[0] is not None:
                 extra_mask = {key: np.vstack([e[key] for e in extra_list])
