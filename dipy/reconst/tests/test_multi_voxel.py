@@ -144,14 +144,14 @@ def test_CallableArray():
 def test_multi_voxel_fit(rng):
     class SillyModel:
         @multi_voxel_fit
-        def fit(self, data, mask=None, **kwargs):
-            return SillyFit(model, data)
+        def fit(self, data, mask=None, another_kwarg=None, **kwargs):
+            return SillyFit(model, data, another_kwarg=another_kwarg)
 
         def predict(self, S0):
             return np.ones(10) * S0
 
     class SillyFit:
-        def __init__(self, model, data):
+        def __init__(self, model, data, another_kwarg):
             self.model = model
             self.data = data
 
@@ -171,12 +171,12 @@ def test_multi_voxel_fit(rng):
     # Test the single voxel case
     model = SillyModel()
     single_voxel = np.zeros(64)
-    fit = model.fit(single_voxel)
+    fit = model.fit(single_voxel, another_kwarg="foo")
     npt.assert_equal(type(fit), SillyFit)
 
     # Test without a mask
     many_voxels = np.zeros((2, 3, 4, 64))
-    fit = model.fit(many_voxels)
+    fit = model.fit(many_voxels, another_kwarg="foo")
     expected = np.empty((2, 3, 4))
     expected[:] = 2.0
     npt.assert_array_equal(fit.model_attr, expected)
@@ -187,19 +187,19 @@ def test_multi_voxel_fit(rng):
     npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with parallelization (using the "serial" dummy engine)
-    fit = model.fit(many_voxels, engine="serial")
+    fit = model.fit(many_voxels, engine="serial", another_kwarg="foo")
 
     # If parallelization engines are installed use them to test:
     if has_joblib:
-        fit = model.fit(many_voxels, engine="joblib")
+        fit = model.fit(many_voxels, engine="joblib", another_kwarg="foo")
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     if has_dask:
-        fit = model.fit(many_voxels, engine="dask")
+        fit = model.fit(many_voxels, engine="dask", another_kwarg="foo")
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     if has_ray:
-        fit = model.fit(many_voxels, engine="ray")
+        fit = model.fit(many_voxels, engine="ray", another_kwarg="foo")
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
