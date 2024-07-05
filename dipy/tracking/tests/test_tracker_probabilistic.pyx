@@ -4,8 +4,6 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
-from dipy.core.sphere import HemiSphere
-from dipy.data import get_fnames, get_sphere
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
 from dipy.reconst.shm import (
     SphHarmFit,
@@ -72,7 +70,6 @@ def test_tracker_probabilistic():
                                       &stream_data[0],
                                       sf_pmf_gen)
         npt.assert_equal(state, 1)
-
 
 def test_probabilistic_performances():
     # Test probabilistic tracker on the DiSCo dataset
