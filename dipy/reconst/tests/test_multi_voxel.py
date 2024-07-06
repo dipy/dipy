@@ -179,15 +179,16 @@ def test_multi_voxel_fit(rng):
 
     # Test without a mask
     many_voxels = np.zeros((2, 3, 4, 64))
-    fit = model.fit(many_voxels, another_kwarg="foo")
-    expected = np.empty((2, 3, 4))
-    expected[:] = 2.0
-    npt.assert_array_equal(fit.model_attr, expected)
-    expected = np.ones((2, 3, 4, 12))
-    npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
-    npt.assert_equal(fit.directions.shape, (2, 3, 4))
-    S0 = 100.0
-    npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+    for verbose in [True, False]:
+        fit = model.fit(many_voxels, verbose=verbose, another_kwarg="foo")
+        expected = np.empty((2, 3, 4))
+        expected[:] = 2.0
+        npt.assert_array_equal(fit.model_attr, expected)
+        expected = np.ones((2, 3, 4, 12))
+        npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
+        npt.assert_equal(fit.directions.shape, (2, 3, 4))
+        S0 = 100.0
+        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with parallelization (using the "serial" dummy engine)
     fit = model.fit(many_voxels, another_kwarg="foo", engine="serial")
