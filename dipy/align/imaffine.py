@@ -59,6 +59,7 @@ from dipy.align.parzenhist import (
 from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
+from dipy.testing.decorators import warning_for_keywords
 
 _interp_options = ["nearest", "linear"]
 _transform_method = {}
@@ -78,9 +79,11 @@ class AffineInvalidValuesError(Exception):
 
 
 class AffineMap:
+    @warning_for_keywords()
     def __init__(
         self,
         affine,
+        *,
         domain_grid_shape=None,
         domain_grid2world=None,
         codomain_grid_shape=None,
@@ -257,9 +260,11 @@ class AffineMap:
                     f"Try one of {allowed_formats_print_map}"
                 )
 
+    @warning_for_keywords()
     def _apply_transform(
         self,
         image,
+        *,
         interpolation="linear",
         image_grid2world=None,
         sampling_grid_shape=None,
@@ -379,9 +384,11 @@ class AffineMap:
         transformed = _transform_method[(dim, interpolation)](image, shape, comp)
         return transformed
 
+    @warning_for_keywords()
     def transform(
         self,
         image,
+        *,
         interpolation="linear",
         image_grid2world=None,
         sampling_grid_shape=None,
@@ -438,9 +445,11 @@ class AffineMap:
         )
         return np.array(transformed)
 
+    @warning_for_keywords()
     def transform_inverse(
         self,
         image,
+        *,
         interpolation="linear",
         image_grid2world=None,
         sampling_grid_shape=None,
@@ -499,7 +508,8 @@ class AffineMap:
 
 
 class MutualInformationMetric:
-    def __init__(self, nbins=32, sampling_proportion=None):
+    @warning_for_keywords()
+    def __init__(self, *, nbins=32, sampling_proportion=None):
         r"""Initialize an instance of the Mutual Information metric.
 
         This class implements the methods required by Optimizer to drive the
@@ -536,11 +546,13 @@ class MutualInformationMetric:
         self.metric_val = None
         self.metric_grad = None
 
+    @warning_for_keywords()
     def setup(
         self,
         transform,
         static,
         moving,
+        *,
         static_grid2world=None,
         moving_grid2world=None,
         starting_affine=None,
@@ -718,7 +730,8 @@ class MutualInformationMetric:
             self.histogram.update_pdfs_sparse(static_values, moving_values)
         return static_values, moving_values, static_mask_values, moving_mask_values
 
-    def _update_mutual_information(self, params, update_gradient=True):
+    @warning_for_keywords()
+    def _update_mutual_information(self, params, *, update_gradient=True):
         r"""Update marginal and joint distributions and the joint gradient.
 
         The distributions are updated according to the static and transformed
@@ -877,8 +890,10 @@ class MutualInformationMetric:
 
 
 class AffineRegistration:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         metric=None,
         level_iters=None,
         sigmas=None,
@@ -1151,12 +1166,14 @@ class AffineRegistration:
                 False,
             )
 
+    @warning_for_keywords()
     def optimize(
         self,
         static,
         moving,
         transform,
         params0,
+        *,
         static_grid2world=None,
         moving_grid2world=None,
         starting_affine=None,
