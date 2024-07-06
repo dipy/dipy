@@ -192,22 +192,28 @@ def test_multi_voxel_fit(rng):
     # Test with parallelization (using the "serial" dummy engine)
     fit = model.fit(many_voxels, another_kwarg="foo", engine="serial")
 
-    # If parallelization engines are installed use them to test:
-    if has_joblib:
-        fit = model.fit(
-            many_voxels,
-            another_kwarg="foo",
-            engine="joblib",
-        )
-        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+    for verbose in [True, False]:
+        # If parallelization engines are installed use them to test:
+        if has_joblib:
+            fit = model.fit(
+                many_voxels,
+                verbose=verbose,
+                another_kwarg="foo",
+                engine="joblib",
+            )
+            npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
-    if has_dask:
-        fit = model.fit(many_voxels, another_kwarg="foo", engine="dask")
-        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+        if has_dask:
+            fit = model.fit(
+                many_voxels, verbose=verbose, another_kwarg="foo", engine="dask"
+            )
+            npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
-    if has_ray:
-        fit = model.fit(many_voxels, another_kwarg="foo", engine="ray")
-        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+        if has_ray:
+            fit = model.fit(
+                many_voxels, verbose=verbose, another_kwarg="foo", engine="ray"
+            )
+            npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
     mask = np.zeros((3, 3, 3)).astype("bool")
