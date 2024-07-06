@@ -6,14 +6,17 @@ from scipy.spatial import cKDTree
 
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.segment.metric import mean_euclidean_distance
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 
 
 class FastStreamlineSearch:
+    @warning_for_keywords()
     def __init__(
         self,
         ref_streamlines,
         max_radius,
+        *,
         nb_mpts=4,
         bin_size=20.0,
         resampling=24,
@@ -116,7 +119,8 @@ class FastStreamlineSearch:
                 slines_id = np.asarray(baryc_b)
                 self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
 
-    def radius_search(self, streamlines, radius, use_negative=True):
+    @warning_for_keywords()
+    def radius_search(self, streamlines, radius, *, use_negative=True):
         """Radius Search using Fast Streamline Search
 
         For each given streamlines, return all reference streamlines

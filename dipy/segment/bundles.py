@@ -12,6 +12,7 @@ from dipy.align.streamlinear import (
     StreamlineLinearRegistration,
 )
 from dipy.segment.clustering import qbx_and_merge
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.distances import bundles_distances_mam, bundles_distances_mdf
 from dipy.tracking.streamline import (
     Streamlines,
@@ -84,7 +85,8 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     return res
 
 
-def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=6.0):
+@warning_for_keywords()
+def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     """Calculates bundle adjacency score between two given bundles
 
     Parameters
@@ -120,7 +122,8 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=6.0):
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
 
-def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
+@warning_for_keywords()
+def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000):
     """Clusters bundles
 
     Parameters
@@ -156,7 +159,10 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     return centroids
 
 
-def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=(5, 3, 1.5), threshold=6):
+@warning_for_keywords()
+def bundle_shape_similarity(
+    bundle1, bundle2, rng, *, clust_thr=(5, 3, 1.5), threshold=6
+):
     """Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
 
@@ -211,9 +217,11 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=(5, 3, 1.5), thresh
 
 
 class RecoBundles:
+    @warning_for_keywords()
     def __init__(
         self,
         streamlines,
+        *,
         greater_than=50,
         less_than=1000000,
         cluster_map=None,
@@ -326,10 +334,12 @@ class RecoBundles:
             logger.info(f" Streamlines have {self.nb_centroids} centroids")
             logger.info(f" Total duration {time() - t:0.3f} s\n")
 
+    @warning_for_keywords()
     def recognize(
         self,
         model_bundle,
         model_clust_thr,
+        *,
         reduction_thr=10,
         reduction_distance="mdf",
         slr=True,
@@ -470,11 +480,13 @@ class RecoBundles:
 
         return pruned_streamlines, self.filtered_indices[labels]
 
+    @warning_for_keywords()
     def refine(
         self,
         model_bundle,
         pruned_streamlines,
         model_clust_thr,
+        *,
         reduction_thr=14,
         reduction_distance="mdf",
         slr=True,
@@ -676,8 +688,9 @@ class RecoBundles:
 
         return ba_value, bmd_value
 
+    @warning_for_keywords()
     def _cluster_model_bundle(
-        self, model_bundle, model_clust_thr, nb_pts=20, select_randomly=500000
+        self, model_bundle, model_clust_thr, *, nb_pts=20, select_randomly=500000
     ):
         if self.verbose:
             t = time()
@@ -700,8 +713,9 @@ class RecoBundles:
             logger.info(f" Duration {time() - t:0.3f} s\n")
         return model_centroids
 
+    @warning_for_keywords()
     def _reduce_search_space(
-        self, model_centroids, reduction_thr=20, reduction_distance="mdf"
+        self, model_centroids, *, reduction_thr=20, reduction_distance="mdf"
     ):
         if self.verbose:
             t = time()
@@ -743,10 +757,12 @@ class RecoBundles:
 
         return neighb_streamlines, neighb_indices
 
+    @warning_for_keywords()
     def _register_neighb_to_model(
         self,
         model_bundle,
         neighb_streamlines,
+        *,
         metric=None,
         x0=None,
         bounds=None,
@@ -819,11 +835,13 @@ class RecoBundles:
 
         return transf_streamlines, slr_bmd
 
+    @warning_for_keywords()
     def _prune_what_not_in_model(
         self,
         model_centroids,
         transf_streamlines,
         neighb_indices,
+        *,
         mdf_thr=5,
         pruning_thr=10,
         pruning_distance="mdf",

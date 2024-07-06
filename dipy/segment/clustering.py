@@ -11,6 +11,7 @@ from dipy.segment.metricspeed import (
     Metric,
     MinimumAverageDirectFlipMetric,
 )
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import nbytes, set_number_of_points
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,8 @@ class Cluster:
     retrieve them using its `ClusterMap` object.
     """
 
-    def __init__(self, id=0, indices=None, refdata=None):
+    @warning_for_keywords()
+    def __init__(self, *, id=0, indices=None, refdata=None):
         if refdata is None:
             refdata = Identity()
         self.id = id
@@ -140,7 +142,8 @@ class ClusterCentroid(Cluster):
     retrieve them using its `ClusterMapCentroid` object.
     """
 
-    def __init__(self, centroid, id=0, indices=None, refdata=None):
+    @warning_for_keywords()
+    def __init__(self, centroid, *, id=0, indices=None, refdata=None):
         if refdata is None:
             refdata = Identity()
         super(ClusterCentroid, self).__init__(id, indices, refdata)
@@ -194,7 +197,8 @@ class ClusterMap:
         Actual elements that clustered indices refer to.
     """
 
-    def __init__(self, refdata=None):
+    @warning_for_keywords()
+    def __init__(self, *, refdata=None):
         if refdata is None:
             refdata = Identity()
         self._clusters = []
@@ -414,7 +418,8 @@ class Clustering:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def cluster(self, data, ordering=None):
+    @warning_for_keywords()
+    def cluster(self, data, *, ordering=None):
         """Clusters `data`.
 
         Subclasses will perform their clustering algorithm here.
@@ -497,7 +502,8 @@ class QuickBundles(Clustering):
                         vol 6, no 175, 2012.
     """
 
-    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=None):
+    @warning_for_keywords()
+    def __init__(self, threshold, *, metric="MDF_12points", max_nb_clusters=None):
         if max_nb_clusters is None:
             max_nb_clusters = np.iinfo("i4").max
 
@@ -515,7 +521,8 @@ class QuickBundles(Clustering):
         else:
             raise ValueError(f"Unknown metric: {metric}")
 
-    def cluster(self, streamlines, ordering=None):
+    @warning_for_keywords()
+    def cluster(self, streamlines, *, ordering=None):
         """Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
@@ -574,7 +581,8 @@ class QuickBundlesX(Clustering):
                         in Medicine (ISMRM). Singapore, 4187, 2016.
     """
 
-    def __init__(self, thresholds, metric="MDF_12points"):
+    @warning_for_keywords()
+    def __init__(self, thresholds, *, metric="MDF_12points"):
         self.thresholds = thresholds
 
         if isinstance(metric, MinimumAverageDirectFlipMetric):
@@ -588,7 +596,8 @@ class QuickBundlesX(Clustering):
         else:
             raise ValueError(f"Unknown metric: {metric}")
 
-    def cluster(self, streamlines, ordering=None):
+    @warning_for_keywords()
+    def cluster(self, streamlines, *, ordering=None):
         """Clusters `streamlines` into bundles.
 
         Performs QuickbundleX using a predefined metric and thresholds.
@@ -615,7 +624,8 @@ class QuickBundlesX(Clustering):
 
 
 class TreeCluster(ClusterCentroid):
-    def __init__(self, threshold, centroid, indices=None):
+    @warning_for_keywords()
+    def __init__(self, threshold, centroid, *, indices=None):
         super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
         self.threshold = threshold
         self.parent = None
@@ -697,8 +707,9 @@ class TreeClusterMap(ClusterMap):
         return clusters
 
 
+@warning_for_keywords()
 def qbx_and_merge(
-    streamlines, thresholds, nb_pts=20, select_randomly=None, rng=None, verbose=False
+    streamlines, thresholds, *, nb_pts=20, select_randomly=None, rng=None, verbose=False
 ):
     """Run QuickBundlesX and then run again on the centroids of the last layer
 
