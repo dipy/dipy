@@ -29,6 +29,7 @@ PLoS ONE 17(9): e0274396. https://doi.org/10.1371/journal.pone.0274396
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -41,9 +42,11 @@ sklearn, have_sklearn, _ = optional_package("sklearn.model_selection")
 
 
 class Cnn1DDenoiser:
+    @warning_for_keywords()
     def __init__(
         self,
         sig_length,
+        *,
         optimizer="adam",
         loss="mean_squared_error",
         metrics=("accuracy",),
@@ -111,7 +114,8 @@ class Cnn1DDenoiser:
         )
         self.model = model
 
-    def compile(self, optimizer="adam", loss=None, metrics=None, loss_weights=None):
+    @warning_for_keywords()
+    def compile(self, *, optimizer="adam", loss=None, metrics=None, loss_weights=None):
         """Configure the model for training.
 
         Parameters
@@ -153,10 +157,12 @@ class Cnn1DDenoiser:
         """
         return self.model.summary()
 
+    @warning_for_keywords()
     def train_test_split(
         self,
         x,
         y,
+        *,
         test_size=None,
         train_size=None,
         random_state=None,
@@ -214,10 +220,12 @@ class Cnn1DDenoiser:
             stratify=stratify,
         )
 
+    @warning_for_keywords()
     def fit(
         self,
         x,
         y,
+        *,
         batch_size=None,
         epochs=1,
         verbose=1,
@@ -312,10 +320,12 @@ class Cnn1DDenoiser:
             validation_freq=validation_freq,
         )
 
+    @warning_for_keywords()
     def evaluate(
         self,
         x,
         y,
+        *,
         batch_size=None,
         verbose=1,
         steps=None,
@@ -375,7 +385,8 @@ class Cnn1DDenoiser:
             return_dict=return_dict,
         )
 
-    def predict(self, x, batch_size=None, verbose=0, steps=None, callbacks=None):
+    @warning_for_keywords()
+    def predict(self, x, *, batch_size=None, verbose=0, steps=None, callbacks=None):
         """Generate predictions for input samples.
 
         Parameters
@@ -420,7 +431,8 @@ class Cnn1DDenoiser:
         )
         return predicted_output
 
-    def save_weights(self, filepath, overwrite=True):
+    @warning_for_keywords()
+    def save_weights(self, filepath, *, overwrite=True):
         """Save the weights of the model to HDF5 file format.
 
         Parameters
