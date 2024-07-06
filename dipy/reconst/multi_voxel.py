@@ -1,6 +1,7 @@
 """Tools to easily make multi voxel models"""
 
 from functools import partial
+from inspect import getargspec
 import multiprocessing
 
 import numpy as np
@@ -12,7 +13,7 @@ from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.utils.parallel import paramap
 
 
-def _parallel_fit_worker(vox_data, single_voxel_fit):
+def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     """
     Works on a chunk of voxel data to create a list of
     single voxel fits.
@@ -25,7 +26,7 @@ def _parallel_fit_worker(vox_data, single_voxel_fit):
     single_voxel_fit : callable
         The fit function to use on each voxel.
     """
-    return [single_voxel_fit(data) for data in vox_data]
+    return [single_voxel_fit(data, **kwargs) for data in vox_data]
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -35,9 +36,22 @@ def multi_voxel_fit(single_voxel_fit):
 
     def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
+        # Analyze if the single voxel fit has any additiona key-word arguments:
+        arg_spec = getargspec(single_voxel_fit)
+        # List of the arguments to the function:
+        args = arg_spec.args
+        args.pop(args.index("self"))
+        args.pop(args.index("data"))
+        args.pop(args.index("mask"))
+        # What remains are arguments that are not in **kwargs:
+        func_kwargs = {}
+        for kwarg in args:
+            func_kwargs.update({kwarg: kwargs[kwarg]})
+            kwargs.pop(kwarg)
+
         # If only one voxel just return a normal fit
         if data.ndim == 1:
-            return single_voxel_fit(self, data)
+            return single_voxel_fit(self, data, **func_kwargs)
 
         # Make a mask if mask is None
         if mask is None:
@@ -57,7 +71,7 @@ def multi_voxel_fit(single_voxel_fit):
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
-                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **kwargs)
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **func_kwargs)
                 bar.update()
             bar.close()
         else:
@@ -77,6 +91,7 @@ def multi_voxel_fit(single_voxel_fit):
                         _parallel_fit_worker,
                         chunks,
                         func_args=[single_voxel_with_self],
+                        func_kwargs=func_kwargs,
                         **kwargs,
                     )
                 )
