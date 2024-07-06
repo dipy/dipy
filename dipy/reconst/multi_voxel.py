@@ -36,20 +36,24 @@ def multi_voxel_fit(single_voxel_fit):
 
     def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
-        # Analyze if the single voxel fit has any additiona key-word arguments:
+        # Analyze if the single voxel fit has any "non standard"
+        # key-word arguments:
         arg_spec = getargspec(single_voxel_fit)
         # List of the arguments to the function:
         args = arg_spec.args
+        # The following are "standard" arguments:
         args.pop(args.index("self"))
         args.pop(args.index("data"))
         args.pop(args.index("mask"))
-        # What remains are arguments that are not in **kwargs:
+        # What remains are arguments that are defined separate from **kwargs
+        # (which we reserve for parallelization arguments):
         func_kwargs = {}
         for kwarg in args:
             func_kwargs.update({kwarg: kwargs[kwarg]})
             kwargs.pop(kwarg)
 
-        # If only one voxel just return a normal fit
+        # If only one voxel just return a standard fit, passing through
+        # the functions key-word arguments:
         if data.ndim == 1:
             return single_voxel_fit(self, data, **func_kwargs)
 
