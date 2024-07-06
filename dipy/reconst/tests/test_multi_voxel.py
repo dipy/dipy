@@ -145,13 +145,16 @@ def test_multi_voxel_fit(rng):
     class SillyModel:
         @multi_voxel_fit
         def fit(self, data, mask=None, another_kwarg=None, **kwargs):
-            return SillyFit(model, data, another_kwarg=another_kwarg)
+            # We want to make sure that all kwargs are passed through to the
+            # the fitting procedure
+            assert another_kwarg is not None
+            return SillyFit(model, data)
 
         def predict(self, S0):
             return np.ones(10) * S0
 
     class SillyFit:
-        def __init__(self, model, data, another_kwarg):
+        def __init__(self, model, data):
             self.model = model
             self.data = data
 
@@ -187,19 +190,23 @@ def test_multi_voxel_fit(rng):
     npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with parallelization (using the "serial" dummy engine)
-    fit = model.fit(many_voxels, engine="serial", another_kwarg="foo")
+    fit = model.fit(many_voxels, another_kwarg="foo", engine="serial")
 
     # If parallelization engines are installed use them to test:
     if has_joblib:
-        fit = model.fit(many_voxels, engine="joblib", another_kwarg="foo")
+        fit = model.fit(
+            many_voxels,
+            another_kwarg="foo",
+            engine="joblib",
+        )
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     if has_dask:
-        fit = model.fit(many_voxels, engine="dask", another_kwarg="foo")
+        fit = model.fit(many_voxels, another_kwarg="foo", engine="dask")
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     if has_ray:
-        fit = model.fit(many_voxels, engine="ray", another_kwarg="foo")
+        fit = model.fit(many_voxels, another_kwarg="foo", engine="ray")
         npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
@@ -208,7 +215,7 @@ def test_multi_voxel_fit(rng):
     mask[1, 1] = 1
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
-    fit = model.fit(data, mask)
+    fit = model.fit(data, mask, another_kwarg="foo")
     expected = np.zeros((3, 3, 3))
     expected[0, 0] = 2
     expected[1, 1] = 2
