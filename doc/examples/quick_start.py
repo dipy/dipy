@@ -127,6 +127,12 @@ print(gtab.bvals)
 print(gtab.bvecs[:10, :])
 
 ###############################################################################
+# You can get the number of gradients (including the number of b0 values)
+# calling ``len`` on the ``GradientTable`` instance:
+
+print(len(gtab))
+
+###############################################################################
 # ``gtab``  can be used to tell what part of the data is the S0 volumes
 # (volumes which correspond to b-values of 0).
 

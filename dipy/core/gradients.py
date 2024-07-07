@@ -349,6 +349,19 @@ class GradientTable:
         msg += f"          max {self.bvecs.max():f}\n"
         return msg
 
+    def __len__(self):
+        """Get the number of gradients. Includes the b0s.
+
+        Examples
+        --------
+        >>> bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+        >>> bvecs = generate_bvecs(bvals.shape[-1])
+        >>> gtab = gradient_table(bvals, bvecs)
+        >>> len(gtab)
+        9
+        """
+        return len(self.bvals)
+
 
 @warning_for_keywords()
 def gradient_table_from_bvals_bvecs(
