@@ -219,7 +219,13 @@ def test_bdg_residual(rng):
         )
         csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
     npt.assert_raises(
-        ValueError, BootDirectionGetter, data, csd_model, 60, hsph_updated, 6
+        ValueError,
+        BootDirectionGetter,
+        data,
+        csd_model,
+        60,
+        sphere=hsph_updated,
+        max_attempts=6,
     )
 
 
@@ -291,8 +297,22 @@ def test_boot_pmf():
             category=PendingDeprecationWarning,
         )
         npt.assert_raises(
-            ValueError, BootDirectionGetter, data, tensor_model, 60, hsph_updated, 6, 20
+            ValueError,
+            BootDirectionGetter,
+            data,
+            tensor_model,
+            60,
+            sphere=hsph_updated,
+            max_attempts=6,
+            b_tol=20,
         )
         npt.assert_raises(
-            ValueError, BootDirectionGetter, data, tensor_model, 60, hsph_updated, 6, -1
+            ValueError,
+            BootDirectionGetter,
+            data,
+            tensor_model,
+            60,
+            sphere=hsph_updated,
+            max_attempts=6,
+            b_tol=-1,
         )

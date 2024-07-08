@@ -103,6 +103,7 @@ cdef class SHCoeffPmfGen(PmfGen):
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type,
+                 *,
                  legacy=True):
         cdef:
             int sh_order

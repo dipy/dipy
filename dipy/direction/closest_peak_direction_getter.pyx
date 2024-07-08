@@ -66,7 +66,7 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
@@ -165,7 +165,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             raise ValueError(msg)
 
         pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
     @classmethod
     @warning_for_keywords()
@@ -222,7 +222,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         else:
             pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
                                     basis_type, legacy=legacy)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
 
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
