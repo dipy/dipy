@@ -6,14 +6,17 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
+@warning_for_keywords()
 def compare_maps(
     fits,
     maps,
+    *,
     transpose=None,
     fit_labels=None,
     map_labels=None,
@@ -127,11 +130,13 @@ def compare_maps(
         plt.show()
 
 
+@warning_for_keywords()
 def compare_qti_maps(
     gt,
     fit1,
     fit2,
     mask,
+    *,
     maps=("fa", "ufa"),
     fitname=("QTI", "QTI+"),
     xlimits=([0, 1], [0.4, 1.5]),

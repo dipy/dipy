@@ -15,6 +15,7 @@ from dipy.align.streamwarp import bundlewarp
 from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
@@ -60,10 +61,12 @@ class ResliceFlow(Workflow):
     def get_short_name(cls):
         return "reslice"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         new_vox_size,
+        *,
         order=1,
         mode="constant",
         cval=0,
@@ -125,10 +128,12 @@ class SlrWithQbxFlow(Workflow):
     def get_short_name(cls):
         return "slrwithqbx"
 
+    @warning_for_keywords()
     def run(
         self,
         static_files,
         moving_files,
+        *,
         x0="affine",
         rm_small_clusters=50,
         qbx_thr=(40, 30, 20, 15),
@@ -293,10 +298,12 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
+    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
+        *,
         transform="affine",
         nbins=32,
         sampling_prop=None,
@@ -492,11 +499,13 @@ class ImageRegistrationFlow(Workflow):
 
 
 class ApplyTransformFlow(Workflow):
+    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
         transform_map_file,
+        *,
         transform_type="affine",
         out_dir="",
         out_file="transformed.nii.gz",
@@ -602,10 +611,12 @@ class ApplyTransformFlow(Workflow):
 
 
 class SynRegistrationFlow(Workflow):
+    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
+        *,
         prealign_file="",
         inv_static=False,
         level_iters=(10, 10, 5),
@@ -859,11 +870,13 @@ class MotionCorrectionFlow(Workflow):
     DWI dataset.
     """
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
+        *,
         b0_threshold=50,
         bvecs_tol=0.01,
         out_dir="",
@@ -938,17 +951,26 @@ class BundleWarpFlow(Workflow):
       
         return "bundlewarp"
 
-
-    def run(self, static_file, moving_file, dist=None, alpha=0.5, beta=20,
-            max_iter=15, affine=True,
-            out_dir='',
-            out_linear_moved='linearly_moved.trk',
-            out_nonlinear_moved='nonlinearly_moved.trk',
-            out_warp_transform='warp_transform.npy',
-            out_warp_kernel='warp_kernel.npy',
-            out_dist='distance_matrix.npy',
-            out_matched_pairs='matched_pairs.npy'):
-        """ BundleWarp: streamline-based nonlinear registration.
+    @warning_for_keywords()
+    def run(
+        self,
+        static_file,
+        moving_file,
+        *,
+        dist=None,
+        alpha=0.3,
+        beta=20,
+        max_iter=15,
+        affine=True,
+        out_dir="",
+        out_linear_moved="linearly_moved.trk",
+        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_warp_transform="warp_transform.npy",
+        out_warp_kernel="warp_kernel.npy",
+        out_dist="distance_matrix.npy",
+        out_matched_pairs="matched_pairs.npy",
+    ):
+        """BundleWarp: streamline-based nonlinear registration.
 
         BundleWarp is nonrigid registration method for deformable registration
         of white matter tracts.

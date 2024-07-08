@@ -17,6 +17,7 @@ from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.mask import bounding_box, segment_from_cfa
 from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
@@ -32,12 +33,14 @@ class SNRinCCFlow(Workflow):
     def get_short_name(cls):
         return "snrincc"
 
+    @warning_for_keywords()
     def run(
         self,
         data_files,
         bvals_files,
         bvecs_files,
         mask_file,
+        *,
         bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1),
         out_dir="",
         out_file="product.json",
@@ -175,6 +178,7 @@ class SNRinCCFlow(Workflow):
                 json.dump(data, myfile)
 
 
+@warning_for_keywords()
 def buan_bundle_profiles(
     model_bundle_folder,
     bundle_folder,
@@ -182,6 +186,7 @@ def buan_bundle_profiles(
     metric_folder,
     group_id,
     subject,
+    *,
     no_disks=100,
     out_dir="",
 ):
@@ -321,7 +326,8 @@ class BundleAnalysisTractometryFlow(Workflow):
     def get_short_name(cls):
         return "ba"
 
-    def run(self, model_bundle_folder, subject_folder, no_disks=100, out_dir=""):
+    @warning_for_keywords()
+    def run(self, model_bundle_folder, subject_folder, *, no_disks=100, out_dir=""):
         """Workflow of bundle analytics.
 
         Applies statistical analysis on bundles of subjects and saves the
@@ -481,7 +487,8 @@ class LinearMixedModelsFlow(Workflow):
         plt.savefig(plot_file)
         plt.clf()
 
-    def run(self, h5_files, no_disks=100, out_dir=""):
+    @warning_for_keywords()
+    def run(self, h5_files, *, no_disks=100, out_dir=""):
         """Workflow of linear Mixed Models.
 
         Applies linear Mixed Models on bundles of subjects and saves the
@@ -548,7 +555,8 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return "BS"
 
-    def run(self, subject_folder, clust_thr=(5, 3, 1.5), threshold=6, out_dir=""):
+    @warning_for_keywords()
+    def run(self, subject_folder, *, clust_thr=(5, 3, 1.5), threshold=6, out_dir=""):
         """Workflow of bundle analytics.
 
         Applies bundle shape similarity analysis on bundles of subjects and

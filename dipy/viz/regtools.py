@@ -1,5 +1,6 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
@@ -51,8 +52,9 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     plt.clf()
 
 
+@warning_for_keywords()
 def overlay_images(
-    img0, img1, title0="", title_mid="", title1="", fname=None, **fig_kwargs
+    img0, img1, *, title0="", title_mid="", title1="", fname=None, **fig_kwargs
 ):
     r"""Plot two images one on top of the other using red and green channels.
 
@@ -153,8 +155,10 @@ def draw_lattice_2d(nrows, ncols, delta):
     return lattice
 
 
+@warning_for_keywords()
 def plot_2d_diffeomorphic_map(
     mapping,
+    *,
     delta=10,
     fname=None,
     direct_grid_shape=None,
@@ -315,7 +319,8 @@ def plot_2d_diffeomorphic_map(
     return warped_forward, warped_backward
 
 
-def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
+@warning_for_keywords()
+def plot_slices(V, *, slice_indices=None, fname=None, **fig_kwargs):
     r"""Plot 3 slices from the given volume: 1 sagittal, 1 coronal and 1 axial
 
     Creates a figure showing the axial, coronal and sagittal slices at the
@@ -362,9 +367,11 @@ def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     return fig
 
 
+@warning_for_keywords()
 def overlay_slices(
     L,
     R,
+    *,
     slice_index=None,
     slice_type=1,
     ltitle="Left",

@@ -4,6 +4,7 @@ import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.evac import EVACPlus
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
@@ -12,9 +13,11 @@ class EVACPlusFlow(Workflow):
     def get_short_name(cls):
         return "evacplus"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         save_masked=False,
         out_dir="",
         out_mask="brain_mask.nii.gz",

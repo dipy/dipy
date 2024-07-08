@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import is_macOS
+from dipy.testing.decorators import is_macOS, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (
     HorizonTab,
@@ -29,8 +29,14 @@ class SlicesTab(HorizonTab):
         Name of the tab.
     """
 
+    @warning_for_keywords()
     def __init__(
-        self, slices_visualizer, tab_name, file_name, force_render=lambda _element: None
+        self,
+        slices_visualizer,
+        tab_name,
+        file_name,
+        *,
+        force_render=lambda _element: None,
     ):
         super().__init__()
 
@@ -247,7 +253,8 @@ class SlicesTab(HorizonTab):
         self._voxel_data.obj.message = message
         self._voxel_data.selected_value = message
 
-    def _change_slice_value(self, slider, selected_slice, sync_slice=False):
+    @warning_for_keywords()
+    def _change_slice_value(self, slider, selected_slice, *, sync_slice=False):
         selected_slice.selected_value = int(np.rint(slider.value))
         if not sync_slice:
             self.on_slice_change(
@@ -266,8 +273,9 @@ class SlicesTab(HorizonTab):
             z1=self._slice_z.selected_value, z2=self._slice_z.selected_value
         )
 
+    @warning_for_keywords()
     def _update_slice_visibility(
-        self, checkboxes, selected_slice, actor_idx, visibility=None
+        self, checkboxes, selected_slice, actor_idx, *, visibility=None
     ):
         if checkboxes is not None and "" in checkboxes.checked_labels:
             visibility = True
