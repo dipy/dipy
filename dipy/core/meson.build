@@ -17,7 +17,8 @@ foreach ext: cython_sources
 endforeach
 
 
-python_sources = ['__init__.py',
+python_sources = [
+  '__init__.py',
   'geometry.py',
   'gradients.py',
   'graph.py',

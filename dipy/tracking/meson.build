@@ -32,7 +32,8 @@ foreach ext: cython_sources
 endforeach
 
 
-python_sources = ['__init__.py',
+python_sources = [
+  '__init__.py',
   '_utils.py',
   'learning.py',
   'life.py',

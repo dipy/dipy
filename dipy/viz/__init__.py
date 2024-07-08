@@ -1,6 +1,8 @@
 # Init file for visualization package
 import warnings
 
+import lazy_loader as lazy
+
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.app import horizon
 
@@ -17,7 +19,20 @@ fury, has_fury, _ = optional_package(
 
 
 if has_fury:
-    from fury import actor, colormap, interactor, lib, shaders, ui, utils, window
+    __getattr__, __dir__, __all__ = lazy.attach(
+        __name__,
+        submodules=[
+            "actor",
+            "colormap",
+            "interactor",
+            "lib",
+            "shaders",
+            "ui",
+            "utils",
+            "window",
+        ],
+    )
+
     from fury.data import DATA_DIR as FURY_DATA_DIR, fetch_viz_icons, read_viz_icons
 
 else:
@@ -33,3 +48,7 @@ _, has_mpl, _ = optional_package(
 
 if has_mpl:
     from . import projections
+
+# Define __all__ if FURY is not available to avoid errors
+if not has_fury:
+    __all__ = []

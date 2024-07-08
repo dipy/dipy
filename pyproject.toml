@@ -44,6 +44,7 @@ dependencies = [
     "packaging>=21",
     "tqdm>=4.30.0",
     "trx-python>=0.2.9",
+    "lazy_loader>=0.4",
 ]
 
 [project.scripts]
@@ -140,6 +141,7 @@ requires = [
     "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
+    'lazy_loader>=0.4',
     # numpy requirement for wheel builds for distribution on PyPI - building
     # against 2.x yields wheels that are also compatible with numpy 1.x at
     # runtime.
