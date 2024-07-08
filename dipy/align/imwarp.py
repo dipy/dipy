@@ -10,6 +10,7 @@ import numpy.linalg as npl
 
 from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
+from dipy.testing.decorators import warning_for_keywords
 
 RegistrationStages = Bunch(
     INIT_START=0,
@@ -101,10 +102,12 @@ def get_direction_and_spacings(affine, dim):
 
 
 class DiffeomorphicMap:
+    @warning_for_keywords()
     def __init__(
         self,
         dim,
         disp_shape,
+        *,
         disp_grid2world=None,
         domain_shape=None,
         domain_grid2world=None,
@@ -259,7 +262,8 @@ class DiffeomorphicMap:
         self.forward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
         self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
 
-    def _get_warping_function(self, interpolation, warp_coordinates=False):
+    @warning_for_keywords()
+    def _get_warping_function(self, interpolation, *, warp_coordinates=False):
         r"""Appropriate warping function for the given interpolation type
 
         Returns the right warping function from vector_fields that must be
@@ -291,7 +295,8 @@ class DiffeomorphicMap:
             else:
                 return vfu.warp_3d_nn
 
-    def _warp_coordinates_forward(self, points, coord2world=None, world2coord=None):
+    @warning_for_keywords()
+    def _warp_coordinates_forward(self, points, *, coord2world=None, world2coord=None):
         r"""Warps the list of points in the forward direction
 
         Applies this diffeomorphic map to the list of points given by `points`.
@@ -314,7 +319,8 @@ class DiffeomorphicMap:
         )
         return out
 
-    def _warp_coordinates_backward(self, points, coord2world=None, world2coord=None):
+    @warning_for_keywords()
+    def _warp_coordinates_backward(self, points, *, coord2world=None, world2coord=None):
         """Warps the list of points in the backward direction
 
         Applies this diffeomorphic map to the list of points given by `points`.
@@ -341,9 +347,11 @@ class DiffeomorphicMap:
         )
         return out
 
+    @warning_for_keywords()
     def _warp_forward(
         self,
         image,
+        *,
         interpolation="linear",
         image_world2grid=None,
         out_shape=None,
@@ -458,9 +466,11 @@ class DiffeomorphicMap:
         )
         return warped
 
+    @warning_for_keywords()
     def _warp_backward(
         self,
         image,
+        *,
         interpolation="linear",
         image_world2grid=None,
         out_shape=None,
@@ -575,9 +585,11 @@ class DiffeomorphicMap:
 
         return warped
 
+    @warning_for_keywords()
     def transform(
         self,
         image,
+        *,
         interpolation="linear",
         image_world2grid=None,
         out_shape=None,
@@ -628,9 +640,11 @@ class DiffeomorphicMap:
             )
         return np.asarray(warped)
 
+    @warning_for_keywords()
     def transform_inverse(
         self,
         image,
+        *,
         interpolation="linear",
         image_world2grid=None,
         out_shape=None,
@@ -679,7 +693,8 @@ class DiffeomorphicMap:
             )
         return np.asarray(warped)
 
-    def transform_points(self, points, coord2world=None, world2coord=None):
+    @warning_for_keywords()
+    def transform_points(self, points, *, coord2world=None, world2coord=None):
         """Warp the list of points in the forward direction.
 
         Applies this diffeomorphic map to the list of points (or streamlines)
@@ -704,7 +719,8 @@ class DiffeomorphicMap:
             points, coord2world, world2coord, inverse=self.is_inverse
         )
 
-    def transform_points_inverse(self, points, coord2world=None, world2coord=None):
+    @warning_for_keywords()
+    def transform_points_inverse(self, points, *, coord2world=None, world2coord=None):
         """Warp the list of points in the backward direction.
 
         Applies this diffeomorphic map to the list of points (or streamlines)
@@ -729,7 +745,10 @@ class DiffeomorphicMap:
             points, coord2world, world2coord, inverse=not self.is_inverse
         )
 
-    def _transform_coordinates(self, points, coord2world, world2coord, inverse=False):
+    @warning_for_keywords()
+    def _transform_coordinates(
+        self, points, coord2world, world2coord, *, inverse=False
+    ):
         is_streamline_obj = isinstance(points, Streamlines)
         data = points.get_data() if is_streamline_obj else points
 
@@ -1000,7 +1019,8 @@ class DiffeomorphicMap:
 
 
 class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
-    def __init__(self, metric=None):
+    @warning_for_keywords()
+    def __init__(self, *, metric=None):
         """Diffeomorphic Registration
 
         This abstract class defines the interface to be implemented by any
@@ -1051,9 +1071,11 @@ class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
+    @warning_for_keywords()
     def __init__(
         self,
         metric,
+        *,
         level_iters=None,
         step_length=0.25,
         ss_sigma_factor=0.2,
@@ -1582,7 +1604,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         x = np.asarray(x)
         y = np.asarray(y)
-        X = np.row_stack((x**2, x, np.ones_like(x)))
+        X = np.vstack((x**2, x, np.ones_like(x)))
         XX = X.dot(X.T)
         b = X.dot(y)
         beta = npl.solve(XX, b)
@@ -1676,10 +1698,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
+    @warning_for_keywords()
     def optimize(
         self,
         static,
         moving,
+        *,
         static_grid2world=None,
         moving_grid2world=None,
         prealign=None,

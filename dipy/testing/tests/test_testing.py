@@ -49,19 +49,19 @@ def test_clear_and_catch_warnings():
     npt.assert_equal(getattr(my_mod, "__warningregistry__", {}), {})
     with dt.clear_and_catch_warnings(modules=[my_mod]):
         warnings.simplefilter("ignore")
-        warnings.warn("Some warning")
+        warnings.warn("Some warning", stacklevel=1)
     npt.assert_equal(my_mod.__warningregistry__, {})
     # Without specified modules, don't clear warnings during context
     with dt.clear_and_catch_warnings():
-        warnings.warn("Some warning")
+        warnings.warn("Some warning", stacklevel=1)
     assert_warn_len_equal(my_mod, 1)
     # Confirm that specifying module keeps old warning, does not add new
     with dt.clear_and_catch_warnings(modules=[my_mod]):
-        warnings.warn("Another warning")
+        warnings.warn("Another warning", stacklevel=1)
     assert_warn_len_equal(my_mod, 1)
     # Another warning, no module spec does add to warnings dict, except on
     # Python 3 (see comments in `assert_warn_len_equal`)
     with dt.clear_and_catch_warnings():
-        warnings.warn("Another warning")
+        warnings.warn("Another warning", stacklevel=1)
     assert_warn_len_equal(my_mod, 2)
     warnings.simplefilter("always", category=UserWarning)

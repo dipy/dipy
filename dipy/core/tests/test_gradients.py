@@ -925,3 +925,92 @@ def test_affine_input_change():
     # Check if list still works
     affs = [np.eye(4) for _ in range(6)]
     _ = reorient_bvecs(gt, affs)
+
+
+def test_gradient_table_len():
+    # Test with single-shell gradient scheme
+    sq2 = np.sqrt(2) / 2.0
+    bvals = 1500 * np.ones(7)
+    bvals[0] = 0
+    bvecs = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [sq2, sq2, 0],
+            [sq2, 0, sq2],
+            [0, sq2, sq2],
+        ]
+    )
+    gtab = gradient_table(bvals, bvecs)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    # Test with big and small deltas
+    big_delta = 5
+    small_delta = 2
+    gtab = gradient_table(bvals, bvecs, big_delta=big_delta, small_delta=small_delta)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    # Test with multi-shell gradient scheme
+    bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    # Test reading gradient values from a file
+    _, fbvals, fbvecs = get_fnames("small_101D")
+    gtab = gradient_table(fbvals, fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    # Test with different shapes
+    gtab = gradient_table(bvals, bvecs.T)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    btab = np.concatenate((bvals[:, None], bvecs), axis=1)
+    gtab = gradient_table(btab)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    gtab = gradient_table(btab.T)
+
+    exp_grad_count = len(bvals)
+    obt_grad_count1 = gtab.__len__()
+    obt_grad_count2 = len(gtab)
+    assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+    # Test with b-tensor encoding gradient schemes
+    gradients = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [3, 4, 0], [5, 0, 12]], "float"
+    )
+    for btens in ["LTE", "PTE", "STE", "CTE"]:
+        gtab = GradientTable(gradients, btens=btens)
+
+        exp_grad_count = len(gradients)
+        obt_grad_count1 = gtab.__len__()
+        obt_grad_count2 = len(gtab)
+        assert exp_grad_count == obt_grad_count1 == obt_grad_count2

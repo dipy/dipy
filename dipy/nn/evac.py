@@ -16,7 +16,7 @@ from dipy.nn.utils import (
     set_logger_level,
     transform_img,
 )
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -98,6 +98,7 @@ def prepare_img(image):
 
 
 class Block(Layer):
+    @warning_for_keywords()
     def __init__(
         self,
         out_channels,
@@ -106,6 +107,7 @@ class Block(Layer):
         padding,
         drop_r,
         n_layers,
+        *,
         layer_type="down",
     ):
         super(Block, self).__init__()
@@ -152,7 +154,8 @@ class ChannelSum(Layer):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
 
-def init_model(model_scale=16):
+@warning_for_keywords()
+def init_model(*, model_scale=16):
     r"""
     Function to create model for EVAC+
 
@@ -292,7 +295,8 @@ class EVACPlus:
     """
 
     @doctest_skip_parser
-    def __init__(self, verbose=False):
+    @warning_for_keywords()
+    def __init__(self, *, verbose=False):
         r"""
         The model was pre-trained for usage on
         brain extraction of T1 images.
@@ -368,10 +372,12 @@ class EVACPlus:
 
         return self.model.predict(x_test)
 
+    @warning_for_keywords()
     def predict(
         self,
         T1,
         affine,
+        *,
         voxsize=(1, 1, 1),
         batch_size=None,
         return_affine=False,

@@ -36,6 +36,7 @@ import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 
@@ -64,8 +65,9 @@ syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
 affine_metric_dict = {"MI": MutualInformationMetric}
 
 
+@warning_for_keywords()
 def _handle_pipeline_inputs(
-    moving, static, static_affine=None, moving_affine=None, starting_affine=None
+    moving, static, *, static_affine=None, moving_affine=None, starting_affine=None
 ):
     """
     Helper function to prepare inputs for pipeline functions
@@ -90,9 +92,11 @@ def _handle_pipeline_inputs(
     return static, static_affine, moving, moving_affine, starting_affine
 
 
+@warning_for_keywords()
 def syn_registration(
     moving,
     static,
+    *,
     moving_affine=None,
     static_affine=None,
     step_length=0.25,
@@ -167,9 +171,11 @@ def syn_registration(
     return warped_moving, mapping
 
 
+@warning_for_keywords()
 def register_dwi_to_template(
     dwi,
     gtab,
+    *,
     dwi_affine=None,
     template=None,
     template_affine=None,
@@ -274,7 +280,8 @@ def write_mapping(mapping, fname):
     save_nifti(fname, mapping_data, mapping.codomain_world2grid)
 
 
-def read_mapping(disp, domain_img, codomain_img, prealign=None):
+@warning_for_keywords()
+def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
     """Read a syn registration mapping from a nifti file.
 
     Parameters
@@ -323,8 +330,9 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
     return mapping
 
 
+@warning_for_keywords()
 def resample(
-    moving, static, moving_affine=None, static_affine=None, between_affine=None
+    moving, static, *, moving_affine=None, static_affine=None, between_affine=None
 ):
     """Resample an image (moving) from one space to another (static).
 
@@ -334,14 +342,14 @@ def resample(
         Containing the data for the moving object, or full path to a nifti file
         with the moving data.
 
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
     moving_affine : 4x4 array, optional
         An affine transformation associated with the moving object. Required if
         data is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
 
     static_affine : 4x4 array, optional
         An affine transformation associated with the static object. Required if
@@ -375,9 +383,11 @@ def resample(
     return nib.Nifti1Image(resampled, static_affine)
 
 
+@warning_for_keywords()
 def affine_registration(
     moving,
     static,
+    *,
     moving_affine=None,
     static_affine=None,
     pipeline=None,
@@ -619,8 +629,9 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 }
 
 
+@warning_for_keywords()
 def register_series(
-    series, ref, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
+    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
 ):
     """Register a series to a reference image.
 
@@ -696,8 +707,9 @@ def register_series(
     return xformed, affines
 
 
+@warning_for_keywords()
 def register_dwi_series(
-    data, gtab, affine=None, b0_ref=0, pipeline=None, static_mask=None
+    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -790,7 +802,8 @@ motion_correction.__doc__ = re.sub(
 )
 
 
-def streamline_registration(moving, static, n_points=100, native_resampled=False):
+@warning_for_keywords()
+def streamline_registration(moving, static, *, n_points=100, native_resampled=False):
     """Register two collections of streamlines ('bundles') to each other.
 
     Parameters

@@ -1,19 +1,22 @@
 import warnings
 
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_array
 from scipy.spatial import cKDTree
 
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.segment.metric import mean_euclidean_distance
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 
 
 class FastStreamlineSearch:
+    @warning_for_keywords()
     def __init__(
         self,
         ref_streamlines,
         max_radius,
+        *,
         nb_mpts=4,
         bin_size=20.0,
         resampling=24,
@@ -116,7 +119,8 @@ class FastStreamlineSearch:
                 slines_id = np.asarray(baryc_b)
                 self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
 
-    def radius_search(self, streamlines, radius, use_negative=True):
+    @warning_for_keywords()
+    def radius_search(self, streamlines, radius, *, use_negative=True):
         """Radius Search using Fast Streamline Search
 
         For each given streamlines, return all reference streamlines
@@ -217,12 +221,12 @@ class FastStreamlineSearch:
                 if use_negative:
                     dist[flipped] *= -1.0
 
-            return coo_matrix(
+            return coo_array(
                 (dist, (ids_in, ids_ref)), shape=(q_nb_slines, self.ref_nb_slines)
             )
 
         # No results, return an empty sparse matrix
-        return coo_matrix((q_nb_slines, self.ref_nb_slines))
+        return coo_array((q_nb_slines, self.ref_nb_slines))
 
     def _resample(self, streamlines):
         """Resample streamlines"""
@@ -261,13 +265,13 @@ class FastStreamlineSearch:
         return u_bin, slines_ids
 
 
-def nearest_from_matrix_row(coo_matrix):
+def nearest_from_matrix_row(coo_array):
     """
     Return the nearest (smallest) for each row given an coup sparse matrix
 
     Parameters
     ----------
-    coo_matrix : scipy COOrdinates sparse matrix (nb_slines x nb_slines_ref)
+    coo_array : scipy COOrdinates sparse array (nb_slines x nb_slines_ref)
         Adjacency matrix containing all neighbors within the given radius
 
     Returns
@@ -279,8 +283,8 @@ def nearest_from_matrix_row(coo_matrix):
     nearest_dist : numpy array (nb_non_empty_row x 1)
         Distance for each nearest match
     """
-    non_zero_ids = np.unique(coo_matrix.row)
-    sparse_matrix = np.abs(coo_matrix.tocsr())
+    non_zero_ids = np.unique(coo_array.row)
+    sparse_matrix = np.abs(coo_array.tocsr())
     upper_limit = np.max(sparse_matrix.data) + 1.0
     sparse_matrix.data = upper_limit - sparse_matrix.data
     nearest_id = np.squeeze(sparse_matrix.argmax(axis=1).data)[non_zero_ids]
@@ -288,13 +292,13 @@ def nearest_from_matrix_row(coo_matrix):
     return non_zero_ids, nearest_id, nearest_dist
 
 
-def nearest_from_matrix_col(coo_matrix):
+def nearest_from_matrix_col(coo_array):
     """
     Return the nearest (smallest) for each column given an coup sparse matrix
 
     Parameters
     ----------
-    coo_matrix : scipy COOrdinates sparse matrix (nb_slines x nb_slines_ref)
+    coo_array : scipy COOrdinates sparse matrix (nb_slines x nb_slines_ref)
         Adjacency matrix containing all neighbors within the given radius
 
     Returns
@@ -306,8 +310,8 @@ def nearest_from_matrix_col(coo_matrix):
     nearest_dist : numpy array (nb_non_empty_col x 1)
         Distance for each nearest match
     """
-    non_zero_ids = np.unique(coo_matrix.col)
-    sparse_matrix = np.abs(coo_matrix.tocsc())
+    non_zero_ids = np.unique(coo_array.col)
+    sparse_matrix = np.abs(coo_array.tocsc())
     upper_limit = np.max(sparse_matrix.data) + 1.0
     sparse_matrix.data = upper_limit - sparse_matrix.data
     nearest_id = np.squeeze(sparse_matrix.argmax(axis=0).data)[non_zero_ids]

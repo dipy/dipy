@@ -328,7 +328,7 @@ fig2.savefig("MSDKI_invivo.png")
 # As showed in [NetoHe2019]_, MSDKI captures the same information than the
 # spherical mean technique (SMT) microstructural models [Kaden2016b]_. In this
 # way, the SMT model parameters can be directly computed from MSDKI.
-# For instance, the axonal volume fraction (f), the intrisic diffusivity (di),
+# For instance, the axonal volume fraction (f), the intrinsic diffusivity (di),
 # and the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_
 # can be extracted using the following lines of code:
 

@@ -6,6 +6,7 @@ import numpy as np
 from dipy.core.sphere import Sphere
 from dipy.direction.peaks import PeaksAndMetrics, reshape_peaks_for_visualization
 from dipy.io.image import save_nifti
+from dipy.testing.decorators import warning_for_keywords
 
 
 def _safe_save(group, array, name):
@@ -25,7 +26,8 @@ def _safe_save(group, array, name):
         ds[:] = array
 
 
-def load_peaks(fname, verbose=False):
+@warning_for_keywords()
+def load_peaks(fname, *, verbose=False):
     """Load a PeaksAndMetrics HDF5 file (PAM5)
 
     Parameters
@@ -117,7 +119,8 @@ def load_peaks(fname, verbose=False):
     return pam
 
 
-def save_peaks(fname, pam, affine=None, verbose=False):
+@warning_for_keywords()
+def save_peaks(fname, pam, *, affine=None, verbose=False):
     """Save all important attributes of object PeaksAndMetrics in a PAM5 file
     (HDF5).
 
@@ -200,12 +203,14 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     return pam
 
 
+@warning_for_keywords()
 def peaks_to_niftis(
     pam,
     fname_shm,
     fname_dirs,
     fname_values,
     fname_indices,
+    *,
     fname_gfa=None,
     reshape_dirs=False,
 ):

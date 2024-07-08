@@ -3,6 +3,8 @@
 import numpy as np
 import scipy as sp
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def bs_se(bs_pdf):
     """Calculate the bootstrap standard error estimate of a statistic."""
@@ -133,7 +135,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     # define helper variables -- w and l
     w = z_0 + __calc_z_alpha(1 - alpha)
     ell = w / (1 - a_hat * w) ** 2
-    return __tt(x, p_0 + ell * delta_hat / sigma_hat, statistic)
+    return __tt(x, p_0 + ell * delta_hat / sigma_hat, statistic=statistic)
 
 
 def __calc_z_alpha(alpha):
@@ -157,14 +159,23 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
         tt_dot[i] = __tt_dot(i, x, p_0, statistic, eps)
     b_hat = b_hat / (2 * n**2)
     c_q_hat = (
-        __tt(x, ((1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)), statistic)
-        + __tt(x, ((1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)), statistic)
-        - 2 * __tt(x, p_0, statistic)
+        __tt(
+            x,
+            ((1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)),
+            statistic=statistic,
+        )
+        + __tt(
+            x,
+            ((1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)),
+            statistic=statistic,
+        )
+        - 2 * __tt(x, p_0, statistic=statistic)
     ) / eps**2
     return a_hat - (b_hat / sigma_hat - c_q_hat)
 
 
-def __tt(x, p_0, statistic=bs_se):
+@warning_for_keywords()
+def __tt(x, p_0, *, statistic=bs_se):
     """Calculate desired statistic from observable data and a
     given proportional weighting.
 
@@ -192,7 +203,8 @@ def __tt_dot(i, x, p_0, statistic, eps):
     e = np.zeros(x.shape)
     e[i] = 1
     return (
-        __tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) - __tt(x, p_0, statistic)
+        __tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic=statistic)
+        - __tt(x, p_0, statistic=statistic)
     ) / eps
 
 
@@ -202,7 +214,10 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
     e[i] = 1
     return (
         __tt_dot(i, x, p_0, statistic, eps) / eps
-        + (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) - __tt(x, p_0, statistic))
+        + (
+            __tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic=statistic)
+            - __tt(x, p_0, statistic=statistic)
+        )
         / eps**2
     )
 

@@ -307,7 +307,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data, verbose=True):
+    def fit(self, data, verbose=True, **kwargs):
         """Fits the model to diffusion data and returns the model fit.
 
         Sometimes the solving process of some voxels can end in a SolverError
@@ -408,7 +408,7 @@ def solve_qp(P, Q, G, H):
         opt = np.array(x.value).reshape((Q.shape[0],))
     except cvxpy.error.SolverError:
         opt = np.empty((Q.shape[0],))
-        opt[:] = np.NaN
+        opt[:] = np.nan
 
     return opt
 

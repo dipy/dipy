@@ -6,6 +6,11 @@ import numpy.testing as npt
 from dipy.core.sphere import unit_icosahedron
 from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+joblib, has_joblib, _ = optional_package("joblib")
+dask, has_dask, _ = optional_package("dask")
+ray, has_ray, _ = optional_package("ray")
 
 
 def test_squash():
@@ -139,7 +144,7 @@ def test_CallableArray():
 def test_multi_voxel_fit(rng):
     class SillyModel:
         @multi_voxel_fit
-        def fit(self, data, mask=None):
+        def fit(self, data, mask=None, **kwargs):
             return SillyFit(model, data)
 
         def predict(self, S0):
@@ -180,6 +185,22 @@ def test_multi_voxel_fit(rng):
     npt.assert_equal(fit.directions.shape, (2, 3, 4))
     S0 = 100.0
     npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+
+    # Test with parallelization (using the "serial" dummy engine)
+    fit = model.fit(many_voxels, engine="serial")
+
+    # If parallelization engines are installed use them to test:
+    if has_joblib:
+        fit = model.fit(many_voxels, engine="joblib")
+        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+
+    if has_dask:
+        fit = model.fit(many_voxels, engine="dask")
+        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+
+    if has_ray:
+        fit = model.fit(many_voxels, engine="ray")
+        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
     mask = np.zeros((3, 3, 3)).astype("bool")

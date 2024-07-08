@@ -23,6 +23,7 @@ from dipy.core.gradients import (
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.streamline import load_trk
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import TripWire, optional_package
 
 # Set a user-writeable file-system location to put files:
@@ -101,7 +102,8 @@ def _log(msg):
     logger.info(msg)
 
 
-def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
+@warning_for_keywords()
+def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
     for _ in tqdm(range(0, int(total_length), length), unit=" MB"):
         buf = fsrc.read(length)
         if not buf:
@@ -127,7 +129,8 @@ def _get_file_md5(filename):
     return md5_data.hexdigest()
 
 
-def check_md5(filename, stored_md5=None):
+@warning_for_keywords()
+def check_md5(filename, *, stored_md5=None):
     """
     Computes the md5 of filename and check if it matches with the supplied
     string md5
@@ -181,7 +184,8 @@ def _get_file_data(fname, url, *, use_headers=False):
                 copyfileobj_withprogress(opener, data, response_size)
 
 
-def fetch_data(files, folder, data_size=None, use_headers=False):
+@warning_for_keywords()
+def fetch_data(files, folder, *, data_size=None, use_headers=False):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -230,12 +234,14 @@ def fetch_data(files, folder, data_size=None, use_headers=False):
         _log(f"Files successfully downloaded to {folder}")
 
 
+@warning_for_keywords()
 def _make_fetcher(
     name,
     folder,
     baseurl,
     remote_fnames,
     local_fnames,
+    *,
     md5_list=None,
     doc="",
     data_size=None,
@@ -1413,7 +1419,8 @@ def fetch_disco_dataset():
     return all_path
 
 
-def get_fnames(name="small_64D"):
+@warning_for_keywords()
+def get_fnames(*, name="small_64D"):
     """Provide full paths to example or test datasets.
 
     Parameters
@@ -1941,7 +1948,8 @@ def fetch_tissue_data():
     return fname_list, folder
 
 
-def read_tissue_data(contrast="T1"):
+@warning_for_keywords()
+def read_tissue_data(*, contrast="T1"):
     """Load images to be used for tissue classification
 
     Parameters
@@ -2013,7 +2021,8 @@ mni_notes = """
 """
 
 
-def read_mni_template(version="a", contrast="T2"):
+@warning_for_keywords()
+def read_mni_template(*, version="a", contrast="T2"):
     """Read the MNI template from disk.
 
     Parameters
@@ -2085,7 +2094,8 @@ read_mni_template.__doc__ += mni_notes
 fetch_mni_template.__doc__ += mni_notes
 
 
-def fetch_cenir_multib(with_raw=False):
+@warning_for_keywords()
+def fetch_cenir_multib(*, with_raw=False):
     """Fetch 'HCP-like' data, collected at multiple b-values.
 
     Parameters
@@ -2160,7 +2170,8 @@ def fetch_cenir_multib(with_raw=False):
     return files, folder
 
 
-def read_cenir_multib(bvals=None):
+@warning_for_keywords()
+def read_cenir_multib(*, bvals=None):
     """Read CENIR multi b-value data.
 
     Parameters
@@ -2235,8 +2246,9 @@ fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
 
 
+@warning_for_keywords()
 def read_bundles_2_subjects(
-    subj_id="subj_1", metrics=("fa",), bundles=("af.left", "cst.right", "cc_1")
+    *, subj_id="subj_1", metrics=("fa",), bundles=("af.left", "cst.right", "cc_1")
 ):
     r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
@@ -2373,7 +2385,8 @@ def get_file_formats():
     return bundles_list, ref_anat
 
 
-def get_bundle_atlas_hcp842(size=80):
+@warning_for_keywords()
+def get_bundle_atlas_hcp842(*, size=80):
     """
     Returns
     -------
@@ -2572,8 +2585,9 @@ def read_five_af_bundles():
     return bundles
 
 
+@warning_for_keywords()
 def to_bids_description(
-    path, fname="dataset_description.json", BIDSVersion="1.4.0", **kwargs
+    path, *, fname="dataset_description.json", BIDSVersion="1.4.0", **kwargs
 ):
     """Dumps a dict into a bids description at the given location"""
     kwargs.update({"BIDSVersion": BIDSVersion})

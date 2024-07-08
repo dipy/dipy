@@ -6,6 +6,8 @@ import math
 import numpy as np
 import numpy.linalg as npl
 
+from dipy.testing.decorators import warning_for_keywords
+
 # epsilon for testing whether a number is close to zero
 _EPS = np.finfo(float).eps * 4.0
 
@@ -165,7 +167,8 @@ def sph2latlon(theta, phi):
     return np.rad2deg(theta - np.pi / 2), np.rad2deg(phi - np.pi)
 
 
-def normalized_vector(vec, axis=-1):
+@warning_for_keywords()
+def normalized_vector(vec, *, axis=-1):
     """Return vector divided by its Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -196,7 +199,8 @@ def normalized_vector(vec, axis=-1):
     return vec / vector_norm(vec, axis, keepdims=True)
 
 
-def vector_norm(vec, axis=-1, keepdims=False):
+@warning_for_keywords()
+def vector_norm(vec, *, axis=-1, keepdims=False):
     """Return vector Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -363,7 +367,8 @@ def nearest_pos_semi_def(B):
     return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))
 
 
-def sphere_distance(pts1, pts2, radius=None, check_radius=True):
+@warning_for_keywords()
+def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
     """Distance across sphere surface between `pts1` and `pts2`
 
     Parameters
@@ -564,7 +569,8 @@ def lambert_equal_area_projection_cart(x, y, z):
     return lambert_equal_area_projection_polar(theta, phi)
 
 
-def euler_matrix(ai, aj, ak, axes="sxyz"):
+@warning_for_keywords()
+def euler_matrix(ai, aj, ak, *, axes="sxyz"):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
 
     Code modified from the work of Christoph Gohlke, link provided here
@@ -641,8 +647,9 @@ def euler_matrix(ai, aj, ak, axes="sxyz"):
     return M
 
 
+@warning_for_keywords()
 def compose_matrix(
-    scale=None, shear=None, angles=None, translate=None, perspective=None
+    *, scale=None, shear=None, angles=None, translate=None, perspective=None
 ):
     """Return 4x4 transformation matrix from sequence of
     transformations.
@@ -933,7 +940,8 @@ def compose_transformations(*mats):
     return prev
 
 
-def perpendicular_directions(v, num=30, half=False):
+@warning_for_keywords()
+def perpendicular_directions(v, *, num=30, half=False):
     r"""Computes n evenly spaced perpendicular directions relative to a given
     vector v
 

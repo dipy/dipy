@@ -6,19 +6,21 @@ import warnings
 import numpy as np
 import scipy.optimize as opt
 from scipy.optimize import minimize
-import scipy.sparse as sps
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
+    @warning_for_keywords()
     def __init__(
         self,
         fun,
         x0,
         args=(),
+        *,
         method="L-BFGS-B",
         jac=None,
         hess=None,
@@ -219,19 +221,14 @@ def spdot(A, B):
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
 
     """
-    if sps.issparse(A) and sps.issparse(B):
-        return A * B
-    elif sps.issparse(A) and not sps.issparse(B):
-        return (A * B).view(type=B.__class__)
-    elif not sps.issparse(A) and sps.issparse(B):
-        return (B.T * A.T).T.view(type=A.__class__)
-    else:
-        return np.dot(A, B)
+    return A @ B
 
 
+@warning_for_keywords()
 def sparse_nnls(
     y,
     X,
+    *,
     momentum=1,
     step_size=0.01,
     non_neg=True,
@@ -383,7 +380,8 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 
 
 class PositiveDefiniteLeastSquares:
-    def __init__(self, m, A=None, L=None):
+    @warning_for_keywords()
+    def __init__(self, m, *, A=None, L=None):
         r"""Regularized least squares with linear matrix inequality constraints
 
         Generate a CVXPY representation of a regularized least squares
@@ -477,7 +475,8 @@ class PositiveDefiniteLeastSquares:
         self.unconstrained_problem = cvxpy.Problem(p_objective)
         self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
 
-    def solve(self, design_matrix, measurements, check=False, **kwargs):
+    @warning_for_keywords()
+    def solve(self, design_matrix, measurements, *, check=False, **kwargs):
         r"""Solve CVXPY problem
 
         Solve a CVXPY problem instance for a given design matrix and a given set

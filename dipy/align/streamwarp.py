@@ -2,13 +2,14 @@ import warnings
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-
+import pandas as pd
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.cpd import DeformableRegistration
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.stats.analysis import assignment_map
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
 from dipy.viz.plotting import bundle_shape_profile
 
@@ -57,6 +58,7 @@ def find_missing(lst, cb):
 
 
 
+@warning_for_keywords()
 def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
                affine=True):
 
@@ -186,6 +188,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
         ty = ty.astype(float)
         deformed_bundle.append(ty)
         warp.append(pr)
+        
+    warp = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
 
     # Returns deformed bundle, affinely moved bundle, distance matrix,
     # streamline correspondences, and warp field
@@ -229,9 +233,9 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     return offsets, directions, colors
 
 
+@warning_for_keywords()
 def bundlewarp_shape_analysis(
-    moving_aligned, deformed_bundle, no_disks=10, plotting=False
-):
+    moving_aligned, deformed_bundle, *, no_disks=10, plotting=False):
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp

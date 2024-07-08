@@ -1,5 +1,4 @@
 from io import BytesIO
-from itertools import product
 import pickle
 from random import randint
 import warnings
@@ -11,6 +10,7 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
+    assert_raises,
 )
 
 from dipy.core.gradients import GradientTable, gradient_table
@@ -30,6 +30,7 @@ from dipy.reconst.odf import OdfFit, OdfModel, gfa
 from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, tournier07_legacy_msg
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.testing.decorators import set_random_number_generator
+from dipy.tracking.utils import seeds_from_mask
 
 
 def test_peak_directions_nl():
@@ -780,12 +781,16 @@ def test_peaks_from_positions():
             min_separation_angle=min_angle,
         )
 
+    mask = np.ones((3, 3, 3))
+    affine = np.eye(4)
+    positions = seeds_from_mask(mask, affine)
+
     # test the peaks at each voxel using int coordinates
-    positions = np.array(list(product(range(3), range(3), range(3))))
     peaks = peaks_from_positions(
         positions,
         pam.odf,
         default_sphere,
+        affine,
         relative_peak_threshold=thresh,
         min_separation_angle=min_angle,
         npeaks=npeaks,
@@ -794,11 +799,11 @@ def test_peaks_from_positions():
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using float coordinates
-    positions = np.array(list(product(range(3), range(3), range(3))))
     peaks = peaks_from_positions(
         positions.astype(float),
         pam.odf,
         default_sphere,
+        affine,
         relative_peak_threshold=thresh,
         min_separation_angle=min_angle,
         npeaks=npeaks,
@@ -807,11 +812,11 @@ def test_peaks_from_positions():
     assert_array_almost_equal(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using double coordinates
-    positions = np.array(list(product(range(3), range(3), range(3))))
     peaks = peaks_from_positions(
         positions.astype(np.float64),
         pam.odf,
         default_sphere,
+        affine,
         relative_peak_threshold=thresh,
         min_separation_angle=min_angle,
         npeaks=npeaks,
@@ -827,9 +832,62 @@ def test_peaks_from_positions():
         positions,
         odfs,
         default_sphere,
+        affine,
         relative_peak_threshold=thresh,
         min_separation_angle=min_angle,
         npeaks=npeaks,
     )
     assert_array_equal(peaks[0], peaks[1])
     assert_array_equal(peaks[0], peaks[2])
+
+    # test with none identity affine
+    positions = seeds_from_mask(mask, affine)
+    peaks_eye = peaks_from_positions(
+        positions,
+        pam.odf,
+        default_sphere,
+        affine,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
+
+    affine[:3, :3] = np.random.random((3, 3))
+    positions = seeds_from_mask(mask, affine)
+
+    peaks = peaks_from_positions(
+        positions,
+        pam.odf,
+        default_sphere,
+        affine,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
+    assert_array_almost_equal(peaks_eye, peaks)
+
+    # test with invalid seed coordinates
+    affine = np.eye(4)
+    positions = np.array([[0, -1, 0], [0.1, -0.1, 0.1]])
+
+    assert_raises(
+        IndexError,
+        peaks_from_positions,
+        positions,
+        pam.odf,
+        default_sphere,
+        affine,
+    )
+
+    affine = np.eye(4) * 10
+    positions = np.array([[1, -1, 1]])
+    positions = np.dot(positions, affine[:3, :3].T)
+    positions += affine[:3, 3]
+    assert_raises(
+        IndexError,
+        peaks_from_positions,
+        positions,
+        pam.odf,
+        default_sphere,
+        affine,
+    )

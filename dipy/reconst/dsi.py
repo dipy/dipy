@@ -128,7 +128,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.gtab = gtab
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return DiffusionSpectrumFit(self, data)
 
 
@@ -563,7 +563,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         )
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return DiffusionSpectrumDeconvFit(self, data)
 
 

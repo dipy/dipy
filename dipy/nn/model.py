@@ -1,11 +1,14 @@
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 
 
 class SingleLayerPerceptron:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         input_shape=(28, 28),
         num_hidden=128,
         act_hidden="relu",
@@ -70,7 +73,8 @@ class SingleLayerPerceptron:
         """
         return self.model.summary()
 
-    def fit(self, x_train, y_train, epochs=5):
+    @warning_for_keywords()
+    def fit(self, x_train, y_train, *, epochs=5):
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed
@@ -97,7 +101,8 @@ class SingleLayerPerceptron:
         self.loss = hist.history["loss"][0]
         return hist
 
-    def evaluate(self, x_test, y_test, verbose=2):
+    @warning_for_keywords()
+    def evaluate(self, x_test, y_test, *, verbose=2):
         """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
@@ -142,8 +147,10 @@ class SingleLayerPerceptron:
 
 
 class MultipleLayerPercepton:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         input_shape=(28, 28),
         num_hidden=(128,),
         act_hidden="relu",
@@ -219,7 +226,8 @@ class MultipleLayerPercepton:
         """
         return self.model.summary()
 
-    def fit(self, x_train, y_train, epochs=5):
+    @warning_for_keywords()
+    def fit(self, x_train, y_train, *, epochs=5):
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed
@@ -246,7 +254,8 @@ class MultipleLayerPercepton:
         self.loss = hist.history["loss"][0]
         return hist
 
-    def evaluate(self, x_test, y_test, verbose=2):
+    @warning_for_keywords()
+    def evaluate(self, x_test, y_test, *, verbose=2):
         """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test

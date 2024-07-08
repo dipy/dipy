@@ -2,6 +2,7 @@ import numpy as np
 from scipy.ndimage import convolve
 from scipy.special import gammainccinv
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 
 
@@ -26,7 +27,8 @@ opt_quantile = {
 
 
 @deprecated_params("l", "step", since="1.10.0", until="1.12.0")
-def piesno(data, N, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
+@warning_for_keywords()
+def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
 
@@ -145,9 +147,11 @@ def piesno(data, N, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=Fal
 
 
 @deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+@warning_for_keywords()
 def _piesno_3D(
     data,
     N,
+    *,
     alpha=0.01,
     step=100,
     itermax=100,
@@ -284,7 +288,8 @@ def _piesno_3D(
     return sigma
 
 
-def estimate_sigma(arr, disable_background_masking=False, N=0):
+@warning_for_keywords()
+def estimate_sigma(arr, *, disable_background_masking=False, N=0):
     """Standard deviation estimation from local patches
 
     Parameters

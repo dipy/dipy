@@ -938,24 +938,17 @@ class BundleWarpFlow(Workflow):
       
         return "bundlewarp"
 
-    def run(
-        self,
-        static_file,
-        moving_file,
-        dist=None,
-        alpha=0.3,
-        beta=20,
-        max_iter=15,
-        affine=True,
-        out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
-        out_warp_transform="warp_transform.npy",
-        out_warp_kernel="warp_kernel.npy",
-        out_dist="distance_matrix.npy",
-        out_matched_pairs="matched_pairs.npy",
-    ):
-        """BundleWarp: streamline-based nonlinear registration.
+
+    def run(self, static_file, moving_file, dist=None, alpha=0.5, beta=20,
+            max_iter=15, affine=True,
+            out_dir='',
+            out_linear_moved='linearly_moved.trk',
+            out_nonlinear_moved='nonlinearly_moved.trk',
+            out_warp_transform='warp_transform.npy',
+            out_warp_kernel='warp_kernel.npy',
+            out_dist='distance_matrix.npy',
+            out_matched_pairs='matched_pairs.npy'):
+        """ BundleWarp: streamline-based nonlinear registration.
 
         BundleWarp is nonrigid registration method for deformable registration
         of white matter tracts.
@@ -1043,13 +1036,11 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        df = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
-
         logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
         logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
         logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)

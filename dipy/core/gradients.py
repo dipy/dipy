@@ -8,6 +8,7 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.io import gradients as io
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -164,8 +165,15 @@ class GradientTable:
 
     """
 
+    @warning_for_keywords()
     def __init__(
-        self, gradients, big_delta=None, small_delta=None, b0_threshold=50, btens=None
+        self,
+        gradients,
+        *,
+        big_delta=None,
+        small_delta=None,
+        b0_threshold=50,
+        btens=None,
     ):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
@@ -341,9 +349,23 @@ class GradientTable:
         msg += f"          max {self.bvecs.max():f}\n"
         return msg
 
+    def __len__(self):
+        """Get the number of gradients. Includes the b0s.
 
+        Examples
+        --------
+        >>> bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+        >>> bvecs = generate_bvecs(bvals.shape[-1])
+        >>> gtab = gradient_table(bvals, bvecs)
+        >>> len(gtab)
+        9
+        """
+        return len(self.bvals)
+
+
+@warning_for_keywords()
 def gradient_table_from_bvals_bvecs(
-    bvals, bvecs, b0_threshold=50, atol=1e-2, btens=None, **kwargs
+    bvals, bvecs, *, b0_threshold=50, atol=1e-2, btens=None, **kwargs
 ):
     """Creates a GradientTable from a bvals array and a bvecs array
 
@@ -452,8 +474,9 @@ def gradient_table_from_bvals_bvecs(
     return grad_table
 
 
+@warning_for_keywords()
 def gradient_table_from_qvals_bvecs(
-    qvals, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+    qvals, bvecs, big_delta, small_delta, *, b0_threshold=50, atol=1e-2
 ):
     """A general function for creating diffusion MR gradients.
 
@@ -533,8 +556,9 @@ def gradient_table_from_qvals_bvecs(
     )
 
 
+@warning_for_keywords()
 def gradient_table_from_gradient_strength_bvecs(
-    gradient_strength, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+    gradient_strength, bvecs, big_delta, small_delta, *, b0_threshold=50, atol=1e-2
 ):
     """A general function for creating diffusion MR gradients.
 
@@ -615,8 +639,10 @@ def gradient_table_from_gradient_strength_bvecs(
     )
 
 
+@warning_for_keywords()
 def gradient_table(
     bvals,
+    *,
     bvecs=None,
     big_delta=None,
     small_delta=None,
@@ -754,7 +780,8 @@ def gradient_table(
     )
 
 
-def reorient_bvecs(gtab, affines, atol=1e-2):
+@warning_for_keywords()
+def reorient_bvecs(gtab, affines, *, atol=1e-2):
     """Reorient the directions in a GradientTable.
 
     When correcting for motion, rotation of the diffusion-weighted volumes
@@ -829,7 +856,8 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     )
 
 
-def generate_bvecs(N, iters=5000, rng=None):
+@warning_for_keywords()
+def generate_bvecs(N, *, iters=5000, rng=None):
     """Generates N bvectors.
 
     Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
@@ -862,7 +890,8 @@ def generate_bvecs(N, iters=5000, rng=None):
     return bvecs
 
 
-def round_bvals(bvals, bmag=None):
+@warning_for_keywords()
+def round_bvals(bvals, *, bmag=None):
     """ "This function rounds the b-values
 
     Parameters
@@ -888,7 +917,8 @@ def round_bvals(bvals, bmag=None):
     return b.round() * (10**bmag)
 
 
-def unique_bvals_tolerance(bvals, tol=20):
+@warning_for_keywords()
+def unique_bvals_tolerance(bvals, *, tol=20):
     """Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a
@@ -946,7 +976,8 @@ def unique_bvals_tolerance(bvals, tol=20):
     return np.asarray(ubvals)
 
 
-def get_bval_indices(bvals, bval, tol=20):
+@warning_for_keywords()
+def get_bval_indices(bvals, bval, *, tol=20):
     """
     Get indices where the b-value is `bval`
 
@@ -969,7 +1000,8 @@ def get_bval_indices(bvals, bval, tol=20):
     return np.where(np.logical_and(bvals <= bval + tol, bvals >= bval - tol))[0]
 
 
-def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
+@warning_for_keywords()
+def unique_bvals_magnitude(bvals, *, bmag=None, rbvals=False):
     """This function gives the unique rounded b-values of the data
 
     Parameters
@@ -999,7 +1031,8 @@ def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
     return np.unique(b)
 
 
-def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
+@warning_for_keywords()
+def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
     """
     Check if you have enough different b-values in your gradient table
 
@@ -1108,7 +1141,8 @@ def _btens_to_params_2d(btens_2d, ztol):
     return float(bval), float(bdelta), float(b_eta)
 
 
-def btens_to_params(btens, ztol=1e-10):
+@warning_for_keywords()
+def btens_to_params(btens, *, ztol=1e-10):
     r"""Compute trace, anisotropy and asymmetry parameters from b-tensors.
 
     Parameters
@@ -1255,7 +1289,8 @@ def ornt_mapping(ornt1, ornt2):
     return mapping
 
 
-def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
+@warning_for_keywords()
+def reorient_vectors(bvecs, current_ornt, new_ornt, *, axis=0):
     """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
@@ -1286,7 +1321,8 @@ def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
     return output
 
 
-def reorient_on_axis(bvecs, current_ornt, new_ornt, axis=0):
+@warning_for_keywords()
+def reorient_on_axis(bvecs, current_ornt, new_ornt, *, axis=0):
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
     if isinstance(new_ornt, str):

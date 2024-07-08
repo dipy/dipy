@@ -192,7 +192,7 @@ def awf_from_msk(msk, mask=None):
     else:
         if mask.shape != msk.shape:
             raise ValueError("Mask is not the same shape as data.")
-        mask = np.array(mask, dtype=bool, copy=False)
+        mask = np.asarray(mask, dtype=bool)
 
     # looping voxels
     index = ndindex(mask.shape)
@@ -484,7 +484,7 @@ class MeanDiffusionKurtosisFit:
     @auto_attr
     def smt2di(self):
         r"""
-        Computes the intrisic diffusivity from the mean signal diffusional
+        Computes the intrinsic diffusivity from the mean signal diffusional
         kurtosis parameters assuming the 2-compartmental spherical mean
         technique model [1]_, [2]_
 
@@ -629,7 +629,7 @@ def wls_fit_msdki(
     else:
         if mask.shape != msignal.shape[:-1]:
             raise ValueError("Mask is not the same shape as data.")
-        mask = np.array(mask, dtype=bool, copy=False)
+        mask = np.asarray(mask, dtype=bool)
 
     index = ndindex(mask.shape)
     for v in index:

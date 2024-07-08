@@ -6,6 +6,7 @@ import logging
 
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+from dipy.testing.decorators import warning_for_keywords
 from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
@@ -23,7 +24,8 @@ cdef class EnhancementKernel:
     cdef double [:, :, :, :, :] lookuptable
     cdef object sphere
 
-    def __init__(self, D33, D44, t, force_recompute=False,
+    @warning_for_keywords()
+    def __init__(self, D33, D44, t, *, force_recompute=False,
                  orientations=None, verbose=True):
         """ Compute a look-up table for the contextual
         enhancement kernel
@@ -78,7 +80,7 @@ cdef class EnhancementKernel:
         if isinstance(orientations, Sphere):
             # use the sphere defined by the user
             sphere = orientations
-        elif isinstance(orientations, (int, long, float)):
+        elif isinstance(orientations, (int, float)):
             # electrostatic repulsion based on number of orientations
             n_pts = int(orientations)
             if n_pts == 0:

@@ -11,6 +11,7 @@ import numpy as np
 from trx import trx_file_memmap
 
 import dipy
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 pd, have_pd, _ = optional_package("pandas")
@@ -60,7 +61,8 @@ def make5d(data):
     return data.reshape(shape)
 
 
-def decfa(img_orig, scale=False):
+@warning_for_keywords()
+def decfa(img_orig, *, scale=False):
     """
     Create a nifti-compliant directional-encoded color FA image.
 
@@ -417,7 +419,8 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     return new_header
 
 
-def save_buan_profiles_hdf5(fname, dt, key=None):
+@warning_for_keywords()
+def save_buan_profiles_hdf5(fname, dt, *, key=None):
     """Saves the given input dataframe to .h5 file
 
     Parameters
@@ -444,7 +447,8 @@ def save_buan_profiles_hdf5(fname, dt, key=None):
     store.close()
 
 
-def read_img_arr_or_path(data, affine=None):
+@warning_for_keywords()
+def read_img_arr_or_path(data, *, affine=None):
     """
     Helper function that handles inputs that can be paths, nifti img or arrays
 

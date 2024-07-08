@@ -1165,7 +1165,7 @@ def test_random_seed_initialization(rng):
     y = np.array([0.0, 1, 2, 21.566539227085478])
     z = np.array([1.0, 1, 1, 51.67881720942744])
 
-    seeds = np.row_stack([np.column_stack([x, y, z]), rng.random((10, 3))])
+    seeds = np.vstack([np.column_stack([x, y, z]), rng.random((10, 3))])
     sc = BinaryStoppingCriterion(np.ones((4, 4, 4)))
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 

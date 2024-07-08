@@ -66,9 +66,7 @@ def create_test_data(test_r, cube_size, mask_size, num_dwi_vols, num_b0s):
     # The bvecs will be a straight line with a minor perturbance every other
     ref_vec = np.array([1.0, 0.0, 0.0])
     nbr_vec = normalized_vector(ref_vec + 0.00001)
-    bvecs = np.row_stack(
-        [ref_vec] * num_b0s + [np.row_stack([ref_vec, nbr_vec])] * n_known
-    )
+    bvecs = np.vstack([ref_vec] * num_b0s + [np.vstack([ref_vec, nbr_vec])] * n_known)
 
     cor = np.ones((2, 2)) * test_r
     np.fill_diagonal(cor, 1)
@@ -96,7 +94,7 @@ def test_neighboring_dwi_correlation():
     real_r, dwi_data, mask, gtab = create_test_data(
         test_r=0.3, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=2
     )
-    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
+    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask=mask)
     assert np.allclose(real_r, estimated_ndc)
 
     maskless_ndc = neighboring_dwi_correlation(dwi_data, gtab)
@@ -106,19 +104,19 @@ def test_neighboring_dwi_correlation():
     real_r, dwi_data, mask, gtab = create_test_data(
         test_r=0.3, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=0
     )
-    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
+    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask=mask)
     assert np.allclose(real_r, estimated_ndc)
 
     # Try with realistic correlation value
     real_r, dwi_data, mask, gtab = create_test_data(
         test_r=0.8, cube_size=10, mask_size=6, num_dwi_vols=10, num_b0s=2
     )
-    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
+    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask=mask)
     assert np.allclose(real_r, estimated_ndc)
 
     # Try with a bigger volume, lower correlation
     real_r, dwi_data, mask, gtab = create_test_data(
         test_r=0.5, cube_size=100, mask_size=49, num_dwi_vols=160, num_b0s=2
     )
-    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask)
+    estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask=mask)
     assert np.allclose(real_r, estimated_ndc)

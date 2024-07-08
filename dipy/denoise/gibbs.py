@@ -5,12 +5,14 @@ import numpy as np
 import scipy
 import scipy.fft
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 _fft = scipy.fft
 
 
-def _image_tv(x, axis=0, n_points=3):
+@warning_for_keywords()
+def _image_tv(x, *, axis=0, n_points=3):
     """Computes total variation (TV) of matrix x across a given axis and
     along two directions.
 
@@ -60,7 +62,8 @@ def _image_tv(x, axis=0, n_points=3):
         return ptv.T, ntv.T
 
 
-def _gibbs_removal_1d(x, axis=0, n_points=3):
+@warning_for_keywords()
+def _gibbs_removal_1d(x, *, axis=0, n_points=3):
     """Suppresses Gibbs ringing along a given axis using fourier sub-shifts.
 
     Parameters
@@ -185,7 +188,8 @@ def _weights(shape):
     return G0, G1
 
 
-def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
+@warning_for_keywords()
+def _gibbs_removal_2d(image, *, n_points=3, G0=None, G1=None):
     """Suppress Gibbs ringing of a 2D image.
 
     Parameters
@@ -195,10 +199,10 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     n_points : int, optional
         Number of neighbours to access local TV (see note). Default is
         set to 3.
-    G0 : 2D ndarray, optional.
+    G0 : 2D ndarray, optional
         Weights for the image corrected along axis 0. If not given, the
         function estimates them using the function :func:`_weights`.
-    G1 : 2D ndarray
+    G1 : 2D ndarray, optional
         Weights for the image corrected along axis 1. If not given, the
         function estimates them using the function :func:`_weights`.
 
@@ -226,7 +230,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
            doi: 10.1002/mrm.26054.
 
     """
-    if np.any(G0) is None or np.any(G1) is None:
+    if G0 is None or G1 is None:
         G0, G1 = _weights(image.shape)
 
     img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
@@ -239,7 +243,8 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
+@warning_for_keywords()
+def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters

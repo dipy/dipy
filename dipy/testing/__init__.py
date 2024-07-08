@@ -73,9 +73,10 @@ class clear_and_catch_warnings(warnings.catch_warnings):
     --------
     >>> import warnings
     >>> import numpy as np
-    >>> with clear_and_catch_warnings(modules=[np.core.fromnumeric]):
+    >>> with clear_and_catch_warnings(modules=[np.lib.scimath]):
     ...     warnings.simplefilter('always')
-    ...     # do something that raises a warning in np.core.fromnumeric
+    ...     # do something that raises a warning in np.lib.scimath
+    ...     _ = np.arccos(90)
 
     Notes
     -----
