@@ -937,24 +937,17 @@ class BundleWarpFlow(Workflow):
     def get_short_name(cls):
         return "bundlewarp"
 
-    def run(
-        self,
-        static_file,
-        moving_file,
-        dist=None,
-        alpha=0.3,
-        beta=20,
-        max_iter=15,
-        affine=True,
-        out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
-        out_warp_transform="warp_transform.npy",
-        out_warp_kernel="warp_kernel.npy",
-        out_dist="distance_matrix.npy",
-        out_matched_pairs="matched_pairs.npy",
-    ):
-        """BundleWarp: streamline-based nonlinear registration.
+
+    def run(self, static_file, moving_file, dist=None, alpha=0.5, beta=20,
+            max_iter=15, affine=True,
+            out_dir='',
+            out_linear_moved='linearly_moved.trk',
+            out_nonlinear_moved='nonlinearly_moved.trk',
+            out_warp_transform='warp_transform.npy',
+            out_warp_kernel='warp_kernel.npy',
+            out_dist='distance_matrix.npy',
+            out_matched_pairs='matched_pairs.npy'):
+        """ BundleWarp: streamline-based nonlinear registration.
 
         BundleWarp is nonrigid registration method for deformable registration
         of white matter tracts.
@@ -973,7 +966,7 @@ class BundleWarpFlow(Workflow):
             deformations. It is represented with λ in BundleWarp paper. NOTE:
             setting alpha<=0.01 will result in highly deformable registration
             that could extremely modify the original anatomy of the moving
-            bundle. (default 0.3)
+            bundle. (default 0.5)
         beta : int, optional
             Represents the strength of the interaction between points
             Gaussian kernel size. (default 20)
@@ -995,7 +988,7 @@ class BundleWarpFlow(Workflow):
         out_dist : string, optional
             Filename of MDF distance matrix.
         out_matched_pairs : string, optional
-            Filename of matched pairs; treamline correspondences between two
+            Filename of matched pairs; streamline correspondences between two
             bundles.
 
         References
