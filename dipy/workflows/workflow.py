@@ -2,12 +2,14 @@ import inspect
 import logging
 import os
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.multi_io import io_iterator_
 
 
 class Workflow:
+    @warning_for_keywords()
     def __init__(
-        self, output_strategy="absolute", mix_names=False, force=False, skip=False
+        self, *, output_strategy="absolute", mix_names=False, force=False, skip=False
     ):
         """Initialize the basic workflow object.
 

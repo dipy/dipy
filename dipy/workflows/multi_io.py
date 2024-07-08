@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.base import get_args_default
 
 
@@ -25,8 +26,9 @@ def slash_to_under(dir_str):
     return "".join(dir_str.replace("/", "_"))
 
 
+@warning_for_keywords()
 def connect_output_paths(
-    inputs, out_dir, out_files, output_strategy="absolute", mix_names=True
+    inputs, out_dir, out_files, *, output_strategy="absolute", mix_names=True
 ):
     """Generate a list of output files paths based on input files and
     output strategies.
@@ -120,8 +122,15 @@ def basename_without_extension(fname):
     return result
 
 
+@warning_for_keywords()
 def io_iterator(
-    inputs, out_dir, fnames, output_strategy="absolute", mix_names=False, out_keys=None
+    inputs,
+    out_dir,
+    fnames,
+    *,
+    output_strategy="absolute",
+    mix_names=False,
+    out_keys=None,
 ):
     """Create an IOIterator from the parameters.
 
@@ -156,7 +165,8 @@ def io_iterator(
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
+@warning_for_keywords()
+def io_iterator_(frame, fnc, *, output_strategy="absolute", mix_names=False):
     """Create an IOIterator using introspection.
 
     Parameters
@@ -216,7 +226,8 @@ class IOIterator:
     inputs.
     """
 
-    def __init__(self, output_strategy="absolute", mix_names=False):
+    @warning_for_keywords()
+    def __init__(self, *, output_strategy="absolute", mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
         self.inputs = []

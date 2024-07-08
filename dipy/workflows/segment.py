@@ -8,6 +8,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import Streamlines
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -18,9 +19,11 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         save_masked=False,
         median_radius=2,
         numpass=5,
@@ -99,10 +102,12 @@ class RecoBundlesFlow(Workflow):
     def get_short_name(cls):
         return "recobundles"
 
+    @warning_for_keywords()
     def run(
         self,
         streamline_files,
         model_bundle_files,
+        *,
         greater_than=50,
         less_than=1000000,
         no_slr=False,
@@ -322,11 +327,13 @@ class LabelsBundlesFlow(Workflow):
     def get_short_name(cls):
         return "labelsbundles"
 
+    @warning_for_keywords()
     def run(
         self,
         streamline_files,
         labels_files,
         out_dir="",
+        *,
         out_bundle="recognized_orig.trk",
     ):
         """Extract bundles using existing indices (labels)

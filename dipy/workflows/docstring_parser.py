@@ -32,6 +32,8 @@ import re
 import textwrap
 from warnings import warn
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 class Reader:
     """A line-based string reader."""
@@ -115,7 +117,8 @@ def dedent_lines(lines):
 
 
 class NumpyDocString:
-    def __init__(self, docstring, config=None):
+    @warning_for_keywords()
+    def __init__(self, docstring, *, config=None):
         docstring = textwrap.dedent(docstring).split("\n")
 
         self._doc = Reader(docstring)

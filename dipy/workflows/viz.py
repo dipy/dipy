@@ -9,6 +9,7 @@ from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
@@ -27,9 +28,11 @@ class HorizonFlow(Workflow):
     def get_short_name(cls):
         return "horizon"
 
+    @warning_for_keywords()
     def run(
         self,
         input_files,
+        *,
         cluster=False,
         rgb=False,
         cluster_thr=15.0,
