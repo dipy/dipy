@@ -935,6 +935,7 @@ class MotionCorrectionFlow(Workflow):
 class BundleWarpFlow(Workflow):
     @classmethod
     def get_short_name(cls):
+      
         return "bundlewarp"
 
 

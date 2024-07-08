@@ -61,6 +61,7 @@ def find_missing(lst, cb):
 @warning_for_keywords()
 def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
                affine=True):
+
     """Register two bundles using nonlinear method.
 
     Parameters
