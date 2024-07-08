@@ -57,10 +57,10 @@ def find_missing(lst, cb):
     return [x for x in range(0, len(cb)) if x not in lst]
 
 
+
 @warning_for_keywords()
-def bundlewarp(
-    static, moving, *, dist=None, alpha=0.3, beta=20, max_iter=15, affine=True
-):
+def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
+               affine=True):
     """Register two bundles using nonlinear method.
 
     Parameters
@@ -77,7 +77,7 @@ def bundlewarp(
     alpha : float, optional
         Represents the trade-off between regularizing the deformation and
         having points match very closely. Lower value of alpha means high
-        deformations (default 0.3)
+        deformations (default 0.5)
 
     beta : int, optional
         Represents the strength of the interaction between points
@@ -233,8 +233,7 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
 
 @warning_for_keywords()
 def bundlewarp_shape_analysis(
-    moving_aligned, deformed_bundle, *, no_disks=10, plotting=False
-):
+    moving_aligned, deformed_bundle, *, no_disks=10, plotting=False):
     """Calculate bundle shape difference profile.
 
     Bundle shape difference analysis using magnitude from BundleWarp
