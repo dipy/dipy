@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
@@ -80,10 +81,12 @@ class PeakActor(Actor):
 
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         directions,
         indices,
+        *,
         values=None,
         affine=None,
         colors=None,
@@ -232,7 +235,8 @@ class PeakActor(Actor):
         )
 
     @calldata_type(VTK_OBJECT)
-    def __display_peaks_vtk_callback(self, caller, event, calldata=None):
+    @warning_for_keywords()
+    def __display_peaks_vtk_callback(self, caller, event, *, calldata=None):
         if calldata is not None:
             calldata.SetUniformi("isRange", self.__is_range)
             calldata.SetUniform3f("highRanges", self.__high_ranges)
@@ -293,8 +297,10 @@ class PeakActor(Actor):
         return self.__min_centers
 
 
+@warning_for_keywords()
 def peak(
     peaks_dirs,
+    *,
     peaks_values=None,
     mask=None,
     affine=None,
@@ -397,7 +403,8 @@ def peak(
     )
 
 
-def _peaks_colors_from_points(points, colors=None, points_per_line=2):
+@warning_for_keywords()
+def _peaks_colors_from_points(points, *, colors=None, points_per_line=2):
     """Return a VTK scalar array containing colors information for each one of
     the peaks according to the policy defined by the parameter colors.
 
@@ -467,7 +474,8 @@ def _peaks_colors_from_points(points, colors=None, points_per_line=2):
     return color_array, colors_are_scalars, global_opacity
 
 
-def _points_to_vtk_cells(points, points_per_line=2):
+@warning_for_keywords()
+def _points_to_vtk_cells(points, *, points_per_line=2):
     """Return the VTK cell array for the peaks given the set of points
     coordinates.
 
