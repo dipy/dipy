@@ -81,3 +81,30 @@ def test_bundle_shape_profile():
 
     assert_equal(len(shape_profile), n)
     assert_equal(len(stdv), n)
+
+def test_transformation_dimensions():
+    cingulum_bundles = two_cingulum_bundles()
+
+    cb1 = Streamlines(cingulum_bundles[0])
+    cb1 = set_number_of_points(cb1, 20)
+
+    cb2 = Streamlines(cingulum_bundles[1])
+    cb2 = set_number_of_points(cb2, 20)
+
+    deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
+
+    n = 10
+    shape_profile, stdv = bundlewarp_shape_analysis(
+        affine_bundle, deformed_bundle, no_disks=n
+    )
+
+    assert_equal(len(shape_profile), n)
+    assert_equal(len(stdv), n)
+
+    n = 100
+    shape_profile, stdv = bundlewarp_shape_analysis(
+        affine_bundle, deformed_bundle, no_disks=n
+    )
+
+    assert_equal(len(shape_profile), n)
+    assert_equal(len(stdv), n)
