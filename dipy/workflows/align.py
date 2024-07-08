@@ -1035,13 +1035,11 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        df = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
-
         logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
         logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
         logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)

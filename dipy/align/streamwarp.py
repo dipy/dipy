@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-
+import pandas as pd
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.cpd import DeformableRegistration
 from dipy.align.streamlinear import slr_with_qbx
@@ -187,6 +187,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
         ty = ty.astype(float)
         deformed_bundle.append(ty)
         warp.append(pr)
+        
+    warp = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
 
     # Returns deformed bundle, affinely moved bundle, distance matrix,
     # streamline correspondences, and warp field
