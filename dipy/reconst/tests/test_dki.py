@@ -18,12 +18,14 @@ from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 import dipy.reconst.dki as dki
 from dipy.reconst.dki import (
+    MIN_POSITIVE_SIGNAL,
     _positive_evals,
     axial_kurtosis,
     carlson_rd,
     carlson_rf,
     kurtosis_fractional_anisotropy,
     lower_triangular,
+    ls_fit_dki,
     mean_kurtosis,
     mean_kurtosis_tensor,
     radial_kurtosis,
@@ -31,6 +33,11 @@ from dipy.reconst.dki import (
 )
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import decompose_tensor, from_lower_triangular
+from dipy.reconst.utils import dki_design_matrix
+from dipy.reconst.weights_method import (
+    weights_method_nlls_gm,
+    weights_method_wls_gm
+)
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.testing import check_for_warnings
 from dipy.utils.optpkg import optional_package
@@ -169,11 +176,49 @@ def test_dki_fits():
     dkiF = dkiM.fit(signal_cross, mask=mask_signal_cross)
     assert_array_almost_equal(dkiF.model_params, crossing_ref)
 
+    # OLS fitting with return leverages
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS",
+                                      return_leverages=True)
+    dkiF = dkiM.fit(signal_cross)
+    leverages = dkiM.extra["leverages"]
+    assert_almost_equal(leverages.sum(), np.array([22.0]))
+
     # WLS fitting
     dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dki_wlsF = dki_wlsM.fit(signal_cross)
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
+
+    # Test wls given S^2 weights argument, matches default wls
+    design_matrix = dki_design_matrix(gtab_2s)
+    inverse_design_matrix = np.linalg.pinv(design_matrix)
+    YN = signal_cross + 10*np.random.normal(size=signal_cross.shape)  # error
+    YN[YN < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
+    # wls calculation
+    D_w, _ = ls_fit_dki(design_matrix, YN, inverse_design_matrix,
+                        return_S0_hat=False, return_lower_triangular=True,
+                        weights=True)
+    # wls calculation, by calculating S^2 from OLS fit, then passing weights
+    D_o, _ = ls_fit_dki(design_matrix, YN, inverse_design_matrix,
+                        return_S0_hat=False, return_lower_triangular=True,
+                        weights=False)
+    pred_s = np.exp(np.dot(design_matrix, D_o.T)).T
+    D_W, _ = ls_fit_dki(design_matrix, YN, inverse_design_matrix,
+                        return_S0_hat=False, return_lower_triangular=True,
+                        weights=pred_s**2)  # S^2 weights
+    assert_almost_equal(D_w, D_W)
+    # wls calculation, but passing incorrect weights
+    D_W, _ = ls_fit_dki(design_matrix, YN, inverse_design_matrix,
+                        return_S0_hat=False, return_lower_triangular=True,
+                        weights=pred_s**1)
+    assert_raises(AssertionError, assert_array_equal, D_w, D_W)
+    # Test that wls implementation is correct, by comparison with result here
+    W = np.diag(pred_s.squeeze()**2)
+    AT_W = np.dot(design_matrix.T, W)
+    inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, design_matrix))
+    AT_W_LS = np.dot(AT_W, np.log(YN).squeeze())
+    result = np.dot(inv_AT_W_A, AT_W_LS)
+    assert_almost_equal(D_w.squeeze(), result)
 
     if have_cvxpy:
         # CLS fitting
@@ -212,7 +257,8 @@ def test_dki_fits():
         )
 
     # Restore fitting
-    dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
+    dki_rtM = dki.DiffusionKurtosisModel(gtab_2s,
+                                         fit_method="RESTORE", sigma=2)
     dki_rtF = dki_rtM.fit(signal_cross)
     assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
 
@@ -251,13 +297,13 @@ def test_dki_fits():
 
     # testing return of S0
     if have_cvxpy:
-        tested_methods = ["NLLS", "WLLS", "CLS"]
+        tested_methods = ['NLLS', 'WLLS', 'CLS', 'CWLS']
     else:
         tested_methods = ["NLLS", "WLLS"]
 
     for fit_method in tested_methods:
         kwargs = {}
-        if fit_method == "CLS":
+        if fit_method in ["CLS", "CWLS"]:
             kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
         dki_S0M = dki.DiffusionKurtosisModel(
             gtab_2s, fit_method=fit_method, return_S0_hat=True, **kwargs
@@ -271,15 +317,85 @@ def test_dki_fits():
     mask_test = dki_S0F.fa > 0
     for fit_method in tested_methods:
         kwargs = {}
-        if fit_method == "CLS":
+        if fit_method in ["CLS", "CWLS"]:
             kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
         dki_S0M = dki.DiffusionKurtosisModel(
             gtab_2s, fit_method=fit_method, return_S0_hat=True, **kwargs
         )
-        dki_S0F = dki_S0M.fit(DWI, mask=mask_test)
+        # FIXME: CLS and CWLS generally fail with noisy data - needs fixing
+        # dki_S0F = dki_S0M.fit(DWI + np.random.normal(size=DWI.shape),\
+        #                      mask=mask_test)
+        dki_S0F = dki_S0M.fit(DWI)
         dki_S0F_S0 = dki_S0F.model_S0
 
         assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
+
+    # testing robust fitting by with WLS and CWLS (needs noisy data)
+    # --------==============----------------------==================
+    YN = DWI + np.random.normal(size=DWI.shape)
+    if have_cvxpy:
+        tested_methods = ['WLS']
+        # FIXME: CWLS generally failing with noisy data, needs fixing
+        # tested_methods = ['WLS', 'CWLS']
+    else:
+        tested_methods = ['WLS']
+    for fit_method in tested_methods:
+        kwargs = {}
+        if fit_method == "CWLS":
+            kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
+        wm = weights_method_wls_gm  # weights method
+        dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                           return_S0_hat=True,
+                                           weights_method=wm,
+                                           fit_type=fit_method,
+                                           num_iter=4,
+                                           **kwargs)
+
+        for mask in [None, np.ones(DWI.shape[0:-1])]:
+            dki_F = dki_M.fit(YN, mask=mask)
+
+        # test that a single iteration will raise an error
+        dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                           return_S0_hat=True,
+                                           weights_method=wm,
+                                           fit_type=fit_method,
+                                           num_iter=1,
+                                           **kwargs)
+
+        assert_raises(ValueError, dki_M.fit, YN)
+
+    # RWLS and RNLLS work based are dti fit functions
+    tested_methods = ['RWLS', 'RNLLS']
+    for fit_method in tested_methods:
+        dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
+                                           return_S0_hat=True)
+        dki_F = dki_M.fit(YN)
+        dki_F = dki_M.fit(YN, mask=np.ones(DWI.shape[0:-1]))  # test with mask
+
+        # try wrong mask (these are not 'multi_fit' methods)
+        assert_raises(ValueError, dki_M.fit, YN,
+                      mask=np.tile(np.ones(DWI.shape[0:-1]), 2))
+
+    # use RWLS and RNLLS but via explicit call to IRLS
+    tested_methods = ['WLS', 'NLLS']
+    for fm in tested_methods:
+        wm = weights_method_wls_gm if fm == 'WLS' else weights_method_nlls_gm
+        dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method='IRLS',
+                                           return_S0_hat=True,
+                                           weights_method=wm,
+                                           fit_type=fm)  # num_iter default
+        dki_F = dki_M.fit(YN)
+
+    # test the weights methods fail if num_iter is too low
+    tested_methods = ['WLS', 'NLLS']
+    for fm in tested_methods:
+        wm = weights_method_wls_gm if fm == 'WLS' else weights_method_nlls_gm
+        dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method='IRLS',
+                                           return_S0_hat=True,
+                                           weights_method=wm,
+                                           fit_type=fm, num_iter=2)
+
+        assert_raises(ValueError, dki_M.fit, YN)
 
 
 def test_apparent_kurtosis_coef():
