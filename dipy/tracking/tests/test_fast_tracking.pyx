@@ -17,7 +17,7 @@ from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_directions_pairs)
 
 
-def get_fast_tracking_performances(params):
+def get_fast_tracking_performances(params, nbr_seeds=1000):
     """
     Return the performance of the fast tracking module
     using the tracking params, on the DiSCo dataset
@@ -43,7 +43,7 @@ def get_fast_tracking_performances(params):
     seed_mask = binary_erosion(seed_mask * mask, iterations=1)
     seeds_positions = random_seeds_from_mask(seed_mask,
                                              affine,
-                                             seeds_count=2500,
+                                             seeds_count=nbr_seeds,
                                              seed_count_per_voxel=False)
 
     pmf_gen = SimplePmfGen(np.asarray(GT_ODF, dtype=float), sphere)
