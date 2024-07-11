@@ -28,7 +28,8 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     directions more than ``max_angle`` degrees from the incoming direction are
     set to 0 and the result is normalized.
     """
-
+    @cython.binding(True)
+    @warning_for_keywords()
     def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1 , **kwargs):
         """Direction getter from a pmf generator.
 
@@ -129,7 +130,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     """Return direction of a sphere with the highest probability mass
     function (pmf).
     """
-
+    @cython.binding(True)
     @warning_for_keywords()
     def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,

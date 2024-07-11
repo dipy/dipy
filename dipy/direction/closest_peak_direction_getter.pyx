@@ -66,6 +66,7 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
+    @warning_for_keywords()
     def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
         self._pf_kwargs = kwargs
