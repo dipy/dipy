@@ -130,6 +130,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
+    @warning_for_keywords()
     def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold=pmf_threshold, **kwargs)

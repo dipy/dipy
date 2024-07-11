@@ -32,6 +32,7 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
 from dipy.tracking.utils import min_radius_curvature_from_angle
+from dipy.testing.decorators import warning_for_keywords
 
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
@@ -62,6 +63,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double[3]    inv_voxel_size
 
 
+    @warning_for_keywords()
     def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=None,
                  double probe_length=0.5, double probe_radius=0,
                  int probe_quality=3, int probe_count=1,

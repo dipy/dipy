@@ -31,6 +31,7 @@ cdef class BootDirectionGetter(DirectionGetter):
         object sphere
 
 
+    @warning_for_keywords()
     def __init__(self, data, model, max_angle, *, sphere=default_sphere,
                  max_attempts=5, sh_order=0, b_tol=20, **kwargs):
         cdef:

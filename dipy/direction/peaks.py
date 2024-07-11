@@ -672,6 +672,7 @@ def reshape_peaks_for_visualization(peaks):
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype("float32")
 
 
+@warning_for_keywords()
 def peaks_from_positions(
     positions,
     odfs,
