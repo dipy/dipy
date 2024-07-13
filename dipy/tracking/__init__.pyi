@@ -200,4 +200,4 @@ from .utils import (
     unique_rows,
 )
 
-Streamlines = lazy.load("nibabel.streamlines.ArraySequence", error_on_import=True)
+Streamlines = lazy.load("nibabel.streamlines:ArraySequence")
