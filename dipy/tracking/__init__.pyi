@@ -90,7 +90,7 @@ __all__ = [
     "winding",
 ]
 
-from nibabel.streamlines import ArraySequence as Streamlines
+import lazy_loader as lazy
 
 from . import (
     direction_getter,
@@ -199,3 +199,5 @@ from .utils import (
     transform_tracking_output,
     unique_rows,
 )
+
+Streamlines = lazy.load("nibabel.streamlines.ArraySequence", error_on_import=True)
