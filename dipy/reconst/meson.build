@@ -19,6 +19,7 @@ endforeach
 
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'base.py',
   'cache.py',
   'cross_validation.py',

@@ -19,6 +19,7 @@ endforeach
 
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'geometry.py',
   'gradients.py',
   'graph.py',

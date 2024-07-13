@@ -20,6 +20,7 @@ endforeach
 
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'adaptive_soft_matching.py',
   'gibbs.py',
   'localpca.py',

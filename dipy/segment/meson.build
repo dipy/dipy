@@ -31,6 +31,7 @@ endforeach
 
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'bundles.py',
   'clustering.py',
   'fss.py',

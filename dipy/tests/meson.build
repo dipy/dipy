@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'scriptrunner.py',
   'test_scripts.py',
   ]
