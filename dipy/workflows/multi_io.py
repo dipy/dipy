@@ -165,9 +165,9 @@ def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
         Contains the info about the current local variables values.
     fnc : function
         The function to inspect
-    output_strategy : string
+    output_strategy : string, optional
         Controls the behavior of the IOIterator for output paths.
-    mix_names : bool
+    mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
 
     Returns
