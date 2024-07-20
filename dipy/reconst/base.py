@@ -14,7 +14,7 @@ particular set of data (different voxels, for example).
 class ReconstModel:
     """Abstract class for signal reconstruction models"""
 
-    def __init__(self, gtab):
+    def __init__(self, gtab, **parallel_kwargs):
         """Initialization of the abstract class for signal reconstruction models
 
         Parameters
@@ -24,8 +24,9 @@ class ReconstModel:
 
         """
         self.gtab = gtab
+        self.parallel_kwargs = parallel_kwargs
 
-    def fit(self, data, mask=None, **kwargs):
+    def fit(self, data, mask=None):
         return ReconstFit(self, data)
 
 
