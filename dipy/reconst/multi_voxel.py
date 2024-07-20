@@ -1,7 +1,6 @@
 """Tools to easily make multi voxel models"""
 
 from functools import partial
-from inspect import getargspec
 import multiprocessing
 
 import numpy as np
@@ -36,26 +35,10 @@ def multi_voxel_fit(single_voxel_fit):
 
     def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
-        # Analyze if the single voxel fit has any "non standard"
-        # key-word arguments:
-        arg_spec = getargspec(single_voxel_fit)
-        # List of the arguments to the function:
-        args = arg_spec.args
-        # The following are "standard" arguments:
-        args.pop(args.index("self"))
-        args.pop(args.index("data"))
-        args.pop(args.index("mask"))
-        # What remains are arguments that are defined separate from **kwargs
-        # (which we reserve for parallelization arguments):
-        func_kwargs = {}
-        for kwarg in args:
-            func_kwargs.update({kwarg: kwargs[kwarg]})
-            kwargs.pop(kwarg)
-
         # If only one voxel just return a standard fit, passing through
         # the functions key-word arguments:
         if data.ndim == 1:
-            return single_voxel_fit(self, data, **func_kwargs)
+            return single_voxel_fit(self, data, **kwargs)
 
         # Make a mask if mask is None
         if mask is None:
@@ -67,15 +50,14 @@ def multi_voxel_fit(single_voxel_fit):
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
         # Default to serial execution:
-        engine = kwargs.get("engine", "serial")
+        engine = self.parallel_kwargs.get("engine", "serial")
+        verbose = self.parallel_kwargs.get("verbose", True)
         if engine == "serial":
-            bar = tqdm(
-                total=np.sum(mask), position=0, disable=kwargs.get("verbose", True)
-            )
+            bar = tqdm(total=np.sum(mask), position=0, disable=verbose)
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
-                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **func_kwargs)
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **kwargs)
                 bar.update()
             bar.close()
         else:
@@ -95,8 +77,8 @@ def multi_voxel_fit(single_voxel_fit):
                         _parallel_fit_worker,
                         chunks,
                         func_args=[single_voxel_with_self],
-                        func_kwargs=func_kwargs,
-                        **kwargs,
+                        func_kwargs=kwargs,
+                        **self.parallel_kwargs,
                     )
                 )
             )
