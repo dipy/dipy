@@ -3,7 +3,10 @@ from functools import reduce
 import numpy as np
 import numpy.testing as npt
 
+from dipy.core.gradients import gradient_table
 from dipy.core.sphere import unit_icosahedron
+from dipy.data import get_fnames
+from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
@@ -142,18 +145,21 @@ def test_CallableArray():
 
 @set_random_number_generator()
 def test_multi_voxel_fit(rng):
-    class SillyModel:
+    class SillyModel(ReconstModel):
+        def __init__(self, gtab, **parallel_kwargs):
+            ReconstModel.__init__(self, gtab, parallel_kwargs=parallel_kwargs)
+
         @multi_voxel_fit
-        def fit(self, data, mask=None, another_kwarg=None, **kwargs):
-            # We want to make sure that all kwargs are passed through to the
-            # the fitting procedure
-            assert another_kwarg is not None
+        def fit(self, data, mask=None, fit_kwarg=None):
+            # We want to make sure that we can define a custom kwarg for the
+            # fit method:
+            assert fit_kwarg is not None
             return SillyFit(model, data)
 
         def predict(self, S0):
             return np.ones(10) * S0
 
-    class SillyFit:
+    class SillyFit(ReconstFit):
         def __init__(self, model, data):
             self.model = model
             self.data = data
@@ -172,48 +178,56 @@ def test_multi_voxel_fit(rng):
             return np.ones(self.data.shape) * S0
 
     # Test the single voxel case
-    model = SillyModel()
+    fdata, fbval, fbvec = get_fnames("small_25")
+    gtab = gradient_table(fbval, fbvec)
+    model = SillyModel(gtab)
     single_voxel = np.zeros(64)
-    fit = model.fit(single_voxel, another_kwarg="foo")
+    fit = model.fit(single_voxel, fit_kwarg="foo")
     npt.assert_equal(type(fit), SillyFit)
 
     # Test without a mask
     many_voxels = np.zeros((2, 3, 4, 64))
-    for verbose in [True, False]:
-        fit = model.fit(many_voxels, verbose=verbose, another_kwarg="foo")
-        expected = np.empty((2, 3, 4))
-        expected[:] = 2.0
-        npt.assert_array_equal(fit.model_attr, expected)
-        expected = np.ones((2, 3, 4, 12))
-        npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
-        npt.assert_equal(fit.directions.shape, (2, 3, 4))
-        S0 = 100.0
-        npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
+    fit = model.fit(many_voxels, fit_kwarg="foo")
+    expected = np.empty((2, 3, 4))
+    expected[:] = 2.0
+    npt.assert_array_equal(fit.model_attr, expected)
+    expected = np.ones((2, 3, 4, 12))
+    npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
+    npt.assert_equal(fit.directions.shape, (2, 3, 4))
+    S0 = 100.0
+    npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with parallelization (using the "serial" dummy engine)
-    fit = model.fit(many_voxels, another_kwarg="foo", engine="serial")
+    model = SillyModel(gtab, parallel_kwargs={"engine": "serial", "verbose": False})
+    fit = model.fit(many_voxels, fit_kwarg="foo")
 
     for verbose in [True, False]:
         # If parallelization engines are installed use them to test:
         if has_joblib:
+            model = SillyModel(
+                gtab, parallel_kwargs={"engine": "joblib", "verbose": verbose}
+            )
+
             fit = model.fit(
                 many_voxels,
-                verbose=verbose,
-                another_kwarg="foo",
-                engine="joblib",
+                fit_kwarg="foo",
             )
             npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
         if has_dask:
-            fit = model.fit(
-                many_voxels, verbose=verbose, another_kwarg="foo", engine="dask"
+            model = SillyModel(
+                gtab, parallel_kwargs={"engine": "dask", "verbose": verbose}
             )
+
+            fit = model.fit(many_voxels, fit_kwarg="foo")
             npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
         if has_ray:
-            fit = model.fit(
-                many_voxels, verbose=verbose, another_kwarg="foo", engine="ray"
+            model = SillyModel(
+                gtab, parallel_kwargs={"engine": "ray", "verbose": verbose}
             )
+
+            fit = model.fit(many_voxels, fit_kwarg="foo")
             npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
@@ -222,7 +236,7 @@ def test_multi_voxel_fit(rng):
     mask[1, 1] = 1
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
-    fit = model.fit(data, mask, another_kwarg="foo")
+    fit = model.fit(data, mask, fit_kwarg="foo")
     expected = np.zeros((3, 3, 3))
     expected[0, 0] = 2
     expected[1, 1] = 2
