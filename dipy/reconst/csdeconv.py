@@ -376,8 +376,8 @@ class ConstrainedSDTModel(SphHarmModel):
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
         sharper angular profile with better angular resolution. The Constrained
         SDTModel is similar to the Constrained CSDModel but mathematically it
-        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
-        for a comparison and a through discussion).
+        deconvolves the q-ball ODF as opposed to the HARDI signal (see [1]_
+        for a comparison and a thorough discussion).
 
         A sharp fODF is obtained because a single fiber *response* function is
         injected as *a priori* knowledge. In the SDTModel, this response is a

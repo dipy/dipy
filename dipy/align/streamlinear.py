@@ -912,13 +912,13 @@ def progressive_slr(
 ):
     """Progressive SLR.
 
-    This is an utility function that allows for example to do affine
+    This is a utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
     [Garyfallidis15]_ by starting with translation first, then rigid,
     then similarity, scaling and finally affine.
 
     Similarly, if for example, you want to perform rigid then you start with
-    translation first. This progressive strategy can helps with finding the
+    translation first. This progressive strategy can help with finding the
     optimal parameters of the final transformation.
 
     Parameters

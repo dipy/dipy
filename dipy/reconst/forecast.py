@@ -73,7 +73,7 @@ class ForecastModel(OdfModel, Cache):
                 \end{equation}
 
         where $\mathbf{b}$ is the b-vector (b-value times gradient direction)
-        and $\mathbf{v}$ is an unit vector representing a fiber direction.
+        and $\mathbf{v}$ is a unit vector representing a fiber direction.
 
         In FORECAST $\rho$ is modeled using real symmetric Spherical Harmonics
         (SH) and $F(\mathbf(b))$ is an axially symmetric tensor.

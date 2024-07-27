@@ -135,7 +135,7 @@ class Horizon:
             File path to replay recorded events
         return_showm : bool
             Return ShowManager object. Used only at Python level. Can be used
-            for extending Horizon's cababilities externally and for testing
+            for extending Horizon's capabilities externally and for testing
             purposes.
         bg_color : ndarray or list or tuple
             Define the background color of the scene.

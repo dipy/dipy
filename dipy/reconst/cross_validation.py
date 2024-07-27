@@ -54,7 +54,7 @@ def coeff_of_determination(data, model, axis=-1):
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     """Perform k-fold cross-validation.
 
-    It generate out-of-sample predictions for each measurement.
+    It generates out-of-sample predictions for each measurement.
 
     Parameters
     ----------
