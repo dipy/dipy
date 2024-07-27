@@ -626,7 +626,10 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         -----
         The predicted signal is given by:
 
-        $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$,
+        .. math::
+
+            S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]
+
         where $ADC_{r}$ and $ADC_{h}$ are the apparent diffusion coefficients
         of the diffusion hindered and restricted compartment for a given
         direction $\theta$, $b$ is the b value provided in the GradientTable
