@@ -421,7 +421,7 @@ def _F2m(a, b, c):
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r"""Calculate the apparent diffusion coefficient (adc) in each direction
+    r"""Calculate the apparent diffusion coefficient (ADC) in each direction
     of a sphere for a single voxel [1]_
 
     Parameters
@@ -439,7 +439,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     Returns
     -------
     adc : ndarray (g,)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
 
     References
@@ -491,7 +491,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores [1]_)
     adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
     adv : ndarray(g,) (optional)
         Apparent diffusion variance coefficient (advc) in all g directions of
@@ -568,7 +568,7 @@ def directional_kurtosis(
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores [3]_)
     adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
     adv : ndarray(g,) (optional)
         Apparent diffusion variance (advc) in all g directions of a sphere for
