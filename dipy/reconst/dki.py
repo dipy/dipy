@@ -1615,7 +1615,7 @@ def kurtosis_fractional_anisotropy(dki_params):
          KFA \equiv
          \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$ is
+    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$ is
     the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the tensor's
     Frobenius norm [1]_.
 
@@ -2433,7 +2433,7 @@ class DiffusionKurtosisFit(TensorFit):
              KFA \equiv
              \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$
+        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$
         is the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the
         tensor's Frobenius norm [1]_.
 
