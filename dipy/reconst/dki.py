@@ -1038,8 +1038,8 @@ def radial_kurtosis(
 
     .. math::
 
-    RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
-              \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
+                  \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
     This equation can be numerically computed by averaging apparent
     directional kurtosis samples for directions perpendicular to e1. [2]_
@@ -2246,8 +2246,8 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. math::
 
-        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
-            K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+            RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
+                K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
         This equation can be numerically computed by averaging apparent
         directional kurtosis samples for directions perpendicular to e1 [2]_.
