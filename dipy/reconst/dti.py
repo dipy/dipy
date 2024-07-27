@@ -1026,7 +1026,7 @@ class TensorFit:
 
         Notes
         -----
-        RD is calculated with the following equation:
+        AD is calculated with the following equation:
 
         .. math::
 
