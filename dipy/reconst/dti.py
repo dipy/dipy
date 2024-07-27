@@ -649,7 +649,7 @@ def apparent_diffusion_coef(q_form, sphere):
 
 
 def tensor_prediction(dti_params, gtab, S0):
-    """
+    r"""
     Predict a signal given tensor parameters.
 
     Parameters
@@ -1187,7 +1187,7 @@ class TensorFit:
         return odf
 
     def adc(self, sphere):
-        """
+        r"""
         Calculate the apparent diffusion coefficient (ADC) in each direction on
         the sphere for each voxel in the data
 
@@ -1215,7 +1215,7 @@ class TensorFit:
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
     def predict(self, gtab, S0=None, step=None):
-        """
+        r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
         Parameters
