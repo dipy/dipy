@@ -935,7 +935,7 @@ def progressive_slr(
     method : string
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
     verbose :  bool, optional.
-        If True, log messages. Default:
+        If True, log messages.
     num_threads : int, optional
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
