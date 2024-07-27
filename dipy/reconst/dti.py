@@ -371,7 +371,7 @@ def isotropic(q_form):
     -----
     The isotropic part of a tensor is defined as (equations 3-5 of [1]_):
 
-    .. math ::
+    .. math::
         \bar{A} = \frac{1}{2} tr(A) I
 
     References
@@ -407,8 +407,8 @@ def deviatoric(q_form):
     -----
     The deviatoric part of the tensor is defined as (equations 3-5 in [1]_):
 
-    .. math ::
-         \widetilde{A} = A - \bar{A}
+    .. math::
+        \widetilde{A} = A - \bar{A}
 
     Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
     part of the tensor.
@@ -634,7 +634,7 @@ def apparent_diffusion_coef(q_form, sphere):
     -----
     The calculation of ADC, relies on the following relationship:
 
-    .. math ::
+    .. math::
 
         ADC = \vec{b} Q \vec{b}^T
 
@@ -1205,7 +1205,7 @@ class TensorFit:
         -----
         The calculation of ADC, relies on the following relationship:
 
-        .. math ::
+        .. math::
 
             ADC = \vec{b} Q \vec{b}^T
 
@@ -1243,12 +1243,13 @@ class TensorFit:
         -----
         The predicted signal is given by:
 
-        .. math ::
+        .. math::
 
             S(\theta, b) = S_0 * e^{-b ADC}
 
         Where:
-        .. math ::
+        .. math::
+
             ADC = \theta Q \theta^T
 
         $\theta$ is a unit vector pointing at any direction on the sphere for
@@ -1607,7 +1608,7 @@ class _NllsHelper:
         breakdown point (6,7). The explicit formula for C using the MAD
         estimator is:
 
-        .. math ::
+        .. math::
 
             C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
 

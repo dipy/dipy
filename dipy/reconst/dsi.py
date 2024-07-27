@@ -25,7 +25,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         spin displacements) can be estimated by applying 3D FFT to the signal
         values $S(\mathbf{q})$
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{eqnarray}
                     P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
@@ -240,7 +240,7 @@ class DiffusionSpectrumFit(OdfFit):
     def msd_discrete(self, normalized=True):
         r"""Calculates the mean squared displacement on the discrete propagator
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
@@ -284,7 +284,7 @@ class DiffusionSpectrumFit(OdfFit):
     def odf(self, sphere):
         r"""Calculates the real discrete odf for a given discrete sphere
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
@@ -509,7 +509,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         The idea is to remove the convolution on the DSI propagator that is
         caused by the truncation of the q-space in the DSI sampling.
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{eqnarray*}
                     P_{dsi}(\mathbf{r}) & = & S_{0}^{-1}\iiint\limits_{\| \mathbf{q} \| \le \mathbf{q_{max}}} S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\

@@ -649,7 +649,7 @@ def apparent_kurtosis_coef(
     For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
     calculation of AKC is done using formula [1]_:
 
-    .. math ::
+    .. math::
 
         AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
         \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -657,7 +657,7 @@ def apparent_kurtosis_coef(
     where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
     diffusivity and ADC the apparent diffusion coefficient computed as:
 
-    .. math ::
+    .. math::
 
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
@@ -2038,7 +2038,7 @@ class DiffusionKurtosisFit(TensorFit):
         For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
         calculation of AKC is done using formula:
 
-        .. math ::
+        .. math::
 
             AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
             \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -2046,7 +2046,7 @@ class DiffusionKurtosisFit(TensorFit):
         where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
         diffusivity and ADC the apparent diffusion coefficient computed as:
 
-        .. math ::
+        .. math::
 
             ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 

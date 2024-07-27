@@ -66,7 +66,7 @@ class ForecastModel(OdfModel, Cache):
         single fiber response function $F(\mathbf{b})$ times the fODF
         $\rho(\mathbf{v})$
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}

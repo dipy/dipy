@@ -245,7 +245,7 @@ class LPCAFlow(Workflow):
             Thresholding of PCA eigenvalues is done by nulling out eigenvalues
             that are smaller than:
 
-            .. math ::
+            .. math::
 
                     \tau = (\tau_{factor} \sigma)^2
 
