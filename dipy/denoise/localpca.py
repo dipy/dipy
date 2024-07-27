@@ -224,9 +224,9 @@ def genpca(
 
                 \tau = (\tau_{factor} \sigma)^2
 
-        \tau_{factor} can be set to a predefined values (e.g. \tau_{factor} =
-        2.3 [3]_), or automatically calculated using random matrix theory
-        (in case that \tau_{factor} is set to None).
+        $\tau_{factor}$ can be set to a predefined values (e.g. $\tau_{factor} =
+        2.3$ [3]_), or automatically calculated using random matrix theory
+        (in case that $\tau_{factor}$ is set to None).
     return_sigma : bool (optional)
         If true, the Standard deviation of the noise will be returned.
     out_dtype : str or dtype (optional)
