@@ -187,7 +187,7 @@ fig2.savefig("denoised_dki.png")
 #
 #
 # Noise standard deviation estimation using the Marchenko-Pastur PCA algorithm
-# ===========================================================================
+# ============================================================================
 #
 # As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
 # estimate the image's noise standard deviation (std). The noise std
