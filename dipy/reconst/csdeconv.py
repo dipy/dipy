@@ -498,7 +498,7 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response
         function
     l_values : ndarray (N,)
-        The order (l) of spherical harmonic function associated with each row
+        The order ($l$) of spherical harmonic function associated with each row
         of the deconvolution matrix. Only even orders are allowed.
     r2_term : bool
         True if ODF comes from an ODF computed from a model using the $r^2$
@@ -877,7 +877,7 @@ def odf_sh_to_sharp(
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
     sh_order_max : int
-        maximal SH order (l) of the SH representation
+        maximal SH order ($l$) of the SH representation
     lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
