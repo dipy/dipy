@@ -22,7 +22,7 @@ def nlmeans(
     rician=True,
     num_threads=None,
 ):
-    r"""Non-local means for denoising 3D and 4D images
+    r"""Non-local means for denoising 3D and 4D images [Descoteaux08]_.
 
     Parameters
     ----------

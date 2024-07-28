@@ -37,6 +37,8 @@ class MapmriModel(ReconstModel, Cache):
     From the MAPMRI coefficients is possible to use the analytical formulae
     to estimate the ODF.
 
+    See [8]_ for additional tissue microstructure insights provided by MAPMRI.
+
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
@@ -135,7 +137,7 @@ class MapmriModel(ReconstModel, Cache):
             Regularize using the Laplacian of the MAP-MRI basis.
         laplacian_weighting: string or scalar,
             The string 'GCV' makes it use generalized cross-validation to find
-            the regularization weight [4]. A scalar sets the regularization
+            the regularization weight [4]_. A scalar sets the regularization
             weight to that value and an array will make it selected the
             optimal weight from the values in the array.
         positivity_constraint : bool,
@@ -153,7 +155,8 @@ class MapmriModel(ReconstModel, Cache):
             If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
             'adaptive', the maximum distance is dependent on the estimated
-            tissue diffusivity.
+            tissue diffusivity. If 'infinity', semidefinite programming
+            constraints are used [9]_.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -176,7 +179,7 @@ class MapmriModel(ReconstModel, Cache):
         static_diffusivity : float,
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
-            D=0.7e-3 _[5].
+            D=0.7e-3 [5]_.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for
@@ -2244,7 +2247,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
 
 def gcv_cost_function(weight, args):
-    """The GCV cost function that is iterated [4]."""
+    """The GCV cost function that is iterated [4]_."""
     data, M, MMt, K, LR = args
     S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)

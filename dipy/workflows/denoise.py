@@ -131,7 +131,7 @@ class NLMeansFlow(Workflow):
         out_dir="",
         out_denoised="dwi_nlmeans.nii.gz",
     ):
-        """Workflow wrapping the nlmeans denoising method.
+        """Workflow wrapping the nlmeans denoising method [Descoteaux08]_.
 
         It applies nlmeans denoise on each file found by 'globing'
         ``input_files`` and saves the results in a directory specified by
@@ -319,7 +319,7 @@ class MPPCAFlow(Workflow):
         out_denoised="dwi_mppca.nii.gz",
         out_sigma="dwi_sigma.nii.gz",
     ):
-        r"""Workflow wrapping Marcenko-Pastur PCA denoising method.
+        r"""Workflow wrapping Marcenko-Pastur PCA denoising method [1]_.
 
         Parameters
         ----------
@@ -394,7 +394,7 @@ class GibbsRingingFlow(Workflow):
         out_dir="",
         out_unring="dwi_unring.nii.gz",
     ):
-        r"""Workflow for applying Gibbs Ringing method.
+        r"""Workflow for applying Gibbs Ringing method [1]_, [2]_.
 
         Parameters
         ----------

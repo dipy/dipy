@@ -82,7 +82,7 @@ class Horizon:
         roi_colors=(1, 0, 0),
         surface_colors=((1, 0, 0),),
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
 
 
         Parameters
@@ -748,7 +748,7 @@ def horizon(
     recorded_events=None,
     return_showm=False,
 ):
-    """Interactive medical visualization - Invert the Horizon!
+    """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
 
 
     Parameters

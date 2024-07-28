@@ -382,7 +382,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 class PositiveDefiniteLeastSquares:
     @warning_for_keywords()
     def __init__(self, m, *, A=None, L=None):
-        r"""Regularized least squares with linear matrix inequality constraints
+        r"""Regularized least squares with linear matrix inequality constraints [1]_.
 
         Generate a CVXPY representation of a regularized least squares
         optimization problem subject to linear matrix inequality constraints.
