@@ -1,4 +1,6 @@
-"""Cross-validation analysis of diffusion models."""
+"""
+Cross-validation analysis of diffusion models.
+"""
 
 import numpy as np
 

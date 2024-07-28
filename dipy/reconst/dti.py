@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Classes and functions for fitting tensors"""
+"""
+Classes and functions for fitting tensors.
+"""
 
 import functools
 import warnings

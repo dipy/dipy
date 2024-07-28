@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Classes and functions for fitting the diffusion kurtosis model"""
+"""
+Classes and functions for fitting the diffusion kurtosis model.
+"""
 
 import warnings
 
