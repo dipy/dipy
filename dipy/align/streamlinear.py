@@ -924,8 +924,11 @@ def progressive_slr(
     Parameters
     ----------
     static : Streamlines
+        Static streamlines.
     moving : Streamlines
+        Moving streamlines.
     metric : StreamlineDistanceMetric
+        Distance metric for registration optimization.
     x0 : string
         Could be any of 'translation', 'rigid', 'similarity', 'scaling',
         'affine'
