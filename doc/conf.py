@@ -65,7 +65,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "dipy"
+project = "Diffusion Imaging in Python"
 copyright = (
     f"Copyright 2008-{datetime.now().year},DIPY developers."
     f" Created using Grg Sphinx Theme and PyData Sphinx Theme."
