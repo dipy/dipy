@@ -94,7 +94,7 @@ def concatenate_tractogram(
             ):
                 if not delete_dpv:
                     logging.debug(f"{key} dpv key does not exist in all TrxFile.")
-                    raise ValueError("TrxFile must be sharing identical dpv " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dpv keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
@@ -112,7 +112,7 @@ def concatenate_tractogram(
             ):
                 if not delete_dps:
                     logging.debug(f"{key} dps key does not exist in all TrxFile.")
-                    raise ValueError("TrxFile must be sharing identical dps " "keys.")
+                    raise ValueError("TrxFile must be sharing identical dps keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype

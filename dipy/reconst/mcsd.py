@@ -44,9 +44,9 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     B : ndarray
         Matrix of the spherical harmonics model used to fit the data
     m_values : int ``|m_value| <= l_value``
-        The phase factor (m) of the harmonic.
+        The phase factor ($m$) of the harmonic.
     l_values : int ``l_value >= 0``
-        The order (l) of the harmonic.
+        The order ($l$) of the harmonic.
     """
     if iso_comp < 2:
         msg = "Multi-tissue CSD requires at least 2 tissue compartments"
@@ -112,7 +112,7 @@ def _inflate_response(response, gtab, sh_order_max, delta):
     response : MultiShellResponse object
     gtab : GradientTable
     sh_order_max : int ``>= 0``
-        The maximal order (l) of the harmonic.
+        The maximal order ($l$) of the harmonic.
     delta : Delta generated from `_basic_delta`
     """
     if (
@@ -141,9 +141,9 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
         number of compartments required is 2.
         Default: 2
     m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
+        The phase factor ($m$) of the harmonic.
     l_value : int ``>= 0``
-        The order (l) of the harmonic.
+        The order ($l$) of the harmonic.
     theta : array_like
        inclination or polar angle
     phi : array_like

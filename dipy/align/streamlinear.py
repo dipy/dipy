@@ -912,20 +912,23 @@ def progressive_slr(
 ):
     """Progressive SLR.
 
-    This is an utility function that allows for example to do affine
+    This is a utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
     [Garyfallidis15]_ by starting with translation first, then rigid,
     then similarity, scaling and finally affine.
 
     Similarly, if for example, you want to perform rigid then you start with
-    translation first. This progressive strategy can helps with finding the
+    translation first. This progressive strategy can help with finding the
     optimal parameters of the final transformation.
 
     Parameters
     ----------
     static : Streamlines
+        Static streamlines.
     moving : Streamlines
+        Moving streamlines.
     metric : StreamlineDistanceMetric
+        Distance metric for registration optimization.
     x0 : string
         Could be any of 'translation', 'rigid', 'similarity', 'scaling',
         'affine'
@@ -935,7 +938,7 @@ def progressive_slr(
     method : string
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
     verbose :  bool, optional.
-        If True, log messages. Default:
+        If True, log messages.
     num_threads : int, optional
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used

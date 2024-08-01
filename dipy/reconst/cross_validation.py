@@ -1,4 +1,6 @@
-"""Cross-validation analysis of diffusion models."""
+"""
+Cross-validation analysis of diffusion models.
+"""
 
 import numpy as np
 
@@ -16,7 +18,7 @@ def coeff_of_determination(data, model, axis=-1):
     model : ndarray
         The predictions of a model for this data. Same shape as the data.
     axis: int, optional
-        The axis along which different samples are laid out (default: -1).
+        The axis along which different samples are laid out.
 
     Returns
     -------
@@ -54,7 +56,7 @@ def coeff_of_determination(data, model, axis=-1):
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     """Perform k-fold cross-validation.
 
-    It generate out-of-sample predictions for each measurement.
+    It generates out-of-sample predictions for each measurement.
 
     Parameters
     ----------

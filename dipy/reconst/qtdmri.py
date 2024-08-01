@@ -35,7 +35,7 @@ class QtdmriModel(Cache):
     The main idea is to model the diffusion signal over time and space as
     a linear combination of continuous functions,
 
-    ..math::
+    .. math::
         :nowrap:
             \begin{equation}
                 \hat{E}(\textbf{q},\tau;\textbf{c}) =

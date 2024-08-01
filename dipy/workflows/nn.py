@@ -23,7 +23,7 @@ class EVACPlusFlow(Workflow):
         out_mask="brain_mask.nii.gz",
         out_masked="dwi_masked.nii.gz",
     ):
-        """Extract brain using EVAC+.
+        """Extract brain using EVAC+ [Park2022]_.
 
         Parameters
         ----------

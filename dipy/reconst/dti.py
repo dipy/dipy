@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Classes and functions for fitting tensors"""
+"""
+Classes and functions for fitting tensors.
+"""
 
 import functools
 import warnings
@@ -371,7 +373,7 @@ def isotropic(q_form):
     -----
     The isotropic part of a tensor is defined as (equations 3-5 of [1]_):
 
-    .. math ::
+    .. math::
         \bar{A} = \frac{1}{2} tr(A) I
 
     References
@@ -407,8 +409,8 @@ def deviatoric(q_form):
     -----
     The deviatoric part of the tensor is defined as (equations 3-5 in [1]_):
 
-    .. math ::
-         \widetilde{A} = A - \bar{A}
+    .. math::
+        \widetilde{A} = A - \bar{A}
 
     Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
     part of the tensor.
@@ -634,7 +636,7 @@ def apparent_diffusion_coef(q_form, sphere):
     -----
     The calculation of ADC, relies on the following relationship:
 
-    .. math ::
+    .. math::
 
         ADC = \vec{b} Q \vec{b}^T
 
@@ -649,7 +651,7 @@ def apparent_diffusion_coef(q_form, sphere):
 
 
 def tensor_prediction(dti_params, gtab, S0):
-    """
+    r"""
     Predict a signal given tensor parameters.
 
     Parameters
@@ -668,8 +670,13 @@ def tensor_prediction(dti_params, gtab, S0):
 
     Notes
     -----
-    The predicted signal is given by: $S(\theta, b) = S_0 * e^{-b ADC}$, where
-    $ADC = \theta Q \theta^T$, $\theta$ is a unit vector pointing at any
+    The predicted signal is given by:
+
+    .. math::
+
+        S(\theta, b) = S_0 * e^{-b ADC}
+
+    where $ADC = \theta Q \theta^T$, $\theta$ is a unit vector pointing at any
     direction on the sphere for which a signal is to be predicted, $b$ is the b
     value provided in the GradientTable input for that direction, $Q$ is the
     quadratic form of the tensor determined by the input parameters.
@@ -743,7 +750,7 @@ class TensorModel(ReconstModel):
         .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+        .. [3] Chang, L-C, Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
         """
@@ -1021,7 +1028,7 @@ class TensorFit:
 
         Notes
         -----
-        RD is calculated with the following equation:
+        AD is calculated with the following equation:
 
         .. math::
 
@@ -1187,7 +1194,7 @@ class TensorFit:
         return odf
 
     def adc(self, sphere):
-        """
+        r"""
         Calculate the apparent diffusion coefficient (ADC) in each direction on
         the sphere for each voxel in the data
 
@@ -1205,7 +1212,7 @@ class TensorFit:
         -----
         The calculation of ADC, relies on the following relationship:
 
-        .. math ::
+        .. math::
 
             ADC = \vec{b} Q \vec{b}^T
 
@@ -1215,7 +1222,7 @@ class TensorFit:
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
     def predict(self, gtab, S0=None, step=None):
-        """
+        r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
         Parameters
@@ -1243,12 +1250,13 @@ class TensorFit:
         -----
         The predicted signal is given by:
 
-        .. math ::
+        .. math::
 
             S(\theta, b) = S_0 * e^{-b ADC}
 
         Where:
-        .. math ::
+        .. math::
+
             ADC = \theta Q \theta^T
 
         $\theta$ is a unit vector pointing at any direction on the sphere for
@@ -1607,7 +1615,7 @@ class _NllsHelper:
         breakdown point (6,7). The explicit formula for C using the MAD
         estimator is:
 
-        .. math ::
+        .. math::
 
             C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
 

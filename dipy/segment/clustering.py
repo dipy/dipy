@@ -554,7 +554,7 @@ class QuickBundles(Clustering):
 
 
 class QuickBundlesX(Clustering):
-    r"""Clusters streamlines using QuickBundlesX.
+    r"""Clusters streamlines using QuickBundlesX [Garyfallidis16]_.
 
     Parameters
     ----------

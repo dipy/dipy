@@ -311,7 +311,8 @@ class ReconstDtiFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
     ):
-        """Workflow for tensor reconstruction and for computing DTI metrics.
+        """Workflow for tensor reconstruction and for computing DTI metrics
+        [1]_, [2]_.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified by
@@ -333,10 +334,10 @@ class ReconstDtiFlow(Workflow):
             multiple masks at once.
         fit_method : string, optional
             can be one of the following:
-            'WLS' for weighted least squares
-            'LS' or 'OLS' for ordinary least squares
+            'WLS' for weighted least squares [4]_
+            'LS' or 'OLS' for ordinary least squares [4]_
             'NLLS' for non-linear least-squares
-            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -417,15 +418,12 @@ class ReconstDtiFlow(Workflow):
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
 
-        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+        .. [3] Chang, L-C, Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
-        .. [4] hung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+        .. [4] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
            approaches for estimation of uncertainties of DTI parameters.
            NeuroImage 33, 531-541.
-
-        .. [5] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
         """
         save_metrics = save_metrics or []
@@ -781,7 +779,7 @@ class ReconstCSDFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
     ):
-        """Constrained spherical deconvolution
+        """Constrained spherical deconvolution [1]_.
 
         Parameters
         ----------
@@ -997,7 +995,7 @@ class ReconstCSAFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
     ):
-        """Constant Solid Angle.
+        """Constant Solid Angle [1]_.
 
         Parameters
         ----------
@@ -1174,9 +1172,9 @@ class ReconstDkiFlow(Workflow):
         out_gfa="gfa.nii.gz",
     ):
         """Workflow for Diffusion Kurtosis reconstruction and for computing
-        DKI metrics. Performs a DKI reconstruction on the files by 'globing'
-        ``input_files`` and saves the DKI metrics in a directory specified by
-        ``out_dir``.
+        DKI metrics [1]_, [2]_. Performs a DKI reconstruction on the files by
+        'globing' ``input_files`` and saves the DKI metrics in a directory
+        specified by ``out_dir``.
 
         Parameters
         ----------

@@ -20,7 +20,7 @@ class ShoreModel(Cache):
     The main idea is to model the diffusion signal as a linear combination of
     continuous functions $\phi_i$,
 
-    ..math::
+    .. math::
         :nowrap:
             \begin{equation}
                 S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
@@ -83,7 +83,7 @@ class ShoreModel(Cache):
         The main idea is to model the diffusion signal as a linear
         combination of continuous functions $\phi_i$,
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
@@ -454,7 +454,7 @@ class ShoreFit:
     def msd(self):
         r"""Calculates the analytical mean squared displacement (MSD) [1]_
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
@@ -502,7 +502,7 @@ class ShoreFit:
 def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
     r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
 
-    ..math::
+    .. math::
             :nowrap:
                 \begin{equation}
                     \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
@@ -512,7 +512,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
                 \end{equation}
 
     where $\phi_{nlm}$ is
-    ..math::
+    .. math::
             :nowrap:
                 \begin{equation}
                     \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
@@ -733,7 +733,7 @@ def create_rspace(gridsize, radius_max):
 def shore_indices(radial_order, index):
     r"""Given the basis order and the index, return the shore indices n, l, m
     for modified Merlet's 3D-SHORE
-    ..math::
+    .. math::
             :nowrap:
                 \begin{equation}
                     \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
@@ -743,7 +743,7 @@ def shore_indices(radial_order, index):
                 \end{equation}
 
     where $\phi_{nlm}$ is
-    ..math::
+    .. math::
             :nowrap:
                 \begin{equation}
                     \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}

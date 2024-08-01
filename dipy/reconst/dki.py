@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Classes and functions for fitting the diffusion kurtosis model"""
+"""
+Classes and functions for fitting the diffusion kurtosis model.
+"""
 
 import warnings
 
@@ -421,7 +423,7 @@ def _F2m(a, b, c):
 
 
 def directional_diffusion(dt, V, min_diffusivity=0):
-    r"""Calculate the apparent diffusion coefficient (adc) in each direction
+    r"""Calculate the apparent diffusion coefficient (ADC) in each direction
     of a sphere for a single voxel [1]_
 
     Parameters
@@ -439,7 +441,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     Returns
     -------
     adc : ndarray (g,)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
 
     References
@@ -491,7 +493,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores [1]_)
     adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
     adv : ndarray(g,) (optional)
         Apparent diffusion variance coefficient (advc) in all g directions of
@@ -568,7 +570,7 @@ def directional_kurtosis(
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores [3]_)
     adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
     adv : ndarray(g,) (optional)
         Apparent diffusion variance (advc) in all g directions of a sphere for
@@ -649,7 +651,7 @@ def apparent_kurtosis_coef(
     For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
     calculation of AKC is done using formula [1]_:
 
-    .. math ::
+    .. math::
 
         AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
         \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -657,7 +659,7 @@ def apparent_kurtosis_coef(
     where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
     diffusivity and ADC the apparent diffusion coefficient computed as:
 
-    .. math ::
+    .. math::
 
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
@@ -1038,8 +1040,8 @@ def radial_kurtosis(
 
     .. math::
 
-    RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
-              \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
+                  \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
     This equation can be numerically computed by averaging apparent
     directional kurtosis samples for directions perpendicular to e1. [2]_
@@ -1615,7 +1617,7 @@ def kurtosis_fractional_anisotropy(dki_params):
          KFA \equiv
          \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$ is
+    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$ is
     the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the tensor's
     Frobenius norm [1]_.
 
@@ -2038,7 +2040,7 @@ class DiffusionKurtosisFit(TensorFit):
         For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
         calculation of AKC is done using formula:
 
-        .. math ::
+        .. math::
 
             AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
             \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -2046,7 +2048,7 @@ class DiffusionKurtosisFit(TensorFit):
         where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
         diffusivity and ADC the apparent diffusion coefficient computed as:
 
-        .. math ::
+        .. math::
 
             ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
@@ -2246,8 +2248,8 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. math::
 
-        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
-            K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+            RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
+                K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
         This equation can be numerically computed by averaging apparent
         directional kurtosis samples for directions perpendicular to e1 [2]_.
@@ -2433,7 +2435,7 @@ class DiffusionKurtosisFit(TensorFit):
              KFA \equiv
              \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$
+        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$
         is the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the
         tensor's Frobenius norm [1]_.
 

@@ -45,7 +45,7 @@ class HistoResDNN:
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
-        ('tournier07') like the proposed model in [1, 2].
+        ('tournier07') like the proposed model in [1]_, [2]_.
 
         To obtain the pre-trained model, use::
         >>> resdnn_model = HistoResDNN() # skip if not have_tf
