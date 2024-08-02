@@ -51,7 +51,7 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(target, colors=(1, 1, 0)))
-window.record(scene, out_path="tractograms_initial.png", size=(600, 600))
+window.record(scene=scene, out_path="tractograms_initial.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -89,7 +89,9 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(moved, colors=(1, 1, 0)))
-window.record(scene, out_path="tractograms_after_registration.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="tractograms_after_registration.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -155,7 +157,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_model_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -189,7 +191,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -239,7 +241,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -288,7 +290,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -343,7 +345,9 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -383,7 +387,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_model_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -415,7 +419,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -465,7 +469,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -514,7 +518,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -570,7 +574,9 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 

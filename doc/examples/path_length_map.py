@@ -83,11 +83,11 @@ streamlines = Streamlines(streamlines)
 # Visualize the streamlines and the Path Length Map base ROI
 # (in this case also the seed ROI)
 
-streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, colors=cmap.line_colors(streamlines))
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(
-    seed_mask, affine, surface_color, surface_opacity
+    seed_mask, affine=affine, color=surface_color, opacity=surface_opacity
 )
 
 scene = window.Scene()
@@ -102,7 +102,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -132,8 +132,8 @@ save_trk(sft, "tractogram_pft.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_pft.png", size=(800, 800))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
+    window.record(scene=scene, out_path="tractogram_pft.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -159,8 +159,10 @@ save_trk(sft, "tractogram_probabilistic_cmc.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_probabilistic_cmc.png", size=(800, 800))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
+    window.record(
+        scene=scene, out_path="tractogram_probabilistic_cmc.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 

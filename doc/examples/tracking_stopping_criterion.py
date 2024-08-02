@@ -133,9 +133,9 @@ save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -200,9 +200,9 @@ save_trk(sft, "tractogram_deterministic_binary_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -297,9 +297,9 @@ save_trk(sft, "tractogram_deterministic_act_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -319,9 +319,9 @@ save_trk(sft, "tractogram_deterministic_act_valid.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)

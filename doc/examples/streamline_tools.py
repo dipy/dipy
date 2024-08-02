@@ -120,7 +120,9 @@ interactive = False
 
 # Make display objects
 color = cmap.line_colors(cc_streamlines)
-cc_streamlines_actor = actor.line(cc_streamlines, cmap.line_colors(cc_streamlines))
+cc_streamlines_actor = actor.line(
+    cc_streamlines, colors=cmap.line_colors(cc_streamlines)
+)
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
@@ -137,12 +139,14 @@ scene.add(cc_streamlines_actor)
 scene.add(cc_ROI_actor)
 
 # Save figures
-window.record(scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800))
+window.record(
+    scene=scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800)
+)
 if interactive:
     window.show(scene)
 scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
 window.record(
-    scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
+    scene=scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
 )
 if interactive:
     window.show(scene)

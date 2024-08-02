@@ -13,7 +13,9 @@ class SurfaceVisualizer:
         self._vertices, self._faces = surface
 
         self._surface_actor = surface_actor(
-            self._vertices, self._faces, np.full((self._vertices.shape[0], 3), color)
+            self._vertices,
+            faces=self._faces,
+            colors=np.full((self._vertices.shape[0], 3), color),
         )
 
         scene.add(self._surface_actor)

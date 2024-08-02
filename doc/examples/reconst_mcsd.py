@@ -320,7 +320,7 @@ scene.add(fodf_spheres)
 scene.reset_camera_tight()
 
 print("Saving illustration as msdodf.png")
-window.record(scene, out_path="msdodf.png", size=(600, 600))
+window.record(scene=scene, out_path="msdodf.png", size=(600, 600))
 
 if interactive:
     window.show(scene)

@@ -120,7 +120,7 @@ fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap="plas
 scene = window.Scene()
 scene.add(fodf_spheres)
 
-window.record(scene, out_path="sf_odfs.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_odfs.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -138,10 +138,10 @@ sf_peaks = dpp.peaks_from_model(
 
 
 scene.clear()
-fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
+fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, peaks_values=sf_peaks.peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene, out_path="sf_peaks.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_peaks.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -151,7 +151,7 @@ if interactive:
 fodf_spheres.GetProperty().SetOpacity(0.4)
 scene.add(fodf_spheres)
 
-window.record(scene, out_path="sf_both.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_both.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 

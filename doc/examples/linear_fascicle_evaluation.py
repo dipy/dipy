@@ -72,7 +72,7 @@ candidate_sl = candidate_sl_sft.streamlines
 interactive = False
 
 candidate_streamlines_actor = actor.streamtube(
-    candidate_sl, cmap.line_colors(candidate_sl)
+    candidate_sl, colors=cmap.line_colors(candidate_sl)
 )
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
@@ -88,7 +88,7 @@ scene.add(candidate_streamlines_actor)
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
 scene.add(vol_actor2)
-window.record(scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -164,10 +164,10 @@ fig.savefig("beta_histogram.png")
 
 optimized_sl = [np.vstack(candidate_sl)[np.where(fiber_fit.beta > 0)[0]]]
 scene = window.Scene()
-scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
+scene.add(actor.streamtube(optimized_sl, colors=cmap.line_colors(optimized_sl)))
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
-window.record(scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
 if interactive:
     window.show(scene)
 

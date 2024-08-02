@@ -454,7 +454,7 @@ class Horizon:
 
         title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
-            scene,
+            scene=scene,
             title=title,
             size=(1920, 1080),
             reset_camera=False,
@@ -722,7 +722,7 @@ class Horizon:
 
         else:
             window.record(
-                scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
+                scene=scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
             )
 
 
