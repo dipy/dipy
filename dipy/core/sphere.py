@@ -553,7 +553,7 @@ def fibonacci_sphere(n_points, *, hemisphere=False, randomize=True, rng=None):
         If True, generate points only on the upper hemisphere.
         Default is False.
     randomize : bool, optional
-        If True, randomize the starting point on the sphere. Default is True.
+        If True, randomize the starting point on the sphere.
     rng : np.random.Generator, optional
         If None creates random generator in function.
 
