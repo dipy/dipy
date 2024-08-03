@@ -521,7 +521,7 @@ class ApplyTransformFlow(Workflow):
             folder containing multiple images.
 
         transform_map_file : string
-            For the affine case, it should be a text(*.txt) file containing
+            For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
             field in each voxel with this shape (x, y, z, 3, 2).
