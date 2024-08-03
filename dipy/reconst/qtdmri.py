@@ -58,7 +58,7 @@ class QtdmriModel(Cache):
     ----------
     gtab : GradientTable,
         gradient directions and bvalues container class. The bvalues
-        should be in the normal s/mm^2. big_delta and small_delta need to
+        should be in the normal s/mm^2. big_delta and small_delta need to be
         given in seconds.
     radial_order : unsigned int,
         an even integer representing the spatial/radial order of the basis.
@@ -100,7 +100,7 @@ class QtdmriModel(Cache):
         stability problem.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint
-        with a particular cvxpy solver. See See https://www.cvxpy.org/ for
+        with a particular cvxpy solver. See https://www.cvxpy.org/ for
         details.
 
     References

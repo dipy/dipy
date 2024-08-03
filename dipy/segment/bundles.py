@@ -650,7 +650,7 @@ class RecoBundles:
         model_bundle : Streamlines
         pruned_streamlines : Streamlines
         slr_select : tuple
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
 
         Returns
