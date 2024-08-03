@@ -189,14 +189,14 @@ def bundle_shape_similarity(
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
+       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
+       Bundle analytics, a computational framework for investigating the
+       shapes and profiles of brain pathways across populations.
+       Sci Rep 10, 17149 (2020)
 
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+       tractography simplification, Frontiers in Neuroscience,
+       vol 6, no 175, 2012.
     """
 
     if len(bundle1) == 0 or len(bundle2) == 0:
@@ -431,8 +431,8 @@ class RecoBundles:
         References
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+           bundles using local and global streamline-based registration and
+           clustering, Neuroimage, 2017.
         """
         if self.verbose:
             t = time()

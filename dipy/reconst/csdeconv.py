@@ -141,8 +141,8 @@ def response_from_mask(gtab, data, mask):
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
     """
     return response_from_mask_ssst(gtab, data, mask)
 
@@ -970,8 +970,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
 
     """
     if len(data.shape) < 4:

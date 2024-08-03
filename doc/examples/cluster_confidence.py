@@ -165,5 +165,5 @@ window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 8
 # ----------
 #
 # .. [Jordan_2018_plm] Jordan, K., Amirbekian, B., Keshavan, A., Henry, R.G.
-# "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
-# for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.
+#    "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
+#    for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.

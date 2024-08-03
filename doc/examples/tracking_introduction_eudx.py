@@ -210,4 +210,4 @@ save_trk(sft, "tractogram_EuDX.trk", streamlines)
 # References
 # ----------
 # .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography"
-# PhD thesis, University of Cambridge, 2012.
+#    PhD thesis, University of Cambridge, 2012.

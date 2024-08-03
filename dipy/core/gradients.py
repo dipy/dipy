@@ -1239,9 +1239,9 @@ def params_to_btens(bval, bdelta, b_eta):
     References
     ----------
     .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+       anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
+       Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
+       Society of Chemistry, Cambridge, UK, 2016.
 
     """
 

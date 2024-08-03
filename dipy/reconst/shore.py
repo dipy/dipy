@@ -537,8 +537,8 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
     References
     ----------
     .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-    ODF estimation via Compressive Sensing in diffusion MRI", Medical
-    Image Analysis, 2013.
+       ODF estimation via Compressive Sensing in diffusion MRI", Medical
+       Image Analysis, 2013.
 
     """
 
@@ -588,8 +588,8 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
     References
     ----------
     .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-    ODF estimation via Compressive Sensing in diffusion MRI", Medical
-    Image Analysis, 2013.
+       ODF estimation via Compressive Sensing in diffusion MRI", Medical
+       Image Analysis, 2013.
     """
 
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
@@ -632,8 +632,8 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
     References
     ----------
     .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-    ODF estimation via Compressive Sensing in diffusion MRI", Medical
-    Image Analysis, 2013.
+       ODF estimation via Compressive Sensing in diffusion MRI", Medical
+       Image Analysis, 2013.
     """
 
     r, theta, phi = cart2sphere(

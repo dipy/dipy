@@ -86,14 +86,14 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     ----------
 
     .. [1] Koay CG, Ozarslan E and Pierpaoli C.
-    "Probabilistic Identification and Estimation of Noise (PIESNO):
-    A self-consistent approach and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 199: 94-103.
+       "Probabilistic Identification and Estimation of Noise (PIESNO):
+       A self-consistent approach and its applications in MRI."
+       Journal of Magnetic Resonance 2009; 199: 94-103.
 
     .. [2] Koay CG, Ozarslan E and Basser PJ.
-    "A signal transformational framework for breaking the noise floor
-    and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 197: 108-119.
+       "A signal transformational framework for breaking the noise floor
+       and its applications in MRI."
+       Journal of Magnetic Resonance 2009; 197: 108-119.
     """
 
     # This method works on a 2D array with repetitions as the third dimension,
@@ -328,12 +328,12 @@ def estimate_sigma(arr, *, disable_background_masking=False, N=0):
     References
     ----------
     .. [1] Koay, C. G., & Basser, P. J. (2006). Analytically exact correction
-    scheme for signal extraction from noisy magnitude MR signals.
-    Journal of Magnetic Resonance), 179(2), 317-22.
+       scheme for signal extraction from noisy magnitude MR signals.
+       Journal of Magnetic Resonance), 179(2), 317-22.
 
     .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot,
-    C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
-    magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.
+       C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
+       magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.
 
     """
     k = np.zeros((3, 3, 3), dtype=np.int8)
