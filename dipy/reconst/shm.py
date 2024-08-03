@@ -168,7 +168,7 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         is used for m < 0). Else, implements the basis as defined in
         Descoteaux et al. 2007 (without the absolute value).
 
@@ -413,7 +413,7 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         is used for m < 0). Else, implements the basis as defined in
         Descoteaux et al. 2007 (without the absolute value).
 
@@ -537,7 +537,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
         even order SH functions. Otherwise returns only even order SH
         functions.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         for m < 0). Else, implements the basis as defined in Descoteaux et al.
         2007.
 
