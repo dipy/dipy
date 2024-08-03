@@ -136,10 +136,10 @@ class MapmriModel(ReconstModel, Cache):
         laplacian_regularization: bool,
             Regularize using the Laplacian of the MAP-MRI basis.
         laplacian_weighting: string or scalar,
-            The string 'GCV' makes it use generalized cross-validation to find
-            the regularization weight [4]_. A scalar sets the regularization
-            weight to that value and an array will make it selected the
-            optimal weight from the values in the array.
+            The string 'GCV' makes it use generalized cross-validation [7]_ to
+            find the regularization weight [4]_. A scalar sets the
+            regularization weight to that value and an array will make it
+            selected the optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
         global_constraints : bool, optional
