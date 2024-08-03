@@ -153,12 +153,14 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
 
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
     the affine.
-    Only verify the following:
+
+    Only verifies the following:
         - affine is of the right type (float) and dimension (4,4)
         - affine contain values in the rotation part
         - dimensions is of right type (int) and length (3)
         - voxel_sizes is of right type (float) and length (3)
         - voxel_order is of right type (str) and length (3)
+
     The listed parameters are what is expected, provide something else and this
     function should fail (cover common mistakes).
 
