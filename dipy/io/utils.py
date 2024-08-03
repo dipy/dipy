@@ -268,6 +268,7 @@ def get_reference_info(reference):
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
         trk.header (dict), TrxFile or trx.header (dict)
         Reference that provides the spatial attribute.
+
     Returns
     -------
     output : tuple
