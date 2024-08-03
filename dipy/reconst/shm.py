@@ -275,9 +275,9 @@ def real_sph_harm(m_values, l_values, theta, phi):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Re(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Re(Y^{|m|}_l) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -325,9 +325,9 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Re(Y^m_l)  \; if m > 0 \\
+        \sqrt{2} * \Re(Y^m_l)  \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -394,9 +394,9 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Re(Y^m_l)  \; if m < 0 \\
+        \sqrt{2} * \Re(Y^m_l)  \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -453,9 +453,9 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Re(Y^m_l)  \; if m > 0 \\
+        \sqrt{2} * \Re(Y^m_l)  \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -516,9 +516,9 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Re(Y^m_l)  \; if m < 0 \\
+        \sqrt{2} * \Re(Y^m_l)  \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -583,9 +583,9 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
 
     Y^m_l =
     \begin{cases}
-        Re(Y^m_l) \; if m > 0 \\
+        \Re(Y^m_l) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        Im(Y^{|m|}_l) \; if m < 0 \\
+        \Im(Y^{|m|}_l) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -647,9 +647,9 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
 
     Y^m_l =
     \begin{cases}
-        \sqrt{2} * Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
