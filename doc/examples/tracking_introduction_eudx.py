@@ -13,7 +13,7 @@ can integrate along those directions to build a complete representation of that
 structure. Local fiber tracking is widely used in the field of diffusion MRI
 because it is simple and robust.
 
-In order to perform local fiber tracking, three things are needed::
+In order to perform local fiber tracking, three things are needed:
 
 1. A method for getting directions from a diffusion dataset.
 2. A method for identifying when the tracking must stop.
