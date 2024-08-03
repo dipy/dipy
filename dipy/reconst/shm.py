@@ -217,7 +217,7 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     Returns
     -------
     y_mn : complex float
-        The harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     Notes
     -----
@@ -268,16 +268,16 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
 def real_sph_harm(m_values, l_values, theta, phi):
     r"""Compute real spherical harmonics.
 
-    Where the real harmonic $Y^m_l$ is defined to be:
+    Where the real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Re(Y_l^{|m|}) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -297,7 +297,7 @@ def real_sph_harm(m_values, l_values, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at `theta` and `phi`.
+        The real harmonic $Y_l^m$ sampled at `theta` and `phi`.
 
     See Also
     --------
@@ -317,17 +317,17 @@ def real_sph_harm(m_values, l_values, theta, phi):
 )
 def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     r"""Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
+    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y_l^m$
     is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Re(Y^m_l)  \; if m > 0 \\
+        \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -350,7 +350,7 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonics $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonics $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
@@ -387,16 +387,16 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
 )
 def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     r"""Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_l$ is defined to be:
+    where the real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y^m_l)  \; if m < 0 \\
+        \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -420,7 +420,7 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
@@ -445,17 +445,17 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
+    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y_l^m$
     is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Re(Y^m_l)  \; if m > 0 \\
+        \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -479,7 +479,7 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
     m_values : array of int
         The phase factor ($m$) of the harmonics.
     l_values : array of int
@@ -509,16 +509,16 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_l$ is defined to be:
+    where the real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y^m_l)  \; if m < 0 \\
+        \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -544,7 +544,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
     m_values : array of int
         The phase factor ($m$) of the harmonics.
     l_values : array of int
@@ -576,16 +576,16 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     r"""
     Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
-    the real harmonic $Y^m_l$ is defined to be::
+    the real harmonic $Y_l^m$ is defined to be::
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \Re(Y^m_l) \; if m > 0 \\
+        \Re(Y_l^m) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \Im(Y^{|m|}_l) \; if m < 0 \\
+        \Im(Y_l^{|m|}) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -603,7 +603,7 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi`` as
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi`` as
         implemented in mrtrix. Warning: the basis is Tournier et al.
         2007 [2]_; 2004 [1]_ is slightly different.
     m_values : array
@@ -639,17 +639,17 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
 
     Samples the basis functions up to order `sh_order_max` at points on the
     sphere given by `theta` and `phi`. The basis functions are defined here the
-    same way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y^m_l$
+    same way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y_l^m$
     is defined to be:
 
     .. math::
        :nowrap:
 
-    Y^m_l =
+    Y_l^m =
     \begin{cases}
-        \sqrt{2} * \Im(Y^m_l) \; if m > 0 \\
+        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
         Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y^{|m|}_l) \; if m < 0 \\
+        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
     \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -668,7 +668,7 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``
     m_values : array of int
         The phase factor ($m$) of the harmonics.
     l_values : array of int
