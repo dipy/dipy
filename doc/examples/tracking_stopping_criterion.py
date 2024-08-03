@@ -98,6 +98,7 @@ dg = DeterministicMaximumDirectionGetter.from_shcoeff(
 # streamline is stopping where metric_map >= threshold, but there is no valid
 # direction to follow.
 # - 'INVALIDPOINT': N/A.
+#
 
 tensor_model = TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
@@ -170,6 +171,7 @@ if has_fury:
 # streamline is stopping where mask > 0, but there is no valid direction to
 # follow.
 # - 'INVALIDPOINT': N/A.
+#
 
 binary_criterion = BinaryStoppingCriterion(white_matter == 1)
 
@@ -244,6 +246,7 @@ if has_fury:
 # but there is no valid direction to follow.
 # - 'INVALIDPOINT': ``exclude_map`` > 0.5; the streamline reach a position
 # which is anatomically not plausible.
+#
 
 f_pve_csf, f_pve_gm, f_pve_wm = get_fnames("stanford_pve_maps")
 pve_csf_data = load_nifti_data(f_pve_csf)
