@@ -641,7 +641,7 @@ def _grad_equality_constraints(vects):
 
 @warning_for_keywords()
 def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
-    """Electrostatic-repulsion objective function. The alpha parameter
+    r"""Electrostatic-repulsion objective function. The alpha parameter
     controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
     $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
     The weights ensure equal importance of each shell to the objective
