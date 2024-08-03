@@ -862,9 +862,9 @@ icosahedron_vertices = np.array(
         [0, t, 1],  # 8
         [0, -t, 1],  # 9
         [0, t, -1],  # 10
-        [0, -t, -1],
+        [0, -t, -1],  # 11
     ]
-)  # 11
+)
 
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(

@@ -28,7 +28,10 @@ def nifti1_symmat(image_data, *args, **kwargs):
     image_data : array-like
         should have lower triangular elements of a symmetric matrix along the
         last dimension
-    all other arguments and keywords are passed to Nifti1Image
+    *args
+        Passed to Nifti1Image
+    *kwargs
+        Passed to Nifti1Image
 
     Returns
     -------
