@@ -399,7 +399,7 @@ class ConstrainedSDTModel(SphHarmModel):
             weight given to the constrained-positivity regularization part of
             the deconvolution equation
         tau : float
-            threshold (tau *mean(fODF)) controlling the amplitude below
+            threshold (``tau *mean(fODF)``) controlling the amplitude below
             which the corresponding fODF is assumed to be zero.
 
         References
@@ -758,7 +758,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
-         threshold (tau *max(fODF)) controlling the amplitude below
+         threshold (``tau *max(fODF)``) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
     r2_term : bool
          True if ODF is computed from model that uses the $r^2$ term in the
