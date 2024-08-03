@@ -65,8 +65,9 @@ def unique_edges(faces, *, return_mapping=False):
     edges : (N, 2) ndarray
         Unique edges.
     mapping : (N, 3)
-        For each face, [x, y, z], a mapping to it's edges [a, b, c].
-        ::
+        For each face, [x, y, z], a mapping to its edges [a, b, c].
+
+        .. code-block:: text
 
                 y
                 /\
@@ -239,7 +240,7 @@ class Sphere:
         New vertices are created at a, b, and c. Then each face [x, y, z] is
         divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
 
-        ::
+        .. code-block:: text
 
                 y
                 /\
