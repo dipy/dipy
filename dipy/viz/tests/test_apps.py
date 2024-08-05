@@ -105,6 +105,7 @@ def test_horizon(rng):
     streamlines.append(s1)
     streamlines.append(s2)
     streamlines.append(s3)
+    streamlines.shrink_data()
 
     affine = np.array(
         [

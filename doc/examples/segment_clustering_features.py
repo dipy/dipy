@@ -166,9 +166,11 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
 scene.add(actor.point(centers[:, 0, :], colormap_full, point_radius=0.2))
-window.record(scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600))
+window.record(
+    scene=scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -214,8 +216,8 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
-scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
-window.record(scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
+window.record(scene=scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -255,8 +257,8 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="arclength_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="arclength_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -300,8 +302,8 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

@@ -105,7 +105,7 @@ class ClustersVisualizer:
         print("Building cluster actors\n")
         for idx, cent in enumerate(centroids):
             centroid_actor = actor.streamtube(
-                [cent], colors, linewidth=linewidths[idx], lod=False
+                [cent], colors=colors, linewidth=linewidths[idx], lod=False
             )
             self.__scene.add(centroid_actor)
 

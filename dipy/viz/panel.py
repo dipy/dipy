@@ -142,7 +142,7 @@ def slicer_panel(
 
     if pam is not None:
         peaks_actor_z = actor.peak_slicer(
-            pam.peak_dirs, None, mask=mask, affine=affine, colors=None
+            pam.peak_dirs, peaks_values=None, mask=mask, affine=affine, colors=None
         )
 
     slicer_opacity = 1.0

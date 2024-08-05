@@ -175,7 +175,7 @@ model_kernel = actor.odf_slicer(
 model_kernel.display(x=3)
 scene.add(model_kernel)
 scene.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
-window.record(scene, out_path="kernel.png", size=(900, 900))
+window.record(scene=scene, out_path="kernel.png", size=(900, 900))
 if interactive:
     window.show(scene)
 
@@ -248,7 +248,7 @@ fodf_spheres_enh_sharp = actor.odf_slicer(
 fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
 scene.add(fodf_spheres_enh_sharp)
 
-window.record(scene, out_path="enhancements.png", size=(900, 900))
+window.record(scene=scene, out_path="enhancements.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

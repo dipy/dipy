@@ -86,9 +86,9 @@ save_trk(sft, "tractogram_probabilistic_dg_pmf.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_probabilistic_dg_pmf.png", size=(800, 800)
+        scene=scene, out_path="tractogram_probabilistic_dg_pmf.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -123,8 +123,10 @@ save_trk(sft, "tractogram_probabilistic_dg_sh.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_probabilistic_dg_sh.png", size=(800, 800))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
+    window.record(
+        scene=scene, out_path="tractogram_probabilistic_dg_sh.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 
@@ -165,9 +167,9 @@ save_trk(sft, "tractogram_probabilistic_dg_sh_pfm.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_probabilistic_dg_sh_pfm.png", size=(800, 800)
+        scene=scene, out_path="tractogram_probabilistic_dg_sh_pfm.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)

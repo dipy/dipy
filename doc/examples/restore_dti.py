@@ -102,7 +102,7 @@ scene = window.Scene()
 scene.add(
     actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3)
 )
-window.record(scene, out_path="tensor_ellipsoids_wls.png", size=(600, 600))
+window.record(scene=scene, out_path="tensor_ellipsoids_wls.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -134,7 +134,7 @@ scene = window.Scene()
 scene.add(
     actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3)
 )
-window.record(scene, out_path="tensor_ellipsoids_wls_noisy.png", size=(600, 600))
+window.record(scene=scene, out_path="tensor_ellipsoids_wls_noisy.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -170,7 +170,9 @@ scene.add(
     actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3)
 )
 print("Saving illustration as tensor_ellipsoids_restore_noisy.png")
-window.record(scene, out_path="tensor_ellipsoids_restore_noisy.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="tensor_ellipsoids_restore_noisy.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 

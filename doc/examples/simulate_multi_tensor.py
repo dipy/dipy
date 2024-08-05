@@ -122,7 +122,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving illustration as multi_tensor_simulation")
-window.record(scene, out_path="multi_tensor_simulation.png", size=(300, 300))
+window.record(scene=scene, out_path="multi_tensor_simulation.png", size=(300, 300))
 if interactive:
     window.show(scene)
 

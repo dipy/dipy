@@ -118,7 +118,7 @@ streamlines = Streamlines(streamline_generator)
 
 color = colormap.line_colors(streamlines)
 streamlines_actor = actor.streamtube(
-    list(transform_streamlines(streamlines, inv(t1_aff))), color, linewidth=0.1
+    list(transform_streamlines(streamlines, inv(t1_aff))), colors=color, linewidth=0.1
 )
 
 vol_actor = actor.slicer(t1_data)
@@ -133,7 +133,9 @@ scene.add(streamlines_actor)
 if interactive:
     window.show(scene)
 
-window.record(scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800))
+window.record(
+    scene=scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800)
+)
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_rumba.trk")

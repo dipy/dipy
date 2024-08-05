@@ -127,7 +127,7 @@ response_actor = actor.odf_slicer(
 )
 scene.add(response_actor)
 print("Saving illustration as csd_response.png")
-window.record(scene, out_path="csd_response.png", size=(200, 200))
+window.record(scene=scene, out_path="csd_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -195,7 +195,7 @@ scene = window.Scene()
 
 scene.add(response_actor)
 print("Saving illustration as csd_recursive_response.png")
-window.record(scene, out_path="csd_recursive_response.png", size=(200, 200))
+window.record(scene=scene, out_path="csd_recursive_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -237,7 +237,7 @@ fodf_spheres = actor.odf_slicer(
 scene.add(fodf_spheres)
 
 print("Saving illustration as csd_odfs.png")
-window.record(scene, out_path="csd_odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="csd_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -261,11 +261,11 @@ csd_peaks = peaks_from_model(
 )
 
 scene.clear()
-fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values)
+fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, peaks_values=csd_peaks.peak_values)
 scene.add(fodf_peaks)
 
 print("Saving illustration as csd_peaks.png")
-window.record(scene, out_path="csd_peaks.png", size=(600, 600))
+window.record(scene=scene, out_path="csd_peaks.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -282,7 +282,7 @@ fodf_spheres.GetProperty().SetOpacity(0.4)
 scene.add(fodf_spheres)
 
 print("Saving illustration as csd_both.png")
-window.record(scene, out_path="csd_both.png", size=(600, 600))
+window.record(scene=scene, out_path="csd_both.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

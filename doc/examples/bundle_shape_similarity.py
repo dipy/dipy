@@ -49,14 +49,14 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
     scene.SetBackground(1.0, 1, 1)
     for i, bundle in enumerate(bundles):
         color = colors[i]
-        streamtube_actor = actor.streamtube(bundle, color, linewidth=0.3)
+        streamtube_actor = actor.streamtube(bundle, colors=color, linewidth=0.3)
         streamtube_actor.RotateX(-90)
         streamtube_actor.RotateZ(90)
         scene.add(streamtube_actor)
     if show:
         window.show(scene)
     if fname is not None:
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
+        window.record(scene=scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
 show_both_bundles(

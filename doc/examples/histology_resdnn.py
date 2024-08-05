@@ -119,7 +119,9 @@ scene.zoom(camera["zoom_factor"])
 if interactive:
     window.show(scene, reset_camera=False)
 
-window.record(scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=False)
+window.record(
+    scene=scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=False
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

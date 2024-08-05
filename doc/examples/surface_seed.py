@@ -49,7 +49,7 @@ scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="surface_seed1.png", size=(600, 600))
+window.record(scene=scene, out_path="surface_seed1.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -111,7 +111,7 @@ scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="surface_seed2.png", size=(600, 600))
+window.record(scene=scene, out_path="surface_seed2.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
