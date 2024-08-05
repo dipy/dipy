@@ -178,10 +178,9 @@ References
        of the fibre orientation distribution in diffusion MRI:
        Non-negativity constrained super-resolved spherical deconvolution.
        NeuroImage. 2007;35(4):1459–1472.
-.. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-       Pietsch M, et al. MRtrix3: A fast, flexible and open software
-       framework for medical image processing and visualisation.
-       NeuroImage. 2019 Nov 15;202:116-137.
+.. [3] Tournier J-D, Calamante F. and Connelly A. MRtrix: Diffusion
+       tractography in crossing fiber regions. International Journal of
+       Imaging Systems and Technology. 2012;22(1):53-66.
 .. [4] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
        Pietsch M, et al. MRtrix3: A fast, flexible and open software
        framework for medical image processing and visualisation.
