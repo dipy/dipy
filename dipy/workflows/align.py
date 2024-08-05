@@ -948,6 +948,7 @@ class MotionCorrectionFlow(Workflow):
 class BundleWarpFlow(Workflow):
     @classmethod
     def get_short_name(cls):
+      
         return "bundlewarp"
 
     @warning_for_keywords()
@@ -988,7 +989,7 @@ class BundleWarpFlow(Workflow):
             deformations. It is represented with λ in BundleWarp paper. NOTE:
             setting alpha<=0.01 will result in highly deformable registration
             that could extremely modify the original anatomy of the moving
-            bundle. (default 0.3)
+            bundle. (default 0.5)
         beta : int, optional
             Represents the strength of the interaction between points
             Gaussian kernel size. (default 20)
@@ -1010,7 +1011,7 @@ class BundleWarpFlow(Workflow):
         out_dist : string, optional
             Filename of MDF distance matrix.
         out_matched_pairs : string, optional
-            Filename of matched pairs; treamline correspondences between two
+            Filename of matched pairs; streamline correspondences between two
             bundles.
 
         References
@@ -1057,13 +1058,11 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        df = pd.DataFrame(warp, columns=["transforms", "gaussian_kernel"])
-
         logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
         logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
         logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)
