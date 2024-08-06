@@ -313,6 +313,7 @@ def create_qspace(gtab, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -335,6 +336,7 @@ def create_qtable(gtab, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -370,6 +372,7 @@ def hanning_filter(gtab, filter_width, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     filter_width : int
     origin : (3,) ndarray
         center of qspace
@@ -439,7 +442,9 @@ def half_to_full_qspace(data, gtab):
     Returns
     -------
     new_data : array, shape (X, Y, Z, 2 * W -1)
+        DWI data across the full Cartesian space.
     new_gtab : GradientTable
+        Gradient table.
 
     Notes
     -----

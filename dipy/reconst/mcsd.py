@@ -33,6 +33,7 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     sh_order_max : int
         Maximal spherical harmonics order (l).
     iso_comp: int
@@ -107,10 +108,13 @@ class MultiShellResponse:
 def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
+
     Parameters
     ----------
     response : MultiShellResponse object
+        Response function.
     gtab : GradientTable
+        Gradient table.
     sh_order_max : int ``>= 0``
         The maximal order ($l$) of the harmonic.
     delta : Delta generated from `_basic_delta`
@@ -177,6 +181,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         response : ndarray or MultiShellResponse object
             Pre-computed multi-shell fiber response function in the form of a
             MultiShellResponse object, or simple response function as a ndarray.
@@ -568,6 +573,7 @@ def mask_for_response_msmt(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data (4D)
     roi_center : array-like, (3,)
@@ -691,6 +697,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask_wm : ndarray
@@ -785,6 +792,7 @@ def auto_response_msmt(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     tol : int, optional

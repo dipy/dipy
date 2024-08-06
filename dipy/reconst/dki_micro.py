@@ -319,7 +319,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         Parameters
         ----------
         gtab : GradientTable class instance
-
+            Gradient table.
         fit_method : str or callable
             str can be one of the following:
             'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor

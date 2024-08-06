@@ -1039,7 +1039,7 @@ def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
     Parameters
     ----------
     gtab : GradientTable class instance.
-
+        Gradient table.
     n_bvals : int
         The number of different b-values you are checking for.
     non_zero : bool

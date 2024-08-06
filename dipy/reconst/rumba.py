@@ -59,6 +59,7 @@ class RumbaSDModel(OdfModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         wm_response : 1d ndarray or 2d ndarray or AxSymShResponse, optional
             Tensor eigenvalues as a (3,) ndarray, multishell eigenvalues as
             a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray in
@@ -728,6 +729,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     sphere : Sphere
         Sphere with which to sample discrete fiber orientations in order to
         construct kernel
