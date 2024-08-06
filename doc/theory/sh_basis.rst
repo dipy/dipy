@@ -17,7 +17,7 @@ Spherical harmonics are orthonormal functions defined by:
 where $l$ is the order, $m$ is the phase factor, $P_l^m$ is an associated
 $l$-th order, $m$-th phase factor Legendre polynomial, and $(\theta, \phi)$ is the
 representation of the direction vector in spherical coordinates. The relation
-between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
+between $Y_l^m$ and $Y_l^{-m}$ is given by:
 
 ..  math::
 
@@ -58,9 +58,9 @@ directly from the literature.
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 - The basis proposed by Tournier *et al.* [2]_:
@@ -69,9 +69,9 @@ directly from the literature.
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \Im(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \Im(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
@@ -93,9 +93,9 @@ from the literature. Their implementation is given below.
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 - The ``tournier07`` basis is based on the one proposed by Tournier *et al.*
@@ -107,7 +107,7 @@ from the literature. Their implementation is given below.
      \begin{cases}
      \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 These bases differ from the literature by the presence of an absolute value around
@@ -130,9 +130,9 @@ the ``descoteaux07`` and ``tournier07`` bases now default to:
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 for the ``descoteaux07`` basis and
@@ -141,9 +141,9 @@ for the ``descoteaux07`` basis and
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 for the ``tournier07`` basis. Both bases are very similar, with their only
@@ -178,10 +178,9 @@ References
        of the fibre orientation distribution in diffusion MRI:
        Non-negativity constrained super-resolved spherical deconvolution.
        NeuroImage. 2007;35(4):1459–1472.
-.. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-       Pietsch M, et al. MRtrix3: A fast, flexible and open software
-       framework for medical image processing and visualisation.
-       NeuroImage. 2019 Nov 15;202:116-137.
+.. [3] Tournier J-D, Calamante F. and Connelly A. MRtrix: Diffusion
+       tractography in crossing fiber regions. International Journal of
+       Imaging Systems and Technology. 2012;22(1):53-66.
 .. [4] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
        Pietsch M, et al. MRtrix3: A fast, flexible and open software
        framework for medical image processing and visualisation.

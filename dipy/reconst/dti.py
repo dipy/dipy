@@ -1943,7 +1943,7 @@ def restore_fit_tensor(
     References
     ----------
     .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-    estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+       estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
     """
     # Detect number of parameters to estimate from design_matrix length plus

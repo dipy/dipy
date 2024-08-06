@@ -47,8 +47,8 @@ shape and structures of the moving bundle. Here, we use relatively higher value
 of alpha=0.03. By default, BundleWarp partially deforms the bundle to preserve
 the key characteristics of the original bundle.
 
-The following BundleWarp workflows requirse two positional input arguments;
- ``static`` and ``moving`` .trk files. In our case, the ``static`` input bundle
+The following BundleWarp workflows requires two positional input arguments;
+``static`` and ``moving`` .trk files. In our case, the ``static`` input bundle
 is the ``s_UF_L.trk`` and the ``moving`` is ``m_UF_L.trk``.
 
 Run the following workflow::
@@ -75,7 +75,7 @@ Fully Deformable BundleWarp Registration
 
 Here, we fully deform/warp moving bundle to make it completely aligned with
 the static bundle. Here, we use lower value of alpha=0.01.
-NOTE: Be caustious with setting lower value of alpha as it can completely
+NOTE: Be cautious with setting lower value of alpha as it can completely
 change the original anatomical shape of the moving bundle.
 
 Run the following workflow::

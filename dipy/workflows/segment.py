@@ -182,14 +182,14 @@ class RecoBundlesFlow(Workflow):
         References
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-         bundles using local and global streamline-based registration and
-         clustering, Neuroimage, 2017.
+           bundles using local and global streamline-based registration and
+           clustering, Neuroimage, 2017.
 
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
+           Garyfallidis, E. Bundle analytics, a computational framework for
+           investigating the shapes and profiles of brain pathways across
+           populations. Sci Rep 10, 17149 (2020)
 
         """
         slr = not no_slr

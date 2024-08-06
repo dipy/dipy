@@ -34,7 +34,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
 
         .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012.
+           thesis, University of Cambridge, 2012.
 
         Notes
         -----

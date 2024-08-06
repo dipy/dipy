@@ -65,8 +65,9 @@ def unique_edges(faces, *, return_mapping=False):
     edges : (N, 2) ndarray
         Unique edges.
     mapping : (N, 3)
-        For each face, [x, y, z], a mapping to it's edges [a, b, c].
-        ::
+        For each face, [x, y, z], a mapping to its edges [a, b, c].
+
+        .. code-block:: text
 
                 y
                 /\
@@ -239,7 +240,7 @@ class Sphere:
         New vertices are created at a, b, and c. Then each face [x, y, z] is
         divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
 
-        ::
+        .. code-block:: text
 
                 y
                 /\
@@ -552,7 +553,7 @@ def fibonacci_sphere(n_points, *, hemisphere=False, randomize=True, rng=None):
         If True, generate points only on the upper hemisphere.
         Default is False.
     randomize : bool, optional
-        If True, randomize the starting point on the sphere. Default is True.
+        If True, randomize the starting point on the sphere.
     rng : np.random.Generator, optional
         If None creates random generator in function.
 
@@ -640,7 +641,7 @@ def _grad_equality_constraints(vects):
 
 @warning_for_keywords()
 def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
-    """Electrostatic-repulsion objective function. The alpha parameter
+    r"""Electrostatic-repulsion objective function. The alpha parameter
     controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
     $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
     The weights ensure equal importance of each shell to the objective
@@ -861,9 +862,9 @@ icosahedron_vertices = np.array(
         [0, t, 1],  # 8
         [0, -t, 1],  # 9
         [0, t, -1],  # 10
-        [0, -t, -1],
+        [0, -t, -1],  # 11
     ]
-)  # 11
+)
 
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(

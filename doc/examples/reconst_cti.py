@@ -174,9 +174,9 @@ plt.show()
 #     brain on a clinical 3T scanner. Neuroimage 254: 119137
 #     doi: 10.1016/j.neuroimage.2022.119137
 # .. [AlvesR2022] Alves, R., Henriques, R.N., Kerkelä, L., Chavarrías C.,
-# Jespersen, S.N., Shemesh, N.
-#     2022. Correlation Tensor MRI deciphers underlying kurtosis sources in
-#     stroke, Neuroimage 247: 118833. doi: 10.1016/j.neuroimage.2021.118833
+#    Jespersen, S.N., Shemesh, N. 2022. Correlation Tensor MRI deciphers
+#    underlying kurtosis sources in stroke, Neuroimage 247: 118833.
+#    doi: 10.1016/j.neuroimage.2021.118833
 # .. [NetHe2021] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2021.
-# Evidence for microscopic kurtosis in neural tissue revealed by correlation
-# tensor MRI. Magn. Reson. Med. 1-20. doi: 10.1002/mrm.28938
+#    Evidence for microscopic kurtosis in neural tissue revealed by correlation
+#    tensor MRI. Magn. Reson. Med. 1-20. doi: 10.1002/mrm.28938

@@ -28,7 +28,10 @@ def nifti1_symmat(image_data, *args, **kwargs):
     image_data : array-like
         should have lower triangular elements of a symmetric matrix along the
         last dimension
-    all other arguments and keywords are passed to Nifti1Image
+    *args
+        Passed to Nifti1Image
+    *kwargs
+        Passed to Nifti1Image
 
     Returns
     -------
@@ -153,12 +156,14 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
 
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
     the affine.
-    Only verify the following:
+
+    Only verifies the following:
         - affine is of the right type (float) and dimension (4,4)
         - affine contain values in the rotation part
         - dimensions is of right type (int) and length (3)
         - voxel_sizes is of right type (float) and length (3)
         - voxel_order is of right type (str) and length (3)
+
     The listed parameters are what is expected, provide something else and this
     function should fail (cover common mistakes).
 
@@ -266,6 +271,7 @@ def get_reference_info(reference):
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
         trk.header (dict), TrxFile or trx.header (dict)
         Reference that provides the spatial attribute.
+
     Returns
     -------
     output : tuple

@@ -104,7 +104,7 @@ class FreeWaterTensorModel(ReconstModel):
                 :func:`fwdti.nls_iter`
 
             callable has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See fwdti.wls_iter, fwdti.nls_iter for
            details

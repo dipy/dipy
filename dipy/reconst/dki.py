@@ -1756,7 +1756,7 @@ class DiffusionKurtosisModel(ReconstModel):
     """Class for the Diffusion Kurtosis Model"""
 
     def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
-        """Diffusion Kurtosis Tensor Model _[1], _[2]
+        """Diffusion Kurtosis Tensor Model [1]_, [2]_
 
         Parameters
         ----------

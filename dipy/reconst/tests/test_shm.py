@@ -88,10 +88,10 @@ def test_sph_harm_ind_list():
 def test_real_sh_descoteaux_from_index():
     # Tests derived from tables in
     # https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
-    # where real spherical harmonic $Y^m_l$ is defined to be:
-    #    Real($Y^m_l$) * sqrt(2) if m > 0
-    #    $Y^m_l$                 if m == 0
-    #    Imag($Y^m_l$) * sqrt(2) if m < 0
+    # where real spherical harmonic $Y_l^m$ is defined to be:
+    #    Real($Y_l^m$) * sqrt(2) if m > 0
+    #    $Y_l^m$                 if m == 0
+    #    Imag($Y_l^m$) * sqrt(2) if m < 0
 
     rsh = real_sh_descoteaux_from_index
     pi = np.pi

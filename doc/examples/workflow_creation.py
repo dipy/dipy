@@ -85,6 +85,7 @@ class AppendTextFlow(Workflow):
 #
 # This is it for the workflow! Now to be able to call it easily via command
 # line, you need to add this workflow in 2 different files:
+#
 # - ``<dipy_root>/pyproject.toml``: open this file and add the following line
 #   to the ``[project.scripts]`` section:
 #   ``dipy_append_text = "dipy.workflows.cli:run"``

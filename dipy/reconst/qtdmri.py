@@ -27,10 +27,10 @@ plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 class QtdmriModel(Cache):
-    r"""The q$\tau$-dMRI model [1] to analytically and continuously represent
+    r"""The q$\tau$-dMRI model [1]_ to analytically and continuously represent
     the q$\tau$ diffusion signal attenuation over diffusion sensitization
     q and diffusion time $\tau$. The model can be seen as an extension of
-    the MAP-MRI basis [2] towards different diffusion times.
+    the MAP-MRI basis [2]_ towards different diffusion times.
 
     The main idea is to model the diffusion signal over time and space as
     a linear combination of continuous functions,
@@ -58,7 +58,7 @@ class QtdmriModel(Cache):
     ----------
     gtab : GradientTable,
         gradient directions and bvalues container class. The bvalues
-        should be in the normal s/mm^2. big_delta and small_delta need to
+        should be in the normal s/mm^2. big_delta and small_delta need to be
         given in seconds.
     radial_order : unsigned int,
         an even integer representing the spatial/radial order of the basis.
@@ -69,7 +69,7 @@ class QtdmriModel(Cache):
         Regularize using the Laplacian of the qt-dMRI basis.
     laplacian_weighting: string or scalar,
         The string 'GCV' makes it use generalized cross-validation to find
-        the regularization weight [3]. A scalar sets the regularization
+        the regularization weight [3]_. A scalar sets the regularization
         weight to that value.
     l1_regularization : bool,
         Regularize by imposing sparsity in the coefficients using the
@@ -80,7 +80,7 @@ class QtdmriModel(Cache):
         to that value.
     cartesian : bool
         Whether to use the Cartesian or spherical implementation of the
-        qt-dMRI basis, which we first explored in [4].
+        qt-dMRI basis, which we first explored in [4]_.
     anisotropic_scaling : bool
         Whether to use anisotropic scaling or isotropic scaling. This
         option can be used to test if the Cartesian implementation is
@@ -100,7 +100,7 @@ class QtdmriModel(Cache):
         stability problem.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint
-        with a particular cvxpy solver. See See https://www.cvxpy.org/ for
+        with a particular cvxpy solver. See https://www.cvxpy.org/ for
         details.
 
     References

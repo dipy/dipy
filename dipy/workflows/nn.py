@@ -42,8 +42,8 @@ class EVACPlusFlow(Workflow):
         References
         ----------
         ..  [Park2022] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
-        EVAC+: Multi-scale V-net with Deep Feature
-        CRF Layers for Brain Extraction.
+            EVAC+: Multi-scale V-net with Deep Feature CRF Layers for Brain
+            Extraction.
 
         """
         io_it = self.get_io_iterator()

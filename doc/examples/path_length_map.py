@@ -181,5 +181,5 @@ fig.savefig("Path_Length_Map.png")
 # ----------
 #
 # .. [Jordan_2018_plm] Jordan K. et al., "An Open-Source Tool for Anisotropic
-# Radiation Therapy Planning in Neuro-oncology Using DW-MRI Tractography",
-# PREPRINT (biorxiv), 2018.
+#    Radiation Therapy Planning in Neuro-oncology Using DW-MRI Tractography",
+#    PREPRINT (biorxiv), 2018.

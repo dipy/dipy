@@ -202,15 +202,15 @@ class SlrWithQbxFlow(Workflow):
         References
         ----------
         .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-        registration of white-matter fascicles in the space of
-        streamlines", NeuroImage, 117, 124--140, 2015
+           registration of white-matter fascicles in the space of
+           streamlines", NeuroImage, 117, 124--140, 2015
 
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-        bundle alignment for group comparisons", ISMRM, 2014.
+           bundle alignment for group comparisons", ISMRM, 2014.
 
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-        bundles using local and global streamline-based registration
-        and clustering, NeuroImage, 2017.
+           bundles using local and global streamline-based registration
+           and clustering, NeuroImage, 2017.
         """
 
         io_it = self.get_io_iterator()
@@ -521,7 +521,7 @@ class ApplyTransformFlow(Workflow):
             folder containing multiple images.
 
         transform_map_file : string
-            For the affine case, it should be a text(*.txt) file containing
+            For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
             field in each voxel with this shape (x, y, z, 3, 2).

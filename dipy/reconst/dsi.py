@@ -219,14 +219,15 @@ class DiffusionSpectrumFit(OdfFit):
         References
         ----------
         .. [1] Descoteaux M. et al., "Multiple q-shell diffusion propagator
-        imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
+           imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
 
         .. [2] Tuch D.S., "Diffusion MRI of Complex Tissue Structure",
-         PhD Thesis, 2002.
+           PhD Thesis, 2002.
 
         .. [3] Wu Y. et al., "Computation of Diffusion Function Measures
-        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-        IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008
+           in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
+           IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
+           2008
 
         """
 
