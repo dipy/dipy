@@ -49,7 +49,9 @@ def test_patch2self_flow():
         data_path, fbvals, fbvecs = get_fnames()
 
         patch2self_flow = Patch2SelfFlow()
-        patch2self_flow.run(data_path, fbvals, patch_radius=0, out_dir=out_dir)
+        patch2self_flow.run(
+            data_path, fbvals, patch_radius=0, out_dir=out_dir, version=1
+        )
         assert_true(
             os.path.isfile(patch2self_flow.last_generated_outputs["out_denoised"])
         )

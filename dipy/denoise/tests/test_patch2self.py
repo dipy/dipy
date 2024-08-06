@@ -42,7 +42,7 @@ def test_patch2self_random_noise(rng):
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
 
-    # both clip and shift = True, and int patch_radius
+    # both clip and shift = True, and int patch_radius for version 1
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
         S0den_clip = p2s.patch2self(
@@ -52,6 +52,22 @@ def test_patch2self_random_noise(rng):
             model="ols",
             clip_negative_vals=True,
             shift_intensity=True,
+            version=1,
+        )
+
+    assert_greater(S0den_clip.min(), S0.min())
+    assert_equal(np.round(S0den_clip.mean()), 30)
+
+    # both clip and shift = True for version 3
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        S0den_clip = p2s.patch2self(
+            S0,
+            bvals,
+            model="ols",
+            clip_negative_vals=True,
+            shift_intensity=True,
+            version=3,
         )
 
     assert_greater(S0den_clip.min(), S0.min())
@@ -164,10 +180,10 @@ def test_phantom(rng):
     gtab = gradient_table(bvals, bvecs=bvecs)
 
     dwi, sigma = rfiw_phantom(gtab, snr=10, rng=rng)
-    dwi_den1 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=1.0)
+    dwi_den1 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=1.0, version=1)
 
     assert_less(np.max(dwi_den1) / sigma, np.max(dwi) / sigma)
-    dwi_den2 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=0.7)
+    dwi_den2 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=0.7, version=1)
 
     assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
     assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
@@ -175,6 +191,6 @@ def test_phantom(rng):
     assert_raises(ValueError, p2s.patch2self, dwi, model="empty", bvals=bvals)
 
     # Try this with a sigma volume, instead of a scalar
-    dwi_den = p2s.patch2self(dwi, bvals=bvals, model="ols")
+    dwi_den = p2s.patch2self(dwi, bvals=bvals, model="ols", version=1)
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)

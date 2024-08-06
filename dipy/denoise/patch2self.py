@@ -1,14 +1,78 @@
+import os
+import tempfile
 import time
 from warnings import warn
 
 import numpy as np
+from tqdm import tqdm
 
-import dipy.core.optimize as opt
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
+# Import optional packages
 sklearn, has_sklearn, _ = optional_package("sklearn")
 linear_model, _, _ = optional_package("sklearn.linear_model")
+
+
+def count_sketch(matrixA_name, matrixA_dtype, matrixA_shape, sketch_rows, tmp_dir):
+    """Count Sketching algorithm to reduce the size of the matrix.
+
+    Parameters
+    ----------
+    matrixA_name : str
+        The name of the memmap file containing the matrix A.
+    matrixA_dtype : dtype
+        The dtype of the matrix A.
+    matrixA_shape : tuple
+        The shape of the matrix A.
+    sketch_rows : int
+        The number of rows in the sketch matrix.
+    tmp_dir : str
+        The directory to save the temporary files.
+
+    Returns
+    -------
+    matrixC_name : str
+        The name of the memmap file containing the sketch matrix.
+    matrixC_dtype : dtype
+        The dtype of the sketch matrix.
+    matrixC_shape : tuple
+        The shape of the sketch matrix.
+
+    """
+    matrixA = np.squeeze(
+        np.memmap(matrixA_name, dtype=matrixA_dtype, mode="r+", shape=matrixA_shape)
+    ).reshape(np.prod(matrixA_shape[:-1]), matrixA_shape[-1])
+
+    with tempfile.NamedTemporaryFile(
+        delete=False, dir=tmp_dir, suffix="matrix_t"
+    ) as matrixt_file:
+        matrixt = np.memmap(
+            matrixt_file.name, dtype=matrixA_dtype, mode="w+", shape=matrixA.shape
+        )
+        hashed_indices = np.random.choice(sketch_rows, matrixA.shape[0], replace=True)
+        rand_signs = np.random.choice(2, matrixA.shape[0], replace=True) * 2 - 1
+        for i in range(0, matrixA.shape[0], matrixA.shape[0] // 20):
+            end_index = min(i + matrixA.shape[0] // 20, matrixA.shape[0])
+            matrixt[i:end_index, :] = (
+                matrixA[i:end_index, :] * rand_signs[i:end_index, np.newaxis]
+            )
+
+    with tempfile.NamedTemporaryFile(
+        delete=False, dir=tmp_dir, suffix="matrix_C"
+    ) as matrixC_file:
+        matrixC = np.memmap(
+            matrixC_file.name,
+            dtype=matrixA_dtype,
+            mode="w+",
+            shape=(sketch_rows, matrixA.shape[1]),
+        )
+        np.add.at(matrixC, hashed_indices, matrixt)
+        matrixC.flush()
+        matrixt.flush()
+    del matrixt
+    os.unlink(matrixt_file.name)
+    return matrixC_file.name, matrixC.dtype, matrixC.shape
 
 
 def _vol_split(train, vol_idx):
@@ -19,95 +83,22 @@ def _vol_split(train, vol_idx):
     train : ndarray
         Array of all 3D patches flattened out to be 2D.
 
-    vol_idx: int
-        The volume number that needs to be held out for training.
-
-    Returns
-    -------
-    cur_x : 2D-array (nvolumes*patch_size) x (nvoxels)
-        Array of patches corresponding to all the volumes except for the
-        held-out volume.
-
-    y : 1D-array
-        Array of patches corresponding to the volume that is used a target for
-        denoising.
-    """
-    # Hold-out the target volume
-    mask = np.zeros(train.shape[0])
-    mask[vol_idx] = 1
-    cur_x = train[mask == 0]
-    cur_x = cur_x.reshape(((train.shape[0] - 1) * train.shape[1], train.shape[2]))
-
-    # Center voxel of the selected block
-    y = train[vol_idx, train.shape[1] // 2, :]
-    return cur_x, y
-
-
-def _vol_denoise(train, vol_idx, model, data_shape, alpha):
-    """Denoise a single 3D volume using a train and test phase.
-
-    Parameters
-    ----------
-    train : ndarray
-        Array of all 3D patches flattened out to be 2D.
-
     vol_idx : int
         The volume number that needs to be held out for training.
 
-    model : string, or initialized linear model object.
-            This will determine the algorithm used to solve the set of linear
-            equations underlying this model. If it is a string it needs to be
-            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
-            it can be an object that inherits from
-            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
-            interface from Scikit-Learn:
-            `sklearn.linear_model.LinearRegression`,
-            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
-            and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ridge'.
-
-    data_shape : ndarray
-        The 4D shape of noisy DWI data to be denoised.
-
-    alpha : float, optional
-        Regularization parameter only for ridge and lasso regression models.
-        default: 1.0
-
     Returns
     -------
-    model prediction : ndarray
-        Denoised array of all 3D patches flattened out to be 2D corresponding
-        to the held out volume `vol_idx`.
+    cur_x : 2D-array (nvolumes * patch_size) x (nvoxels)
+        Array of patches corresponding to all volumes except the held out volume.
 
+    y : 1D-array
+        Array of patches corresponding to the volume that is used a target for denoising
     """
-    # To add a new model, use the following API
-    # We adhere to the following options as they are used for comparisons
-    if model.lower() == "ols":
-        model = linear_model.LinearRegression(copy_X=False)
-
-    elif model.lower() == "ridge":
-        model = linear_model.Ridge(copy_X=False, alpha=alpha)
-
-    elif model.lower() == "lasso":
-        model = linear_model.Lasso(copy_X=False, max_iter=50, alpha=alpha)
-
-    elif (
-        isinstance(model, opt.SKLearnLinearSolver)
-        or has_sklearn
-        and isinstance(model, sklearn.base.RegressorMixin)
-    ):
-        model = model
-
-    else:
-        e_s = "The `solver` key-word argument needs to be: "
-        e_s += "'ols', 'ridge', 'lasso' or a "
-        e_s += "`dipy.optimize.SKLearnLinearSolver` object"
-        raise ValueError(e_s)
-
-    cur_x, y = _vol_split(train, vol_idx)
-    model.fit(cur_x.T, y.T)
-
-    return model.predict(cur_x.T).reshape(data_shape[0], data_shape[1], data_shape[2])
+    mask = np.zeros(train.shape[0], dtype=bool)
+    mask[vol_idx] = True
+    cur_x = train[~mask].reshape((train.shape[0] - 1) * train.shape[1], train.shape[2])
+    y = train[vol_idx, train.shape[1] // 2, :]
+    return cur_x, y
 
 
 def _extract_3d_patches(arr, patch_radius):
@@ -158,6 +149,204 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
+def _fit_denoising_model(train, vol_idx, model, alpha, version):
+    """Fit a single 3D volume using a train and test phase.
+
+    Parameters
+    ----------
+    train : ndarray
+        Array of all 3D patches flattened out to be 2D.
+
+    vol_idx : int
+        The volume number that needs to be held out for training.
+
+    model : str or initialized linear model object.
+        This will determine the algorithm used to solve the set of linear
+        equations underlying this model. If it is a string it needs to be
+        one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+        it can be an object that inherits from
+        `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+        interface from Scikit-Learn:
+        `sklearn.linear_model.LinearRegression`,
+        `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+        and other objects that inherit from `sklearn.base.RegressorMixin`.
+
+    alpha : float
+        Regularization parameter only for ridge and lasso regression models.
+
+    version : int
+        Version 1 or 3 of Patch2Self to use.
+
+    Returns
+    -------
+    model_instance : object
+        The fitted model instance if version is 3.
+
+    prediction : ndarray
+        The prediction of the model if version is 1.
+    """
+    if isinstance(model, str):
+        if model.lower() == "ols":
+            model_instance = linear_model.LinearRegression(copy_X=False)
+        elif model.lower() == "ridge":
+            model_instance = linear_model.Ridge(copy_X=False, alpha=alpha)
+        elif model.lower() == "lasso":
+            model_instance = linear_model.Lasso(copy_X=False, max_iter=50, alpha=alpha)
+        else:
+            raise ValueError(
+                f"Invalid model string: {model}. Should be 'ols', 'ridge', or 'lasso'."
+            )
+    elif isinstance(model, linear_model.BaseEstimator):
+        model_instance = model
+    else:
+        raise ValueError(
+            "Model should either be a string or \
+                an instance of sklearn.linear_model BaseEstimator."
+        )
+    cur_x, y = _vol_split(train, vol_idx)
+    model_instance.fit(cur_x.T, y.T)
+    return model_instance if version == 3 else model_instance.predict(cur_x.T)
+
+
+def vol_denoise(
+    data_dict, b0_idx, dwi_idx, model, alpha, b0_denoising, verbose, tmp_dir
+):
+    """Denoise a single 3D volume using train and test phase.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Dictionary containing the following
+        data_name : str
+            The name of the memmap file containing the memmaped data.
+        data_dtype : dtype
+            The dtype of the data.
+        data_shape : tuple
+            The shape of the data.
+        data_b0s : ndarray
+            Array of all 3D patches flattened out to be 2D for b0 volumes.
+        data_dwi : ndarray
+            Array of all 3D patches flattened out to be 2D for dwi volumes.
+    b0_idx : ndarray
+        The indices of the b0 volumes.
+    dwi_idx : ndarray
+        The indices of the dwi volumes.
+    model : str or initialized linear model object.
+        This is the model that is initialized from the _fit_denoising_model function.
+    alpha : float
+        Regularization parameter only for ridge and lasso regression models.
+    b0_denoising : bool
+        Skips denoising b0 volumes if set to False.
+    verbose : bool
+        Show progress of Patch2Self and time taken.
+    tmp_dir : str
+        The directory to save the temporary files.
+
+    Returns
+    -------
+    denoised_arr_name : str
+        The name of the memmap file containing the denoised array.
+    denoised_arr_dtype : dtype
+        The dtype of the denoised array.
+    denoised_arr_shape : tuple
+        The shape of the denoised array.
+    """
+    data_shape = data_dict["data"][2]
+    data_tmp = np.memmap(
+        data_dict["data"][0],
+        dtype=data_dict["data"][1],
+        mode="r",
+        shape=data_dict["data"][2],
+    ).reshape(np.prod(data_shape[:-1]), data_shape[-1])
+    data_b0s = data_dict["data_b0s"]
+    data_dwi = data_dict["data_dwi"]
+    p = data_tmp.shape[0] // 10
+    b0_counter = 0
+    dwi_counter = 0
+    start_idx = 0
+    denoised_arr_file = tempfile.NamedTemporaryFile(
+        delete=False, dir=tmp_dir, suffix="denoised_arr"
+    )
+    denoised_arr_file.close()
+    denoised_arr = np.memmap(
+        denoised_arr_file.name, dtype=data_tmp.dtype, mode="w+", shape=data_shape
+    )
+    idx_counter = 0
+    full_result = np.empty(
+        (data_shape[0], data_shape[1], data_shape[2], data_shape[3] // 5)
+    )
+    b0_idx = b0_idx
+    dwi_idx = dwi_idx
+    if data_b0s.shape[0] == 1 or not b0_denoising:
+        if verbose:
+            print("b0 denoising skipped....")
+        for i in range(data_b0s.shape[0]):
+            full_result[..., i] = data_tmp[..., b0_counter].reshape(
+                data_shape[0], data_shape[1], data_shape[2]
+            )
+            b0_counter += 1
+            idx_counter += 1
+    for vol_idx in tqdm(
+        range(data_shape[-1]), desc="Fitting and Denoising", leave=False
+    ):
+        if vol_idx in b0_idx.flatten():
+            if b0_denoising:
+                b_fit = _fit_denoising_model(
+                    data_b0s, b0_counter, model, alpha, version=3
+                )
+                b_matrix = np.zeros(data_tmp.shape[-1])
+                b_fit_coef = np.insert(b_fit.coef_, b0_counter, 0)
+                np.put(b_matrix, b0_idx, b_fit_coef)
+                result = np.zeros(data_tmp.shape[0])
+                for z in range(0, data_tmp.shape[0], p):
+                    end_idx = z + p
+                    if end_idx > z + p:
+                        end_idx = data_tmp.shape[0]
+                    result[z:end_idx] = (
+                        np.matmul(np.squeeze(data_tmp[z:end_idx, :]), b_matrix)
+                        + b_fit.intercept_
+                    )
+                full_result[..., idx_counter] = result.reshape(
+                    data_shape[0], data_shape[1], data_shape[2]
+                )
+                idx_counter += 1
+                b0_counter += 1
+                del b_fit_coef
+                del b_matrix
+                del result
+        else:
+            dwi_fit = _fit_denoising_model(
+                data_dwi, dwi_counter, model, alpha, version=3
+            )
+            b_matrix = np.zeros(data_tmp.shape[-1])
+            dwi_fit_coef = np.insert(dwi_fit.coef_, dwi_counter, 0)
+            np.put(b_matrix, dwi_idx, dwi_fit_coef)
+            del dwi_fit_coef
+            result = np.zeros(data_tmp.shape[0])
+            for z in range(0, data_tmp.shape[0], p):
+                end_idx = z + p
+                if end_idx > z + p:
+                    end_idx = data_tmp.shape[0]
+                result[z:end_idx] = (
+                    np.matmul(np.squeeze(data_tmp[z:end_idx, :]), b_matrix)
+                    + dwi_fit.intercept_
+                )
+            full_result[..., idx_counter] = result.reshape(
+                data_shape[0], data_shape[1], data_shape[2]
+            )
+            idx_counter += 1
+            dwi_counter += 1
+        if idx_counter >= data_shape[-1] // 5:
+            denoised_arr[..., start_idx : vol_idx + 1] = full_result
+            start_idx = vol_idx + 1
+            idx_counter = 0
+    denoised_arr_idx = data_shape[-1] - data_shape[-1] % 5
+    full_result_idx = full_result.shape[-1] - data_shape[-1] % 5
+    denoised_arr[..., denoised_arr_idx:] = full_result[..., full_result_idx:]
+    del full_result
+    return denoised_arr_file.name, denoised_arr.dtype, denoised_arr.shape
+
+
 @warning_for_keywords()
 def patch2self(
     data,
@@ -172,6 +361,8 @@ def patch2self(
     b0_denoising=True,
     clip_negative_vals=False,
     shift_intensity=True,
+    tmp_dir=None,
+    version=3,
 ):
     """Patch2Self Denoiser.
 
@@ -202,28 +393,34 @@ def patch2self(
             Default: 'ols'.
 
     b0_threshold : int, optional
-        Threshold for considering volumes as b0.
+        Threshold for considering volumes as b0. Default: 50.
 
     out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
 
     alpha : float, optional
-        Regularization parameter only for ridge regression model.
+        Regularization parameter only for ridge regression model. Default: 1.0.
 
     verbose : bool, optional
-        Show progress of Patch2Self and time taken.
+        Show progress of Patch2Self and time taken. Default: False.
 
     b0_denoising : bool, optional
-        Skips denoising b0 volumes if set to False.
+        Skips denoising b0 volumes if set to False. Default: True.
 
     clip_negative_vals : bool, optional
-        Sets negative values after denoising to 0 using `np.clip`.
+        Sets negative values after denoising to 0 using `np.clip`. Default: False.
 
     shift_intensity : bool, optional
         Shifts the distribution of intensities per volume to give
-        non-negative values
+        non-negative values. Default: True.
 
+    tmp_dir : str, optional
+        The directory to save the temporary files. If None, the temporary
+        files are saved in the system's default temporary directory. Default: None.
+
+    version : int, optional
+        Version 1 or 3 of Patch2Self to use. Default: 3
 
     Returns
     -------
@@ -235,24 +432,183 @@ def patch2self(
     ----------
     .. footbibliography::
 
+    [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                    Denoising Diffusion MRI with Self-supervised Learning,
+                    Advances in Neural Information Processing Systems 33 (2020)
+
+    [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
+                    E. Garyfallidis, Patch2Self2: Self-supervised Denoising
+                    on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
+                    Conference on Computer Vision and Pattern Recognition (2024),
+                    27641-27651.
+
     """
-    if isinstance(patch_radius, int):
-        patch_radius = np.ones(3, dtype=int) * patch_radius
+    if out_dtype is None:
+        out_dtype = data.dtype
 
-    patch_radius = np.asarray(patch_radius, dtype=int)
+    if version not in [1, 3]:
+        raise ValueError("Invalid version. Should be 1 or 3.")
 
-    if not data.ndim == 4:
+    if tmp_dir is None and version == 3:
+        tmp_dir = tempfile.gettempdir()
+
+    _validate_inputs(data, patch_radius, version, tmp_dir)
+
+    if version == 1:
+        return _patch2self_version1(
+            data,
+            bvals,
+            patch_radius,
+            model,
+            b0_threshold,
+            out_dtype,
+            alpha,
+            verbose,
+            b0_denoising,
+            clip_negative_vals,
+            shift_intensity,
+            version,
+        )
+    else:
+        return _patch2self_version3(
+            data,
+            bvals,
+            model,
+            b0_threshold,
+            out_dtype,
+            alpha,
+            verbose,
+            b0_denoising,
+            clip_negative_vals,
+            shift_intensity,
+            tmp_dir,
+        )
+
+
+def _validate_inputs(data, patch_radius, version, tmp_dir):
+    """Validate inputs for patch2self function.
+
+    Parameters
+    ----------
+    data : ndarray
+        The 4D noisy DWI data to be denoised.
+
+    patch_radius : int or 1D array
+        The radius of the local patch to be taken around each voxel (in
+        voxels).
+
+    version : int
+        Version 1 or 3 of Patch2Self to use.
+
+    tmp_dir : str
+        The directory to save the temporary files. If None, the temporary
+        files are saved in the system's default temporary directory.
+
+    Raises
+    ------
+    ValueError
+        If temporary directory is not None for Patch2Self version 1.
+        If the patch_radius is not 0 for Patch2Self version 3.
+        If the temporary directory does not exist.
+        If the input data is not a 4D array.
+
+    Warns
+    -----
+    If the input data has less than 10 3D volumes.
+    """
+    if version == 1 and tmp_dir is not None:
+        raise ValueError(
+            "Temporary directory is not supported for Patch2Self version 1. \
+                Please set tmp_dir to None."
+        )
+    if patch_radius != (0, 0, 0) and version == 3:
+        raise ValueError(
+            "Patch radius is not supported for Patch2Self version 3. \
+                Please set patch_radius to (0,0,0)"
+        )
+    if version == 3 and tmp_dir is not None and not os.path.exists(tmp_dir):
+        raise ValueError("The temporary directory does not exist.")
+    if data.ndim != 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.", data.shape)
-
     if data.shape[3] < 10:
         warn(
-            "The input data has less than 10 3D volumes. Patch2Self may not "
-            "give denoising performance.",
+            "The input data has less than 10 3D volumes. \
+                Patch2Self may not give optimal denoising performance.",
             stacklevel=2,
         )
 
-    if out_dtype is None:
-        out_dtype = data.dtype
+
+def _patch2self_version1(
+    data,
+    bvals,
+    patch_radius,
+    model,
+    b0_threshold,
+    out_dtype,
+    alpha,
+    verbose,
+    b0_denoising,
+    clip_negative_vals,
+    shift_intensity,
+    version,
+):
+    """Patch2Self Denoiser.
+
+    Parameters
+    ----------
+    data : ndarray
+        The 4D noisy DWI data to be denoised.
+
+    bvals : 1D array
+        Array of the bvals from the DWI acquisition.
+
+    patch_radius : int or 1D array
+        The radius of the local patch to be taken around each voxel (in
+        voxels).
+
+    model : string, or initialized linear model object.
+        This will determine the algorithm used to solve the set of linear
+        equations underlying this model. If it is a string it needs to be
+        one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+        it can be an object that inherits from
+        `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+        interface from Scikit-Learn:
+        `sklearn.linear_model.LinearRegression`,
+        `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+        and other objects that inherit from `sklearn.base.RegressorMixin`.
+
+    b0_threshold : int
+        Threshold for considering volumes as b0.
+
+    out_dtype : str or dtype
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
+
+    alpha : float
+        Regularization parameter only for ridge regression model.
+
+    verbose : bool
+        Show progress of Patch2Self and time taken.
+
+    b0_denoising : bool
+        Skips denoising b0 volumes if set to False.
+
+    clip_negative_vals : bool
+        Sets negative values after denoising to 0 using `np.clip`.
+
+    shift_intensity : bool
+        Shifts the distribution of intensities per volume to give
+        non-negative values.
+
+    version : int
+        Version 1 or 3 of Patch2Self to use.
+
+    Returns
+    -------
+    denoised array : ndarray
+        This is the denoised array of the same size as that of the input data,
+        clipped to non-negative values.
+    """
 
     # We retain float64 precision, iff the input is in this precision:
     if data.dtype == np.float64:
@@ -278,6 +634,9 @@ def patch2self(
     if verbose is True:
         t1 = time.time()
 
+    if patch_radius == 0:
+        patch_radius = (0, 0, 0)
+
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3 or not b0_denoising:
         if verbose:
@@ -300,13 +659,12 @@ def patch2self(
         )
 
         for vol_idx in range(0, data_b0s.shape[3]):
-            denoised_b0s[..., vol_idx] = _vol_denoise(
-                train_b0, vol_idx, model, data_b0s.shape, alpha=alpha
-            )
+            denoised_b0s[..., vol_idx] = _fit_denoising_model(
+                train_b0, vol_idx, model, alpha=alpha, version=version
+            ).reshape(data_b0s.shape[0], data_b0s.shape[1], data_b0s.shape[2])
 
-            if verbose is True:
-                print("Denoised b0 Volume: ", vol_idx)
-
+        if verbose is True:
+            print("Denoised b0 Volume: ", vol_idx)
     # Separate denoising for DWI volumes
     train_dwi = _extract_3d_patches(
         np.pad(
@@ -324,9 +682,9 @@ def patch2self(
 
     # Insert the separately denoised arrays into the respective empty arrays
     for vol_idx in range(0, data_dwi.shape[3]):
-        denoised_dwi[..., vol_idx] = _vol_denoise(
-            train_dwi, vol_idx, model, data_dwi.shape, alpha=alpha
-        )
+        denoised_dwi[..., vol_idx] = _fit_denoising_model(
+            train_dwi, vol_idx, model, alpha=alpha, version=version
+        ).reshape(data_dwi.shape[0], data_dwi.shape[1], data_dwi.shape[2])
 
         if verbose is True:
             print("Denoised DWI Volume: ", vol_idx)
@@ -344,20 +702,188 @@ def patch2self(
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
-    # shift intensities per volume to handle for negative intensities
-    if shift_intensity and not clip_negative_vals:
-        for i in range(0, denoised_arr.shape[3]):
-            shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
-            denoised_arr[..., i] = denoised_arr[..., i] + shift
+    denoised_arr = _apply_post_processing(
+        denoised_arr, shift_intensity, clip_negative_vals
+    )
+    return np.array(denoised_arr, dtype=out_dtype)
 
-    # clip out the negative values from the denoised output
+
+def _patch2self_version3(
+    data,
+    bvals,
+    model,
+    b0_threshold,
+    out_dtype,
+    alpha,
+    verbose,
+    b0_denoising,
+    clip_negative_vals,
+    shift_intensity,
+    tmp_dir,
+):
+    """Patch2Self Denoiser.
+
+    Parameters
+    ----------
+    data : ndarray
+        The 4D noisy DWI data to be denoised.
+
+    bvals : 1D array
+        Array of the bvals from the DWI acquisition.
+
+    model : string, or initialized linear model object.
+        This will determine the algorithm used to solve the set of linear
+        equations underlying this model. If it is a string it needs to be
+        one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+        it can be an object that inherits from
+        `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+        interface from Scikit-Learn:
+        `sklearn.linear_model.LinearRegression`,
+        `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+        and other objects that inherit from `sklearn.base.RegressorMixin`.
+
+    b0_threshold : int
+        Threshold for considering volumes as b0.
+
+    out_dtype : str or dtype
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
+
+    alpha : float
+        Regularization parameter only for ridge regression model.
+
+    verbose : bool
+        Show progress of Patch2Self and time taken.
+
+    b0_denoising : bool
+        Skips denoising b0 volumes if set to False.
+
+    clip_negative_vals : bool
+        Sets negative values after denoising to 0 using `np.clip`.
+
+    shift_intensity : bool
+        Shifts the distribution of intensities per volume to give
+        non-negative values.
+
+    tmp_dir : str
+        The directory to save the temporary files. If None, the temporary
+        files are saved in the system's default temporary directory.
+
+    Returns
+    -------
+    denoised array : ndarray
+        This is the denoised array of the same size as that of the input data,
+        clipped to non-negative values.
+    """
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir, suffix="tmp_file")
+    tmp_file.close()
+    tmp = np.memmap(
+        tmp_file.name,
+        dtype=data.dtype,
+        mode="w+",
+        shape=(data.shape[0], data.shape[1], data.shape[2], data.shape[3]),
+    )
+    p = data.shape[-1] // 5
+    idx_start = 0
+    for z in range(0, data.shape[3], p):
+        end_idx = z + p
+        if end_idx > data.shape[3]:
+            end_idx = data.shape[3]
+        if verbose:
+            print("Loading data from {} to {}".format(idx_start, end_idx))
+        tmp[..., idx_start:end_idx] = data[..., idx_start:end_idx]
+        idx_start = end_idx
+    sketch_rows = int(0.30 * data.shape[0] * data.shape[1] * data.shape[2])
+    sketched_matrix_name, sketched_matrix_dtype, sketched_matrix_shape = count_sketch(
+        tmp_file.name,
+        data.dtype,
+        tmp.shape,
+        sketch_rows=sketch_rows,
+        tmp_dir=tmp_dir,
+    )
+    sketched_matrix = np.memmap(
+        sketched_matrix_name,
+        dtype=sketched_matrix_dtype,
+        mode="r",
+        shape=sketched_matrix_shape,
+    ).T
+    if verbose:
+        print("Sketching done.")
+    b0_idx = np.argwhere(bvals <= b0_threshold)
+    dwi_idx = np.argwhere(bvals > b0_threshold)
+    data_b0s = np.take(np.squeeze(sketched_matrix), b0_idx, axis=0)
+    data_dwi = np.take(np.squeeze(sketched_matrix), dwi_idx, axis=0)
+    data_dict = {
+        "data": [tmp_file.name, data.dtype, tmp.shape],
+        "data_b0s": data_b0s,
+        "data_dwi": data_dwi,
+    }
+    if verbose:
+        t1 = time.time()
+    del sketched_matrix
+    os.unlink(sketched_matrix_name)
+    denoised_arr_name, denoised_arr_dtype, denoised_arr_shape = vol_denoise(
+        data_dict,
+        b0_idx,
+        dwi_idx,
+        model,
+        alpha,
+        b0_denoising,
+        verbose,
+        tmp_dir=tmp_dir,
+    )
+    denoised_arr = np.memmap(
+        denoised_arr_name,
+        dtype=denoised_arr_dtype,
+        mode="r+",
+        shape=denoised_arr_shape,
+    )
+    if verbose:
+        t2 = time.time()
+        print("Time taken for Patch2Self: ", t2 - t1, " seconds.")
+
+    denoised_arr = _apply_post_processing(
+        denoised_arr, shift_intensity, clip_negative_vals
+    )
+    del tmp
+    os.unlink(data_dict["data"][0])
+    result = np.array(denoised_arr, dtype=out_dtype)
+    del denoised_arr
+    os.unlink(denoised_arr_name)
+    return result
+
+
+def _apply_post_processing(denoised_arr, shift_intensity, clip_negative_vals):
+    """Apply post-processing steps such as clipping and shifting intensities.
+
+    Parameters
+    ----------
+    denoised_arr : ndarray
+        The denoised array.
+
+    shift_intensity : bool
+        Shifts the distribution of intensities per volume to give
+        non-negative values
+
+    clip_negative_vals : bool
+        Sets negative values after denoising to 0 using `np.clip`.
+
+    Returns
+    -------
+    denoised_arr : ndarray
+        The denoised array with post-processing applied.
+    """
+    if shift_intensity and not clip_negative_vals:
+        for i in range(denoised_arr.shape[-1]):
+            shift = np.min(denoised_arr[..., i]) - np.min(denoised_arr[..., i])
+            denoised_arr[..., i] += shift
     elif clip_negative_vals and not shift_intensity:
         denoised_arr.clip(min=0, out=denoised_arr)
-
     elif clip_negative_vals and shift_intensity:
-        msg = "Both `clip_negative_vals` and `shift_intensity` cannot be True."
-        msg += " Defaulting to `clip_negative_vals`..."
-        warn(msg, stacklevel=2)
+        warn(
+            "Both `clip_negative_vals` and `shift_intensity` cannot be True. \
+                Defaulting to `clip_negative_vals`...",
+            stacklevel=2,
+        )
         denoised_arr.clip(min=0, out=denoised_arr)
-
-    return np.array(denoised_arr, dtype=out_dtype)
+    return denoised_arr
