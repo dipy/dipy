@@ -7,6 +7,8 @@ cimport cython
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 cdef enum:
     SCALAR, ARRAY
 
@@ -15,7 +17,8 @@ SCALAR_TYPES = np.ScalarType
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def quick_squash(obj_arr, mask=None, fill=0):
+@warning_for_keywords()
+def quick_squash(obj_arr, *, mask=None, fill=0):
     """Try and make a standard array from an object array
 
     This function takes an object array and attempts to convert it to a more

@@ -7,10 +7,14 @@ import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
-    def __init__(self, gtab, method="gqi2", sampling_length=1.2, normalize_peaks=False):
+    @warning_for_keywords()
+    def __init__(
+        self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
+    ):
         r"""Generalized Q-Sampling Imaging [1]_
 
         This model has the same assumptions as the DSI method i.e. Cartesian
@@ -126,7 +130,8 @@ class GeneralizedQSamplingFit(OdfFit):
         return np.dot(self.data, self.gqi_vector)
 
 
-def normalize_qa(qa, max_qa=None):
+@warning_for_keywords()
+def normalize_qa(qa, *, max_qa=None):
     """Normalize quantitative anisotropy.
 
     Used mostly with GQI rather than GQI2.
@@ -155,7 +160,8 @@ def normalize_qa(qa, max_qa=None):
     return qa / max_qa
 
 
-def squared_radial_component(x, tol=0.01):
+@warning_for_keywords()
+def squared_radial_component(x, *, tol=0.01):
     """Part of the GQI2 integral
 
     Eq.8 in the referenced paper by Yeh et al. 2010
@@ -167,7 +173,8 @@ def squared_radial_component(x, tol=0.01):
     return np.where(x_near_zero, 1.0 / 3, result)
 
 
-def npa(self, odf, width=5):
+@warning_for_keywords()
+def npa(self, odf, *, width=5):
     """non-parametric anisotropy
 
     Nimmo-Smith et al.  ISMRM 2011
@@ -185,7 +192,8 @@ def npa(self, odf, width=5):
     return t0, t1, t2, npa
 
 
-def equatorial_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def equatorial_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial zone conjugate
     to 'pole' with width half 'width' degrees
@@ -197,7 +205,8 @@ def equatorial_zone_vertices(vertices, pole, width=5):
     ]
 
 
-def polar_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def polar_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial band around
     the 'pole' of radius 'width' degrees

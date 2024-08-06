@@ -1,4 +1,5 @@
 from dipy.core.onetime import auto_attr
+from dipy.testing.decorators import warning_for_keywords
 
 
 class Cache:
@@ -65,7 +66,8 @@ class Cache:
         """
         self._cache[(tag, key)] = value
 
-    def cache_get(self, tag, key, default=None):
+    @warning_for_keywords()
+    def cache_get(self, tag, key, *, default=None):
         """Retrieve a value from the cache.
 
         Parameters

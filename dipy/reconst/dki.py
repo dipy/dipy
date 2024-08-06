@@ -30,9 +30,11 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.testing.decorators import warning_for_keywords
 
 
-def _positive_evals(L1, L2, L3, er=2e-7):
+@warning_for_keywords()
+def _positive_evals(L1, L2, L3, *, er=2e-7):
     """Helper function that identifies which voxels in a array have all
     eigenvalues significantly larger than zero
 
@@ -59,7 +61,8 @@ def _positive_evals(L1, L2, L3, er=2e-7):
     return ind
 
 
-def carlson_rf(x, y, z, errtol=3e-4):
+@warning_for_keywords()
+def carlson_rf(x, y, z, *, errtol=3e-4):
     r"""Compute the Carlson's incomplete elliptic integral of the first kind
 
     Carlson's incomplete elliptic integral of the first kind is defined as:
@@ -132,7 +135,8 @@ def carlson_rf(x, y, z, errtol=3e-4):
     return RF
 
 
-def carlson_rd(x, y, z, errtol=1e-4):
+@warning_for_keywords()
+def carlson_rd(x, y, z, *, errtol=1e-4):
     r"""Compute the Carlson's incomplete elliptic integral of the second kind
 
     Carlson's incomplete elliptic integral of the second kind is defined as:
@@ -422,8 +426,9 @@ def _F2m(a, b, c):
     return F2
 
 
-def directional_diffusion(dt, V, min_diffusivity=0):
-    r"""Calculate the apparent diffusion coefficient (ADC) in each direction
+@warning_for_keywords()
+def directional_diffusion(dt, V, *, min_diffusivity=0):
+    r"""Calculate the apparent diffusion coefficient (adc) in each direction
     of a sphere for a single voxel [1]_
 
     Parameters
@@ -473,7 +478,8 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     return adc
 
 
-def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
+@warning_for_keywords()
+def directional_diffusion_variance(kt, V, *, min_kurtosis=-3 / 7):
     r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
@@ -541,8 +547,9 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
     return adv
 
 
+@warning_for_keywords()
 def directional_kurtosis(
-    dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3 / 7, adc=None, adv=None
+    dt, md, kt, V, *, min_diffusivity=0, min_kurtosis=-3 / 7, adc=None, adv=None
 ):
     r"""Calculate the apparent kurtosis coefficient (akc) in each direction of
     a sphere for a single voxel [1]_,[2]_
@@ -611,8 +618,9 @@ def directional_kurtosis(
     return akc
 
 
+@warning_for_keywords()
 def apparent_kurtosis_coef(
-    dki_params, sphere, min_diffusivity=0, min_kurtosis=-3.0 / 7
+    dki_params, sphere, *, min_diffusivity=0, min_kurtosis=-3.0 / 7
 ):
     r"""Calculate the apparent kurtosis coefficient (AKC) in each direction
     of a sphere [1]_,[2]_
@@ -720,7 +728,10 @@ def apparent_kurtosis_coef(
     return akc.reshape((outshape + (len(V),)))
 
 
-def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True):
+@warning_for_keywords()
+def mean_kurtosis(
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True
+):
     r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_,[2]_
 
     Parameters
@@ -1001,8 +1012,9 @@ def _G2m(a, b, c):
     return G2
 
 
+@warning_for_keywords()
 def radial_kurtosis(
-    dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
 ):
     r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_,[2]_
 
@@ -1143,7 +1155,10 @@ def radial_kurtosis(
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+@warning_for_keywords()
+def axial_kurtosis(
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
+):
     r"""Compute axial kurtosis (AK) from the kurtosis tensor [1]_, [2]_
 
     Parameters
@@ -1291,7 +1306,8 @@ def _kt_maximum_converge(ang, dt, md, kt):
     return -1.0 * directional_kurtosis(dt, md, kt, n)
 
 
-def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
+@warning_for_keywords()
+def _voxel_kurtosis_maximum(dt, md, kt, sphere, *, gtol=1e-2):
     """Compute the maximum value of a single voxel kurtosis tensor
 
     Parameters
@@ -1357,7 +1373,8 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     return max_value.item(), max_direction
 
 
-def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
+@warning_for_keywords()
+def kurtosis_maximum(dki_params, *, sphere="repulsion100", gtol=1e-2, mask=None):
     """Compute kurtosis maximum value [1]_
 
     Parameters
@@ -1430,7 +1447,8 @@ def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
     return kt_max
 
 
-def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+@warning_for_keywords()
+def mean_kurtosis_tensor(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
     r"""Compute mean of the kurtosis tensor (MKT) [1]_
 
     Parameters
@@ -1681,7 +1699,8 @@ def kurtosis_fractional_anisotropy(dki_params):
     return KFA
 
 
-def dki_prediction(dki_params, gtab, S0=1.0):
+@warning_for_keywords()
+def dki_prediction(dki_params, gtab, *, S0=1.0):
     """Predict a signal given diffusion kurtosis imaging parameters
 
     Parameters
@@ -1755,7 +1774,8 @@ def dki_prediction(dki_params, gtab, S0=1.0):
 class DiffusionKurtosisModel(ReconstModel):
     """Class for the Diffusion Kurtosis Model"""
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
+    @warning_for_keywords()
+    def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """Diffusion Kurtosis Tensor Model _[1], _[2]
 
         Parameters
@@ -1862,7 +1882,8 @@ class DiffusionKurtosisModel(ReconstModel):
             "CWLS",
         ]
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the DKI model.
 
         Parameters
@@ -1927,7 +1948,8 @@ class DiffusionKurtosisModel(ReconstModel):
         return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
     @multi_voxel_fit
-    def multi_fit(self, data_thres, mask=None):
+    @warning_for_keywords()
+    def multi_fit(self, data_thres, *, mask=None):
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1952,7 +1974,8 @@ class DiffusionKurtosisModel(ReconstModel):
 
         return DiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, dki_params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, dki_params, *, S0=1.0):
         """Predict a signal for this DKI model class instance given parameters
 
         Parameters
@@ -1989,7 +2012,8 @@ class DiffusionKurtosisModel(ReconstModel):
 class DiffusionKurtosisFit(TensorFit):
     """Class for fitting the Diffusion Kurtosis Model"""
 
-    def __init__(self, model, model_params, model_S0=None):
+    @warning_for_keywords()
+    def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a DiffusionKurtosisFit class instance
 
         Since DKI is an extension of DTI, class instance is defined as subclass
@@ -2057,7 +2081,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+    @warning_for_keywords()
+    def mk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_, [2]_
 
         Parameters
@@ -2152,7 +2177,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
 
-    def ak(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+    @warning_for_keywords()
+    def ak(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r"""
         Compute axial kurtosis (AK) of a diffusion kurtosis tensor [1]_, [2]_
 
@@ -2216,7 +2242,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
 
-    def rk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+    @warning_for_keywords()
+    def rk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_
 
         Parameters
@@ -2300,7 +2327,8 @@ class DiffusionKurtosisFit(TensorFit):
             self.model_params, min_kurtosis, max_kurtosis, analytical
         )
 
-    def kmax(self, sphere="repulsion100", gtol=1e-5, mask=None):
+    @warning_for_keywords()
+    def kmax(self, *, sphere="repulsion100", gtol=1e-5, mask=None):
         r"""Compute the maximum value of a single voxel kurtosis tensor
 
         Parameters
@@ -2330,7 +2358,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
 
-    def mkt(self, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+    @warning_for_keywords()
+    def mkt(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
         r"""Compute mean of the kurtosis tensor (MKT) [1]_
 
         Parameters
@@ -2380,6 +2409,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis_tensor(self.model_params, min_kurtosis, max_kurtosis)
 
+    @warning_for_keywords()
     def rtk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
         r"""Compute the rescaled radial tensor kurtosis (RTK) [1]_
 
@@ -2448,7 +2478,8 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_fractional_anisotropy(self.model_params)
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""Given a DKI model fit, predict the signal on the vertices of a
         gradient table
 
@@ -2502,7 +2533,8 @@ class DiffusionKurtosisFit(TensorFit):
         return dki_prediction(self.model_params, gtab, S0)
 
 
-def params_to_dki_params(result, min_diffusivity=0):
+@warning_for_keywords()
+def params_to_dki_params(result, *, min_diffusivity=0):
     r"""Convert the 21 unique elements of the diffusion and kurtosis tensors
     to the parameter format adopted in DIPY
 
@@ -2549,10 +2581,12 @@ def params_to_dki_params(result, min_diffusivity=0):
     return dki_params
 
 
+@warning_for_keywords()
 def ls_fit_dki(
     design_matrix,
     data,
     inverse_design_matrix,
+    *,
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,
@@ -2621,11 +2655,13 @@ def ls_fit_dki(
         return dki_params[..., 0:-1], None
 
 
+@warning_for_keywords()
 def cls_fit_dki(
     design_matrix,
     data,
     inverse_design_matrix,
     sdp,
+    *,
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,

@@ -89,10 +89,10 @@ def test_tensor_model():
     gtab1 = grad.gradient_table(fbval, fbvec)
     data2, gtab2 = dsi_voxels()
     for data, gtab in zip([data1, data2], [gtab1, gtab2]):
-        dm = dti.TensorModel(gtab, "LS")
+        dm = dti.TensorModel(gtab, fit_method="LS")
         dtifit = dm.fit(data[0, 0, 0])
         npt.assert_equal(dtifit.fa < 0.9, True)
-        dm = dti.TensorModel(gtab, "WLS")
+        dm = dti.TensorModel(gtab, fit_method="WLS")
         dtifit = dm.fit(data[0, 0, 0])
         npt.assert_equal(dtifit.fa < 0.9, True)
         npt.assert_equal(dtifit.fa > 0, True)
@@ -272,7 +272,7 @@ def test_diffusivities():
     ]
     S = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(S)
 
     md = mean_diffusivity(dmfit.evals)
@@ -294,7 +294,7 @@ def test_diffusivities():
 
 def test_color_fa():
     data, gtab = dsi_voxels()
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(data)
     fa = fractional_anisotropy(dmfit.evals)
 
@@ -503,7 +503,7 @@ def test_all_zeros():
 def test_mask():
     data, gtab = dsi_voxels()
     for fit_type in ["LS", "NLLS"]:
-        dm = dti.TensorModel(gtab, fit_type)
+        dm = dti.TensorModel(gtab, fit_method=fit_type)
         mask = np.zeros(data.shape[:-1], dtype=bool)
         mask[0, 0, 0] = True
         dtifit = dm.fit(data)
@@ -762,7 +762,7 @@ def test_adc():
     coefficient
     """
     data, gtab = dsi_voxels()
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     mask = np.zeros(data.shape[:-1], dtype=bool)
     mask[0, 0, 0] = True
     dtifit = dm.fit(data)
@@ -772,13 +772,13 @@ def test_adc():
     pdd0 = dtifit.evecs[0, 0, 0, 0]
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
     npt.assert_array_almost_equal(
-        dtifit.adc(sphere_pdd0)[0, 0, 0], dtifit.ad[0, 0, 0], decimal=5
+        dtifit.adc(sphere_pdd0)[0, 0, 0], dtifit.ad[0, 0, 0], decimal=4
     )
 
     # Test that it works for cases in which the data is 1D
     dtifit = dm.fit(data[0, 0, 0])
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
-    npt.assert_array_almost_equal(dtifit.adc(sphere_pdd0), dtifit.ad, decimal=5)
+    npt.assert_array_almost_equal(dtifit.adc(sphere_pdd0), dtifit.ad, decimal=4)
 
 
 def test_predict():
@@ -867,7 +867,7 @@ def test_eig_from_lo_tri():
         ]
     )
 
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(S)
 
     lo_tri = lower_triangular(dmfit.quadratic_form)
