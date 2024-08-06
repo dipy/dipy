@@ -1,10 +1,9 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_equal
 import pytest
 
-from dipy.core.gradients import generate_bvecs, gradient_table
 from dipy.denoise import patch2self3 as p2s3
 from dipy.sims.voxel import multi_tensor
 from dipy.testing import (
@@ -16,7 +15,7 @@ from dipy.testing import (
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-sklearn, has_sklearn, _ = optional_package('sklearn')
+sklearn, has_sklearn, _ = optional_package("sklearn")
 needs_sklearn = pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
 
 
@@ -28,8 +27,9 @@ def test_patch2self3_random_noise(rng):
     bvals = np.repeat(30, 50)
 
     # shift = True
-    S0den_shift = p2s3.patch2self(S0, bvals, model='ols',
-                                  shift_intensity=True, tmp_dir='/tmp')
+    S0den_shift = p2s3.patch2self(
+        S0, bvals, model="ols", shift_intensity=True, tmp_dir="/tmp"
+    )
 
     assert_greater_equal(S0den_shift.min(), S0.min())
     assert_less_equal(np.round(S0den_shift.mean()), 30)
@@ -38,8 +38,9 @@ def test_patch2self3_random_noise(rng):
     msg = "Both `clip_negative_vals` and `shift_intensity` .*"
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        S0den_clip = p2s3.patch2self(S0, bvals, model='ols',
-                                    clip_negative_vals=True, tmp_dir='/tmp')
+        S0den_clip = p2s3.patch2self(
+            S0, bvals, model="ols", clip_negative_vals=True, tmp_dir="/tmp"
+        )
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
@@ -47,17 +48,27 @@ def test_patch2self3_random_noise(rng):
     # both clip and shift = True
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        S0den_clip = p2s3.patch2self(S0, bvals, model='ols',
-                                    clip_negative_vals=True,
-                                    shift_intensity=True, tmp_dir='/tmp')
+        S0den_clip = p2s3.patch2self(
+            S0,
+            bvals,
+            model="ols",
+            clip_negative_vals=True,
+            shift_intensity=True,
+            tmp_dir="/tmp",
+        )
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
 
     # both clip and shift = False
-    S0den_clip = p2s3.patch2self(S0, bvals, model='ols',
-                                clip_negative_vals=False,
-                                shift_intensity=False, tmp_dir='/tmp')
+    S0den_clip = p2s3.patch2self(
+        S0,
+        bvals,
+        model="ols",
+        clip_negative_vals=False,
+        shift_intensity=False,
+        tmp_dir="/tmp",
+    )
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
@@ -74,7 +85,7 @@ def test_patch2self3_boundary(rng):
 
     bvals = np.repeat(100, 20)
 
-    p2s3.patch2self(S0, bvals, tmp_dir='/tmp')
+    p2s3.patch2self(S0, bvals, tmp_dir="/tmp")
     assert_greater(S0[9, 9, 9, 9], 290)
     assert_less(S0[10, 10, 10, 10], 110)
 
@@ -110,7 +121,7 @@ def rfiw_phantom(gtab, snr=None, rng=None):
     S2 = 100  # S0 value for water
 
     # Define tissue volume fraction for each voxel type (in index order)
-    f = np.array([0., 1., 0.6, 0.18, 0.30, 0.15, 0.50, 0.35, 0.70, 0.42])
+    f = np.array([0.0, 1.0, 0.6, 0.18, 0.30, 0.15, 0.50, 0.35, 0.70, 0.42])
 
     # Define S0 for each voxel (in index order)
     S0 = S1 * f + S2 * (1 - f)
@@ -123,15 +134,19 @@ def rfiw_phantom(gtab, snr=None, rng=None):
     # details on this contact the phantom designer)
     f1 = f * S1 / S0
 
-    mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh],
+    mevals = np.array([[ADr, RDr, RDr],
+                       [ADh, RDh, RDh],
                        [Dwater, Dwater, Dwater]])
     angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
-    dwi = np.zeros(slice_ind.shape + (gtab.bvals.size, ))
+    dwi = np.zeros(slice_ind.shape + (gtab.bvals.size,))
     for i in range(10):
-        fractions = [f1[i] * fia * 100, f1[i] *
-                     (1 - fia) * 100, (1 - f1[i]) * 100]
-        sig, direction = multi_tensor(gtab, mevals, S0=S0[i], angles=angles,
-                                      fractions=fractions, snr=None)
+        fractions = [f1[i] * fia * 100,
+                     f1[i] * (1 - fia) * 100,
+                     (1 - f1[i]) * 100]
+        sig, direction = multi_tensor(
+            gtab, mevals, S0=S0[i],
+            angles=angles, fractions=fractions, snr=None
+        )
         dwi[slice_ind == i, :] = sig
     if snr is None:
         return dwi
@@ -139,5 +154,8 @@ def rfiw_phantom(gtab, snr=None, rng=None):
         sigma = S2 * 1.0 / snr
         n1 = rng.normal(0, sigma, size=dwi.shape)
         n2 = rng.normal(0, sigma, size=dwi.shape)
-        return [np.sqrt((dwi / np.sqrt(2) + n1)**2 +
-                        (dwi / np.sqrt(2) + n2)**2), sigma]
+        return [
+            np.sqrt((dwi / np.sqrt(2) + n1) ** 2 +
+                    (dwi / np.sqrt(2) + n2) ** 2),
+            sigma,
+        ]
