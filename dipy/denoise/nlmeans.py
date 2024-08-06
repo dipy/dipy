@@ -42,7 +42,7 @@ def nlmeans(
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
 
     Returns
