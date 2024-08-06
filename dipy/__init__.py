@@ -37,6 +37,8 @@ Utilities
 
 import sys
 
+import lazy_loader as lazy
+
 from dipy.version import version as __version__
 
 # Plumb in version etc info stuff
@@ -51,24 +53,8 @@ def get_info():
 
 del sys
 
-submodules = [
-    "align",
-    "core",
-    "data",
-    "denoise",
-    "direction",
-    "io",
-    "nn",
-    "reconst",
-    "segment",
-    "sims",
-    "stats",
-    "tracking",
-    "utils",
-    "viz",
-    "workflows",
-    "tests",
-    "testing",
-]
+__getattr__, __lazy_dir__, _ = lazy.attach_stub(__name__, __file__)
 
-__all__ = submodules + ["__version__", "setup_test", "get_info"]
+
+def __dir__():
+    return __lazy_dir__() + __version__ + ["get_info"]
