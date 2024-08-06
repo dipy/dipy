@@ -9,6 +9,7 @@ from dipy.reconst import shm
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from libc.stdlib cimport malloc, free
+from dipy.testing.decorators import warning_for_keywords
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
@@ -24,7 +25,8 @@ cdef class PmfGen:
         self.vertices = np.asarray(sphere.vertices, dtype=float)
         self.pmf = np.zeros(self.vertices.shape[0])
 
-    def get_pmf(self, double[::1] point, double[:] out=None):
+    @warning_for_keywords()
+    def get_pmf(self, double[::1] point, *, double[:] out=None):
         if out is None:
             out = self.pmf
         return <double[:len(self.vertices)]>self.get_pmf_c(&point[0], &out[0])
@@ -97,10 +99,12 @@ cdef class SimplePmfGen(PmfGen):
 
 cdef class SHCoeffPmfGen(PmfGen):
 
+    @warning_for_keywords()
     def __init__(self,
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type,
+                 *,
                  legacy=True):
         cdef:
             int sh_order

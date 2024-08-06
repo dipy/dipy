@@ -18,12 +18,15 @@ from dipy.reconst.recspeed import (
     search_descending,
 )
 from dipy.reconst.shm import sh_to_sf_matrix
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 
 
+@warning_for_keywords()
 def peak_directions_nl(
     sphere_eval,
+    *,
     relative_peak_threshold=0.25,
     min_separation_angle=25,
     sphere=default_sphere,
@@ -95,8 +98,14 @@ def peak_directions_nl(
     return directions, values
 
 
+@warning_for_keywords()
 def peak_directions(
-    odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25, is_symmetric=True
+    odf,
+    sphere,
+    *,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    is_symmetric=True,
 ):
     """Get the directions of odf peaks.
 
@@ -437,12 +446,14 @@ def _peaks_from_model_parallel_sub(args):
 
 
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def peaks_from_model(
     model,
     data,
     sphere,
     relative_peak_threshold,
     min_separation_angle,
+    *,
     mask=None,
     return_odf=False,
     return_sh=True,
@@ -661,6 +672,7 @@ def reshape_peaks_for_visualization(peaks):
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype("float32")
 
 
+@warning_for_keywords()
 def peaks_from_positions(
     positions,
     odfs,

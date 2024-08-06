@@ -12,6 +12,7 @@ from random import random
 import numpy as np
 cimport numpy as cnp
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                      where_to_insert)
@@ -27,8 +28,9 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     directions more than ``max_angle`` degrees from the incoming direction are
     set to 0 and the result is normalized.
     """
-
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @cython.binding(True)
+    @warning_for_keywords()
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1 , **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -57,7 +59,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
+                                       pmf_threshold=pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
 
@@ -128,10 +130,11 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     """Return direction of a sphere with the highest probability mass
     function (pmf).
     """
-
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @cython.binding(True)
+    @warning_for_keywords()
+    def __init__(self, pmf_gen, max_angle, sphere, *, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                              pmf_threshold, **kwargs)
+                                              pmf_threshold=pmf_threshold, **kwargs)
 
     cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Find direction with the highest pmf to updates ``direction`` array
