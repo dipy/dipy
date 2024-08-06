@@ -270,7 +270,7 @@ def vol_denoise(
             idx_counter += 1
             dwi_counter += 1
         if idx_counter >= data_shape[-1] // 5:
-            denoised_arr[..., start_idx: vol_idx + 1] = full_result
+            denoised_arr[..., start_idx : vol_idx + 1] = full_result
             start_idx = vol_idx + 1
             idx_counter = 0
     denoised_arr_idx = data_shape[-1] - data_shape[-1] % 5
@@ -379,7 +379,7 @@ def patch2self(
         warn(
             "The input data has less than 10 3D volumes. \
                 Patch2Self may not give denoising performance.",
-            stacklevel=2
+            stacklevel=2,
         )
     if out_dtype is None:
         out_dtype = data.dtype

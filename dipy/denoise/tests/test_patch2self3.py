@@ -134,18 +134,13 @@ def rfiw_phantom(gtab, snr=None, rng=None):
     # details on this contact the phantom designer)
     f1 = f * S1 / S0
 
-    mevals = np.array([[ADr, RDr, RDr],
-                       [ADh, RDh, RDh],
-                       [Dwater, Dwater, Dwater]])
+    mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh], [Dwater, Dwater, Dwater]])
     angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
     dwi = np.zeros(slice_ind.shape + (gtab.bvals.size,))
     for i in range(10):
-        fractions = [f1[i] * fia * 100,
-                     f1[i] * (1 - fia) * 100,
-                     (1 - f1[i]) * 100]
+        fractions = [f1[i] * fia * 100, f1[i] * (1 - fia) * 100, (1 - f1[i]) * 100]
         sig, direction = multi_tensor(
-            gtab, mevals, S0=S0[i],
-            angles=angles, fractions=fractions, snr=None
+            gtab, mevals, S0=S0[i], angles=angles, fractions=fractions, snr=None
         )
         dwi[slice_ind == i, :] = sig
     if snr is None:
@@ -155,7 +150,6 @@ def rfiw_phantom(gtab, snr=None, rng=None):
         n1 = rng.normal(0, sigma, size=dwi.shape)
         n2 = rng.normal(0, sigma, size=dwi.shape)
         return [
-            np.sqrt((dwi / np.sqrt(2) + n1) ** 2 +
-                    (dwi / np.sqrt(2) + n2) ** 2),
+            np.sqrt((dwi / np.sqrt(2) + n1) ** 2 + (dwi / np.sqrt(2) + n2) ** 2),
             sigma,
         ]
