@@ -16,6 +16,7 @@ DIPY 1.10.0 changes
   switched to the new default solver, Clarabel.
 
 **Workflows**
+
 - The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
   this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.
 
@@ -40,6 +41,7 @@ DIPY 1.8.0 changes
 - Change in ``dipy.core.gradients``, function ``reorient_bvecs`` now requires the affine to have a shape of (4, 4, n) or (3, 3, n)
 
 **Direction**
+
 - Change in ``dipy.direction.bootstrap_direction_getter``.
     - The parent class was changes from ``PmfGenDirectionGetter`` to ``DirectionGetter``. The ``BootPmfGen`` functions were merged in ``BootDirectionGetter``.
     - The class constructor parameter `pmfgen` was removed. Parameters `data`, `model` and `sh_order=0` were added.

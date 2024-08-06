@@ -93,6 +93,7 @@ else:
 # - max_radius : is the maximum distance that can be used with radius search
 #
 # Then, the ``radius_search()`` method needs the following arguments:
+#
 # - radius : for each streamline search find all similar ones in the
 #   "ref_streamlines" that are within the given radius
 #
