@@ -371,8 +371,8 @@ compare_maps(
 #                 Imaging. Magnetic Resonance in Medicine 53: 1432-1440
 # .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
 #                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
+#                 Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                 Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
 #                 non-Gaussian water diffusion by kurtosis analysis. NMR in
 #                 Biomedicine 23(7): 698-710

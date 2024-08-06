@@ -192,8 +192,8 @@ fig1.savefig("Kurtosis_Microstructural_measures.png")
 #                 2105-2112. doi: 10.3174/ajnr.A3553
 # .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
 #                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
+#                 Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                 Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
 #                 kurtosis strategies, b-value optimization and exploration of
 #                 diffusion MRI contrast. Scientific Data 3: 160072
