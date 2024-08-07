@@ -60,7 +60,11 @@ theta = 0.1
 c, s = np.cos(theta), np.sin(theta)
 affmat[0:2, 0:2] = np.array([[c, -s], [s, c]])
 affine_map = AffineMap(
-    affmat, static.shape, static_grid2world, static.shape, static_grid2world
+    affmat,
+    domain_grid_shape=static.shape,
+    domain_grid2world=static_grid2world,
+    codomain_grid_shape=static.shape,
+    codomain_grid2world=static_grid2world,
 )
 moving = affine_map.transform(static)
 moving_affine = static_affine.copy()
@@ -102,8 +106,8 @@ transl = affreg.optimize(
     moving,
     transform,
     None,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=None,
     static_mask=None,
     moving_mask=None,
@@ -114,8 +118,8 @@ transl = affreg.optimize(
     moving,
     transform,
     None,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=transl.affine,
     static_mask=None,
     moving_mask=None,
@@ -297,7 +301,11 @@ series = np.stack([static, moving, moving], axis=-1)
 
 pipeline = [translation, rigid]
 xformed, _ = register_series(
-    series, 0, pipeline, series_affine=moving_affine, static_mask=static_mask
+    series,
+    ref=0,
+    pipeline=pipeline,
+    series_affine=moving_affine,
+    static_mask=static_mask,
 )
 
 regtools.overlay_slices(
