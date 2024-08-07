@@ -20,6 +20,7 @@ class ReconstModel:
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
 
         """
         self.gtab = gtab

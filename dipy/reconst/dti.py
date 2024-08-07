@@ -702,7 +702,7 @@ class TensorModel(ReconstModel):
         Parameters
         ----------
         gtab : GradientTable class instance
-
+            Gradient table.
         fit_method : str or callable, optional
             str can be one of the following:
 

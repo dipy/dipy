@@ -50,6 +50,7 @@ def auto_response(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -107,6 +108,7 @@ def response_from_mask(gtab, data, mask):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -210,6 +212,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
@@ -388,6 +391,7 @@ class ConstrainedSDTModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         ratio : float
             ratio of the smallest vs the largest eigenvalue of the single
             prolate tensor response function
@@ -474,7 +478,9 @@ def estimate_response(gtab, evals, S0):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     evals : ndarray
+        Eigenvalues.
     S0 : float
         non diffusion weighted
 
@@ -942,6 +948,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data (4D)
     roi_center : array-like, (3,)
@@ -1014,6 +1021,7 @@ def response_from_mask_ssst(gtab, data, mask):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -1074,6 +1082,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -1144,6 +1153,7 @@ def recursive_response(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray, optional

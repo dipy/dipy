@@ -355,6 +355,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
 
         sphere : Sphere class instance, optional
             A sphere on which coefficients will be estimated. Default:

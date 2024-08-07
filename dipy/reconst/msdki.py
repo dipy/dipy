@@ -279,6 +279,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
 
         bmag : int
             The order of magnitude that the bvalues have to differ to be

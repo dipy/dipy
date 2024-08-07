@@ -498,6 +498,7 @@ def multi_tensor_dki(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
     S0 : float (optional)

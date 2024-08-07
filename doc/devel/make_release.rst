@@ -120,7 +120,7 @@ then do you push to upstream on github.
   release artifacts (next section). Only push the release commit to the DIPY_
   repo once you have built the sdists and docs successfully.
   Then continue with building wheels. Only push the release tag to the repo once
-   all wheels have been built successfully on `DIPY Github Actions`_.
+  all wheels have been built successfully on `DIPY Github Actions`_.
 
 * For the wheel build / upload, follow the `wheel builder README`_
   instructions again.  Edit the ``.github/workflows/wheel.yml`` files (if

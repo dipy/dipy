@@ -406,8 +406,8 @@ fig3.savefig("MSDKI_SMT2_invivo.png")
 #                 doi: 10.1002/mrm.27606
 # .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
 #                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
+#                 Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                 Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Kaden2016b] Kaden E, Kelm ND, Carson RP, Does MD, Alexander DC (2016)
 #                 Multi-compartment microscopic diffusion imaging. NeuroImage
 #                 139: 346-359.

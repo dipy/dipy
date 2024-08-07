@@ -8,6 +8,9 @@
 .. image:: https://github.com/dipy/dipy/actions/workflows/test.yml/badge.svg?branch=master
   :target: https://github.com/dipy/dipy/actions/workflows/test.yml
 
+.. image:: https://github.com/dipy/dipy/actions/workflows/build_docs.yml/badge.svg?branch=master
+  :target: https://github.com/dipy/dipy/actions/workflows/build_docs.yml
+
 .. image:: https://codecov.io/gh/dipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/dipy/dipy
 

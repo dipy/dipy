@@ -18,6 +18,7 @@ extends the SSST-CSD introduced in [Tournier2007]_.
 
 The reconstruction of the fiber orientation distribution function
 (fODF) in MSMT-CSD involves the following steps:
+
     1. Generate a mask using Median Otsu (optional step)
     2. Denoise the data using MP-PCA (optional step)
     3. Generate  Anisotropic Powermap (if T1 unavailable)

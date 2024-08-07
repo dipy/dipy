@@ -56,8 +56,8 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         """
@@ -383,8 +383,8 @@ class StreamlineLinearRegistration:
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         References
@@ -815,7 +815,7 @@ def bundle_min_distance_fast(t, static, moving, block_size, *, num_threads=None)
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
 
     Returns
@@ -943,7 +943,7 @@ def progressive_slr(
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 
@@ -1098,7 +1098,7 @@ def slr_with_qbx(
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 

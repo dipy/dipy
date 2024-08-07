@@ -4,10 +4,10 @@ Denoise images using the Marcenko-Pastur PCA algorithm
 ======================================================
 
 The PCA-based denoising algorithm exploits the redundancy across the
-diffusion-weighted images [Manjon2013]_, [Veraart2016a]_. This algorithm has
+diffusion-weighted images [Manjon2013]_, [Veraa2016a]_. This algorithm has
 been shown to provide an optimal compromise between noise suppression and loss
 of anatomical information for different techniques such as DTI [Manjon2013]_,
-spherical deconvolution [Veraart2016a] and DKI [Henri2018]_.
+spherical deconvolution [Veraa2016a] and DKI [Henri2018]_.
 
 The basic idea behind the PCA-based denoising algorithms is to remove the
 components of the data that are classified as noise. The Principal Components
