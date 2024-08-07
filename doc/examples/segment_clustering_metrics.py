@@ -41,7 +41,7 @@ def get_streamlines():
     from dipy.data import get_fnames
     from dipy.io.streamline import load_tractogram
 
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 
     return fornix.streamlines

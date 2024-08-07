@@ -93,7 +93,7 @@ n_pts = [len(streamline) for streamline in bundle]
 # points of a streamline at a specific number and at the same time enforce
 # that all the segments of the streamline will have equal length.
 
-bundle_downsampled = set_number_of_points(bundle, 12)
+bundle_downsampled = set_number_of_points(bundle, nb_points=12)
 n_pts_ds = [len(s) for s in bundle_downsampled]
 
 ###############################################################################

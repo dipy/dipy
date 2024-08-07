@@ -50,14 +50,14 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-_, _, f_pve_wm = get_fnames("stanford_pve_maps")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+_, _, f_pve_wm = get_fnames(name="stanford_pve_maps")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = load_nifti_data(f_pve_wm)
 
@@ -248,7 +248,7 @@ if has_fury:
 #   which is anatomically not plausible.
 #
 
-f_pve_csf, f_pve_gm, f_pve_wm = get_fnames("stanford_pve_maps")
+f_pve_csf, f_pve_gm, f_pve_wm = get_fnames(name="stanford_pve_maps")
 pve_csf_data = load_nifti_data(f_pve_csf)
 pve_gm_data = load_nifti_data(f_pve_gm)
 pve_wm_data = load_nifti_data(f_pve_wm)

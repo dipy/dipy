@@ -19,12 +19,12 @@ from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
 from dipy.segment.mask import median_otsu
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 maskdata, mask = median_otsu(
     data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
@@ -43,7 +43,7 @@ csamodel = CsaOdfModel(gtab, 4)
 # data and a sphere as input. The sphere is an object that represents the
 # spherical discrete grid where the ODF values will be evaluated.
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 start_time = time.time()
 

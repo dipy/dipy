@@ -74,7 +74,7 @@ gtab = gradient_table(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     ),
-    op.join(
+    bvecs=op.join(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),

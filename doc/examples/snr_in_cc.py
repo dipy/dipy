@@ -45,11 +45,11 @@ from dipy.segment.mask import bounding_box, median_otsu, segment_from_cfa
 ###############################################################################
 # Then, we fetch and load a specific dataset with 64 gradient directions:
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 print("Computing brain mask...")
 b0_mask, mask = median_otsu(data, vol_idx=[0])

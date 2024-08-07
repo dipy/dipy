@@ -116,7 +116,7 @@ print(bvecs)
 # Both b-values and b-vectors look correct. Let's now create the
 # ``GradientTable``.
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 scene.clear()
 

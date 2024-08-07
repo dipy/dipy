@@ -65,17 +65,39 @@ moving_grid2world = moving_affine
 
 identity = np.eye(4)
 affine_map = AffineMap(
-    identity, static.shape, static_grid2world, moving.shape, moving_grid2world
+    identity,
+    domain_grid_shape=static.shape,
+    domain_grid2world=static_grid2world,
+    codomain_grid_shape=moving.shape,
+    codomain_grid2world=moving_grid2world,
 )
 resampled = affine_map.transform(moving)
 regtools.overlay_slices(
-    static, resampled, None, 0, "Static", "Moving", "resampled_0.png"
+    static,
+    resampled,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="resampled_0.png",
 )
 regtools.overlay_slices(
-    static, resampled, None, 1, "Static", "Moving", "resampled_1.png"
+    static,
+    resampled,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="resampled_1.png",
 )
 regtools.overlay_slices(
-    static, resampled, None, 2, "Static", "Moving", "resampled_2.png"
+    static,
+    resampled,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="resampled_2.png",
 )
 
 ###############################################################################
@@ -88,7 +110,10 @@ regtools.overlay_slices(
 # centers of mass of the two images
 
 c_of_mass = transform_centers_of_mass(
-    static, static_grid2world, moving, moving_grid2world
+    static,
+    static_grid2world,
+    moving,
+    moving_grid2world,
 )
 
 ###############################################################################
@@ -98,13 +123,31 @@ c_of_mass = transform_centers_of_mass(
 
 transformed = c_of_mass.transform(moving)
 regtools.overlay_slices(
-    static, transformed, None, 0, "Static", "Transformed", "transformed_com_0.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_com_0.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 1, "Static", "Transformed", "transformed_com_1.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_com_1.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 2, "Static", "Transformed", "transformed_com_2.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_com_2.png",
 )
 
 ###############################################################################
@@ -125,7 +168,7 @@ regtools.overlay_slices(
 
 nbins = 32
 sampling_prop = None
-metric = MutualInformationMetric(nbins, sampling_prop)
+metric = MutualInformationMetric(nbins=nbins, sampling_proportion=sampling_prop)
 
 ###############################################################################
 # To avoid getting stuck at local optima, and to accelerate convergence, we
@@ -186,8 +229,8 @@ translation = affreg.optimize(
     moving,
     transform,
     params0,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=starting_affine,
 )
 
@@ -197,13 +240,31 @@ translation = affreg.optimize(
 
 transformed = translation.transform(moving)
 regtools.overlay_slices(
-    static, transformed, None, 0, "Static", "Transformed", "transformed_trans_0.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_trans_0.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 1, "Static", "Transformed", "transformed_trans_1.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_trans_1.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 2, "Static", "Transformed", "transformed_trans_2.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_trans_2.png",
 )
 
 ###############################################################################
@@ -225,8 +286,8 @@ rigid = affreg.optimize(
     moving,
     transform,
     params0,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=starting_affine,
 )
 
@@ -235,13 +296,31 @@ rigid = affreg.optimize(
 
 transformed = rigid.transform(moving)
 regtools.overlay_slices(
-    static, transformed, None, 0, "Static", "Transformed", "transformed_rigid_0.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_rigid_0.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 1, "Static", "Transformed", "transformed_rigid_1.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_rigid_1.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 2, "Static", "Transformed", "transformed_rigid_2.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_rigid_2.png",
 )
 
 ###############################################################################
@@ -263,8 +342,8 @@ affine = affreg.optimize(
     moving,
     transform,
     params0,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=starting_affine,
 )
 
@@ -273,13 +352,31 @@ affine = affreg.optimize(
 
 transformed = affine.transform(moving)
 regtools.overlay_slices(
-    static, transformed, None, 0, "Static", "Transformed", "transformed_affine_0.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_affine_0.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 1, "Static", "Transformed", "transformed_affine_1.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_affine_1.png",
 )
 regtools.overlay_slices(
-    static, transformed, None, 2, "Static", "Transformed", "transformed_affine_2.png"
+    static,
+    transformed,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="transformed_affine_2.png",
 )
 
 ###############################################################################
@@ -317,13 +414,31 @@ xformed_img, reg_affine = affine_registration(
 )
 
 regtools.overlay_slices(
-    static, xformed_img, None, 0, "Static", "Transformed", "xformed_affine_0.png"
+    static,
+    xformed_img,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_affine_0.png",
 )
 regtools.overlay_slices(
-    static, xformed_img, None, 1, "Static", "Transformed", "xformed_affine_1.png"
+    static,
+    xformed_img,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_affine_1.png",
 )
 regtools.overlay_slices(
-    static, xformed_img, None, 2, "Static", "Transformed", "xformed_affine_2.png"
+    static,
+    xformed_img,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_affine_2.png",
 )
 
 
@@ -355,13 +470,31 @@ xformed_dwi, reg_affine = register_dwi_to_template(
 )
 
 regtools.overlay_slices(
-    moving, xformed_dwi, None, 0, "Static", "Transformed", "xformed_dwi_0.png"
+    moving,
+    xformed_dwi,
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_dwi_0.png",
 )
 regtools.overlay_slices(
-    moving, xformed_dwi, None, 1, "Static", "Transformed", "xformed_dwi_1.png"
+    moving,
+    xformed_dwi,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_dwi_1.png",
 )
 regtools.overlay_slices(
-    moving, xformed_dwi, None, 2, "Static", "Transformed", "xformed_dwi_2.png"
+    moving,
+    xformed_dwi,
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Transformed",
+    fname="xformed_dwi_2.png",
 )
 
 ###############################################################################

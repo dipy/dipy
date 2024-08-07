@@ -43,14 +43,14 @@ from dipy.viz import actor, colormap as cmap, window
 # :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
 # and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -132,7 +132,7 @@ wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 save_nifti("example_cc_path_length_map.nii.gz", wmpl.astype(np.float32), affine)
 
 # get the T1 to show anatomical context of the WMPL
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 t1_data = load_nifti_data(t1_fname)
 
 

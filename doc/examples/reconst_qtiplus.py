@@ -185,7 +185,7 @@ qtifit_217 = qtimodel_217.fit(data_217, mask)
 # to the subsampled dataset:
 
 qtimodel_unconstrained = qti.QtiModel(gtab_70)
-qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
+qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask=mask)
 
 ###############################################################################
 # Now we repeat the fit but with the constraints applied.
@@ -210,7 +210,7 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 # and 2 minute when using Mosek!
 
 qtimodel_constrained = qti.QtiModel(gtab_70, fit_method="SDPdc")
-qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
+qtifit_constrained = qtimodel_constrained.fit(data_70, mask=mask)
 
 ###############################################################################
 # Now we can visualize the results obtained with the constrained and

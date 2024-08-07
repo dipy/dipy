@@ -34,11 +34,11 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 # is fetched and a gradient table is constructed from bvals/bvecs.
 
 # Fetch DWI and GTAB
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 data = np.squeeze(data)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # To accelerate computation, a brain mask must be computed. The resulting mask
@@ -70,7 +70,7 @@ save_nifti("predicted_sh.nii.gz", predicted_sh, affine)
 # added as actors and a mid-coronal slice is selected.
 
 interactive = False
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 B, invB = sh_to_sf_matrix(
     sphere, sh_order_max=8, basis_type=resdnn_model.basis_type, smooth=0.0006
 )
