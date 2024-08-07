@@ -87,7 +87,10 @@ regtools.overlay_slices(
 # centers of mass of the two images
 
 c_of_mass = transform_centers_of_mass(
-    static, static_grid2world, moving, moving_grid2world
+    static,
+    static_grid2world=static_grid2world,
+    moving=moving,
+    moving_grid2world=moving_grid2world,
 )
 
 ###############################################################################
@@ -185,8 +188,8 @@ translation = affreg.optimize(
     moving,
     transform,
     params0,
-    static_grid2world,
-    moving_grid2world,
+    static_grid2world=static_grid2world,
+    moving_grid2world=moving_grid2world,
     starting_affine=starting_affine,
 )
 
