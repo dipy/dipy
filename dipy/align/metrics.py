@@ -9,10 +9,10 @@ from scipy import ndimage
 from dipy.align import (
     crosscorr as cc,
     expectmax as em,
-    floating,
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
+from dipy.align.utils import floating
 from dipy.testing.decorators import warning_for_keywords
 
 
