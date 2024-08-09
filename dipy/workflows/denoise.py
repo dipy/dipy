@@ -35,6 +35,7 @@ class Patch2SelfFlow(Workflow):
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
+        version=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
     ):
@@ -113,6 +114,7 @@ class Patch2SelfFlow(Workflow):
                     b0_denoising=b0_denoising,
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
+                    version=version,
                 )
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
