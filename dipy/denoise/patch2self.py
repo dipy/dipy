@@ -43,13 +43,11 @@ def count_sketch(matrixA_name, matrixA_dtype, matrixA_shape, sketch_rows, tmp_di
 
     """
     matrixA = np.squeeze(
-        np.memmap(matrixA_name, dtype=matrixA_dtype,
-                  mode="r+", shape=matrixA_shape)
+        np.memmap(matrixA_name, dtype=matrixA_dtype, mode="r+", shape=matrixA_shape)
     ).reshape(np.prod(matrixA_shape[:-1]), matrixA_shape[-1])
     m, n = matrixA.shape
     matrixt_file = tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir)
-    matrixt = np.memmap(matrixt_file.name,
-                        dtype=matrixA_dtype, mode="w+", shape=(m, n))
+    matrixt = np.memmap(matrixt_file.name, dtype=matrixA_dtype, mode="w+", shape=(m, n))
     matrixC_file = tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir)
     matrixC = np.memmap(
         matrixC_file.name, dtype=matrixA_dtype, mode="w+", shape=(sketch_rows, n)
@@ -90,8 +88,7 @@ def _vol_split(train, vol_idx):
     mask = np.zeros(train.shape[0], dtype=bool)
     mask[vol_idx] = True
     cur_x = train[~mask]
-    cur_x = cur_x.reshape(
-        (train.shape[0] - 1) * train.shape[1], train.shape[2])
+    cur_x = cur_x.reshape((train.shape[0] - 1) * train.shape[1], train.shape[2])
     y = train[vol_idx, train.shape[1] // 2, :]
     return cur_x, y
 
@@ -138,8 +135,7 @@ def _extract_3d_patches(arr, patch_radius):
                 kx1 = k - patch_radius[2]
                 kx2 = k + patch_radius[2] + 1
 
-                X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
-                    np.prod(patch_size), dim)
+                X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(np.prod(patch_size), dim)
                 all_patches.append(X)
 
     return np.array(all_patches).T
@@ -186,8 +182,7 @@ def _fit_denoising_model(train, vol_idx, model, alpha, version):
         elif model.lower() == "ridge":
             model_instance = linear_model.Ridge(copy_X=False, alpha=alpha)
         elif model.lower() == "lasso":
-            model_instance = linear_model.Lasso(
-                copy_X=False, max_iter=50, alpha=alpha)
+            model_instance = linear_model.Lasso(copy_X=False, max_iter=50, alpha=alpha)
         else:
             raise ValueError(
                 f"Invalid model string: {model}. Should be 'ols', 'ridge', or 'lasso'."
@@ -334,7 +329,7 @@ def vol_denoise(
             idx_counter += 1
             dwi_counter += 1
         if idx_counter >= data_shape[-1] // 5:
-            denoised_arr[..., start_idx: vol_idx + 1] = full_result
+            denoised_arr[..., start_idx : vol_idx + 1] = full_result
             start_idx = vol_idx + 1
             idx_counter = 0
     denoised_arr_idx = data_shape[-1] - data_shape[-1] % 5
@@ -471,8 +466,7 @@ def patch2self(
     if os.path.exists(tmp_dir) is False:
         raise ValueError("The temporary directory does not exist.")
     if not data.ndim == 4:
-        raise ValueError(
-            "Patch2Self can only denoise on 4D arrays.", data.shape)
+        raise ValueError("Patch2Self can only denoise on 4D arrays.", data.shape)
     if data.shape[3] < 10:
         warn(
             "The input data has less than 10 3D volumes. \
@@ -568,8 +562,7 @@ def patch2self(
             denoised_arr[:, :, :, b0_idx[0][0]] = denoised_b0s
         else:
             for i, idx in enumerate(b0_idx):
-                denoised_arr[:, :, :, idx[0]] = np.squeeze(
-                    denoised_b0s[..., i])
+                denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_b0s[..., i])
 
         for i, idx in enumerate(dwi_idx):
             denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
