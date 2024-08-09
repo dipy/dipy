@@ -52,7 +52,7 @@ def test_patch2self_random_noise(rng):
             model="ols",
             clip_negative_vals=True,
             shift_intensity=True,
-            version=1
+            version=1,
         )
 
     assert_greater(S0den_clip.min(), S0.min())
@@ -67,7 +67,7 @@ def test_patch2self_random_noise(rng):
             model="ols",
             clip_negative_vals=True,
             shift_intensity=True,
-            version=3
+            version=3,
         )
 
     assert_greater(S0den_clip.min(), S0.min())
