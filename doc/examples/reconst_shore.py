@@ -92,7 +92,7 @@ sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap="plasma", scale=
 sfu.RotateX(-90)
 sfu.display(y=0)
 scene.add(sfu)
-window.record(scene, out_path="odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

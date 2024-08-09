@@ -137,7 +137,9 @@ scene.add(cc_streamlines_actor)
 scene.add(cc_ROI_actor)
 
 # Save figures
-window.record(scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800))
+window.record(
+    scene=scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800)
+)
 if interactive:
     window.show(scene)
 scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])

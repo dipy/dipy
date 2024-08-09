@@ -88,7 +88,7 @@ scene.add(candidate_streamlines_actor)
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
 scene.add(vol_actor2)
-window.record(scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -167,7 +167,7 @@ scene = window.Scene()
 scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
-window.record(scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
 if interactive:
     window.show(scene)
 

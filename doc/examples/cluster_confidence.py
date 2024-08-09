@@ -102,7 +102,7 @@ scene.add(stream_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -153,7 +153,7 @@ scene.add(keep_streamlines_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

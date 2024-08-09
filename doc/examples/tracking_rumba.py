@@ -133,7 +133,9 @@ scene.add(streamlines_actor)
 if interactive:
     window.show(scene)
 
-window.record(scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800))
+window.record(
+    scene=scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800)
+)
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_rumba.trk")

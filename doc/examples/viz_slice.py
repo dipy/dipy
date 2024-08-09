@@ -84,7 +84,7 @@ scene.zoom(1.4)
 ###############################################################################
 # Otherwise, you can save a screenshot using the following command.
 
-window.record(scene, out_path="slices.png", size=(600, 600), reset_camera=False)
+window.record(scene=scene, out_path="slices.png", size=(600, 600), reset_camera=False)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -131,7 +131,9 @@ scene.zoom(1.4)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
 
-window.record(scene, out_path="slices_lut.png", size=(600, 600), reset_camera=False)
+window.record(
+    scene=scene, out_path="slices_lut.png", size=(600, 600), reset_camera=False
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -265,7 +267,7 @@ scene.zoom(1.0)
 # the mosaic up/down and left/right using the middle mouse button drag,
 # zoom in/out using the scroll wheel, and pick voxels with left click.
 
-window.record(scene, out_path="mosaic.png", size=(900, 600), reset_camera=False)
+window.record(scene=scene, out_path="mosaic.png", size=(900, 600), reset_camera=False)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

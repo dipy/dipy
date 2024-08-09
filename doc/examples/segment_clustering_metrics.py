@@ -144,7 +144,7 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="cosine_metric.png", size=(600, 600))
+window.record(scene=scene, out_path="cosine_metric.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

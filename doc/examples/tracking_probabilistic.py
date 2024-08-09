@@ -124,7 +124,9 @@ save_trk(sft, "tractogram_probabilistic_dg_sh.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_probabilistic_dg_sh.png", size=(800, 800))
+    window.record(
+        scene=scene, out_path="tractogram_probabilistic_dg_sh.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 

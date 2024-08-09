@@ -128,7 +128,7 @@ scene.add(bundle_actor2)
 scene.add(bundle_actor3)
 
 scene.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
-window.record(scene, out_path="simulated_cosine_bundle.png", size=(900, 900))
+window.record(scene=scene, out_path="simulated_cosine_bundle.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

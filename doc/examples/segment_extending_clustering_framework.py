@@ -131,7 +131,7 @@ for cluster, color in zip(clusters, cmap):
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
+window.record(scene=scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
 
 # Enables/disables interactive visualization
 interactive = False
@@ -225,7 +225,7 @@ for cluster, color in zip(clusters, cmap):
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
+window.record(scene=scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

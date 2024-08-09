@@ -102,7 +102,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

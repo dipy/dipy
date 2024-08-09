@@ -41,7 +41,7 @@ scene.add(actor.line(streamlines))
 if interactive:
     window.show(scene)
 else:
-    window.record(scene, out_path="tractograms_initial.png", size=(600, 600))
+    window.record(scene=scene, out_path="tractograms_initial.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -69,7 +69,7 @@ scene.set_camera(
 if interactive:
     window.show(scene)
 else:
-    window.record(scene, out_path="AF_L_model_bundle.png", size=(600, 600))
+    window.record(scene=scene, out_path="AF_L_model_bundle.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -126,7 +126,7 @@ scene.set_camera(
 if interactive:
     window.show(scene)
 else:
-    window.record(scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
+    window.record(scene=scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -153,7 +153,9 @@ scene.set_camera(
 if interactive:
     window.show(scene)
 else:
-    window.record(scene, out_path="AF_L_recognized_bundle_dist.png", size=(600, 600))
+    window.record(
+        scene=scene, out_path="AF_L_recognized_bundle_dist.png", size=(600, 600)
+    )
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -183,7 +185,9 @@ scene.set_camera(
 if interactive:
     window.show(scene)
 else:
-    window.record(scene, out_path="AF_L_model_bundle_reached.png", size=(600, 600))
+    window.record(
+        scene=scene, out_path="AF_L_model_bundle_reached.png", size=(600, 600)
+    )
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

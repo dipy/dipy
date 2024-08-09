@@ -60,7 +60,7 @@ scene.add(stream_actor)
 
 # Uncomment the line below to show to display the window
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle1.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle1.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -93,7 +93,7 @@ scene.add(stream_actor2)
 scene.add(bar)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle2.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle2.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -120,7 +120,7 @@ scene.add(stream_actor3)
 scene.add(bar2)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle3.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle3.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -140,7 +140,7 @@ stream_actor4 = actor.line(bundle_native, (1.0, 0.5, 0), linewidth=0.1)
 scene.add(stream_actor4)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle4.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle4.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -177,7 +177,7 @@ bar3 = actor.scalar_bar(lut_cmap)
 scene.add(bar3)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle5.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle5.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -205,7 +205,7 @@ stream_actor6 = actor.line(
 scene.add(stream_actor6)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene, out_path="bundle6.png", size=(600, 600))
+window.record(scene=scene, out_path="bundle6.png", size=(600, 600))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

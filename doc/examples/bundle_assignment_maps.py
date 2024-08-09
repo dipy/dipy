@@ -28,7 +28,7 @@ atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
+sft_af_l = load_trk(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
 ###############################################################################
@@ -44,7 +44,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="af_l_before_assignment_maps.png", size=(600, 600))
+window.record(scene=scene, out_path="af_l_before_assignment_maps.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -82,7 +82,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="af_l_after_assignment_maps.png", size=(600, 600))
+window.record(scene=scene, out_path="af_l_after_assignment_maps.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

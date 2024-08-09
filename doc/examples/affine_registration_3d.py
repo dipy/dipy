@@ -88,9 +88,9 @@ regtools.overlay_slices(
 
 c_of_mass = transform_centers_of_mass(
     static,
-    static_grid2world=static_grid2world,
-    moving=moving,
-    moving_grid2world=moving_grid2world,
+    static_grid2world,
+    moving,
+    moving_grid2world,
 )
 
 ###############################################################################

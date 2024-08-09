@@ -92,7 +92,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, out_path="contour_from_roi_tutorial.png", size=(1200, 900))
+window.record(scene=scene, out_path="contour_from_roi_tutorial.png", size=(1200, 900))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

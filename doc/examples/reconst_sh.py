@@ -59,7 +59,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving illustration as symm_signal.png")
-window.record(scene, out_path="symm_signal.png", size=(300, 300))
+window.record(scene=scene, out_path="symm_signal.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -98,7 +98,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving output as symm_reconst.png")
-window.record(scene, out_path="symm_reconst.png", size=(300, 300))
+window.record(scene=scene, out_path="symm_reconst.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -126,7 +126,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving output as asym_signal.png")
-window.record(scene, out_path="asym_signal.png", size=(300, 300))
+window.record(scene=scene, out_path="asym_signal.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -148,7 +148,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving output as asym_reconst.png")
-window.record(scene, out_path="asym_reconst.png", size=(300, 300))
+window.record(scene=scene, out_path="asym_reconst.png", size=(300, 300))
 if interactive:
     window.show(scene)
 
@@ -173,7 +173,7 @@ odf_actor.RotateX(90)
 scene.add(odf_actor)
 
 print("Saving output as asym_reconst_full.png")
-window.record(scene, out_path="asym_reconst_full.png", size=(300, 300))
+window.record(scene=scene, out_path="asym_reconst_full.png", size=(300, 300))
 if interactive:
     window.show(scene)
 

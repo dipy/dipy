@@ -231,14 +231,14 @@ scene.add(vol_actor2)
 
 # Show original fibers
 scene.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
-window.record(scene, n_frames=1, out_path="OR_before.png", size=(900, 900))
+window.record(scene=scene, n_frames=1, out_path="OR_before.png", size=(900, 900))
 if interactive:
     window.show(scene)
 
 # Show thresholded fibers
 scene.rm(lineactor)
 scene.add(actor.line(fbc_sl_thres, np.vstack(clrs_thres), linewidth=0.2))
-window.record(scene, n_frames=1, out_path="OR_after.png", size=(900, 900))
+window.record(scene=scene, n_frames=1, out_path="OR_after.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

@@ -148,7 +148,7 @@ odf_actor = actor.odf_slicer(
 )
 scene = window.Scene()
 scene.add(odf_actor)
-window.record(scene, out_path="fODFs.png", size=(600, 600), magnification=4)
+window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=4)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -250,7 +250,9 @@ scene.add(
 )
 
 print("Saving illustration as tensor_ellipsoids.png")
-window.record(scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600))
+window.record(
+    scene=scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -272,7 +274,7 @@ tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
 scene.add(odf_actor)
 print("Saving illustration as tensor_odfs.png")
-window.record(scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
+window.record(scene=scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

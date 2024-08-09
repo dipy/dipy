@@ -99,7 +99,7 @@ if has_fury:
         actor.peak_slicer(csa_peaks.peak_dirs, csa_peaks.peak_values, colors=None)
     )
 
-    window.record(scene, out_path="csa_direction_field.png", size=(900, 900))
+    window.record(scene=scene, out_path="csa_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
@@ -183,7 +183,7 @@ if has_fury:
     scene.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(scene, out_path="tractogram_EuDX.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_EuDX.png", size=(800, 800))
     if interactive:
         window.show(scene)
 

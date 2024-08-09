@@ -150,7 +150,7 @@ if has_fury:
     scene.add(vol_actor)
     scene.add(vol_actor2)
 
-    window.record(scene, out_path="tractogram_sfm.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_sfm.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
