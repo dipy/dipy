@@ -1070,11 +1070,7 @@ def v_cycle_3d(
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarser resolution and finally refines the solution at the current
     resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
-    Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005.
-        ICCV 2005.
+    Weickert [1]_.
 
     Parameters
     ----------
@@ -1105,6 +1101,13 @@ def v_cycle_3d(
     -------
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this
         iteration
+
+    References
+    ----------
+    ..  [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+            estimation: combining highest accuracy with real-time performance",
+            10th IEEE International Conference on Computer Vision, 2005.
+            ICCV 2005.
     """
     # pre-smoothing
     for _ in range(k):
