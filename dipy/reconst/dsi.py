@@ -397,11 +397,11 @@ def pdf_interp_coords(sphere, rradius, origin):
     Parameters
     ----------
     sphere : object,
-            Sphere
+        Sphere
     rradius : array, shape (N,)
-            line interpolation points
+        line interpolation points
     origin : array, shape (3,)
-            center of the grid
+        center of the grid
 
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T

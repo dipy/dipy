@@ -339,17 +339,17 @@ class ImageRegistrationFlow(Workflow):
             Number of bins to discretize the joint and marginal PDF.
 
         sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF.
-             'None' implies all voxels.
+            Number ([0-100]) of voxels for calculating the PDF. None implies all
+            voxels.
 
         metric : string, optional
             Similarity metric for gathering mutual information).
 
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
-             `level_iters[0]` corresponds to the coarsest scale,
-             `level_iters[-1]` the finest, where n is the length of the
-              sequence.
+            `level_iters[0]` corresponds to the coarsest scale,
+            `level_iters[-1]` the finest, where n is the length of the
+            sequence.
 
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
@@ -389,8 +389,7 @@ class ImageRegistrationFlow(Workflow):
             Name for the saved affine matrix.
 
         out_quality : string, optional
-            Name of the file containing the saved quality
-             metric.
+            Name of the file containing the saved quality metric.
         """
 
         io_it = self.get_io_iterator()
