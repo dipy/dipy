@@ -275,12 +275,15 @@ def rodrigues_axis_rotation(r, theta):
 
     Parameters
     ----------
-    r :  array_like shape (3,), axis
-    theta : float, angle in degrees
+    r :  array_like shape (3,)
+        Axis.
+    theta : float
+        Angle in degrees.
 
     Returns
     -------
-    R : array, shape (3,3), rotation matrix
+    R : array, shape (3,3)
+        Rotation matrix.
 
     Examples
     --------

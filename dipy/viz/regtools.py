@@ -85,7 +85,8 @@ def overlay_images(
     fname : string (optional)
         the file name to write the resulting figure. If None (default), the
         image is not saved.
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
     """
     # Normalize the input images to [0,255]
     img0 = 255 * ((img0 - img0.min()) / (img0.max() - img0.min()))
@@ -215,7 +216,8 @@ def plot_2d_diffeomorphic_map(
     show_figure : bool, optional
         if True (default), the deformed grids will be plotted using matplotlib,
         else the grids are just returned
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
 
     Returns
     -------
@@ -339,7 +341,8 @@ def plot_slices(V, *, slice_indices=None, fname=None, **fig_kwargs):
     fname : string (optional)
         the name of the file to save the figure to. If None (default), the
         figure is not saved to disk.
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
     """
     if slice_indices is None:
         slice_indices = np.array(V.shape) // 2

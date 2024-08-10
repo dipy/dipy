@@ -374,6 +374,7 @@ def hanning_filter(gtab, filter_width, origin):
     gtab : GradientTable
         Gradient table.
     filter_width : int
+        Strength of the Hanning filter.
     origin : (3,) ndarray
         center of qspace
 

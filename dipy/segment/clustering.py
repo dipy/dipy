@@ -722,6 +722,7 @@ def qbx_and_merge(
     Parameters
     ----------
     streamlines : Streamlines
+        Streamlines.
     thresholds : sequence
         List of distance thresholds for QuickBundlesX.
     nb_pts : int

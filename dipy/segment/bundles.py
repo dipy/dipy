@@ -173,6 +173,7 @@ def bundle_shape_similarity(
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
     rng : np.random.Generator
+        Random number generator.
     clust_thr : array-like, optional
         list of clustering thresholds used in quickbundlesX
     threshold : float, optional
@@ -523,6 +524,7 @@ class RecoBundles:
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
+            Bundle distance metric.
         slr_x0 : array or int or str
             Transformation allowed. translation, rigid, similarity or scaling
             Initial parametrization for the optimization.
@@ -557,7 +559,7 @@ class RecoBundles:
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
             (default None)
         slr_bounds : array
-            (default None)
+            SLR bounds.
         slr_select : tuple
             Select the number of streamlines from model to neirborhood of
             model to perform the local SLR.
@@ -648,7 +650,9 @@ class RecoBundles:
         Parameters
         ----------
         model_bundle : Streamlines
+            Model bundle streamlines.
         pruned_streamlines : Streamlines
+            Pruned bundle streamlines.
         slr_select : tuple
             Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.

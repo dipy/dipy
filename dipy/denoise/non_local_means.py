@@ -16,6 +16,7 @@ def non_local_means(
     arr : 3D or 4D ndarray
         The array to be denoised
     mask : 3D ndarray
+        Mask on data where the non-local means will be applied.
     sigma : float
         standard deviation of the noise estimated from the data
     patch_radius : int

@@ -130,6 +130,7 @@ class IsotropicFit(ReconstFit):
         Parameters
         ----------
         model : IsotropicModel class instance
+            Isotropic model.
         params : ndarray
             The mean isotropic model parameters (the mean diffusion-weighted
             signal in each voxel).

@@ -75,9 +75,13 @@ def slicer_panel(
     Parameters
     ----------
     scene : Scene
+        Scene.
     iren : Interactor
+        Interactor.
     data : 3d ndarray
+        Data to be sliced.
     affine : 4x4 ndarray
+        Affine matrix.
     world_coords : bool
         If True then the affine is applied.
 

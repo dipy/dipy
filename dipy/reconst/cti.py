@@ -68,7 +68,8 @@ def multi_gaussian_k_from_c(ccti, MD):
     ----------
     ccti: array(..., 21)
         Covariance Tensor Elements with no hidden factors.
-    MD: Mean Diffusivity (MD) of a diffusion tensor.
+    MD : ndarray
+        Mean Diffusivity (MD) of a diffusion tensor.
 
     Returns
     -------
@@ -205,6 +206,7 @@ class CorrelationTensorModel(ReconstModel):
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
         fit_method : str or callable, optional
+            Fitting method.
         args, kwargs :
             arguments and key-word arguments passed to the fit_method.
 

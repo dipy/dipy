@@ -265,7 +265,8 @@ def write_mapping(mapping, fname):
 
     Parameters
     ----------
-    mapping : a DiffeomorphicMap object derived from :func:`syn_registration`
+    mapping : DiffeomorphicMap
+        Registration mapping derived from :func:`syn_registration`
     fname : str
         Full path to the nifti file storing the mapping
 

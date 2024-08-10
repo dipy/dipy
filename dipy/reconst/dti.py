@@ -2282,6 +2282,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     Parameters
     ----------
     evecs : ndarray
+        Eigenvectors.
     odf_vertices : ndarray, optional
         If None, then set vertices from symmetric362 sphere.  Otherwise use
         passed ndarray as vertices

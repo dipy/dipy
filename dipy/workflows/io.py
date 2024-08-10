@@ -297,6 +297,7 @@ class SplitFlow(Workflow):
         input_files : variable string
             Any number of Nifti1 files
         vol_idx : int, optional
+            Index of the 3D volume to extract.
         out_dir : string, optional
             Output directory. (default current directory)
         out_split : string, optional

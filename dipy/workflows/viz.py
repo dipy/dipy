@@ -62,6 +62,7 @@ class HorizonFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
+            Filenames.
         cluster : bool, optional
             Enable QuickBundlesX clustering.
         rgb : bool, optional

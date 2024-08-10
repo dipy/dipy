@@ -214,6 +214,14 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     directions : List
         Unitary vector directions
     colors : List
+        Colors for bundle warping field vectors. Colors follow the convention
+        used in DTI-derived maps (e.g. color FA) [Pajevic1999]_.
+
+    References
+    ----------
+    .. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
+       orientation of anisotropic tissues from diffusion tensor data: application
+       to white matter fiber tract mapping in the human brain.
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)
