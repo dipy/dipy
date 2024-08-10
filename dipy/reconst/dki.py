@@ -1791,9 +1791,9 @@ class DiffusionKurtosisModel(ReconstModel):
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
         *args
-            Variable length argument list passed to the fit method.
+            Variable length argument list passed to the :func:`fit` method.
         **kwargs
-            Arbitrary keyword arguments passed to the fit method.
+            Arbitrary keyword arguments passed to the :func:`fit` method.
 
         References
         ----------

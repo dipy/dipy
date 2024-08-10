@@ -210,9 +210,9 @@ class CorrelationTensorModel(ReconstModel):
         fit_method : str or callable, optional
             Fitting method.
         *args
-            Variable length argument list passed to the fit method.
+            Variable length argument list passed to the :func:`fit` method.
         **kwargs
-            Arbitrary keyword arguments passed to the fit method.
+            Arbitrary keyword arguments passed to the :func:`fit` method.
 
         """
         self.gtab1 = gtab1

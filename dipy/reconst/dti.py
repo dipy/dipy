@@ -724,7 +724,8 @@ class TensorModel(ReconstModel):
             Boolean to return (True) or not (False) the S0 values for the fit.
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
+           fit_method. See :func:`dti.wls_fit_tensor`,
+           :func:`dti.ols_fit_tensor` for details
 
         min_signal : float, optional
             The minimum signal value. Needs to be a strictly positive
