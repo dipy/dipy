@@ -1988,8 +1988,8 @@ def map_laplace_u(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
@@ -2011,8 +2011,8 @@ def map_laplace_t(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
@@ -2037,8 +2037,8 @@ def map_laplace_s(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
 

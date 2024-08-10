@@ -1056,8 +1056,8 @@ def response_from_mask_ssst(gtab, data, mask):
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
     """
 
     ten = TensorModel(gtab)
