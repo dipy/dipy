@@ -330,10 +330,10 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            com: center of mass, trans: translation, rigid: rigid body,
-            rigid_isoscaling: rigid body + isotropic scaling, rigid_scaling:
-            rigid body + scaling, affine: full affine including translation,
-            rotation, shearing and scaling.
+            ``'com'``: center of mass; ``'trans'``: translation; ``'rigid'``:
+            rigid body; ``'rigid_isoscaling'``: rigid body + isotropic scaling,
+            ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
+            including translation, rotation, shearing and scaling.
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF.
