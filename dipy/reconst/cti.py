@@ -209,8 +209,10 @@ class CorrelationTensorModel(ReconstModel):
             A GradientTable class instance for second DDE diffusion epoch
         fit_method : str or callable, optional
             Fitting method.
-        args, kwargs :
-            arguments and key-word arguments passed to the fit_method.
+        *args
+            Variable length argument list passed to the fit method.
+        **kwargs
+            Arbitrary keyword arguments passed to the fit method.
 
         """
         self.gtab1 = gtab1

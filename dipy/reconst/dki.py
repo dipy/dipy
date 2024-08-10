@@ -1790,8 +1790,10 @@ class DiffusionKurtosisModel(ReconstModel):
             Default: "WLS"
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
-        args, kwargs :
-            arguments and key-word arguments passed to the fit_method.
+        *args
+            Variable length argument list passed to the fit method.
+        **kwargs
+            Arbitrary keyword arguments passed to the fit method.
 
         References
         ----------
