@@ -555,7 +555,7 @@ class RecoBundles:
                 b) "similarity"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
                 c) "affine"
-                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
         slr_bounds : array
             SLR bounds.
         slr_select : tuple
