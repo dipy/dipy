@@ -1079,8 +1079,8 @@ class QtdmriFit:
         fitted signal contains spurious oscillations. A high laplacian norm may
         indicate that these are present, and any q-space indices that
         use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
-        QIV). In contrast to [1], the Laplacian now describes oscillations in
-        the 4-dimensional qt-signal [2].
+        QIV). In contrast to [1]_, the Laplacian now describes oscillations in
+        the 4-dimensional qt-signal [2]_.
 
         References
         ----------

@@ -197,7 +197,7 @@ class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
     def __init__(self, gtab1, gtab2, fit_method="WLS", *args, **kwargs):
-        """Correlation Tensor Imaging Model [1]
+        """Correlation Tensor Imaging Model [1]_
 
         Parameters
         ----------

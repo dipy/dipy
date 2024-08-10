@@ -87,8 +87,7 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
         The sphere providing sample directions to sample the restricted and
-        hindered cellular diffusion tensors. For more details see Fieremans
-        et al., 2011.
+        hindered cellular diffusion tensors. For more details see [1]_.
     awf : ndarray (optional)
         Array containing values of the axonal water fraction that has the shape
         dki_params.shape[:-1]. If not given this will be automatically computed
