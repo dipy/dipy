@@ -195,6 +195,7 @@ class FreeWaterTensorFit(TensorFit):
         model_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector

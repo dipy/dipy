@@ -37,6 +37,7 @@ def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=Non
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
@@ -81,6 +82,7 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
@@ -189,8 +191,10 @@ def dkimicro_prediction(params, gtab, S0=1):
     Parameters
     ----------
     params : ndarray (x, y, z, 40) or (n, 40)
-    All parameters estimated from the diffusion kurtosis microstructure model.
+        All parameters estimated from the diffusion kurtosis microstructure
+        model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
@@ -321,12 +325,13 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             Gradient table.
         fit_method : str or callable
             str can be one of the following:
-            'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor
-            using the ordinary linear least squares solution
-                dki.ols_fit_dki
-            'WLS' or 'UWLLS' to fit the diffusion tensor and kurtosis tensor
-            using the ordinary linear least squares solution
-                dki.wls_fit_dki
+
+            - 'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor
+              using the ordinary linear least squares solution
+              `:func:dki.ols_fit_dki`
+            - 'WLS' or 'UWLLS' to fit the diffusion tensor and kurtosis tensor
+              using the ordinary linear least squares solution
+              :func:`dki.wls_fit_dki`
 
             callable has to have the signature:
                 fit_method(design_matrix, data, *args, **kwargs)
@@ -420,6 +425,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             All parameters estimated from the diffusion kurtosis
             microstructural model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
@@ -427,6 +433,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                 4) Six elements of the hindered diffusion tensor
                 5) Six elements of the restricted diffusion tensor
                 6) Axonal water fraction
+
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -460,6 +467,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
             All parameters estimated from the diffusion kurtosis
             microstructural model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector

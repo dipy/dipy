@@ -509,6 +509,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         parallel_backend: str, ParallelBackendBase instance or None
             Specify the parallelization backend implementation.
             Supported backends are:
+
             - "loky" used by default, can induce some
               communication and memory overhead when exchanging input and
               output data with the worker Python processes.

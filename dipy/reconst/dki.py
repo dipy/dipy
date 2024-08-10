@@ -620,8 +620,9 @@ def apparent_kurtosis_coef(
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
         1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
             second and third coordinates of the eigenvectors respectively
@@ -726,11 +727,12 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
         1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
+           second and third coordinates of the eigenvector
         3) Fifteen elements of the kurtosis tensor
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
@@ -1011,10 +1013,12 @@ def radial_kurtosis(
     dki_params : ndarray (x, y, z, 27) or (n, 27)
     All parameters estimated from the diffusion kurtosis model.
     Parameters are ordered as follows:
+
         1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
+           second and third coordinates of the eigenvector
         3) Fifteen elements of the kurtosis tensor
+
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
@@ -1151,10 +1155,12 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
     dki_params : ndarray (x, y, z, 27) or (n, 27)
     All parameters estimated from the diffusion kurtosis model.
     Parameters are ordered as follows:
+
         1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
+           second and third coordinates of the eigenvector
         3) Fifteen elements of the kurtosis tensor
+
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
@@ -1365,10 +1371,12 @@ def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
     dki_params : ndarray (x, y, z, 27) or (n, 27)
     All parameters estimated from the diffusion kurtosis model.
     Parameters are ordered as follows:
+
         1) Three diffusion tensor's eingenvalues
         2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
+           second and third coordinates of the eigenvector
         3) Fifteen elements of the kurtosis tensor
+
     sphere : Sphere class instance, optional
         The sphere providing sample directions for the initial search of the
         maximal value of kurtosis.
@@ -1438,10 +1446,12 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
     dki_params : ndarray (x, y, z, 27) or (n, 27)
     All parameters estimated from the diffusion kurtosis model.
     Parameters are ordered as follows:
+
         1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
+           second and third coordinates of the eigenvector
         3) Fifteen elements of the kurtosis tensor
+
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
@@ -1515,10 +1525,12 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
+
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
@@ -1765,12 +1777,14 @@ class DiffusionKurtosisModel(ReconstModel):
             The gradient table for the data set.
         fit_method : str or callable, optional
             str be one of the following:
-                'OLS' or 'ULLS' for ordinary least squares.
-                'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
-                    See dki.ls_fit_dki.
-                'CLS' for LMI constrained ordinary least squares [3].
-                'CWLS' for LMI constrained weighted least squares [3].
-                    See dki.cls_fit_dki.
+
+                - 'OLS' or 'ULLS' for ordinary least squares.
+                - 'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
+                   See func:`dki.ls_fit_dki`.
+                - 'CLS' for LMI constrained ordinary least squares [3]_.
+                - 'CWLS' for LMI constrained weighted least squares [3]_.
+                   See func:`dki.cls_fit_dki`.
+
             callable has to have the signature:
                 fit_method(design_matrix, data, *args, **kwargs).
             Default: "WLS"
@@ -2004,9 +2018,10 @@ class DiffusionKurtosisFit(TensorFit):
             All parameters estimated from the diffusion kurtosis model,
             not including S0.
             Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
-                first, second and third coordinates of the eigenvector
+               first, second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
         model_S0 : ndarray (x, y, z, 1) or (n, 1), optional
             S0 estimated from the diffusion kurtosis model.
@@ -2522,12 +2537,13 @@ def params_to_dki_params(result, min_diffusivity=0):
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     """
 
@@ -2583,12 +2599,13 @@ def ls_fit_dki(
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
@@ -2664,12 +2681,13 @@ def cls_fit_dki(
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
@@ -2898,12 +2916,13 @@ def split_dki_param(dki_params):
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
 
     Returns
     -------

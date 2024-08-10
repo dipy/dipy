@@ -970,18 +970,19 @@ def perpendicular_directions(v, *, num=30, half=False):
     Perpendicular directions are estimated using the following two step
     procedure:
 
-        1) the perpendicular directions are first sampled in a unit
-        circumference parallel to the plane normal to the x-axis.
+    1) the perpendicular directions are first sampled in a unit
+       circumference parallel to the plane normal to the x-axis.
 
-        2) Samples are then rotated and aligned to the plane normal to vector
-        v. The rotational matrix for this rotation is constructed as reference
-        frame basis which axis are the following:
-            - The first axis is vector v
-            - The second axis is defined as the normalized vector given by the
-            cross product between vector v and the unit vector aligned to the
-            x-axis
-            - The third axis is defined as the cross product between the
-            previous computed vector and vector v.
+    2) Samples are then rotated and aligned to the plane normal to vector
+       v. The rotational matrix for this rotation is constructed as reference
+       frame basis which axis are the following:
+
+       - The first axis is vector v
+       - The second axis is defined as the normalized vector given by the
+         cross product between vector v and the unit vector aligned to the
+         x-axis
+       - The third axis is defined as the cross product between the
+         previous computed vector and vector v.
 
     Following this two steps, coordinates of the final perpendicular directions
     are given as:
