@@ -559,7 +559,7 @@ class RecoBundles:
         slr_bounds : array
             SLR bounds.
         slr_select : tuple
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
         slr_method : string
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.

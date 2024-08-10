@@ -343,7 +343,7 @@ class ImageRegistrationFlow(Workflow):
             voxels.
 
         metric : string, optional
-            Similarity metric for gathering mutual information).
+            Similarity metric for gathering mutual information.
 
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.

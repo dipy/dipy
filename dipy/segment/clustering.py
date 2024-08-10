@@ -235,7 +235,7 @@ class ClusterMap:
         Returns
         -------
         `Cluster` object(s)
-            When `idx` is a int, returns a single `Cluster` object.
+            When `idx` is an int, returns a single `Cluster` object.
 
             When `idx`is either a slice, list or boolean array, returns
             a list of `Cluster` objects.

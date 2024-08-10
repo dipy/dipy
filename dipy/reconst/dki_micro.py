@@ -93,7 +93,7 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
     awf : ndarray (optional)
         Array containing values of the axonal water fraction that has the shape
         dki_params.shape[:-1]. If not given this will be automatically computed
-        using :func:`axonal_water_fraction`" with function's default precision.
+        using :func:`axonal_water_fraction` with function's default precision.
     mask : ndarray (optional)
         A boolean array used to mark the coordinates in the data that should be
         analyzed that has the shape dki_params.shape[:-1]
