@@ -1021,8 +1021,8 @@ class MapmriFit(ReconstFit):
         return E
 
     def predict(self, qvals_or_gtab, S0=100.0):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
+        """Recovers the reconstructed signal for any qvalue array or gradient
+        table.
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
