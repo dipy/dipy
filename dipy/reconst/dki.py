@@ -1786,7 +1786,7 @@ class DiffusionKurtosisModel(ReconstModel):
                    See func:`dki.cls_fit_dki`.
 
             callable has to have the signature:
-                fit_method(design_matrix, data, *args, **kwargs).
+                ``fit_method(design_matrix, data, *args, **kwargs)``
                 Default: "WLS"
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.

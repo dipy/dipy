@@ -337,7 +337,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
               :func:`dki.wls_fit_dki`
 
             callable has to have the signature:
-                fit_method(design_matrix, data, *args, **kwargs)
+                ``fit_method(design_matrix, data, *args, **kwargs)``
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See :func:`dki.ols_fit_dki`, :func:`dki.wls_fit_dki` for

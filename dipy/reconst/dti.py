@@ -718,7 +718,7 @@ class TensorModel(ReconstModel):
                 :func:`dti.restore_fit_tensor`
 
             callable has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
 
         return_S0_hat : bool, optional
             Boolean to return (True) or not (False) the S0 values for the fit.
@@ -1321,7 +1321,7 @@ def iter_fit_tensor(step=1e4):
         fit_tensor : callable
             A tensor fitting callable (most likely a function). The callable
             has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
         """
 
         @functools.wraps(fit_tensor)
