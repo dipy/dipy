@@ -127,13 +127,17 @@ See some of our :ref:`Past Announcements <old_news>`
    theory/index
    reference/index
    reference_cmd/index
+   recipes
    api_changes
    stateoftheart
    old_highlights
    old_news
    glossary
+   developers
+   gimbal_lock
    faq
    cite
+   subscribe
 
 .. Main content will be displayed using the jinja template
 
