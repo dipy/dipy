@@ -521,8 +521,7 @@ class RecoBundles:
         reduction_distance : string
             Reduction distance type can be mdf or mam (default mdf)
         slr : bool
-            Use Streamline-based Linear Registration (SLR) locally
-            (default True)
+            Use Streamline-based Linear Registration (SLR) locally.
         slr_metric : BundleMinDistanceMetric
             Bundle distance metric.
         slr_x0 : array or int or str
@@ -557,7 +556,6 @@ class RecoBundles:
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
                 c) "affine"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
-            (default None)
         slr_bounds : array
             SLR bounds.
         slr_select : tuple
@@ -565,11 +563,10 @@ class RecoBundles:
             model to perform the local SLR.
         slr_method : string
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
-            (default 'L-BFGS-B')
         pruning_thr : float
-            Pruning after reducing the search space (default 6).
+            Pruning after reducing the search space.
         pruning_distance : string
-            Pruning distance type can be mdf or mam (default mdf)
+            Pruning distance type can be mdf or mam.
 
         Returns
         -------

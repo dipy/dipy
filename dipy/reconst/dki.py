@@ -633,7 +633,7 @@ def apparent_kurtosis_coef(
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
-        `min_diffusivity`. Default = 0
+        `min_diffusivity`.
     min_kurtosis : float (optional)
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
@@ -742,10 +742,10 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
     analytical : bool (optional)
         If True, MK is calculated using its analytical solution, otherwise an
-        exact numerical estimator is used (see Notes). Default is set to True
+        exact numerical estimator is used (see Notes).
 
     Returns
     -------
@@ -1787,7 +1787,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
             callable has to have the signature:
                 ``fit_method(design_matrix, data, *args, **kwargs)``
-                Default: "WLS"
+
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
         *args
@@ -2184,12 +2184,12 @@ class DiffusionKurtosisFit(TensorFit):
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 10
+            with `max_kurtosis`.
         analytical : bool (optional)
             If True, AK is calculated from rotated diffusion kurtosis tensor,
             otherwise it will be computed from the apparent diffusion kurtosis
             values along the principal axis of the diffusion tensor
-            (see notes). Default is set to True.
+            (see notes).
 
         Returns
         -------

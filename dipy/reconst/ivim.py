@@ -210,13 +210,11 @@ class IvimModelTRR(ReconstModel):
             used while estimating the value of D. The assumption is that at
             higher b values the effects of perfusion is less and hence the
             signal can be approximated as a mono-exponential decay.
-            default : 400.
 
         split_b_S0 : float, optional
             The b-value to split the data on for two-stage fit for estimation
             of S0 and initial guess for D_star. The assumption here is that
             at low bvalues the effects of perfusion are more.
-            default : 200.
 
         bounds : tuple of arrays with 4 elements, optional
             Bounds to constrain the fitted model parameters. This is only
@@ -231,32 +229,26 @@ class IvimModelTRR(ReconstModel):
             parameters after the linear fitting by splitting the data based on
             bvalues. This gives more accurate parameters but takes more time.
             The linear fit can be used to get a quick estimation of the
-            parameters. default : False
+            parameters.
 
         tol : float, optional
             Tolerance for convergence of minimization.
-            default : 1e-15
 
         x_scale : array-like, optional
             Scaling for the parameters. This is passed to `least_squares` which
             is only available for Scipy version > 0.17.
-            default: [1000, 0.01, 0.001, 0.0001]
 
         gtol : float, optional
             Tolerance for termination by the norm of the gradient.
-            default : 1e-15
 
         ftol : float, optional
             Tolerance for termination by the change of the cost function.
-            default : 1e-15
 
         eps : float, optional
             Step size used for numerical approximation of the jacobian.
-            default : 1e-15
 
         maxiter : int, optional
             Maximum number of iterations to perform.
-            default : 1000
 
         References
         ----------
@@ -539,11 +531,9 @@ class IvimModelVP(ReconstModel):
         maxiter: int, optional
             Maximum number of iterations for the Differential Evolution in
             SciPy.
-            default : 10
 
         xtol : float, optional
             Tolerance for convergence of minimization.
-            default : 1e-8
 
         References
         ----------

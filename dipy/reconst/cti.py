@@ -294,7 +294,7 @@ class CorrelationTensorModel(ReconstModel):
             A GradientTable class instance for second DDE diffusion epoch
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Returns
         -------
