@@ -247,31 +247,48 @@ def vector_norm(vec, *, axis=-1, keepdims=False):
 
 
 def rodrigues_axis_rotation(r, theta):
-    """Rodrigues formula
+    r"""Rodrigues formula
 
-    Rotation matrix for rotation around axis r for angle theta.
+    Rotation matrix for rotation around axis `r` for angle `theta`.
 
     The rotation matrix is given by the Rodrigues formula:
 
-    R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
+    .. math::
+        :nowrap:
 
-    with::
+        \mathbf{R} = \mathbf{I} + \sin(\theta)*\mathbf{S}_n +
+        (1-\cos(\theta))*\mathbf{S}_n^2
 
-             0  -nz  ny
-      Sn =   nz   0 -nx
-            -ny  nx   0
+    with:
 
-    where n = r / ||r||
+    .. math::
 
-    In case the angle ||r|| is very small, the above formula may lead
+        Sn =
+        \begin{pmatrix}
+            0 & -n{z} & n{y} \\
+            n{z} & 0 & -n{x} \\
+            -n{y} & n{x} & 0
+        \end{pmatrix}
+
+    where :math:`n = r / ||r||`
+
+    In case the angle :math:`||r||` is very small, the above formula may lead
     to numerical instabilities. We instead use a Taylor expansion
-    around theta=0:
+    around :math:`theta=0`:
 
-    R = I + sin(theta)/tetha Sr + (1-cos(theta))/teta2 Sr^2
+    .. math::
+        :nowrap:
+
+        R = I + \sin(\theta)/\theta \mathbf{S}_r +
+        (1-\cos(\theta))/\theta^2 \mathbf{S}_r^2
 
     leading to:
 
-    R = I + (1-theta2/6)*Sr + (1/2-theta2/24)*Sr^2
+    .. math::
+        :nowrap:
+
+        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_r +
+        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_r^2
 
     Parameters
     ----------

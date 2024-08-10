@@ -2742,16 +2742,16 @@ def Wrotate(kt, Basis):
 
     Notes
     -----
-    KT elements are assumed to be ordered as follows:
+    The kurtosis tensor elements are assumed to be ordered as follows:
 
     .. math::
 
-    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                     & ... \\
-                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                     & ... \\
-                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-                     & & )\end{matrix}
+    KT =
+    \begin{pmatrix}
+        W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
+        W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
+        W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+    \end{pmatrix}
 
     References
     ----------
@@ -2882,12 +2882,12 @@ def Wcons(k_elements):
 
     .. math::
 
-    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                     & ... \\
-                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                     & ... \\
-                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-                     & & )\end{matrix}
+    KT =
+    \begin{pmatrix}
+        W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
+        W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
+        W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+    \end{pmatrix}
 
     Returns
     -------

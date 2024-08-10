@@ -447,7 +447,8 @@ def norm(q_form):
     -----
     The Frobenius norm is defined as:
 
-    :math:
+    .. math::
+
         ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
 
     See Also

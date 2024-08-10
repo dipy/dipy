@@ -194,14 +194,11 @@ class IvimModelTRR(ReconstModel):
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
 
-            .. math::
+        .. math::
 
             S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
 
-            Where:
-            .. math::
-
-            S_0, f, D\* and D are the IVIM parameters.
+        where $S_0$, $f$, $D\*$ and $D$ are the IVIM parameters.
 
         Parameters
         ----------
@@ -533,15 +530,11 @@ class IvimModelVP(ReconstModel):
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
 
-            .. math::
+        .. math::
 
             S(b) = S_0*[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
 
-            Where:
-            .. math::
-
-            S_0, f, D\* and D are the IVIM parameters.
-
+        where $S_0$, $f$, $D\*$ and $D$ are the IVIM parameters.
 
         maxiter: int, optional
             Maximum number of iterations for the Differential Evolution in

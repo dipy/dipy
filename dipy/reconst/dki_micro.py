@@ -216,16 +216,19 @@ def dkimicro_prediction(params, gtab, S0=1):
     Notes
     -----
     1) The predicted signal is given by:
-    $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$, where
-    $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of the
-    diffusion hindered and restricted compartment for a given direction
-    $\theta$, $b$ is the b value provided in the GradientTable input for that
-    direction, $f$ is the volume fraction of the restricted diffusion
-    compartment (also known as the axonal water fraction).
+       .. math::
+
+           S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]
+
+       where $ADC_{r}$ and $ADC_{h}$ are the apparent diffusion coefficients of
+       the diffusion hindered and restricted compartment for a given direction
+       $\theta$, $b$ is the b value provided in the GradientTable input for that
+       direction, $f$ is the volume fraction of the restricted diffusion
+       compartment (also known as the axonal water fraction).
 
     2) In the original article of DKI microstructural model [1]_, the hindered
-    and restricted tensors were defined as the intra-cellular and
-    extra-cellular diffusion compartments respectively.
+       and restricted tensors were defined as the intra-cellular and
+       extra-cellular diffusion compartments respectively.
     """
 
     # Initialize pred_sig

@@ -367,21 +367,21 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     @property
     def K_aniso(self):
-        r"""Returns the anisotropic Source of Kurtosis (K_aniso)
+        r"""Returns the anisotropic Source of Kurtosis ($K_{aniso}$)
 
-            Notes
-            -----
-            The K_aniso is defined as[1]_:
+        Notes
+        -----
+        The $K_{aniso}$ is defined as [1]_:
 
-            :math::
+        .. math::
 
             \[K_{aniso} = \frac{6}{5} \cdot \frac{\langle V_{\lambda}(D_c)
-                                                  \rangle}{\overline{D}^2}\]
+                                              \rangle}{\overline{D}^2}\]
 
-        where: $K_{aniso}$ is the anisotropic kurtosis,
-            $\langle V_{\lambda}(D_c) \rangle$ represents the mean of the
-            variance of eigenvalues of the diffusion tensor,
-            $\overline{D}$ is the mean of the diffusion tensor.
+        where $K_{aniso}$ is the anisotropic kurtosis,
+        $\langle V_{\lambda}(D_c) \rangle$ represents the mean of the variance
+        of eigenvalues of the diffusion tensor, $\overline{D}$ is the mean of
+        the diffusion tensor.
 
         References
         ----------
@@ -429,19 +429,19 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     @property
     def K_iso(self):
-        r"""Returns the isotropic Source of Kurtosis (K_iso)
+        r"""Returns the isotropic Source of Kurtosis ($K_{iso}$)
 
         Notes
         -----
-        The K_iso is defined as :
+        The $K_{iso}$ is defined as :
 
-        :math::
-            $$ K_{\text{iso}} = 3 \cdot \frac{V(\overline{D}^c)}{\overline{D}^2} $$
+        .. math::
 
-        where: $ K_{\text{iso}} $ is the isotropic kurtosis,
-            \(V({\overline{D}^c})\) represents the variance of the diffusion
-            tensor raised to the power c,
-            \(\overline{D}\) is the mean of the diffusion tensor.
+            K_{\text{iso}} = 3 \cdot \frac{V(\overline{D}^c)}{\overline{D}^2}
+
+        where: $K_{\text{iso}}$ is the isotropic kurtosis, $V({\overline{D}^c})$
+        represents the variance of the diffusion tensor raised to the power $c$,
+        $\overline{D}$ is the mean of the diffusion tensor.
 
         """
         C = self.ct
@@ -470,9 +470,9 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
             Notes
             -----
-            $K_total$ is defined as :
+            $K_{total}$ is defined as:
 
-            :math::
+            .. math::
                 \[\Psi = \frac{2}{5} \cdot \frac{D_{11}^2 + D_{22}^2 + D_{33}^2
                                                  + 2D_{12}^2 + 2D_{13}^2 +
                                                  2D_{23}^2{\overline{D}^2} -
@@ -482,12 +482,11 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                                                       + 2W_{1133} + 2W_{2233})\
                   ]
 
-            where \(\Psi\) is a variable representing a part of the total
-            excess kurtosis,
-            \(D_{ij}\) are elements of the diffusion tensor,
-            \(\overline{D}\) is the mean of the diffusion tensor.
-            \{\overline{W}} is the mean kurtosis,
-            \(W_{ijkl}\) are elements of the kurtosis tensor.
+            where $\Psi$ is a variable representing a part of the total
+            excess kurtosis, $D_{ij}$ are elements of the diffusion tensor,
+            $\overline{D}$ is the mean of the diffusion tensor. $\overline{W}$
+            is the mean kurtosis, $W_{ijkl}$ are elements of the kurtosis
+            tensor.
         """
 
         mean_K = self.mkt()
