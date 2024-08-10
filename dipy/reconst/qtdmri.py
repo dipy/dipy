@@ -1014,9 +1014,9 @@ class QtdmriFit:
         return qiv
 
     def fitted_signal(self, gtab=None):
-        """
-        Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the model object.
+        """Recovers the fitted signal for the given gradient table. If no
+        gradient table is given it recovers the signal for the gtab of the model
+        object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab)
