@@ -292,6 +292,15 @@ def init_model(*, model_scale=16):
 class EVACPlus:
     """
     This class is intended for the EVAC+ model.
+
+    The EVAC+ model :footcite:p:`Park2024` is a deep learning neural network for
+    brain extraction. It uses a V-net architecture combined with
+    multi-resolution input data, an additional conditional random field (CRF)
+    recurrent layer and supplementary Dice loss term for this recurrent layer.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @doctest_skip_parser
@@ -309,12 +318,6 @@ class EVACPlus:
         verbose : bool (optional)
             Whether to show information about the processing.
             Default: False
-
-        References
-        ----------
-        ..  [1] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
-                EVAC+: Multi-scale V-net with Deep Feature
-                CRF Layers for Brain Extraction.
         """
 
         if not have_tf:

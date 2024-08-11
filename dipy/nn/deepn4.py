@@ -135,6 +135,13 @@ def UNet3D(input_shape):
 class DeepN4:
     """
     This class is intended for the DeepN4 model.
+
+    The DeepN4 model :footcite:p:`Kanakaraj2024` predicts the bias field for
+    magnetic field inhomogeneity correction on T1-weighted images.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @warning_for_keywords()
@@ -154,12 +161,6 @@ class DeepN4:
         verbose : bool (optional)
             Whether to show information about the processing.
             Default: False
-
-        References
-        ----------
-        Kanakaraj, P., Yao, T., Cai, L. Y., Lee, H. H., Newlin, N. R.,
-        Kim, M. E., & Moyer, D. (2023). DeepN4: Learning N4ITK Bias Field
-        Correction for T1-weighted Images.
         """
 
         if not have_tf:
