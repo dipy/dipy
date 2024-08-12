@@ -43,7 +43,7 @@ Pull Requests (28):
 * :ghpull:`2373`: [FIX] warning if not the same number of points
 * :ghpull:`2372`: Expand patch radius if input is int
 * :ghpull:`2348`: RF: Use new name for this function.
-* :ghpull:`2363`: [ENH] Adding cython file(*.pyx) in documentation
+* :ghpull:`2363`: [ENH] Adding cython file(``*.pyx``) in documentation
 * :ghpull:`2365`: [DOC]: Change defaults in Patch2Self example
 * :ghpull:`2349`: [ENH] Allow for other statistics, like median, in afq_profile
 * :ghpull:`2350`: [FIX] Use npy_intp variables instead of int and size_t to iterate over numpy arrays
@@ -78,8 +78,8 @@ Issues (61):
 * :ghissue:`2341`: Allow use of all threads in the gibbs ringing workflow
 * :ghissue:`2348`: RF: Use new name for this function.
 * :ghissue:`2353`: How to create tractogram from a multi-shell data for RecoBundles
-* :ghissue:`1311`: Adding cython file(*.pyx) in documentation
-* :ghissue:`2363`: [ENH] Adding cython file(*.pyx) in documentation
+* :ghissue:`1311`: Adding cython file(``*.pyx``) in documentation
+* :ghissue:`2363`: [ENH] Adding cython file(``*.pyx``) in documentation
 * :ghissue:`1302`: [DOC] cython (pyx) files are not parsed
 * :ghissue:`366`: Some doc missing
 * :ghissue:`2365`: [DOC]: Change defaults in Patch2Self example

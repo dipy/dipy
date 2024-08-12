@@ -18,6 +18,7 @@ obtain the underlying fiber distribution.
 
 In this way, the reconstruction of the fiber orientation distribution function
 (fODF) in CSD involves two steps:
+
     1. Estimation of the fiber response function
     2. Use the response function to reconstruct the fODF
 

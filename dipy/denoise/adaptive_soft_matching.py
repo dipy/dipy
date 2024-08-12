@@ -13,7 +13,8 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
 
     Parameters
     ----------
-    ima : the original (not filtered) image
+    ima : ndarray
+        Original (unfiltered) image
     fimau : 3D double array,
         filtered image with optimized non-local means using a small block
         (suggested:3x3), which corresponds to a "high resolution" filter.

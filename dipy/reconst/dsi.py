@@ -374,6 +374,7 @@ def hanning_filter(gtab, filter_width, origin):
     gtab : GradientTable
         Gradient table.
     filter_width : int
+        Strength of the Hanning filter.
     origin : (3,) ndarray
         center of qspace
 
@@ -396,11 +397,11 @@ def pdf_interp_coords(sphere, rradius, origin):
     Parameters
     ----------
     sphere : object,
-            Sphere
+        Sphere
     rradius : array, shape (N,)
-            line interpolation points
+        line interpolation points
     origin : array, shape (3,)
-            center of the grid
+        center of the grid
 
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T

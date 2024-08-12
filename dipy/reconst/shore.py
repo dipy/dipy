@@ -531,7 +531,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
         scale factor
     gtab : GradientTable,
         gradient directions and bvalues container class
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     References

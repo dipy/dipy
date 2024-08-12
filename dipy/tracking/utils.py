@@ -846,6 +846,7 @@ def transform_tracking_output(tracking_output, affine, *, save_seeds=False):
         The voxel_to_rasmm matrix, typically from a NIFTI file.
     save_seeds : bool, optional
         If set, seeds associated to streamlines will be also moved and returned
+
     Returns
     -------
     streamlines : generator

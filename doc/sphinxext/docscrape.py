@@ -22,6 +22,7 @@ class Reader:
     """
     def __init__(self, data):
         """
+
         Parameters
         ----------
         data : str

@@ -1014,9 +1014,9 @@ class QtdmriFit:
         return qiv
 
     def fitted_signal(self, gtab=None):
-        """
-        Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the model object.
+        """Recovers the fitted signal for the given gradient table. If no
+        gradient table is given it recovers the signal for the gtab of the model
+        object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab)
@@ -1025,8 +1025,8 @@ class QtdmriFit:
         return E
 
     def predict(self, qvals_or_gtab, S0=1.0):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
+        """Recovers the reconstructed signal for any qvalue array or gradient
+        table.
         """
         tau_scaling = self.tau_scaling
         if isinstance(qvals_or_gtab, np.ndarray):
@@ -1079,8 +1079,8 @@ class QtdmriFit:
         fitted signal contains spurious oscillations. A high laplacian norm may
         indicate that these are present, and any q-space indices that
         use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
-        QIV). In contrast to [1], the Laplacian now describes oscillations in
-        the 4-dimensional qt-signal [2].
+        QIV). In contrast to [1]_, the Laplacian now describes oscillations in
+        the 4-dimensional qt-signal [2]_.
 
         References
         ----------

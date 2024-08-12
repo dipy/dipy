@@ -447,7 +447,8 @@ def norm(q_form):
     -----
     The Frobenius norm is defined as:
 
-    :math:
+    .. math::
+
         ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
 
     See Also
@@ -717,13 +718,14 @@ class TensorModel(ReconstModel):
                 :func:`dti.restore_fit_tensor`
 
             callable has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
 
         return_S0_hat : bool, optional
             Boolean to return (True) or not (False) the S0 values for the fit.
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
+           fit_method. See :func:`dti.wls_fit_tensor`,
+           :func:`dti.ols_fit_tensor` for details
 
         min_signal : float, optional
             The minimum signal value. Needs to be a strictly positive
@@ -1319,7 +1321,7 @@ def iter_fit_tensor(step=1e4):
         fit_tensor : callable
             A tensor fitting callable (most likely a function). The callable
             has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
         """
 
         @functools.wraps(fit_tensor)
@@ -2282,6 +2284,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     Parameters
     ----------
     evecs : ndarray
+        Eigenvectors.
     odf_vertices : ndarray, optional
         If None, then set vertices from symmetric362 sphere.  Otherwise use
         passed ndarray as vertices

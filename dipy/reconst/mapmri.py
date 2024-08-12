@@ -1010,9 +1010,9 @@ class MapmriFit(ReconstFit):
         return norm_of_laplacian
 
     def fitted_signal(self, gtab=None):
-        """
-        Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the model object.
+        """Recovers the fitted signal for the given gradient table. If no
+        gradient table is given it recovers the signal for the gtab of the model
+        object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab, S0=1.0)
@@ -1021,8 +1021,8 @@ class MapmriFit(ReconstFit):
         return E
 
     def predict(self, qvals_or_gtab, S0=100.0):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
+        """Recovers the reconstructed signal for any qvalue array or gradient
+        table.
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
@@ -1988,8 +1988,8 @@ def map_laplace_u(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
@@ -2011,8 +2011,8 @@ def map_laplace_t(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
@@ -2037,8 +2037,8 @@ def map_laplace_s(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
 

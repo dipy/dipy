@@ -30,7 +30,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
         last dimension
     *args
         Passed to Nifti1Image
-    *kwargs
+    **kwargs
         Passed to Nifti1Image
 
     Returns

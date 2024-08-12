@@ -13,6 +13,7 @@ def normalize(image, *, min_v=None, max_v=None, new_min=-1, new_max=1):
     Parameters
     ----------
     image : np.ndarray
+        Image to be normalized.
     min_v : int or float, optional
         minimum value range for normalization
         intensities below min_v will be clipped

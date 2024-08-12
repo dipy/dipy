@@ -437,6 +437,7 @@ class LinearMixedModelsFlow(Workflow):
         title : string
             Title for the plot.
         bundle_name : string
+            Bundle name.
         x : list
             list containing segment/disk number for x-axis.
         y : list

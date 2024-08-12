@@ -280,7 +280,6 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
 
     References
     ----------
-    Please cite the following articles
     .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
            Analysis and their Application to the Healthy Ageing Brain
            (Doctoral thesis). https://doi.org/10.17863/CAM.29356
