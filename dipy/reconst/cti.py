@@ -340,8 +340,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """Given a CTI model fit, predict the signal on the vertices of a
         gradient table
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         params: numpy.ndarray (...,43)
                 All parameters estimated from the correlation tensor model.
                 Parameters are ordered as follows:

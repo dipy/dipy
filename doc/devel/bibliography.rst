@@ -34,4 +34,4 @@ The following conventions are used in that file.
 Whenever this file needs to be edited (e.g. changed or a new entry added), the
 above conventions must need to be followed.
 
-.. include:: links_names.inc
+.. include:: ../links_names.inc
