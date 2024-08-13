@@ -40,19 +40,20 @@ def multi_voxel_fit(single_voxel_fit):
         # key-word arguments:
         arg_spec = getargspec(single_voxel_fit)
         # List of the arguments to the function:
-        args = arg_spec.args
+        this_args = arg_spec.args
         # The following are "standard" arguments:
-        args.pop(args.index("self"))
-        args.pop(args.index("data"))
-        if "mask" in args:
-            args.pop(args.index("mask"))
+        this_args.pop(this_args.index("self"))
+        this_args.pop(this_args.index("data"))
+        if "mask" in this_args:
+            this_args.pop(this_args.index("mask"))
         # What remains are arguments that are defined separate from **kwargs
         # (kwargs are specifically reserved only for parallelization
         # arguments):
         func_kwargs = {}
-        for kwarg in args:
-            func_kwargs.update({kwarg: kwargs[kwarg]})
-            kwargs.pop(kwarg)
+        for kwarg in this_args:
+            if kwarg in kwargs:
+                func_kwargs.update({kwarg: kwargs[kwarg]})
+                kwargs.pop(kwarg)
 
         # If only one voxel just return a standard fit, passing through
         # the functions key-word arguments (no mask needed).
