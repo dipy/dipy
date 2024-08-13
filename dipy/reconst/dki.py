@@ -1936,7 +1936,7 @@ class DiffusionKurtosisModel(ReconstModel):
         return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
     @multi_voxel_fit
-    def multi_fit(self, data_thres, mask=None):
+    def multi_fit(self, data, mask=None):
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1947,7 +1947,7 @@ class DiffusionKurtosisModel(ReconstModel):
         )
         params, extra = self.fit_method(
             self.design_matrix,
-            data_thres,
+            data,
             self.inverse_design_matrix,
             return_S0_hat=self.return_S0_hat,
             weights=self.weights,
