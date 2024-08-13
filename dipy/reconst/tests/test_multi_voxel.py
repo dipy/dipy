@@ -144,10 +144,15 @@ def test_CallableArray():
 def test_multi_voxel_fit(rng):
     class SillyModel:
         @multi_voxel_fit
-        def fit(self, data, mask=None, another_kwarg=None, **kwargs):
+        def fit(
+            self, data, mask=None, another_kwarg=None, kwarg_untouched=True, **kwargs
+        ):
             # We want to make sure that all kwargs are passed through to the
             # the fitting procedure
             assert another_kwarg is not None
+            # Make sure that an argument that is not passed is still
+            # usable in the fitting procedure:
+            assert kwarg_untouched
             return SillyFit(model, data)
 
         def predict(self, S0):
