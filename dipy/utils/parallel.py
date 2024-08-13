@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 import json
 import multiprocessing
 import shutil
@@ -58,8 +59,9 @@ def paramap(
         Only applies to "ray" engine. Otherwise has no effect.
     func_args : list, optional
         Positional arguments to `func`.
-    func_kwargs : dict, optional
-        Keyword arguments to `func`.
+    func_kwargs : dict or sequence, optional
+        Keyword arguments to `func` or sequence of keyword arguments
+        to `func`: one item for each item in the input list.
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute, or ray.remote depending on the engine used.
@@ -72,6 +74,16 @@ def paramap(
 
     func_args = func_args or []
     func_kwargs = func_kwargs or {}
+    # Check if the func_kwargs are a sequence:
+
+    if isinstance(func_kwargs, Sequence):
+        if len(func_kwargs) != len(in_list):
+            raise ValueError(
+                "The length of func_kwargs should be the same as the length of in_list"
+            )
+        func_kwargs_sequence = True
+    else:
+        func_kwargs_sequence = False
 
     if engine == "joblib":
         if not has_joblib:
@@ -80,7 +92,10 @@ def paramap(
             backend = "loky"
         pp = joblib.Parallel(n_jobs=n_jobs, backend=backend, **kwargs)
         dd = joblib.delayed(func)
-        d_l = [dd(ii, *func_args, **func_kwargs) for ii in in_list]
+        if func_kwargs_sequence:
+            d_l = [dd(ii, *func_args, **fk) for ii, fk in zip(in_list, func_kwargs)]
+        else:
+            d_l = [dd(ii, *func_args, **func_kwargs) for ii in in_list]
         results = pp(tqdm(d_l))
 
     elif engine == "dask":
@@ -99,8 +114,17 @@ def paramap(
 
             return newfunc
 
-        pp = partial(func, *func_args, **func_kwargs)
-        dd = [dask.delayed(pp)(ii) for ii in in_list]
+        delayed_func = dask.delayed(func)
+
+        if func_kwargs_sequence:
+            dd = [
+                delayed_func(ii, *func_args, **fk)
+                for ii, fk in zip(in_list, func_kwargs)
+            ]
+        else:
+            pp = dask.delayed(partial(func, *func_args, **func_kwargs))
+            dd = [pp(ii) for ii in in_list]
+
         if backend == "multiprocessing":
             results = dask.compute(*dd, scheduler="processes", workers=n_jobs, **kwargs)
         elif backend == "threading":
@@ -128,17 +152,29 @@ def paramap(
                 )
 
         func = ray.remote(func)
-        results = ray.get(
-            [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
-        )
+        if func_kwargs_sequence:
+            results = ray.get(
+                [
+                    func.remote(ii, *func_args, **fk)
+                    for ii, fk in zip(in_list, func_kwargs)
+                ]
+            )
+        else:
+            results = ray.get(
+                [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
+            )
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)
 
     elif engine == "serial":
         results = []
-        for in_element in in_list:
-            results.append(func(in_element, *func_args, **func_kwargs))
+        if func_kwargs_sequence:
+            for in_element, fk in zip(in_list, func_kwargs):
+                results.append(func(in_element, *func_args, **fk))
+        else:
+            for in_element in in_list:
+                results.append(func(in_element, *func_args, **func_kwargs))
     else:
         raise ValueError("%s is not a valid engine" % engine)
 
