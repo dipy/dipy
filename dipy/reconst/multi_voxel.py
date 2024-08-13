@@ -53,7 +53,7 @@ def multi_voxel_fit(single_voxel_fit):
             kwargs.pop(kwarg)
 
         # If only one voxel just return a standard fit, passing through
-        # the functions key-word arguments:
+        # the functions key-word arguments (no mask needed).
         if data.ndim == 1:
             return single_voxel_fit(self, data, **func_kwargs)
 
