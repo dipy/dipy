@@ -44,7 +44,8 @@ def multi_voxel_fit(single_voxel_fit):
         # The following are "standard" arguments:
         args.pop(args.index("self"))
         args.pop(args.index("data"))
-        args.pop(args.index("mask"))
+        if "mask" in args:
+            args.pop(args.index("mask"))
         # What remains are arguments that are defined separate from **kwargs
         # (kwargs are specifically reserved only for parallelization
         # arguments):
