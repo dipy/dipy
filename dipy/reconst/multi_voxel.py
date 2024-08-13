@@ -1,7 +1,7 @@
 """Tools to easily make multi voxel models"""
 
 from functools import partial
-from inspect import getargspec
+from inspect import getfullargspec as getargspec
 import multiprocessing
 
 import numpy as np
