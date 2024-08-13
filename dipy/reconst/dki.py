@@ -1887,7 +1887,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
     @multi_voxel_fit
     @warning_for_keywords()
-    def multi_fit(self, data_thres, *, mask=None):
+    def multi_fit(self, data, *, mask=None):
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1898,7 +1898,7 @@ class DiffusionKurtosisModel(ReconstModel):
         )
         params, extra = self.fit_method(
             self.design_matrix,
-            data_thres,
+            data,
             self.inverse_design_matrix,
             return_S0_hat=self.return_S0_hat,
             weights=self.weights,
