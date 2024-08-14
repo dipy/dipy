@@ -21,6 +21,7 @@ cli_flows = {
     "dipy_denoise_mppca": ("dipy.workflows.denoise", "MPPCAFlow"),
     "dipy_denoise_patch2self": ("dipy.workflows.denoise", "Patch2SelfFlow"),
     "dipy_evac_plus": ("dipy.workflows.nn", "EVACPlusFlow"),
+    "dipy_gtable": ("dipy.workflows.io", "GradientTableFlow"),
     "dipy_fetch": ("dipy.workflows.io", "FetchFlow"),
     "dipy_fit_csa": ("dipy.workflows.reconst", "ReconstCSAFlow"),
     "dipy_fit_csd": ("dipy.workflows.reconst", "ReconstCSDFlow"),

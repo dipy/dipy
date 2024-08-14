@@ -8,6 +8,8 @@ import warnings
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_gradient_table, save_gradient_table
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
@@ -123,6 +125,10 @@ class IoInfoFlow(Workflow):
                 ncl1 = np.sum(norms < 1 - bvecs_tol)
                 logging.info(f"Total number of unit bvectors {len(res[0])}")
                 logging.info(f"Total number of non-unit bvectors {ncl1}\n")
+
+            if os.path.basename(input_path).lower().find("gtab.csv") > -1:
+                gtab = read_gradient_table(input_path)
+                gtab.display_info(use_logging=True)
 
             if extension in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
                 sft = None
@@ -281,6 +287,72 @@ class FetchFlow(Workflow):
             # in the same process, we don't have the env variable pointing
             # to the wrong place
             self.load_module("dipy.data.fetcher")
+
+
+class GradientTableFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "gtable"
+
+    def run(
+        self,
+        bvals,
+        bvecs,
+        small_delta=None,
+        big_delta=None,
+        b0_threshold=50,
+        atol=1e-2,
+        btens=None,
+        out_dir="",
+        out_gtable="gt_condensed.gtab.csv",
+    ):
+        """Saves bvals and bvecs files to disk.
+
+        Parameters
+        ----------
+        bvals : string
+            Path to the bvals file
+        bvecs : string
+            Path to the bvecs file
+        small_delta : float, optional
+            acquisition pulse duration time in seconds
+        big_delta : float, optional
+            acquisition pulse separation time in seconds
+        b0_threshold : float, optional
+            All b-values with values less than or equal to `bo_threshold` are
+            considered as b0s i.e. without diffusion weighting.
+        atol : float, optional
+            All b-vectors need to be unit vectors up to a tolerance.
+        btens : str, optional
+            A string specifying the shape of the encoding tensor for all
+            volumes in data. Options: 'LTE', 'PTE', 'STE', 'CTE' corresponding
+            to linear, planar, spherical, and "cigar-shaped" tensor encoding.
+            Tensors are rotated so that linear and cigar tensors are aligned
+            with the corresponding gradient direction and the planar tensor's
+            normal is aligned with the corresponding gradient direction.
+            Magnitude is scaled to match the b-value.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_gtable : string, optional
+            Name of the resulting gtable file
+
+        """
+        io_it = self.get_io_iterator()
+        for bval, bvec, ogtable in io_it:
+            logging.info(f"Loading {bval} and {bvec}")
+            gtab = gradient_table(
+                bval,
+                bvecs=bvec,
+                small_delta=small_delta,
+                big_delta=big_delta,
+                atol=atol,
+                btens=btens,
+                b0_threshold=b0_threshold,
+            )
+            save_gradient_table(gtab, ogtable)
+            msg = f"Gradient table saved as {ogtable} "
+            msg += f"in {os.path.abspath(out_dir)}"
+            logging.info(msg)
 
 
 class SplitFlow(Workflow):
