@@ -167,7 +167,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     r"""One iteration of a large linear system solver for 2D SSD registration
 
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel
-    solver proposed by Bruhn and Weickert [Bruhn05].
+    solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -196,10 +196,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -340,7 +337,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     r"""One iteration of a large linear system solver for 3D SSD registration
 
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel
-    solver proposed by Bruhn and Weickert [Bruhn05].
+    solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -369,10 +366,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -540,7 +534,7 @@ def compute_residual_displacement_field_ssd_3d(
 
     Computes the residual displacement field corresponding to the current
     displacement field (given by 'disp') in the Multi-resolution
-    Gauss-Seidel solver proposed by Bruhn and Weickert [Bruhn].
+    Gauss-Seidel solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -571,10 +565,7 @@ def compute_residual_displacement_field_ssd_3d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -655,7 +646,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
 
     Computes the residual displacement field corresponding to the current
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by
-    Bruhn and Weickert [Bruhn05].
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -686,10 +677,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -756,7 +744,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     r"""Demons step for 2D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
-    ( eq. 4 in [Bruhn05] )
+    ( eq. 4 in :footcite:p:`Bruhn2005` )
 
     Parameters
     ----------
@@ -767,7 +755,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
+        $\sigma_x^2$ in algorithm 1 of :footcite:t:`Vercauteren2009`.
     out : array, shape (R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -782,14 +770,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp nr = delta_field.shape[0]
@@ -830,7 +811,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     r"""Demons step for 3D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
-    ( eq. 4 in [Bruhn05] )
+    ( eq. 4 in :footcite:p:`Bruhn2005` )
 
     Parameters
     ----------
@@ -841,7 +822,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
+        $\sigma_x^2$ in algorithm 1 of :footcite:t:`Vercauteren2009`.
     out : array, shape (S, R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -856,14 +837,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp ns = delta_field.shape[0]

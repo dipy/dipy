@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 def bundle_adjacency(dtracks0, dtracks1, threshold):
     """Find bundle adjacency between two given tracks/bundles
 
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
+
     Parameters
     ----------
     dtracks0 : Streamlines
@@ -56,9 +58,7 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
     d01 = bundles_distances_mdf(dtracks0, dtracks1)
 
@@ -89,6 +89,8 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
 def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     """Calculates bundle adjacency score between two given bundles
 
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
+
     Parameters
     ----------
     recognized_bundle : Streamlines
@@ -110,9 +112,7 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     recognized_bundle = set_number_of_points(recognized_bundle, nb_pts)
@@ -125,6 +125,8 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
 @warning_for_keywords()
 def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000):
     """Clusters bundles
+
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
 
     Parameters
     ----------
@@ -146,9 +148,7 @@ def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000)
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     model_cluster_map = qbx_and_merge(
@@ -165,6 +165,9 @@ def bundle_shape_similarity(
 ):
     """Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
+
+    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020` for further
+    details about the method.
 
     Parameters
     ----------
@@ -189,15 +192,7 @@ def bundle_shape_similarity(
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
-
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-       tractography simplification, Frontiers in Neuroscience,
-       vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     if len(bundle1) == 0 or len(bundle2) == 0:
@@ -235,7 +230,8 @@ class RecoBundles:
 
         Extract bundles from a participants' tractograms using model bundles
         segmented from a different subject or an atlas of bundles.
-        See [Garyfallidis17]_ for the details.
+
+        See :footcite:p:`Garyfallidis2018` for the details.
 
         Parameters
         ----------
@@ -268,9 +264,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+        .. footbibliography::
         """
         map_ind = np.zeros(len(streamlines))
         for i in range(len(streamlines)):
@@ -355,6 +349,8 @@ class RecoBundles:
     ):
         """Recognize the model_bundle in self.streamlines
 
+        See :footcite:p:`Garyfallidis2018` for further details about the method.
+
         Parameters
         ----------
         model_bundle : Streamlines
@@ -431,9 +427,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based registration and
-           clustering, Neuroimage, 2017.
+        .. footbibliography::
         """
         if self.verbose:
             t = time()
@@ -507,6 +501,9 @@ class RecoBundles:
         This time, search space is created using pruned bundle and not model
         bundle.
 
+        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020` for
+        further details about the method.
+
         Parameters
         ----------
         model_bundle : Streamlines
@@ -577,15 +574,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
-
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
         """
         if self.verbose:
             t = time()

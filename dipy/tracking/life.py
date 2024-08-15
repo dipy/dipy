@@ -1,10 +1,10 @@
 """
 This is an implementation of the Linear Fascicle Evaluation (LiFE) algorithm
-described in:
+described in :footcite:p:`Pestilli2014`.
 
-Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
-and statistical inference in living connectomes. Nature Methods 11:
-1058-1063. doi:10.1038/nmeth.3098
+References
+----------
+.. footbibliography::
 """
 
 import numpy as np
@@ -311,11 +311,12 @@ class FiberModel(ReconstModel):
 
     Notes
     -----
-    This is an implementation of the LiFE model described in [1]_
+    This is an implementation of the LiFE model described in
+    :footcite:p:`Pestilli2014`.
 
-    [1] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
-        B.A. (2014). Validation and statistical inference in living
-        connectomes. Nature Methods.
+    References
+    ----------
+    .. footbibliography::
     """
 
     def __init__(self, gtab):

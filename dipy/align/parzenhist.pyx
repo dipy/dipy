@@ -26,12 +26,13 @@ cdef extern from "dpy_math.h" nogil:
 class ParzenJointHistogram:
     def __init__(self, nbins):
         r""" Computes joint histogram and derivatives with Parzen windows
+        :footcite:p:`Parzen1962`.
 
         Base class to compute joint and marginal probability density
         functions and their derivatives with respect to a transform's
         parameters. The smooth histograms are computed by using Parzen
-        windows [Parzen62] with a cubic spline kernel, as proposed by
-        Mattes et al. [Mattes03]. This implementation is not tied to any
+        windows :footcite:p:`Parzen1962` with a cubic spline kernel, as proposed
+        by :footcite:t:`Mattes2003`. This implementation is not tied to any
         optimization (registration) method, the idea is that
         information-theoretic matching functionals (such as Mutual
         Information) can inherit from this class to perform the low-level
@@ -48,13 +49,7 @@ class ParzenJointHistogram:
 
         References
         ----------
-        [Parzen62] E. Parzen. On the estimation of a probability density
-                   function and the mode. Annals of Mathematical Statistics,
-                   33(3), 1065-1076, 1962.
-        [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-                   & Eubank, W. PET-CT image registration in the chest using
-                   free-form deformations. IEEE Transactions on Medical
-                   Imaging, 22(1), 120-8, 2003.
+        .. footbibliography::
 
         Notes
         -----
@@ -523,14 +518,12 @@ def cubic_spline(double[:] x):
 
 cdef inline double _cubic_spline(double x) nogil:
     r""" Cubic B-Spline evaluated at x
-    See eq. (3) of [Matttes03].
+
+    See eq. (3) of :footcite:t:`Mattes2003`.
 
     References
     ----------
-    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-               & Eubank, W. PET-CT image registration in the chest using
-               free-form deformations. IEEE Transactions on Medical Imaging,
-               22(1), 120-8, 2003.
+    .. footbibliography::
     """
     cdef:
         double absx = -x if x < 0.0 else x
@@ -563,14 +556,12 @@ def cubic_spline_derivative(double[:] x):
 
 cdef inline double _cubic_spline_derivative(double x) nogil:
     r""" Derivative of cubic B-Spline evaluated at x
-    See eq. (3) of [Mattes03].
+
+    See eq. (3) of :footcite:t:`Mattes2003`.
 
     References
     ----------
-    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-               & Eubank, W. PET-CT image registration in the chest using
-               free-form deformations. IEEE Transactions on Medical Imaging,
-               22(1), 120-8, 2003.
+    .. footbibliography::
     """
     cdef:
         double absx = -x if x < 0.0 else x

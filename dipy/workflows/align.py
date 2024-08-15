@@ -154,6 +154,9 @@ class SlrWithQbxFlow(Workflow):
         For efficiency we apply the registration on cluster centroids and
         remove small clusters.
 
+        See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015`,
+        :footcite:p:`Garyfallidis2018` for further details.
+
         Parameters
         ----------
         static_files : string
@@ -201,20 +204,11 @@ class SlrWithQbxFlow(Workflow):
         The order of operations is the following. First short or long
         streamlines are removed. Second the tractogram or a random selection
         of the tractogram is clustered with QuickBundlesX. Then SLR
-        [Garyfallidis15]_ is applied.
+        :footcite:p:`Garyfallidis2015` is applied.
 
         References
         ----------
-        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-           registration of white-matter fascicles in the space of
-           streamlines", NeuroImage, 117, 124--140, 2015
-
-        .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-           bundle alignment for group comparisons", ISMRM, 2014.
-
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based registration
-           and clustering, NeuroImage, 2017.
+        .. footbibliography::
         """
 
         io_it = self.get_io_iterator()
@@ -974,8 +968,8 @@ class BundleWarpFlow(Workflow):
     ):
         """BundleWarp: streamline-based nonlinear registration.
 
-        BundleWarp is nonrigid registration method for deformable registration
-        of white matter tracts.
+        BundleWarp :footcite:p:`Chandio2023` is a nonrigid registration method
+        for deformable registration of white matter tracts.
 
         Parameters
         ----------
@@ -1018,8 +1012,7 @@ class BundleWarpFlow(Workflow):
 
         References
         ----------
-         .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01.
+        .. footbibliography::
         """
 
         logging.info(f"Loading static file {static_file}")

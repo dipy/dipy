@@ -3,13 +3,11 @@ Testing the Intravoxel incoherent motion module
 
 The values of the various parameters used in the tests are inspired by
 the study of the IVIM model applied to MR images of the brain by
-Federau, Christian, et al. [1].
+:footcite:t:`Federau2012`.
 
 References
 ----------
-.. [1] Federau, Christian, et al. "Quantitative measurement
-       of brain perfusion with intravoxel incoherent motion
-       MR imaging." Radiology 265.3 (2012): 874-881.
+.. footbibliography::
 """
 
 import warnings

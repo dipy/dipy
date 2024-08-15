@@ -491,8 +491,9 @@ def peaks_from_model(
         SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_ basis, and
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        ``tournier07`` for the Tournier 2007 :footcite:p:Tournier2007` basis,
+        and ``descoteaux07`` for the Descoteaux 2007 :footcite:p:Descoteaux2007`
+        basis
         (``None`` defaults to ``descoteaux07``).
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
@@ -523,13 +524,7 @@ def peaks_from_model(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
+    .. footbibliography::
 
     """
     if return_sh and (B is None or invB is None):

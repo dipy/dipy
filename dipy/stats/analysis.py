@@ -112,6 +112,8 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     Calculates assignment maps of the target bundle with reference to
     model bundle centroids.
 
+    See :footcite:p:`Chandio2020` for further details about the method.
+
     Parameters
     ----------
     target_bundle : streamlines
@@ -129,11 +131,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
+    .. footbibliography::
 
     """
 
@@ -246,7 +244,7 @@ def afq_profile(
     Calculates a summarized profile of data for a bundle or tract
     along its length.
 
-    Follows the approach outlined in [Yeatman2012]_.
+    Follows the approach outlined in :footcite:p:`Yeatman2012`.
 
     Parameters
     ----------
@@ -291,10 +289,7 @@ def afq_profile(
 
     References
     ----------
-    .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty,
-       Nathaniel J. Myall, Brian A. Wandell, and Heidi M. Feldman. 2012.
-       "Tract Profiles of White Matter Properties: Automating Fiber-Tract
-       Quantification" PloS One 7 (11): e49790.
+    .. footbibliography::
 
     """
     if orient_by is not None:

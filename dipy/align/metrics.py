@@ -541,7 +541,7 @@ class EMMetric(SimilarityMetric):
         regularized displacement field (this step does not require
         post-smoothing, as opposed to the demons step, which does not include
         regularization). To accelerate convergence we use the multi-grid
-        Gauss-Seidel algorithm proposed by Bruhn and Weickert et al [Bruhn05]
+        Gauss-Seidel algorithm proposed by :footcite:t:`Bruhn2005`.
 
         Parameters
         ----------
@@ -558,10 +558,7 @@ class EMMetric(SimilarityMetric):
 
         References
         ----------
-        [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-                  estimation: combining highest accuracy with real-time
-                  performance", 10th IEEE International Conference on Computer
-                  Vision, 2005. ICCV 2005.
+        .. footbibliography::
         """
         reference_shape = self.static_image.shape
 
@@ -866,8 +863,8 @@ class SSDMetric(SimilarityMetric):
     def compute_demons_step(self, *, forward_step=True):
         r"""Demons step for SSD metric
 
-        Computes the demons step proposed by Vercauteren et al.[Vercauteren09]
-        for the SSD metric.
+        Computes the demons step proposed by :footcite:t:`Vercauteren2009` for
+        the SSD metric.
 
         Parameters
         ----------
@@ -884,9 +881,7 @@ class SSDMetric(SimilarityMetric):
 
         References
         ----------
-        [Vercauteren09] Tom Vercauteren, Xavier Pennec, Aymeric Perchant,
-                        Nicholas Ayache, "Diffeomorphic Demons: Efficient
-                        Non-parametric Image Registration", Neuroimage 2009
+        .. footbibliography::
         """
         sigma_reg_2 = np.sum(self.static_spacing**2) / self.dim
 
@@ -943,7 +938,7 @@ def v_cycle_2d(
     by first filtering (GS-iterate) the current level, then solves for the
     residual at a coarser resolution and finally refines the solution at the
     current resolution. This scheme corresponds to the V-cycle proposed by
-    Bruhn and Weickert[Bruhn05].
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -977,10 +972,7 @@ def v_cycle_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining the highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     # pre-smoothing
     for _ in range(k):
@@ -1069,8 +1061,8 @@ def v_cycle_3d(
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarser resolution and finally refines the solution at the current
-    resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
-    Weickert [1]_.
+    resolution. This scheme corresponds to the V-cycle proposed by
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -1104,10 +1096,7 @@ def v_cycle_3d(
 
     References
     ----------
-    ..  [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-            estimation: combining highest accuracy with real-time performance",
-            10th IEEE International Conference on Computer Vision, 2005.
-            ICCV 2005.
+    .. footbibliography::
     """
     # pre-smoothing
     for _ in range(k):

@@ -327,7 +327,9 @@ def rodrigues_axis_rotation(r, theta):
 
 
 def nearest_pos_semi_def(B):
-    """Least squares positive semi-definite tensor estimation
+    """Least squares positive semi-definite tensor estimation.
+
+    See :footcite:p:`Niethammer2006` for further details about the method.
 
     Parameters
     ----------
@@ -349,10 +351,7 @@ def nearest_pos_semi_def(B):
 
     References
     ----------
-    .. [1] Niethammer M, San Jose Estepar R, Bouix S, Shenton M, Westin CF.
-           On diffusion tensor estimation. Conf Proc IEEE Eng Med Biol Soc.
-           2006;1:2622-5. PubMed PMID: 17946125; PubMed Central PMCID:
-           PMC2791793.
+    .. footbibliography::
 
     """
     B = np.asarray(B)

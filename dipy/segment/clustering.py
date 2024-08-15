@@ -441,14 +441,15 @@ class Clustering:
 
 
 class QuickBundles(Clustering):
-    r"""Clusters streamlines using QuickBundles [Garyfallidis12]_.
+    r"""Clusters streamlines using QuickBundles.
 
-    Given a list of streamlines, the QuickBundles algorithm sequentially
-    assigns each streamline to its closest bundle in $\mathcal{O}(Nk)$ where
-    $N$ is the number of streamlines and $k$ is the final number of bundles.
-    If for a given streamline its closest bundle is farther than `threshold`,
-    a new bundle is created and the streamline is assigned to it except if the
-    number of bundles has already exceeded `max_nb_clusters`.
+    Given a list of streamlines, the QuickBundles algorithm
+    :footcite:p:`Garyfallidis2012a` sequentially assigns each streamline to its
+    closest bundle in $\mathcal{O}(Nk)$ where $N$ is the number of streamlines
+    and $k$ is the final number of bundles. If for a given streamline its
+    closest bundle is farther than `threshold`, a new bundle is created and the
+    streamline is assigned to it except if the number of bundles has already
+    exceeded `max_nb_clusters`.
 
     Parameters
     ----------
@@ -497,9 +498,7 @@ class QuickBundles(Clustering):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     @warning_for_keywords()
@@ -554,7 +553,9 @@ class QuickBundles(Clustering):
 
 
 class QuickBundlesX(Clustering):
-    r"""Clusters streamlines using QuickBundlesX [Garyfallidis16]_.
+    r"""Clusters streamlines using QuickBundlesX.
+
+    See :footcite:p:`Garyfallidis2016` for further details about the method.
 
     Parameters
     ----------
@@ -564,21 +565,13 @@ class QuickBundlesX(Clustering):
         as part of it.
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12
-        points.
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
 
     @warning_for_keywords()
@@ -711,13 +704,16 @@ class TreeClusterMap(ClusterMap):
 def qbx_and_merge(
     streamlines, thresholds, *, nb_pts=20, select_randomly=None, rng=None, verbose=False
 ):
-    """Run QuickBundlesX and then run again on the centroids of the last layer
+    """Run QuickBundlesX and then run again on the centroids of the last layer.
 
     Running again QuickBundles at a layer has the effect of merging
     some of the clusters that may be originally divided because of branching.
     This function help obtain a result at a QuickBundles quality but with
     QuickBundlesX speed. The merging phase has low cost because it is applied
     only on the centroids rather than the entire dataset.
+
+    See :footcite:p:`Garyfallidis2012a` and :footcite:p:`Garyfallidis2016` for
+    further details about the method.
 
     Parameters
     ----------
@@ -742,15 +738,7 @@ def qbx_and_merge(
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
     t = time()
     len_s = len(streamlines)

@@ -54,7 +54,9 @@ class HorizonFlow(Workflow):
         out_dir="",
         out_stealth_png="tmp.png",
     ):
-        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
+        """Interactive medical visualization - Invert the Horizon!
+
+        See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
@@ -125,11 +127,7 @@ class HorizonFlow(Workflow):
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-            adaptive visualization, Proceedings of: International Society of
-            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
         super(HorizonFlow, self).__init__(force=True)
         verbose = True

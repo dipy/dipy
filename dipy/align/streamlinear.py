@@ -76,9 +76,11 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
 
 
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
-    """Bundle-based Minimum Distance aka BMD
+    """Bundle-based Minimum Distance aka BMD.
 
     This is the cost function used by the StreamlineLinearRegistration.
+
+    See :footcite:p:`Garyfallidis2014` for further details about the metric.
 
     Methods
     -------
@@ -87,9 +89,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
     References
     ----------
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-                        bundle alignment for group comparisons", ISMRM,
-                        2014.
+    .. footbibliography::
     """
 
     def setup(self, static, moving):
@@ -315,7 +315,9 @@ class StreamlineLinearRegistration:
         evolution=False,
         num_threads=None,
     ):
-        r"""Linear registration of 2 sets of streamlines [Garyfallidis15]_.
+        r"""Linear registration of 2 sets of streamlines.
+
+        See :footcite:p:`Garyfallidis2015` for further details about the method.
 
         Parameters
         ----------
@@ -389,16 +391,7 @@ class StreamlineLinearRegistration:
 
         References
         ----------
-        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-           registration of white-matter fascicles in the space of streamlines",
-           NeuroImage, 117, 124--140, 2015
-
-        .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-           bundle alignment for group comparisons", ISMRM, 2014.
-
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based
-           registration and clustering, Neuroimage, 2017.
+        .. footbibliography::
 
         """
         self.x0 = self._set_x0(x0)
@@ -914,8 +907,8 @@ def progressive_slr(
 
     This is a utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
-    [Garyfallidis15]_ by starting with translation first, then rigid,
-    then similarity, scaling and finally affine.
+    :footcite:p:`Garyfallidis2015` by starting with translation first,
+    then rigid, then similarity, scaling and finally affine.
 
     Similarly, if for example, you want to perform rigid then you start with
     translation first. This progressive strategy can help with finding the
@@ -949,9 +942,7 @@ def progressive_slr(
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-        registration of white-matter fascicles in the space of streamlines",
-        NeuroImage, 117, 124--140, 2015
+    .. footbibliography::
 
     """
     if verbose:
@@ -1054,6 +1045,9 @@ def slr_with_qbx(
     For efficiency, we apply the registration on cluster centroids and remove
     small clusters.
 
+    See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015` and
+    :footcite:p:`Garyfallidis2018` for details about the methods involved.
+
     Parameters
     ----------
     static : Streamlines
@@ -1107,18 +1101,12 @@ def slr_with_qbx(
     -----
     The order of operations is the following. First short or long streamlines
     are removed. Second, the tractogram or a random selection of the tractogram
-    is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
+    is clustered with QuickBundles. Then SLR :footcite:p:`Garyfallidis2015` is
+    applied.
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-       registration of white-matter fascicles in the space of streamlines",
-       NeuroImage, 117, 124--140, 2015
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-            bundle alignment for group comparisons", ISMRM, 2014.
-    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-       bundles using local and global streamline-based registration and
-       clustering, Neuroimage, 2017.
+    .. footbibliography::
 
     """
     if rng is None:
@@ -1231,12 +1219,15 @@ def groupwise_slr(
     verbose=False,
     rng=None,
 ):
-    """Function to perform unbiased groupwise bundle registration.
+    """Function to perform unbiased groupwise bundle registration
 
     All bundles are moved to the same space by iteratively applying halfway
     streamline linear registration in pairs. With each iteration, bundles get
     closer to each other until the procedure converges and there is no more
     improvement.
+
+    See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015` and
+    :footcite:p:`Garyfallidis2018`.
 
     Parameters
     ----------
@@ -1273,14 +1264,7 @@ def groupwise_slr(
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-       registration of white-matter fascicles in the space of streamlines",
-       NeuroImage, 117, 124--140, 2015
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-            bundle alignment for group comparisons", ISMRM, 2014.
-    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-       bundles using local and global streamline-based registration and
-       clustering, Neuroimage, 2017.
+    .. footbibliography::
 
     """
 

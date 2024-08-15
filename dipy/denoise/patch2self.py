@@ -175,6 +175,8 @@ def patch2self(
 ):
     """Patch2Self Denoiser.
 
+    See :footcite:p:`Fadnavis2020` for further details about the method.
+
     Parameters
     ----------
     data : ndarray
@@ -231,9 +233,7 @@ def patch2self(
 
     References
     ----------
-    [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-                    Denoising Diffusion MRI with Self-supervised Learning,
-                    Advances in Neural Information Processing Systems 33 (2020)
+    .. footbibliography::
 
     """
     if isinstance(patch_radius, int):

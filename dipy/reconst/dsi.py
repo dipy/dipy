@@ -33,11 +33,13 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions. Method
         used to calculate the ODFs. Here we implement the method proposed by
-        Wedeen et al. [1]_.
+        :footcite:t:`Wedeen2005`.
 
         The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
-        q_space [3]_.
+        q_space :footcite:p:`Garyfallidis2012b`.
+
+        See also :footcite:p:`CanalesRodriguez2010`.
 
         Parameters
         ----------
@@ -59,14 +61,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1]  Wedeen V.J et al., "Mapping Complex Tissue Architecture With
-        Diffusion Spectrum Magnetic Resonance Imaging", MRM 2005.
-
-        .. [2] Canales-Rodriguez E.J et al., "Deconvolution in Diffusion
-        Spectrum Imaging", Neuroimage, 2010.
-
-        .. [3] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012.
+        .. footbibliography::
 
         Examples
         --------
@@ -199,10 +194,13 @@ class DiffusionSpectrumFit(OdfFit):
         return rtop
 
     def rtop_pdf(self, normalized=True):
-        r"""Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Descoteaux et Al. [1]_,
-        Tuch [2]_, Wu et al. [3]_)
+        r"""Calculates the return to origin probability from the propagator,
+        which is the propagator evaluated at zero.
+
         rtop = P(0)
+
+        See :footcite:p:`Descoteaux2011`, :footcite:p:`Tuch2002` and
+        :footcite:p:`Wu2008` for further details about the method.
 
         Parameters
         ----------
@@ -217,16 +215,7 @@ class DiffusionSpectrumFit(OdfFit):
 
         References
         ----------
-        .. [1] Descoteaux M. et al., "Multiple q-shell diffusion propagator
-           imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
-
-        .. [2] Tuch D.S., "Diffusion MRI of Complex Tissue Structure",
-           PhD Thesis, 2002.
-
-        .. [3] Wu Y. et al., "Computation of Diffusion Function Measures
-           in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-           IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
-           2008
+        .. footbibliography::
 
         """
 
@@ -246,7 +235,7 @@ class DiffusionSpectrumFit(OdfFit):
             MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
 
         where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space
-        (see Wu et al. [1]_).
+        (see :footcite:p:`Wu2007`).
 
         Parameters
         ----------
@@ -261,8 +250,7 @@ class DiffusionSpectrumFit(OdfFit):
 
         References
         ----------
-        .. [1] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        p. 617-629, 2007.
+        .. footbibliography::
 
         """  # noqa: E501
 
@@ -524,8 +512,10 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions,
         $M(\mathbf{q})$ is a mask corresponding to your q-space sampling and
-        $\otimes$ is the convolution operator [1]_.
+        $\otimes$ is the convolution operator
+        :footcite:p:`CanalesRodriguez2010`.
 
+        See also :footcite:p:`Biggs1997`.
 
         Parameters
         ----------
@@ -547,12 +537,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
         References
         ----------
-        .. [1] Canales-Rodriguez E.J et al., "Deconvolution in Diffusion
-        Spectrum Imaging", Neuroimage, 2010.
-
-        .. [2] Biggs David S.C. et al., "Acceleration of Iterative Image
-        Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
-        1997.
+        .. footbibliography::
 
         """  # noqa: E501
         DiffusionSpectrumModel.__init__(
@@ -638,13 +623,11 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
     numit : int
         Number of Lucy-Richardson iteration to perform.
     acc_factor : float
-        Exponential acceleration factor as in [1]_.
+        Exponential acceleration factor as in :footcite:p:`Biggs1997`.
 
     References
     ----------
-    .. [1] Biggs David S.C. et al., "Acceleration of Iterative Image
-       Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
-       1997.
+    .. footbibliography::
 
     """
 

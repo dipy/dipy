@@ -85,8 +85,8 @@ class Horizon:
         roi_colors=(1, 0, 0),
         surface_colors=((1, 0, 0),),
     ):
-        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
-
+        """Interactive medical visualization - Invert the Horizon!
+        :footcite:p:`Garyfallidis2019`.
 
         Parameters
         ----------
@@ -158,11 +158,7 @@ class Horizon:
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-            adaptive visualization, Proceedings of: International Society of
-            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
         if not has_fury:
             raise ImportError(
@@ -753,8 +749,9 @@ def horizon(
     recorded_events=None,
     return_showm=False,
 ):
-    """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
+    """Interactive medical visualization - Invert the Horizon!
 
+    See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
     Parameters
     ----------
@@ -823,11 +820,7 @@ def horizon(
 
     References
     ----------
-    .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-        S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-        S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-        adaptive visualization, Proceedings of: International Society of
-        Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+    .. footbibliography::
     """
 
     hz = Horizon(

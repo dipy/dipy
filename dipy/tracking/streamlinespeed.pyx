@@ -541,22 +541,23 @@ cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
 
 @warning_for_keywords()
 def compress_streamlines(streamlines, *, tol_error=0.01, max_segment_length=10):
-    """ Compress streamlines by linearization as in [Presseau15]_.
+    """ Compress streamlines by linearization.
 
-    The compression consists in merging consecutive segments that are
-    nearly collinear. The merging is achieved by removing the point the two
-    segments have in common.
+    The compression :footcite:p:`Presseau2015` consists in merging consecutive
+    segments that are nearly collinear. The merging is achieved by removing the
+    point the two segments have in common.
 
-    The linearization process [Presseau15]_ ensures that every point being
-    removed are within a certain margin (in mm) of the resulting streamline.
-    Recommendations for setting this margin can be found in [Presseau15]_
-    (in which they called it tolerance error).
+    The linearization process :footcite:p:`Presseau2015` ensures that every
+    point being removed are within a certain margin (in mm) of the resulting
+    streamline. Recommendations for setting this margin can be found in
+    :footcite:p:`Presseau2015` (in which they called it tolerance error).
 
     The compression also ensures that two consecutive points won't be too far
     from each other (precisely less or equal than `max_segment_length`mm).
-    This is a tradeoff to speed up the linearization process [Rheault15]_. A low
-    value will result in a faster linearization but low compression, whereas
-    a high value will result in a slower linearization but high compression.
+    This is a tradeoff to speed up the linearization process
+    :footcite:p:`Rheault2015`. A low value will result in a faster linearization
+    but low compression, whereas a high value will result in a slower
+    linearization but high compression.
 
     Parameters
     ----------
@@ -568,7 +569,8 @@ def compress_streamlines(streamlines, *, tol_error=0.01, max_segment_length=10):
         streamlines.
     max_segment_length : float (optional)
         Maximum length in mm of any given segment produced by the compression.
-        The default is 10mm. (In [Presseau15]_, they used a value of `np.inf`).
+        The default is 10mm. (In :footcite:p:`Presseau2015` they used a value of
+        `np.inf`).
 
     Returns
     -------
@@ -600,16 +602,11 @@ def compress_streamlines(streamlines, *, tol_error=0.01, max_segment_length=10):
     Notes
     -----
     Be aware that compressed streamlines have variable step sizes. One needs to
-    be careful when computing streamlines-based metrics [Houde15]_.
+    be careful when computing streamlines-based metrics :footcite:p:`Houde2015`.
 
     References
     ----------
-    .. [Presseau15] Presseau C. et al., A new compression format for fiber
-                    tracking datasets, NeuroImage, no 109, 73-83, 2015.
-    .. [Rheault15] Rheault F. et al., Real Time Interaction with Millions of
-                   Streamlines, ISMRM, 2015.
-    .. [Houde15] Houde J.-C. et al. How to Avoid Biased Streamlines-Based
-                 Metrics for Streamlines with Variable Step Sizes, ISMRM, 2015.
+    .. footbibliography::
     """
     only_one_streamlines = False
     if type(streamlines) is cnp.ndarray:

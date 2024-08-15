@@ -165,18 +165,20 @@ class MultiShellDeconvModel(shm.SphHarmModel):
     ):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
-        (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
-        the estimation of multiple response functions as a function of multiple
-        b-values and multiple tissue types.
+        (MSMT-CSD) :footcite:p:`Jeurissen2014`. This method extends the CSD
+        model proposed in :footcite:p:`Tournier2007`. by the estimation of
+        multiple response functions as a function of multiple b-values and
+        multiple tissue types.
 
         Spherical deconvolution computes a fiber orientation distribution
-        (FOD), also called fiber ODF (fODF) [2]_. The fODF is derived from
-        different tissue types and thus overcomes the overestimation of WM in
-        GM and CSF areas.
+        (FOD), also called fiber ODF (fODF) :footcite:p:`Tournier2007`. The fODF
+        is derived from different tissue types and thus overcomes the
+        overestimation of WM in GM and CSF areas.
 
         The response function is based on the different tissue types
         and is provided as input to the MultiShellDeconvModel.
-        It will be used as deconvolution kernel, as described in [2]_.
+        It will be used as deconvolution kernel, as described in
+        :footcite:p:`Tournier2007`.
 
         Parameters
         ----------
@@ -208,15 +210,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 
         References
         ----------
-        .. [1] Jeurissen, B., et al. NeuroImage 2014. Multi-tissue constrained
-               spherical deconvolution for improved analysis of multi-shell
-               diffusion MRI data
-        .. [2] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-               the fibre orientation distribution in diffusion MRI:
-               Non-negativity constrained super-resolved spherical
-               deconvolution
-        .. [3] Tournier, J.D, et al. Imaging Systems and Technology
-               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
+        .. footbibliography::
         """
         if not iso >= 2:
             msg = "Multi-tissue CSD requires at least 2 tissue compartments"

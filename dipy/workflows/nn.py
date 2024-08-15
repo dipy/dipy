@@ -23,7 +23,9 @@ class EVACPlusFlow(Workflow):
         out_mask="brain_mask.nii.gz",
         out_masked="dwi_masked.nii.gz",
     ):
-        """Extract brain using EVAC+ :footcite:p:`Park2024`.
+        """Extract brain using EVAC+.
+
+        See :footcite:p:`Park2024` for further details about EVAC+.
 
         Parameters
         ----------

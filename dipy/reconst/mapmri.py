@@ -24,57 +24,32 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class MapmriModel(ReconstModel, Cache):
-    r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
+    r"""Mean Apparent Propagator MRI (MAPMRI) of the diffusion signal.
 
-    The main idea is to model the diffusion signal as a linear combination of
-    the continuous functions presented in [2]_ but extending it in three
-    dimensions.
-    The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-    extension is provided using a set of three basis functions for the radial
-    part, one for the signal along x, one for y and one for z, while [3]_
-    uses one basis function to model the radial part and real Spherical
-    Harmonics to model the angular part.
+    The main idea in MAPMRI footcite:p:`Ozarslan2013` is to model the diffusion
+    signal as a linear combination of the continuous functions presented in
+    footcite:p:`Ozarslan2008` but extending it in three dimensions.
+
+    The main difference with the SHORE proposed in footcite:p:`Merlet2013` is
+    that MAPMRI 3D extension is provided using a set of three basis functions
+    for the radial part, one for the signal along x, one for y and one for z,
+    while footcite:p:`Merlet2013` uses one basis function to model the radial
+    part and real Spherical Harmonics to model the angular part.
+
     From the MAPMRI coefficients is possible to use the analytical formulae
     to estimate the ODF.
 
-    See [8]_ for additional tissue microstructure insights provided by MAPMRI.
+    See :footcite:p:`Avram2015` for additional tissue microstructure insights
+    provided by MAPMRI.
+
+    See also footcite:p:`Fick2016b`, footcite:p:`Cheng2012`,
+    footcite:p:`Hosseinbor2013`, footcite:p:`Craven1979`, and
+    footcite:p:`DelaHaije2020` for additional insight into to the model.
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+    .. footbibliography::
 
-    .. [2] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
-           and estimation for one-dimensional q-space magnetic resonance
-           1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
-
-    .. [3] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
-           estimation via Compressive Sensing in diffusion MRI", Medical
-           Image Analysis, 2013.
-
-    .. [4] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-           using Laplacian-regularized MAP-MRI and its application to HCP
-           data." NeuroImage (2016).
-
-    .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
-           Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
-
-    .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
-           (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices". NeuroImage
-           64, 2013, 650-670.
-
-    .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
-           NUMER MATH 31.4 (1978): 377-403.
-
-    .. [8] Avram et al. "Clinical feasibility of using mean apparent
-           propagator (MAP) MRI to characterize brain tissue microstructure".
-           NeuroImage 2015, in press.
-
-    .. [9] Dela Haije et al. "Enforcing necessary non-negativity constraints
-           for common diffusion MRI models using sum of squares programming".
-           NeuroImage 209, 2020, 116405.
     """
 
     def __init__(
@@ -95,32 +70,36 @@ class MapmriModel(ReconstModel, Cache):
         cvxpy_solver=None,
     ):
         r"""Analytical and continuous modeling of the diffusion signal with
-        respect to the MAPMRI basis [1]_.
+        respect to the MAPMRI basis.
 
-        The main idea is to model the diffusion signal as a linear combination
-        of the continuous functions presented in [2]_ but extending it in three
+        The main idea of the MAPMRI :footcite:p:`Ozarslan2013` is to model the
+        diffusion signal as a linear combination of the continuous functions
+        presented in :footcite:p:`Ozarslan2008` but extending it in three
         dimensions.
 
-        The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-        extension is provided using a set of three basis functions for the
-        radial part, one for the signal along x, one for y and one for z, while
-        [3]_ uses one basis function to model the radial part and real
-        Spherical Harmonics to model the angular part.
+        The main difference with the SHORE proposed in
+        :footcite:p:`Ozarslan2009` is that MAPMRI 3D extension is provided using
+        a set of three basis functions for the radial part, one for the signal
+        along x, one for y and one for z, while :footcite:p:`Ozarslan2009` uses
+        one basis function to model the radial part and real Spherical Harmonics
+        to model the angular part.
 
         From the MAPMRI coefficients it is possible to estimate various
         q-space indices, the PDF and the ODF.
 
         The fitting procedure can be constrained using the positivity
-        constraint proposed in [1]_ or [4]_ and/or the laplacian regularization
-        proposed in [5]_.
+        constraint proposed in :footcite:p:`Ozarslan2013` or
+        :footcite:p:`DelaHaije2020` and/or the laplacian regularization proposed
+        in :footcite:p:`Fick2016b`.
 
         For the estimation of q-space indices we recommend using the 'regular'
         anisotropic implementation of MAPMRI. However, it has been shown that
         the ODF estimation in this implementation has a bias which
         'squeezes together' the ODF peaks when there is a crossing at an angle
-        smaller than 90 degrees [5]_. When you want to estimate ODFs for
-        tractography we therefore recommend using the isotropic implementation
-        (which is equivalent to [3]_).
+        smaller than 90 degrees :footcite:p:`Fick2016b`. When you want to
+        estimate ODFs for tractography we therefore recommend using the
+        isotropic implementation (which is equivalent to
+        :footcite:p:`Ozarslan2009`).
 
         The switch between isotropic and anisotropic can be easily made through
         the anisotropic_scaling option.
@@ -136,18 +115,19 @@ class MapmriModel(ReconstModel, Cache):
         laplacian_regularization: bool,
             Regularize using the Laplacian of the MAP-MRI basis.
         laplacian_weighting: string or scalar,
-            The string 'GCV' makes it use generalized cross-validation [7]_ to
-            find the regularization weight [4]_. A scalar sets the
-            regularization weight to that value and an array will make it
-            selected the optimal weight from the values in the array.
+            The string 'GCV' makes it use generalized cross-validation
+            :footcite:p:`Craven1979` to find the regularization weight
+            :footcite:p:`DelaHaije2020`. A scalar sets the regularization
+            weight to that value and an array will make it selected the optimal
+            weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
         global_constraints : bool, optional
             If set to False, positivity is enforced on a grid determined by
             pos_grid and pos_radius. If set to True, positivity is enforced
-            everywhere using the constraints of [6]_. Global constraints are
-            currently supported for anisotropic_scaling=True and for
-            radial_order <= 10. Default: False.
+            everywhere using the constraints of :footcite:p:`Merlet2013`. Global
+            constraints are currently supported for anisotropic_scaling=True and
+            for radial_order <= 10.
         pos_grid : integer,
             The number of points in the grid that is used in the local
             positivity constraint.
@@ -156,7 +136,7 @@ class MapmriModel(ReconstModel, Cache):
             constraint constrains to posivity is that value. If set to
             'adaptive', the maximum distance is dependent on the estimated
             tissue diffusivity. If 'infinity', semidefinite programming
-            constraints are used [9]_.
+            constraints are used :footcite:p:`DelaHaije2020`.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -179,7 +159,7 @@ class MapmriModel(ReconstModel, Cache):
         static_diffusivity : float,
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
-            D=0.7e-3 [5]_.
+            D=0.7e-3 :footcite:p:`Fick2016b`.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for
@@ -188,30 +168,7 @@ class MapmriModel(ReconstModel, Cache):
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-               diffusion imaging method for mapping tissue microstructure",
-               NeuroImage, 2013.
-
-        .. [2] Ozarslan E. et al., "Simple harmonic oscillator based
-               reconstruction and estimation for one-dimensional q-space
-               magnetic resonance 1D-SHORE)", Proc Intl Soc Mag Reson Med,
-               vol. 16, p. 35., 2008.
-
-        .. [3] Ozarslan E. et al., "Simple harmonic oscillator based
-               reconstruction and estimation for three-dimensional q-space
-               mri", ISMRM 2009.
-
-        .. [4] Dela Haije et al. "Enforcing necessary non-negativity
-               constraints for common diffusion MRI models using sum of squares
-               programming". NeuroImage 209, 2020, 116405.
-
-        .. [5] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-               using Laplacian-regularized MAP-MRI and its application to HCP
-               data." NeuroImage (2016).
-
-        .. [6] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
-               estimation via Compressive Sensing in diffusion MRI", Medical
-               Image Analysis, 2013.
+        .. footbibliography::
 
         Examples
         --------
@@ -543,8 +500,10 @@ class MapmriFit(ReconstFit):
         return self._mapmri_coef
 
     def odf(self, sphere, s=2):
-        r"""Calculates the analytical Orientation Distribution Function (ODF)
-        from the signal [1]_ Eq. (32).
+        """Calculates the analytical Orientation Distribution Function (ODF)
+        from the signal.
+
+        See :footcite:p:`Ozarslan2013` Eq. (32).
 
         Parameters
         ----------
@@ -555,9 +514,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+        .. footbibliography::
         """
 
         if self.model.anisotropic_scaling:
@@ -579,20 +536,15 @@ class MapmriFit(ReconstFit):
 
     def odf_sh(self, s=2):
         r"""Calculates the real analytical odf for a given discrete sphere.
+
         Computes the design matrix of the ODF for the given sphere vertices
-        and radial moment [1]_ eq. (32). The radial moment s acts as a
-        sharpening method. The analytical equation for the spherical ODF basis
-        is given in [2]_ eq. (C8).
+        and radial moment :footcite:p:`Ozarslan2013` eq. (32). The radial moment
+        s acts as a sharpening method. The analytical equation for the spherical
+        ODF basis  is given in :footcite:p:`Fick2016b` eq. (C8).
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-           using Laplacian-regularized MAP-MRI and its application to HCP data."
-           NeuroImage (2016).
+        .. footbibliography::
         """
         if self.model.anisotropic_scaling:
             raise ValueError(
@@ -610,19 +562,15 @@ class MapmriFit(ReconstFit):
         return odf
 
     def rtpp(self):
-        r"""Calculates the analytical return to the plane probability (RTPP)
-        [1]_ eq. (42). The analytical formula for the isotropic MAP-MRI
-        basis was derived in [2]_ eq. (C11).
+        r"""Calculates the analytical return to the plane probability (RTPP).
+
+        RTPP is defined in :footcite:p:`Ozarslan2013` eq. (42). The analytical
+        formula for the isotropic MAP-MRI basis was derived in
+        :footcite:p:`Fick2016b` eq. (C11).
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+        .. footbibliography::
         """
         Bm = self.model.Bm
         ind_mat = self.model.ind_mat
@@ -670,19 +618,15 @@ class MapmriFit(ReconstFit):
             return rtpp.sum()
 
     def rtap(self):
-        r"""Calculates the analytical return to the axis probability (RTAP)
-        [1]_ eq. (40, 44a). The analytical formula for the isotropic MAP-MRI
-        basis was derived in [2]_ eq. (C11).
+        r"""Calculates the analytical return to the axis probability (RTAP).
+
+        RTAP is defined in :footcite:p:`Ozarslan2013` eq. (40, 44a). The
+        analytical formula for the isotropic MAP-MRI basis was derived in
+        :footcite:p:`Fick2016b` eq. (C11).
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-           using Laplacian-regularized MAP-MRI and its application to HCP data."
-           NeuroImage (2016).
+        .. footbibliography::
         """
         Bm = self.model.Bm
         ind_mat = self.model.ind_mat
@@ -728,19 +672,15 @@ class MapmriFit(ReconstFit):
         return rtap
 
     def rtop(self):
-        r"""Calculates the analytical return to the origin probability (RTOP)
-        [1]_ eq. (36, 43). The analytical formula for the isotropic MAP-MRI
-        basis was derived in [2]_ eq. (C11).
+        r"""Calculates the analytical return to the origin probability (RTOP).
+
+        RTOP is defined in :footcite:p:`Ozarslan2013` eq. (36, 43). The
+        analytical formula for the isotropic MAP-MRI basis was derived in
+        :footcite:p:`Fick2016b` eq. (C11).
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-           using Laplacian-regularized MAP-MRI and its application to HCP data."
-           NeuroImage (2016).
+        .. footbibliography::
         """
         Bm = self.model.Bm
 
@@ -758,18 +698,14 @@ class MapmriFit(ReconstFit):
 
     def msd(self):
         r"""Calculates the analytical Mean Squared Displacement (MSD).
+
         It is defined as the Laplacian of the origin of the estimated signal
-        [1]_. The analytical formula for the MAP-MRI basis was derived in [2]_
-        eq. (C13, D1).
+        :footcite:p:`Cheng2012`. The analytical formula for the MAP-MRI basis
+        was derived in :footcite:p:`Fick2016b` eq. (C13, D1).
 
         References
         ----------
-        .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
-        Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+        .. footbibliography::
         """
 
         mu = self.mu
@@ -810,20 +746,15 @@ class MapmriFit(ReconstFit):
 
     def qiv(self):
         r"""Calculates the analytical Q-space Inverse Variance (QIV).
+
         It is defined as the inverse of the Laplacian of the origin of the
-        estimated propagator [1]_ eq. (22). The analytical formula for the
-        MAP-MRI basis was derived in [2]_ eq. (C14, D2).
+        estimated propagator :footcite:p:`Hosseinbor2013` eq. (22). The
+        analytical formula for the MAP-MRI basis was derived in
+        :footcite:p:`Fick2016b` eq. (C14, D2).
 
         References
         ----------
-        .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
-           (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices. NeuroImage 64,
-           2013, 650-670.
-
-        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-           using Laplacian-regularized MAP-MRI and its application to HCP data."
-           NeuroImage (2016).
+        .. footbibliography::
         """
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
@@ -859,20 +790,17 @@ class MapmriFit(ReconstFit):
         return qiv
 
     def ng(self):
-        r"""Calculates the analytical non-Gaussiannity (NG) [1]_.
-        For the NG to be meaningful the mapmri scale factors must be
-        estimated only on data representing Gaussian diffusion of spins, i.e.,
-        bvals smaller than about 2000 s/mm^2 [2]_.
+        r"""Calculates the analytical non-Gaussiannity (NG).
+
+        For the NG to be meaningful the mapmri scale factors must be estimated
+        only on data representing Gaussian diffusion of spins, i.e., bvals
+        smaller than about 2000 s/mm^2 :footcite:p:`Avram2015`.
+
+        See :footcite:p:`Ozarslan2013` for a definition of the metric.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
-        .. [2] Avram et al. "Clinical feasibility of using mean apparent
-        propagator (MAP) MRI to characterize brain tissue microstructure".
-        NeuroImage 2015, in press.
+        .. footbibliography::
         """
         if self.model.bval_threshold > 2000.0:
             warn(
@@ -889,20 +817,17 @@ class MapmriFit(ReconstFit):
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef**2))
 
     def ng_parallel(self):
-        r"""Calculates the analytical parallel non-Gaussiannity (NG) [1]_.
-        For the NG to be meaningful the mapmri scale factors must be
-        estimated only on data representing Gaussian diffusion of spins, i.e.,
-        bvals smaller than about 2000 s/mm^2 [2]_.
+        r"""Calculates the analytical parallel non-Gaussiannity (NG).
+
+        For the NG to be meaningful the mapmri scale factors must be estimated
+        only on data representing Gaussian diffusion of spins, i.e., bvals
+        smaller than about 2000 s/mm^2 :footcite:p:`Avram2015`.
+
+        See :footcite:p:`Ozarslan2013` for a definition of the metric.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
-
-        .. [2] Avram et al. "Clinical feasibility of using mean apparent
-           propagator (MAP) MRI to characterize brain tissue microstructure".
-           NeuroImage 2015, in press.
+        .. footbibliography::
         """
         if self.model.bval_threshold > 2000.0:
             warn(
@@ -935,19 +860,16 @@ class MapmriFit(ReconstFit):
 
     def ng_perpendicular(self):
         r"""Calculates the analytical perpendicular non-Gaussiannity (NG)
-        [1]_. For the NG to be meaningful the mapmri scale factors must be
-        estimated only on data representing Gaussian diffusion of spins, i.e.,
-        bvals smaller than about 2000 s/mm^2 [2]_.
+
+        For the NG to be meaningful the mapmri scale factors must be estimated
+        only on data representing Gaussian diffusion of spins, i.e.,  bvals
+        smaller than about 2000 s/mm^2 :footcite:p:`Avram2015`.
+
+        See :footcite:p:`Ozarslan2013` for a definition of the metric.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
-
-        .. [2] Avram et al. "Clinical feasibility of using mean apparent
-           propagator (MAP) MRI to characterize brain tissue microstructure".
-           NeuroImage 2015, in press.
+        .. footbibliography::
         """
         if self.model.bval_threshold > 2000.0:
             warn(
@@ -980,18 +902,18 @@ class MapmriFit(ReconstFit):
         return np.sqrt(1 - np.sum(a00**2) / np.sum(a_perp**2))
 
     def norm_of_laplacian_signal(self):
-        """Calculates the norm of the laplacian of the fitted signal [1]_.
+        """Calculates the norm of the laplacian of the fitted signal.
+
         This information could be useful to assess if the extrapolation of the
         fitted signal contains spurious oscillations. A high laplacian may
-        indicate that these are present, and any q-space indices that
-        use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
-        QIV).
+        indicate that these are present, and any q-space indices that use
+        integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP, QIV).
+
+        See :footcite:p:`Fick2016b` for a definition of the metric.
 
         References
         ----------
-        .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+        .. footbibliography::
         """
         if self.model.anisotropic_scaling:
             laplacian_matrix = mapmri_laplacian_reg_matrix(
@@ -1076,7 +998,9 @@ class MapmriFit(ReconstFit):
 
 
 def isotropic_scale_factor(mu_squared):
-    r"""Estimated isotropic scaling factor _[1] Eq. (49).
+    r"""Estimated isotropic scaling factor.
+
+    See :footcite:p:`Ozarslan2013` Eq. (49).
 
     Parameters
     ----------
@@ -1090,9 +1014,7 @@ def isotropic_scale_factor(mu_squared):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
     X, Y, Z = mu_squared
     coef_array = np.array([-3, -(X + Y + Z), (X * Y + X * Z + Y * Z), 3 * X * Y * Z])
@@ -1102,7 +1024,9 @@ def isotropic_scale_factor(mu_squared):
 
 
 def mapmri_index_matrix(radial_order):
-    r"""Calculates the indices for the MAPMRI [1]_ basis in x, y and z.
+    r"""Calculates the indices for the MAPMRI basis in x, y and z.
+
+    See :footcite:p:`Ozarslan2013` for a definition of MAPMRI.
 
     Parameters
     ----------
@@ -1116,9 +1040,7 @@ def mapmri_index_matrix(radial_order):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+    .. footbibliography::
     """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
@@ -1130,7 +1052,9 @@ def mapmri_index_matrix(radial_order):
 
 
 def b_mat(index_matrix):
-    r"""Calculates the B coefficients from [1]_ Eq. (27).
+    r"""Calculates the B coefficients from
+
+    See :footcite:p:`Ozarslan2013` Eq. (27).
 
     Parameters
     ----------
@@ -1144,9 +1068,7 @@ def b_mat(index_matrix):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+    .. footbibliography::
     """
 
     B = np.zeros(index_matrix.shape[0])
@@ -1163,7 +1085,9 @@ def b_mat(index_matrix):
 
 
 def b_mat_isotropic(index_matrix):
-    r"""Calculates the isotropic B coefficients from [1]_ Fig 8.
+    r"""Calculates the isotropic B coefficients.
+
+    See :footcite:p:`Ozarslan2013` Fig 8.
 
     Parameters
     ----------
@@ -1177,9 +1101,7 @@ def b_mat_isotropic(index_matrix):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     B = np.zeros((index_matrix.shape[0]))
@@ -1191,7 +1113,9 @@ def b_mat_isotropic(index_matrix):
 
 
 def mapmri_phi_1d(n, q, mu):
-    r"""One dimensional MAPMRI basis function from [1]_ Eq. (4).
+    r"""One dimensional MAPMRI basis function.
+
+    See :footcite:p:`Ozarslan2013` Eq. (4).
 
     Parameters
     ----------
@@ -1204,9 +1128,7 @@ def mapmri_phi_1d(n, q, mu):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     qn = 2 * np.pi * mu * q
@@ -1221,7 +1143,9 @@ def mapmri_phi_1d(n, q, mu):
 
 
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
-    r"""Compute the MAPMRI phi matrix for the signal [1]_ eq. (23).
+    r"""Compute the MAPMRI phi matrix for the signal.
+
+    See :footcite:p:`Ozarslan2013` eq. (23).
 
     Parameters
     ----------
@@ -1234,9 +1158,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1267,7 +1189,9 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
 
 def mapmri_psi_1d(n, x, mu):
-    r"""One dimensional MAPMRI propagator basis function from [1]_ Eq. (10).
+    r"""One dimensional MAPMRI propagator basis function.
+
+    See :footcite:p:`Ozarslan2013` Eq. (10).
 
     Parameters
     ----------
@@ -1280,9 +1204,7 @@ def mapmri_psi_1d(n, x, mu):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     H = hermite(n)(x / mu)
@@ -1294,7 +1216,9 @@ def mapmri_psi_1d(n, x, mu):
 
 
 def mapmri_psi_matrix(radial_order, mu, rgrad):
-    r"""Compute the MAPMRI psi matrix for the propagator [1]_ eq. (22).
+    r"""Compute the MAPMRI psi matrix for the propagator.
+
+    See :footcite:p:`Ozarslan2013` eq. (22).
 
     Parameters
     ----------
@@ -1307,9 +1231,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1337,7 +1259,9 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_odf_matrix(radial_order, mu, s, vertices):
-    r"""Compute the MAPMRI ODF matrix [1]_  Eq. (33).
+    r"""Compute the MAPMRI ODF matrix.
+
+    See :footcite:p:`Ozarslan2013` Eq. (33).
 
     Parameters
     ----------
@@ -1353,9 +1277,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1387,13 +1309,13 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
 
 def _odf_cfunc(n1, n2, n3, a, b, g, s):
-    r"""Compute the MAPMRI ODF function from [1]_  Eq. (34).
+    r"""Compute the MAPMRI ODF function.
+
+    See :footcite:p:`Ozarslan2013` Eq. (34).
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+    .. footbibliography::
     """
 
     f = mfactorial
@@ -1416,8 +1338,9 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
 
 def mapmri_isotropic_phi_matrix(radial_order, mu, q):
-    r"""Three dimensional isotropic MAPMRI signal basis function from [1]_
-    Eq. (61).
+    r"""Three dimensional isotropic MAPMRI signal basis function
+
+    See :footcite:p:`Ozarslan2013` Eq. (61).
 
     Parameters
     ----------
@@ -1430,9 +1353,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
     qval, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1457,7 +1378,9 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
 
 def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
-    r"""Radial part of the isotropic 1D-SHORE signal basis [1]_ eq. (61).
+    r"""Radial part of the isotropic 1D-SHORE signal basis.
+
+    See :footcite:p:`Ozarslan2013` eq. (61).
 
     Parameters
     ----------
@@ -1472,9 +1395,7 @@ def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
     pi2_mu2_q2 = 2 * np.pi**2 * mu**2 * qval**2
     const = (
@@ -1541,8 +1462,9 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
 
 
 def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
-    r"""Three dimensional isotropic MAPMRI propagator basis function from [1]_
-    Eq. (61).
+    r"""Three dimensional isotropic MAPMRI propagator basis function.
+
+    See :footcite:p:`Ozarslan2013` Eq. (61).
 
     Parameters
     ----------
@@ -1555,9 +1477,7 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
 
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1], rgrad[:, 2])
@@ -1583,7 +1503,9 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
-    r"""Radial part of the isotropic 1D-SHORE propagator basis [1]_ eq. (61).
+    r"""Radial part of the isotropic 1D-SHORE propagator basis.
+
+    See :footcite:p:`Ozarslan2013` eq. (61).
 
     Parameters
     ----------
@@ -1598,9 +1520,7 @@ def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
     """
     r2u2 = r**2 / (2 * mu**2)
     const = (
@@ -1671,9 +1591,11 @@ def binomialfloat(n, k):
 
 
 def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
-    r"""Compute the isotropic MAPMRI ODF matrix [1]_ Eq. 32 but for the
-    isotropic propagator in [1]_ eq. (60). Analytical derivation in
-    [2]_ eq. (C8).
+    r"""Compute the isotropic MAPMRI ODF matrix.
+
+    The computation follows :footcite:p:`Ozarslan2013` Eq. 32 but, it is done
+    for the isotropic propagator in footcite:p:`Ozarslan2013` eq. (60).
+    Analytical derivation in :footcite:p:`Fick2016b` eq. (C8).
 
     Parameters
     ----------
@@ -1693,13 +1615,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
-
-    .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     r, theta, phi = cart2sphere(vertices[:, 0], vertices[:, 1], vertices[:, 2])
@@ -1732,11 +1648,14 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
 
 def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
-    r"""Compute the isotropic MAPMRI ODF matrix [1]_ Eq. 32 for the isotropic
-    propagator in [1]_ eq. (60). Here we do not compute the sphere function but
-    the spherical harmonics by only integrating the radial part of the
-    propagator. We use the same derivation of the ODF in the isotropic
-    implementation as in [2]_ eq. (C8).
+    r"""Compute the isotropic MAPMRI ODF matrix.
+
+    The computation follows :footcite:p:`Ozarslan2013` Eq. 32, but it is done
+    for the isotropic propagator in :footcite:p:`Ozarslan2013` eq. (60). Here
+    we do not compute the sphere function but the spherical harmonics by only
+    integrating the radial part of the propagator. We use the same derivation of
+    the ODF in the isotropic implementation as in :footcite:p:`Fick2016b` eq.
+    (C8).
 
     Parameters
     ----------
@@ -1754,13 +1673,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
-
-    .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     sh_mat = sph_harm_ind_list(radial_order)
@@ -1791,7 +1704,9 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
 def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     r"""Computes the Laplacian regularization matrix for MAP-MRI's isotropic
-    implementation [1]_ eq. (C7).
+    implementation.
+
+    See :footcite:p:`Fick2016b` eq. (C7).
 
     Parameters
     ----------
@@ -1807,9 +1722,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
@@ -1818,7 +1731,9 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
 def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
     r"""Computes the Laplacian regularization matrix for MAP-MRI's isotropic
-    implementation [1]_ eq. (C7).
+    implementation.
+
+    See :footcite:p:`Fick2016b` eq. (C7).
 
     Parameters
     ----------
@@ -1834,9 +1749,7 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     n_elem = ind_mat.shape[0]
@@ -1901,7 +1814,9 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
 
 
 def mapmri_isotropic_index_matrix(radial_order):
-    r"""Calculates the indices for the isotropic MAPMRI basis [1]_ Fig 8.
+    r"""Calculates the indices for the isotropic MAPMRI basis.
+
+    See :footcite:p:`Ozarslan2013` Fig 8.
 
     Parameters
     ----------
@@ -1915,9 +1830,7 @@ def mapmri_isotropic_index_matrix(radial_order):
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-       diffusion imaging method for mapping tissue microstructure",
-       NeuroImage, 2013.
+    .. footbibliography::
 
     """
     index_matrix = []
@@ -1973,7 +1886,9 @@ def delta(n, m):
 
 
 def map_laplace_u(n, m):
-    r"""S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
+    r"""S(n, m) static matrix for Laplacian regularization.
+
+    See :footcite:p:`Fick2016b` eq. (13).
 
     Parameters
     ----------
@@ -1987,16 +1902,16 @@ def map_laplace_u(n, m):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
 
 
 def map_laplace_t(n, m):
-    r"""L(m, n) static matrix for Laplacian regularization [1]_ eq. (12).
+    r"""L(m, n) static matrix for Laplacian regularization.
+
+    See :footcite:p:`Fick2016b` eq. (12).
 
     Parameters
     ----------
@@ -2010,9 +1925,7 @@ def map_laplace_t(n, m):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
@@ -2022,7 +1935,9 @@ def map_laplace_t(n, m):
 
 
 def map_laplace_s(n, m):
-    r"""R(m,n) static matrix for Laplacian regularization [1]_ eq. (11).
+    r"""R(m,n) static matrix for Laplacian regularization.
+
+    See :footcite:p:`Fick2016b` eq. (11).
 
     Parameters
     ----------
@@ -2036,9 +1951,7 @@ def map_laplace_s(n, m):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
 
@@ -2055,8 +1968,9 @@ def map_laplace_s(n, m):
 
 
 def mapmri_STU_reg_matrices(radial_order):
-    """Generate the static portions of the Laplacian regularization matrix
-    according to [1]_ eq. (11, 12, 13).
+    """Generate the static portions of the Laplacian regularization matrix.
+
+    See :footcite:p:`Fick2016b` eq. (11, 12, 13).
 
     Parameters
     ----------
@@ -2070,9 +1984,7 @@ def mapmri_STU_reg_matrices(radial_order):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     S = np.zeros((radial_order + 1, radial_order + 1))
@@ -2093,7 +2005,9 @@ def mapmri_STU_reg_matrices(radial_order):
 
 
 def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
-    """Put the Laplacian regularization matrix together [1]_ eq. (10).
+    """Put the Laplacian regularization matrix together.
+
+    See :footcite:p:`Fick2016b` eq. (10).
 
     The static parts in S, T and U are multiplied and divided by the
     voxel-specific scale factors.
@@ -2114,9 +2028,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-       using Laplacian-regularized MAP-MRI and its application to HCP data."
-       NeuroImage (2016).
+    .. footbibliography::
 
     """
     ux, uy, uz = mu
@@ -2165,7 +2077,9 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
 
 
 def generalized_crossvalidation_array(data, M, LR, weights_array=None):
-    """Generalized Cross Validation Function [1]_ eq. (15).
+    """Generalized Cross Validation Function.
+
+    See :footcite:p:`Fick2016b` eq. (15).
 
     Here weights_array is a numpy array with all values that should be
     considered in the GCV. It will run through the weights until the cost
@@ -2183,6 +2097,9 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     weights_array : array (N_of_weights)
         array of optional regularization weights
 
+    References
+    ----------
+    .. footbibliography::
     """
     if weights_array is None:
         lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
@@ -2206,9 +2123,11 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
 
 
 def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
-    """Generalized Cross Validation Function [1]_ eq. (15).
+    """Generalized Cross Validation Function.
 
     Finds optimal regularization weight based on generalized cross-validation.
+
+    See :footcite:p:`Craven1979` eq. (15).
 
     Parameters
     ----------
@@ -2228,8 +2147,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
     References
     ----------
-    .. [1] Craven et al. "Smoothing Noisy Data with Spline Functions."
-        NUMER MATH 31.4 (1978): 377-403.
+    .. footbibliography::
 
     """
     MMt = np.dot(M.T, M)
@@ -2247,7 +2165,14 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
 
 def gcv_cost_function(weight, args):
-    """The GCV cost function that is iterated [4]_."""
+    """The GCV cost function that is iterated.
+
+    See :footcite:p:`Fick2016b` for further details about the method.
+
+    References
+    ----------
+    .. footbibliography::
+    """
     data, M, MMt, K, LR = args
     S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)

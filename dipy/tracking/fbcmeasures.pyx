@@ -29,6 +29,9 @@ cdef class FBCMeasures:
         """ Compute the fiber to bundle coherence measures for a set of
         streamlines.
 
+        See :footcite:p`Meesters2016b` and :footcite:p:`Portegies2015b` for
+        further details about the method.
+
         Parameters
         ----------
         streamlines : list
@@ -52,15 +55,7 @@ cdef class FBCMeasures:
 
         References
         ----------
-        [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                           J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning
-                           output of tractography via fiber to bundle coherence,
-                           a new open source implementation. Human Brain Mapping
-                           conference 2016.
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-                         G.Girard, and R. Duits. (2015) Improving Fiber Alignment
-                         in HARDI by Combining Contextual PDE flow with
-                         Constrained Spherical Deconvolution. PLoS One.
+        .. footbibliography::
         """
         self.compute(streamlines,
                      kernel,

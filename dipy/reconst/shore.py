@@ -15,10 +15,10 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 class ShoreModel(Cache):
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
-    (SHORE) [1]_ of the diffusion signal.
+    (SHORE) of the diffusion signal.
 
-    The main idea is to model the diffusion signal as a linear combination of
-    continuous functions $\phi_i$,
+    The main idea of SHORE :footcite:p:`Ozarslan2008` is to model the diffusion
+    signal as a linear combination of continuous functions $\phi_i$,
 
     .. math::
 
@@ -26,32 +26,16 @@ class ShoreModel(Cache):
 
     where $\mathbf{q}$ is the wave vector which corresponds to different
     gradient directions. Numerous continuous functions $\phi_i$ can be used to
-    model $S$. Some are presented in [2,3,4]_.
+    model $S$. Some are presented in :footcite:p:`Merlet2013`,
+    :footcite:p:`Rathi2011`, and :footcite:p:`Cheng2011`.
 
     From the $c_i$ coefficients, there exist analytical formulae to estimate
     the ODF, the return to the origin probability (RTOP), the mean square
-    displacement (MSD), amongst others [5]_.
+    displacement (MSD), amongst others :footcite:p:`Ozarslan2013`.
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
-           and estimation for one-dimensional q-space magnetic resonance
-           1D-SHORE)", Proc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
-
-    .. [2] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
-           estimation via Compressive Sensing in diffusion MRI", Medical
-           Image Analysis, 2013.
-
-    .. [3] Rathi Y. et al., "Sparse multi-shell diffusion imaging", MICCAI,
-           2011.
-
-    .. [4] Cheng J. et al., "Theoretical Analysis and Practical Insights on
-           EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
-           Computational Diffusion MRI, 2011.
-
-    .. [5] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+    .. footbibliography::
 
     Notes
     -----
@@ -73,10 +57,12 @@ class ShoreModel(Cache):
         cvxpy_solver=None,
     ):
         r"""Analytical and continuous modeling of the diffusion signal with
-        respect to the SHORE basis [1,2]_.
-        This implementation is a modification of SHORE presented in [1]_.
-        The modification was made to obtain the same ordering of the basis
-        presented in [2,3]_.
+        respect to the SHORE basis.
+
+        This implementation is a modification of SHORE presented in
+        :footcite:p:`Merlet2013`. The modification was made to obtain the same
+        ordering of the basis presented in :footcite:p:`Cheng2011`,
+        :footcite:p:`Ozarslan2013`.
 
         The main idea is to model the diffusion signal as a linear
         combination of continuous functions $\phi_i$,
@@ -125,17 +111,7 @@ class ShoreModel(Cache):
 
         References
         ----------
-        .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-        ODF estimation via Compressive Sensing in diffusion MRI", Medical
-        Image Analysis, 2013.
-
-        .. [2] Cheng J. et al., "Theoretical Analysis and Practical Insights
-        on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
-        Computational Diffusion MRI, 2011.
-
-        .. [3] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+        .. footbibliography::
 
         Examples
         --------
@@ -403,13 +379,13 @@ class ShoreFit:
 
     def rtop_signal(self):
         r"""Calculates the analytical return to origin probability (RTOP)
-        from the signal [1]_.
+        from the signal.
+
+        See :footcite:p:`Ozarslan2013` for further details about the method.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+        .. footbibliography::
         """
         rtop = 0
         c = self._shore_coef
@@ -426,13 +402,13 @@ class ShoreFit:
 
     def rtop_pdf(self):
         r"""Calculates the analytical return to origin probability (RTOP)
-        from the pdf [1]_.
+        from the pdf.
+
+        See :footcite:p:`Ozarslan2013` for further details about the method.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+        .. footbibliography::
         """
         rtop = 0
         c = self._shore_coef
@@ -448,7 +424,9 @@ class ShoreFit:
         return np.clip(rtop, 0, rtop.max())
 
     def msd(self):
-        r"""Calculates the analytical mean squared displacement (MSD) [1]_
+        r"""Calculates the analytical mean squared displacement (MSD).
+
+        See :footcite:p:`Wu2007` for a definition of the method.
 
         .. math::
            :nowrap:
@@ -457,13 +435,12 @@ class ShoreFit:
             \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
             \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu
-        et al. [1]_).
+        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see
+        :footcite:t:`Wu2007`).
 
         References
         ----------
-        .. [1] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        p. 617-629, 2007.
+        .. footbibliography::
         """
         msd = 0
         c = self._shore_coef
@@ -495,7 +472,9 @@ class ShoreFit:
 
 
 def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
-    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
+    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     .. math::
         :nowrap:
@@ -530,9 +509,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
 
     """
 
@@ -568,7 +545,9 @@ def _kappa(zeta, n, ell):
 
 
 def shore_matrix_pdf(radial_order, zeta, rtab):
-    r"""Compute the SHORE propagator matrix [1]_"
+    r"""Compute the SHORE propagator matrix.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     Parameters
     ----------
@@ -581,9 +560,7 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
     """
 
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
@@ -612,7 +589,9 @@ def _kappa_pdf(zeta, n, ell):
 
 
 def shore_matrix_odf(radial_order, zeta, sphere_vertices):
-    r"""Compute the SHORE ODF matrix [1]_"
+    r"""Compute the SHORE ODF matrix.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     Parameters
     ----------
@@ -625,9 +604,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
     """
 
     r, theta, phi = cart2sphere(

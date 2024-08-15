@@ -12,10 +12,10 @@ AffineMap: encapsulates the necessary information to perform affine
     mapping points in the codomain to points in the domain.
 
 ParzenJointHistogram: computes the marginal and joint distributions of
-    intensities of a pair of images, using Parzen windows [Parzen62]
-    with a cubic spline kernel, as proposed by Mattes et al. [Mattes03].
-    It also computes the gradient of the joint histogram w.r.t. the
-    parameters of a given transform.
+    intensities of a pair of images, using Parzen windows
+    :footcite:p:`Parzen1962` with a cubic spline kernel, as proposed by
+    :footcite:t:`Mattes2003`. It also computes the gradient of the joint
+    histogram w.r.t. the parameters of a given transform.
 
 MutualInformationMetric: computes the value and gradient of the mutual
     information metric the way `Optimizer` needs them. That is, given
@@ -33,13 +33,7 @@ AffineRegistration: it runs the multi-resolution registration, putting
 
 References
 ----------
-[Parzen62] E. Parzen. On the estimation of a probability density
-           function and the mode. Annals of Mathematical Statistics,
-           33(3), 1065-1076, 1962.
-[Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-           & Eubank, W. PET-CT image registration in the chest using
-           free-form deformations. IEEE Transactions on Medical
-           Imaging, 22(1), 120-8, 2003.
+.. footbibliography::
 
 """
 

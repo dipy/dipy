@@ -13,11 +13,11 @@ def bs_se(bs_pdf):
 
 
 def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
-    """
-
-    Bootstrap resampling [1]_ to accurately estimate the standard error and
+    """Bootstrap resampling to accurately estimate the standard error and
     confidence interval of a desired statistic of a probability distribution
     function (pdf).
+
+    See :footcite:p`Efron1979` for further details about the method.
 
     Parameters
     ----------
@@ -62,8 +62,7 @@ def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
 
     References
     ----------
-    ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
-        look at the jackknife. Ann. Stat. 7, 1-26.
+    .. footbibliography::
 
     """
     N = len(x)
@@ -81,6 +80,8 @@ def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
 
 def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     """Calculate the bootstrap confidence interval by approximating the BCa.
+
+    See :footcite:p`DiCiccio1996` for further details about the method.
 
     Parameters
     ----------
@@ -111,8 +112,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
 
     References
     ----------
-    ..  [2] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals.
-        Statistical Science. 11, 3, 189-228.
+    .. footbibliography::
 
     """
     # define base variables -- n, p_0, sigma_hat, delta_hat
@@ -223,9 +223,10 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
 
 
 def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
-    """
-    Jackknife resampling [3]_ to quickly estimate the bias and standard
-    error of a desired statistic in a probability distribution function (pdf).
+    """Jackknife resampling to quickly estimate the bias and standard error of a
+    desired statistic in a probability distribution function (pdf).
+
+    See :footcite:p`Efron1979` for further details about the method.
 
     Parameters
     ----------
@@ -275,8 +276,7 @@ def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
 
     References
     ----------
-    .. [3] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
-           look at the jackknife. Ann. Stat. 7, 1-26.
+    .. footbibliography::
 
     """
     N = len(pdf)

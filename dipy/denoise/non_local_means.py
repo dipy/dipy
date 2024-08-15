@@ -8,8 +8,11 @@ from dipy.testing.decorators import warning_for_keywords
 def non_local_means(
     arr, sigma, *, mask=None, patch_radius=1, block_radius=5, rician=True
 ):
-    r"""Non-local means for denoising 3D and 4D images, using
-        blockwise averaging approach
+    r"""Non-local means for denoising 3D and 4D images, using blockwise
+    averaging approach.
+
+    See :footcite:p:`Coupe2008` and :footcite:p:`Coupe2012` for further details
+    about the method.
 
     Parameters
     ----------
@@ -34,16 +37,7 @@ def non_local_means(
 
     References
     ----------
-
-    .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
-                 Barillot, An Optimized Blockwise Non Local Means Denoising
-                 Filter for 3D Magnetic Resonance Images, IEEE Transactions on
-                 Medical Imaging, 27(4):425-441, 2008
-
-    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-                Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
-                Denoising IET Image Processing, Institution of Engineering and
-                Technology, 2011
+    .. footbibliography::
 
     """
     if not np.isscalar(sigma) and not sigma.shape == (1,):

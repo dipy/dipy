@@ -188,11 +188,12 @@ class IvimModelTRR(ReconstModel):
         r"""
         Initialize an IVIM model.
 
-        The IVIM model assumes that biological tissue includes a volume
-        fraction 'f' of water flowing with a pseudo-diffusion coefficient
-        D* and a fraction (1-f) of static (diffusion only), intra and
-        extracellular water, with a diffusion coefficient D. In this model
-        the echo attenuation of a signal in a single voxel can be written as
+        The IVIM model footcite:p:`LeBihan1988`, :footcite:p:`Federau2012`
+        assumes that biological tissue includes a volume fraction 'f' of water
+        flowing with a pseudo-diffusion coefficient D* and a fraction (1-f) of
+        static (diffusion only), intra and extracellular water, with a diffusion
+        coefficient D. In this model the echo attenuation of a signal in a
+        single voxel can be written as
 
         .. math::
 
@@ -252,12 +253,7 @@ class IvimModelTRR(ReconstModel):
 
         References
         ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
-               in intravoxel incoherent motion MR imaging." Radiology 168.2
-               (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
-               perfusion with intravoxel incoherent motion MR imaging."
-               Radiology 265.3 (2012): 874-881.
+        .. footbibliography::
         """
         if not np.any(gtab.b0s_mask):
             e_s = "No measured signal at bvalue == 0."
@@ -515,6 +511,9 @@ class IvimModelVP(ReconstModel):
     def __init__(self, gtab, bounds=None, maxiter=10, xtol=1e-8):
         r"""Initialize an IvimModelVP class.
 
+        See :footcite:p:`LeBihan1988`, :footcite:p:`Federau2012` and
+        :footcite:p:`Fadnavis2019` for further details about the model.
+
         The IVIM model assumes that biological tissue includes a volume
         fraction 'f' of water flowing with a pseudo-diffusion coefficient
         D* and a fraction (1-f: treated as a separate fraction in the variable
@@ -537,16 +536,7 @@ class IvimModelVP(ReconstModel):
 
         References
         ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
-               in intravoxel incoherent motion MR imaging." Radiology 168.2
-               (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
-               perfusion with intravoxel incoherent motion MR imaging."
-               Radiology 265.3 (2012): 874-881.
-        .. [3] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
 
         self.maxiter = maxiter
@@ -561,7 +551,7 @@ class IvimModelVP(ReconstModel):
     def fit(self, data, bounds_de=None, **kwargs):
         r"""Fit method of the IvimModelVP model class
 
-        MicroLearn framework (VarPro)[1]_.
+        MicroLearn framework (VarPro) :footcite:p:`Fadnavis2019`.
 
         The VarPro computes the IVIM parameters using the MIX approach.
         This algorithm uses three different optimizers. It starts with a
@@ -571,18 +561,12 @@ class IvimModelVP(ReconstModel):
         the volume fractions are determined. Then the last step is non linear
         least square fitting on all the parameters. The results of the first
         and second step are utilized as the initial values for the last step
-        of the algorithm. (see [1]_ and [2]_ for a comparison and a thorough
-        discussion).
+        of the algorithm. (see :footcite:p:`Fadnavis2019` and
+        :footcite:p:`Farooq2016` for a comparison and a thorough discussion).
 
         References
         ----------
-        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
+        .. footbibliography::
 
         """
         data_max = data.max()
@@ -658,8 +642,9 @@ class IvimModelVP(ReconstModel):
         First calculates the Moore-Penrose inverse of the input `phi` and takes
         a dot product with the measured signal. The result obtained is again
         multiplied with `phi` to complete the projection of the variable into
-        a transformed space. (see [1]_ and [2]_ for thorough discussion on
-        Variable Projections and relevant cost functions).
+        a transformed space. (see :footcite:p:`Fadnavis2019` and
+        :footcite:p:`Farooq2016` for thorough discussion on Variable Projections
+        and relevant cost functions).
 
         Parameters
         ----------
@@ -682,13 +667,7 @@ class IvimModelVP(ReconstModel):
 
         References
         ----------
-        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
+        .. footbibliography::
 
         """
         # Moore-Penrose

@@ -349,8 +349,8 @@ def cluster_confidence(
     in a bundle of 100 streamlines that follow similar
     pathways has a high cci.
 
-    See: Jordan et al. 2017
-    (Based on streamline MDF distance from Garyfallidis et al. 2012)
+    See :footcite:p:`Jordan2018` (based on the streamline MDF distance from
+    :footcite:t:`Garyfallidis2012a`).
 
     Parameters
     ----------
@@ -381,13 +381,7 @@ def cluster_confidence(
 
     References
     ----------
-    [Jordan17] Jordan K. Et al., Cluster Confidence Index: A Streamline-Wise
-    Pathway Reproducibility Metric for Diffusion-Weighted MRI Tractography,
-    Journal of Neuroimaging, vol 28, no 1, 2017.
-
-    [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-    tractography simplification, Frontiers in Neuroscience,
-    vol 6, no 175, 2012.
+    .. footbibliography::
 
     """
 
