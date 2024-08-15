@@ -37,6 +37,17 @@ logger = logging.getLogger("histo_resdnn")
 class HistoResDNN:
     """
     This class is intended for the ResDNN Histology Network model.
+
+    ResDNN :footcite:p:`Nath2019` is a deep neural network that employs residual
+    blocks deep neural network to predict ground truth SH coefficients from SH
+    coefficients computed using DWI data. To this end, authors considered
+    histology FOD-computed SH coefficients (obtained from ex vivo non-human
+    primate acquisitions) as their ground truth, and the DWI-computed SH
+    coefficients as their target.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
@@ -45,7 +56,7 @@ class HistoResDNN:
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
-        ('tournier07') like the proposed model in [1]_, [2]_.
+        ('tournier07') like the proposed model in :footcite:p:`Nath2019`.
 
         To obtain the pre-trained model, use::
         >>> resdnn_model = HistoResDNN() # skip if not have_tf
@@ -72,16 +83,7 @@ class HistoResDNN:
 
         References
         ----------
-        ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-            C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-            Deep learning reveals untapped information for local white-matter
-            fiber reconstruction in diffusion-weighted MRI.
-            Magnetic resonance imaging, 62, 220-227.
-        ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-            P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-            Deep learning captures more accurate diffusion fiber orientations
-            distributions than constrained spherical deconvolution.
-            arXiv preprint arXiv:1911.07927.
+        .. footbibliography::
         """  # noqa: E501
 
         if not have_tf:

@@ -6,8 +6,9 @@ Obtaining tissue microstructure measurements from diffusion weighted imaging
 (DWI) with multiple, high b-values is crucial. However, the high noise levels
 present in these images can adversely affect the accuracy of the
 microstructural measurements. In this context, we suggest a straightforward
-denoising technique that can be applied to any DWI dataset as long as a
-low-noise, single-subject dataset is obtained using the same DWI sequence.
+denoising technique :footcite:p:`Cheng2022` that can be applied to any DWI
+dataset as long as a low-noise, single-subject dataset is obtained using the
+same DWI sequence.
 
 We created a simple 1D-CNN model with five layers, based on the 1D CNN for
 denoising speech. The model consists of two convolutional layers followed by
@@ -20,11 +21,8 @@ low-noise reference image.
 
 Reference
 ---------
-Cheng H, Vinci-Booher S, Wang J, Caron B, Wen Q, Newman S, et al.
-(2022) Denoising diffusion weighted imaging data using convolutional neural
-networks.
-PLoS ONE 17(9): e0274396. https://doi.org/10.1371/journal.pone.0274396
 
+.. footbibliography::
 """
 
 import numpy as np
