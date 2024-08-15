@@ -612,7 +612,7 @@ class PosteriorOdffpDictionaryFromFib(PosteriorOdffpDictionary):
 class OdffpModel(object):
  
     def __init__(self, gtab, odf_dict, 
-                 drop_negative_odf=True, zero_baseline_odf=True, output_dict_odf=True,
+                 drop_negative_odf=True, zero_baseline_odf=False, output_dict_odf=True,
                  odf_recon_model=None):
         """ODF-Fingerprinting reconstruction"""
         
