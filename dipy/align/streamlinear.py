@@ -80,7 +80,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
     This is the cost function used by the StreamlineLinearRegistration.
 
-    See :footcite:p:`Garyfallidis2014` for further details about the metric.
+    See :footcite:p:`Garyfallidis2014b` for further details about the metric.
 
     Methods
     -------
@@ -1045,7 +1045,7 @@ def slr_with_qbx(
     For efficiency, we apply the registration on cluster centroids and remove
     small clusters.
 
-    See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015` and
+    See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015` and
     :footcite:p:`Garyfallidis2018` for details about the methods involved.
 
     Parameters
@@ -1226,7 +1226,7 @@ def groupwise_slr(
     closer to each other until the procedure converges and there is no more
     improvement.
 
-    See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015` and
+    See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015` and
     :footcite:p:`Garyfallidis2018`.
 
     Parameters
