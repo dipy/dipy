@@ -18,7 +18,9 @@ The following conventions are used in that file.
   added after the year to distinguish them, e.g. ``Garyfallidis2012a``,
   ``Garyfallidis2012b``, starting with the least recent work (including works
   across groups). Within the same group, the least recent work is put closest
-  to the end of the file.
+  to the end of the file. Similarly, if multiple works of the same author
+  appeared in the same month, the name of the venue (i.e. its first letter)
+  is used to distinguish works, following the rules described for the year.
 - Strictly unnecessary (e.g. ``abstract``) or non-standard fields (``issn``)
   should be avoided.
 - Author full names (i.e. including their first names) are used, and names use
