@@ -2,7 +2,6 @@ from functools import partial
 import multiprocessing as mp
 
 import numpy as np
-import scipy
 import scipy.fft
 
 from dipy.testing.decorators import warning_for_keywords
