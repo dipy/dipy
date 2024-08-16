@@ -465,31 +465,16 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     return adc
 
 
-def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
+def directional_diffusion_variance(kt, V):
     r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
     Parameters
     ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
     V : array (g, 3)
-        g directions of a Sphere in Cartesian coordinates
-    min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physically
-        and biologicaly pluasible, and these cause artefacts in
-        kurtosis-based measures, directional kurtosis values smaller than
-        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
-        (theoretical kurtosis limit for regions that consist of water confined
-        to spherical pores [1]_)
-    adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (ADC) in all g directions of a sphere
-        for a single voxel.
-    adv : ndarray(g,) (optional)
-        Apparent diffusion variance coefficient (advc) in all g directions of
-        a sphere for a single voxel.
+        g directions of a Sphere in Cartesian coordinates.
 
     Returns
     -------
