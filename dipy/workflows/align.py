@@ -1009,7 +1009,7 @@ class BundleWarpFlow(Workflow):
         out_dist : string, optional
             Filename of MDF distance matrix.
         out_matched_pairs : string, optional
-            Filename of matched pairs; treamline correspondences between two
+            Filename of matched pairs; streamline correspondences between two
             bundles.
 
         References

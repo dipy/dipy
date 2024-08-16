@@ -316,7 +316,7 @@ fig2.savefig("MSDKI_invivo.png")
 #
 # This figure shows that the contrast of in-vivo MSD and MSK maps (upper
 # panels) are similar to the contrast of MD and MSK maps (lower panels);
-# however, in the upper part we insure that direct contributions of fiber
+# however, in the upper part we ensure that direct contributions of fiber
 # dispersion were removed. The upper panels also reveal that MSDKI measures
 # are let sensitive to noise artefacts than standard DKI measures (as pointed
 # by [NetoHe2018]_), particularly one can observe that MSK maps always present

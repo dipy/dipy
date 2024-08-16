@@ -33,7 +33,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
-    """Helper function that identifies which voxels in a array have all
+    """Helper function that identifies which voxels in an array have all
     eigenvalues significantly larger than zero
 
     Parameters
@@ -2797,7 +2797,7 @@ ind_ele = {
 
 
 def Wrotate_element(kt, indi, indj, indk, indl, B):
-    r"""Compute the the specified index element of a kurtosis tensor rotated
+    r"""Compute the specified index element of a kurtosis tensor rotated
     to the coordinate system basis B
 
     Parameters
@@ -2822,7 +2822,7 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
 
     Notes
     -----
-    It is assumed that initial kurtosis tensor elementes are defined on the
+    It is assumed that initial kurtosis tensor elements are defined on the
     Cartesian coordinate system.
 
     References

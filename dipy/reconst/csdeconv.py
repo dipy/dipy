@@ -679,7 +679,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
                 solve $Qf_n = z$ using Cholesky decomposition
 
-    We'd like to thanks Donald Tournier for his help with describing and
+    We would like to thank Donald Tournier for his help with describing and
     implementing this algorithm.
 
     References

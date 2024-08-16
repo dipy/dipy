@@ -613,7 +613,7 @@ def nls_iter(
         The minimum signal value. Needs to be a strictly positive
         number.
     cholesky : bool, optional
-        If true it uses Cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
         Default: False
     f_transform : bool, optional
@@ -762,7 +762,7 @@ def nls_fit_tensor(
         0 and 1.
         Default: True
     cholesky : bool, optional
-        If true it uses Cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
         Default: False
     jac : bool

@@ -418,13 +418,13 @@ class MeanDiffusionKurtosisFit:
     @auto_attr
     def msd(self):
         r"""
-        Mean signal diffusitivity (MSD) calculated from the mean signal
+        Mean signal diffusivity (MSD) calculated from the mean signal
         Diffusion Kurtosis Model.
 
         Returns
         -------
         msd : ndarray
-            Calculated signal mean diffusitivity.
+            Calculated signal mean diffusivity.
 
         References
         ----------
