@@ -367,7 +367,7 @@ def wls_fit_tensor(
         be analyzed that has the shape data.shape[:-1]
     min_signal : float
         The minimum signal value. Needs to be a strictly positive
-        number. Default: 1.0e-6.
+        number.
     piterations : inter, optional
         Number of iterations used to refine the precision of f. Default is set
         to 3 corresponding to a precision of 0.01.
@@ -468,12 +468,10 @@ def _nls_err_func(
     cholesky : bool, optional
         If true, the diffusion tensor elements were decomposed using Cholesky
         decomposition. See fwdti.nls_fit_tensor
-        Default: False
     f_transform : bool, optional
         If true, the water volume fraction was converted to
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
         See fwdti.nls_fit_tensor
-        Default: True
 
     References
     ----------
@@ -555,8 +553,7 @@ def _nls_jacobian_func(
     f_transform : bool, optional
         If true, the water volume fraction was converted to
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
-        See fwdti.nls_fit_tensor
-        Default: True
+        See fwdti.nls_fit_tensor.
     """
     tensor = np.copy(tensor_elements)
     if f_transform:
@@ -619,14 +616,12 @@ def nls_iter(
     cholesky : bool, optional
         If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
-        Default: False
     f_transform : bool, optional
         If true, the water volume fractions is converted during the convergence
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
         0 and 1.
-        Default: True
     jac : bool, optional
-        Use the Jacobian? Default: False
+        True to use the Jacobian.
     weighting: str, optional
         the weighting scheme to use in considering the
         squared-error. Default behavior is to use uniform weighting. Other
@@ -759,18 +754,16 @@ def nls_fit_tensor(
         (corresponding to 90% of the free water diffusion value).
     min_signal : float, optional
         The minimum signal value. Needs to be a strictly positive
-        number. Default: 1.0e-6.
+        number.
     f_transform : bool, optional
         If true, the water volume fractions is converted during the convergence
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
         0 and 1.
-        Default: True
     cholesky : bool, optional
         If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
-        Default: False
     jac : bool, optional
-        Use the Jacobian? Default: False
+        True to use the Jacobian.
     weighting: str, optional
         the weighting scheme to use in considering the
         squared-error. Default behavior is to use uniform weighting. Other

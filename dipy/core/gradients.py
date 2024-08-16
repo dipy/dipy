@@ -39,7 +39,6 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------
@@ -1015,7 +1014,6 @@ def unique_bvals_magnitude(bvals, *, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------

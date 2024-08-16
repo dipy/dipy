@@ -42,7 +42,7 @@ cdef class EnhancementKernel:
             Diffusion time
         force_recompute : boolean, optional
             Always compute the look-up table even if it is available
-            in cache. Default is False.
+            in cache.
         orientations : integer or Sphere object, optional
             Specify the number of orientations to be used with
             electrostatic repulsion, or provide a Sphere object.

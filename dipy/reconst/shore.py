@@ -101,7 +101,7 @@ class ShoreModel(Cache):
             positivity.
         pos_radius : float, optional
             Radius of the grid of the EAP in which enforce positivity in
-            millimeters. By default 20e-03 mm.
+            millimeters.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for

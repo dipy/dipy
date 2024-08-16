@@ -198,13 +198,11 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             a MultiShellResponse object on the side.
         reg_sphere : Sphere, optional
             sphere used to build the regularization B matrix.
-            Default: 'symmetric362'.
         sh_order_max : int, optional
-            Maximal spherical harmonics order (l). Default: 8
+            Maximal spherical harmonics order (l).
         iso: int, optional
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
-            Default: 2
         tol : int, optional
             Tolerance gap for b-values clustering.
 
@@ -323,7 +321,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             The diffusion data to fit the model on.
         verbose : bool, optional
             Whether to show warnings when a SolverError appears or not.
-            Default: True
         """
         coeff = self.fitter(data)
         if verbose:

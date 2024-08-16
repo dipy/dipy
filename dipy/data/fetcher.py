@@ -2605,14 +2605,14 @@ def fetch_hcp(
     subjects : list
         Each item is an integer, identifying one of the HCP subjects
     hcp_bucket : string, optional
-        The name of the HCP S3 bucket. Default: "hcp-openaccess"
+        The name of the HCP S3 bucket.
     profile_name : string, optional
-        The name of the AWS profile used for access. Default: "hcp"
+        The name of the AWS profile used for access.
     path : string, optional
         Path to save files into. Defaults to the value of the ``DIPY_HOME``
         environment variable is set; otherwise, defaults to ``$HOME/.dipy``.
     study : string, optional
-        Which HCP study to grab. Default: 'HCP_1200'
+        Which HCP study to grab.
     aws_access_key_id : string, optional
         AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
         set to False.
@@ -2838,7 +2838,7 @@ def fetch_hbn(subjects, *, path=None, include_afq=False):
         environment variable is set; otherwise, defaults to ``$HOME/.dipy``.
 
     include_afq : bool, optional
-        Whether to include pyAFQ derivatives. Default: False
+        Whether to include pyAFQ derivatives
 
     Returns
     -------

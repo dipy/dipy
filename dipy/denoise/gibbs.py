@@ -250,14 +250,11 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
     slice_axis : int (0, 1, or 2)
         Data axis corresponding to the number of acquired slices.
-        Default is set to the third axis.
     n_points : int, optional
         Number of neighbour points to access local TV (see note).
-        Default is set to 3.
     inplace : bool, optional
         If True, the input data is replaced with results. Otherwise, returns
         a new array.
-        Default is set to True.
     num_processes : int or None, optional
         Split the calculation to a pool of children processes. This only
         applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal

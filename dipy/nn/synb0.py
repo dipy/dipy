@@ -159,7 +159,6 @@ class Synb0:
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
         """
 
         if not have_tf:

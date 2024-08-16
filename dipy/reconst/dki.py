@@ -534,7 +534,7 @@ def directional_kurtosis(
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
-        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        `min_kurtosis` are replaced with `min_kurtosis`.
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores :footcite:p:`Jensen2005`).
     adc : ndarray(g,), optional
@@ -969,7 +969,7 @@ def radial_kurtosis(
     max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
     analytical : bool, optional
         If True, RK is calculated using its analytical solution, otherwise an
         exact numerical estimator is used (see Notes). Default is set to True.
@@ -1108,12 +1108,11 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
     max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
     analytical : bool, optional
         If True, AK is calculated from rotated diffusion kurtosis tensor,
         otherwise it will be computed from the apparent diffusion kurtosis
         values along the principal axis of the diffusion tensor (see notes).
-        Default is set to True.
 
     Returns
     -------
@@ -1394,7 +1393,8 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
     max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
+
     Returns
     -------
     mkt : array
@@ -1909,7 +1909,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
         S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         References
         ----------
@@ -2375,7 +2375,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----
@@ -2484,7 +2484,7 @@ def ls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -2561,7 +2561,7 @@ def cls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise

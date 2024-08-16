@@ -74,12 +74,11 @@ class HistoResDNN:
             Maximum SH order (l) in the SH fit.  For ``sh_order_max``, there
             will be
             ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients
-            for a symmetric basis. Default: 8
+            for a symmetric basis.
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
         verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
 
         References
         ----------

@@ -251,13 +251,13 @@ def sparse_nnls(
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
 
-    momentum : float, optional (default: 1).
+    momentum : float, optional
         The persistence of the gradient.
 
-    step_size : float, optional (default: 0.01).
+    step_size : float, optional
         The increment of parameter update in each iteration
 
-    non_neg : Boolean, optional (default: True)
+    non_neg : Boolean, optional
         Whether to enforce non-negativity of the solution.
 
     check_error_iter : int, optional
@@ -498,7 +498,6 @@ class PositiveDefiniteLeastSquares:
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary
             constrained optimization calls.
-            Default: False
         kwargs : keyword arguments
             Arguments passed to the CVXPY solve method.
 

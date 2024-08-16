@@ -16,7 +16,7 @@ def load_nifti_data(fname, *, as_ndarray=True):
     as_ndarray: bool, optional
         convert nibabel ArrayProxy to a numpy.ndarray.
         If you want to save memory and delay this casting, just turn this
-        option to False (default: True)
+        option to False.
 
     Returns
     -------
@@ -48,18 +48,18 @@ def load_nifti(
         Full path to a nifti file.
 
     return_img : bool, optional
-        Whether to return the nibabel nifti img object. Default: False
+        Whether to return the nibabel nifti img object.
 
     return_voxsize: bool, optional
-        Whether to return the nifti header zooms. Default: False
+        Whether to return the nifti header zooms.
 
     return_coords : bool, optional
-        Whether to return the nifti header aff2axcodes. Default: False
+        Whether to return the nifti header aff2axcodes.
 
     as_ndarray: bool, optional
         convert nibabel ArrayProxy to a numpy.ndarray.
         If you want to save memory and delay this casting, just turn this
-        option to False (default: True)
+        option to False.
 
     Returns
     -------

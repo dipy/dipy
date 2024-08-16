@@ -552,7 +552,7 @@ def ls_fit_cti(
     inverse_design_matrix : array (43, g)
         Inverse of the design matrix.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise

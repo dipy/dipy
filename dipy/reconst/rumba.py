@@ -91,19 +91,17 @@ class RumbaSDModel(OdfModel):
         voxelwise : bool, optional
             If true, performs a voxelwise fit. If false, performs a global fit
             on the entire brain at once. The global fit requires a 4D brain
-            volume in `fit`. Default: True
+            volume in `fit`.
         use_tv : bool, optional
             If true, applies total variation regularization. This only takes
             effect in a global fit (`voxelwise` is set to `False`). TV can only
             be applied to 4D brain volumes with no singleton dimensions.
-            Default: False
         sphere : Sphere, optional
             Sphere on which to construct fODF. If None, uses `repulsion724`.
-            Default: None
         verbose : bool, optional
             If true, logs updates on estimated signal-to-noise ratio after each
             iteration. This only takes effect in a global fit (`voxelwise` is
-            set to `False`). Default: False
+            set to `False`).
 
         References
         ----------
@@ -850,20 +848,19 @@ def rumba_deconv_global(
         fit at these voxels (0 elsewhere).
     n_iter : int, optional
         Number of iterations for fODF estimation. Must be a positive int.
-        Default: 600
     recon_type : {'smf', 'sos'}, optional
         MRI reconstruction method: spatial matched filter (SMF) or
         sum-of-squares (SoS). SMF reconstruction generates Rician noise while
-        SoS reconstruction generates Noncentral Chi noise. Default: 'smf'
+        SoS reconstruction generates Noncentral Chi noise.
     n_coils : int, optional
         Number of coils in MRI scanner -- only relevant in SoS reconstruction.
-        Must be a positive int. Default: 1
+        Must be a positive int.
     use_tv : bool, optional
         If true, applies total variation regularization. This requires a brain
-        volume with no singleton dimensions. Default: True
+        volume with no singleton dimensions.
     verbose : bool, optional
         If true, logs updates on estimated signal-to-noise ratio after each
-        iteration. Default: False
+        iteration.
 
     Returns
     -------

@@ -208,7 +208,7 @@ def dkimicro_prediction(params, gtab, S0=1):
         The gradient table for this prediction
     S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
+        voxels
 
     Returns
     -------
@@ -449,7 +449,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
 
         S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----

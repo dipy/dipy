@@ -238,7 +238,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
         The gradient table for this prediction
     S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
+        voxels.
 
     Notes
     -----
@@ -366,7 +366,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             The parameters of the mean signal diffusion kurtosis model
         S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Returns
         -------
