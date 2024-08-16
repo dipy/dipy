@@ -77,7 +77,7 @@ class HistoResDNN:
             for a symmetric basis. Default: 8
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
             Default: False
 
@@ -185,7 +185,7 @@ class HistoResDNN:
         gtab : GradientTable class instance
             The acquisition scheme matching the data (must contain at least
             one b0)
-        mask : np.ndarray (optional)
+        mask : np.ndarray, optional
             Binary mask of the brain to avoid unnecessary computation and
             unreliable prediction outside the brain.
             Default: Compute prediction only for nonzero voxels (with at least

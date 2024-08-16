@@ -260,14 +260,14 @@ def afq_profile(
         The voxel_to_rasmm matrix, typically from a NIFTI file.
     n_points: int, optional
         The number of points to sample along the bundle. Default: 100.
-    orient_by: streamline, optional.
+    orient_by: streamline, optional
         A streamline to use as a standard to orient all of the streamlines in
         the bundle according to.
-    weights : 1D array or 2D array or callable (optional)
+    weights : 1D array or 2D array or callable, optional
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
-    profile_stat : callable
+    profile_stat : callable, optional
         The statistic used to average the profile across streamlines.
         If weights is not None, this must take weights as a keyword argument.
         The default, np.average, is the same as np.mean but takes weights

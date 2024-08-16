@@ -128,35 +128,35 @@ class MapmriModel(ReconstModel, Cache):
             everywhere using the constraints of :footcite:p:`Merlet2013`. Global
             constraints are currently supported for anisotropic_scaling=True and
             for radial_order <= 10.
-        pos_grid : integer,
+        pos_grid : int, optional
             The number of points in the grid that is used in the local
             positivity constraint.
-        pos_radius : float or string,
+        pos_radius : float or string, optional
             If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
             'adaptive', the maximum distance is dependent on the estimated
             tissue diffusivity. If 'infinity', semidefinite programming
             constraints are used :footcite:p:`DelaHaije2020`.
-        anisotropic_scaling : bool,
+        anisotropic_scaling : bool, optional
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
-        eigenvalue_threshold : float,
+        eigenvalue_threshold : float, optional
             Sets the minimum of the tensor eigenvalues in order to avoid
             stability problem.
-        bval_threshold : float,
+        bval_threshold : float, optional
             Sets the b-value threshold to be used in the scale factor
             estimation. In order for the estimated non-Gaussianity to have
             meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
-        dti_scale_estimation : bool,
+        dti_scale_estimation : bool, optional
             Whether or not DTI fitting is used to estimate the isotropic scale
             factor for isotropic MAP-MRI.
             When set to False the algorithm presets the isotropic tissue
             diffusivity to static_diffusivity. This vastly increases fitting
             speed but at the cost of slightly reduced fitting quality. Can
             still be used in combination with regularization and constraints.
-        static_diffusivity : float,
+        static_diffusivity : float, optional
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
             D=0.7e-3 :footcite:p:`Fick2016b`.

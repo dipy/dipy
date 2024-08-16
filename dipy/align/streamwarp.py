@@ -73,7 +73,7 @@ def bundlewarp(
     moving : Streamlines
         Target bundle that will be moved/registered to match the static bundle
 
-    dist : float, optional.
+    dist : float, optional
         Precomputed distance matrix (default None)
 
     alpha : float, optional

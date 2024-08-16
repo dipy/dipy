@@ -77,7 +77,7 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
-    mask : ndarray (optional)
+    mask : ndarray, optional
         A boolean mask indicating the voxels identified as pure noise.
 
     Notes
@@ -176,27 +176,27 @@ def _piesno_3D(
     N : int
         The number of phase array coils of the MRI scanner.
 
-    alpha : float (optional)
+    alpha : float, optional
         Probabilistic estimation threshold for the gamma function.
         Default: 0.01.
 
-    step : int (optional)
+    step : int, optional
         number of initial estimates for sigma to try. Default: 100.
 
-    itermax : int (optional)
+    itermax : int, optional
         Maximum number of iterations to execute if convergence
         is not reached. Default: 100.
 
-    eps : float (optional)
+    eps : float, optional
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
         Default: 1e-5.
 
-    return_mask : bool (optional)
+    return_mask : bool, optional
         If True, return a mask identifying all the pure noise voxel
         that were found. Default: False.
 
-    initial_estimation : float (optional)
+    initial_estimation : float, optional
         Upper bound for the initial estimation of sigma. default : None,
         which computes the optimal quantile for N.
 

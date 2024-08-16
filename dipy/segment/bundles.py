@@ -98,9 +98,9 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     expert_bundle : Streamlines
         Model bundle used as reference while extracting similar type bundle
         from input tractogram
-    nb_pts : integer (default 20)
+    nb_pts : integer, optional
         Discretizing streamlines to have nb_pts number of points
-    threshold : float (default 6)
+    threshold : float, optional
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly

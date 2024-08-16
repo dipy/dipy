@@ -196,12 +196,12 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             for the response function without diffusion weighting (S0). Note
             that in order to use more than three compartments, one must create
             a MultiShellResponse object on the side.
-        reg_sphere : Sphere (optional)
+        reg_sphere : Sphere, optional
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
-        sh_order_max : int (optional)
+        sh_order_max : int, optional
             Maximal spherical harmonics order (l). Default: 8
-        iso: int (optional)
+        iso: int, optional
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
             Default: 2
@@ -321,7 +321,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         ----------
         data : ndarray
             The diffusion data to fit the model on.
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show warnings when a SolverError appears or not.
             Default: True
         """

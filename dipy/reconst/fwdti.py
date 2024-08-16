@@ -455,10 +455,10 @@ def _nls_err_func(
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
-    weighting : str (optional).
+    weighting : str, optional
          Whether to use the Geman-McClure weighting criterion (see
         :footcite:p:`NetoHenriques2017` for details)
-    sigma : float or float array (optional)
+    sigma : float or float array, optional
         If 'sigma' weighting is used, we will weight the error function
         according to the background noise estimated either in aggregate over
         all directions (when a float is provided), or to an estimate of the
@@ -613,7 +613,7 @@ def nls_iter(
         diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
         parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
         (corresponding to 90% of the free water diffusion value).
-    min_signal : float
+    min_signal : float, optional
         The minimum signal value. Needs to be a strictly positive
         number.
     cholesky : bool, optional
@@ -625,7 +625,7 @@ def nls_iter(
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
         0 and 1.
         Default: True
-    jac : bool
+    jac : bool, optional
         Use the Jacobian? Default: False
     weighting: str, optional
         the weighting scheme to use in considering the
@@ -757,7 +757,7 @@ def nls_fit_tensor(
         diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
         parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
         (corresponding to 90% of the free water diffusion value).
-    min_signal : float
+    min_signal : float, optional
         The minimum signal value. Needs to be a strictly positive
         number. Default: 1.0e-6.
     f_transform : bool, optional
@@ -769,7 +769,7 @@ def nls_fit_tensor(
         If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
         Default: False
-    jac : bool
+    jac : bool, optional
         Use the Jacobian? Default: False
     weighting: str, optional
         the weighting scheme to use in considering the

@@ -144,7 +144,7 @@ class IsotropicFit(ReconstFit):
 
         Parameters
         ----------
-        gtab : a GradientTable class instance (optional)
+        gtab : a GradientTable class instance, optional
             Defaults to use the gtab from the IsotropicModel from which this
             fit was derived.
 
@@ -209,7 +209,7 @@ class ExponentialIsotropicFit(IsotropicFit):
 
         Parameters
         ----------
-        gtab : a GradientTable class instance (optional)
+        gtab : a GradientTable class instance, optional
             Defaults to use the gtab from the IsotropicModel from which this
             fit was derived.
         """

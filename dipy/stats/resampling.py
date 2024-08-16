@@ -23,14 +23,14 @@ def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
     ----------
     x : ndarray (N, 1)
         Observable sample to resample. N should be reasonably large.
-    statistic : method (optional)
+    statistic : method, optional
         Method to calculate the desired statistic. (Default: calculate
         bootstrap standard error)
-    B : integer (optional)
+    B : integer, optional
         Total number of bootstrap resamples in bootstrap pdf. (Default: 1000)
-    alpha : float (optional)
+    alpha : float, optional
         Percentile for confidence interval of the statistic. (Default: 0.05)
-    rng : numpy.random.Generator
+    rng : numpy.random.Generator, optional
         Random number generator to use for sampling. If None, the generator
         is initialized using the default BitGenerator.
 
@@ -92,7 +92,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
         proportions (flat probability densities vector)
     alpha : float (0, 1)
         Desired confidence interval initial endpoint (Default: 0.05)
-    eps : float (optional)
+    eps : float, optional
         Specifies step size in calculating numerical derivative T' and
         T''. Default: 1e-5
 
@@ -233,7 +233,7 @@ def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
     pdf : ndarray (N, 1)
         Probability distribution function to resample. N should be reasonably
         large.
-    statistic : method (optional)
+    statistic : method, optional
         Method to calculate the desired statistic. (Default: calculate
         standard deviation)
     M : integer (M < N)

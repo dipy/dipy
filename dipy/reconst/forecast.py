@@ -76,19 +76,19 @@ class ForecastModel(OdfModel, Cache):
         ----------
         gtab : GradientTable,
             gradient directions and bvalues container class.
-        sh_order_max : unsigned int,
+        sh_order_max : unsigned int, optional
             an even integer that represent the maximal SH order ($l$) of the
             basis (max 12)
-        lambda_lb: float,
+        lambda_lb: float, optional
             Laplace-Beltrami regularization weight.
-        dec_alg : str,
+        dec_alg : str, optional
             Spherical deconvolution algorithm. The possible values are Weighted Least Squares ('WLS'),
             Positivity Constraints using CVXPY ('POS') and the Constraint
             Spherical Deconvolution algorithm ('CSD'). Default is 'CSD'.
-        sphere : array, shape (N,3),
+        sphere : array, shape (N,3), optional
             sphere points where to enforce positivity when 'POS' or 'CSD'
             dec_alg are selected.
-        lambda_csd : float,
+        lambda_csd : float, optional
             CSD regularization weight.
 
         References

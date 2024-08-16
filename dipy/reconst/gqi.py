@@ -26,9 +26,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         ----------
         gtab : object,
             GradientTable
-        method : str,
+        method : str, optional
             'standard' or 'gqi2'
-        sampling_length : float,
+        sampling_length : float, optional
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
         normalize_peaks : bool, optional
             True to normalize peaks.

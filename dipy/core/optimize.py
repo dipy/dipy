@@ -260,15 +260,15 @@ def sparse_nnls(
     non_neg : Boolean, optional (default: True)
         Whether to enforce non-negativity of the solution.
 
-    check_error_iter : int (default:10)
+    check_error_iter : int, optional
         How many rounds to run between error evaluation for
         convergence-checking.
 
-    max_error_checks : int (default: 10)
+    max_error_checks : int, optional
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_sse : float (default: 0.99)
+    converge_on_sse : float, optional
       a percentage improvement in SSE that is required each time to say
       that things are still going well.
 
@@ -397,9 +397,9 @@ class PositiveDefiniteLeastSquares:
         ----------
         m : int
             Positive int indicating the number of regressors.
-        A : array (t = m + k + 1, p, p) (optional)
+        A : array (t = m + k + 1, p, p), optional
             Constraint matrices $A$.
-        L : array (m, m) (optional)
+        L : array (m, m), optional
             Regularization matrix $L$.
             Default: None.
 
@@ -493,7 +493,7 @@ class PositiveDefiniteLeastSquares:
             Design matrix.
         measurements : array (n)
             Measurements.
-        check : boolean (optional)
+        check : boolean, optional
             If True check whether the unconstrained optimization solution
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary

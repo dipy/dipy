@@ -158,7 +158,7 @@ class DeepN4:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
             Default: False
         """
