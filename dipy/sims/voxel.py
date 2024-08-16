@@ -201,7 +201,7 @@ def sticks_and_ball(
 
 
 def callaghan_perpendicular(q, radius):
-    r"""Calculates the perpendicular diffusion signal E(q) in a cylinder of
+    """Calculates the perpendicular diffusion signal E(q) in a cylinder of
     radius R using the Soderman model.
 
     Assumes that the pulse length is infinitely short and the diffusion time is
@@ -268,7 +268,7 @@ def cylinders_and_ball_soderman(
     fractions=(35, 35),
     snr=20,
 ):
-    r"""Calculates the three-dimensional signal attenuation E(q) originating
+    """Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation.
 
     The diffusion signal is assumed to be separable  perpendicular and parallel

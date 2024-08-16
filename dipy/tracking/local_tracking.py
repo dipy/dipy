@@ -295,7 +295,7 @@ class ParticleFilteringTracking(LocalTracking):
         randomize_forward_direction=False,
         initial_directions=None,
     ):
-        r"""A streamline generator using the particle filtering tractography
+        """A streamline generator using the particle filtering tractography
         method.
 
         See :footcite:p:`Girard2014` for further details about the method.
