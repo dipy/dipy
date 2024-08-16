@@ -184,7 +184,7 @@ def bundle_shape_similarity(
 
     Returns
     -------
-    ba_value : Float
+    ba_value : float
         Bundle similarity score between two tracts
 
     References
