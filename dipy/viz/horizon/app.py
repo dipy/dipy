@@ -759,8 +759,8 @@ def horizon(
     Parameters
     ----------
     tractograms : sequence of StatefulTractograms
-            StatefulTractograms are used for making sure that the coordinate
-            systems are correct
+        StatefulTractograms are used for making sure that the coordinate
+        systems are correct
     images : sequence of tuples
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics

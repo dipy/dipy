@@ -631,7 +631,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=N
     Returns
     -------
     wijkl : float
-            kurtosis tensor element of index i, j, k, l
+        kurtosis tensor element of index i, j, k, l
 
     Notes
     -----
