@@ -102,6 +102,7 @@ class QtdmriModel(Cache):
         cvxpy solver name. Optionally optimize the positivity constraint
         with a particular cvxpy solver. See https://www.cvxpy.org/ for
         details.
+        Default: None (cvxpy chooses its own solver)
 
     References
     ----------
