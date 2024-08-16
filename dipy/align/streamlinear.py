@@ -1057,7 +1057,9 @@ def slr_with_qbx(
     Parameters
     ----------
     static : Streamlines
-    moving : Streamlines
+        Fixed or reference set of streamlines.
+    moving : streamlines
+        Moving streamlines.
 
     x0 : str, optional.
         rigid, similarity or affine transformation model (default affine)

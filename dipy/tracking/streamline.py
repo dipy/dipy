@@ -21,11 +21,14 @@ def unlist_streamlines(streamlines):
     Parameters
     ----------
     streamlines: sequence
+        Streamlines.
 
     Returns
     -------
     points : array
+        Streamlines' points.
     offsets : array
+        Streamlines' offsets.
 
     """
 
@@ -49,11 +52,14 @@ def relist_streamlines(points, offsets):
     Parameters
     ----------
     points : array
+        Streamlines' points.
     offsets : array
+        Streamlines' offsets.
 
     Returns
     -------
     streamlines: sequence
+        Streamlines.
     """
 
     streamlines = [points[0 : offsets[0]]]

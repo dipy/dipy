@@ -2023,6 +2023,8 @@ class DiffusionKurtosisFit(TensorFit):
         Parameters
         ----------
         sphere : Sphere class instance
+            Sphere providing sample directions to compute the apparent kurtosis
+            coefficient.
 
         Returns
         -------

@@ -157,7 +157,10 @@ class SlrWithQbxFlow(Workflow):
         Parameters
         ----------
         static_files : string
+            List of reference/fixed bundle tractograms.
         moving_files : string
+            List of target bundle tractograms that will be moved/registered to
+            match the static bundles.
         x0 : string, optional
             rigid, similarity or affine transformation model.
         rm_small_clusters : int, optional
@@ -179,6 +182,7 @@ class SlrWithQbxFlow(Workflow):
         nb_pts : int, optional
             Number of points for discretizing each streamline.
         progressive : boolean, optional
+            True to enable progressive registration.
         out_dir : string, optional
             Output directory. (default current directory)
         out_moved : string, optional

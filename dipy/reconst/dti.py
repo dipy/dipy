@@ -1203,6 +1203,8 @@ class TensorFit:
         Parameters
         ----------
         sphere : Sphere class instance
+            Sphere providing sample directions to compute the apparent diffusion
+            coefficient.
 
         Returns
         -------
