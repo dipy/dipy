@@ -10,13 +10,19 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_raises,
 )
+import pytest
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.dki import common_fit_methods
 import dipy.reconst.dki_micro as dki_micro
 from dipy.reconst.dti import eig_from_lo_tri
 from dipy.sims.voxel import _check_directions, multi_tensor, multi_tensor_dki
+from dipy.utils.optpkg import optional_package
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
 FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
@@ -89,6 +95,18 @@ def teardown_module():
     global gtab_2s, DWIsim, DWIsim_all_taylor, FIE, RDI, ADI, ADE, Tor, RDE
     gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
     FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
+
+
+@needs_cvxpy
+def test_fit_selection():
+    for model in [
+        dki_micro.KurtosisMicrostructureModel,
+        dki_micro.DiffusionKurtosisModel,
+    ]:
+        for name, method in common_fit_methods.items():
+            model_instance = model(gtab_2s, fit_method=name)
+
+            assert model_instance.fit_method == method
 
 
 def test_single_fiber_model():
