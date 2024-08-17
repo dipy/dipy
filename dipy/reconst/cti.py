@@ -105,7 +105,7 @@ def split_cti_params(cti_params):
 
     Parameters
     ----------
-        params: numpy.ndarray (..., 48)
+    cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
         Parameters are ordered as follows:
 

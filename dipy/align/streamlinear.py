@@ -582,7 +582,7 @@ class StreamlineRegistrationMap:
 
         Parameters
         ----------
-        matrix : array,
+        matopt : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
 
@@ -592,7 +592,7 @@ class StreamlineRegistrationMap:
         fopt : float,
             final value of the metric
 
-        matrix_history : array
+        matopt_history : array
             All transformation matrices created during the optimization
 
         funcs : int,
