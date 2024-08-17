@@ -342,16 +342,6 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         Parameters
         ----------
-        params: numpy.ndarray (...,43)
-                All parameters estimated from the correlation tensor model.
-                Parameters are ordered as follows:
-
-                1. Three diffusion tensor's eigenvalues
-                2. Three lines of the eigenvector matrix each containing the
-                   first, second and third coordinates of the eigenvector
-                3. Fifteen elements of the kurtosis tensor
-                4. Twenty-One elements of the covariance tensor
-
         gtab1: dipy.core.gradients.GradientTable
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
