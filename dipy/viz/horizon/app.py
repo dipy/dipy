@@ -564,7 +564,9 @@ class Horizon:
         if len(self.pams) > 0:
             if self.images:
                 sync_peaks = check_peak_size(
-                    self.pams, self.images[0][0].shape[:3], sync_slices
+                    self.pams,
+                    ref_img_shape=self.images[0][0].shape[:3],
+                    sync_imgs=sync_slices,
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
@@ -831,23 +833,23 @@ def horizon(
     """
 
     hz = Horizon(
-        tractograms,
-        images,
-        pams,
-        surfaces,
-        cluster,
-        rgb,
-        cluster_thr,
-        random_colors,
-        length_gt,
-        length_lt,
-        clusters_gt,
-        clusters_lt,
-        world_coords,
-        interactive,
-        out_png,
-        recorded_events,
-        return_showm,
+        tractograms=tractograms,
+        images=images,
+        pams=pams,
+        surfaces=surfaces,
+        cluster=cluster,
+        rgb=rgb,
+        cluster_thr=cluster_thr,
+        random_colors=random_colors,
+        length_gt=length_gt,
+        length_lt=length_lt,
+        clusters_gt=clusters_gt,
+        clusters_lt=clusters_lt,
+        world_coords=world_coords,
+        interactive=interactive,
+        out_png=out_png,
+        recorded_events=recorded_events,
+        return_showm=return_showm,
         bg_color=bg_color,
         order_transparent=order_transparent,
         buan=buan,

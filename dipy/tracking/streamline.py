@@ -401,7 +401,7 @@ def cluster_confidence(
         )
 
     # calculate the pairwise MDF distance between all streamlines in dataset
-    subsamp_sls = set_number_of_points(streamlines, subsample)
+    subsamp_sls = set_number_of_points(streamlines, nb_points=subsample)
 
     cci_score_mtrx = np.zeros([len(subsamp_sls)])
 
@@ -591,8 +591,8 @@ def orient_by_streamline(
 
     """
     # Start by resampling, so that distance calculation is easy:
-    fgarray = set_number_of_points(streamlines, n_points)
-    std_array = set_number_of_points([standard], n_points)
+    fgarray = set_number_of_points(streamlines, nb_points=n_points)
+    std_array = set_number_of_points([standard], nb_points=n_points)
 
     if as_generator:
         if in_place:

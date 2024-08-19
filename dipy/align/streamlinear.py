@@ -134,7 +134,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             self.static_centered_pts,
             self.moving_centered_pts,
             self.block_size,
-            self.num_threads,
+            num_threads=self.num_threads,
         )
 
 
@@ -839,7 +839,9 @@ def bundle_min_distance_fast(t, static, moving, block_size, *, num_threads=None)
     rows = static.shape[0] // block_size
     cols = moving.shape[0] // block_size
 
-    return _bundle_minimum_distance(static, moving, rows, cols, block_size, num_threads)
+    return _bundle_minimum_distance(
+        static, moving, rows, cols, block_size, num_threads=num_threads
+    )
 
 
 def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
@@ -1147,7 +1149,7 @@ def slr_with_qbx(
     else:
         rstreamlines1 = streamlines1
 
-    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_points=nb_pts)
 
     rstreamlines1._data.astype("f4")
 
@@ -1161,7 +1163,7 @@ def slr_with_qbx(
     else:
         rstreamlines2 = streamlines2
 
-    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_points=nb_pts)
     rstreamlines2._data.astype("f4")
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
@@ -1324,10 +1326,10 @@ def groupwise_slr(
 
         if select_random is not None:
             bundles[i] = select_random_set_of_streamlines(
-                bundles[i], select_random, rng
+                bundles[i], select_random, rng=rng
             )
 
-        bundles[i] = set_number_of_points(bundles[i], nb_pts)
+        bundles[i] = set_number_of_points(bundles[i], nb_points=nb_pts)
 
         bundle, shift = center_streamlines(bundles[i])
         aff_list.append(compose_matrix44(-shift))
@@ -1386,7 +1388,7 @@ def groupwise_slr(
                 logging.info("Registration converged {d_improve} < {tol}")
             break
 
-        pairs, excluded = get_unique_pairs(n_bundle, pairs)
+        pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)
 
     # Move bundles just once at the end
     for i, aff in enumerate(aff_list):

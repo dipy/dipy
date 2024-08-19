@@ -92,7 +92,7 @@ cdef class EnhancementKernel:
                 sphere, potential = disperse_charges(hsph_initial, 5000)
         else:
             # use default
-            sphere = get_sphere('repulsion100')
+            sphere = get_sphere(name="repulsion100")
 
         if sphere is not None:
             self.orientations_list = sphere.vertices

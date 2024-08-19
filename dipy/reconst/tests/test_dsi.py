@@ -16,9 +16,9 @@ def test_dsi():
     sphere = default_sphere
 
     # load icosahedron sphere
-    sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_fnames("dsi515btable"))
-    gtab = gradient_table(btable[:, 0], btable[:, 1:])
+    sphere2 = create_unit_sphere(recursion_level=5)
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
+    gtab = gradient_table(btable[:, 0], bvecs=btable[:, 1:])
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -70,7 +70,7 @@ def test_multib0_dsi():
     new_data = np.concatenate([data, data[..., 0, None]], -1)
     new_bvecs = np.concatenate([gtab.bvecs, np.zeros((1, 3))])
     new_bvals = np.concatenate([gtab.bvals, [0]])
-    new_gtab = gradient_table(new_bvals, new_bvecs)
+    new_gtab = gradient_table(new_bvals, bvecs=new_bvecs)
     ds = DiffusionSpectrumModel(new_gtab)
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()
@@ -82,7 +82,7 @@ def test_multib0_dsi():
     new_data = np.concatenate([data, data[..., 0, None]], -1)
     new_bvecs = np.concatenate([gtab.bvecs, np.zeros((1, 3))])
     new_bvals = np.concatenate([gtab.bvals, [0]])
-    new_gtab = gradient_table(new_bvals, new_bvecs)
+    new_gtab = gradient_table(new_bvals, bvecs=new_bvecs)
     ds = DiffusionSpectrumModel(new_gtab)
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()

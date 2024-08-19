@@ -16,11 +16,11 @@ def test_gqi():
     # load repulsion 724 sphere
     sphere = default_sphere
     # load icosahedron sphere
-    sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    sphere2 = create_unit_sphere(recursion_level=5)
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -53,7 +53,7 @@ def test_gqi():
 
 def test_mvoxel_gqi():
     data, gtab = dsi_voxels()
-    sphere = get_sphere("symmetric724")
+    sphere = get_sphere(name="symmetric724")
 
     gq = GeneralizedQSamplingModel(gtab, "standard")
     gqfit = gq.fit(data)

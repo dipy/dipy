@@ -189,7 +189,7 @@ def deprecate_with_version(
     def deprecator(func):
         @functools.wraps(func)
         def deprecated_func(*args, **kwargs):
-            if until and is_bad_version(until, version_comparator):
+            if until and is_bad_version(until, version_comparator=version_comparator):
                 raise error_class(message)
             warnings.warn(message, warn_class, stacklevel=2)
             return func(*args, **kwargs)
@@ -414,7 +414,9 @@ def deprecated_params(
                     elif alternative:
                         message += f"* Use {alternative} instead."
 
-                    if until[i] and is_bad_version(until[i], version_comparator):
+                    if until[i] and is_bad_version(
+                        until[i], version_comparator=version_comparator
+                    ):
                         raise error_class(message)
                     warnings.warn(message, warn_class, stacklevel=2)
 
@@ -423,7 +425,9 @@ def deprecated_params(
                 elif not n_name and positions[i] and len(args) > positions[i]:
                     if alternative:
                         message += f"* Use {alternative} instead."
-                    if until[i] and is_bad_version(until[i], version_comparator):
+                    if until[i] and is_bad_version(
+                        until[i], version_comparator=version_comparator
+                    ):
                         raise error_class(message)
 
                     warnings.warn(message, warn_class, stacklevel=2)

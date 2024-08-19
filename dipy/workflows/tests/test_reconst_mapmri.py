@@ -34,7 +34,7 @@ def test_reconst_mmri_positivity():
 
 def reconst_mmri_core(flow, lap, pos):
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_25")
+        data_path, bval_path, bvec_path = get_fnames(name="small_25")
         volume = load_nifti_data(data_path)
 
         mmri_flow = flow()

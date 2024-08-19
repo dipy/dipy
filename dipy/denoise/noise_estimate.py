@@ -26,7 +26,7 @@ opt_quantile = {
 }
 
 
-@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
     """
@@ -146,7 +146,7 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     return sigma
 
 
-@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def _piesno_3D(
     data,

@@ -161,7 +161,7 @@ def test_phantom(rng):
         (np.zeros(6), 300 * np.ones(8), 1000 * np.ones(20), 2000 * np.ones(30))
     )
     bvecs = np.vstack((np.zeros((6, 3)), directions8, directions30, directions60))
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     dwi, sigma = rfiw_phantom(gtab, snr=10, rng=rng)
     dwi_den1 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=1.0)

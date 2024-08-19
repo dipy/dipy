@@ -167,8 +167,8 @@ def orbital_phantom(
         radii = np.linspace(0.2, 2, 6)
 
     if gtab is None:
-        fimg, fbvals, fbvecs = get_fnames("small_64D")
-        gtab = gradient_table(fbvals, fbvecs)
+        fimg, fbvals, fbvecs = get_fnames(name="small_64D")
+        gtab = gradient_table(fbvals, bvecs=fbvecs)
 
     if func is None:
         x = np.sin(t)
@@ -196,7 +196,7 @@ def orbital_phantom(
 
     for i in range(len(dx)):
         evecs, R = diff2eigenvectors(dx[i], dy[i], dz[i])
-        S = single_tensor(gtab, S0, evals, evecs, snr=None)
+        S = single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
 
         vol[int(x[i]), int(y[i]), int(z[i]), :] += S
 
@@ -213,7 +213,7 @@ def orbital_phantom(
     vol *= S0
 
     if snr is not None:
-        vol = add_noise(vol, snr, S0=S0, noise_type="rician", rng=rng)
+        vol = add_noise(vol, snr=snr, S0=S0, noise_type="rician", rng=rng)
 
     return vol
 

@@ -13,10 +13,10 @@ def test_bundlewarp():
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
-    cb1 = set_number_of_points(cb1, 20)
+    cb1 = set_number_of_points(cb1, nb_points=20)
 
     cb2 = Streamlines(cingulum_bundles[1])
-    cb2 = set_number_of_points(cb2, 20)
+    cb2 = set_number_of_points(cb2, nb_points=20)
 
     deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
 
@@ -35,10 +35,10 @@ def test_bundlewarp_vector_filed():
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
-    cb1 = set_number_of_points(cb1, 20)
+    cb1 = set_number_of_points(cb1, nb_points=20)
 
     cb2 = Streamlines(cingulum_bundles[1])
-    cb2 = set_number_of_points(cb2, 20)
+    cb2 = set_number_of_points(cb2, nb_points=20)
 
     deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
 
@@ -59,10 +59,10 @@ def test_bundle_shape_profile():
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = Streamlines(cingulum_bundles[0])
-    cb1 = set_number_of_points(cb1, 20)
+    cb1 = set_number_of_points(cb1, nb_points=20)
 
     cb2 = Streamlines(cingulum_bundles[1])
-    cb2 = set_number_of_points(cb2, 20)
+    cb2 = set_number_of_points(cb2, nb_points=20)
 
     deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(cb1, cb2)
 

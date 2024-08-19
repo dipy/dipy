@@ -235,7 +235,7 @@ class FastStreamlineSearch:
             if len(sline) < 2:
                 s[i] = sline
             else:
-                s[i] = set_number_of_points(sline, self.resampling)
+                s[i] = set_number_of_points(sline, nb_points=self.resampling)
         return s
 
     def _slines_barycenters(self, slines_arr):

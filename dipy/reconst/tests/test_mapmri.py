@@ -1095,7 +1095,7 @@ def test_mapmri_odf(radial_order=6):
         laplacian_weighting=0.01,
     )
     # repulsion724
-    sphere2 = create_unit_sphere(5)
+    sphere2 = create_unit_sphere(recursion_level=5)
     mapfit = mapmod.fit(data)
     odf = mapfit.odf(sphere)
 

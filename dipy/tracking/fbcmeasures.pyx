@@ -19,9 +19,11 @@ cdef class FBCMeasures:
     cdef double [:, :] streamlines_lfbc
     cdef double [:] streamlines_rfbc
 
+    @warning_for_keywords()
     def __init__(self,
                  streamlines,
                  kernel,
+                 *,
                  min_fiberlength=10,
                  max_windowsize=7,
                  num_threads=None,
@@ -63,11 +65,11 @@ cdef class FBCMeasures:
                          Constrained Spherical Deconvolution. PLoS One.
         """
         self.compute(streamlines,
-                     kernel,
-                     min_fiberlength,
-                     max_windowsize,
-                     num_threads,
-                     verbose)
+                 kernel,
+                 min_fiberlength=min_fiberlength,
+                 max_windowsize=max_windowsize,
+                 num_threads=num_threads,
+                 verbose=verbose)
 
     @warning_for_keywords()
     def get_points_rfbc_thresholded(self, threshold, *, emphasis=.5, verbose=False):
@@ -313,7 +315,7 @@ cdef class FBCMeasures:
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length,
                                              streamline_scores,
-                                             max_windowsize)
+                                             max_windowsize=max_windowsize)
 
 
 @warning_for_keywords()

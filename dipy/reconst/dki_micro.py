@@ -121,7 +121,7 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere(sphere)
+        sphere = get_sphere(name=sphere)
 
     # select voxels where to apply the single fiber model
     if mask is None:

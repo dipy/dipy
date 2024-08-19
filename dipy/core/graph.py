@@ -77,7 +77,7 @@ class Graph:
         paths = []
         for node in graph[start]:
             if node not in path:
-                newpaths = self.all_paths(graph, node, end, path)
+                newpaths = self.all_paths(graph, node, end=end, path=path)
                 for newpath in newpaths:
                     paths.append(newpath)
         return paths
@@ -93,7 +93,7 @@ class Graph:
         shortest = None
         for node in graph[start]:
             if node not in path:
-                newpath = self.shortest_path(graph, node, end, path)
+                newpath = self.shortest_path(graph, node, end=end, path=path)
                 if newpath:
                     if not shortest or len(newpath) < len(shortest):
                         shortest = newpath

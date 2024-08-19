@@ -182,7 +182,7 @@ def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.m
 
     """
     # Resample to same length for each streamline:
-    bundle = set_number_of_points(bundle, n_points)
+    bundle = set_number_of_points(bundle, nb_points=n_points)
 
     # This is the output
     w = np.zeros((len(bundle), n_points))
@@ -305,7 +305,7 @@ def afq_profile(
         raise ValueError("The bundle contains no streamlines")
 
     # Resample each streamline to the same number of points:
-    fgarray = set_number_of_points(bundle, n_points)
+    fgarray = set_number_of_points(bundle, nb_points=n_points)
 
     # Extract the values
     values = np.array(values_from_volume(data, fgarray, affine))

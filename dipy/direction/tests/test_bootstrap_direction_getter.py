@@ -18,16 +18,16 @@ from dipy.testing.decorators import set_random_number_generator
 def test_bdg_initial_direction():
     """This tests the number of initial directions." """
 
-    hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
+    hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(n=2)
     vertices = hsph_updated.vertices
     bvecs = vertices
     bvals = np.ones(len(vertices)) * 1000
     bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
     bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # test that we get one direction when we have a single tensor
-    sphere = HemiSphere.from_sphere(get_sphere("symmetric724"))
+    sphere = HemiSphere.from_sphere(get_sphere(name="symmetric724"))
     voxel = single_tensor(gtab).reshape([1, 1, 1, -1])
     dti_model = dti.TensorModel(gtab)
     with warnings.catch_warnings():
@@ -73,17 +73,17 @@ def test_bdg_initial_direction():
 def test_bdg_get_direction():
     """This tests the direction found by the bootstrap direction getter."""
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0)]
 
-    voxel, _ = multi_tensor(gtab, mevals, 1, angles=angles, fractions=[100], snr=100)
+    voxel, _ = multi_tensor(gtab, mevals, S0=1, angles=angles, fractions=[100], snr=100)
     data = np.tile(voxel, (3, 3, 3, 1))
-    sphere = get_sphere("symmetric362")
+    sphere = get_sphere(name="symmetric362")
     response = (np.array([0.0015, 0.0003, 0.0003]), 1)
 
     with warnings.catch_warnings():
@@ -152,13 +152,13 @@ def test_bdg_get_direction():
 def test_bdg_residual(rng):
     """This tests the bootstrapping residual."""
 
-    hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
+    hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(n=2)
     vertices = hsph_updated.vertices
     bvecs = vertices
     bvals = np.ones(len(vertices)) * 1000
     bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
     bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     r, theta, phi = cart2sphere(*vertices.T)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -210,7 +210,7 @@ def test_bdg_residual(rng):
 
     # test with a gtab with two shells and assert you get an error
     bvals[-1] = 2000
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -231,7 +231,7 @@ def test_boot_pmf():
     bvals = np.ones(len(vertices)) * 1000
     bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
     bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     voxel = single_tensor(gtab)
     data = np.tile(voxel, (3, 3, 3, 1))
     point = np.array([1.0, 1.0, 1.0])
@@ -282,7 +282,7 @@ def test_boot_pmf():
 
     # test b_tol parameter
     bvals[-2] = 1100
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     tensor_model = TensorModel(gtab)
     with warnings.catch_warnings():
         warnings.filterwarnings(

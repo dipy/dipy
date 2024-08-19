@@ -268,7 +268,7 @@ def dwt3D(x, J, af):
 
     w = [None] * (J + 1)
     for k in range(J):
-        x, w[k] = afb3D(x, af, af, af)
+        x, w[k] = afb3D(x, af, af2=af, af3=af)
     w[J] = x
     return w
 
@@ -294,5 +294,5 @@ def idwt3D(w, J, sf):
 
     y = w[J]
     for k in range(J)[::-1]:
-        y = sfb3D(y, w[k], sf, sf, sf)
+        y = sfb3D(y, w[k], sf, sf2=sf, sf3=sf)
     return y

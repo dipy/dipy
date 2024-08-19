@@ -132,11 +132,11 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
         this_gtab = gtgt(
             np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[fold_mask]]),
-            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[fold_mask]]),
+            bvecs=np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[fold_mask]]),
         )
         left_out_gtab = gtgt(
             np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[~fold_mask]]),
-            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[~fold_mask]]),
+            bvecs=np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[~fold_mask]]),
         )
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data, mask=mask)

@@ -40,7 +40,7 @@ def setup_module():
         (np.zeros(6), 300 * np.ones(8), 1000 * np.ones(30), 2000 * np.ones(60))
     )
     bvecs = np.vstack((np.zeros((6, 3)), directions8, directions30, directions60))
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
 
 def rfiw_phantom(gtab, snr=None, rng=None):
@@ -217,7 +217,7 @@ def test_phantom(rng):
         ** 2
     )
 
-    DWI_den = localpca(DWI, sigma, patch_radius=3)
+    DWI_den = localpca(DWI, sigma=sigma, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
 
@@ -232,16 +232,16 @@ def test_phantom(rng):
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
     # Check if the results of different PCA methods (eig, svd) are similar
-    DWI_den_svd = localpca(DWI, sigma, pca_method="svd", patch_radius=3)
+    DWI_den_svd = localpca(DWI, sigma=sigma, pca_method="svd", patch_radius=3)
     assert_array_almost_equal(DWI_den, DWI_den_svd)
 
-    assert_raises(ValueError, localpca, DWI, sigma, pca_method="empty")
+    assert_raises(ValueError, localpca, DWI, sigma=sigma, pca_method="empty")
 
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
     mask = np.zeros_like(DWI, dtype=bool)[..., 0]
     mask[2:-2, 2:-2, 2:-2] = True
-    DWI_den = localpca(DWI, sigma_vol, mask, patch_radius=3)
+    DWI_den = localpca(DWI, sigma=sigma_vol, mask=mask, patch_radius=3)
     DWI_clean_masked = DWI_clean.copy()
     DWI_clean_masked[~mask] = 0
     DWI_masked = DWI.copy()
@@ -272,14 +272,14 @@ def test_phantom(rng):
 def test_lpca_ill_conditioned(rng):
     DWI, sigma = rfiw_phantom(gtab, snr=30, rng=rng)
     for patch_radius in [1, [1, 1, 1]]:
-        assert_warns(UserWarning, localpca, DWI, sigma, patch_radius=patch_radius)
+        assert_warns(UserWarning, localpca, DWI, sigma=sigma, patch_radius=patch_radius)
 
 
 @set_random_number_generator()
 def test_lpca_radius_wrong_shape(rng):
     DWI, sigma = rfiw_phantom(gtab, snr=30, rng=rng)
     for patch_radius in [[2, 2], [2, 2, 2, 2]]:
-        assert_raises(ValueError, localpca, DWI, sigma, patch_radius=patch_radius)
+        assert_raises(ValueError, localpca, DWI, sigma=sigma, patch_radius=patch_radius)
 
 
 @set_random_number_generator()
@@ -287,13 +287,13 @@ def test_lpca_sigma_wrong_shape(rng):
     DWI, sigma = rfiw_phantom(gtab, snr=30, rng=rng)
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
     sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
-    assert_raises(ValueError, localpca, DWI, sigma)
+    assert_raises(ValueError, localpca, DWI, sigma=sigma)
 
 
 @set_random_number_generator()
 def test_lpca_no_gtab_no_sigma(rng):
     DWI, sigma = rfiw_phantom(gtab, snr=30, rng=rng)
-    assert_raises(ValueError, localpca, DWI, None, None)
+    assert_raises(ValueError, localpca, DWI, sigma=None, mask=None)
 
 
 @set_random_number_generator()

@@ -12,7 +12,6 @@ from dipy.denoise.patch2self import patch2self
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
-from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
@@ -21,12 +20,10 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return "patch2self"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bval_files,
-        *,
         model="ols",
         b0_threshold=50,
         alpha=1.0,
@@ -114,7 +111,7 @@ class Patch2SelfFlow(Workflow):
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
                 )
-                save_nifti(odenoised, denoised_data, affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volumes saved as %s", odenoised)
 
@@ -124,11 +121,9 @@ class NLMeansFlow(Workflow):
     def get_short_name(cls):
         return "nlmeans"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         sigma=0,
         patch_radius=1,
         block_radius=5,
@@ -190,7 +185,7 @@ class NLMeansFlow(Workflow):
                     block_radius=block_radius,
                     rician=rician,
                 )
-                save_nifti(odenoised, denoised_data, affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volume saved as %s", odenoised)
 
@@ -200,13 +195,11 @@ class LPCAFlow(Workflow):
     def get_short_name(cls):
         return "lpca"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
-        *,
         sigma=0,
         b0_threshold=50,
         bvecs_tol=0.01,
@@ -293,7 +286,7 @@ class LPCAFlow(Workflow):
                 logging.info("Estimating sigma")
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(
-                    bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                    bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
                 )
                 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
                 logging.debug("Found sigma %s", sigma)
@@ -305,7 +298,7 @@ class LPCAFlow(Workflow):
                 pca_method=pca_method,
                 tau_factor=tau_factor,
             )
-            save_nifti(odenoised, denoised_data, affine, image.header)
+            save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
             logging.info("Denoised volume saved as %s", odenoised)
 
@@ -315,11 +308,9 @@ class MPPCAFlow(Workflow):
     def get_short_name(cls):
         return "mppca"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         patch_radius=2,
         pca_method="eig",
         return_sigma=False,
@@ -380,10 +371,10 @@ class MPPCAFlow(Workflow):
                 return_sigma=True,
             )
 
-            save_nifti(odenoised, denoised_data, affine, image.header)
+            save_nifti(odenoised, denoised_data, affine, hdr=image.header)
             logging.info("Denoised volume saved as %s", odenoised)
             if return_sigma:
-                save_nifti(osigma, sigma, affine, image.header)
+                save_nifti(osigma, sigma, affine, hdr=image.header)
                 logging.info("Sigma volume saved as %s", osigma)
 
 
@@ -392,11 +383,9 @@ class GibbsRingingFlow(Workflow):
     def get_short_name(cls):
         return "gibbs_ringing"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         slice_axis=2,
         n_points=3,
         num_processes=1,
@@ -449,5 +438,5 @@ class GibbsRingingFlow(Workflow):
                 num_processes=num_processes,
             )
 
-            save_nifti(ounring, unring_data, affine, image.header)
+            save_nifti(ounring, unring_data, affine, hdr=image.header)
             logging.info("Denoised volume saved as %s", ounring)

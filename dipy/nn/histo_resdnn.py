@@ -50,7 +50,7 @@ class HistoResDNN:
     .. footbibliography::
     """
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     @doctest_skip_parser
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
@@ -60,7 +60,7 @@ class HistoResDNN:
 
         To obtain the pre-trained model, use::
         >>> resdnn_model = HistoResDNN() # skip if not have_tf
-        >>> fetch_model_weights_path = get_fnames('histo_resdnn_weights') # skip if not have_tf
+        >>> fetch_model_weights_path = get_fnames(name='histo_resdnn_weights') # skip if not have_tf
         >>> resdnn_model.load_model_weights(fetch_model_weights_path) # skip if not have_tf
 
         This model is designed to take as input raw DWI signal on a sphere
@@ -122,7 +122,7 @@ class HistoResDNN:
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
-        fetch_model_weights_path = get_fnames("histo_resdnn_weights")
+        fetch_model_weights_path = get_fnames(name="histo_resdnn_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -257,7 +257,7 @@ class HistoResDNN:
             )
 
             # Removing negative values from the SF
-            sphere = get_sphere("repulsion724")
+            sphere = get_sphere(name="repulsion724")
             tmp_sf = sh_to_sf(
                 sh=tmp_sh,
                 sphere=sphere,

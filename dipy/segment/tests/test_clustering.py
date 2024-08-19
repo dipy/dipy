@@ -38,8 +38,14 @@ def test_cluster_attributes_and_constructor():
     assert_equal(len(cluster), 0)
 
     # Duplicate
-    assert_true(cluster == Cluster(cluster.id, cluster.indices, cluster.refdata))
-    assert_false(cluster != Cluster(cluster.id, cluster.indices, cluster.refdata))
+    assert_true(
+        cluster
+        == Cluster(id=cluster.id, indices=cluster.indices, refdata=cluster.refdata)
+    )
+    assert_false(
+        cluster
+        != Cluster(id=cluster.id, indices=cluster.indices, refdata=cluster.refdata)
+    )
 
     # Invalid comparison
     assert_raises(TypeError, cluster.__cmp__, cluster)

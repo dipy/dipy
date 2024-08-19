@@ -29,14 +29,14 @@ def setup_module():
     """Module-level setup"""
     global gtab, gtab_2s
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
 
 # Unused with missing references to basis
@@ -118,7 +118,7 @@ def test_sticks_and_ball():
 def test_single_tensor():
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
     evecs = np.eye(3)
-    S = single_tensor(gtab, 100, evals, evecs, snr=None)
+    S = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S[gtab.b0s_mask], 100)
     assert_(np.mean(S[~gtab.b0s_mask]) < 100)
 
@@ -139,12 +139,12 @@ def test_multi_tensor():
     # assert_(odf.shape == (len(vertices),))
     # assert_(np.all(odf <= 1) & np.all(odf >= 0))
 
-    fimg, fbvals, fbvecs = get_fnames("small_101D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
-    s1 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
-    s2 = single_tensor(gtab, 100, mevals[1], mevecs[1], snr=None)
+    s1 = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    s2 = single_tensor(gtab, 100, evals=mevals[1], evecs=mevecs[1], snr=None)
 
     Ssingle = 0.5 * s1 + 0.5 * s2
 
@@ -252,7 +252,7 @@ def test_kurtosis_elements():
                     # Testing optional function inputs
                     assert_almost_equal(
                         kurtosis_element(mD, frac, i, k, j, ell),
-                        kurtosis_element(mD, frac, i, k, j, ell, D, MD),
+                        kurtosis_element(mD, frac, i, k, j, ell, DT=D, MD=MD),
                     )
 
 
@@ -309,7 +309,7 @@ def test_DKI_simulations_aligned_fibers():
             [0, 0, 1],
         ]
     )
-    gtab_axis = gradient_table(bvals, bvecs)
+    gtab_axis = gradient_table(bvals, bvecs=bvecs)
     # axis x
     S_fx = dki_signal(gtab_axis, dt_fx, kt_fx, S0=100)
     assert_array_almost_equal(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
@@ -387,22 +387,22 @@ def test_DKI_crossing_fibers_simulations():
 
 def test_single_tensor_btens():
     """Testing single tensor simulations when a btensor is given"""
-    gtab_lte = gradient_table(gtab.bvals, gtab.bvecs, btens="LTE")
-    gtab_ste = gradient_table(gtab.bvals, gtab.bvecs, btens="STE")
+    gtab_lte = gradient_table(gtab.bvals, bvecs=gtab.bvecs, btens="LTE")
+    gtab_ste = gradient_table(gtab.bvals, bvecs=gtab.bvecs, btens="STE")
 
     # Check if Signals produced with LTE btensor gives same results as
     # previous simulations not specifying b-tensor
     evecs = np.eye(3)
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
-    S_ref = single_tensor(gtab, 100, evals, evecs, snr=None)
-    S_btens = single_tensor(gtab_lte, 100, evals, evecs, snr=None)
+    S_ref = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
+    S_btens = single_tensor(gtab_lte, 100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S_ref, S_btens)
 
     # Check if signals produced with STE btensor gives signals that matches
     # the signal decay for mean diffusivity
     md = np.sum(evals) / 3
     S_ref = 100 * np.exp(-gtab.bvals * md)
-    S_btens = single_tensor(gtab_ste, 100, evals, evecs, snr=None)
+    S_btens = single_tensor(gtab_ste, 100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S_ref, S_btens)
 
 
@@ -413,10 +413,10 @@ def test_multi_tensor_btens():
     e1 = np.array([0, np.sqrt(2) / 2.0, np.sqrt(2) / 2.0])
     mevecs = [all_tensor_evecs(e0), all_tensor_evecs(e1)]
 
-    gtab_ste = gradient_table(gtab.bvals, gtab.bvecs, btens="STE")
+    gtab_ste = gradient_table(gtab.bvals, bvecs=gtab.bvecs, btens="STE")
 
-    s1 = single_tensor(gtab_ste, 100, mevals[0], mevecs[0], snr=None)
-    s2 = single_tensor(gtab_ste, 100, mevals[1], mevecs[1], snr=None)
+    s1 = single_tensor(gtab_ste, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    s2 = single_tensor(gtab_ste, 100, evals=mevals[1], evecs=mevecs[1], snr=None)
 
     Ssingle = 0.5 * s1 + 0.5 * s2
 

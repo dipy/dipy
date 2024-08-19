@@ -82,7 +82,7 @@ def create_test_data(test_r, cube_size, mask_size, num_dwi_vols, num_b0s):
 
         known_correlations += [np.corrcoef(correlated)[0, 1]] * 2
 
-    gtab = gradient_table(bvals, bvecs, b0_threshold=50)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=50)
 
     return np.mean(known_correlations), dwi_data, test_mask, gtab
 

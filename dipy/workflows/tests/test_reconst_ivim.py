@@ -45,7 +45,7 @@ def test_reconst_ivim():
         temp_bvec_path = pjoin(out_dir, "temp.bvec")
         np.savetxt(temp_bvec_path, bvecs)
 
-        gtab = gradient_table(bvals, bvecs)
+        gtab = gradient_table(bvals, bvecs=bvecs)
 
         S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
 

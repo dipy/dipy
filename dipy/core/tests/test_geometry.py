@@ -144,9 +144,9 @@ def test_sphere_distance():
     # Check points not on surface raises error when asked for
     assert_raises(ValueError, sphere_distance, [1, 0], [0, 2])
     # Not when check is disabled
-    sphere_distance([1, 0], [0, 2], None, False)
+    sphere_distance([1, 0], [0, 2], radius=None, check_radius=False)
     # Error when radii don't match passed radius
-    assert_raises(ValueError, sphere_distance, [1, 0], [0, 1], 2.0)
+    assert_raises(ValueError, sphere_distance, [1, 0], [0, 1], radius=2.0)
 
 
 @set_random_number_generator()

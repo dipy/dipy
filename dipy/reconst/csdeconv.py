@@ -184,7 +184,7 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(
         self,
         gtab,
@@ -369,7 +369,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(
         self, gtab, ratio, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
     ):
@@ -435,7 +435,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         # for the odf sphere
         if reg_sphere is None:
-            self.sphere = get_sphere("symmetric362")
+            self.sphere = get_sphere(name="symmetric362")
         else:
             self.sphere = reg_sphere
 
@@ -491,10 +491,10 @@ def estimate_response(gtab, evals, S0):
     """
     evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-    return single_tensor(gtab, S0, evals, evecs, snr=None)
+    return single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
 
 
-@deprecated_params("n", "l_values", since="1.9", until="2.0")
+@deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
 def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
     r"""Build forward sharpening deconvolution transform (SDT) matrix
 
@@ -848,7 +848,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     return fodf_sh, num_it
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def odf_sh_to_sharp(
     odfs_sh,
     sphere,
@@ -1133,7 +1133,7 @@ def _get_response(S0s, lambdas):
     return response, ratio
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def recursive_response(
     gtab,
     data,

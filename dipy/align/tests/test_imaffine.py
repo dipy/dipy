@@ -230,14 +230,16 @@ def test_affreg_all_transforms(rng):
         )
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
-        metric = imaffine.MutualInformationMetric(32, sampling_pc)
+        metric = imaffine.MutualInformationMetric(
+            nbins=32, sampling_proportion=sampling_pc
+        )
         affreg = imaffine.AffineRegistration(
-            metric,
-            [1000, 100, 50],
-            [3, 1, 0],
-            [4, 2, 1],
-            "L-BFGS-B",
-            None,
+            metric=metric,
+            level_iters=[1000, 100, 50],
+            sigmas=[3, 1, 0],
+            factors=[4, 2, 1],
+            method="L-BFGS-B",
+            ss_sigma_factor=None,
             options=None,
         )
         x0 = trans.get_identity_parameters()
@@ -251,12 +253,12 @@ def test_affreg_all_transforms(rng):
                 moving,
                 trans,
                 x0,
-                static_g2w,
-                moving_g2w,
-                None,
-                None,
-                smask,
-                mmask,
+                static_grid2world=static_g2w,
+                moving_grid2world=moving_g2w,
+                starting_affine=None,
+                ret_metric=None,
+                static_mask=smask,
+                moving_mask=mmask,
             )
         else:
             affine_map = affreg.optimize(
@@ -264,12 +266,12 @@ def test_affreg_all_transforms(rng):
                 moving,
                 trans,
                 x0,
-                static_g2w,
-                moving_g2w,
-                None,
-                None,
-                smask,
-                mmask,
+                static_grid2world=static_g2w,
+                moving_grid2world=moving_g2w,
+                starting_affine=None,
+                ret_metric=None,
+                static_mask=smask,
+                moving_mask=mmask,
             )
 
         transformed = affine_map.transform(moving)
@@ -280,8 +282,10 @@ def test_affreg_all_transforms(rng):
         assert reduction > 0.9
 
     # Verify that exception is raised if level_iters is empty
-    metric = imaffine.MutualInformationMetric(32)
-    assert_raises(ValueError, imaffine.AffineRegistration, metric, [])
+    metric = imaffine.MutualInformationMetric(nbins=32)
+    assert_raises(
+        ValueError, imaffine.AffineRegistration, metric=metric, level_iters=[]
+    )
 
     # Verify that exception is raised if masks are all zeros
     affine_map = assert_warns(
@@ -291,12 +295,12 @@ def test_affreg_all_transforms(rng):
         moving,
         trans,
         x0,
-        static_g2w,
-        moving_g2w,
-        None,
-        None,
-        np.zeros_like(smask),
-        np.zeros_like(mmask),
+        static_grid2world=static_g2w,
+        moving_grid2world=moving_g2w,
+        starting_affine=None,
+        ret_metric=None,
+        static_mask=np.zeros_like(smask),
+        moving_mask=np.zeros_like(mmask),
     )
 
 
@@ -334,12 +338,12 @@ def test_affreg_defaults(rng):
         mmask = None
         for ss_sigma_factor in [1.0, None]:
             affreg = imaffine.AffineRegistration(
-                metric,
-                level_iters,
-                sigmas,
-                scale_factors,
-                "L-BFGS-B",
-                ss_sigma_factor,
+                metric=metric,
+                level_iters=level_iters,
+                sigmas=sigmas,
+                factors=scale_factors,
+                method="L-BFGS-B",
+                ss_sigma_factor=ss_sigma_factor,
                 options=None,
             )
             affine_map = affreg.optimize(
@@ -347,12 +351,12 @@ def test_affreg_defaults(rng):
                 moving,
                 transform,
                 x0,
-                static_grid2world,
-                moving_grid2world,
-                starting_affine,
-                None,
-                smask,
-                mmask,
+                static_grid2world=static_grid2world,
+                moving_grid2world=moving_grid2world,
+                starting_affine=starting_affine,
+                ret_metric=None,
+                static_mask=smask,
+                moving_mask=mmask,
             )
             transformed = affine_map.transform(moving)
             # Sum of absolute differences
@@ -398,7 +402,9 @@ def test_mi_gradient(rng):
         )
 
         # Prepare a MutualInformationMetric instance
-        mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
+        mi_metric = imaffine.MutualInformationMetric(
+            nbins=32, sampling_proportion=sampling_proportion
+        )
         mi_metric.setup(transform, static, moving, starting_affine=starting_affine)
         # Compute the gradient with the implementation under test
         actual = mi_metric.gradient(theta)
@@ -527,16 +533,18 @@ def test_affine_map(rng):
             grid2grid_transform = affine
 
             # Evaluate the transform with vector_fields module (already tested)
-            expected_linear = oracle_linear(img, dom_shape[:dim1], grid2grid_transform)
-            expected_nn = oracle_nn(img, dom_shape[:dim1], grid2grid_transform)
+            expected_linear = oracle_linear(
+                img, dom_shape[:dim1], affine=grid2grid_transform
+            )
+            expected_nn = oracle_nn(img, dom_shape[:dim1], affine=grid2grid_transform)
 
             # Evaluate the transform with the implementation under test
             affine_map = imaffine.AffineMap(
-                affine,
-                dom_shape[:dim1],
-                domain_grid2world,
-                cod_shape[:dim1],
-                codomain_grid2world,
+                affine=affine,
+                domain_grid_shape=dom_shape[:dim1],
+                domain_grid2world=domain_grid2world,
+                codomain_grid_shape=cod_shape[:dim1],
+                codomain_grid2world=codomain_grid2world,
             )
             actual_linear = affine_map.transform(img, interpolation="linear")
             actual_nn = affine_map.transform(img, interpolation="nearest")
@@ -570,15 +578,15 @@ def test_affine_map(rng):
             # transform
             aff_inv = None if affine is None else npl.inv(affine)
             aff_inv_inv = None if aff_inv is None else npl.inv(aff_inv)
-            expected_linear = oracle_linear(img, dom_shape[:dim1], aff_inv_inv)
-            expected_nn = oracle_nn(img, dom_shape[:dim1], aff_inv_inv)
+            expected_linear = oracle_linear(img, dom_shape[:dim1], affine=aff_inv_inv)
+            expected_nn = oracle_nn(img, dom_shape[:dim1], affine=aff_inv_inv)
 
             affine_map = imaffine.AffineMap(
-                aff_inv,
-                cod_shape[:dim1],
-                codomain_grid2world,
-                dom_shape[:dim1],
-                domain_grid2world,
+                affine=aff_inv,
+                domain_grid_shape=cod_shape[:dim1],
+                domain_grid2world=codomain_grid2world,
+                codomain_grid_shape=dom_shape[:dim1],
+                codomain_grid2world=domain_grid2world,
             )
             actual_linear = affine_map.transform_inverse(img, interpolation="linear")
             actual_nn = affine_map.transform_inverse(img, interpolation="nearest")
@@ -612,15 +620,21 @@ def test_affine_map(rng):
         invalid_nan[1, 1] = np.nan
         invalid_zeros = np.zeros((dim1 + 1, dim1 + 1), dtype=np.float64)
         assert_raises(
-            imaffine.AffineInvalidValuesError, imaffine.AffineMap, invalid_nan
+            imaffine.AffineInvalidValuesError, imaffine.AffineMap, affine=invalid_nan
         )
-        assert_raises(AffineInvalidValuesError, imaffine.AffineMap, invalid_zeros)
+        assert_raises(
+            AffineInvalidValuesError, imaffine.AffineMap, affine=invalid_zeros
+        )
 
         # Test exception is raised when the affine transform matrix is not
         # valid
         invalid_shape = np.eye(dim1)
         affmap_invalid_shape = imaffine.AffineMap(
-            invalid_shape, dom_shape[:dim1], None, cod_shape[:dim1], None
+            affine=invalid_shape,
+            domain_grid_shape=dom_shape[:dim1],
+            domain_grid2world=None,
+            codomain_grid_shape=cod_shape[:dim1],
+            codomain_grid2world=None,
         )
         assert_raises(ValueError, affmap_invalid_shape.transform, img)
         assert_raises(ValueError, affmap_invalid_shape.transform_inverse, img)
@@ -632,14 +646,20 @@ def test_affine_map(rng):
         assert_raises(ValueError, affmap_invalid_shape.transform_inverse, img)
 
         # Verify exception is raised when requesting an invalid interpolation
-        assert_raises(ValueError, affine_map.transform, img, "invalid")
-        assert_raises(ValueError, affine_map.transform_inverse, img, "invalid")
+        assert_raises(ValueError, affine_map.transform, img, interpolation="invalid")
+        assert_raises(
+            ValueError, affine_map.transform_inverse, img, interpolation="invalid"
+        )
 
         # Verify exception is raised when attempting to warp an image of
         # invalid dimension
         for dim2 in [2, 3]:
             affine_map = imaffine.AffineMap(
-                np.eye(dim2), cod_shape[:dim2], None, dom_shape[:dim2], None
+                affine=np.eye(dim2),
+                domain_grid_shape=cod_shape[:dim2],
+                domain_grid2world=None,
+                codomain_grid_shape=dom_shape[:dim2],
+                codomain_grid2world=None,
             )
             for sh in [(2,), (2, 2, 2, 2)]:
                 img = np.zeros(sh)
@@ -675,7 +695,9 @@ def test_MIMetric_invalid_params(rng):
     theta_inf = np.zeros(n)
     theta_nan[...] = np.inf
 
-    mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
+    mi_metric = imaffine.MutualInformationMetric(
+        nbins=32, sampling_proportion=sampling_proportion
+    )
     mi_metric.setup(transform, static, moving)
     for theta in [theta_sing, theta_nan, theta_inf]:
         # Test metric value at invalid params

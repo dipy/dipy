@@ -279,7 +279,11 @@ def plot_2d_diffeomorphic_map(
 
     # Warp in the forward direction (sampling it on the input grid)
     warped_forward = mapping.transform(
-        lattice_out, "linear", world_to_image, direct_grid_shape, direct_grid2world
+        lattice_out,
+        interpolation="linear",
+        image_world2grid=world_to_image,
+        out_shape=direct_grid_shape,
+        out_grid2world=direct_grid2world,
     )
 
     # Now, the world-to-image (image = drawn lattice on the input grid)
@@ -298,7 +302,11 @@ def plot_2d_diffeomorphic_map(
 
     # Warp in the backward direction (sampling it on the output grid)
     warped_backward = mapping.transform_inverse(
-        lattice_in, "linear", world_to_image, inverse_grid_shape, inverse_grid2world
+        lattice_in,
+        interpolation="linear",
+        image_world2grid=world_to_image,
+        out_shape=inverse_grid_shape,
+        out_grid2world=inverse_grid2world,
     )
 
     # Now plot the grids

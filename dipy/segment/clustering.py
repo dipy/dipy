@@ -146,7 +146,7 @@ class ClusterCentroid(Cluster):
     def __init__(self, centroid, *, id=0, indices=None, refdata=None):
         if refdata is None:
             refdata = Identity()
-        super(ClusterCentroid, self).__init__(id, indices, refdata)
+        super(ClusterCentroid, self).__init__(id=id, indices=indices, refdata=refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
@@ -469,7 +469,7 @@ class QuickBundles(Clustering):
     >>> from dipy.data import get_fnames
     >>> from dipy.io.streamline import load_tractogram
     >>> from dipy.tracking.streamline import Streamlines
-    >>> fname = get_fnames('fornix')
+    >>> fname = get_fnames(name='fornix')
     >>> fornix = load_tractogram(fname, 'same',
     ...                          bbox_valid_check=False).streamlines
     >>> streamlines = Streamlines(fornix)
@@ -760,7 +760,7 @@ def qbx_and_merge(
     if rng is None:
         rng = np.random.default_rng()
     indices = rng.choice(len_s, min(select_randomly, len_s), replace=False)
-    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+    sample_streamlines = set_number_of_points(streamlines, nb_points=nb_pts)
 
     if verbose:
         logger.info(f" Resampled to {nb_pts} points")

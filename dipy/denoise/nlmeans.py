@@ -67,7 +67,13 @@ def nlmeans(
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return nlmeans_3d(
-            arr, mask, sigma, patch_radius, block_radius, rician, num_threads
+            arr,
+            mask=mask,
+            sigma=sigma,
+            patch_radius=patch_radius,
+            block_radius=block_radius,
+            rician=rician,
+            num_threads=num_threads,
         ).astype(arr.dtype)
 
     elif arr.ndim == 4:
@@ -81,12 +87,12 @@ def nlmeans(
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = nlmeans_3d(
                 arr[..., i],
-                mask,
-                sigma[..., i],
-                patch_radius,
-                block_radius,
-                rician,
-                num_threads,
+                mask=mask,
+                sigma=sigma[..., i],
+                patch_radius=patch_radius,
+                block_radius=block_radius,
+                rician=rician,
+                num_threads=num_threads,
             ).astype(arr.dtype)
 
         return denoised_arr

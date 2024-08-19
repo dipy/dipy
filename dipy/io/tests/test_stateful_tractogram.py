@@ -26,7 +26,9 @@ FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 def setup_module():
     global FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA
     try:
-        FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = get_fnames("gold_standard_tracks")
+        FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = get_fnames(
+            name="gold_standard_tracks"
+        )
     except (HTTPError, URLError) as e:
         FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
@@ -941,7 +943,7 @@ def test_invalid_streamlines_epsilon():
 
     epsilon = 1e-6
     obtained_idx_to_remove, obtained_idx_to_keep = sft.remove_invalid_streamlines(
-        epsilon
+        epsilon=epsilon
     )
 
     expected_idx_to_keep = list(range(src_strml_count))
@@ -955,7 +957,7 @@ def test_invalid_streamlines_epsilon():
 
     epsilon = 1.0
     obtained_idx_to_remove, obtained_idx_to_keep = sft.remove_invalid_streamlines(
-        epsilon
+        epsilon=epsilon
     )
 
     expected_idx_to_remove = [0, 1, 2, 3, 4, 5, 6, 7]

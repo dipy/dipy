@@ -87,7 +87,7 @@ def setup_module():
     )
     N = len(bvals)
     bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
+    gtab = gradient_table(bvals, bvecs=bvecs.T, b0_threshold=0)
 
     S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
     # params for a single voxel
@@ -148,7 +148,7 @@ def setup_module():
         ]
     )
 
-    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs=bvecs.T, b0_threshold=0)
 
     bvals_with_multiple_b0 = np.array(
         [
@@ -178,7 +178,7 @@ def setup_module():
 
     bvecs_with_multiple_b0 = generate_bvecs(N)
     gtab_with_multiple_b0 = gradient_table(
-        bvals_with_multiple_b0, bvecs_with_multiple_b0.T, b0_threshold=0
+        bvals_with_multiple_b0, bvecs=bvecs_with_multiple_b0.T, b0_threshold=0
     )
 
     noisy_single = np.array(
@@ -364,7 +364,7 @@ def test_b0_threshold_greater_than0():
     )
     N = len(bvals_b0t)
     bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals_b0t, bvecs.T)
+    gtab = gradient_table(bvals_b0t, bvecs=bvecs.T)
     with assert_raises(ValueError) as vae:
         _ = IvimModel(gtab, fit_method="trr")
         b0_s = "The IVIM model requires a measurement at b==0. As of "

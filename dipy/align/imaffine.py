@@ -381,7 +381,7 @@ class AffineMap:
         # Transform the input image
         if interpolation == "linear":
             image = image.astype(np.float64)
-        transformed = _transform_method[(dim, interpolation)](image, shape, comp)
+        transformed = _transform_method[(dim, interpolation)](image, shape, affine=comp)
         return transformed
 
     @warning_for_keywords()
@@ -436,11 +436,11 @@ class AffineMap:
         """
         transformed = self._apply_transform(
             image,
-            interpolation,
-            image_grid2world,
-            sampling_grid_shape,
-            sampling_grid2world,
-            resample_only,
+            interpolation=interpolation,
+            image_grid2world=image_grid2world,
+            sampling_grid_shape=sampling_grid_shape,
+            sampling_grid2world=sampling_grid2world,
+            resample_only=resample_only,
             apply_inverse=False,
         )
         return np.array(transformed)
@@ -497,11 +497,11 @@ class AffineMap:
         """
         transformed = self._apply_transform(
             image,
-            interpolation,
-            image_grid2world,
-            sampling_grid_shape,
-            sampling_grid2world,
-            resample_only,
+            interpolation=interpolation,
+            image_grid2world=image_grid2world,
+            sampling_grid_shape=sampling_grid_shape,
+            sampling_grid2world=sampling_grid2world,
+            resample_only=resample_only,
             apply_inverse=True,
         )
         return np.array(transformed)
@@ -624,7 +624,11 @@ class MutualInformationMetric:
             P = self.starting_affine
 
         self.affine_map = AffineMap(
-            P, static.shape, static_grid2world, moving.shape, moving_grid2world
+            P,
+            domain_grid_shape=static.shape,
+            domain_grid2world=static_grid2world,
+            codomain_grid_shape=moving.shape,
+            codomain_grid2world=moving_grid2world,
         )
 
         # Masks can only be used with dense sampling
@@ -673,7 +677,7 @@ class MutualInformationMetric:
             self.static_vals, inside = self.interp_method(static, static_p)
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
         self.histogram.setup(
-            self.static, self.moving, self.static_mask, self.moving_mask
+            self.static, self.moving, smask=self.static_mask, mmask=self.moving_mask
         )
 
     def _update_histogram(self):
@@ -717,7 +721,10 @@ class MutualInformationMetric:
                 ).astype(np.int32)
 
             self.histogram.update_pdfs_dense(
-                static_values, moving_values, self.static_mask, moving_mask_values
+                static_values,
+                moving_values,
+                smask=self.static_mask,
+                mmask=moving_mask_values,
             )
         else:  # Sparse case
             sp_to_moving = self.moving_world2grid.dot(self.affine_map.affine)
@@ -792,8 +799,8 @@ class MutualInformationMetric:
                     moving_values,
                     static2prealigned,
                     mgrad,
-                    static_mask_values,
-                    moving_mask_values,
+                    smask=static_mask_values,
+                    mmask=moving_mask_values,
                 )
             else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
@@ -835,7 +842,7 @@ class MutualInformationMetric:
 
         """
         try:
-            self._update_mutual_information(params, False)
+            self._update_mutual_information(params, update_gradient=False)
         except (AffineInversionError, AffineInvalidValuesError):
             return np.inf
         return -1 * self.metric_val
@@ -857,7 +864,7 @@ class MutualInformationMetric:
 
         """
         try:
-            self._update_mutual_information(params, True)
+            self._update_mutual_information(params, update_gradient=True)
         except (AffineInversionError, AffineInvalidValuesError):
             return 0 * self.metric_grad
         return -1 * self.metric_grad
@@ -883,7 +890,7 @@ class MutualInformationMetric:
 
         """
         try:
-            self._update_mutual_information(params, True)
+            self._update_mutual_information(params, update_gradient=True)
         except (AffineInversionError, AffineInvalidValuesError):
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
@@ -1133,37 +1140,37 @@ class AffineRegistration:
                 moving,
                 self.factors,
                 self.sigmas,
-                moving_grid2world,
-                moving_spacing,
-                False,
+                image_grid2world=moving_grid2world,
+                input_spacing=moving_spacing,
+                mask0=False,
             )
 
             self.static_ss = IsotropicScaleSpace(
                 static,
                 self.factors,
                 self.sigmas,
-                static_grid2world,
-                static_spacing,
-                False,
+                image_grid2world=static_grid2world,
+                input_spacing=static_spacing,
+                mask0=False,
             )
 
         else:
             self.moving_ss = ScaleSpace(
                 moving,
                 self.levels,
-                moving_grid2world,
-                moving_spacing,
-                self.ss_sigma_factor,
-                False,
+                image_grid2world=moving_grid2world,
+                input_spacing=moving_spacing,
+                sigma_factor=self.ss_sigma_factor,
+                mask0=False,
             )
 
             self.static_ss = ScaleSpace(
                 static,
                 self.levels,
-                static_grid2world,
-                static_spacing,
-                self.ss_sigma_factor,
-                False,
+                image_grid2world=static_grid2world,
+                input_spacing=static_spacing,
+                sigma_factor=self.ss_sigma_factor,
+                mask0=False,
             )
 
     @warning_for_keywords()
@@ -1262,10 +1269,10 @@ class AffineRegistration:
         original_moving_grid2world = self.moving_ss.get_affine(0)
         affine_map = AffineMap(
             None,
-            original_static_shape,
-            original_static_grid2world,
-            original_moving_shape,
-            original_moving_grid2world,
+            domain_grid_shape=original_static_shape,
+            domain_grid2world=original_static_grid2world,
+            codomain_grid_shape=original_moving_shape,
+            codomain_grid2world=original_moving_grid2world,
         )
 
         for level in range(self.levels - 1, -1, -1):
@@ -1280,10 +1287,10 @@ class AffineRegistration:
             current_static_grid2world = self.static_ss.get_affine(level)
             current_affine_map = AffineMap(
                 None,
-                current_static_shape,
-                current_static_grid2world,
-                original_static_shape,
-                original_static_grid2world,
+                domain_grid_shape=current_static_shape,
+                domain_grid2world=current_static_grid2world,
+                codomain_grid_shape=original_static_shape,
+                codomain_grid2world=original_static_grid2world,
             )
             current_static = current_affine_map.transform(smooth_static)
             current_static_mask = None
@@ -1302,11 +1309,11 @@ class AffineRegistration:
                 transform,
                 current_static,
                 current_moving,
-                current_static_grid2world,
-                current_moving_grid2world,
-                self.starting_affine,
-                current_static_mask,
-                self.moving_mask,
+                static_grid2world=current_static_grid2world,
+                moving_grid2world=current_moving_grid2world,
+                starting_affine=self.starting_affine,
+                static_mask=current_static_mask,
+                moving_mask=self.moving_mask,
             )
 
             # Optimize this level
@@ -1374,7 +1381,11 @@ def transform_centers_of_mass(static, static_grid2world, moving, moving_grid2wor
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     affine_map = AffineMap(
-        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+        transform,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_grid2world,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_grid2world,
     )
     return affine_map
 
@@ -1416,7 +1427,11 @@ def transform_geometric_centers(static, static_grid2world, moving, moving_grid2w
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     affine_map = AffineMap(
-        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+        transform,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_grid2world,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_grid2world,
     )
     return affine_map
 
@@ -1456,6 +1471,10 @@ def transform_origins(static, static_grid2world, moving, moving_grid2world):
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     affine_map = AffineMap(
-        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+        transform,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_grid2world,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_grid2world,
     )
     return affine_map

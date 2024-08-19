@@ -115,9 +115,9 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
                         vol 6, no 175, 2012.
     """
 
-    recognized_bundle = set_number_of_points(recognized_bundle, nb_pts)
+    recognized_bundle = set_number_of_points(recognized_bundle, nb_points=nb_pts)
 
-    expert_bundle = set_number_of_points(expert_bundle, nb_pts)
+    expert_bundle = set_number_of_points(expert_bundle, nb_points=nb_pts)
 
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
@@ -323,7 +323,12 @@ class RecoBundles:
         thresholds = self.start_thr + [clust_thr]
 
         merged_cluster_map = qbx_and_merge(
-            self.streamlines, thresholds, nb_pts, None, self.rng, self.verbose
+            self.streamlines,
+            thresholds,
+            nb_pts=nb_pts,
+            select_randomly=None,
+            rng=self.rng,
+            verbose=self.verbose,
         )
 
         self.cluster_map = merged_cluster_map
@@ -671,8 +676,8 @@ class RecoBundles:
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
         ba_value = bundle_adjacency(
-            set_number_of_points(recog_centroids, 20),
-            set_number_of_points(model_centroids, 20),
+            set_number_of_points(recog_centroids, nb_points=20),
+            set_number_of_points(model_centroids, nb_points=20),
             threshold=10,
         )
 
@@ -680,8 +685,8 @@ class RecoBundles:
         static = select_random_set_of_streamlines(model_bundle, slr_select[0])
         moving = select_random_set_of_streamlines(pruned_streamlines, slr_select[1])
         nb_pts = 20
-        static = set_number_of_points(static, nb_pts)
-        moving = set_number_of_points(moving, nb_pts)
+        static = set_number_of_points(static, nb_points=nb_pts)
+        moving = set_number_of_points(moving, nb_points=nb_pts)
 
         BMD.setup(static, moving)
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0])  # affine
@@ -806,8 +811,8 @@ class RecoBundles:
             neighb_streamlines, select_target, rng=self.rng
         )
 
-        static = set_number_of_points(static, nb_pts)
-        moving = set_number_of_points(moving, nb_pts)
+        static = set_number_of_points(static, nb_points=nb_pts)
+        moving = set_number_of_points(moving, nb_points=nb_pts)
 
         slr = StreamlineLinearRegistration(
             metric=metric, x0=x0, bounds=bounds, method=method

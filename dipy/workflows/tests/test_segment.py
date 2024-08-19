@@ -17,7 +17,7 @@ from dipy.workflows.segment import LabelsBundlesFlow, MedianOtsuFlow, RecoBundle
 
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames("small_25")
+        data_path, _, _ = get_fnames(name="small_25")
         volume = load_nifti_data(data_path)
         save_masked = True
         median_radius = 3
@@ -64,7 +64,7 @@ def test_median_otsu_flow():
 
 def test_recobundles_flow():
     with TemporaryDirectory() as out_dir:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
 
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
@@ -113,8 +113,8 @@ def test_recobundles_flow():
 
         BMD = BundleMinDistanceMetric()
         nb_pts = 20
-        static = set_number_of_points(f2, nb_pts)
-        moving = set_number_of_points(rec_bundle_org, nb_pts)
+        static = set_number_of_points(f2, nb_points=nb_pts)
+        moving = set_number_of_points(rec_bundle_org, nb_points=nb_pts)
 
         BMD.setup(static, moving)
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0])  # affine

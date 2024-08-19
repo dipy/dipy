@@ -14,7 +14,7 @@ response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 @set_random_number_generator()
 def test_pmf_val(rng):
-    sphere = get_sphere("symmetric724")
+    sphere = get_sphere(name="symmetric724")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",

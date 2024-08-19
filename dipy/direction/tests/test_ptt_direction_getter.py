@@ -23,7 +23,7 @@ from dipy.tracking.streamline import Streamlines
 
 def test_ptt_tracking():
     # Test PTT direction getter generate 100 streamlines with more than 1 pts.
-    fod_fname, seed_coordinates_fname, _ = get_fnames("ptt_minimal_dataset")
+    fod_fname, seed_coordinates_fname, _ = get_fnames(name="ptt_minimal_dataset")
     fod, affine = load_nifti(fod_fname)
     seed_coordinates = np.loadtxt(seed_coordinates_fname)[:10, :]
     sf = sh_to_sf(

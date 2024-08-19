@@ -94,12 +94,12 @@ def test_diffeomorphic_map_2d(rng):
     diff_map = imwarp.DiffeomorphicMap(
         2,
         domain_shape,
-        domain_grid2world,
-        domain_shape,
-        domain_grid2world,
-        codomain_shape,
-        codomain_grid2world,
-        None,
+        disp_grid2world=domain_grid2world,
+        domain_shape=domain_shape,
+        domain_grid2world=domain_grid2world,
+        codomain_shape=codomain_shape,
+        codomain_grid2world=codomain_grid2world,
+        prealign=None,
     )
     diff_map.forward = disp
 
@@ -110,48 +110,48 @@ def test_diffeomorphic_map_2d(rng):
         moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
-        warped = diff_map.transform(moving_image, "linear")
+        warped = diff_map.transform(moving_image, interpolation="linear")
         # compare the images (the linear interpolation may introduce slight
         # precision errors)
         assert_array_almost_equal(warped, expected, decimal=5)
 
         # Now test the nearest neighbor interpolation
-        warped = diff_map.transform(moving_image, "nearest")
+        warped = diff_map.transform(moving_image, interpolation="nearest")
         # compare the images (now we don't have to worry about precision,
         # it is n.n.)
         assert_array_almost_equal(warped, expected)
 
         # verify the is_inverse flag
         inv = diff_map.inverse()
-        warped = inv.transform_inverse(moving_image, "linear")
+        warped = inv.transform_inverse(moving_image, interpolation="linear")
         assert_array_almost_equal(warped, expected, decimal=5)
 
-        warped = inv.transform_inverse(moving_image, "nearest")
+        warped = inv.transform_inverse(moving_image, interpolation="nearest")
         assert_array_almost_equal(warped, expected)
 
     # Now test the inverse functionality
     diff_map = imwarp.DiffeomorphicMap(
-        2,
-        codomain_shape,
-        codomain_grid2world,
-        codomain_shape,
-        codomain_grid2world,
-        domain_shape,
-        domain_grid2world,
-        None,
+        dim=2,
+        disp_shape=codomain_shape,
+        disp_grid2world=codomain_grid2world,
+        domain_shape=codomain_shape,
+        domain_grid2world=codomain_grid2world,
+        codomain_shape=domain_shape,
+        codomain_grid2world=domain_grid2world,
+        prealign=None,
     )
     diff_map.backward = disp
     for _type in [floating, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
-        warped = diff_map.transform_inverse(moving_image, "linear")
+        warped = diff_map.transform_inverse(moving_image, interpolation="linear")
         # compare the images (the linear interpolation may introduce slight
         # precision errors)
         assert_array_almost_equal(warped, expected, decimal=5)
 
         # Now test the nearest neighbor interpolation
-        warped = diff_map.transform_inverse(moving_image, "nearest")
+        warped = diff_map.transform_inverse(moving_image, interpolation="nearest")
         # compare the images (now we don't have to worry about precision,
         # it is nearest neighbour)
         assert_array_almost_equal(warped, expected)
@@ -159,37 +159,39 @@ def test_diffeomorphic_map_2d(rng):
     # Verify that DiffeomorphicMap raises the appropriate exceptions when
     # the sampling information is undefined
     diff_map = imwarp.DiffeomorphicMap(
-        2,
-        domain_shape,
-        domain_grid2world,
-        domain_shape,
-        domain_grid2world,
-        codomain_shape,
-        codomain_grid2world,
-        None,
+        dim=2,
+        disp_shape=domain_shape,
+        disp_grid2world=domain_grid2world,
+        domain_shape=domain_shape,
+        domain_grid2world=domain_grid2world,
+        codomain_shape=codomain_shape,
+        codomain_grid2world=codomain_grid2world,
+        prealign=None,
     )
     diff_map.forward = disp
     diff_map.domain_shape = None
     # If we don't provide the sampling info, it should try to use the map's
     # info, but it's None...
-    assert_raises(ValueError, diff_map.transform, moving_image, "linear")
+    assert_raises(ValueError, diff_map.transform, moving_image, interpolation="linear")
 
     # Same test for diff_map.transform_inverse
     diff_map = imwarp.DiffeomorphicMap(
-        2,
-        domain_shape,
-        domain_grid2world,
-        domain_shape,
-        domain_grid2world,
-        codomain_shape,
-        codomain_grid2world,
-        None,
+        dim=2,
+        disp_shape=domain_shape,
+        disp_grid2world=domain_grid2world,
+        domain_shape=domain_shape,
+        domain_grid2world=domain_grid2world,
+        codomain_shape=codomain_shape,
+        codomain_grid2world=codomain_grid2world,
+        prealign=None,
     )
     diff_map.forward = disp
     diff_map.codomain_shape = None
     # If we don't provide the sampling info, it should try to use the map's
     # info, but it's None...
-    assert_raises(ValueError, diff_map.transform_inverse, moving_image, "linear")
+    assert_raises(
+        ValueError, diff_map.transform_inverse, moving_image, interpolation="linear"
+    )
 
     # We must provide, at least, the reference grid shape
     assert_raises(ValueError, imwarp.DiffeomorphicMap, 2, None)
@@ -238,16 +240,25 @@ def test_diffeomorphic_map_simplification_2d():
     P = gt_affine
 
     # Create the original diffeomorphic map
-    diff_map = imwarp.DiffeomorphicMap(2, dom_shape, R, dom_shape, D, cod_shape, C, P)
+    diff_map = imwarp.DiffeomorphicMap(
+        dim=2,
+        disp_shape=dom_shape,
+        disp_grid2world=R,
+        domain_shape=dom_shape,
+        domain_grid2world=D,
+        codomain_shape=cod_shape,
+        codomain_grid2world=C,
+        prealign=P,
+    )
     diff_map.forward = np.array(d, dtype=floating)
     diff_map.backward = np.array(dinv, dtype=floating)
     # Warp the circle to obtain the expected image
-    expected = diff_map.transform(circle, "linear")
+    expected = diff_map.transform(circle, interpolation="linear")
 
     # Simplify
     simplified = diff_map.get_simplified_transform()
     # warp the circle
-    warped = simplified.transform(circle, "linear")
+    warped = simplified.transform(circle, interpolation="linear")
     # verify that the simplified map is equivalent to the
     # original one
     assert_array_almost_equal(warped, expected)
@@ -304,17 +315,24 @@ def test_diffeomorphic_map_simplification_3d():
 
     # Create the original diffeomorphic map
     diff_map = imwarp.DiffeomorphicMap(
-        3, domain_shape, R, domain_shape, D, codomain_shape, C, P
+        dim=3,
+        disp_shape=domain_shape,
+        disp_grid2world=R,
+        domain_shape=domain_shape,
+        domain_grid2world=D,
+        codomain_shape=codomain_shape,
+        codomain_grid2world=C,
+        prealign=P,
     )
     diff_map.forward = np.array(d, dtype=floating)
     diff_map.backward = np.array(dinv, dtype=floating)
     # Warp the sphere to obtain the expected image
-    expected = diff_map.transform(sphere, "linear")
+    expected = diff_map.transform(sphere, interpolation="linear")
 
     # Simplify
     simplified = diff_map.get_simplified_transform()
     # warp the sphere
-    warped = simplified.transform(sphere, "linear")
+    warped = simplified.transform(sphere, interpolation="linear")
     # verify that the simplified map is equivalent to the
     # original one
     assert_array_almost_equal(warped, expected)
@@ -334,9 +352,11 @@ def test_optimizer_exceptions():
     # The metric must not be None
     assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, None)
     # The iterations list must not be empty
-    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, metric, [])
+    assert_raises(
+        ValueError, imwarp.SymmetricDiffeomorphicRegistration, metric, level_iters=[]
+    )
 
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, None)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters=None)
     # Verify the default iterations list
     assert_array_equal(optimizer.level_iters, [100, 100, 25])
 
@@ -391,8 +411,8 @@ def test_ssd_2d_demons():
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
     """
-    fname_moving = get_fnames("reg_o")
-    fname_static = get_fnames("reg_c")
+    fname_moving = get_fnames(name="reg_o")
+    fname_static = get_fnames(name="reg_c")
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -414,12 +434,12 @@ def test_ssd_2d_demons():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
 
     # test callback being called
@@ -436,7 +456,7 @@ def test_ssd_2d_demons():
     optimizer.callback = simple_callback
 
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -460,8 +480,8 @@ def test_ssd_2d_gauss_newton():
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
     """
-    fname_moving = get_fnames("reg_o")
-    fname_static = get_fnames("reg_c")
+    fname_moving = get_fnames(name="reg_o")
+    fname_static = get_fnames(name="reg_c")
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -473,7 +493,9 @@ def test_ssd_2d_gauss_newton():
     smooth = 4
     inner_iter = 5
     step_type = "gauss_newton"
-    similarity_metric = metrics.SSDMetric(2, smooth, inner_iter, step_type)
+    similarity_metric = metrics.SSDMetric(
+        2, smooth=smooth, inner_iter=inner_iter, step_type=step_type
+    )
 
     # Configure and run the Optimizer
     level_iters = [200, 100, 50, 25]
@@ -483,13 +505,13 @@ def test_ssd_2d_gauss_newton():
     inv_tol = 1e-3
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        metric=similarity_metric,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
 
     # test callback not being called
@@ -505,7 +527,11 @@ def test_ssd_2d_gauss_newton():
     optimizer.verbosity = VerbosityLevels.DEBUG
     transformation = np.eye(3)
     mapping = optimizer.optimize(
-        static, moving, transformation, transformation, transformation
+        static,
+        moving,
+        static_grid2world=transformation,
+        moving_grid2world=transformation,
+        prealign=transformation,
     )
     m = optimizer.get_map()
     assert_equal(mapping, m)
@@ -582,7 +608,7 @@ def get_warped_stacked_image(image, nslices, b, m):
 
 def get_synthetic_warped_circle(nslices):
     # get a subsampled circle
-    fname_cicle = get_fnames("reg_o")
+    fname_cicle = get_fnames(name="reg_o")
     circle = np.load(fname_cicle)[::4, ::4].astype(floating)
 
     # create a synthetic invertible map and warp the circle
@@ -640,15 +666,15 @@ def test_ssd_3d_demons():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -677,7 +703,9 @@ def test_ssd_3d_gauss_newton():
     smooth = 4
     inner_iter = 5
     step_type = "gauss_newton"
-    similarity_metric = metrics.SSDMetric(3, smooth, inner_iter, step_type)
+    similarity_metric = metrics.SSDMetric(
+        3, smooth=smooth, inner_iter=inner_iter, step_type=step_type
+    )
 
     # Create the optimizer
     level_iters = [10, 10]
@@ -688,15 +716,15 @@ def test_ssd_3d_gauss_newton():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -715,7 +743,7 @@ def test_cc_2d():
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
     """
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 1
     b = 0.1
     m = 4
@@ -726,13 +754,15 @@ def test_cc_2d():
     # Configure the metric
     sigma_diff = 3.0
     radius = 4
-    metric = metrics.CCMetric(2, sigma_diff, radius)
+    metric = metrics.CCMetric(2, sigma_diff=sigma_diff, radius=radius)
 
     # Configure and run the Optimizer
     level_iters = [15, 5]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric=metric, level_iters=level_iters
+    )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -752,7 +782,7 @@ def test_cc_3d():
     invertible map. We verify that the final registration is of good
     quality.
     """
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 21
     b = 0.1
     m = 4
@@ -763,7 +793,7 @@ def test_cc_3d():
     # Create the CC metric
     sigma_diff = 2.0
     radius = 2
-    similarity_metric = metrics.CCMetric(3, sigma_diff, radius)
+    similarity_metric = metrics.CCMetric(3, sigma_diff=sigma_diff, radius=radius)
 
     # Create the optimizer
     level_iters = [20, 5]
@@ -774,16 +804,18 @@ def test_cc_3d():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
 
-    mapping = optimizer.optimize(static, moving, None, None, None)
+    mapping = optimizer.optimize(
+        static, moving, static_grid2world=None, moving_grid2world=None, prealign=None
+    )
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -803,7 +835,7 @@ def test_em_3d_gauss_newton():
     invertible map. We verify that the final registration is of good
     quality.
     """
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 21
     b = 0.1
     m = 4
@@ -819,7 +851,12 @@ def test_em_3d_gauss_newton():
     double_gradient = True
     iter_type = "gauss_newton"
     similarity_metric = metrics.EMMetric(
-        3, smooth, inner_iter, q_levels, double_gradient, iter_type
+        3,
+        smooth=smooth,
+        inner_iter=inner_iter,
+        q_levels=q_levels,
+        double_gradient=double_gradient,
+        step_type=iter_type,
     )
 
     # Create the optimizer
@@ -830,15 +867,15 @@ def test_em_3d_gauss_newton():
     ss_sigma_factor = 1.0
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -858,7 +895,7 @@ def test_em_2d_gauss_newton():
     registration is of good quality.
     """
 
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 1
     b = 0.1
     m = 4
@@ -873,14 +910,21 @@ def test_em_2d_gauss_newton():
     double_gradient = False
     iter_type = "gauss_newton"
     metric = metrics.EMMetric(
-        2, smooth, inner_iter, q_levels, double_gradient, iter_type
+        2,
+        smooth=smooth,
+        inner_iter=inner_iter,
+        q_levels=q_levels,
+        double_gradient=double_gradient,
+        step_type=iter_type,
     )
 
     # Configure and run the Optimizer
     level_iters = [40, 20, 10]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric, level_iters=level_iters
+    )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -900,7 +944,7 @@ def test_em_3d_demons():
     invertible map. We verify that the final registration is of good
     quality.
     """
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 21
     b = 0.1
     m = 4
@@ -916,7 +960,12 @@ def test_em_3d_demons():
     double_gradient = True
     iter_type = "demons"
     similarity_metric = metrics.EMMetric(
-        3, smooth, inner_iter, q_levels, double_gradient, iter_type
+        3,
+        smooth=smooth,
+        inner_iter=inner_iter,
+        q_levels=q_levels,
+        double_gradient=double_gradient,
+        step_type=iter_type,
     )
 
     # Create the optimizer
@@ -927,15 +976,15 @@ def test_em_3d_demons():
     ss_sigma_factor = 1.0
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric,
-        level_iters,
-        step_length,
-        ss_sigma_factor,
-        opt_tol,
-        inv_iter,
-        inv_tol,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -954,7 +1003,7 @@ def test_em_2d_demons():
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
     """
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     nslices = 1
     b = 0.1
     m = 4
@@ -969,14 +1018,21 @@ def test_em_2d_demons():
     double_gradient = False
     iter_type = "demons"
     metric = metrics.EMMetric(
-        2, smooth, inner_iter, q_levels, double_gradient, iter_type
+        2,
+        smooth=smooth,
+        inner_iter=inner_iter,
+        q_levels=q_levels,
+        double_gradient=double_gradient,
+        step_type=iter_type,
     )
 
     # Configure and run the Optimizer
     level_iters = [40, 20, 10]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric=metric, level_iters=level_iters
+    )
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -1072,19 +1128,19 @@ def test_coordinate_mapping(rng):
         diff_map = imwarp.DiffeomorphicMap(
             dim,
             domain_shape,
-            domain_grid2world,
-            domain_shape,
-            domain_grid2world,
-            codomain_shape,
-            codomain_grid2world,
-            None,
+            disp_grid2world=domain_grid2world,
+            domain_shape=domain_shape,
+            domain_grid2world=domain_grid2world,
+            codomain_shape=codomain_shape,
+            codomain_grid2world=codomain_grid2world,
+            prealign=None,
         )
         diff_map.forward = disp
 
         # Here, expected is obtained after two interpolation steps, therefore
         # we need to increase the tolerance when comparing against the result
         # using only one interpolation step (we set decimal=5 below)
-        warped = diff_map.transform(moving_image, "linear")
+        warped = diff_map.transform(moving_image, interpolation="linear")
         expected, inside = interpolate_f(warped, points)
 
         # Now map the points with the implementation under test
@@ -1093,7 +1149,9 @@ def test_coordinate_mapping(rng):
         # Request mapping back from world to grid coordinates
         world2out = diff_map.domain_world2grid
         # Execute warping
-        wpoints = diff_map.transform_points(points, in2world, world2out)
+        wpoints = diff_map.transform_points(
+            points, coord2world=in2world, world2coord=world2out
+        )
         # Interpolate at warped points and verify it's equal to direct warping
         actual, inside = interpolate_f(moving_image, wpoints)
         assert_array_almost_equal(actual, expected, decimal=5)

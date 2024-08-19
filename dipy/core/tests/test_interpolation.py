@@ -46,7 +46,7 @@ def test_trilinear_interpolate(rng):
 
     # Pass in out ourselves
     out[:] = -1
-    trilinear_interpolate4d(data.astype(float), point.astype(float), out)
+    trilinear_interpolate4d(data.astype(float), point.astype(float), out=out)
     npt.assert_array_almost_equal(out, expected)
 
     # use a point close to an edge
@@ -400,8 +400,8 @@ def test_interp_rbf():
     def data_func(s, a, b):
         return a * np.cos(s.theta) + b * np.sin(s.phi)
 
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
+    s0 = create_unit_sphere(recursion_level=3)
+    s1 = create_unit_sphere(recursion_level=4)
 
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = data_func(s0, a, b)
@@ -429,8 +429,8 @@ def test_interp_rbf():
 
 
 def test_rbf_interpolation():
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
+    s0 = create_unit_sphere(recursion_level=3)
+    s1 = create_unit_sphere(recursion_level=4)
 
     def data_func(s, a, b):
         return a * np.cos(s.theta) + b * np.sin(s.phi)

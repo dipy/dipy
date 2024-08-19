@@ -43,7 +43,7 @@ def test_peak_directions_nl():
     assert_array_equal(values, abs(directions).sum(-1))
 
     # Test using a different sphere
-    sphere = unit_icosahedron.subdivide(4)
+    sphere = unit_icosahedron.subdivide(n=4)
     directions, values = peak_directions_nl(discrete_eval, sphere=sphere)
     assert_equal(directions.shape, (4, 3))
     assert_array_almost_equal(abs(directions), 1 / np.sqrt(3))
@@ -87,7 +87,7 @@ def test_peak_directions_nl():
     assert_almost_equal(values, 3 * 3 / np.sqrt(3))
 
 
-_sphere = create_unit_hemisphere(4)
+_sphere = create_unit_hemisphere(recursion_level=4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
 _gtab = GradientTable(np.ones((64, 3)))
 
@@ -160,17 +160,17 @@ def test_peak_directions():
 
 
 def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     S, sticks = multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=fractions, snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=fractions, snr=SNR
     )
 
-    sphere = get_sphere("symmetric724").subdivide(2)
+    sphere = get_sphere(name="symmetric724").subdivide(n=2)
 
     if half_sphere:
         sphere = HemiSphere.from_sphere(sphere)
@@ -453,7 +453,7 @@ def test_degenerate_cases(rng):
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
-    for sphere in [_sphere, get_sphere("symmetric642")]:
+    for sphere in [_sphere, get_sphere(name="symmetric642")]:
         # Test basic case
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
@@ -559,15 +559,15 @@ def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     data, _ = multi_tensor(
-        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
     )
 
     for sphere in [_sphere, default_sphere]:
@@ -663,17 +663,17 @@ def test_peaks_shm_coeff():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     sphere = default_sphere
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     data, _ = multi_tensor(
-        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
     )
 
     with warnings.catch_warnings():
@@ -745,9 +745,9 @@ def test_peaks_from_positions():
     min_angle = 25
     npeaks = 5
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     voxels = []
     for _ in range(27):

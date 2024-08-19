@@ -25,12 +25,12 @@ from dipy.sims.voxel import multi_tensor, single_tensor, sticks_and_ball
 def test_rumba():
     # Test fODF results from ideal examples.
     sphere = default_sphere  # repulsion 724
-    sphere2 = get_sphere("symmetric362")
+    sphere2 = get_sphere(name="symmetric362")
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -39,7 +39,7 @@ def test_rumba():
     msg = "b0_threshold .*"
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        gtab_broken = gradient_table(bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+        gtab_broken = gradient_table(bvals[~gtab.b0s_mask], bvecs=bvecs[~gtab.b0s_mask])
 
     assert_raises(ValueError, RumbaSDModel, gtab_broken)
 
@@ -96,10 +96,10 @@ def test_predict():
 
     sphere = default_sphere
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     rumba = RumbaSDModel(gtab, n_iter=600, sphere=sphere)
 
@@ -116,10 +116,10 @@ def test_recursive_rumba():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -149,10 +149,10 @@ def test_multishell_rumba():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -233,10 +233,10 @@ def test_global_fit():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -388,10 +388,10 @@ def test_generate_kernel():
     # load repulsion 724 sphere
     sphere = default_sphere
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # Kernel parameters
     wm_response = np.array([1.7e-3, 0.2e-3, 0.2e-3])
@@ -410,10 +410,10 @@ def test_generate_kernel():
     S, _ = multi_tensor(
         gtab,
         np.array([wm_response]),
-        S0,
-        [[theta[0] * 180 / np.pi, phi[0] * 180 / np.pi]],
-        [fi],
-        None,
+        S0=S0,
+        angles=[[theta[0] * 180 / np.pi, phi[0] * 180 / np.pi]],
+        fractions=[fi],
+        snr=None,
     )
     assert_almost_equal(kernel[:, 0], S)
 

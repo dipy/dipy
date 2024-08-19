@@ -196,7 +196,7 @@ def normalized_vector(vec, *, axis=-1):
     True
 
     """
-    return vec / vector_norm(vec, axis, keepdims=True)
+    return vec / vector_norm(vec, axis=axis, keepdims=True)
 
 
 @warning_for_keywords()
@@ -720,7 +720,7 @@ def compose_matrix(
         T[:3, 3] = translate[:3]
         M = np.dot(M, T)
     if angles is not None:
-        R = euler_matrix(angles[0], angles[1], angles[2], "sxyz")
+        R = euler_matrix(angles[0], angles[1], angles[2], axes="sxyz")
         M = np.dot(M, R)
     if shear is not None:
         Z = np.identity(4)

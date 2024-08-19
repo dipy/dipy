@@ -183,7 +183,7 @@ class Synb0:
         idx : int
             The idx of the default weights. It can be from 0~4.
         """
-        fetch_model_weights_path = get_fnames("synb0_default_weights")
+        fetch_model_weights_path = get_fnames(name="synb0_default_weights")
         print(f"fetched {fetch_model_weights_path[idx]}")
         self.load_model_weights(fetch_model_weights_path[idx])
 

@@ -49,7 +49,7 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
     extra_kwargs = extra_kwargs or {}
 
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_25")
+        data_path, bval_path, bvec_path = get_fnames(name="small_25")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, "tmp_mask.nii.gz")

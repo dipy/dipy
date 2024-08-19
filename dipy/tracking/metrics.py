@@ -190,7 +190,7 @@ def downsample(xyz, *, n_pols=3):
        should be equal to n_pols
 
     """
-    return set_number_of_points(xyz, n_pols)
+    return set_number_of_points(xyz, nb_points=n_pols)
 
 
 def center_of_mass(xyz):
