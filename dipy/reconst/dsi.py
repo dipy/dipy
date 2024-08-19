@@ -26,10 +26,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         values $S(\mathbf{q})$
 
         .. math::
-            :nowrap:
-                \begin{eqnarray}
-                    P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
-                \end{eqnarray}
+           :nowrap:
+
+           P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions. Method
@@ -243,9 +242,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         .. math::
             :nowrap:
-                \begin{equation}
-                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
-                \end{equation}
+
+            MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
 
         where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space
         (see Wu et al. [1]_).
@@ -286,10 +284,8 @@ class DiffusionSpectrumFit(OdfFit):
         r"""Calculates the real discrete odf for a given discrete sphere
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
-                \end{equation}
+
+           \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
 
         where $\hat{\mathbf{u}}$ is the unit vector which corresponds to a
         sphere point.
@@ -518,11 +514,12 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
         .. math::
             :nowrap:
-                \begin{eqnarray*}
+
+                \begin{eqnarray}
                     P_{dsi}(\mathbf{r}) & = & S_{0}^{-1}\iiint\limits_{\| \mathbf{q} \| \le \mathbf{q_{max}}} S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\
                     & = & S_{0}^{-1}\iiint\limits_{\mathbf{q}} \left( S(\mathbf{q}) \cdot M(\mathbf{q}) \right) \exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\
                     & = & P(\mathbf{r}) \otimes \left( S_{0}^{-1}\iiint\limits_{\mathbf{q}}  M(\mathbf{q}) \exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \right) \\
-                \end{eqnarray*}
+                \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions,

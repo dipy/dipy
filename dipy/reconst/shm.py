@@ -273,12 +273,12 @@ def real_sph_harm(m_values, l_values, theta, phi):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y_l^{|m|}) \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -323,12 +323,12 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -392,12 +392,12 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -451,12 +451,12 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -514,12 +514,12 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -581,12 +581,12 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \Re(Y_l^m) \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \Im(Y_l^{|m|}) \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \Re(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -645,12 +645,12 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     .. math::
        :nowrap:
 
-    Y_l^m =
-    \begin{cases}
-        \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
-        Y^0_l \; if m = 0 \\
-        \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
-    \end{cases}
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -1474,7 +1474,9 @@ def calculate_max_order(n_coeffs, full_basis=False):
     -----
     The calculation in this function for the symmetric SH basis
     proceeds according to the following logic:
+
     .. math::
+
         n = \frac{1}{2} (L+1) (L+2)
         \rarrow 2n = L^2 + 3L + 2
         \rarrow L^2 + 3L + 2 - 2n = 0
@@ -1535,7 +1537,9 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True
     -----
     Calculate AP image based on a IxJxKxC SH coefficient matrix based on the
     equation:
+
     .. math::
+
         AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
 
     Where the last dimension, C, is made of a flattened array of $l$x$m$
