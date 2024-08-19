@@ -5,7 +5,7 @@ import numpy.testing as npt
 
 from dipy.core.sphere import unit_icosahedron
 from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
-from dipy.testing.decorators import set_random_number_generator
+from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package("joblib")
@@ -143,9 +143,10 @@ def test_CallableArray():
 @set_random_number_generator()
 def test_multi_voxel_fit(rng):
     class SillyModel:
+        @warning_for_keywords()
         @multi_voxel_fit
         def fit(
-            self, data, mask=None, another_kwarg=None, kwarg_untouched=True, **kwargs
+            self, data, *, mask=None, another_kwarg=None, kwarg_untouched=True, **kwargs
         ):
             # We want to make sure that all kwargs are passed through to the
             # the fitting procedure
