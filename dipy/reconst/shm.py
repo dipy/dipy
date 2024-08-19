@@ -64,8 +64,8 @@ def forward_sdeconv_mat(r_rh, l_values):
         function. Each element ``rh[i]`` is associated with spherical harmonics
         of order ``2*i``.
     l_values : ndarray
-        The orders ($l$) of spherical harmonic function associated with each row
-        of the deconvolution matrix. Only even orders are allowed
+        The orders ($l$) of spherical harmonic function associated with each
+        row of the deconvolution matrix. Only even orders are allowed
 
     Returns
     -------
