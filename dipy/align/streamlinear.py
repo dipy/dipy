@@ -329,10 +329,10 @@ class StreamlineLinearRegistration:
 
             If 1D array with:
                 a) 6 elements then only rigid registration is performed with
-                the 3 first elements for translation and 3 for rotation.
+                   the 3 first elements for translation and 3 for rotation.
                 b) 7 elements also isotropic scaling is performed (similarity).
                 c) 12 elements then translation, rotation (in degrees),
-                scaling and shearing is performed (affine).
+                   scaling and shearing is performed (affine).
 
                 Here is an example of x0 with 12 elements:
                 ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
