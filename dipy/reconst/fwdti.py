@@ -420,7 +420,7 @@ def wls_fit_tensor(
                 data[v],
                 S0[v],
                 min_signal=min_signal,
-                Diso=3e-3,
+                Diso=Diso,
                 piterations=piterations,
                 mdreg=mdreg,
             )
