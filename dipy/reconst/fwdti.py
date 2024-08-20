@@ -314,7 +314,7 @@ def wls_iter(
             FS, SI = np.meshgrid(fs, sig)
             SA = SI - FS * S0 * SFW.T
             # SA < 0 means that the signal components from the free water
-            # component is larger than the total fiber. This cases are present
+            # component is larger than the total fiber. These cases are present
             # for inappropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
