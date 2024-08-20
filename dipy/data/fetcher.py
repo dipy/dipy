@@ -2261,7 +2261,7 @@ def read_bundles_2_subjects(
     bundles : array-like
         E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
-        ``$HOME/.dipy`` folder.
+        ``DIPY_HOME`` of ``$HOME/.dipy`` folder.
 
     Returns
     -------
@@ -2618,7 +2618,8 @@ def fetch_hcp(
     profile_name : string, optional
         The name of the AWS profile used for access. Default: "hcp"
     path : string, optional
-        Path to save files into. Default: '~/.dipy'
+        Path to save files into. Defaults to the value of the ``DIPY_HOME``
+        environment variable is set; otherwise, defaults to ``$HOME/.dipy``.
     study : string, optional
         Which HCP study to grab. Default: 'HCP_1200'
     aws_access_key_id : string, optional
@@ -2838,7 +2839,8 @@ def fetch_hbn(subjects, *, path=None, include_afq=False):
         For example: ["NDARAA948VFH", "NDAREK918EC2"].
 
     path : string, optional
-        Path to save files into. Default: '~/.dipy'
+        Path to save files into. Defaults to the value of the ``DIPY_HOME``
+        environment variable is set; otherwise, defaults to ``$HOME/.dipy``.
 
     include_afq : bool, optional
         Whether to include pyAFQ derivatives. Default: False

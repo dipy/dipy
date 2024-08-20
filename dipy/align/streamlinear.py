@@ -582,7 +582,7 @@ class StreamlineRegistrationMap:
 
         Parameters
         ----------
-        matrix : array,
+        matopt : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
 
@@ -592,7 +592,7 @@ class StreamlineRegistrationMap:
         fopt : float,
             final value of the metric
 
-        matrix_history : array
+        matopt_history : array
             All transformation matrices created during the optimization
 
         funcs : int,
@@ -1057,7 +1057,9 @@ def slr_with_qbx(
     Parameters
     ----------
     static : Streamlines
-    moving : Streamlines
+        Fixed or reference set of streamlines.
+    moving : streamlines
+        Moving streamlines.
 
     x0 : str, optional.
         rigid, similarity or affine transformation model (default affine)
@@ -1076,20 +1078,19 @@ def slr_with_qbx(
         If True, logs information about optimization. Default: False
 
     greater_than : int, optional
-            Keep streamlines that have length greater than
-            this value (default 50)
+        Keep streamlines that have length greater than this value.
 
     less_than : int, optional
-            Keep streamlines have length less than this value (default 250)
+        Keep streamlines have length less than this value.
 
     qbx_thr : variable int
-            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+        Thresholds for QuickBundlesX.
 
     nb_pts : int, optional
-            Number of points for discretizing each streamline (default 20)
+        Number of points for discretizing each streamline.
 
     progressive : boolean, optional
-            (default True)
+       True to enable progressive registration.
 
     rng : np.random.Generator
         If None creates random generator in function.

@@ -571,7 +571,7 @@ class IvimModelVP(ReconstModel):
         the volume fractions are determined. Then the last step is non linear
         least square fitting on all the parameters. The results of the first
         and second step are utilized as the initial values for the last step
-        of the algorithm. (see [1]_ and [2]_ for a comparison and a through
+        of the algorithm. (see [1]_ and [2]_ for a comparison and a thorough
         discussion).
 
         References
@@ -752,7 +752,7 @@ class IvimModelVP(ReconstModel):
         Cost function for the least square problem. The cost function is used
         in the Least Squares function of SciPy in :func: `fit`. It guarantees
         that stopping point of the algorithm is at least a stationary point
-        with reduction in the the number of iterations required by the
+        with reduction in the number of iterations required by the
         differential evolution optimizer.
 
         Parameters

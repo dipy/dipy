@@ -1196,7 +1196,7 @@ class ResidualBootstrapWrapper:
     """Returns a residual bootstrap sample of the signal_object when indexed
 
     Wraps a signal_object, this signal object can be an interpolator. When
-    indexed, the the wrapper indexes the signal_object to get the signal.
+    indexed, the wrapper indexes the signal_object to get the signal.
     There wrapper than samples the residual bootstrap distribution of signal and
     returns that sample.
     """

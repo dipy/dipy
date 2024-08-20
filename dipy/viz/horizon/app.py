@@ -759,8 +759,8 @@ def horizon(
     Parameters
     ----------
     tractograms : sequence of StatefulTractograms
-            StatefulTractograms are used for making sure that the coordinate
-            systems are correct
+        StatefulTractograms are used for making sure that the coordinate
+        systems are correct
     images : sequence of tuples
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
@@ -818,7 +818,7 @@ def horizon(
         File path to replay recorded events
     return_showm : bool
         Return ShowManager object. Used only at Python level. Can be used
-        for extending Horizon's cababilities externally and for testing
+        for extending Horizon's capabilities externally and for testing
         purposes.
 
     References

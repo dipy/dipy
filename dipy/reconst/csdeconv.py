@@ -102,8 +102,8 @@ def auto_response(
     until="1.4",
 )
 def response_from_mask(gtab, data, mask):
-    """Computation of single-shell single-tissue (ssst) response
-        function from a given mask.
+    """Computation of single-shell single-tissue (ssst) response function from a
+    given mask.
 
     Parameters
     ----------
@@ -679,7 +679,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
                 solve $Qf_n = z$ using Cholesky decomposition
 
-    We'd like to thanks Donald Tournier for his help with describing and
+    We would like to thank Donald Tournier for his help with describing and
     implementing this algorithm.
 
     References
@@ -753,19 +753,19 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     Parameters
     ----------
     odf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
-         ndarray of SH coefficients for the ODF spherical function to be
-         deconvolved
+        ndarray of SH coefficients for the ODF spherical function to be
+        deconvolved
     R : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SDT matrix in SH basis
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SDT matrix in SH basis
     B_reg : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SH basis matrix used for deconvolution
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SH basis matrix used for deconvolution
     lambda_ : float
-         lambda parameter in minimization equation (default 1.0)
+        lambda parameter in minimization equation (default 1.0)
     tau : float
-         threshold (``tau *max(fODF)``) controlling the amplitude below
-         which the corresponding fODF is assumed to be zero.
+        threshold (``tau *max(fODF)``) controlling the amplitude below
+        which the corresponding fODF is assumed to be zero.
     r2_term : bool
          True if ODF is computed from model that uses the $r^2$ term in the
          integral.  Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and

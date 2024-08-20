@@ -105,7 +105,7 @@ def split_cti_params(cti_params):
 
     Parameters
     ----------
-        params: numpy.ndarray (..., 48)
+    cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
         Parameters are ordered as follows:
 
@@ -141,14 +141,14 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
     Parameters
     ----------
     cti_params: numpy.ndarray (..., 48)
-    All parameters estimated from the correlation tensor model.
-    Parameters are ordered as follows:
+        All parameters estimated from the correlation tensor model.
+        Parameters are ordered as follows:
 
-        1. Three diffusion tensor's eigenvalues
-        2. Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
-        3. Fifteen elements of the kurtosis tensor
-        4. Twenty-One elements of the covariance tensor
+            1. Three diffusion tensor's eigenvalues
+            2. Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3. Fifteen elements of the kurtosis tensor
+            4. Twenty-One elements of the covariance tensor
 
     gtab1: dipy.core.gradients.GradientTable
         A GradientTable class instance for first DDE diffusion epoch
@@ -279,14 +279,14 @@ class CorrelationTensorModel(ReconstModel):
         Parameters
         ----------
         cti_params: numpy.ndarray (..., 48)
-        All parameters estimated from the correlation tensor model.
-        Parameters are ordered as follows:
+            All parameters estimated from the correlation tensor model.
+            Parameters are ordered as follows:
 
-            1. Three diffusion tensor's eigenvalues
-            2. Three lines of the eigenvector matrix each containing the
-               first, second and third coordinates of the eigenvector
-            3. Fifteen elements of the kurtosis tensor
-            4. Twenty-One elements of the covariance tensor
+                1. Three diffusion tensor's eigenvalues
+                2. Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3. Fifteen elements of the kurtosis tensor
+                4. Twenty-One elements of the covariance tensor
 
         gtab1: dipy.core.gradients.GradientTable
             A GradientTable class instance for first DDE diffusion epoch
@@ -342,16 +342,6 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         Parameters
         ----------
-        params: numpy.ndarray (...,43)
-                All parameters estimated from the correlation tensor model.
-                Parameters are ordered as follows:
-
-                1. Three diffusion tensor's eigenvalues
-                2. Three lines of the eigenvector matrix each containing the
-                   first, second and third coordinates of the eigenvector
-                3. Fifteen elements of the kurtosis tensor
-                4. Twenty-One elements of the covariance tensor
-
         gtab1: dipy.core.gradients.GradientTable
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
@@ -569,14 +559,14 @@ def ls_fit_cti(
     Returns
     -------
     cti_params : array (48)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
 
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
-        4) Twenty One elements of the covariance tensor.
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+                third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
+            4) Twenty One elements of the covariance tensor.
 
     """
     A = design_matrix

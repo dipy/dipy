@@ -102,6 +102,7 @@ class QtdmriModel(Cache):
         cvxpy solver name. Optionally optimize the positivity constraint
         with a particular cvxpy solver. See https://www.cvxpy.org/ for
         details.
+        Default: None (cvxpy chooses its own solver)
 
     References
     ----------
@@ -550,7 +551,7 @@ class QtdmriFit:
     def qtdmri_to_mapmri_coef(self, tau):
         """This function converts the qtdmri coefficients to mapmri
         coefficients for a given tau [1]_. The conversion is performed by a
-        matrix multiplication that evaluates the time-depenent part of the
+        matrix multiplication that evaluates the time-dependent part of the
         basis and multiplies it with the coefficients, after which coefficients
         with the same spatial orders are summed up, resulting in mapmri
         coefficients.
