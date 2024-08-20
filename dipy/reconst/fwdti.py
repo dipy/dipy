@@ -255,7 +255,7 @@ def wls_iter(
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
-     mdreg : float, optimal
+    mdreg : float, optimal
         DTI's mean diffusivity regularization threshold. If standard DTI
         diffusion tensor's mean diffusivity is almost near the free water
         diffusion value, the diffusion signal is assumed to be only free water
