@@ -1,12 +1,37 @@
-from math import sqrt
+import logging
+
 import numpy as np
 import nibabel as nib
-import tensorflow as tf
-import keras
-from keras import layers, Layer, Model, initializers
-from tractoencoder_gsoc.utils import pre_pad
-from tractoencoder_gsoc.utils import dict_kernel_size_flatten_encoder_shape
 
+from dipy.nn.utils import pre_pad
+from dipy.nn.utils import dict_kernel_size_flatten_encoder_shape
+
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.utils.optpkg import optional_package
+
+
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+if have_tf:
+    import tensorflow as tf
+    import keras
+    from keras import layers, Model, initializers
+    from keras.layers import Layer
+else:
+    class Model:
+        pass
+
+    class Layer:
+        pass
+
+    logging.warning(
+        "This model requires Tensorflow.\
+                    Please install these packages using \
+                    pip. If using mac, please refer to this \
+                    link for installation. \
+                    https://github.com/apple/tensorflow_macos"
+    )
+
+logging.basicConfig()
 
 class Encoder(Layer):
     def __init__(self, latent_space_dims=32, kernel_size=3, **kwargs):
@@ -35,7 +60,7 @@ class Encoder(Layer):
         # Weight and bias initializers for Conv1D layers (matching PyTorch initialization)
         # Link: https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html (Variables section)
         # Weights
-        self.k_conv1d_weights_initializer = sqrt(1 / (3 * self.kernel_size))
+        self.k_conv1d_weights_initializer = np.sqrt(1 / (3 * self.kernel_size))
         self.conv1d_weights_initializer = initializers.RandomUniform(minval=-self.k_conv1d_weights_initializer,
                                                                      maxval=self.k_conv1d_weights_initializer,
                                                                      seed=2208)
@@ -85,7 +110,7 @@ class Encoder(Layer):
         # For Dense layers
         # Link: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html (Variables section)
         # Weights
-        self.k_dense_weights_initializer = sqrt(1 / dict_kernel_size_flatten_encoder_shape[self.kernel_size])
+        self.k_dense_weights_initializer = np.sqrt(1 / dict_kernel_size_flatten_encoder_shape[self.kernel_size])
         self.dense_weights_initializer = initializers.RandomUniform(minval=-self.k_dense_weights_initializer,
                                                                     maxval=self.k_dense_weights_initializer,
                                                                     seed=2208)
@@ -284,8 +309,12 @@ def init_model(latent_space_dims=32, kernel_size=3):
     Returns
     -------
     keras.Model
-        AutoEncoder model comprising an
-        Encoder and a Decoder.
+        Encoder model
+    keras.Model
+        Decoder model
+    tuple
+        Size of the convolutional output of
+        the Encoder block.
     """
     input_data = keras.Input(shape=(256, 3), name='input_streamline')
 
@@ -293,20 +322,22 @@ def init_model(latent_space_dims=32, kernel_size=3):
     encoder = Encoder(latent_space_dims=latent_space_dims,
                       kernel_size=kernel_size)
     encoded = encoder(input_data)
+    # Instantiate encoder model
+    model_encoder = Model(input_data, encoded, name="Encoder")
 
     # decode
     decoder = Decoder(encoder.encoder_out_size,
                       kernel_size=kernel_size)
     decoded = decoder(encoded)
     output_data = decoded
+    # Instantiate decoder model
+    model_decoder = Model(encoded, decoded, name="Decoder")
 
     # Instantiate model and name it
-    model = Model(input_data, output_data)
-    model.name = 'IncrFeatStridedConvFCUpsampReflectPadAE'
-    return model
+    return model_encoder, model_decoder, encoder.encoder_out_size
 
 
-class IncrFeatStridedConvFCUpsampReflectPadAE():
+class IncrFeatStridedConvFCUpsampReflectPadAE(Model):
     """
     Strided convolution-upsampling-based
     AutoEncoder using reflection-padding and
@@ -316,17 +347,39 @@ class IncrFeatStridedConvFCUpsampReflectPadAE():
     [1] https://doi.org/10.1016/j.media.2021.102126
     """
 
-    def __init__(self, latent_space_dims=32, kernel_size=3):
+    def __init__(self, latent_space_dims=32, kernel_size=3,
+                 **kwargs):
+        super(IncrFeatStridedConvFCUpsampReflectPadAE, self).__init__(**kwargs)
 
         # Parameter Initialization
         self.kernel_size = kernel_size
         self.latent_space_dims = latent_space_dims
-        self.input = keras.Input(shape=(256, 3), name='input_streamline')
 
-        self.model = init_model(latent_space_dims=self.latent_space_dims,
-                                kernel_size=self.kernel_size)
+        model = init_model(latent_space_dims=self.latent_space_dims,
+                           kernel_size=self.kernel_size)
+        self.encoder = model[0]
+        self.decoder = model[1]
+        self.encoder_out_size = model[2]
 
-    def __call__(self, x):
+        # Model name is: "incr_feat_strided_conv_fc_upsamp_reflect_pad_ae"
+
+    def get_config(self):
+        base_config = super().get_config()
+        config = {
+            "latent_space_dims": keras.saving.serialize_keras_object(self.latent_space_dims),
+            "kernel_size": keras.saving.serialize_keras_object(self.kernel_size),
+            "encoder_out_size": keras.saving.serialize_keras_object(self.encoder_out_size),
+        }
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        latent_space_dims = keras.saving.deserialize_keras_object(config.pop('latent_space_dims'))
+        encoder_out_size = keras.saving.deserialize_keras_object(config.pop('encoder_out_size'))
+        kernel_size = keras.saving.deserialize_keras_object(config.pop('kernel_size'))
+        return cls(latent_space_dims, kernel_size, **config)
+
+    def call(self, x):
         r"""
         Run the input streamlines 'x' through
         the model (encoder -> decoder)
@@ -343,7 +396,10 @@ class IncrFeatStridedConvFCUpsampReflectPadAE():
             Reconstruction of input streamlines
             after passing through the model.
         """
-        return self.model(x)
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+
+        return decoded
 
     def compile(self, **kwargs):
         r"""
@@ -354,19 +410,16 @@ class IncrFeatStridedConvFCUpsampReflectPadAE():
         implementation (FINTA [1]).
         [1] https://doi.org/10.1016/j.media.2021.102126
         """
-        kwargs['optimizer'].weight_decay = 0.13
-        self.model.compile(**kwargs)
+        if 'optimizer' in kwargs:
+            if hasattr(kwargs['optimizer'], 'weight_decay'):
+                kwargs['optimizer'].weight_decay = 0.13
+            else:
+                print("Optimizer does not have a weight_decay attribute. Ignoring...")
 
-    def summary(self, **kwargs):
-        r"""
-        Get the summary of the model. The summary
-        is textual and includes information about:
-        - The layers and their order in the model.
-        - The output shape of each layer.
-        """
-        return self.model.summary(**kwargs)
+        # Call the superclass's compile with the modified kwargs
+        super().compile(**kwargs)
 
-    def fit(self, *args, **kwargs,):
+    def fit(self, *args, **kwargs):
         r"""
         Wrapper of the built in fit method of the
         model, which trains the model for a fixed
@@ -378,22 +431,5 @@ class IncrFeatStridedConvFCUpsampReflectPadAE():
             kwargs['x'] = np.array(kwargs['x'])
         if isinstance(kwargs['y'], nib.streamlines.ArraySequence):
             kwargs['y'] = np.array(kwargs['y'])
-        return self.model.fit(*args, **kwargs)
 
-    def save_weights(self, *args, **kwargs):
-        """
-        Wrapper of the built in method to save
-        the weights of the model in the specified
-        filepath, which must end
-        in '*.weights.h5'.
-        """
-        self.model.save_weights(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        """
-        Wrapper of the built in method to save
-        the model together with its weights in
-        the specified filepath, which must end
-        in '*.keras'.
-        """
-        self.model.save(*args, **kwargs)
+        return super().fit(*args, **kwargs)

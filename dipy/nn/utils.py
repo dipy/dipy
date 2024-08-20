@@ -4,6 +4,31 @@ from scipy.ndimage import affine_transform, label
 from dipy.align.reslice import reslice
 from dipy.testing.decorators import warning_for_keywords
 
+from tensorflow import pad as tf_pad
+from keras import Sequential
+from keras.layers import Layer
+
+
+dict_kernel_size_flatten_encoder_shape = {1: 12288,
+                                          2: 10240,
+                                          3: 8192,
+                                          4: 7168,
+                                          5: 5120}
+
+class ReflectionPadding1D(Layer):
+    @warning_for_keywords()
+    def __init__(self, padding: int = 1, **kwargs):
+        super(ReflectionPadding1D, self).__init__(**kwargs)
+        self.padding = padding
+
+    def call(self, inputs):
+        return tf_pad(inputs, [[0, 0], [self.padding, self.padding], [0, 0]],
+                      mode='REFLECT')
+
+
+def pre_pad(layer: Layer):
+    return Sequential([ReflectionPadding1D(padding=1), layer])
+
 
 @warning_for_keywords()
 def normalize(image, *, min_v=None, max_v=None, new_min=-1, new_max=1):
