@@ -385,6 +385,7 @@ def wls_fit_tensor(
     fw_params : ndarray (x, y, z, 13)
         Matrix containing in the last dimension the free water model parameters
         in the following order:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
@@ -785,6 +786,7 @@ def nls_fit_tensor(
     fw_params : ndarray (x, y, z, 13)
         Matrix containing in the dimension the free water model parameters in
         the following order:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
