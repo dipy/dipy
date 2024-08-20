@@ -1756,12 +1756,12 @@ class DiffusionKurtosisModel(ReconstModel):
         fit_method : str or callable, optional
             str be one of the following:
 
-                - 'OLS' or 'ULLS' for ordinary least squares.
-                - 'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
-                   See func:`dki.ls_fit_dki`.
-                - 'CLS' for LMI constrained ordinary least squares [3]_.
-                - 'CWLS' for LMI constrained weighted least squares [3]_.
-                   See func:`dki.cls_fit_dki`.
+            - 'OLS' or 'ULLS' for ordinary least squares.
+            - 'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
+              See func:`dki.ls_fit_dki`.
+            - 'CLS' for LMI constrained ordinary least squares [3]_.
+            - 'CWLS' for LMI constrained weighted least squares
+              [3]_. See func:`dki.cls_fit_dki`.
 
             callable has to have the signature:
                 ``fit_method(design_matrix, data, *args, **kwargs)``
