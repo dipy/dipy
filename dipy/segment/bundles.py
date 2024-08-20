@@ -410,7 +410,7 @@ class RecoBundles:
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
 
         slr_bounds : array, optional
-            (default None)
+            SLR bounds.
         slr_select : tuple, optional
             Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
