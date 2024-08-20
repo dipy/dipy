@@ -287,7 +287,7 @@ class QtdmriModel(Cache):
                 ut /= tau_scaling
                 us = np.clip(us, self.eigenvalue_threshold, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.radial_order,
                     self.time_order,
                     us,
@@ -304,7 +304,7 @@ class QtdmriModel(Cache):
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.radial_order,
                     self.time_order,
                     us,
@@ -321,7 +321,7 @@ class QtdmriModel(Cache):
             R = np.eye(3)
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
-            M = qtdmri_isotropic_signal_matrix_(
+            M = _qtdmri_isotropic_signal_matrix(
                 self.radial_order,
                 self.time_order,
                 us[0],
@@ -1042,7 +1042,7 @@ class QtdmriFit:
         if self.model.cartesian:
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.model.radial_order,
                     self.model.time_order,
                     self.us,
@@ -1052,7 +1052,7 @@ class QtdmriFit:
                     self.model.normalization,
                 )
             else:
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.model.radial_order,
                     self.model.time_order,
                     self.us,
@@ -1062,7 +1062,7 @@ class QtdmriFit:
                     self.model.normalization,
                 )
         else:
-            M = qtdmri_isotropic_signal_matrix_(
+            M = _qtdmri_isotropic_signal_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us[0],
@@ -1129,7 +1129,7 @@ class QtdmriFit:
         tau_scaling = self.tau_scaling
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
         if self.model.cartesian:
-            K = qtdmri_eap_matrix_(
+            K = _qtdmri_eap_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us,
@@ -1138,7 +1138,7 @@ class QtdmriFit:
                 self.model.normalization,
             )
         else:
-            K = qtdmri_isotropic_eap_matrix_(
+            K = _qtdmri_isotropic_eap_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us[0],
@@ -1288,7 +1288,7 @@ def qtdmri_mapmri_isotropic_normalization(j, ell, u0):
     return sqrtC
 
 
-def qtdmri_signal_matrix_(
+def _qtdmri_signal_matrix(
     radial_order, time_order, us, ut, q, tau, normalization=False
 ):
     """Function to generate the qtdmri signal basis."""
@@ -1377,7 +1377,7 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     return K
 
 
-def qtdmri_isotropic_signal_matrix_(
+def _qtdmri_isotropic_signal_matrix(
     radial_order, time_order, us, ut, q, tau, normalization=False
 ):
     M = qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
@@ -1435,7 +1435,7 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     return M
 
 
-def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=False):
+def _qtdmri_eap_matrix(radial_order, time_order, us, ut, grid, normalization=False):
     sqrtCut = 1.0
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
@@ -1445,7 +1445,7 @@ def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=Fal
     return K_tau
 
 
-def qtdmri_isotropic_eap_matrix_(
+def _qtdmri_isotropic_eap_matrix(
     radial_order, time_order, us, ut, grid, normalization=False
 ):
     K = qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)
