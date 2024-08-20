@@ -429,9 +429,9 @@ class AffineMap:
 
         Returns
         -------
-        transformed : array, shape `sampling_grid_shape` or
-                      `self.codomain_shape`
-            the transformed image, sampled at the requested grid
+        transformed : array
+            the transformed image, sampled at the requested grid, with shape
+            `sampling_grid_shape` or `self.codomain_shape`.
 
         """
         transformed = self._apply_transform(
@@ -490,9 +490,9 @@ class AffineMap:
 
         Returns
         -------
-        transformed : array, shape `sampling_grid_shape` or
-                      `self.codomain_shape`
-            the transformed image, sampled at the requested grid
+        transformed : array
+            the transformed image, sampled at the requested grid, with shape
+            `sampling_grid_shape` or `self.codomain_shape`.
 
         """
         transformed = self._apply_transform(
