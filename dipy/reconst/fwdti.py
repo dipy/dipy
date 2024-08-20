@@ -271,12 +271,15 @@ def wls_iter(
 
     Returns
     -------
-    All parameters estimated from the free water tensor model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
-        3) The volume fraction of the free water compartment
+    fw_params : ndarray
+        All parameters estimated from the free water tensor model. Parameters
+        are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3) The volume fraction of the free water compartment
+
     """
     W = design_matrix
 
