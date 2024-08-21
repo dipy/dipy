@@ -3,7 +3,7 @@ import logging
 import os
 
 from dipy.testing.decorators import warning_for_keywords
-from dipy.workflows.multi_io import io_iterator_
+from dipy.workflows.multi_io import _io_iterator
 
 
 class Workflow:
@@ -36,7 +36,7 @@ class Workflow:
         else:
             frame = frame.frame
 
-        io_it = io_iterator_(
+        io_it = _io_iterator(
             frame,
             self.run,
             output_strategy=self._output_strategy,
