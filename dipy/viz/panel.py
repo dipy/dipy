@@ -75,9 +75,13 @@ def slicer_panel(
     Parameters
     ----------
     scene : Scene
+        Scene.
     iren : Interactor
+        Interactor.
     data : 3d ndarray
+        Data to be sliced.
     affine : 4x4 ndarray
+        Affine matrix.
     world_coords : bool
         If True then the affine is applied.
 
@@ -142,7 +146,7 @@ def slicer_panel(
 
     if pam is not None:
         peaks_actor_z = actor.peak_slicer(
-            pam.peak_dirs, None, mask=mask, affine=affine, colors=None
+            pam.peak_dirs, peaks_values=None, mask=mask, affine=affine, colors=None
         )
 
     slicer_opacity = 1.0

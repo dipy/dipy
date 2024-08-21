@@ -37,6 +37,7 @@ def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=Non
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
@@ -81,18 +82,18 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
         The sphere providing sample directions to sample the restricted and
-        hindered cellular diffusion tensors. For more details see Fieremans
-        et al., 2011.
+        hindered cellular diffusion tensors. For more details see [1]_.
     awf : ndarray (optional)
         Array containing values of the axonal water fraction that has the shape
         dki_params.shape[:-1]. If not given this will be automatically computed
-        using :func:`axonal_water_fraction`" with function's default precision.
+        using :func:`axonal_water_fraction` with function's default precision.
     mask : ndarray (optional)
         A boolean array used to mark the coordinates in the data that should be
         analyzed that has the shape dki_params.shape[:-1]
@@ -190,8 +191,10 @@ def dkimicro_prediction(params, gtab, S0=1):
     Parameters
     ----------
     params : ndarray (x, y, z, 40) or (n, 40)
-    All parameters estimated from the diffusion kurtosis microstructure model.
+        All parameters estimated from the diffusion kurtosis microstructure
+        model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
@@ -213,16 +216,19 @@ def dkimicro_prediction(params, gtab, S0=1):
     Notes
     -----
     1) The predicted signal is given by:
-    $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$, where
-    $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of the
-    diffusion hindered and restricted compartment for a given direction
-    $\theta$, $b$ is the b value provided in the GradientTable input for that
-    direction, $f$ is the volume fraction of the restricted diffusion
-    compartment (also known as the axonal water fraction).
+       .. math::
+
+           S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]
+
+       where $ADC_{r}$ and $ADC_{h}$ are the apparent diffusion coefficients of
+       the diffusion hindered and restricted compartment for a given direction
+       $\theta$, $b$ is the b value provided in the GradientTable input for that
+       direction, $f$ is the volume fraction of the restricted diffusion
+       compartment (also known as the axonal water fraction).
 
     2) In the original article of DKI microstructural model [1]_, the hindered
-    and restricted tensors were defined as the intra-cellular and
-    extra-cellular diffusion compartments respectively.
+       and restricted tensors were defined as the intra-cellular and
+       extra-cellular diffusion compartments respectively.
     """
 
     # Initialize pred_sig
@@ -319,21 +325,23 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         Parameters
         ----------
         gtab : GradientTable class instance
-
+            Gradient table.
         fit_method : str or callable
             str can be one of the following:
-            'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor
-            using the ordinary linear least squares solution
-                dki.ols_fit_dki
-            'WLS' or 'UWLLS' to fit the diffusion tensor and kurtosis tensor
-            using the ordinary linear least squares solution
-                dki.wls_fit_dki
+
+            - 'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor
+              using the ordinary linear least squares solution
+              `:func:dki.ols_fit_dki`
+            - 'WLS' or 'UWLLS' to fit the diffusion tensor and kurtosis tensor
+              using the ordinary linear least squares solution
+              :func:`dki.wls_fit_dki`
 
             callable has to have the signature:
-                fit_method(design_matrix, data, *args, **kwargs)
+                ``fit_method(design_matrix, data, *args, **kwargs)``
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
+           fit_method. See :func:`dki.ols_fit_dki`, :func:`dki.wls_fit_dki` for
+           details
 
         References
         ----------
@@ -421,6 +429,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             All parameters estimated from the diffusion kurtosis
             microstructural model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
@@ -428,6 +437,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                 4) Six elements of the hindered diffusion tensor
                 5) Six elements of the restricted diffusion tensor
                 6) Axonal water fraction
+
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -461,6 +471,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
             All parameters estimated from the diffusion kurtosis
             microstructural model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
@@ -620,13 +631,16 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----
         The predicted signal is given by:
 
-        $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$,
+        .. math::
+
+            S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]
+
         where $ADC_{r}$ and $ADC_{h}$ are the apparent diffusion coefficients
         of the diffusion hindered and restricted compartment for a given
         direction $\theta$, $b$ is the b value provided in the GradientTable

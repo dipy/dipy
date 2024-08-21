@@ -80,8 +80,8 @@ save_trk(sft, "tractogram_bootstrap_dg.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_bootstrap_dg.png", size=(800, 800))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
+    window.record(scene=scene, out_path="tractogram_bootstrap_dg.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -112,7 +112,9 @@ save_trk(sft, "closest_peak_dg_CSD.trk")
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_closest_peak_dg.png", size=(800, 800))
+    window.record(
+        scene=scene, out_path="tractogram_closest_peak_dg.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 

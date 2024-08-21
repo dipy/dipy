@@ -14,3 +14,4 @@ DIPY User Guide
    dependencies
    getting_started
    data
+   bibliography

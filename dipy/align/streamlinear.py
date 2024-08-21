@@ -56,8 +56,8 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         """
@@ -383,8 +383,8 @@ class StreamlineLinearRegistration:
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         References
@@ -582,7 +582,7 @@ class StreamlineRegistrationMap:
 
         Parameters
         ----------
-        matrix : array,
+        matopt : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
 
@@ -592,7 +592,7 @@ class StreamlineRegistrationMap:
         fopt : float,
             final value of the metric
 
-        matrix_history : array
+        matopt_history : array
             All transformation matrices created during the optimization
 
         funcs : int,
@@ -815,7 +815,7 @@ def bundle_min_distance_fast(t, static, moving, block_size, *, num_threads=None)
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
 
     Returns
@@ -912,20 +912,23 @@ def progressive_slr(
 ):
     """Progressive SLR.
 
-    This is an utility function that allows for example to do affine
+    This is a utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
     [Garyfallidis15]_ by starting with translation first, then rigid,
     then similarity, scaling and finally affine.
 
     Similarly, if for example, you want to perform rigid then you start with
-    translation first. This progressive strategy can helps with finding the
+    translation first. This progressive strategy can help with finding the
     optimal parameters of the final transformation.
 
     Parameters
     ----------
     static : Streamlines
+        Static streamlines.
     moving : Streamlines
+        Moving streamlines.
     metric : StreamlineDistanceMetric
+        Distance metric for registration optimization.
     x0 : string
         Could be any of 'translation', 'rigid', 'similarity', 'scaling',
         'affine'
@@ -935,12 +938,12 @@ def progressive_slr(
     method : string
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
     verbose :  bool, optional.
-        If True, log messages. Default:
+        If True, log messages.
     num_threads : int, optional
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 
@@ -1054,7 +1057,9 @@ def slr_with_qbx(
     Parameters
     ----------
     static : Streamlines
-    moving : Streamlines
+        Fixed or reference set of streamlines.
+    moving : streamlines
+        Moving streamlines.
 
     x0 : str, optional.
         rigid, similarity or affine transformation model (default affine)
@@ -1073,20 +1078,19 @@ def slr_with_qbx(
         If True, logs information about optimization. Default: False
 
     greater_than : int, optional
-            Keep streamlines that have length greater than
-            this value (default 50)
+        Keep streamlines that have length greater than this value.
 
     less_than : int, optional
-            Keep streamlines have length less than this value (default 250)
+        Keep streamlines have length less than this value.
 
     qbx_thr : variable int
-            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+        Thresholds for QuickBundlesX.
 
     nb_pts : int, optional
-            Number of points for discretizing each streamline (default 20)
+        Number of points for discretizing each streamline.
 
     progressive : boolean, optional
-            (default True)
+       True to enable progressive registration.
 
     rng : np.random.Generator
         If None creates random generator in function.
@@ -1095,7 +1099,7 @@ def slr_with_qbx(
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 
@@ -1108,13 +1112,13 @@ def slr_with_qbx(
     References
     ----------
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-    registration of white-matter fascicles in the space of streamlines",
-    NeuroImage, 117, 124--140, 2015
+       registration of white-matter fascicles in the space of streamlines",
+       NeuroImage, 117, 124--140, 2015
     .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
             bundle alignment for group comparisons", ISMRM, 2014.
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-    bundles using local and global streamline-based registration and
-    clustering, Neuroimage, 2017.
+       bundles using local and global streamline-based registration and
+       clustering, Neuroimage, 2017.
 
     """
     if rng is None:
@@ -1270,13 +1274,13 @@ def groupwise_slr(
     References
     ----------
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-    registration of white-matter fascicles in the space of streamlines",
-    NeuroImage, 117, 124--140, 2015
+       registration of white-matter fascicles in the space of streamlines",
+       NeuroImage, 117, 124--140, 2015
     .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
             bundle alignment for group comparisons", ISMRM, 2014.
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-    bundles using local and global streamline-based registration and
-    clustering, Neuroimage, 2017.
+       bundles using local and global streamline-based registration and
+       clustering, Neuroimage, 2017.
 
     """
 

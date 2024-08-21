@@ -23,7 +23,7 @@ class EVACPlusFlow(Workflow):
         out_mask="brain_mask.nii.gz",
         out_masked="dwi_masked.nii.gz",
     ):
-        """Extract brain using EVAC+.
+        """Extract brain using EVAC+ :footcite:p:`Park2024`.
 
         Parameters
         ----------
@@ -41,10 +41,7 @@ class EVACPlusFlow(Workflow):
 
         References
         ----------
-        ..  [Park2022] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
-        EVAC+: Multi-scale V-net with Deep Feature
-        CRF Layers for Brain Extraction.
-
+        .. footbibliography::
         """
         io_it = self.get_io_iterator()
         empty_flag = True

@@ -92,6 +92,7 @@ class Optimizer:
         constraints : dict or sequence of dict, optional
             Constraints definition (only for COBYLA and SLSQP).
             Each constraint is defined in a dictionary with fields:
+
                 type : str
                     Constraint type: 'eq' for equality, 'ineq' for inequality.
                 fun : callable
@@ -100,6 +101,7 @@ class Optimizer:
                     The Jacobian of `fun` (only for SLSQP).
                 args : sequence, optional
                     Extra arguments to be passed to the function and Jacobian.
+
             Equality constraint means that the constraint function result is to
             be zero whereas inequality means that it is to be non-negative.
             Note that COBYLA only supports inequality constraints.
@@ -115,10 +117,12 @@ class Optimizer:
         options : dict, optional
             A dictionary of solver options. All methods accept the following
             generic options:
+
                 maxiter : int
                     Maximum number of iterations to perform.
                 disp : bool
                     Set to True to print convergence messages.
+
             For method-specific options, see
             `show_options('minimize', method)`.
 
@@ -382,7 +386,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 class PositiveDefiniteLeastSquares:
     @warning_for_keywords()
     def __init__(self, m, *, A=None, L=None):
-        r"""Regularized least squares with linear matrix inequality constraints
+        r"""Regularized least squares with linear matrix inequality constraints [1]_.
 
         Generate a CVXPY representation of a regularized least squares
         optimization problem subject to linear matrix inequality constraints.

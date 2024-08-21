@@ -94,22 +94,24 @@ denoised_arr = patch2self(
 #
 # .. note::
 #
-# Depending on the acquisition, b0 may exhibit signal attenuation or
-# other artefacts that are not ideal for any denoising algorithm. We therefore
-# provide an option to skip denoising b0 volumes in the data. This can be done
-# by using the option `b0_denoising=False` within Patch2Self.
+#    Depending on the acquisition, b0 may exhibit signal attenuation or
+#    other artefacts that are not ideal for any denoising algorithm. We
+#    therefore provide an option to skip denoising b0 volumes in the data.
+#    This can be done by using the option `b0_denoising=False` within
+#    Patch2Self.
 #
-# Please set ``shift_intensity=True`` and ``clip_negative_vals=False`` by
-# default to avoid negative values in the denoised output.
+#    Please set ``shift_intensity=True`` and ``clip_negative_vals=False`` by
+#    default to avoid negative values in the denoised output.
 #
-# The ``b0_threshold`` is used to separate the b0 volumes from the DWI
-# volumes. Changing the value of the b0 threshold is needed if the b0 volumes
-# in the ``bval`` file have a value greater than the default ``b0_threshold``.
+#    The ``b0_threshold`` is used to separate the b0 volumes from the DWI
+#    volumes. Changing the value of the b0 threshold is needed if the b0 volumes
+#    in the ``bval`` file have a value greater than the default
+#    ``b0_threshold``.
 #
-# The default value of ``b0_threshold`` in DIPY is set to 50. If using data
-# such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
-# associated with them in the `bval` file. Please check the b-values for b0s
-# and adjust the ``b0_threshold``` accordingly.
+#    The default value of ``b0_threshold`` in DIPY is set to 50. If using data
+#    such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
+#    associated with them in the `bval` file. Please check the b-values for b0s
+#    and adjust the ``b0_threshold``` accordingly.
 #
 # Now let's visualize the output and the residuals obtained from the denoising.
 

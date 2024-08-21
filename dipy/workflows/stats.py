@@ -220,10 +220,10 @@ def buan_bundle_profiles(
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
+       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
+       Bundle analytics, a computational framework for investigating the
+       shapes and profiles of brain pathways across populations.
+       Sci Rep 10, 17149 (2020)
 
     """
 
@@ -353,10 +353,10 @@ class BundleAnalysisTractometryFlow(Workflow):
         References
         ----------
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
+           Garyfallidis, E. Bundle analytics, a computational framework for
+           investigating the shapes and profiles of brain pathways across
+           populations. Sci Rep 10, 17149 (2020)
 
         """
 
@@ -437,6 +437,7 @@ class LinearMixedModelsFlow(Workflow):
         title : string
             Title for the plot.
         bundle_name : string
+            Bundle name.
         x : list
             list containing segment/disk number for x-axis.
         y : list
@@ -581,10 +582,10 @@ class BundleShapeAnalysis(Workflow):
         References
         ----------
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
+           Garyfallidis, E. Bundle analytics, a computational framework for
+           investigating the shapes and profiles of brain pathways across
+           populations. Sci Rep 10, 17149 (2020)
 
         """
         rng = np.random.default_rng()

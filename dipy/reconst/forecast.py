@@ -66,14 +66,14 @@ class ForecastModel(OdfModel, Cache):
         single fiber response function $F(\mathbf{b})$ times the fODF
         $\rho(\mathbf{v})$
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}
                 \end{equation}
 
         where $\mathbf{b}$ is the b-vector (b-value times gradient direction)
-        and $\mathbf{v}$ is an unit vector representing a fiber direction.
+        and $\mathbf{v}$ is a unit vector representing a fiber direction.
 
         In FORECAST $\rho$ is modeled using real symmetric Spherical Harmonics
         (SH) and $F(\mathbf(b))$ is an axially symmetric tensor.
@@ -84,7 +84,7 @@ class ForecastModel(OdfModel, Cache):
         gtab : GradientTable,
             gradient directions and bvalues container class.
         sh_order_max : unsigned int,
-            an even integer that represent the maximal SH order (l) of the
+            an even integer that represent the maximal SH order ($l$) of the
             basis (max 12)
         lambda_lb: float,
             Laplace-Beltrami regularization weight.

@@ -37,6 +37,8 @@ class MapmriModel(ReconstModel, Cache):
     From the MAPMRI coefficients is possible to use the analytical formulae
     to estimate the ODF.
 
+    See [8]_ for additional tissue microstructure insights provided by MAPMRI.
+
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
@@ -134,10 +136,10 @@ class MapmriModel(ReconstModel, Cache):
         laplacian_regularization: bool,
             Regularize using the Laplacian of the MAP-MRI basis.
         laplacian_weighting: string or scalar,
-            The string 'GCV' makes it use generalized cross-validation to find
-            the regularization weight [4]. A scalar sets the regularization
-            weight to that value and an array will make it selected the
-            optimal weight from the values in the array.
+            The string 'GCV' makes it use generalized cross-validation [7]_ to
+            find the regularization weight [4]_. A scalar sets the
+            regularization weight to that value and an array will make it
+            selected the optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
         global_constraints : bool, optional
@@ -153,7 +155,8 @@ class MapmriModel(ReconstModel, Cache):
             If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
             'adaptive', the maximum distance is dependent on the estimated
-            tissue diffusivity.
+            tissue diffusivity. If 'infinity', semidefinite programming
+            constraints are used [9]_.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -176,7 +179,7 @@ class MapmriModel(ReconstModel, Cache):
         static_diffusivity : float,
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
-            D=0.7e-3 _[5].
+            D=0.7e-3 [5]_.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for
@@ -553,8 +556,8 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
         """
 
         if self.model.anisotropic_scaling:
@@ -584,12 +587,12 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
 
         .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+           using Laplacian-regularized MAP-MRI and its application to HCP data."
+           NeuroImage (2016).
         """
         if self.model.anisotropic_scaling:
             raise ValueError(
@@ -674,12 +677,12 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
 
         .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+           using Laplacian-regularized MAP-MRI and its application to HCP data."
+           NeuroImage (2016).
         """
         Bm = self.model.Bm
         ind_mat = self.model.ind_mat
@@ -732,12 +735,12 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
 
         .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+           using Laplacian-regularized MAP-MRI and its application to HCP data."
+           NeuroImage (2016).
         """
         Bm = self.model.Bm
 
@@ -814,13 +817,13 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
-        (bfor): An analytical diffusion propagator reconstruction for hybrid
-        diffusion imaging and computation of q-space indices. NeuroImage 64,
-        2013, 650-670.
+           (bfor): An analytical diffusion propagator reconstruction for hybrid
+           diffusion imaging and computation of q-space indices. NeuroImage 64,
+           2013, 650-670.
 
         .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+           using Laplacian-regularized MAP-MRI and its application to HCP data."
+           NeuroImage (2016).
         """
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
@@ -894,12 +897,12 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
 
         .. [2] Avram et al. "Clinical feasibility of using mean apparent
-        propagator (MAP) MRI to characterize brain tissue microstructure".
-        NeuroImage 2015, in press.
+           propagator (MAP) MRI to characterize brain tissue microstructure".
+           NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.0:
             warn(
@@ -939,12 +942,12 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
 
         .. [2] Avram et al. "Clinical feasibility of using mean apparent
-        propagator (MAP) MRI to characterize brain tissue microstructure".
-        NeuroImage 2015, in press.
+           propagator (MAP) MRI to characterize brain tissue microstructure".
+           NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.0:
             warn(
@@ -1007,9 +1010,9 @@ class MapmriFit(ReconstFit):
         return norm_of_laplacian
 
     def fitted_signal(self, gtab=None):
-        """
-        Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the model object.
+        """Recovers the fitted signal for the given gradient table. If no
+        gradient table is given it recovers the signal for the gtab of the model
+        object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab, S0=1.0)
@@ -1018,8 +1021,8 @@ class MapmriFit(ReconstFit):
         return E
 
     def predict(self, qvals_or_gtab, S0=100.0):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
+        """Recovers the reconstructed signal for any qvalue array or gradient
+        table.
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
@@ -1088,8 +1091,8 @@ def isotropic_scale_factor(mu_squared):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
     X, Y, Z = mu_squared
     coef_array = np.array([-3, -(X + Y + Z), (X * Y + X * Z + Y * Z), 3 * X * Y * Z])
@@ -1114,8 +1117,8 @@ def mapmri_index_matrix(radial_order):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
     """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
@@ -1175,8 +1178,8 @@ def b_mat_isotropic(index_matrix):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     B = np.zeros((index_matrix.shape[0]))
@@ -1202,8 +1205,8 @@ def mapmri_phi_1d(n, q, mu):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     qn = 2 * np.pi * mu * q
@@ -1232,8 +1235,8 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1278,8 +1281,8 @@ def mapmri_psi_1d(n, x, mu):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     H = hermite(n)(x / mu)
@@ -1305,8 +1308,8 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1351,8 +1354,8 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -1428,8 +1431,8 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
     qval, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1470,8 +1473,8 @@ def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
     pi2_mu2_q2 = 2 * np.pi**2 * mu**2 * qval**2
     const = (
@@ -1553,8 +1556,8 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
 
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1], rgrad[:, 2])
@@ -1596,8 +1599,8 @@ def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
     """
     r2u2 = r**2 / (2 * mu**2)
     const = (
@@ -1691,12 +1694,12 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
 
     .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     r, theta, phi = cart2sphere(vertices[:, 0], vertices[:, 1], vertices[:, 2])
@@ -1752,12 +1755,12 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
 
     .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     sh_mat = sph_harm_ind_list(radial_order)
@@ -1805,8 +1808,8 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
@@ -1832,8 +1835,8 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     n_elem = ind_mat.shape[0]
@@ -1913,8 +1916,8 @@ def mapmri_isotropic_index_matrix(radial_order):
     References
     ----------
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
+       diffusion imaging method for mapping tissue microstructure",
+       NeuroImage, 2013.
 
     """
     index_matrix = []
@@ -1985,8 +1988,8 @@ def map_laplace_u(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
@@ -2008,8 +2011,8 @@ def map_laplace_t(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
@@ -2034,8 +2037,8 @@ def map_laplace_s(n, m):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
 
@@ -2068,8 +2071,8 @@ def mapmri_STU_reg_matrices(radial_order):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     S = np.zeros((radial_order + 1, radial_order + 1))
@@ -2112,8 +2115,8 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-    using Laplacian-regularized MAP-MRI and its application to HCP data."
-    NeuroImage (2016).
+       using Laplacian-regularized MAP-MRI and its application to HCP data."
+       NeuroImage (2016).
 
     """
     ux, uy, uz = mu
@@ -2244,7 +2247,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
 
 def gcv_cost_function(weight, args):
-    """The GCV cost function that is iterated [4]."""
+    """The GCV cost function that is iterated [4]_."""
     data, M, MMt, K, LR = args
     S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)

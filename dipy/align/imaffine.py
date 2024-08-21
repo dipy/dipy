@@ -1218,7 +1218,6 @@ class AffineRegistration:
                 array, shape (dim+1, dim+1).
             If None:
                 Start from identity.
-            The default is None.
         ret_metric : boolean, optional
             if True, it returns the parameters for measuring the
             similarity between the images (default 'False').

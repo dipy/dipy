@@ -25,11 +25,13 @@ class Dpy:
 
         Parameters
         ----------
-        fname : str, full filename
-        mode : 'r' read
-         'w' write
-         'r+' read and write only if file already exists
-        compression : 0 no compression to 9 maximum compression
+        fname : str
+            Full filename
+        mode : str, optional
+            Use 'r' to read, 'w' to write, and 'r+' to read and write (only if
+            file already exists).
+        compression : int, optional
+            0 no compression to 9 maximum compression.
 
         Examples
         --------

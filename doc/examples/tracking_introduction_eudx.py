@@ -13,7 +13,7 @@ can integrate along those directions to build a complete representation of that
 structure. Local fiber tracking is widely used in the field of diffusion MRI
 because it is simple and robust.
 
-In order to perform local fiber tracking, three things are needed::
+In order to perform local fiber tracking, three things are needed:
 
 1. A method for getting directions from a diffusion dataset.
 2. A method for identifying when the tracking must stop.
@@ -96,10 +96,12 @@ csa_peaks = peaks_from_model(
 if has_fury:
     scene = window.Scene()
     scene.add(
-        actor.peak_slicer(csa_peaks.peak_dirs, csa_peaks.peak_values, colors=None)
+        actor.peak_slicer(
+            csa_peaks.peak_dirs, peaks_values=csa_peaks.peak_values, colors=None
+        )
     )
 
-    window.record(scene, out_path="csa_direction_field.png", size=(900, 900))
+    window.record(scene=scene, out_path="csa_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
@@ -176,14 +178,16 @@ if has_fury:
     # Prepare the display objects.
     color = colormap.line_colors(streamlines)
 
-    streamlines_actor = actor.line(streamlines, colormap.line_colors(streamlines))
+    streamlines_actor = actor.line(
+        streamlines, colors=colormap.line_colors(streamlines)
+    )
 
     # Create the 3D display.
     scene = window.Scene()
     scene.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(scene, out_path="tractogram_EuDX.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_EuDX.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -206,4 +210,4 @@ save_trk(sft, "tractogram_EuDX.trk", streamlines)
 # References
 # ----------
 # .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography"
-# PhD thesis, University of Cambridge, 2012.
+#    PhD thesis, University of Cambridge, 2012.

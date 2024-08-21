@@ -130,6 +130,7 @@ class IsotropicFit(ReconstFit):
         Parameters
         ----------
         model : IsotropicModel class instance
+            Isotropic model.
         params : ndarray
             The mean isotropic model parameters (the mean diffusion-weighted
             signal in each voxel).
@@ -355,6 +356,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
 
         sphere : Sphere class instance, optional
             A sphere on which coefficients will be estimated. Default:
@@ -363,7 +365,6 @@ class SparseFascicleModel(ReconstModel, Cache):
         response : (3,) array-like, optional
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
-            Default:[0.0015, 0.0005, 0.0005]
 
         solver : string, or initialized linear model object.
             This will determine the algorithm used to solve the set of linear
@@ -374,15 +375,14 @@ class SparseFascicleModel(ReconstModel, Cache):
             `sklearn.linear_model.ElasticNet`, `sklearn.linear_model.Lasso` or
             `sklearn.linear_model.Ridge` and other objects that inherit from
             `sklearn.base.RegressorMixin`.
-            Default: 'ElasticNet'.
 
         l1_ratio : float, optional
             Sets the balance between L1 and L2 regularization in ElasticNet
-            [Zou2005]_. Default: 0.5
+            [Zou2005]_.
 
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
-            regularization in ElasticNet [Zou2005]_. Default: 0.001
+            regularization in ElasticNet [Zou2005]_.
 
         isotropic : IsotropicModel class instance
             This is a class that implements the function that calculates the
@@ -507,6 +507,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         parallel_backend: str, ParallelBackendBase instance or None
             Specify the parallelization backend implementation.
             Supported backends are:
+
             - "loky" used by default, can induce some
               communication and memory overhead when exchanging input and
               output data with the worker Python processes.
@@ -519,7 +520,6 @@ class SparseFascicleModel(ReconstModel, Cache):
               explicitly releases the GIL (for instance a Cython loop wrapped
               in a "with nogil" block or an expensive call to a library such
               as NumPy).
-            Default: 'multiprocessing'.
 
         Returns
         -------

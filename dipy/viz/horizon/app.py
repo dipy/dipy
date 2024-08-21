@@ -85,7 +85,7 @@ class Horizon:
         roi_colors=(1, 0, 0),
         surface_colors=((1, 0, 0),),
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
 
 
         Parameters
@@ -138,7 +138,7 @@ class Horizon:
             File path to replay recorded events
         return_showm : bool
             Return ShowManager object. Used only at Python level. Can be used
-            for extending Horizon's cababilities externally and for testing
+            for extending Horizon's capabilities externally and for testing
             purposes.
         bg_color : ndarray or list or tuple
             Define the background color of the scene.
@@ -454,7 +454,7 @@ class Horizon:
 
         title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
-            scene,
+            scene=scene,
             title=title,
             size=(1920, 1080),
             reset_camera=False,
@@ -722,7 +722,7 @@ class Horizon:
 
         else:
             window.record(
-                scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
+                scene=scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
             )
 
 
@@ -753,14 +753,14 @@ def horizon(
     recorded_events=None,
     return_showm=False,
 ):
-    """Interactive medical visualization - Invert the Horizon!
+    """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
 
 
     Parameters
     ----------
     tractograms : sequence of StatefulTractograms
-            StatefulTractograms are used for making sure that the coordinate
-            systems are correct
+        StatefulTractograms are used for making sure that the coordinate
+        systems are correct
     images : sequence of tuples
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
@@ -818,7 +818,7 @@ def horizon(
         File path to replay recorded events
     return_showm : bool
         Return ShowManager object. Used only at Python level. Can be used
-        for extending Horizon's cababilities externally and for testing
+        for extending Horizon's capabilities externally and for testing
         purposes.
 
     References

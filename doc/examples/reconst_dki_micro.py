@@ -72,11 +72,11 @@ dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
 ###############################################################################
 # Before fitting this microstructural model, it is useful to indicate the
 # regions in which this model provides meaningful information (i.e. voxels of
-# well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple
+# well-aligned fibers). Following Fieremans et al. [Fierem2011]_, a simple
 # way to select this region is to generate a well-aligned fiber mask based on
 # the values of diffusion sphericity, planarity and linearity. Here we will
 # follow these selection criteria for a better comparison of our figures with
-# the original article published by Fieremans et al. [Fieremans2011]_.
+# the original article published by Fieremans et al. [Fierem2011]_.
 # Nevertheless, it is important to note that voxels with well-aligned fibers
 # can be selected based on other approaches such as using predefined regions
 # of interest.
@@ -192,8 +192,8 @@ fig1.savefig("Kurtosis_Microstructural_measures.png")
 #                 2105-2112. doi: 10.3174/ajnr.A3553
 # .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
 #                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
+#                 Diffusional Kurtosis Imaging in the Diffusion Imaging in
+#                 Python Project. Frontiers in Human Neuroscience 15: 675433.
 # .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
 #                 kurtosis strategies, b-value optimization and exploration of
 #                 diffusion MRI contrast. Scientific Data 3: 160072

@@ -27,15 +27,15 @@ plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 class QtdmriModel(Cache):
-    r"""The q$\tau$-dMRI model [1] to analytically and continuously represent
+    r"""The q$\tau$-dMRI model [1]_ to analytically and continuously represent
     the q$\tau$ diffusion signal attenuation over diffusion sensitization
     q and diffusion time $\tau$. The model can be seen as an extension of
-    the MAP-MRI basis [2] towards different diffusion times.
+    the MAP-MRI basis [2]_ towards different diffusion times.
 
     The main idea is to model the diffusion signal over time and space as
     a linear combination of continuous functions,
 
-    ..math::
+    .. math::
         :nowrap:
             \begin{equation}
                 \hat{E}(\textbf{q},\tau;\textbf{c}) =
@@ -58,7 +58,7 @@ class QtdmriModel(Cache):
     ----------
     gtab : GradientTable,
         gradient directions and bvalues container class. The bvalues
-        should be in the normal s/mm^2. big_delta and small_delta need to
+        should be in the normal s/mm^2. big_delta and small_delta need to be
         given in seconds.
     radial_order : unsigned int,
         an even integer representing the spatial/radial order of the basis.
@@ -69,7 +69,7 @@ class QtdmriModel(Cache):
         Regularize using the Laplacian of the qt-dMRI basis.
     laplacian_weighting: string or scalar,
         The string 'GCV' makes it use generalized cross-validation to find
-        the regularization weight [3]. A scalar sets the regularization
+        the regularization weight [3]_. A scalar sets the regularization
         weight to that value.
     l1_regularization : bool,
         Regularize by imposing sparsity in the coefficients using the
@@ -80,7 +80,7 @@ class QtdmriModel(Cache):
         to that value.
     cartesian : bool
         Whether to use the Cartesian or spherical implementation of the
-        qt-dMRI basis, which we first explored in [4].
+        qt-dMRI basis, which we first explored in [4]_.
     anisotropic_scaling : bool
         Whether to use anisotropic scaling or isotropic scaling. This
         option can be used to test if the Cartesian implementation is
@@ -100,8 +100,9 @@ class QtdmriModel(Cache):
         stability problem.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint
-        with a particular cvxpy solver. See See https://www.cvxpy.org/ for
+        with a particular cvxpy solver. See https://www.cvxpy.org/ for
         details.
+        Default: None (cvxpy chooses its own solver)
 
     References
     ----------
@@ -286,7 +287,7 @@ class QtdmriModel(Cache):
                 ut /= tau_scaling
                 us = np.clip(us, self.eigenvalue_threshold, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.radial_order,
                     self.time_order,
                     us,
@@ -303,7 +304,7 @@ class QtdmriModel(Cache):
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.radial_order,
                     self.time_order,
                     us,
@@ -320,7 +321,7 @@ class QtdmriModel(Cache):
             R = np.eye(3)
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
-            M = qtdmri_isotropic_signal_matrix_(
+            M = _qtdmri_isotropic_signal_matrix(
                 self.radial_order,
                 self.time_order,
                 us[0],
@@ -550,7 +551,7 @@ class QtdmriFit:
     def qtdmri_to_mapmri_coef(self, tau):
         """This function converts the qtdmri coefficients to mapmri
         coefficients for a given tau [1]_. The conversion is performed by a
-        matrix multiplication that evaluates the time-depenent part of the
+        matrix multiplication that evaluates the time-dependent part of the
         basis and multiplies it with the coefficients, after which coefficients
         with the same spatial orders are summed up, resulting in mapmri
         coefficients.
@@ -1014,9 +1015,9 @@ class QtdmriFit:
         return qiv
 
     def fitted_signal(self, gtab=None):
-        """
-        Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the model object.
+        """Recovers the fitted signal for the given gradient table. If no
+        gradient table is given it recovers the signal for the gtab of the model
+        object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab)
@@ -1025,8 +1026,8 @@ class QtdmriFit:
         return E
 
     def predict(self, qvals_or_gtab, S0=1.0):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
+        """Recovers the reconstructed signal for any qvalue array or gradient
+        table.
         """
         tau_scaling = self.tau_scaling
         if isinstance(qvals_or_gtab, np.ndarray):
@@ -1041,7 +1042,7 @@ class QtdmriFit:
         if self.model.cartesian:
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.model.radial_order,
                     self.model.time_order,
                     self.us,
@@ -1051,7 +1052,7 @@ class QtdmriFit:
                     self.model.normalization,
                 )
             else:
-                M = qtdmri_signal_matrix_(
+                M = _qtdmri_signal_matrix(
                     self.model.radial_order,
                     self.model.time_order,
                     self.us,
@@ -1061,7 +1062,7 @@ class QtdmriFit:
                     self.model.normalization,
                 )
         else:
-            M = qtdmri_isotropic_signal_matrix_(
+            M = _qtdmri_isotropic_signal_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us[0],
@@ -1079,8 +1080,8 @@ class QtdmriFit:
         fitted signal contains spurious oscillations. A high laplacian norm may
         indicate that these are present, and any q-space indices that
         use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
-        QIV). In contrast to [1], the Laplacian now describes oscillations in
-        the 4-dimensional qt-signal [2].
+        QIV). In contrast to [1]_, the Laplacian now describes oscillations in
+        the 4-dimensional qt-signal [2]_.
 
         References
         ----------
@@ -1128,7 +1129,7 @@ class QtdmriFit:
         tau_scaling = self.tau_scaling
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
         if self.model.cartesian:
-            K = qtdmri_eap_matrix_(
+            K = _qtdmri_eap_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us,
@@ -1137,7 +1138,7 @@ class QtdmriFit:
                 self.model.normalization,
             )
         else:
-            K = qtdmri_isotropic_eap_matrix_(
+            K = _qtdmri_isotropic_eap_matrix(
                 self.model.radial_order,
                 self.model.time_order,
                 self.us[0],
@@ -1287,7 +1288,7 @@ def qtdmri_mapmri_isotropic_normalization(j, ell, u0):
     return sqrtC
 
 
-def qtdmri_signal_matrix_(
+def _qtdmri_signal_matrix(
     radial_order, time_order, us, ut, q, tau, normalization=False
 ):
     """Function to generate the qtdmri signal basis."""
@@ -1376,7 +1377,7 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     return K
 
 
-def qtdmri_isotropic_signal_matrix_(
+def _qtdmri_isotropic_signal_matrix(
     radial_order, time_order, us, ut, q, tau, normalization=False
 ):
     M = qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
@@ -1434,7 +1435,7 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     return M
 
 
-def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=False):
+def _qtdmri_eap_matrix(radial_order, time_order, us, ut, grid, normalization=False):
     sqrtCut = 1.0
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
@@ -1444,7 +1445,7 @@ def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid, normalization=Fal
     return K_tau
 
 
-def qtdmri_isotropic_eap_matrix_(
+def _qtdmri_isotropic_eap_matrix(
     radial_order, time_order, us, ut, grid, normalization=False
 ):
     K = qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)

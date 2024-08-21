@@ -46,7 +46,7 @@ maskdata, mask = median_otsu(
 )
 
 ###############################################################################
-# We instantiate our CSA model with spherical harmonic order (l) of 4
+# We instantiate our CSA model with spherical harmonic order ($l$) of 4
 
 csamodel = CsaOdfModel(gtab, 4)
 
@@ -105,7 +105,7 @@ csa_odfs_actor.display(z=0)
 
 scene.add(csa_odfs_actor)
 print("Saving illustration as csa_odfs.png")
-window.record(scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
+window.record(scene=scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

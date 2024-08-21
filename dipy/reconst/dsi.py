@@ -25,7 +25,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         spin displacements) can be estimated by applying 3D FFT to the signal
         values $S(\mathbf{q})$
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{eqnarray}
                     P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
@@ -219,14 +219,15 @@ class DiffusionSpectrumFit(OdfFit):
         References
         ----------
         .. [1] Descoteaux M. et al., "Multiple q-shell diffusion propagator
-        imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
+           imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
 
         .. [2] Tuch D.S., "Diffusion MRI of Complex Tissue Structure",
-         PhD Thesis, 2002.
+           PhD Thesis, 2002.
 
         .. [3] Wu Y. et al., "Computation of Diffusion Function Measures
-        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-        IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008
+           in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
+           IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
+           2008
 
         """
 
@@ -240,7 +241,7 @@ class DiffusionSpectrumFit(OdfFit):
     def msd_discrete(self, normalized=True):
         r"""Calculates the mean squared displacement on the discrete propagator
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
@@ -284,7 +285,7 @@ class DiffusionSpectrumFit(OdfFit):
     def odf(self, sphere):
         r"""Calculates the real discrete odf for a given discrete sphere
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{equation}
                     \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
@@ -312,6 +313,7 @@ def create_qspace(gtab, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -334,6 +336,7 @@ def create_qtable(gtab, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -369,7 +372,9 @@ def hanning_filter(gtab, filter_width, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     filter_width : int
+        Strength of the Hanning filter.
     origin : (3,) ndarray
         center of qspace
 
@@ -392,11 +397,11 @@ def pdf_interp_coords(sphere, rradius, origin):
     Parameters
     ----------
     sphere : object,
-            Sphere
+        Sphere
     rradius : array, shape (N,)
-            line interpolation points
+        line interpolation points
     origin : array, shape (3,)
-            center of the grid
+        center of the grid
 
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
@@ -438,7 +443,9 @@ def half_to_full_qspace(data, gtab):
     Returns
     -------
     new_data : array, shape (X, Y, Z, 2 * W -1)
+        DWI data across the full Cartesian space.
     new_gtab : GradientTable
+        Gradient table.
 
     Notes
     -----
@@ -509,7 +516,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         The idea is to remove the convolution on the DSI propagator that is
         caused by the truncation of the q-space in the DSI sampling.
 
-        ..math::
+        .. math::
             :nowrap:
                 \begin{eqnarray*}
                     P_{dsi}(\mathbf{r}) & = & S_{0}^{-1}\iiint\limits_{\| \mathbf{q} \| \le \mathbf{q_{max}}} S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\

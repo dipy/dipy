@@ -28,7 +28,7 @@ answer it yourself and contribute to the documentation!
 .. dropdown:: How do I convert my Spherical Harmonics from MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available from DIPY 1.9.0+. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
+   Available from DIPY 1.9.0+. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
 
    .. code-block:: Python
 
@@ -38,7 +38,7 @@ answer it yourself and contribute to the documentation!
 .. dropdown:: How do I convert my tensors from FSL to DIPY  or MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available with DIPY 1.9.0+
+   Available with DIPY 1.9.0+
 
    .. code-block:: Python
 

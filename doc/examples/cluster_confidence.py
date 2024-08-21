@@ -87,11 +87,11 @@ lut_cmap = actor.colormap_lookup_table(
     scale_range=(cci.min(), cci.max() / 4), hue_range=hue, saturation_range=saturation
 )
 
-bar3 = actor.scalar_bar(lut_cmap)
+bar3 = actor.scalar_bar(lookup_table=lut_cmap)
 scene.add(bar3)
 
 stream_actor = actor.line(
-    long_streamlines, cci, linewidth=0.1, lookup_colormap=lut_cmap
+    long_streamlines, colors=cci, linewidth=0.1, lookup_colormap=lut_cmap
 )
 scene.add(stream_actor)
 
@@ -102,7 +102,7 @@ scene.add(stream_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -153,7 +153,7 @@ scene.add(keep_streamlines_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -165,5 +165,5 @@ window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 # ----------
 #
 # .. [Jordan_2018_plm] Jordan, K., Amirbekian, B., Keshavan, A., Henry, R.G.
-# "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
-# for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.
+#    "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
+#    for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.

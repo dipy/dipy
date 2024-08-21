@@ -184,8 +184,10 @@ def streamline_signal(streamline, gtab, *, evals=(0.001, 0, 0)):
     Parameters
     ----------
     streamline : a single streamline
+        Streamline data.
 
     gtab : GradientTable class instance
+        Gradient table.
 
     evals : array-like of length 3, optional
         The eigenvalues of the canonical tensor used as an estimate of the

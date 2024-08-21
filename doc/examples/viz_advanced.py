@@ -86,7 +86,7 @@ stream_actor = actor.line(streamlines)
 if not world_coords:
     image_actor_z = actor.slicer(data, affine=np.eye(4))
 else:
-    image_actor_z = actor.slicer(data, affine)
+    image_actor_z = actor.slicer(data, affine=affine)
 
 ###############################################################################
 # We can also change also the opacity of the slicer.
@@ -268,7 +268,10 @@ if interactive:
 
 else:
     window.record(
-        scene, out_path="bundles_and_3_slices.png", size=(1200, 900), reset_camera=False
+        scene=scene,
+        out_path="bundles_and_3_slices.png",
+        size=(1200, 900),
+        reset_camera=False,
     )
 
 ###############################################################################

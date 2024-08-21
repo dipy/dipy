@@ -129,9 +129,17 @@ def UNet3D(input_shape):
 class Synb0:
     """
     This class is intended for the Synb0 model.
+
+    Synb0 :footcite:p:`Schilling2019`, :footcite:p:`Schilling2020` uses a neural
+    network to synthesize a b0 volume for distortion correction in DWI images.
+
     The model is the deep learning part of the Synb0-Disco
     pipeline, thus stand-alone usage is not
     recommended.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @doctest_skip_parser
@@ -152,18 +160,6 @@ class Synb0:
         verbose : bool (optional)
             Whether to show information about the processing.
             Default: False
-
-        References
-        ----------
-        ..  [1] Schilling, K. G., Blaber, J., Huo, Y., Newton, A.,
-            Hansen, C., Nath, V., ... & Landman, B. A. (2019).
-            Synthesized b0 for diffusion distortion correction (Synb0-DisCo).
-            Magnetic resonance imaging, 64, 62-70.
-        ..  [2] Schilling, K. G., Blaber, J., Hansen, C., Cai, L.,
-            Rogers, B., Anderson, A. W., ... & Landman, B. A. (2020).
-            Distortion correction of diffusion weighted MRI without reverse
-            phase-encoding scans or field-maps.
-            PloS one, 15(7), e0236418.
         """
 
         if not have_tf:

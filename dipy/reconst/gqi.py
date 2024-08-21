@@ -28,13 +28,15 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
             'standard' or 'gqi2'
         sampling_length : float,
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
+        normalize_peaks : bool, optional
+            True to normalize peaks.
 
         References
         ----------
         .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
 
         .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012.
+           thesis, University of Cambridge, 2012.
 
         Notes
         -----

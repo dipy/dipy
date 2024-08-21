@@ -166,7 +166,7 @@ def io_iterator(
 
 
 @warning_for_keywords()
-def io_iterator_(frame, fnc, *, output_strategy="absolute", mix_names=False):
+def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
     """Create an IOIterator using introspection.
 
     Parameters

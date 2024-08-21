@@ -56,8 +56,8 @@ class PeakActor(Actor):
     affine : array, optional
         4x4 transformation array from native coordinates to world coordinates.
     colors : None or string ('rgb_standard') or tuple (3D or 4D) or
-             array/ndarray (N, 3 or 4) or array/ndarray (K, 3 or 4) or
-             array/ndarray(N, ) or array/ndarray (K, )
+        array/ndarray (N, 3 or 4) or array/ndarray (K, 3 or 4) or
+        array/ndarray(N, ) or array/ndarray (K, )
         If None a standard orientation colormap is used for every line.
         If one tuple of color is used. Then all streamlines will have the same
         color.

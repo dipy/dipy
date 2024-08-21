@@ -54,7 +54,7 @@ class HorizonFlow(Workflow):
         out_dir="",
         out_stealth_png="tmp.png",
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
@@ -62,6 +62,7 @@ class HorizonFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
+            Filenames.
         cluster : bool, optional
             Enable QuickBundlesX clustering.
         rgb : bool, optional

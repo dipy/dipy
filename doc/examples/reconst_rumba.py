@@ -96,7 +96,7 @@ response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma"
 
 scene.add(response_actor)
 print("Saving illustration as default_response.png")
-window.record(scene, out_path="default_response.png", size=(200, 200))
+window.record(scene=scene, out_path="default_response.png", size=(200, 200))
 
 if interactive:
     window.show(scene)
@@ -134,7 +134,7 @@ response_odf = response_odf[None, None, None, :]
 response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma")
 scene.add(response_actor)
 print("Saving illustration as estimated_response.png")
-window.record(scene, out_path="estimated_response.png", size=(200, 200))
+window.record(scene=scene, out_path="estimated_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -181,7 +181,7 @@ response_actor = actor.odf_slicer(rec_response_signal, sphere=sphere, colormap="
 
 scene.add(response_actor)
 print("Saving illustration as recursive_response.png")
-window.record(scene, out_path="recursive_response.png", size=(200, 200))
+window.record(scene=scene, out_path="recursive_response.png", size=(200, 200))
 if interactive:
     window.show(scene)
 
@@ -296,7 +296,7 @@ fodf_spheres = actor.odf_slicer(
 )
 scene.add(fodf_spheres)
 print("Saving illustration as rumba_odfs.png")
-window.record(scene, out_path="rumba_odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="rumba_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -328,10 +328,10 @@ rumba_peaks = peaks_from_model(
 peak_values = np.clip(rumba_peaks.peak_values * 15, 0, 1)
 peak_dirs = rumba_peaks.peak_dirs
 
-fodf_peaks = actor.peak_slicer(peak_dirs, peak_values)
+fodf_peaks = actor.peak_slicer(peak_dirs, peaks_values=peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene, out_path="rumba_peaks.png", size=(600, 600))
+window.record(scene=scene, out_path="rumba_peaks.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -386,7 +386,7 @@ fodf_spheres = actor.odf_slicer(
 
 scene.add(fodf_spheres)
 print("Saving illustration as rumba_global_odfs.png")
-window.record(scene, out_path="rumba_global_odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="rumba_global_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -426,11 +426,13 @@ for idx in np.ndindex(shape):  # iterate through each voxel
 # Scale up for visualization
 peak_values = np.clip(peak_values * 15, 0, 1)
 
-fodf_peaks = actor.peak_slicer(peak_dirs[:, :, 0:1, :], peak_values[:, :, 0:1, :])
+fodf_peaks = actor.peak_slicer(
+    peak_dirs[:, :, 0:1, :], peaks_values=peak_values[:, :, 0:1, :]
+)
 scene.add(fodf_peaks)
 
 print("Saving illustration as rumba_global_peaks.png")
-window.record(scene, out_path="rumba_global_peaks.png", size=(600, 600))
+window.record(scene=scene, out_path="rumba_global_peaks.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

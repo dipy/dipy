@@ -51,7 +51,7 @@ value_range = (mean - 0.5 * std, mean + 1.5 * std)
 # transformation matrix. The default behavior of this function is to show the
 # middle slice of the last dimension of the resampled data.
 
-slice_actor = actor.slicer(data, affine, value_range)
+slice_actor = actor.slicer(data, affine=affine, value_range=value_range)
 
 ###############################################################################
 # The ``slice_actor`` contains an axial slice.
@@ -69,7 +69,7 @@ slice_actor2 = slice_actor.copy()
 # Now we have a new ``slice_actor`` which displays the middle slice of the
 # sagittal plane.
 
-slice_actor2.display(slice_actor2.shape[0] // 2, None, None)
+slice_actor2.display(x=slice_actor2.shape[0] // 2, y=None, z=None)
 
 scene.add(slice_actor2)
 
@@ -84,7 +84,7 @@ scene.zoom(1.4)
 ###############################################################################
 # Otherwise, you can save a screenshot using the following command.
 
-window.record(scene, out_path="slices.png", size=(600, 600), reset_camera=False)
+window.record(scene=scene, out_path="slices.png", size=(600, 600), reset_camera=False)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -121,7 +121,7 @@ lut = actor.colormap_lookup_table(
 # This is because the lookup table is applied in the slice after interpolating
 # to (0, 255).
 
-fa_actor = actor.slicer(fa, affine, lookup_colormap=lut)
+fa_actor = actor.slicer(fa, affine=affine, lookup_colormap=lut)
 
 scene.clear()
 scene.add(fa_actor)
@@ -131,7 +131,9 @@ scene.zoom(1.4)
 
 # window.show(scene, size=(600, 600), reset_camera=False)
 
-window.record(scene, out_path="slices_lut.png", size=(600, 600), reset_camera=False)
+window.record(
+    scene=scene, out_path="slices_lut.png", size=(600, 600), reset_camera=False
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -239,7 +241,7 @@ border = 10
 for j in range(rows):
     for i in range(cols):
         slice_mosaic = slice_actor.copy()
-        slice_mosaic.display(None, None, cnt)
+        slice_mosaic.display(z=cnt)
         slice_mosaic.SetPosition(
             (X + border) * i, 0.5 * cols * (Y + border) - (Y + border) * j, 0
         )
@@ -265,7 +267,7 @@ scene.zoom(1.0)
 # the mosaic up/down and left/right using the middle mouse button drag,
 # zoom in/out using the scroll wheel, and pick voxels with left click.
 
-window.record(scene, out_path="mosaic.png", size=(900, 600), reset_camera=False)
+window.record(scene=scene, out_path="mosaic.png", size=(900, 600), reset_camera=False)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

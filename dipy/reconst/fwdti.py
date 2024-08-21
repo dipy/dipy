@@ -95,6 +95,7 @@ class FreeWaterTensorModel(ReconstModel):
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
         fit_method : str or callable
             str can be one of the following:
 
@@ -104,7 +105,7 @@ class FreeWaterTensorModel(ReconstModel):
                 :func:`fwdti.nls_iter`
 
             callable has to have the signature:
-              fit_method(design_matrix, data, *args, **kwargs)
+              ``fit_method(design_matrix, data, *args, **kwargs)``
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See fwdti.wls_iter, fwdti.nls_iter for
            details
@@ -194,6 +195,7 @@ class FreeWaterTensorFit(TensorFit):
         model_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
@@ -611,7 +613,7 @@ def nls_iter(
         The minimum signal value. Needs to be a strictly positive
         number.
     cholesky : bool, optional
-        If true it uses Cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
         Default: False
     f_transform : bool, optional
@@ -760,7 +762,7 @@ def nls_fit_tensor(
         0 and 1.
         Default: True
     cholesky : bool, optional
-        If true it uses Cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to ensure that diffusion tensor
         is positive define.
         Default: False
     jac : bool

@@ -59,6 +59,7 @@ class RumbaSDModel(OdfModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         wm_response : 1d ndarray or 2d ndarray or AxSymShResponse, optional
             Tensor eigenvalues as a (3,) ndarray, multishell eigenvalues as
             a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray in
@@ -728,6 +729,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     sphere : Sphere
         Sphere with which to sample discrete fiber orientations in order to
         construct kernel
@@ -899,24 +901,30 @@ def rumba_deconv_global(
     -----
     TV modifies our cost function as follows:
 
-    $J(\textbf{f}) = -\log{P(\textbf{S}|\textbf{H}, \textbf{f}, \sigma^2, n)})+
-    \alpha_{TV}TV(\textbf{f})$
+    .. math::
+
+    J(\textbf{f}) = -\log{P(\textbf{S}|\textbf{H}, \textbf{f}, \sigma^2, n)})+
+    \alpha_{TV}TV(\textbf{f})
 
     where the first term is the negative log likelihood described in the notes
     of `rumba_deconv`, and the second term is the TV energy, or the sum of
     gradient absolute values for the fODF across the entire brain. This results
     in a new multiplicative factor in the iterative scheme, now becoming:
 
-    $\textbf{f}^{k+1} = \textbf{f}^k \circ \frac{\textbf{H}^T\left[\textbf{S}
+    .. math::
+
+    \textbf{f}^{k+1} = \textbf{f}^k \circ \frac{\textbf{H}^T\left[\textbf{S}
     \circ\frac{I_n(\textbf{S}\circ\textbf{Hf}^k/\sigma^2)} {I_{n-1}(\textbf{S}
     \circ\textbf{Hf}^k/\sigma^2)} \right ]} {\textbf{H}^T\textbf{Hf}^k}\circ
-    \textbf{R}^k$
+    \textbf{R}^k
 
     where $\textbf{R}^k$ is computed voxelwise by:
 
-    $(\textbf{R}^k)_j = \frac{1}{1 - \alpha_{TV}div\left(\frac{\triangledown[
+    .. math::
+
+    (\textbf{R}^k)_j = \frac{1}{1 - \alpha_{TV}div\left(\frac{\triangledown[
     \textbf{f}^k_{3D}]_j}{\lvert\triangledown[\textbf{f}^k_{3D}]_j \rvert}
-    \right)\biggr\rvert_{x, y, z}}$
+    \right)\biggr\rvert_{x, y, z}}
 
     Here, $\triangledown$ is the symbol for the 3D gradient at any voxel.
 

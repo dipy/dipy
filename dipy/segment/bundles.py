@@ -173,6 +173,7 @@ def bundle_shape_similarity(
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
     rng : np.random.Generator
+        Random number generator.
     clust_thr : array-like, optional
         list of clustering thresholds used in quickbundlesX
     threshold : float, optional
@@ -183,20 +184,20 @@ def bundle_shape_similarity(
 
     Returns
     -------
-    ba_value : Float
+    ba_value : float
         Bundle similarity score between two tracts
 
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
+       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
+       Bundle analytics, a computational framework for investigating the
+       shapes and profiles of brain pathways across populations.
+       Sci Rep 10, 17149 (2020)
 
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+       tractography simplification, Frontiers in Neuroscience,
+       vol 6, no 175, 2012.
     """
 
     if len(bundle1) == 0 or len(bundle2) == 0:
@@ -372,8 +373,8 @@ class RecoBundles:
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error.
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error.
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
@@ -431,8 +432,8 @@ class RecoBundles:
         References
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+           bundles using local and global streamline-based registration and
+           clustering, Neuroimage, 2017.
         """
         if self.verbose:
             t = time()
@@ -520,9 +521,9 @@ class RecoBundles:
         reduction_distance : string
             Reduction distance type can be mdf or mam (default mdf)
         slr : bool
-            Use Streamline-based Linear Registration (SLR) locally
-            (default True)
+            Use Streamline-based Linear Registration (SLR) locally.
         slr_metric : BundleMinDistanceMetric
+            Bundle distance metric.
         slr_x0 : array or int or str
             Transformation allowed. translation, rigid, similarity or scaling
             Initial parametrization for the optimization.
@@ -554,20 +555,18 @@ class RecoBundles:
                 b) "similarity"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
                 c) "affine"
-                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
-            (default None)
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
         slr_bounds : array
-            (default None)
+            SLR bounds.
         slr_select : tuple
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
         slr_method : string
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
-            (default 'L-BFGS-B')
         pruning_thr : float
-            Pruning after reducing the search space (default 6).
+            Pruning after reducing the search space.
         pruning_distance : string
-            Pruning distance type can be mdf or mam (default mdf)
+            Pruning distance type can be mdf or mam.
 
         Returns
         -------
@@ -583,10 +582,10 @@ class RecoBundles:
             clustering, Neuroimage, 2017.
 
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
+           Garyfallidis, E. Bundle analytics, a computational framework for
+           investigating the shapes and profiles of brain pathways across
+           populations. Sci Rep 10, 17149 (2020)
         """
         if self.verbose:
             t = time()
@@ -648,9 +647,11 @@ class RecoBundles:
         Parameters
         ----------
         model_bundle : Streamlines
+            Model bundle streamlines.
         pruned_streamlines : Streamlines
+            Pruned bundle streamlines.
         slr_select : tuple
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
 
         Returns

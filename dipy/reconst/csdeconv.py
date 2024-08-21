@@ -50,6 +50,7 @@ def auto_response(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -101,12 +102,13 @@ def auto_response(
     until="1.4",
 )
 def response_from_mask(gtab, data, mask):
-    """Computation of single-shell single-tissue (ssst) response
-        function from a given mask.
+    """Computation of single-shell single-tissue (ssst) response function from a
+    given mask.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -141,8 +143,8 @@ def response_from_mask(gtab, data, mask):
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
     """
     return response_from_mask_ssst(gtab, data, mask)
 
@@ -210,6 +212,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
@@ -376,8 +379,8 @@ class ConstrainedSDTModel(SphHarmModel):
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
         sharper angular profile with better angular resolution. The Constrained
         SDTModel is similar to the Constrained CSDModel but mathematically it
-        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
-        for a comparison and a through discussion).
+        deconvolves the q-ball ODF as opposed to the HARDI signal (see [1]_
+        for a comparison and a thorough discussion).
 
         A sharp fODF is obtained because a single fiber *response* function is
         injected as *a priori* knowledge. In the SDTModel, this response is a
@@ -388,6 +391,7 @@ class ConstrainedSDTModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         ratio : float
             ratio of the smallest vs the largest eigenvalue of the single
             prolate tensor response function
@@ -399,7 +403,7 @@ class ConstrainedSDTModel(SphHarmModel):
             weight given to the constrained-positivity regularization part of
             the deconvolution equation
         tau : float
-            threshold (tau *mean(fODF)) controlling the amplitude below
+            threshold (``tau *mean(fODF)``) controlling the amplitude below
             which the corresponding fODF is assumed to be zero.
 
         References
@@ -474,7 +478,9 @@ def estimate_response(gtab, evals, S0):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     evals : ndarray
+        Eigenvalues.
     S0 : float
         non diffusion weighted
 
@@ -498,7 +504,7 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response
         function
     l_values : ndarray (N,)
-        The order (l) of spherical harmonic function associated with each row
+        The order ($l$) of spherical harmonic function associated with each row
         of the deconvolution matrix. Only even orders are allowed.
     r2_term : bool
         True if ODF comes from an ODF computed from a model using the $r^2$
@@ -673,7 +679,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
                 solve $Qf_n = z$ using Cholesky decomposition
 
-    We'd like to thanks Donald Tournier for his help with describing and
+    We would like to thank Donald Tournier for his help with describing and
     implementing this algorithm.
 
     References
@@ -747,19 +753,19 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     Parameters
     ----------
     odf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
-         ndarray of SH coefficients for the ODF spherical function to be
-         deconvolved
+        ndarray of SH coefficients for the ODF spherical function to be
+        deconvolved
     R : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SDT matrix in SH basis
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SDT matrix in SH basis
     B_reg : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SH basis matrix used for deconvolution
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SH basis matrix used for deconvolution
     lambda_ : float
-         lambda parameter in minimization equation (default 1.0)
+        lambda parameter in minimization equation (default 1.0)
     tau : float
-         threshold (tau *max(fODF)) controlling the amplitude below
-         which the corresponding fODF is assumed to be zero.
+        threshold (``tau *max(fODF)``) controlling the amplitude below
+        which the corresponding fODF is assumed to be zero.
     r2_term : bool
          True if ODF is computed from model that uses the $r^2$ term in the
          integral.  Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and
@@ -877,7 +883,7 @@ def odf_sh_to_sharp(
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
     sh_order_max : int
-        maximal SH order (l) of the SH representation
+        maximal SH order ($l$) of the SH representation
     lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
@@ -942,6 +948,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data (4D)
     roi_center : array-like, (3,)
@@ -970,8 +977,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
 
     """
     if len(data.shape) < 4:
@@ -1014,6 +1021,7 @@ def response_from_mask_ssst(gtab, data, mask):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -1048,8 +1056,8 @@ def response_from_mask_ssst(gtab, data, mask):
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+       fiber orientation density function from diffusion-weighted MRI
+       data using spherical deconvolution
     """
 
     ten = TensorModel(gtab)
@@ -1074,6 +1082,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -1144,6 +1153,7 @@ def recursive_response(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray, optional

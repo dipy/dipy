@@ -60,10 +60,9 @@ be subtle or even hardly noticeable, apparent or visible, depending on the
 choice. Users are encouraged to carefully choose the parameters.
 
 .. |image1| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
-
    :align: middle
-.. |image2| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
 
+.. |image2| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
    :align: middle
 
 +--------------------+--------------------+

@@ -9,9 +9,9 @@ if has_fury:
     from dipy.viz import actor, window
 
 sagittal_deprecation_warning_msg = (
-    "The view argument value `sagital` is deprecated and its support will be"
-    " removed in a future version. Please, use `sagittal` instead."
-)  # codespell:ignore sagital
+    "The view argument value `sagital` is deprecated and "  # codespell:ignore sagital
+    "its support will be removed in a future version. Please, use `sagittal` instead."
+)
 
 
 @warning_for_keywords()
@@ -83,7 +83,7 @@ def show_bundles(
         window.show(scene)
 
     if save_as is not None:
-        window.record(scene, n_frames=1, out_path=save_as, size=(900, 900))
+        window.record(scene=scene, n_frames=1, out_path=save_as, size=(900, 900))
 
 
 @warning_for_keywords()
@@ -132,7 +132,7 @@ def viz_two_bundles(b1, b2, fname, *, c1=(1, 0, 0), c2=(0, 1, 0), interactive=Fa
     if interactive:
         window.show(ren)
 
-    window.record(ren, n_frames=1, out_path=fname, size=(1200, 1200))
+    window.record(scene=ren, n_frames=1, out_path=fname, size=(1200, 1200))
     if interactive:
         im = plt.imread(fname)
         plt.figure(figsize=(10, 10))
@@ -186,7 +186,7 @@ def viz_vector_field(
     if interactive:
         window.show(scene)
 
-    window.record(scene, n_frames=1, out_path=fname, size=(1200, 1200))
+    window.record(scene=scene, n_frames=1, out_path=fname, size=(1200, 1200))
     if interactive:
         im = plt.imread(fname)
         plt.figure(figsize=(10, 10))
@@ -220,20 +220,22 @@ def viz_displacement_mag(bundle, offsets, fname, *, interactive=False):
         saturation_range=saturation,
     )
 
-    stream_actor = actor.line(bundle, offsets, linewidth=7, lookup_colormap=lut_cmap)
+    stream_actor = actor.line(
+        bundle, colors=offsets, linewidth=7, lookup_colormap=lut_cmap
+    )
 
     stream_actor.RotateX(-70)
     stream_actor.RotateZ(90)
 
     scene.add(stream_actor)
-    bar = actor.scalar_bar(lut_cmap)
+    bar = actor.scalar_bar(lookup_table=lut_cmap)
 
     scene.add(bar)
 
     if interactive:
         window.show(scene)
 
-    window.record(scene, n_frames=1, out_path=fname, size=(2000, 1500))
+    window.record(scene=scene, n_frames=1, out_path=fname, size=(2000, 1500))
     if interactive:
         im = plt.imread(fname)
         plt.figure(figsize=(10, 10))

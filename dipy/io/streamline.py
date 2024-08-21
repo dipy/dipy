@@ -216,6 +216,7 @@ def load_generator(ttype):
     ----------
     ttype : string
         Extension of the file format that requires a loader
+
     Returns
     -------
     output : function
@@ -262,6 +263,7 @@ def save_generator(ttype):
     ----------
     ttype : string
         Extension of the file format that requires a saver
+
     Returns
     -------
     output : function

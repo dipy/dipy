@@ -71,7 +71,7 @@ def neighboring_dwi_correlation(dwi_data, gtab, *, mask=None):
     """Calculate the Neighboring DWI Correlation (NDC) from dMRI data.
 
     Using a mask is highly recommended, otherwise the FOV will influence the
-    correlations. According to [Yeh2019], an NDC less than 0.4 indicates a
+    correlations. According to [Yeh2019]_, an NDC less than 0.4 indicates a
     low quality image.
 
     Parameters
