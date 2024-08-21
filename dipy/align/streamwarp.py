@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-import pandas as pd
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.cpd import DeformableRegistration
 from dipy.align.streamlinear import slr_with_qbx
@@ -13,6 +12,7 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
 from dipy.viz.plotting import bundle_shape_profile
 
+pd, have_pd, _ = optional_package("pandas")
 
 def average_bundle_length(bundle):
     """Find average Euclidean length of the bundle in mm.
@@ -59,7 +59,7 @@ def find_missing(lst, cb):
 
 
 @warning_for_keywords()
-def bundlewarp(static, moving, dist=None, alpha=0.5, beta=20, max_iter=15,
+def bundlewarp(static, moving, *, dist=None, alpha=0.5, beta=20, max_iter=15,
                affine=True):
 
     """Register two bundles using nonlinear method.
