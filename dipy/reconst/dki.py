@@ -1672,7 +1672,7 @@ def kurtosis_fractional_anisotropy(dki_params):
 
 
 def dki_prediction(dki_params, gtab, S0=1.0):
-    """Predict a signal given diffusion kurtosis imaging parameters
+    r"""Predict a signal given diffusion kurtosis imaging parameters
 
     Parameters
     ----------

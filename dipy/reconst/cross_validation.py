@@ -8,7 +8,7 @@ import dipy.core.gradients as gt
 
 
 def coeff_of_determination(data, model, axis=-1):
-    """Calculate the coefficient of determination for a model prediction,
+    r"""Calculate the coefficient of determination for a model prediction,
     relative to data.
 
     Parameters

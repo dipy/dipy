@@ -1691,7 +1691,7 @@ def get_fnames(*, name="small_64D"):
 
 
 def read_qtdMRI_test_retest_2subjects():
-    """Load test-retest qt-dMRI acquisitions of two C57Bl6 mice. These
+    r"""Load test-retest qt-dMRI acquisitions of two C57Bl6 mice. These
     datasets were used to study test-retest reproducibility of time-dependent
     q-space indices (q$\tau$-indices) in the corpus callosum of two mice [1].
     The data itself and its details are publicly available and can be cited at
