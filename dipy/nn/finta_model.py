@@ -20,12 +20,6 @@ if have_tf:
     from keras.saving import deserialize_keras_object, serialize_keras_object
     from keras.initializers import RandomUniform
 else:
-    class Model:
-        pass
-
-    class Layer:
-        pass
-
     logging.warning("This model requires Tensorflow. Please install these packages "
                     "using pip. If using mac, please refer to this link for "
                     " installation https://github.com/apple/tensorflow_macos.")

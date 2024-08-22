@@ -17,6 +17,10 @@ if have_tf:
     from keras.layers import Layer
     from keras import Sequential
 
+else:
+    pytest.skip("TensorFlow not installed. Skipping tests `for finta_model.py`.",
+                allow_module_level=True)
+
 
 class DummyData():
     def __init__(self, latent_space_dims=32):
