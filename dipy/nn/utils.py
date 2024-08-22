@@ -13,6 +13,14 @@ if have_tf:
     from keras.layers import Layer
     from tensorflow import pad as tf_pad
 else:
+    have_tf = False
+
+    class Model:
+        pass
+
+    class Layer:
+        pass
+
     logging.warning("TensorFlow not installed. Some functions may not work.")
 
 

@@ -20,10 +20,7 @@ if have_tf:
     )
 
 else:
-    pytest.skip(
-        "TensorFlow not installed. Skipping tests `for finta_model.py`.",
-        allow_module_level=True,
-    )
+    have_tf = False
 
 
 class DummyData:

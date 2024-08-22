@@ -16,6 +16,7 @@ if have_tf:
     from keras.saving import deserialize_keras_object, serialize_keras_object
     import tensorflow as tf
 else:
+    have_tf = False
     logging.warning(
         "This model requires Tensorflow. Please install these packages "
         "using pip. If using mac, please refer to this link for "
