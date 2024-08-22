@@ -110,7 +110,7 @@ class AffineMap:
         sampling information needs to be specified each time the `transform`
         or `transform_inverse` is called to transform images. Note that such
         sampling information is not necessary to transform points defined in
-        physical space, such as stream lines.
+        physical space, such as streamlines.
 
         Parameters
         ----------
@@ -429,9 +429,9 @@ class AffineMap:
 
         Returns
         -------
-        transformed : array, shape `sampling_grid_shape` or
-                      `self.codomain_shape`
-            the transformed image, sampled at the requested grid
+        transformed : array
+            the transformed image, sampled at the requested grid, with shape
+            `sampling_grid_shape` or `self.codomain_shape`.
 
         """
         transformed = self._apply_transform(
@@ -490,9 +490,9 @@ class AffineMap:
 
         Returns
         -------
-        transformed : array, shape `sampling_grid_shape` or
-                      `self.codomain_shape`
-            the transformed image, sampled at the requested grid
+        transformed : array
+            the transformed image, sampled at the requested grid, with shape
+            `sampling_grid_shape` or `self.codomain_shape`.
 
         """
         transformed = self._apply_transform(

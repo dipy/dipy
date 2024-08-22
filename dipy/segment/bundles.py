@@ -407,12 +407,12 @@ class RecoBundles:
                 b) "similarity"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
                 c) "affine"
-                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
-            (default None)
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
+
         slr_bounds : array, optional
-            (default None)
+            SLR bounds.
         slr_select : tuple, optional
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
         slr_method : string, optional
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
@@ -530,10 +530,10 @@ class RecoBundles:
 
             If 1D array with:
                 a) 6 elements then only rigid registration is performed with
-                the 3 first elements for translation and 3 for rotation.
+                   the 3 first elements for translation and 3 for rotation.
                 b) 7 elements also isotropic scaling is performed (similarity).
                 c) 12 elements then translation, rotation (in degrees),
-                scaling and shearing are performed (affine).
+                   scaling and shearing are performed (affine).
 
                 Here is an example of x0 with 12 elements:
                 ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``

@@ -111,7 +111,7 @@ def split_cti_params(cti_params):
 
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
-            first, second and third coordinates of the eigenvector
+               first, second and third coordinates of the eigenvector
             3. Fifteen elements of the kurtosis tensor
             4. Twenty-One elements of the covariance tensor
 

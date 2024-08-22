@@ -212,10 +212,13 @@ def register_dwi_to_template(
 
     Returns
     -------
-    warped_b0, mapping: The fist is an array with the b0 volume warped to the
-    template. If reg_method is "syn", the second is a DiffeomorphicMap class
-    instance that can be used to transform between the two spaces. Otherwise,
-    if reg_method is "aff", this is a 4x4 matrix encoding the affine transform.
+    warped_b0 : ndarray
+        b0 volume warped to the template.
+    mapping : DiffeomorphicMap or ndarray
+        If reg_method is "syn", a DiffeomorphicMap class instance that can be
+        used to transform between the two spaces. Otherwise, if reg_method is
+        "aff", a 4x4 matrix encoding the affine transform.
+
 
     Notes
     -----

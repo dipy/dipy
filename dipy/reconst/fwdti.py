@@ -255,7 +255,7 @@ def wls_iter(
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
-     mdreg : float, optimal
+    mdreg : float, optimal
         DTI's mean diffusivity regularization threshold. If standard DTI
         diffusion tensor's mean diffusivity is almost near the free water
         diffusion value, the diffusion signal is assumed to be only free water
@@ -271,12 +271,15 @@ def wls_iter(
 
     Returns
     -------
-    All parameters estimated from the free water tensor model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
-        3) The volume fraction of the free water compartment
+    fw_params : ndarray
+        All parameters estimated from the free water tensor model. Parameters
+        are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3) The volume fraction of the free water compartment
+
     """
     W = design_matrix
 
@@ -314,7 +317,7 @@ def wls_iter(
             FS, SI = np.meshgrid(fs, sig)
             SA = SI - FS * S0 * SFW.T
             # SA < 0 means that the signal components from the free water
-            # component is larger than the total fiber. This cases are present
+            # component is larger than the total fiber. These cases are present
             # for inappropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
@@ -382,6 +385,7 @@ def wls_fit_tensor(
     fw_params : ndarray (x, y, z, 13)
         Matrix containing in the last dimension the free water model parameters
         in the following order:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
@@ -782,6 +786,7 @@ def nls_fit_tensor(
     fw_params : ndarray (x, y, z, 13)
         Matrix containing in the dimension the free water model parameters in
         the following order:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector

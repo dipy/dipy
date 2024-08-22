@@ -722,13 +722,12 @@ class QtiModel(ReconstModel):
             Gradient table with b-tensors.
         fit_method : str, optional
             Must be one of the following:
-                'OLS' for ordinary least squares
-                    :func:`qti._ols_fit`
-                'WLS' for weighted least squares
-                    :func:`qti._wls_fit`
-                'SDPDc' for semidefinite programming with positivity
-                        constraints applied [2]_
-                    :func:`qti._sdpdc_fit`
+
+            - 'OLS' for ordinary least squares :func:`qti._ols_fit`
+            - 'WLS' for weighted least squares :func:`qti._wls_fit`
+            - 'SDPDc' for semidefinite programming with positivity constraints
+              applied [2]_ :func:`qti._sdpdc_fit`
+
         cvxpy_solver: str, optionals
             solver for the SDP formulation. default: 'SCS'
 
