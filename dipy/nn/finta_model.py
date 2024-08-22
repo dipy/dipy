@@ -17,6 +17,13 @@ if have_tf:
     import tensorflow as tf
 else:
     have_tf = False
+
+    class Model:
+        pass
+
+    class Layer:
+        pass
+
     logging.warning(
         "This model requires Tensorflow. Please install these packages "
         "using pip. If using mac, please refer to this link for "
