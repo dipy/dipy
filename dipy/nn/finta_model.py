@@ -455,7 +455,7 @@ def init_model(latent_space_dims=32, kernel_size=3):
     # decode
     decoder = Decoder(encoder.encoder_out_size, kernel_size=kernel_size)
     decoded = decoder(encoded)
-    output_data = decoded
+
     # Instantiate decoder model
     model_decoder = Model(encoded, decoded, name="Decoder")
 
@@ -540,7 +540,7 @@ class IncrFeatStridedConvFCUpsampReflectPadAE(Model):
             Model instance recreated from the retrieved configuration
         """
         latent_space_dims = deserialize_keras_object(config.pop("latent_space_dims"))
-        encoder_out_size = deserialize_keras_object(config.pop("encoder_out_size"))
+        # encoder_out_size = deserialize_keras_object(config.pop("encoder_out_size"))
         kernel_size = deserialize_keras_object(config.pop("kernel_size"))
         return cls(latent_space_dims, kernel_size, **config)
 
