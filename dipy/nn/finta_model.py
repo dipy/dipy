@@ -1,28 +1,26 @@
 import logging
 from math import sqrt
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 
-from dipy.nn.utils import pre_pad
-from dipy.nn.utils import dict_kernel_encoder_shape
-
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.nn.utils import dict_kernel_encoder_shape, pre_pad
 from dipy.utils.optpkg import optional_package
-
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
-    import tensorflow as tf
     import keras
-    from keras import layers, Model
+    from keras import Model, layers
+    from keras.initializers import RandomUniform
     from keras.layers import Layer
     from keras.saving import deserialize_keras_object, serialize_keras_object
-    from keras.initializers import RandomUniform
+    import tensorflow as tf
 else:
-    logging.warning("This model requires Tensorflow. Please install these packages "
-                    "using pip. If using mac, please refer to this link for "
-                    " installation https://github.com/apple/tensorflow_macos.")
+    logging.warning(
+        "This model requires Tensorflow. Please install these packages "
+        "using pip. If using mac, please refer to this link for "
+        " installation https://github.com/apple/tensorflow_macos."
+    )
 
 logging.basicConfig()
 
@@ -78,48 +76,80 @@ class Encoder(Layer):
         # (Variables section)
         # Weights
         self.k_conv1d_weight_init = sqrt(1 / (3 * self.kernel_size))
-        self.conv1d_weight_init = RandomUniform(minval=-self.k_conv1d_weight_init,
-                                                maxval=self.k_conv1d_weight_init,
-                                                seed=2208)
+        self.conv1d_weight_init = RandomUniform(
+            minval=-self.k_conv1d_weight_init,
+            maxval=self.k_conv1d_weight_init,
+            seed=2208,
+        )
         # Biases
         self.k_conv1d_bias_init = self.k_conv1d_weight_init
         self.conv1d_bias_init = self.conv1d_weight_init
 
         self.encod_conv1 = pre_pad(
-            layers.Conv1D(32, self.kernel_size, strides=2, padding="valid",
-                          name="encoder_conv1",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                32,
+                self.kernel_size,
+                strides=2,
+                padding="valid",
+                name="encoder_conv1",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
         self.encod_conv2 = pre_pad(
-            layers.Conv1D(64, self.kernel_size, strides=2, padding="valid",
-                          name="encoder_conv2",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                64,
+                self.kernel_size,
+                strides=2,
+                padding="valid",
+                name="encoder_conv2",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
         self.encod_conv3 = pre_pad(
-            layers.Conv1D(128, self.kernel_size, strides=2, padding="valid",
-                          name="encoder_conv3",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                128,
+                self.kernel_size,
+                strides=2,
+                padding="valid",
+                name="encoder_conv3",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
         self.encod_conv4 = pre_pad(
-            layers.Conv1D(256, self.kernel_size, strides=2, padding="valid",
-                          name="encoder_conv4",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                256,
+                self.kernel_size,
+                strides=2,
+                padding="valid",
+                name="encoder_conv4",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
         self.encod_conv5 = pre_pad(
-            layers.Conv1D(512, self.kernel_size, strides=2, padding="valid",
-                          name="encoder_conv5",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                512,
+                self.kernel_size,
+                strides=2,
+                padding="valid",
+                name="encoder_conv5",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
         self.encod_conv6 = pre_pad(
-            layers.Conv1D(1024, self.kernel_size, strides=1, padding="valid",
-                          name="encoder_conv6",
-                          kernel_initializer=self.conv1d_weight_init,
-                          bias_initializer=self.conv1d_bias_init)
+            layers.Conv1D(
+                1024,
+                self.kernel_size,
+                strides=1,
+                padding="valid",
+                name="encoder_conv6",
+                kernel_initializer=self.conv1d_weight_init,
+                bias_initializer=self.conv1d_bias_init,
+            )
         )
 
         self.flatten = layers.Flatten(name="flatten")
@@ -129,17 +159,20 @@ class Encoder(Layer):
         # (Variables section)
         # Weights
         self.k_dense_weight_init = sqrt(1 / dict_kernel_encoder_shape[self.kernel_size])
-        self.dense_weight_init = RandomUniform(minval=-self.k_dense_weight_init,
-                                               maxval=self.k_dense_weight_init,
-                                               seed=2208)
+        self.dense_weight_init = RandomUniform(
+            minval=-self.k_dense_weight_init, maxval=self.k_dense_weight_init, seed=2208
+        )
 
         # Biases
         self.k_dense_bias_init = self.k_dense_weight_init
         self.dense_bias_init = self.dense_weight_init
 
-        self.fc1 = layers.Dense(self.latent_space_dims, name="fc1",
-                                kernel_initializer=self.dense_weight_init,
-                                bias_initializer=self.dense_bias_init)
+        self.fc1 = layers.Dense(
+            self.latent_space_dims,
+            name="fc1",
+            kernel_initializer=self.dense_weight_init,
+            bias_initializer=self.dense_bias_init,
+        )
 
     def get_config(self):
         """Serialize the custom objects of the layer, retrieve the configuration of a
@@ -157,7 +190,7 @@ class Encoder(Layer):
         base_config = super().get_config()
         config = {
             "latent_space_dims": serialize_keras_object(self.latent_space_dims),
-            "kernel_size": serialize_keras_object(self.kernel_size)
+            "kernel_size": serialize_keras_object(self.kernel_size),
         }
         return {**base_config, **config}
 
@@ -273,33 +306,39 @@ class Decoder(Layer):
 
         self.fc2 = layers.Dense(8192, name="fc2")
         self.decod_conv1 = pre_pad(
-            layers.Conv1D(512, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv1")
+            layers.Conv1D(
+                512, self.kernel_size, strides=1, padding="valid", name="decoder_conv1"
+            )
         )
         self.upsampl1 = layers.UpSampling1D(size=2, name="upsampling1")
         self.decod_conv2 = pre_pad(
-            layers.Conv1D(256, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv2")
+            layers.Conv1D(
+                256, self.kernel_size, strides=1, padding="valid", name="decoder_conv2"
+            )
         )
         self.upsampl2 = layers.UpSampling1D(size=2, name="upsampling2")
         self.decod_conv3 = pre_pad(
-            layers.Conv1D(128, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv3")
+            layers.Conv1D(
+                128, self.kernel_size, strides=1, padding="valid", name="decoder_conv3"
+            )
         )
         self.upsampl3 = layers.UpSampling1D(size=2, name="upsampling3")
         self.decod_conv4 = pre_pad(
-            layers.Conv1D(64, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv4")
+            layers.Conv1D(
+                64, self.kernel_size, strides=1, padding="valid", name="decoder_conv4"
+            )
         )
         self.upsampl4 = layers.UpSampling1D(size=2, name="upsampling4")
         self.decod_conv5 = pre_pad(
-            layers.Conv1D(32, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv5")
+            layers.Conv1D(
+                32, self.kernel_size, strides=1, padding="valid", name="decoder_conv5"
+            )
         )
         self.upsampl5 = layers.UpSampling1D(size=2, name="upsampling5")
         self.decod_conv6 = pre_pad(
-            layers.Conv1D(3, self.kernel_size, strides=1, padding="valid",
-                          name="decoder_conv6")
+            layers.Conv1D(
+                3, self.kernel_size, strides=1, padding="valid", name="decoder_conv6"
+            )
         )
 
     def get_config(self):
@@ -316,7 +355,7 @@ class Decoder(Layer):
         base_config = super().get_config()
         config = {
             "encoder_out_size": serialize_keras_object(self.encoder_out_size),
-            "kernel_size": serialize_keras_object(self.kernel_size)
+            "kernel_size": serialize_keras_object(self.kernel_size),
         }
         return {**base_config, **config}
 
@@ -363,8 +402,9 @@ class Decoder(Layer):
         fc = self.fc2(z)
 
         # Reshape to match encoder output size
-        fc_reshape = tf.reshape(fc, (-1, self.encoder_out_size[0],
-                                     self.encoder_out_size[1]))
+        fc_reshape = tf.reshape(
+            fc, (-1, self.encoder_out_size[0], self.encoder_out_size[1])
+        )
 
         h1 = tf.nn.relu(self.decod_conv1(fc_reshape))
         h2 = self.upsampl1(h1)
@@ -407,15 +447,13 @@ def init_model(latent_space_dims=32, kernel_size=3):
     input_data = keras.Input(shape=(256, 3), name="input_streamline")
 
     # encode
-    encoder = Encoder(latent_space_dims=latent_space_dims,
-                      kernel_size=kernel_size)
+    encoder = Encoder(latent_space_dims=latent_space_dims, kernel_size=kernel_size)
     encoded = encoder(input_data)
     # Instantiate encoder model
     model_encoder = Model(input_data, encoded, name="Encoder")
 
     # decode
-    decoder = Decoder(encoder.encoder_out_size,
-                      kernel_size=kernel_size)
+    decoder = Decoder(encoder.encoder_out_size, kernel_size=kernel_size)
     decoded = decoder(encoded)
     output_data = decoded
     # Instantiate decoder model
@@ -426,9 +464,7 @@ def init_model(latent_space_dims=32, kernel_size=3):
 
 
 class IncrFeatStridedConvFCUpsampReflectPadAE(Model):
-
-    def __init__(self, latent_space_dims=32, kernel_size=3,
-                 **kwargs):
+    def __init__(self, latent_space_dims=32, kernel_size=3, **kwargs):
         """Strided convolution-upsampling-based AutoEncoder using reflection-padding and
         increasing feature maps in decoder.
 
@@ -457,8 +493,9 @@ class IncrFeatStridedConvFCUpsampReflectPadAE(Model):
         self.kernel_size = kernel_size
         self.latent_space_dims = latent_space_dims
 
-        model = init_model(latent_space_dims=self.latent_space_dims,
-                           kernel_size=self.kernel_size)
+        model = init_model(
+            latent_space_dims=self.latent_space_dims, kernel_size=self.kernel_size
+        )
         self.encoder = model[0]
         self.decoder = model[1]
         self.encoder_out_size = model[2]
@@ -523,8 +560,9 @@ class IncrFeatStridedConvFCUpsampReflectPadAE(Model):
 
         # Check that the input streamlines have 256 points
         if not x.shape[1] == 256:
-            raise ValueError("Input streamlines to AutoEncoder must have "
-                             "256 points.")
+            raise ValueError(
+                "Input streamlines to AutoEncoder must have " "256 points."
+            )
 
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)

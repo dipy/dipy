@@ -7,22 +7,17 @@ from dipy.align.reslice import reslice
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 if have_tf:
-    from tensorflow import pad as tf_pad
     from keras import Sequential
     from keras.layers import Layer
+    from tensorflow import pad as tf_pad
 else:
     logging.warning("TensorFlow not installed. Some functions may not work.")
 
 
 # Dictionary to store the expected output shape of the encoder in the SAE.
-dict_kernel_encoder_shape = {1: 12288,
-                             2: 10240,
-                             3: 8192,
-                             4: 7168,
-                             5: 5120}
+dict_kernel_encoder_shape = {1: 12288, 2: 10240, 3: 8192, 4: 7168, 5: 5120}
 
 
 class ReflectionPadding1D(Layer):
@@ -52,8 +47,9 @@ class ReflectionPadding1D(Layer):
             Output tensor, result of operation.
         """
 
-        return tf_pad(inputs, [[0, 0], [self.padding, self.padding], [0, 0]],
-                      mode='REFLECT')
+        return tf_pad(
+            inputs, [[0, 0], [self.padding, self.padding], [0, 0]], mode="REFLECT"
+        )
 
 
 def pre_pad(layer: Layer):
@@ -71,8 +67,10 @@ def pre_pad(layer: Layer):
     """
 
     if not isinstance(layer, Layer):
-        raise ValueError("Input must be an instance of keras.layers.Layer."
-                         " Pass a layer to apply ReflectionPadding1D to.")
+        raise ValueError(
+            "Input must be an instance of keras.layers.Layer."
+            " Pass a layer to apply ReflectionPadding1D to."
+        )
     return Sequential([ReflectionPadding1D(padding=1), layer])
 
 

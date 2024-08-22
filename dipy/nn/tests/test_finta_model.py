@@ -1,9 +1,9 @@
 import os
-import pytest
 import tempfile
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.nn.utils as utils
 from dipy.utils.optpkg import optional_package
@@ -11,18 +11,22 @@ from dipy.utils.optpkg import optional_package
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
 
 if have_tf:
-    from dipy.nn.finta_model import Encoder, Decoder
-    from dipy.nn.finta_model import (
-        IncrFeatStridedConvFCUpsampReflectPadAE as AE)
-    from keras.layers import Layer
     from keras import Sequential
 
+    from dipy.nn.finta_model import (
+        Decoder,
+        Encoder,
+        IncrFeatStridedConvFCUpsampReflectPadAE as AE,
+    )
+
 else:
-    pytest.skip("TensorFlow not installed. Skipping tests `for finta_model.py`.",
-                allow_module_level=True)
+    pytest.skip(
+        "TensorFlow not installed. Skipping tests `for finta_model.py`.",
+        allow_module_level=True,
+    )
 
 
-class DummyData():
+class DummyData:
     def __init__(self, latent_space_dims=32):
         """Generate three streamlines, aligned with the x, y, and z axes. Each
         streamline has 256 points. Generate a latent vector of the input size.
@@ -54,15 +58,13 @@ class DummyData():
 # Test the Encoder on its own as a usable block
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_encoder_parameter_initialization():
-    test_encoder = Encoder(latent_space_dims=10,
-                           kernel_size=3)
+    test_encoder = Encoder(latent_space_dims=10, kernel_size=3)
 
     # Check initialization parameters
     assert test_encoder.latent_space_dims == 10
     assert test_encoder.kernel_size == 3
     k_weight_init = np.sqrt(1 / (3 * test_encoder.kernel_size))
-    npt.assert_almost_equal(test_encoder.k_conv1d_weight_init,
-                            k_weight_init, decimal=5)
+    npt.assert_almost_equal(test_encoder.k_conv1d_weight_init, k_weight_init, decimal=5)
 
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
@@ -146,12 +148,12 @@ def test_decoder_call_correct():
 
 # Test the full AutoEncoder
 
+
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_ae_calling_output_shape():
     latent_space_dims = 32
     kernel_size = 3
-    test_ae = AE(latent_space_dims=latent_space_dims,
-                 kernel_size=kernel_size)
+    test_ae = AE(latent_space_dims=latent_space_dims, kernel_size=kernel_size)
 
     data = DummyData().streamlines
     output = test_ae(data)
@@ -180,10 +182,7 @@ def test_ae_fit_wrong_streamline_size():
     input_train_data = tf.convert_to_tensor(bad_streamlines)
 
     with pytest.raises(ValueError) as excinfo:
-        test_ae.fit(x=input_train_data,
-                    y=input_train_data,
-                    batch_size=1,
-                    epochs=3)
+        test_ae.fit(x=input_train_data, y=input_train_data, batch_size=1, epochs=3)
 
     assert excinfo.type == ValueError
     assert "Training streamlines must have 256 points." in str(excinfo.value)
@@ -193,8 +192,7 @@ def test_ae_fit_wrong_streamline_size():
 def test_ae_train_weight_saving_and_loading():
     latent_space_dims = 32
     kernel_size = 3
-    test_ae = AE(latent_space_dims=latent_space_dims,
-                 kernel_size=kernel_size)
+    test_ae = AE(latent_space_dims=latent_space_dims, kernel_size=kernel_size)
 
     # Train the model
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5)
@@ -206,10 +204,7 @@ def test_ae_train_weight_saving_and_loading():
     # Fit the model
     input_train_data = DummyData().streamlines
     input_train_data = tf.convert_to_tensor(input_train_data)
-    test_ae.fit(x=input_train_data,
-                y=input_train_data,
-                batch_size=1,
-                epochs=3)
+    test_ae.fit(x=input_train_data, y=input_train_data, batch_size=1, epochs=3)
 
     # Run the training data through the trained model
     output_after_train = test_ae(input_train_data)
@@ -255,7 +250,9 @@ def test_pre_pad():
     with pytest.raises(ValueError) as excinfo:
         utils.pre_pad("not_a_layer")
 
-    expected_error_str = ("Input must be an instance of keras.layers.Layer."
-                          " Pass a layer to apply ReflectionPadding1D to.")
+    expected_error_str = (
+        "Input must be an instance of keras.layers.Layer."
+        " Pass a layer to apply ReflectionPadding1D to."
+    )
     assert str(excinfo.value) == expected_error_str
     assert excinfo.type == ValueError
