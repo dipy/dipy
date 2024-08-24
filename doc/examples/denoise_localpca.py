@@ -6,8 +6,8 @@ Denoise images using Local PCA via empirical thresholds
 PCA-based denoising algorithms are effective denoising methods because they
 explore the redundancy of the multi-dimensional information of
 diffusion-weighted datasets. In this example, we will show how to
-perform the PCA-based denoising using the algorithm proposed by Manjon et al.
-[Manjon2013]_.
+perform the PCA-based denoising using the algorithm proposed by
+:footcite:t:`Manjon2013`.
 
 This algorithm involves the following steps:
 
@@ -55,14 +55,14 @@ print("Input Volume", data.shape)
 # =====================================
 #
 # We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
-# used in the local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
+# used in the local PCA algorithm proposed by :footcite:t:`Manjon2013`.
 # It takes both data and the gradient table object as input and returns an
 # estimate of local noise standard deviation as a 3D array. We return a
 # smoothed version, where a Gaussian filter with radius 3 voxels has been
 # applied to the estimate of the noise before returning it.
 #
 # We correct for the bias due to Rician noise, based on an equation developed
-# by Koay and Basser [Koay2006]_.
+# by :footcite:t:`Koay2006a`.
 
 t = time()
 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
@@ -79,7 +79,7 @@ print("Sigma estimation time", time() - t)
 # performed by the ``pca_noise_estimate`` function, if this is inputted in the
 # main ``localpca`` function. The relationship between the noise variance
 # estimate and the eigenvalue threshold can be adjusted using the input
-# parameter ``tau_factor``. According to Manjon et al. [Manjon2013]_, this
+# parameter ``tau_factor``. According to :footcite:t:`Manjon2013`, this
 # parameter is set to 2.3.
 
 t = time()
@@ -124,10 +124,6 @@ save_nifti("denoised_localpca.nii.gz", denoised_arr, affine)
 ###############################################################################
 # References
 # ----------
-# .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-#                 Weighted Image Denoising Using Overcomplete Local PCA" (2013)
-#                 PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
 #
-# .. [Koay2006]  Koay CG, Basser PJ (2006). "Analytically exact correction
-#                scheme for signal extraction from noisy magnitude MR signals".
-#                JMR 179: 317-322.
+# .. footbibliography::
+#

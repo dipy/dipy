@@ -5,8 +5,8 @@ Intravoxel incoherent motion
 The intravoxel incoherent motion (IVIM) model describes diffusion
 and perfusion in the signal acquired with a diffusion MRI sequence
 that contains multiple low b-values. The IVIM model can be understood
-as an adaptation of the work of Stejskal and Tanner [Stejskal65]_
-in biological tissue, and was proposed by Le Bihan [LeBihan84]_.
+as an adaptation of the work of Stejskal and Tanner :footcite:p:`Stejskal1965`
+in biological tissue, and was proposed by Le Bihan :footcite:p:`LeBihan1988`.
 The model assumes two compartments: a slow moving compartment,
 where particles diffuse in a Brownian fashion as a consequence of thermal
 energy, and a fast moving compartment (the vascular compartment), where
@@ -14,7 +14,7 @@ blood moves as a consequence of a pressure gradient. In the first compartment,
 the diffusion coefficient is $\mathbf{D}$ while in the second compartment, a
 pseudo diffusion term $\mathbf{D^*}$ is introduced that describes the
 displacement of the blood elements in an assumed randomly laid out vascular
-network, at the macroscopic level. According to [LeBihan84]_,
+network, at the macroscopic level. According to :footcite:p:`LeBihan1988`,
 $\mathbf{D^*}$ is greater than $\mathbf{D}$.
 
 The IVIM model expresses the MRI signal as follows:
@@ -201,10 +201,10 @@ plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 ###############################################################################
 # Next, we will fit the same model with a more refined optimization process
 # with `fit_method='VarPro'` (for "Variable Projection"). The VarPro computes
-# the IVIM parameters using the MIX approach [Farooq16]_. This algorithm uses
-# three different optimizers. It starts with a differential evolution
-# algorithm and fits the parameters in the power of exponentials. Then the
-# fitted parameters in the first step are utilized to make a linear convex
+# the IVIM parameters using the MIX approach :footcite:p:`Farooq2016`. This
+# algorithm uses three different optimizers. It starts with a differential
+# evolution algorithm and fits the parameters in the power of exponentials. Then
+# the fitted parameters in the first step are utilized to make a linear convex
 # problem. Using a convex optimization, the volume fractions are determined.
 # The last step is non-linear least-squares fitting on all the parameters.
 # The results of the first and second optimizers are utilized as the initial
@@ -216,7 +216,7 @@ plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 # simultaneously. Making use of the three step optimization mentioned above
 # increases the convergence basin for fitting the multi-exponential functions
 # of microstructure models. This method has been described in further detail
-# in [Fadnavis19]_ and [Farooq16]_.
+# in :footcite:p:`Fadnavis2019` and :footcite:p:`Farooq2016`.
 
 ivimmodel_vp = IvimModel(gtab, fit_method="VarPro")
 ivimfit_vp = ivimmodel_vp.fit(data_slice)
@@ -336,21 +336,5 @@ plot_map(
 # References
 # ----------
 #
-# .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
-#                 "Spin Diffusion Measurements: Spin Echoes in the Presence
-#                 of a Time-Dependent Field Gradient". The Journal of Chemical
-#                 Physics 42 (1): 288. Bibcode: 1965JChPh..42..288S.
-#                 doi:10.1063/1.1695690.
+# .. footbibliography::
 #
-# .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
-#                and perfusion in intravoxel incoherent motion MR
-#                imaging." Radiology 168.2 (1988): 497-505.
-#
-# .. [Fadnavis19] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-#                learning, reconstruction, optimization and microstructure
-#                modeling, Proceedings of: International Society of Magnetic
-#                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-#
-# .. [Farooq16] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-#                White Matter Fibers from diffusion MRI." Scientific reports 6
-#                (2016).

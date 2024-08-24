@@ -3,9 +3,10 @@
 Enhancing QuickBundles with different metrics and features
 ==========================================================
 
-QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
-distance metric and an adjacency threshold to perform clustering. There is a
-wide variety of metrics that could be used to cluster streamlines.
+QuickBundles :footcite:p:`Garyfallidis2012a` is a flexible algorithm that
+requires only a distance metric and an adjacency threshold to perform
+clustering. There is a wide variety of metrics that could be used to cluster
+streamlines.
 
 The purpose of this tutorial is to show how to easily create new ``Feature``
 and new ``Metric`` classes that can be used by QuickBundles.
@@ -239,6 +240,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+# .. footbibliography::
+#

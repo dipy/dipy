@@ -14,8 +14,8 @@ the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
 'LocalTracking' generator can be set to output all generated streamlines
-or only the 'valid' ones. See Girard et al. (2004) [Girard2014]_ and Smith et
-al.(2012) [Smith2012]_ for more details on these methods.
+or only the 'valid' ones. See :footcite:t:`Girard2014` and
+:footcite:p:`Smith2012` for more details on these methods.
 
 This example is an extension of the
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_deterministic.py`
@@ -219,9 +219,9 @@ if has_fury:
 #
 # ACT Stopping Criterion
 # ======================
-# Anatomically-constrained tractography (ACT) [Smith2012]_ uses information
-# from anatomical images to determine when the tractography stops. The
-# ``include_map`` defines when the streamline reached a 'valid' stopping
+# Anatomically-constrained tractography (ACT) :footcite:p:`Smith2012` uses
+# information from anatomical images to determine when the tractography stops.
+# The ``include_map`` defines when the streamline reached a 'valid' stopping
 # region (e.g. gray matter partial volume estimation (PVE) map) and the
 # ``exclude_map`` defines when the streamline reached an 'invalid' stopping
 # region (e.g. corticospinal fluid PVE map). The background of the anatomical
@@ -349,17 +349,11 @@ if has_fury:
 # Currently,the proposed method that cuts streamlines going through
 # subcortical gray matter regions is not implemented. The
 # backtracking technique for streamlines reaching INVALIDPOINT is not
-# implemented either [Smith2012]_.
+# implemented either :footcite:p:`Smith2012`.
 #
 #
 # References
 # ----------
 #
-# .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-#     Anatomically-constrained tractography: Improved diffusion MRI
-#     streamlines tractography through effective use of anatomical
-#     information. NeuroImage, 63(3), 1924-1938, 2012.
+# .. footbibliography::
 #
-# .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-#     Towards quantitative connectivity analysis: reducing tractography biases.
-#     NeuroImage, 98, 266-278, 2014.

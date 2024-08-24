@@ -71,7 +71,7 @@ def get_streamlines():
 # since it will require less computation (i.e. no resampling). However, it
 # highly depends on the number of points streamlines have. By default,
 # QuickBundles resamples streamlines so that they have 12 points each
-# [Garyfallidis12]_.
+# :footcite:p:`Garyfallidis2012a`.
 #
 # *Unless stated otherwise, it is the default feature used by `Metric` objects
 # in the clustering framework.*
@@ -103,12 +103,12 @@ print("Cluster sizes:", list(map(len, clusters)))
 #
 # **When:** The QuickBundles algorithm requires streamlines to have the same
 # number of points. By default, QuickBundles uses `ResampleFeature` to resample
-# streamlines so that they have 12 points each [Garyfallidis12]_. If you want
-# to use a different number of points for the resampling, you should provide
-# your own instance of `ResampleFeature` (see following example).
+# streamlines so that they have 12 points each :footcite:p:`Garyfallidis2012a`.
+# If you want to use a different number of points for the resampling, you should
+# provide your own instance of `ResampleFeature` (see following example).
 #
 # **Note:** Resampling streamlines has an impact on clustering results both in
-# term of speed and quality. Setting the number of points too low will result
+# terms of speed and quality. Setting the number of points too low will result
 # in a loss of information about the shape of the streamlines. On the contrary,
 # setting the number of points too high will slow down the clustering process.
 
@@ -315,6 +315,6 @@ if interactive:
 #
 # References
 # ----------
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+#
+# .. footbibliography::
+#

@@ -3,7 +3,7 @@
 Reconstruct with Diffusion Spectrum Imaging
 ===========================================
 
-We show how to apply Diffusion Spectrum Imaging [Wedeen08]_ to
+We show how to apply Diffusion Spectrum Imaging :footcite:p:`Wedeen2005` to
 diffusion MRI datasets of Cartesian keyhole diffusion gradients.
 
 First import the necessary modules:
@@ -91,7 +91,7 @@ for index in ndindex(dataslice.shape[:2]):
 # when reasonable spheres (with < 1000 vertices) are used.
 #
 # Let's now calculate a map of Generalized Fractional Anisotropy (GFA)
-# [Tuch04]_ using the DSI ODFs.
+# :footcite:p:`Tuch2004` using the DSI ODFs.
 
 GFA = gfa(ODF)
 
@@ -107,8 +107,8 @@ plt.savefig("dsi_gfa.png", bbox_inches="tight")
 # for calculating different types of DSI maps.
 #
 #
-# .. [Wedeen08] Wedeen et al., Diffusion spectrum magnetic resonance imaging
-#               (DSI) tractography of crossing fibers, Neuroimage, vol 41, no
-#               4, 1267-1277, 2008.
+# References
+# ----------
 #
-# .. [Tuch04] Tuch, D.S, Q-ball imaging, MRM, vol 52, no 6, 1358-1372, 2004.
+# .. footbibliography::
+#

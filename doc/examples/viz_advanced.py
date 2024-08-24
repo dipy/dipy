@@ -4,8 +4,8 @@ Advanced interactive visualization
 ==================================
 
 In DIPY_ we created a thin interface to access many of the capabilities
-available in the FURY 3D visualization library but tailored to the
-needs of structural and diffusion imaging.
+available in the FURY 3D visualization library :footcite:p:`Garyfallidis2021`
+but tailored to the needs of structural and diffusion imaging.
 
 Let's start by importing the necessary modules.
 """
@@ -285,9 +285,5 @@ del show_m
 # References
 # ----------
 #
-# .. [Garyfallidis2021] Garyfallidis, Eleftherios, Serge Koudoro, Javier Guaje,
-#     Marc-Alexandre Côté, Soham Biswas, David Reagan, Nasim Anousheh,
-#     Filipi Silva, Geoffrey Fox, and Fury Contributors.
-#     "FURY: advanced scientific visualization." Journal of Open Source
-#     Software 6 no. 64 (2021): 3384.
-#     https://doi.org/10.21105/joss.03384
+# .. footbibliography::
+#

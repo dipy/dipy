@@ -21,8 +21,9 @@ colored-FA (CFA) map. In this example, we will use voxels from the CC, which
 have the characteristic of being highly red in the CFA map since they are
 mainly oriented in the left-right direction. We know that the DW image closest
 to the X-direction will be the one with the most attenuated diffusion signal.
-This is the strategy adopted in several recent papers (see [Descoteaux2011]_
-and [Jones2013]_). It gives a good indication of the quality of the DWI data.
+This is the strategy adopted in several recent papers (see
+:footcite:p:`Descoteaux2011` and :footcite:p:`Jones2013`). It gives a good
+indication of the quality of the DWI data.
 
 First, we compute the tensor model in a brain mask (see the :ref:`reconst_dti`
 example for further explanations).
@@ -164,10 +165,5 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 # References
 # ----------
 #
-# .. [Descoteaux2011] Descoteaux, M., Deriche, R., Le Bihan, D., Mangin, J.-F.,
-#    and Poupon, C. Multiple q-shell diffusion propagator imaging. Medical
-#    Image Analysis, 15(4), 603, 2011.
+# .. footbibliography::
 #
-# .. [Jones2013] Jones, D. K., Knosche, T. R., & Turner, R. White Matter
-#    Integrity, Fiber Count, and Other Fallacies: The Dos and Don'ts of
-#    Diffusion MRI. NeuroImage, 73, 239, 2013.

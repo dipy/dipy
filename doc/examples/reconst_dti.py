@@ -7,11 +7,11 @@ Reconstruction of the diffusion signal with the Tensor model
 ============================================================
 
 The diffusion tensor model is a model that describes the diffusion within a
-voxel. First proposed by Basser and colleagues [Basser1994]_, it has been very
-influential in demonstrating the utility of diffusion MRI in characterizing the
-micro-structure of white matter tissue and of the biophysical properties of
-tissue, inferred from local diffusion properties and it is still very commonly
-used.
+voxel. First proposed by Basser and colleagues :footcite:p:`Basser1994a`, it has
+been very influential in demonstrating the utility of diffusion MRI in
+characterizing the micro-structure of white matter tissue and of the biophysical
+properties of tissue, inferred from local diffusion properties and it is still
+very commonly used.
 
 The diffusion tensor models the diffusion signal as:
 
@@ -207,8 +207,9 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make
-sure that the FA is scaled between 0 and 1, we compute the RGB map and save it.
+We can also compute the colored FA or RGB-map :footcite:p:`Pajevic1999`. First,
+we make sure that the FA is scaled between 0 and 1, we compute the RGB map and
+save it.
 """
 
 FA = np.clip(FA, 0, 1)
@@ -297,13 +298,7 @@ other examples.
 
 References
 ----------
-
-.. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
-   spectroscopy and imaging.
-
-.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
-   orientation of anisotropic tissues from diffusion tensor data: application
-   to white matter fiber tract mapping in the human brain.
+.. footbibliography::
 
 .. include:: ../links_names.inc
 

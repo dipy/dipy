@@ -112,7 +112,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     Calculates assignment maps of the target bundle with reference to
     model bundle centroids.
 
-    See :footcite:p:`Chandio2020` for further details about the method.
+    See :footcite:p:`Chandio2020a` for further details about the method.
 
     Parameters
     ----------

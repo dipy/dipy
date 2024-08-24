@@ -4,9 +4,9 @@ Calculate SHORE scalar maps
 ===========================
 
 We show how to calculate two SHORE-based scalar maps: return to origin
-probability (RTOP) [Descoteaux2011]_ and mean square displacement (MSD)
-[Wu2007]_, [Wu2008]_ on your data. SHORE can be used with any multiple b-value
-dataset like multi-shell or DSI.
+probability (RTOP) :footcite:p:`Descoteaux2011` and mean square displacement
+(MSD) :footcite:p:`Wu2007`, :footcite:p:`Wu2008` on your data. SHORE can be used
+with any multiple b-value dataset like multi-shell or DSI.
 
 First import the necessary modules:
 """
@@ -107,13 +107,5 @@ plt.savefig("SHORE_maps.png")
 # References
 # ----------
 #
-# .. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
-#    propagator imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621,
-#    2011.
+# .. footbibliography::
 #
-# .. [Wu2007] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36, p.
-#    617-629, 2007.
-#
-# .. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures in
-#    q-Space Using Magnetic Resonance Hybrid Diffusion Imaging", IEEE
-#    TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008.

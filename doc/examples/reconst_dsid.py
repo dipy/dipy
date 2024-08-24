@@ -3,10 +3,10 @@
 DSI Deconvolution vs DSI
 ========================
 
-An alternative method to DSI is the method proposed by [Canales10]_ which is
-called DSI with Deconvolution. This algorithm is using Lucy-Richardson
-deconvolution in the diffusion propagator with the goal to create sharper ODFs
-with higher angular resolution.
+An alternative method to DSI is the method proposed by
+:footcite:p:`CanalesRodriguez2010` which is called DSI with Deconvolution. This
+algorithm is using Lucy-Richardson deconvolution in the diffusion propagator
+with the goal to create sharper ODFs with higher angular resolution.
 
 In this example we will show with simulated data how this method's ODF
 performs against standard DSI ODF and a ground truth multi tensor ODF.
@@ -88,5 +88,6 @@ if interactive:
 #
 # References
 # ----------
-# .. [Canales10] Canales-Rodriguez et al., Deconvolution in Diffusion Spectrum
-#                Imaging, Neuroimage, vol 50, no 1, p. 136-149, 2010.
+#
+# .. footbibliography::
+#

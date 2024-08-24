@@ -7,7 +7,7 @@ Between-volumes Motion Correction on DWI datasets
 During a dMRI acquisition, the subject motion inevitable. This motion implies
 a misalignment between N volumes on a dMRI dataset. A common way to solve this
 issue is to perform a registration on each acquired volume to a
-reference b = 0. [JenkinsonSmith01]_
+reference b = 0 :footcite:p:`Jenkinson2001`.
 
 This preprocessing is a highly recommended step that should be executed before
 any dMRI dataset analysis.
@@ -63,8 +63,6 @@ save_nifti(
 # References
 # ----------
 #
-# .. [JenkinsonSmith01] Jenkinson, M., Smith, S., 2001. A global optimisation
-#    method for robust affine registration of brain images. Med Image Anal 5
-#    (2), 143–56.
+# .. footbibliography::
 #
 # .. include:: ../links_names.inc

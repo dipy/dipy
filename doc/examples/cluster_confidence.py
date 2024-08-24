@@ -5,7 +5,7 @@ Calculation of Outliers with Cluster Confidence Index
 
 This is an outlier scoring method that compares the pathways of each streamline
 in a bundle (pairwise) and scores each streamline by how many other streamlines
-have similar pathways. The details can be found in [Jordan_2018_plm]_.
+have similar pathways. The details can be found in :footcite:p:`Jordan2018`.
 
 """
 
@@ -164,6 +164,5 @@ window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 8
 # References
 # ----------
 #
-# .. [Jordan_2018_plm] Jordan, K., Amirbekian, B., Keshavan, A., Henry, R.G.
-#    "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
-#    for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.
+# .. footbibliography::
+#

@@ -3,10 +3,10 @@
 Reconstruct with Q-space Trajectory Imaging (QTI)
 =================================================
 
-Q-space trajectory imaging (QTI) by Westin et al. [1]_ is a general framework
-for analyzing diffusion-weighted MRI data acquired with tensor-valued diffusion
-encoding. This tutorial briefly summarizes the theory and provides an example
-of how to estimate the diffusion and covariance tensors using DIPY.
+Q-space trajectory imaging (QTI) by :footcite:t:`Westin2016` is a general
+framework for analyzing diffusion-weighted MRI data acquired with tensor-valued
+diffusion encoding. This tutorial briefly summarizes the theory and provides an
+example of how to estimate the diffusion and covariance tensors using DIPY.
 
 Theory
 ======
@@ -73,7 +73,7 @@ $\\text{rank}(\\mathbf{X}^\\text{T}\\mathbf{X}) = 28$.
 This can be achieved by combining acquisitions with b-tensors with different
 shapes, sizes, and orientations.
 
-For details, please see [1]_.
+For details, please see :footcite:p:`Westin2016`.
 
 Usage example
 =============
@@ -129,8 +129,8 @@ fa = qtifit.fa
 ufa = qtifit.ufa
 
 ###############################################################################
-# Finally, let's reproduce Figure 9 from [1]_ to visualize more QTI parameter
-# maps:
+# Finally, let's reproduce Figure 9 from :footcite:p:`Westin2016` to visualize
+# more QTI parameter maps:
 
 z = 36
 
@@ -174,11 +174,11 @@ fig.tight_layout()
 plt.show()
 
 ###############################################################################
-# For more information about QTI, please read the article by Westin et
-# al. [1]_.
+# For more information about QTI, please read the article by
+# :footcite:t:`Westin2016`.
 #
 # References
 # ----------
-# .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
-#    multidimensional diffusion MRI of the human brain." Neuroimage 135
-#    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
+#
+# .. footbibliography::
+#

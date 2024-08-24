@@ -5,9 +5,9 @@ Bootstrap and Closest Peak Direction Getters Example
 
 This example shows how choices in direction-getter impact fiber
 tracking results by demonstrating the bootstrap direction getter (a type of
-probabilistic tracking, as described in Berman et al. (2008) [Berman2008]_ a
-nd the closest peak direction getter (a type of deterministic tracking).
-(Amirbekian, PhD thesis, 2016)
+probabilistic tracking, as described in :footcite:p:`Berman2008` and the closest
+peak direction getter (a type of deterministic tracking)
+:footcite:p:`Amirbekian2016`.
 
 This example is an extension of the
 :ref:`sphx_glr_examples_built_quick_start_tracking_introduction_eudx.py`
@@ -133,5 +133,6 @@ if has_fury:
 #
 # References
 # ----------
-# .. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
-# tractography using the residual bootstrap, NeuroImage, vol 39, no 1, 2008
+#
+# .. footbibliography::
+#

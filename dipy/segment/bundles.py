@@ -166,7 +166,7 @@ def bundle_shape_similarity(
     """Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
 
-    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020` for further
+    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020a` for further
     details about the method.
 
     Parameters
@@ -501,7 +501,7 @@ class RecoBundles:
         This time, search space is created using pruned bundle and not model
         bundle.
 
-        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020` for
+        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020a` for
         further details about the method.
 
         Parameters
