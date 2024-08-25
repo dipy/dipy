@@ -99,7 +99,7 @@ representation, $\\mathbf{C}$, should be positive semi-definite:
 $\\mathbf{C} \\succeq 0$
 
 When not imposed, violations of these conditions can occur in presence of noise
-and/or in sparsely sampled data. This could results in metrics derived from the
+and/or in sparsely sampled data. This could result in metrics derived from the
 model parameters to be unreliable. Both these conditions can be enfoced while
 estimating the QTI model's parameters using semidefinite programming (SDP) as
 shown by Herberthson et al. [2]_. This corresponds to solving the problem

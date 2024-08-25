@@ -495,7 +495,7 @@ class RecoBundles:
     ):
         """Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
-        first output of recobundle by applying second local slr (optional),
+        first output of RecoBundles by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
         This time, search space is created using pruned bundle and not model
