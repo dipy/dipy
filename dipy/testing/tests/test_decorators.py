@@ -107,5 +107,31 @@ def test_warning_for_keywords():
     except TypeError:
         pass
 
+    # Case 5: Version is a pre-release like '2.0.0rc1', warnings expected
+    dipy.__version__ = "2.0.0rc1"
+    assert func_with_kwonly_args(1, 2, c=3) == 6
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = func_with_kwonly_args(1, 2, 3)
+        assert result == 6, "Expected result to be 6"
+        assert len(w) == 1, "Expected warning for version 2.0.0rc1"
+        assert (
+            "Pass ['c'] as keyword args. From version 10.0.0 passing these as "
+            "positional arguments will result in an error" in str(w[-1].message)
+        )
+
+    # Case 6: Version is a dev release like '1.10.0.dev1', warnings expected
+    dipy.__version__ = "1.10.0.dev1"
+    assert func_with_kwonly_args(1, 2, c=3) == 6
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = func_with_kwonly_args(1, 2, 3)
+        assert result == 6, "Expected result to be 6"
+        assert len(w) == 1, "Expected warning for version 1.10.0.dev1"
+        assert (
+            "Pass ['c'] as keyword args. From version 10.0.0 passing these as "
+            "positional arguments will result in an error" in str(w[-1].message)
+        )
+
     # Restore the original version
     dipy.__version__ = original_version
