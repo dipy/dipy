@@ -67,10 +67,8 @@ class ForecastModel(OdfModel, Cache):
         $\rho(\mathbf{v})$
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}
-                \end{equation}
+
+            E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}
 
         where $\mathbf{b}$ is the b-vector (b-value times gradient direction)
         and $\mathbf{v}$ is a unit vector representing a fiber direction.

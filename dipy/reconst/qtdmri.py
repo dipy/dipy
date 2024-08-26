@@ -37,11 +37,10 @@ class QtdmriModel(Cache):
 
     .. math::
         :nowrap:
-            \begin{equation}
-                \hat{E}(\textbf{q},\tau;\textbf{c}) =
-                \sum_i^{N_{\textbf{q}}}\sum_k^{N_\tau} \textbf{c}_{ik}
-                \,\Phi_i(\textbf{q})\,T_k(\tau),
-            \end{equation}
+
+        \hat{E}(\textbf{q},\tau;\textbf{c}) =
+        \sum_i^{N_{\textbf{q}}}\sum_k^{N_\tau} \textbf{c}_{ik}
+        \,\Phi_i(\textbf{q})\,T_k(\tau)
 
     where $\Phi$ and $T$ are the spatial and temporal basis functions,
     $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal

@@ -1172,7 +1172,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
     2) AK can be sampled from the principal axis of the diffusion tensor [2]_:
 
     .. math::
-        AK = K(\mathbf{\mathbf{e}_1)
+        AK = K(\mathbf{e}_1)
 
     Although both approaches leads to an exact calculation of AK, the first
     approach will be referred to as the analytical method while the second
@@ -1672,7 +1672,13 @@ def kurtosis_fractional_anisotropy(dki_params):
 
 
 def dki_prediction(dki_params, gtab, S0=1.0):
-    """Predict a signal given diffusion kurtosis imaging parameters
+    r"""Predict a signal given diffusion kurtosis imaging parameters
+
+    The predicted signal is given by:
+
+    .. math::
+
+        S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
 
     Parameters
     ----------
@@ -1692,12 +1698,8 @@ def dki_prediction(dki_params, gtab, S0=1.0):
 
     Returns
     -------
-    S : (..., N) ndarray
-        Simulated signal based on the DKI model:
-
-    .. math::
-
-        S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
+    pred_sig : (..., N) ndarray
+        Simulated signal based on the DKI model.
 
     References
     ----------
@@ -2189,7 +2191,7 @@ class DiffusionKurtosisFit(TensorFit):
         2) AK can be sampled from the principal axis of the diffusion tensor:
 
         .. math::
-            AK = K(\mathbf{\mathbf{e}_1)
+            AK = K(\mathbf{e}_1)
 
         Although both approaches leads to an exact calculation of AK, the
         first approach will be referred to as the analytical method while the
@@ -2361,8 +2363,8 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. math::
 
-        MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
-        (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
+            MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
+            (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
 
         References
         ----------
@@ -2727,12 +2729,12 @@ def Wrotate(kt, Basis):
 
     .. math::
 
-    KT =
-    \begin{pmatrix}
-        W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
-        W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
-        W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-    \end{pmatrix}
+        KT =
+        \begin{pmatrix}
+            W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
+            W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
+            W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+        \end{pmatrix}
 
     References
     ----------

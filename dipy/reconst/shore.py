@@ -21,10 +21,8 @@ class ShoreModel(Cache):
     continuous functions $\phi_i$,
 
     .. math::
-        :nowrap:
-            \begin{equation}
-                S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
-            \end{equation}
+
+       S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q})
 
     where $\mathbf{q}$ is the wave vector which corresponds to different
     gradient directions. Numerous continuous functions $\phi_i$ can be used to
@@ -84,10 +82,8 @@ class ShoreModel(Cache):
         combination of continuous functions $\phi_i$,
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
-                \end{equation}
+
+           S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q})
 
         where $\mathbf{q}$ is the wave vector which corresponds to different
         gradient directions.
@@ -455,12 +451,11 @@ class ShoreFit:
         r"""Calculates the analytical mean squared displacement (MSD) [1]_
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
-                    \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
-                    \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
-                \end{equation}
+           :nowrap:
+
+            MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
+            \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
+            \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
 
         where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu
         et al. [1]_).
@@ -503,25 +498,24 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
     r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
 
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
-                                            \sum_{n=l}^{(N_{max}+l)/2}
-                                            \sum_{m=-l}^l c_{nlm}
-                                            \phi_{nlm}(q\textbf{u})
-                \end{equation}
+        :nowrap:
+
+        \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                               \sum_{n=l}^{(N_{max}+l)/2}
+                               \sum_{m=-l}^l c_{nlm}
+                               \phi_{nlm}(q\textbf{u})
 
     where $\phi_{nlm}$ is
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
-                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
-                        Y_l^m(\textbf{u}).
-                \end{equation}
+        :nowrap:
+
+        \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+            {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+            \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+            exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
+            L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+            Y_l^m(\textbf{u})
 
     Parameters
     ----------

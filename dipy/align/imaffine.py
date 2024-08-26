@@ -938,7 +938,7 @@ class AffineRegistration:
             The `ss_sigma_factor` is used to scale the automatically computed
             sigmas. For example, in the isotropic case, the sigma of the
             kernel will be $factor * (2 ^ i)$ where
-            $i = 1, 2, ..., n_scales - 1$ is the scale (the finest resolution
+            $i = 1, 2, ..., n_{scales} - 1$ is the scale (the finest resolution
             image $i=0$ is never smoothed). The default is None.
         options : dict, optional
             extra optimization options. The default is None, implying
