@@ -38,16 +38,14 @@ def add_noise(vol, *, snr=1.0, S0=None, noise_type="rician", rng=None):
 
     Notes
     -----
-    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
-    the standard deviation of the two Gaussian distributions forming the real
-    and imaginary components of the Rician noise distribution (see [2]_).
+    SNR is defined here, following :footcite:p:`Descoteaux2007`, as
+    ``S0 / sigma``, where ``sigma`` is the standard deviation of the two
+    Gaussian distributions forming the real and imaginary components of the
+    Rician noise distribution (see :footcite:p:`Gudbjartsson1995`).
 
     References
     ----------
-    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
-           fast and robust q-ball imaging. MRM, 58: 497-510
-    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
-           data. MRM 34: 910-914.
+    .. footbibliography::
 
     Examples
     --------

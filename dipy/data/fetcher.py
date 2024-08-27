@@ -1691,11 +1691,12 @@ def get_fnames(*, name="small_64D"):
 
 
 def read_qtdMRI_test_retest_2subjects():
-    r"""Load test-retest qt-dMRI acquisitions of two C57Bl6 mice. These
-    datasets were used to study test-retest reproducibility of time-dependent
-    q-space indices (q$\tau$-indices) in the corpus callosum of two mice [1].
-    The data itself and its details are publicly available and can be cited at
-    [2].
+    r"""Load test-retest qt-dMRI acquisitions of two C57Bl6 mice.
+
+    These datasets were used to study test-retest reproducibility of
+    time-dependent q-space indices (q$\tau$-indices) in the corpus callosum of
+    two mice :footcite:p:`Fick2018`. The data itself and its details are
+    publicly available and can be cited at :footcite:p:`Wassermann2017`.
 
     The test-retest diffusion MRI spin echo sequences were acquired from two
     C57Bl6 wild-type mice on an 11.7 Tesla Bruker scanner. The test and retest
@@ -1721,12 +1722,7 @@ def read_qtdMRI_test_retest_2subjects():
 
     References
     ----------
-    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-        Representation of dMRI in Space and Time", Medical Image Analysis,
-        2017.
-    .. [2] Wassermann, Demian, et al., "Test-Retest qt-dMRI datasets for
-        `Non-Parametric GraphNet-Regularized Representation of dMRI in Space
-        and Time'". doi:10.5281/zenodo.996889, 2017.
+    .. footbibliography::
     """
     data = []
     data_names = [
@@ -2252,6 +2248,9 @@ def read_bundles_2_subjects(
 ):
     r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
+    See :footcite:p:`Renauld2016` and :footcite:p:`Garyfallidis2015` for further
+    details about the dataset and processing pipeline.
+
     Parameters
     ----------
     subj_id : string
@@ -2274,13 +2273,7 @@ def read_bundles_2_subjects(
 
     References
     ----------
-    .. [1] Renauld, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
-    K. Whittingstall, "Morphology of thalamus, LGN and optic radiation do not
-    influence EEG alpha waves", Plos One (under submission), 2015.
-
-    .. [2] Garyfallidis, E., O. Ocegueda, D. Wassermann,
-    M. Descoteaux. Robust and efficient linear registration of fascicles in the
-    space of streamlines , Neuroimage, 117:124-140, 2015.
+    .. footbibliography::
 
     """
     dname = pjoin(dipy_home, "exp_bundles_and_maps", "bundles_2_subjects")
@@ -2607,7 +2600,9 @@ def fetch_hcp(
 ):
     """
     Fetch HCP diffusion data and arrange it in a manner that resembles the
-    BIDS [1]_ specification.
+    BIDS specification.
+
+    See :footcite:p:`Gorgolewski2016` for details about the BIDS specification.
 
     Parameters
     ----------
@@ -2648,9 +2643,9 @@ def fetch_hcp(
 
     Local filenames are changed to match our expected conventions.
 
-    .. [1] Gorgolewski et al. (2016). The brain imaging data structure,
-           a format for organizing and describing outputs of neuroimaging
-           experiments. Scientific Data, 3::160044. DOI: 10.1038/sdata.2016.44.
+    References
+    ----------
+    .. footbibliography::
     """  # noqa: E501
     if not has_boto3:
         raise ValueError(
@@ -2830,7 +2825,11 @@ def _hbn_downloader(my_path, derivative, subjects, client):
 
 def fetch_hbn(subjects, *, path=None, include_afq=False):
     """
-    Fetch preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
+    Fetch preprocessed data from the Healthy Brain Network POD2 study.
+
+
+    See :footcite:p:`Alexander2017` and :footcite:p:`RichieHalford2022` for
+    further details about the study and processing pipeline.
 
     Parameters
     ----------
@@ -2850,16 +2849,9 @@ def fetch_hbn(subjects, *, path=None, include_afq=False):
     dict with remote and local names of these files,
     path to BIDS derivative dataset
 
-    Notes
-    -----
-
-    .. [1] Alexander LM, Escalera J, Ai L, et al. An open resource for
-        transdiagnostic research in pediatric mental health and learning
-        disorders. Sci Data. 2017;4:170181.
-
-    .. [2] Richie-Halford A, Cieslak M, Ai L, et al. An analysis-ready and
-        quality controlled resource for pediatric brain white-matter research.
-        Scientific Data. 2022;9(1):1-27.
+    References
+    ----------
+    .. footbibliography::
 
     """
 

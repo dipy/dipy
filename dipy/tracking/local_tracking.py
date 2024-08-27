@@ -296,7 +296,9 @@ class ParticleFilteringTracking(LocalTracking):
         initial_directions=None,
     ):
         r"""A streamline generator using the particle filtering tractography
-        method [1]_.
+        method.
+
+        See :footcite:p:`Girard2014` for further details about the method.
 
         Parameters
         ----------
@@ -366,9 +368,7 @@ class ParticleFilteringTracking(LocalTracking):
 
         References
         ----------
-        .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-               Towards quantitative connectivity analysis: reducing
-               tractography biases. NeuroImage, 98, 266-278, 2014.
+        .. footbibliography::
         """
 
         if not isinstance(stopping_criterion, AnatomicalStoppingCriterion):

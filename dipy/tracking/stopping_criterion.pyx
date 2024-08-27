@@ -166,11 +166,14 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
 cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     r"""
-    Anatomically-Constrained Tractography (ACT) stopping criterion from [1]_.
+    Anatomically-Constrained Tractography (ACT) stopping criterion.
+
+    See :footcite:p:`Smith2012` for further details about the method.
+
     This implements the use of partial volume fraction (PVE) maps to
-    determine when the tracking stops. The proposed ([1]_) method that
-    cuts streamlines going through subcortical gray matter regions is
-    not implemented here. The backtracking technique for
+    determine when the tracking stops. The proposed method
+    :footcite:p:`Smith2012` that cuts streamlines going through subcortical gray
+    matter regions is not implemented here. The backtracking technique for
     streamlines reaching INVALIDPOINT is not implemented either.
     cdef:
         double interp_out_double[1]
@@ -179,10 +182,7 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
 
     References
     ----------
-    .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-    "Anatomically-constrained tractography: Improved diffusion MRI
-    streamlines tractography through effective use of anatomical
-    information." NeuroImage, 63(3), 1924-1938, 2012.
+    .. footbibliography::
     """
 
     def __cinit__(self, include_map, exclude_map):
@@ -226,9 +226,10 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
 
 cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
     r"""
-    Continuous map criterion (CMC) stopping criterion from [1]_.
+    Continuous map criterion (CMC) stopping criterion.
+
     This implements the use of partial volume fraction (PVE) maps to
-    determine when the tracking stops.
+    determine when the tracking stops :footcite:p:`Girard2014`.
 
     cdef:
         double interp_out_double[1]
@@ -240,9 +241,7 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
 
     References
     ----------
-    .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-    "Towards quantitative connectivity analysis: reducing tractography biases."
-    NeuroImage, 98, 266-278, 2014.
+    .. footbibliography::
     """
 
     def __cinit__(self, include_map, exclude_map, step_size, average_voxel_size):

@@ -312,11 +312,11 @@ class ReconstDtiFlow(Workflow):
         out_gfa="gfa.nii.gz",
     ):
         """Workflow for tensor reconstruction and for computing DTI metrics
-        [1]_, [2]_.
-        using Weighted Least-Squares.
-        Performs a tensor reconstruction on the files by 'globing'
-        ``input_files`` and saves the DTI metrics in a directory specified by
-        ``out_dir``.
+        using Weighted  Least-Squares.
+
+        Performs a tensor reconstruction :footcite:p:`Basser1994b`,
+        :footcite:p:`Basser1996` on the files by 'globing' ``input_files`` and
+        saves the DTI metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -334,19 +334,20 @@ class ReconstDtiFlow(Workflow):
             multiple masks at once.
         fit_method : string, optional
             can be one of the following:
-            'WLS' for weighted least squares [4]_
-            'LS' or 'OLS' for ordinary least squares [4]_
+            'WLS' for weighted least squares :footcite:p:`Chung2006`
+            'LS' or 'OLS' for ordinary least squares :footcite:p:`Chung2006`
             'NLLS' for non-linear least-squares
-            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_.
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
+            :footcite:p:`Chang2005`.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
         sigma : float, optional
-            An estimate of the variance. [5]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
-            b-vectors are unit vectors.
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise) b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -410,20 +411,7 @@ class ReconstDtiFlow(Workflow):
 
         References
         ----------
-        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
-           the effective self-diffusion tensor from the NMR spin echo. J Magn
-           Reson B 103, 247-254.
-
-        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
-           physiological features of tissues elucidated by quantitative
-           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-
-        .. [3] Chang, L-C, Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
-           estimation of tensors by outlier rejection. MRM 53: 1088-1095
-
-        .. [4] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-           approaches for estimation of uncertainties of DTI parameters.
-           NeuroImage 33, 531-541.
+        .. footbibliography::
 
         """
         save_metrics = save_metrics or []
@@ -779,7 +767,9 @@ class ReconstCSDFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
     ):
-        """Constrained spherical deconvolution [1]_.
+        """Constrained spherical deconvolution.
+
+        See :footcite:p:`Tournier2007` for further details about the method.
 
         Parameters
         ----------
@@ -844,9 +834,7 @@ class ReconstCSDFlow(Workflow):
 
         References
         ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-           the fibre orientation distribution in diffusion MRI: Non-negativity
-           constrained super-resolved spherical deconvolution.
+        .. footbibliography::
         """
         io_it = self.get_io_iterator()
 
@@ -995,7 +983,9 @@ class ReconstCSAFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
     ):
-        """Constant Solid Angle [1]_.
+        """Constant Solid Angle.
+
+        See :footcite:p:`Aganj2009` for further details about the method.
 
         Parameters
         ----------
@@ -1047,8 +1037,7 @@ class ReconstCSAFlow(Workflow):
 
         References
         ----------
-        .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
-           with Solid Angle Consideration.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -1172,9 +1161,11 @@ class ReconstDkiFlow(Workflow):
         out_gfa="gfa.nii.gz",
     ):
         """Workflow for Diffusion Kurtosis reconstruction and for computing
-        DKI metrics [1]_, [2]_. Performs a DKI reconstruction on the files by
-        'globing' ``input_files`` and saves the DKI metrics in a directory
-        specified by ``out_dir``.
+        DKI metrics.
+
+        Performs a DKI reconstruction :footcite:p:`Tabesh2011`,
+        :footcite:p:`Jensen2005` on the files by 'globing' ``input_files`` and
+        saves the DKI metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -1197,9 +1188,10 @@ class ReconstDkiFlow(Workflow):
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         sigma : float, optional
-            An estimate of the variance. [3]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -1258,17 +1250,7 @@ class ReconstDkiFlow(Workflow):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-
-        .. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,
-           and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
-           Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
-           Resonance Imaging. MRM 53 (6):1432-40.
-
-        .. [3] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        .. footbibliography::
 
         """
         save_metrics = save_metrics or []
@@ -1482,9 +1464,11 @@ class ReconstIvimFlow(Workflow):
         out_D="D.nii.gz",
     ):
         """Workflow for Intra-voxel Incoherent Motion reconstruction and for
-        computing IVIM metrics. Performs a IVIM reconstruction on the files
-        by 'globing' ``input_files`` and saves the IVIM metrics in a directory
-        specified by ``out_dir``.
+        computing IVIM metrics.
+
+        Performs a IVIM reconstruction :footcite:p:`LeBihan1988`,
+        :footcite:p:`Stejskal1965` on the files by 'globing' ``input_files`` and
+        saves the IVIM metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -1524,15 +1508,7 @@ class ReconstIvimFlow(Workflow):
 
         References
         ----------
-        .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
-                        "Spin Diffusion Measurements: Spin Echoes in the
-                        Presence of a Time-Dependent Field Gradient". The
-                        Journal of Chemical Physics 42 (1): 288.
-                        Bibcode: 1965JChPh..42..288S. doi:10.1063/1.1695690.
-
-        .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
-                       and perfusion in intravoxel incoherent motion MR
-                       imaging." Radiology 168.2 (1988): 497-505.
+        .. footbibliography::
         """
         save_metrics = save_metrics or []
 
@@ -1647,10 +1623,11 @@ class ReconstRUMBAFlow(Workflow):
         out_gfa="gfa.nii.gz",
     ):
         """Reconstruct the fiber local orientations using the Robust and
-        Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_ model. The
-        fiber response function (FRF) is computed using the single-shell,
+        Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) model.
+
+        The fiber response function (FRF) is computed using the single-shell,
         single-tissue model, and the voxel-wise fitting procedure is used for
-        RUMBA-SD.
+        RUMBA-SD :footcite:p:`CanalesRodriguez2015`.
 
         Parameters
         ----------
@@ -1751,14 +1728,7 @@ class ReconstRUMBAFlow(Workflow):
 
         References
         ----------
-        .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N.,
-               Caruyer, E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-               Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y.,
-               Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R.
-               (2015). Spherical Deconvolution of Multichannel Diffusion MRI
-               Data with Non-Gaussian Noise Models and Spatial Regularization.
-               PLOS ONE, 10(10), e0138910.
-               https://doi.org/10.1371/journal.pone.0138910
+        .. footbibliography::
         """
 
         io_it = self.get_io_iterator()

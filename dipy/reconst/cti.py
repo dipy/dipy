@@ -199,7 +199,9 @@ class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
     def __init__(self, gtab1, gtab2, fit_method="WLS", *args, **kwargs):
-        """Correlation Tensor Imaging Model [1]_
+        """Correlation Tensor Imaging Model.
+
+        See :footcite:p:`NetoHenriques2020` for further details about the model.
 
         Parameters
         ----------
@@ -214,6 +216,9 @@ class CorrelationTensorModel(ReconstModel):
         **kwargs
             Arbitrary keyword arguments passed to the :func:`fit` method.
 
+        References
+        ----------
+        .. footbibliography::
         """
         self.gtab1 = gtab1
         self.gtab2 = gtab2
@@ -363,7 +368,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The $K_{aniso}$ is defined as [1]_:
+        The $K_{aniso}$ is defined as :footcite:p:`NetoHenriques2020`:
 
         .. math::
 
@@ -377,9 +382,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         References
         ----------
-        .. [1]  [NetoHe2020] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2020.
-                Correlation tensor magnetic resonance imaging. Neuroimage 211.
-                doi: 10.1016/j.neuroimage.2020.116605
+        .. footbibliography::
         """
         C = self.ct
         D = self.quadratic_form

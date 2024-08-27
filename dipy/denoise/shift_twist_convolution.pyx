@@ -19,6 +19,10 @@ def convolve(odfs_sh, kernel, sh_order_max, *, test_mode=False, num_threads=None
     """ Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
+    See :footcite:p:`Meesters2016`, :footcite:p:`Duits2011`,
+    :footcite:p:`Portegies2015a` and :footcite:p:`Portegies2015b` for further
+    details about the method.
+
     Parameters
     ----------
     odfs : array of double
@@ -46,23 +50,7 @@ def convolve(odfs_sh, kernel, sh_order_max, *, test_mode=False, num_threads=None
 
     References
     ----------
-    [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                         J. Portegies, R. Duits. (2016) Fast implementations of
-                         contextual PDE’s for HARDI data processing in DIPY.
-                         ISMRM 2016 conference.
-    [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions
-                        on the space of positions and orientations and their
-                        application to crossing-preserving smoothing of HARDI
-                        images. International Journal of Computer Vision, 92:231-264.
-    [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-                    (2015) New Approximation of a Scale Space Kernel on SE(3) and
-                    Applications in Neuroimaging. Fifth International
-                    Conference on Scale Space and Variational Methods in
-                    Computer Vision
-    [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
-                     and R. Duits. (2015) Improving Fiber Alignment in HARDI by
-                     Combining Contextual PDE flow with Constrained Spherical
-                     Deconvolution. PLoS One.
+    .. footbibliography::
     """
 
     # convert the ODFs from SH basis to DSF

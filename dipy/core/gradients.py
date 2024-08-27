@@ -788,7 +788,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
     might cause systematic bias in rotationally invariant measures, such as FA
     and MD, and also cause characteristic biases in tractography, unless the
     gradient directions are appropriately reoriented to compensate for this
-    effect [Leemans2009]_.
+    effect :footcite:p:`Leemans2009`.
 
     Parameters
     ----------
@@ -808,9 +808,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
 
     References
     ----------
-    .. [Leemans2009] The B-Matrix Must Be Rotated When Correcting for
-       Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
-       MRM, 61: 1336-1349
+    .. footbibliography::
     """
     if isinstance(affines, list):
         affines = np.stack(affines, axis=-1)
@@ -1094,14 +1092,11 @@ def _btens_to_params_2d(btens_2d, ztol):
 
     Notes
     -----
-    Implementation following [1].
+    Implementation following :footcite:t:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
     btens_2d[abs(btens_2d) <= ztol] = 0
@@ -1234,14 +1229,11 @@ def params_to_btens(bval, bdelta, b_eta):
 
     Notes
     -----
-    Implements eq. 7.11. p. 231 in [1].
+    Implements eq. 7.11. p. 231 in :footcite:p:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-       anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
-       Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
-       Society of Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
 

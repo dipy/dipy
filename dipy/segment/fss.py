@@ -26,7 +26,7 @@ class FastStreamlineSearch:
 
         Generate the Binned K-D Tree structure with reference streamlines,
         using streamlines barycenter and mean-points.
-        See [StOnge2022]_ for further details.
+        See :footcite:p:`StOnge2022` for further details.
 
         Parameters
         ----------
@@ -53,9 +53,7 @@ class FastStreamlineSearch:
 
         References
         ----------
-        .. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
-                        An Exact Technique for Diffusion MRI Tractography.
-                        Neuroinformatics, 2022.
+        .. footbibliography::
         """
         if max_radius <= 0.0:
             raise ValueError("max_radius needs to be a positive value")
@@ -124,7 +122,8 @@ class FastStreamlineSearch:
         """Radius Search using Fast Streamline Search
 
         For each given streamlines, return all reference streamlines
-        within the given radius. See [StOnge2022]_ for further details.
+        within the given radius. See :footcite:p:`StOnge2022` for further
+        details.
 
         Parameters
         ----------
@@ -150,9 +149,7 @@ class FastStreamlineSearch:
 
         References
         ----------
-        .. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
-                        An Exact Technique for Diffusion MRI Tractography.
-                        Neuroinformatics, 2022.
+        .. footbibliography::
         """
         if radius > self.max_radius:
             raise ValueError(

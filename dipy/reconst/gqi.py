@@ -11,14 +11,16 @@ from dipy.reconst.odf import OdfFit, OdfModel
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
     def __init__(self, gtab, method="gqi2", sampling_length=1.2, normalize_peaks=False):
-        r"""Generalized Q-Sampling Imaging [1]_
+        r"""Generalized Q-Sampling Imaging.
+
+        See :footcite:t:`Yeh2010` for further details about the model.
 
         This model has the same assumptions as the DSI method i.e. Cartesian
         grid sampling in q-space and fast gradient switching.
 
-        Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
-        from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
-        the DSI ODF.
+        Implements equations 2.14 from :footcite:p:`Garyfallidis2012b` for
+        standard GQI and equation 2.16 from :footcite:p:`Garyfallidis2012b` for
+        GQI2. You can think of GQI2 as an analytical solution of the DSI ODF.
 
         Parameters
         ----------
@@ -31,19 +33,16 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         normalize_peaks : bool, optional
             True to normalize peaks.
 
-        References
-        ----------
-        .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
-
-        .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-           thesis, University of Cambridge, 2012.
-
         Notes
         -----
         As of version 0.9, range of the sampling length in GQI2 has changed
-        to match the same scale used in the 'standard' method [1]_. This
-        means that the value of `sampling_length` should be approximately
-        1 - 1.3 (see [1]_, pg. 1628).
+        to match the same scale used in the 'standard' method
+        :footcite:t:`Yeh2010`. This means that the value of `sampling_length`
+        should be approximately 1 - 1.3 (see :footcite:t:`Yeh2010`, pg. 1628).
+
+        References
+        ----------
+        .. footbibliography::
 
         Examples
         --------
@@ -160,7 +159,11 @@ def normalize_qa(qa, max_qa=None):
 def squared_radial_component(x, tol=0.01):
     """Part of the GQI2 integral
 
-    Eq.8 in the referenced paper by Yeh et al. 2010
+    Eq.8 in the referenced paper by :footcite:t:`Yeh2010`.
+
+    References
+    ----------
+    .. footbibliography::
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

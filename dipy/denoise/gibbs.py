@@ -145,7 +145,9 @@ def _gibbs_removal_1d(x, *, axis=0, n_points=3):
 
 def _weights(shape):
     """Computes the weights necessary to combine two images processed by
-    the 1D Gibbs removal procedure along two different axes [1]_.
+    the 1D Gibbs removal procedure along two different axes.
+
+    See :footcite:p:`Kellner2016` for further details about the method.
 
     Parameters
     ----------
@@ -161,9 +163,7 @@ def _weights(shape):
 
     References
     ----------
-    .. [1] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
     G0 = np.zeros(shape)
@@ -189,7 +189,8 @@ def _weights(shape):
 
 @warning_for_keywords()
 def _gibbs_removal_2d(image, *, n_points=3, G0=None, G1=None):
-    """Suppress Gibbs ringing of a 2D image.
+    """Suppress Gibbs ringing of a 2D image :footcite:p:`Kellner2016`,
+    :footcite:p:`NetoHenriques2018`.
 
     Parameters
     ----------
@@ -220,13 +221,7 @@ def _gibbs_removal_2d(image, *, n_points=3, G0=None, G1=None):
 
     References
     ----------
-    Please cite the following articles
-    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain
-           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
     if G0 is None or G1 is None:
@@ -245,6 +240,9 @@ def _gibbs_removal_2d(image, *, n_points=3, G0=None, G1=None):
 @warning_for_keywords()
 def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
+
+    See :footcite:p:`Kellner2016` and :footcite:p:`NetoHenriques2018` for
+    further details about the method.
 
     Parameters
     ----------
@@ -279,12 +277,7 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
 
     References
     ----------
-    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain
-           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
     nd = vol.ndim

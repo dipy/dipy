@@ -58,6 +58,8 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     It generates out-of-sample predictions for each measurement.
 
+    See :footcite:p:`Rokem2014` for further details about the method.
+
     Parameters
     ----------
     model : Model class instance
@@ -92,9 +94,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     References
     ----------
-    .. [1] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
-       Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
-       multiple b-values with cross-validation. ISMRM 2014.
+    .. footbibliography::
 
     """
     _ = model_kwargs.pop("rng", np.random.default_rng())

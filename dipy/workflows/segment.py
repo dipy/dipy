@@ -130,6 +130,9 @@ class RecoBundlesFlow(Workflow):
     ):
         """Recognize bundles
 
+        See :footcite:p:`Garyfallidis2018` and :footcite:p:`Chandio2020` for
+        further details about the method.
+
         Parameters
         ----------
         streamline_files : string
@@ -181,15 +184,7 @@ class RecoBundlesFlow(Workflow):
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based registration and
-           clustering, Neuroimage, 2017.
-
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
         slr = not no_slr
@@ -338,6 +333,8 @@ class LabelsBundlesFlow(Workflow):
     ):
         """Extract bundles using existing indices (labels)
 
+        See :footcite:p:`Garyfallidis2018` for further details about the method.
+
         Parameters
         ----------
         streamline_files : string
@@ -351,9 +348,7 @@ class LabelsBundlesFlow(Workflow):
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-         bundles using local and global streamline-based registration and
-         clustering, Neuroimage, 2017.
+        .. footbibliography::
 
         """
         logging.info("### Labels to Bundles ###")

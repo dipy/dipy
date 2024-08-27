@@ -101,16 +101,14 @@ def add_noise(signal, snr, S0, *, noise_type="rician", rng=None):
 
     Notes
     -----
-    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
-    the standard deviation of the two Gaussian distributions forming the real
-    and imaginary components of the Rician noise distribution (see [2]_).
+    SNR is defined here, following :footcite:p:`Descoteaux2007`, as
+    ``S0 / sigma``, where ``sigma`` is the standard deviation of the two
+    Gaussian distributions forming the real and imaginary components of the
+    Rician noise distribution (see :footcite:p:`Gudbjartsson1995`).
 
     References
     ----------
-    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
-           fast and robust q-ball imaging. MRM, 58: 497-510
-    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
-           data. MRM 34: 910-914.
+    .. footbibliography::
 
     Examples
     --------
@@ -148,6 +146,8 @@ def sticks_and_ball(
 ):
     """Simulate the signal for a Sticks & Ball model.
 
+    See :footcite:p:`Behrens2007` for a definition of the Sticks & Ball model.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -175,9 +175,7 @@ def sticks_and_ball(
 
     References
     ----------
-    .. [1] Behrens et al., "Probabilistic diffusion
-           tractography with multiple fiber orientations:  what can we gain?",
-           Neuroimage, 2007.
+    .. footbibliography::
 
     """
     fractions = [f / 100.0 for f in fractions]
@@ -204,8 +202,12 @@ def sticks_and_ball(
 
 def callaghan_perpendicular(q, radius):
     r"""Calculates the perpendicular diffusion signal E(q) in a cylinder of
-    radius R using the Soderman model [1]_. Assumes that the pulse length
-    is infinitely short and the diffusion time is infinitely long.
+    radius R using the Soderman model.
+
+    Assumes that the pulse length is infinitely short and the diffusion time is
+    infinitely long.
+
+    See :footcite:p:`Soderman1995` for details about the Soderman model.
 
     Parameters
     ----------
@@ -221,9 +223,7 @@ def callaghan_perpendicular(q, radius):
 
     References
     ----------
-    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-           cylindrical geometry." Journal of Magnetic Resonance, Series A
-           117.1 (1995): 94-97.
+    .. footbibliography::
 
     """
     # Eq. [6] in the paper
@@ -269,11 +269,15 @@ def cylinders_and_ball_soderman(
     snr=20,
 ):
     r"""Calculates the three-dimensional signal attenuation E(q) originating
-    from within a cylinder of radius R using the Soderman approximation [1]_.
-    The diffusion signal is assumed to be separable perpendicular and parallel
-    to the cylinder axis [2]_.
+    from within a cylinder of radius R using the Soderman approximation.
+
+    The diffusion signal is assumed to be separable  perpendicular and parallel
+    to the cylinder axis :footcite:p:`Assaf2004`.
+
     This function is basically an extension of the ball and stick model.
     Setting the radius to zero makes them equivalent.
+
+    See :footcite:p:`Soderman1995` for details about the Soderman model.
 
     Parameters
     ----------
@@ -304,12 +308,7 @@ def cylinders_and_ball_soderman(
 
     References
     ----------
-    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-           cylindrical geometry." Journal of Magnetic Resonance, Series A
-           117.1 (1995): 94-97.
-    .. [2] Assaf, Yaniv, et al. "New modeling and experimental framework to
-           characterize hindered and restricted water diffusion in brain white
-           matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
+    .. footbibliography::
 
     """
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
@@ -342,6 +341,8 @@ def cylinders_and_ball_soderman(
 def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
     """Simulate diffusion-weighted signals with a single tensor.
 
+    See :footcite:p:`Stejskal1965`, :footcite:p:`Descoteaux2008b`.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -370,12 +371,7 @@ def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
 
     References
     ----------
-    .. [1] M. Descoteaux, "High Angular Resolution Diffusion MRI: from Local
-           Estimation to Segmentation and Tractography", PhD thesis,
-           University of Nice-Sophia Antipolis, p. 42, 2008.
-    .. [2] E. Stejskal and J. Tanner, "Spin diffusion measurements: spin echos
-           in the presence of a time-dependent field gradient", Journal of
-           Chemical Physics, nr. 42, pp. 288--292, 1965.
+    .. footbibliography::
 
     """
     if rng is None:
@@ -495,6 +491,8 @@ def multi_tensor_dki(
     r"""Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
+    See :footcite:p:`NetoHenriques2015` for further details.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -547,10 +545,7 @@ def multi_tensor_dki(
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     if np.round(np.sum(fractions), 2) != 100.0:
@@ -635,14 +630,12 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=N
 
     Notes
     -----
-    wijkl is calculated using equation 8 given in [1]_
+    wijkl is calculated using equation 8 given in
+    :footcite:p:`NetoHenriques2015`.
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     if DT is None:
@@ -678,6 +671,8 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
     tensors of a single voxel. Simulations are performed assuming the DKI
     model.
 
+    See :footcite:p:`NetoHenriques2015` for further details.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -702,10 +697,7 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     dt = np.array(dt)
@@ -729,6 +721,8 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 def single_tensor_odf(r, *, evals=None, evecs=None):
     """Simulated ODF with a single tensor.
 
+    See :footcite:p:`Aganj2010` for further details.
+
     Parameters
     ----------
     r : (N,3) or (M,N,3) ndarray
@@ -748,10 +742,7 @@ def single_tensor_odf(r, *, evals=None, evecs=None):
 
     References
     ----------
-    .. [1] Aganj et al., "Reconstruction of the Orientation Distribution
-           Function in Single- and Multiple-Shell q-Ball Imaging Within
-           Constant Solid Angle", Magnetic Resonance in Medicine, nr. 64,
-           pp. 554--566, 2010.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -849,6 +840,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
     """Simulate a Single-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     evals : 1D arrays,
@@ -864,8 +857,7 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -878,6 +870,8 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 @warning_for_keywords()
 def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
+
+    See :footcite:p:`Cheng2012` for further details.
 
     Parameters
     ----------
@@ -896,8 +890,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     rtop = 0
@@ -915,6 +908,8 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 @warning_for_keywords()
 def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     """Simulated ODF with a single tensor.
+
+    See :footcite:p:`Cheng2012` for further details.
 
     Parameters
     ----------
@@ -938,8 +933,7 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -967,6 +961,8 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor ODF.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     pdf_points : (N, 3) ndarray
@@ -989,8 +985,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     mf = [f / 100.0 for f in fractions]
@@ -1014,6 +1009,8 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     evals : 1D arrays,
@@ -1029,8 +1026,7 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -1043,6 +1039,8 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 @warning_for_keywords()
 def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
+
+    See :footcite:p:`Cheng2012` for further details.
 
     Parameters
     ----------
@@ -1061,8 +1059,7 @@ def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     msd = 0

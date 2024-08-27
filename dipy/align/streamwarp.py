@@ -63,6 +63,8 @@ def bundlewarp(
 ):
     """Register two bundles using nonlinear method.
 
+     See :footcite:p:`Chandio2023` for further details about the method.
+
     Parameters
     ----------
     static : Streamlines
@@ -109,8 +111,7 @@ def bundlewarp(
 
     References
     ----------
-    .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01.
+    .. footbibliography::
 
     """
     if alpha <= 0.01:
@@ -215,13 +216,11 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
         Unitary vector directions
     colors : List
         Colors for bundle warping field vectors. Colors follow the convention
-        used in DTI-derived maps (e.g. color FA) [Pajevic1999]_.
+        used in DTI-derived maps (e.g. color FA) :footcite:p:`Pajevic1999`.
 
     References
     ----------
-    .. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
-       orientation of anisotropic tissues from diffusion tensor data: application
-       to white matter fiber tract mapping in the human brain.
+    .. footbibliography::
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)

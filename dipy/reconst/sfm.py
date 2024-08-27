@@ -2,18 +2,12 @@
 The Sparse Fascicle Model.
 
 This is an implementation of the sparse fascicle model described in
-[Rokem2015]_. The multi b-value version of this model is described in
-[Rokem2014]_.
+:footcite:t:`Rokem2015`. The multi b-value version of this model is described
+in :footcite:t:`Rokem2014`.
 
-
-.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2015). Evaluating the accuracy of diffusion MRI models in white
-   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-.. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
-   Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
-   models at multiple b-values with cross-validation. ISMRM 2014.
+References
+----------
+.. footbibliography::
 """
 
 from collections import OrderedDict
@@ -282,29 +276,19 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
     >>> sphere = dpd.get_sphere()
     >>> from dipy.reconst.sfm import sfm_design_matrix
 
-    A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
+    A canonical tensor approximating corpus-callosum voxels
+    :footcite:p`Rokem2014`:
 
     >>> tensor_matrix = sfm_design_matrix(gtab, sphere,
     ...                                   [0.0015, 0.0005, 0.0005])
 
-    A 'stick' function ([Behrens2007]_):
+    A 'stick' function :footcite:p`Behrens2007`:
 
     >>> stick_matrix = sfm_design_matrix(gtab, sphere, [0.001, 0, 0])
 
-    Notes
-    -----
-    .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-       N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-       (2015). Evaluating the accuracy of diffusion MRI models in white
-       matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-    .. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
-       Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
-       models at multiple b-values with cross-validation. ISMRM 2014.
-
-    .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
-       (2007): Probabilistic diffusion tractography with multiple fibre
-       orientations: What can we gain? Neuroimage 34:144-55.
+    References
+    ----------
+    .. footbibliography::
     """
     if mode == "signal":
         with warnings.catch_warnings():
@@ -378,11 +362,11 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         l1_ratio : float, optional
             Sets the balance between L1 and L2 regularization in ElasticNet
-            [Zou2005]_.
+            :footcite:p`Zou2005`.
 
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
-            regularization in ElasticNet [Zou2005]_.
+            regularization in ElasticNet :footcite:p`Zou2005`.
 
         isotropic : IsotropicModel class instance
             This is a class that implements the function that calculates the
@@ -395,15 +379,12 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Notes
         -----
-        This is an implementation of the SFM, described in [Rokem2015]_.
+        This is an implementation of the SFM, described in
+        :footcite:p`Rokem2015`.
 
-        .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-           N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-           (2014). Evaluating the accuracy of diffusion MRI models in white
-           matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-        .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
-           selection via the elastic net. J R Stat Soc B:301-320
+        References
+        ----------
+        .. footbibliography::
         """
         ReconstModel.__init__(self, gtab)
 

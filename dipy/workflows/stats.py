@@ -194,6 +194,8 @@ def buan_bundle_profiles(
     Applies statistical analysis on bundles and saves the results
     in a directory specified by ``out_dir``.
 
+    See :footcite:p:`Chandio2020` for further details about the method.
+
     Parameters
     ----------
     model_bundle_folder : string
@@ -219,11 +221,7 @@ def buan_bundle_profiles(
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
+    .. footbibliography::
 
     """
 
@@ -333,6 +331,8 @@ class BundleAnalysisTractometryFlow(Workflow):
         Applies statistical analysis on bundles of subjects and saves the
         results in a directory specified by ``out_dir``.
 
+        See :footcite:p:`Chandio2020` for further details about the method.
+
         Parameters
         ----------
 
@@ -352,11 +352,7 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
 
@@ -563,6 +559,8 @@ class BundleShapeAnalysis(Workflow):
         Applies bundle shape similarity analysis on bundles of subjects and
         saves the results in a directory specified by ``out_dir``.
 
+        See :footcite:p:`Chandio2020` for further details about the method.
+
         Parameters
         ----------
 
@@ -581,11 +579,7 @@ class BundleShapeAnalysis(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
         rng = np.random.default_rng()

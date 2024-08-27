@@ -68,6 +68,8 @@ def quickbundles(streamlines, Metric metric, double threshold, *,
                  long max_nb_clusters=BIGGEST_INT, ordering=None):
     """ Clusters streamlines using QuickBundles.
 
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
+
     Parameters
     ----------
     streamlines : list of 2D arrays
@@ -89,9 +91,7 @@ def quickbundles(streamlines, Metric metric, double threshold, *,
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
     # Threshold of np.inf is not supported, set it to 'biggest_double'
     threshold = min(threshold, BIGGEST_DOUBLE)
@@ -124,6 +124,9 @@ def quickbundles(streamlines, Metric metric, double threshold, *,
 def quickbundlesx(streamlines, Metric metric, thresholds, *, ordering=None):
     """ Clusters streamlines using QuickBundlesX.
 
+    See :footcite:p:`Garyfallidis2012a` and :footcite:p:`Garyfallidis2016` for
+    further details about the method.
+
     Parameters
     ----------
     streamlines : list of 2D arrays
@@ -145,16 +148,7 @@ def quickbundlesx(streamlines, Metric metric, thresholds, *, ordering=None):
 
     References
     ----------
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                    clustering of millions of streamlines in multiple
-                    levels of detail at record execution time. Proceedings
-                    of the, International Society of Magnetic Resonance
-                    in Medicine (ISMRM). Singapore, 4187, 2016.
-
-     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
     if ordering is None:
         ordering = range(len(streamlines))

@@ -19,28 +19,21 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 class ForecastModel(OdfModel, Cache):
     r"""Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
-    (FORECAST) [1,2,3]_. FORECAST is a Spherical Deconvolution reconstruction
+    (FORECAST).
+
+    FORECAST :footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a`,
+    :footcite:p:`Zucchelli2017` is a Spherical Deconvolution reconstruction
     model for multi-shell diffusion data which enables the calculation of a
     voxel adaptive response function using the Spherical Mean Technique (SMT)
-    [2,3]_.
+    :footcite:p:`Kaden2016a`, :footcite:p:`Zucchelli2017`.
 
     With FORECAST it is possible to calculate crossing invariant parallel
     diffusivity, perpendicular diffusivity, mean diffusivity, and fractional
-    anisotropy [2]_
+    anisotropy :footcite:p:`Kaden2016a`.
 
     References
     ----------
-    .. [1] Anderson A. W., "Measurement of Fiber Orientation Distributions
-           Using High Angular Resolution Diffusion Imaging", Magnetic
-           Resonance in Medicine, 2005.
-
-    .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-           Coefficients in Brain White Matter", Magnetic Resonance in
-           Medicine, 2016.
-
-    .. [3] Zucchelli E. et al., "A generalized SMT-based framework for
-           Diffusion MRI microstructural model estimation", MICCAI Workshop
-           on Computational DIFFUSION MRI (CDMRI), 2017.
+    .. footbibliography::
 
     Notes
     -----
@@ -58,9 +51,11 @@ class ForecastModel(OdfModel, Cache):
         lambda_csd=1.0,
     ):
         r"""Analytical and continuous modeling of the diffusion signal with
-        respect to the FORECAST basis [1,2,3]_.
+        respect to the FORECAST basis.
+
         This implementation is a modification of the original FORECAST
-        model presented in [1]_ adapted for multi-shell data as in [2,3]_ .
+        model presented in :footcite:p:`Anderson2005` adapted for multi-shell
+        data as in :footcite:p:`Kaden2016a`, :footcite:p:`Zucchelli2017`.
 
         The main idea is to model the diffusion signal as the combination of a
         single fiber response function $F(\mathbf{b})$ times the fODF
@@ -98,17 +93,7 @@ class ForecastModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1] Anderson A. W., "Measurement of Fiber Orientation Distributions
-               Using High Angular Resolution Diffusion Imaging", Magnetic
-               Resonance in Medicine, 2005.
-
-        .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-               Coefficients in Brain White Matter", Magnetic Resonance in
-               Medicine, 2016.
-
-        .. [3] Zucchelli M. et al., "A generalized SMT-based framework for
-               Diffusion MRI microstructural model estimation", MICCAI Workshop
-               on Computational DIFFUSION MRI (CDMRI), 2017.
+        .. footbibliography::
 
         Examples
         --------

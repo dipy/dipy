@@ -1,17 +1,11 @@
 """Tools for using spherical harmonic models to fit diffusion data.
 
+See :footcite:p:`Aganj2009`, :footcite:p:`Descoteaux2007`,
+:footcite:p:`TristanVega2009`, and :footcite:p:`TristanVega2010`.
+
 References
 ----------
-.. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-       Angle Consideration.
-.. [2] Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
-       Q-ball imaging.
-.. [3] Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
-       populations in white matter of the brain with Funk-Radon transform.
-.. [4] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
-       probability density functions in high angular resolution diffusion
-       imaging.
-
+.. footbibliography::
 
 Note about the Transpose:
 In the literature the matrix representation of these methods is often written
@@ -102,6 +96,8 @@ def sh_to_rh(r_sh, m_values, l_values):
     will be ignored as axial symmetry is assumed. Hence, there
     will be ``(sh_order/2 + 1)`` non-zero coefficients.
 
+    See :footcite:p:`Tournier2007` for further details about the method.
+
     Parameters
     ----------
     r_sh : ndarray (N,)
@@ -126,9 +122,7 @@ def sh_to_rh(r_sh, m_values, l_values):
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
-        fibre orientation distribution in diffusion MRI: Non-negativity
-        constrained super-resolved spherical deconvolution
+    .. footbibliography::
 
     """
     mask = m_values == 0
@@ -316,9 +310,11 @@ def real_sph_harm(m_values, l_values, theta, phi):
     until="2.0",
 )
 def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
-    r"""Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y_l^m$
-    is defined to be:
+    r"""Compute real spherical harmonics.
+
+    The SH are computed as initially defined in :footcite:p:`Tournier2007` then
+    updated in MRtrix3 :footcite:p:`Tournier2019`, where the real harmonic
+    $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
@@ -354,14 +350,7 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [2] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     # In the m < 0 case, Tournier basis considers |m|
     sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
@@ -386,8 +375,10 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     until="2.0",
 )
 def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
-    r"""Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y_l^m$ is defined to be:
+    r"""Compute real spherical harmonics.
+
+    The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
+    real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
@@ -424,9 +415,7 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
 
     References
     ----------
-     .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
@@ -444,9 +433,11 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
 
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
-    r"""Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y_l^m$
-    is defined to be:
+    r"""Compute real spherical harmonics.
+
+    The SH are computed as initially defined in :footcite:p:`Tournier2007` then
+    updated in MRtrix3 :footcite:p:`Tournier2019`, where the real harmonic
+    $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
@@ -487,14 +478,7 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [2] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis)
 
@@ -508,8 +492,10 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
 
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
-    r"""Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y_l^m$ is defined to be:
+    r"""Compute real spherical harmonics.
+
+    The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
+    real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
@@ -552,9 +538,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
 
     References
     ----------
-     .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
     """
     m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis)
 
@@ -575,8 +559,10 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
 @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     r"""
-    Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
-    the real harmonic $Y_l^m$ is defined to be::
+    Compute real symmetric spherical harmonics.
+
+    The SH are computed as initially defined in :footcite:t:`Tournier2007`,
+    where the real harmonic $Y_l^m$ is defined to be:
 
     .. math::
        :nowrap:
@@ -604,8 +590,8 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     -------
     y_mn : real float
         The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi`` as
-        implemented in mrtrix. Warning: the basis is Tournier et al.
-        2007 [2]_; 2004 [1]_ is slightly different.
+        implemented in mrtrix. Warning: the basis is :footcite:t:`Tournier2007`;
+        :footcite:p:`Tournier2004` is slightly different.
     m_values : array
         The phase factor ($m$) of the harmonics.
     l_values : array
@@ -613,14 +599,7 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F., Gadian D.G. and Connelly A.
-           Direct estimation of the fibre orientation density function from
-           diffusion-weighted MRI data using spherical deconvolution.
-           NeuroImage. 2004;23:1176-1185.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
+    .. footbibliography::
 
     """
     return real_sh_tournier(sh_order_max, theta, phi, legacy=True)
@@ -639,7 +618,7 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
 
     Samples the basis functions up to order `sh_order_max` at points on the
     sphere given by `theta` and `phi`. The basis functions are defined here the
-    same way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y_l^m$
+    same way as in :footcite:p:`Descoteaux2007` where the real harmonic $Y_l^m$
     is defined to be:
 
     .. math::
@@ -676,9 +655,7 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
 
     """
     return real_sh_descoteaux(sh_order_max, theta, phi, legacy=True)
@@ -1029,10 +1006,11 @@ class SphHarmFit(OdfFit):
 class CsaOdfModel(QballBaseModel):
     """Implementation of Constant Solid Angle reconstruction method.
 
+    See :footcite:p:`Aganj2009` for further details about the method.
+
     References
     ----------
-    .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With
-           Solid Angle Consideration.
+    .. footbibliography::
     """
 
     min = 0.001
@@ -1061,14 +1039,12 @@ class OpdtModel(QballBaseModel):
     """Implementation of Orientation Probability Density Transform
     reconstruction method.
 
+    See :footcite:p:`TristanVega2009` and :footcite:p:`TristanVega2010` for
+    further details about the method.
+
     References
     ----------
-    .. [1] Tristan-Vega, A., et al. 2010. A new methodology for estimation of
-           fiber populations in white matter of the brain with Funk-Radon
-           transform.
-    .. [2] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
-           probability density functions in high angular resolution diffusion
-           imaging.
+    .. footbibliography::
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -1094,10 +1070,11 @@ def _slowadc_formula(data, delta_b, delta_q):
 class QballModel(QballBaseModel):
     """Implementation of regularized Qball reconstruction method.
 
+    See :footcite:p:`Descoteaux2007` for further details about the method.
+
     References
     ----------
-    .. [1] Descoteaux, M., et al. 2007. Regularized, fast, and robust
-           analytical Q-ball imaging.
+    .. footbibliography::
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -1157,17 +1134,14 @@ def bootstrap_data_array(data, H, R, permute=None):
     This function, and the bootstrap_data_voxel function, calculate
     residual-bootstrap samples given a Hat matrix and a Residual matrix. These
     samples can be used for non-parametric statistics or for bootstrap
-    probabilistic tractography:
+    probabilistic tractography,
+
+    See :footcite:p:`Berman2008`, :footcite:p:`Haroon2009`, and
+    :footcite:p:`Jeurissen2011`.
 
     References
     ----------
-    .. [1] J. I. Berman, et al., "Probabilistic streamline q-ball tractography
-           using the residual bootstrap" 2008.
-    .. [2] HA Haroon, et al., "Using the model-based residual bootstrap to
-           quantify uncertainty in fiber orientations from Q-ball analysis"
-           2009.
-    .. [3] B. Jeurissen, et al., "Probabilistic Fiber Tracking Using the
-           Residual Bootstrap with Constrained Spherical Deconvolution" 2011.
+    .. footbibliography::
     """
 
     if permute is None:
@@ -1266,8 +1240,10 @@ def sf_to_sh(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         True for using a SH basis containing even and odd order SH functions.
@@ -1285,17 +1261,7 @@ def sf_to_sh(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
@@ -1332,8 +1298,10 @@ def sh_to_sf(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         True to use a SH basis containing even and odd order SH functions.
@@ -1349,17 +1317,7 @@ def sh_to_sf(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
@@ -1399,8 +1357,10 @@ def sh_to_sf_matrix(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         If True, uses a SH basis containing even and odd order SH functions.
@@ -1423,17 +1383,7 @@ def sh_to_sf_matrix(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
 
     """
 
@@ -1516,6 +1466,8 @@ def calculate_max_order(n_coeffs, full_basis=False):
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True):
     r"""Calculate anisotropic power map with a given SH coefficient matrix.
 
+    See :footcite:p:`DellAcqua2014` for further details about the method.
+
     Parameters
     ----------
     sh_coeffs : ndarray
@@ -1554,11 +1506,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True
 
     References
     ----------
-    .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
-            Anisotropic Power Maps: A diffusion contrast to reveal low
-            anisotropy tissues from HARDI data,
-            in: Proceedings of International Society for Magnetic Resonance in
-            Medicine. Milan, Italy.
+    .. footbibliography::
 
     """
     dim = sh_coeffs.shape[:-1]
@@ -1626,8 +1574,11 @@ def convert_sh_to_full_basis(sh_coeffs):
 
 def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
     """Convert SH coefficients in legacy SH basis to SH coefficients
-    of the new SH basis for ``descoteaux07`` [1]_ or ``tournier07`` [2]_[3]_
-    bases.
+    of the new SH basis for ``descoteaux07`` or ``tournier07`` bases.
+
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2007`,
+    :footcite:p:`Tournier2019` for the ``descoteaux07`` and ``tournier07``
+    bases, respectively.
 
     Parameters
     ----------
@@ -1635,8 +1586,10 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
     sh_basis: {'descoteaux07', 'tournier07'}
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis.
     full_basis: bool, optional
         True if the input SH basis includes both even and odd
         order SH functions, else False.
@@ -1648,17 +1601,7 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
@@ -1676,8 +1619,11 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
 
 def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
     """Convert SH coefficients in new SH basis to SH coefficients for
-    the legacy SH basis for ``descoteaux07`` [1]_ or ``tournier07`` [2]_[3]_
-    bases.
+    the legacy SH basis for ``descoteaux07`` or ``tournier07`` bases.
+
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2007`,
+    :footcite:p:`Tournier2019` for the ``descoteaux07`` and ``tournier07``
+    bases, respectively.
 
     Parameters
     ----------
@@ -1685,8 +1631,10 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
     sh_basis: {'descoteaux07', 'tournier07'}
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis.
     full_basis: bool, optional
         True if the input SH basis includes both even and odd
         order SH functions.
@@ -1698,17 +1646,7 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
@@ -1735,7 +1673,9 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
 
     This can be used to convert SH representations between DIPY and MRtrix3.
 
-    See [descoteaux07]_ and [tournier19]_ for the origin of these SH bases.
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2019` for the
+    origin of these SH bases.
+
     See [mrtrixbasis]_ for a description of the basis used in MRtrix3.
     See [mrtrixdipybases]_ for more details on the conversion.
 
@@ -1754,13 +1694,7 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
 
     References
     ----------
-    .. [descoteaux07] Descoteaux, M., Angelino, E., Fitzgibbons, S. and
-           Deriche, R. Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [tournier19] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     .. [mrtrixbasis] https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html
     .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
     """  # noqa: E501

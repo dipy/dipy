@@ -55,14 +55,11 @@ def _pca_classifier(L, nvoxels):
 
     Notes
     -----
-    This is based on the algorithm described in [1]_.
+    This is based on the algorithm described in :footcite:p:`Veraart2016c`.
 
     References
     ----------
-    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
-           theory. Neuroimage 142:394-406.
-           doi: 10.1016/j.neuroimage.2016.08.016
+    .. footbibliography::
     """
 
     # if num_samples - 1 (to correct for mean subtraction) is less than number
@@ -71,8 +68,9 @@ def _pca_classifier(L, nvoxels):
         L = L[-(nvoxels - 1) :]
 
     # Note that the condition expressed in the while-loop is expressed in terms
-    # of the variance of equation (12), not equation (11) as in [1]_. Also,
-    # this code implements ascending eigenvalues, unlike [1]_.
+    # of the variance of equation (12), not equation (11) as in
+    # :footcite:p:`Veraart2016c`. Also, this code implements ascending
+    # eigenvalues, unlike :footcite:p:`Veraart2016c`.
     var = np.mean(L)
     c = L.size - 1
     r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / nvoxels) * var
@@ -203,7 +201,7 @@ def genpca(
     sigma : float or 3D array (optional)
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
-        [1]_,[2]_
+        :footcite:p:`Veraart2016b`, :footcite:p:`Veraart2016c`.
     mask : 3D boolean array (optional)
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
@@ -225,8 +223,8 @@ def genpca(
                 \tau = (\tau_{factor} \sigma)^2
 
         $\tau_{factor}$ can be set to a predefined values (e.g. $\tau_{factor} =
-        2.3$ [3]_), or automatically calculated using random matrix theory
-        (in case that $\tau_{factor}$ is set to None).
+        2.3$ :footcite:p:`Manjon2013`), or automatically calculated using random
+        matrix theory (in case that $\tau_{factor}$ is set to None).
     return_sigma : bool (optional)
         If true, the Standard deviation of the noise will be returned.
     out_dtype : str or dtype (optional)
@@ -243,17 +241,7 @@ def genpca(
 
     References
     ----------
-    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
-           theory. Neuroimage 142:394-406.
-           doi: 10.1016/j.neuroimage.2016.08.016
-    .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-           mapping using random matrix theory. Magnetic Resonance in Medicine.
-           doi: 10.1002/mrm.26059.
-    .. [3] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
-           Diffusion Weighted Image Denoising Using Overcomplete Local
-           PCA. PLoS ONE 8(9): e73021.
-           https://doi.org/10.1371/journal.pone.0073021
+    .. footbibliography::
     """
     if mask is None:
         # If mask is not specified, use the whole volume
@@ -416,7 +404,9 @@ def localpca(
     out_dtype=None,
     suppress_warning=False,
 ):
-    r"""Performs local PCA denoising according to Manjon et al. [1]_.
+    r"""Performs local PCA denoising.
+
+    The method follows the algorithm in :footcite:t:`Manjon2013`.
 
     Parameters
     ----------
@@ -425,7 +415,7 @@ def localpca(
         are the diffusion gradient directions.
     sigma : float or 3D array (optional)
         Standard deviation of the noise estimated from the data. If not given,
-        calculate using method in [1]_.
+        calculate using method in :footcite:t:`Manjon2013`.
     mask : 3D boolean array (optional)
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
@@ -457,13 +447,14 @@ def localpca(
         \tau_{factor} can be change to adjust the relationship between the
         noise standard deviation and the threshold \tau. If \tau_{factor} is
         set to None, it will be automatically calculated using the
-        Marcenko-Pastur distribution [2]_. Default: 2.3 according to [1]_.
+        Marcenko-Pastur distribution :footcite:p:`Veraart2016c`. Default: 2.3
+        according to :footcite:t:`Manjon2013`.
     return_sigma : bool (optional)
         If true, a noise standard deviation estimate based on the
-        Marcenko-Pastur distribution is returned [2]_.
+        Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016c`.
     correct_bias : bool (optional)
         Whether to correct for bias due to Rician noise. This is an
-        implementation of equation 8 in [1]_.
+        implementation of equation 8 in :footcite:p:`Manjon2013`.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -478,14 +469,7 @@ def localpca(
 
     References
     ----------
-    .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
-           Diffusion Weighted Image Denoising Using Overcomplete Local
-           PCA. PLoS ONE 8(9): e73021.
-           https://doi.org/10.1371/journal.pone.0073021
-    .. [2] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
-           theory. Neuroimage 142:394-406.
-           doi: 10.1016/j.neuroimage.2016.08.016
+    .. footbibliography::
     """
     # check gtab is given, if sigma is not given
     if sigma is None and gtab is None:
@@ -526,7 +510,9 @@ def mppca(
     suppress_warning=False,
 ):
     r"""Performs PCA-based denoising using the Marcenko-Pastur
-    distribution [1]_.
+    distribution.
+
+    See :footcite:p:`Veraart2016c` for further details about the method.
 
     Parameters
     ----------
@@ -547,7 +533,7 @@ def mppca(
         more accurate.
     return_sigma : bool (optional)
         If true, a noise standard deviation estimate based on the
-        Marcenko-Pastur distribution is returned [2]_.
+        Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -564,13 +550,7 @@ def mppca(
 
     References
     ----------
-    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
-           theory. Neuroimage 142:394-406.
-           doi: 10.1016/j.neuroimage.2016.08.016
-    .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-           mapping using random matrix theory. Magnetic Resonance in Medicine.
-           doi: 10.1002/mrm.26059.
+    .. footbibliography::
     """
     return genpca(
         arr,

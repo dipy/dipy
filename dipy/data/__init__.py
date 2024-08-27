@@ -404,8 +404,9 @@ def matlab_life_results():
 
 @warning_for_keywords()
 def load_sdp_constraints(model_name, *, order=None):
-    """Import semidefinite programming constraint matrices for different models,
-    generated as described for example in [1]_.
+    """Import semidefinite programming constraint matrices for different models.
+
+    Generated as described for example in :footcite:p:`DelaHaije2020`.
 
     Parameters
     ----------
@@ -427,9 +428,7 @@ def load_sdp_constraints(model_name, *, order=None):
 
     References
     ----------
-    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
-           for common diffusion MRI models using sum of squares programming".
-           NeuroImage 209, 2020, 116405.
+    .. footbibliography::
 
     """
 

@@ -55,14 +55,11 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
     value provided in the GradientTable input for that direction, $Q$ is the
     quadratic form of the tensor determined by the input parameters, $f$ is the
     free water diffusion compartment, $D_{iso}$ is the free water diffusivity
-    which is equal to $3 * 10^{-3} mm^{2}s^{-1} [1]_.
+    which is equal to $3 * 10^{-3} mm^{2}s^{-1} :footcite:p:`NetoHenriques2017`.
 
     References
     ----------
-    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
-           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
-           water elimination two-compartment model for diffusion tensor
-           imaging. ReScience volume 3, issue 1, article number 2
+    .. footbibliography::
     """
     evals = params[..., :3]
     evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
@@ -90,7 +87,9 @@ class FreeWaterTensorModel(ReconstModel):
     """Class for the Free Water Elimination Diffusion Tensor Model"""
 
     def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
-        """Free Water Diffusion Tensor Model [1]_.
+        """Free Water Diffusion Tensor Model.
+
+        See :footcite:p:`NetoHenriques2017` for further details about the model.
 
         Parameters
         ----------
@@ -99,10 +98,10 @@ class FreeWaterTensorModel(ReconstModel):
         fit_method : str or callable
             str can be one of the following:
 
-            'WLS' for weighted linear least square fit according to [1]_
-                :func:`fwdti.wls_iter`
-            'NLS' for non-linear least square fit according to [1]_
-                :func:`fwdti.nls_iter`
+            - 'WLS' for weighted linear least square fit according to
+              :footcite:p:`NetoHenriques2017` :func:`fwdti.wls_iter`
+            - 'NLS' for non-linear least square fit according to
+              :footcite:p:`NetoHenriques2017` :func:`fwdti.nls_iter`
 
             callable has to have the signature:
               ``fit_method(design_matrix, data, *args, **kwargs)``
@@ -112,10 +111,7 @@ class FreeWaterTensorModel(ReconstModel):
 
         References
         ----------
-        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
-               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
-               water elimination two-compartment model for diffusion tensor
-               imaging. ReScience volume 3, issue 1, article number 2
+        .. footbibliography::
 
         """
         ReconstModel.__init__(self, gtab)
@@ -185,8 +181,12 @@ class FreeWaterTensorFit(TensorFit):
 
     def __init__(self, model, model_params):
         """Initialize a FreeWaterTensorFit class instance.
+
         Since the free water tensor model is an extension of DTI, class
         instance is defined as subclass of the TensorFit from dti.py
+
+        See :footcite:p:`NetoHenriques2017` for further details about the
+        method.
 
         Parameters
         ----------
@@ -203,10 +203,7 @@ class FreeWaterTensorFit(TensorFit):
 
         References
         ----------
-        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
-               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
-               water elimination two-compartment model for diffusion tensor
-               imaging. ReScience volume 3, issue 1, article number 2
+        .. footbibliography::
         """
         TensorFit.__init__(self, model, model_params)
 
@@ -350,7 +347,9 @@ def wls_fit_tensor(
     gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6, piterations=3, mdreg=2.7e-3
 ):
     r"""Computes weighted least squares (WLS) fit to calculate self-diffusion
-    tensor using a linear regression model [1]_.
+    tensor using a linear regression model.
+
+    See :footcite:p:`NetoHenriques2017` for further details about the method.
 
     Parameters
     ----------
@@ -393,10 +392,7 @@ def wls_fit_tensor(
 
     References
     ----------
-    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
-           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
-           water elimination two-compartment model for diffusion tensor
-           imaging. ReScience volume 3, issue 1, article number 2
+    .. footbibliography::
     """
     fw_params = np.zeros(data.shape[:-1] + (13,))
     W = design_matrix(gtab)
@@ -460,8 +456,8 @@ def _nls_err_func(
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     weighting : str (optional).
-         Whether to use the Geman-McClure weighting criterion (see [1]_
-         for details)
+         Whether to use the Geman-McClure weighting criterion (see
+        :footcite:p:`NetoHenriques2017` for details)
     sigma : float or float array (optional)
         If 'sigma' weighting is used, we will weight the error function
         according to the background noise estimated either in aggregate over
@@ -478,6 +474,10 @@ def _nls_err_func(
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
         See fwdti.nls_fit_tensor
         Default: True
+
+    References
+    ----------
+    .. footbibliography::
     """
     tensor = np.copy(tensor_elements)
     if cholesky:
@@ -633,8 +633,8 @@ def nls_iter(
         options: 'sigma' 'gmm'
     sigma: float, optional
         If the 'sigma' weighting scheme is used, a value of sigma needs to be
-        provided here. According to [Chang2005]_, a good value to use is
-        1.5267 * std(background_noise), where background_noise is estimated
+        provided here. According to :footcite:t:`Chang2005`, a good value to use
+        is 1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
 
     Returns
@@ -777,8 +777,8 @@ def nls_fit_tensor(
         options: 'sigma' 'gmm'
     sigma: float, optional
         If the 'sigma' weighting scheme is used, a value of sigma needs to be
-        provided here. According to [Chang2005]_, a good value to use is
-        1.5267 * std(background_noise), where background_noise is estimated
+        provided here. According to :footcite:t:`Chang2005`, a good value to use
+        is 1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
 
     Returns
@@ -791,6 +791,10 @@ def nls_fit_tensor(
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
             3) The volume fraction of the free water compartment
+
+    References
+    ----------
+    .. footbibliography::
     """
     fw_params = np.zeros(data.shape[:-1] + (13,))
     W = design_matrix(gtab)
@@ -840,14 +844,11 @@ def lower_triangular_to_cholesky(tensor_elements):
     -------
     cholesky_elements : array (6,)
         Array containing the six Cholesky's decomposition elements
-        (R0, R1, R2, R3, R4, R5) [1]_.
+        (R0, R1, R2, R3, R4, R5) :footcite:p:`Koay2006b`.
 
     References
     ----------
-    .. [1] Koay, C.G., Carew, J.D., Alexander, A.L., Basser, P.J.,
-           Meyerand, M.E., 2006. Investigation of anomalous estimates of
-           tensor-derived quantities in diffusion tensor imaging. Magnetic
-           Resonance in Medicine, 55(4), 930-936. doi:10.1002/mrm.20832
+    .. footbibliography::
     """
     R0 = np.sqrt(tensor_elements[0])
     R3 = tensor_elements[1] / R0
@@ -866,7 +867,7 @@ def cholesky_to_lower_triangular(R):
     ----------
     R : array (6,)
         Array containing the six Cholesky's decomposition elements
-        (R0, R1, R2, R3, R4, R5) [1]_.
+        (R0, R1, R2, R3, R4, R5) :footcite:p:`Koay2006b`.
 
     Returns
     -------
@@ -876,10 +877,7 @@ def cholesky_to_lower_triangular(R):
 
     References
     ----------
-    .. [1] Koay, C.G., Carew, J.D., Alexander, A.L., Basser, P.J.,
-           Meyerand, M.E., 2006. Investigation of anomalous estimates of
-           tensor-derived quantities in diffusion tensor imaging. Magnetic
-           Resonance in Medicine, 55(4), 930-936. doi:10.1002/mrm.20832
+    .. footbibliography::
     """
     Dxx = R[0] ** 2
     Dxy = R[0] * R[3]

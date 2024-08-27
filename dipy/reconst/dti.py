@@ -109,7 +109,8 @@ def geodesic_anisotropy(evals, axis=-1):
 
     Notes
     -----
-    GA is calculated using the following equation given in [1]_:
+    GA is calculated using the following equation given in
+    :footcite:p:`Batchelor2005`:
 
     .. math::
 
@@ -120,36 +121,23 @@ def geodesic_anisotropy(evals, axis=-1):
 
     Note that the notation, $<D>$, is often used as the mean diffusivity (MD)
     of the diffusion tensor and can lead to confusions in the literature
-    (see [1]_ versus [2]_ versus [3]_ for example). Reference [2]_ defines
+    (see :footcite:p:`Batchelor2005` versus :footcite:p:`Correia2011b` versus
+    :footcite:p:`Lee2008` for example). :footcite:p:`Correia2011b` defines
     geodesic anisotropy (GA) with $<D>$ as the MD in the denominator of the
-    sum. This is wrong. The original paper [1]_ defines GA with
-    $<D> = det(D)^{1/3}$, as the isotropic part of the distance. This might be
-    an explanation for the confusion. The isotropic part of the diffusion
-    tensor in Euclidean space is the MD whereas the isotropic part of the
-    tensor in log-Euclidean space is $det(D)^{1/3}$. The Appendix of [1]_ and
-    log-Euclidean derivations from [3]_ are clear on this. Hence, all that to
-    say that $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
+    sum. This is wrong. The original paper :footcite:p:`Batchelor2005` defines
+    GA with  $<D> = det(D)^{1/3}$, as the isotropic part of the distance. This
+    might be an explanation for the confusion. The isotropic part of the
+    diffusion tensor in Euclidean space is the MD whereas the isotropic part of
+    the tensor in log-Euclidean space is $det(D)^{1/3}$. The Appendix of
+    :footcite:p:`Batchelor2005` and log-Euclidean derivations from
+    :footcite:p:`Lee2008` are clear on this. Hence, all that to say that
+    $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
+
+    See also :footcite:p:`Arsigny2006`.
 
     References
     ----------
-
-    .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante,
-        A. Connelly, "A rigorous framework for diffusion tensor calculus",
-        Magnetic Resonance in Medicine, vol. 53, pp. 221-225, 2005.
-
-    .. [2] M. M. Correia, V. F. Newcombe, G.B. Williams.
-        "Contrast-to-noise ratios for indices of anisotropy obtained from
-        diffusion MRI: a study with standard clinical b-values at 3T".
-        NeuroImage, vol. 57, pp. 1103-1115, 2011.
-
-    .. [3] A. D. Lee, etal, P. M. Thompson.
-        "Comparison of fractional and geodesic anisotropy in diffusion tensor
-        images of 90 monozygotic and dizygotic twins". 5th IEEE International
-        Symposium on Biomedical Imaging (ISBI), pp. 943-946, May 2008.
-
-    .. [4] V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
-        "Log-Euclidean metrics for fast and simple calculus on diffusion
-        tensors." Magnetic Resonance in Medecine, vol 56, pp. 411-421, 2006.
+    .. footbibliography::
 
     """
     evals = _roll_evals(evals, axis)
@@ -160,7 +148,7 @@ def geodesic_anisotropy(evals, axis=-1):
     log3 = np.zeros(ev1.shape)
     idx = np.nonzero(ev1)
 
-    # this is the definition in [1]_
+    # this is the definition in :footcite:p:`Batchelor2005`
     detD = np.power(ev1 * ev2 * ev3, 1 / 3.0)
     log1[idx] = np.log(ev1[idx] / detD[idx])
     log2[idx] = np.log(ev2[idx] / detD[idx])
@@ -356,7 +344,9 @@ def determinant(q_form):
 
 def isotropic(q_form):
     r"""
-    Calculate the isotropic part of the tensor [1]_.
+    Calculate the isotropic part of the tensor.
+
+    See :footcite:p:`Ennis2006` for further details about the method.
 
     Parameters
     ----------
@@ -371,17 +361,15 @@ def isotropic(q_form):
 
     Notes
     -----
-    The isotropic part of a tensor is defined as (equations 3-5 of [1]_):
+    The isotropic part of a tensor is defined as (equations 3-5 of
+    :footcite:p:`Ennis2006`):
 
     .. math::
         \bar{A} = \frac{1}{2} tr(A) I
 
     References
     ----------
-    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
-        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
-        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
-        2006.
+    .. footbibliography::
 
     """
     tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
@@ -392,7 +380,9 @@ def isotropic(q_form):
 
 def deviatoric(q_form):
     r"""
-    Calculate the deviatoric (anisotropic) part of the tensor [1]_.
+    Calculate the deviatoric (anisotropic) part of the tensor.
+
+    See :footcite:p:`Ennis2006` for further details about the method.
 
     Parameters
     ----------
@@ -407,7 +397,8 @@ def deviatoric(q_form):
 
     Notes
     -----
-    The deviatoric part of the tensor is defined as (equations 3-5 in [1]_):
+    The deviatoric part of the tensor is defined as (equations 3-5 in
+    :footcite:p:`Ennis2006`):
 
     .. math::
         \widetilde{A} = A - \bar{A}
@@ -417,10 +408,7 @@ def deviatoric(q_form):
 
     References
     ----------
-    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
-        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
-        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
-        2006.
+    .. footbibliography::
 
     """
     A_squiggle = q_form - isotropic(q_form)
@@ -461,7 +449,9 @@ def norm(q_form):
 
 def mode(q_form):
     r"""
-    Mode (MO) of a diffusion tensor [1]_.
+    Mode (MO) of a diffusion tensor.
+
+    See :footcite:p:`Ennis2006` for further details about the method.
 
     Parameters
     ----------
@@ -478,7 +468,7 @@ def mode(q_form):
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
     with 0 representing isotropy. Mode is calculated with the following
-    equation (equation 9 in [1]_):
+    equation (equation 9 in :footcite:p:`Ennis2006`):
 
     .. math::
 
@@ -488,11 +478,7 @@ def mode(q_form):
 
     References
     ----------
-
-    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
-        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
-        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
-        2006.
+    .. footbibliography::
 
     """
     A_squiggle = deviatoric(q_form)
@@ -512,7 +498,9 @@ def mode(q_form):
 
 def linearity(evals, axis=-1):
     r"""
-    The linearity of the tensor [1]_
+    The linearity of the tensor.
+
+    See :footcite:p:`Westin1997` for further details about the method.
 
     Parameters
     ----------
@@ -536,9 +524,7 @@ def linearity(evals, axis=-1):
 
     References
     ----------
-    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. footbibliography::
 
     """
     evals = _roll_evals(evals, axis)
@@ -548,7 +534,9 @@ def linearity(evals, axis=-1):
 
 def planarity(evals, axis=-1):
     r"""
-    The planarity of the tensor [1]_
+    The planarity of the tensor.
+
+    See :footcite:p:`Westin1997` for further details about the method.
 
     Parameters
     ----------
@@ -573,9 +561,7 @@ def planarity(evals, axis=-1):
 
     References
     ----------
-    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. footbibliography::
 
     """
     evals = _roll_evals(evals, axis)
@@ -585,7 +571,9 @@ def planarity(evals, axis=-1):
 
 def sphericity(evals, axis=-1):
     r"""
-    The sphericity of the tensor [1]_
+    The sphericity of the tensor.
+
+    See :footcite:p:`Westin1997` for further details about the method.
 
     Parameters
     ----------
@@ -609,9 +597,7 @@ def sphericity(evals, axis=-1):
 
     References
     ----------
-    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. footbibliography::
 
     """
     evals = _roll_evals(evals, axis)
@@ -698,7 +684,10 @@ class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
     def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
-        """A Diffusion Tensor Model [1]_, [2]_.
+        """A Diffusion Tensor Model.
+
+        See :footcite:p:`Basser1994b` and :footcite:p:`Basser1996` for further
+        details about the model.
 
         Parameters
         ----------
@@ -714,7 +703,7 @@ class TensorModel(ReconstModel):
             'NLLS' for non-linear least-squares
                 :func:`dti.nlls_fit_tensor`
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor
-                fitting [3]_
+                fitting :footcite:p:`Chang2005`
                 :func:`dti.restore_fit_tensor`
 
             callable has to have the signature:
@@ -746,14 +735,7 @@ class TensorModel(ReconstModel):
 
         References
         ----------
-        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
-           the effective self-diffusion tensor from the NMR spin echo. J Magn
-           Reson B 103, 247-254.
-        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
-           physiological features of tissues elucidated by quantitative
-           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-        .. [3] Chang, L-C, Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
-           estimation of tensors by outlier rejection. MRM 53: 1088-1095
+        .. footbibliography::
 
         """
         ReconstModel.__init__(self, gtab)
@@ -1066,7 +1048,8 @@ class TensorFit:
         Returns
         -------
         sphericity : array
-            Calculated sphericity of the diffusion tensor [1]_.
+            Calculated sphericity of the diffusion tensor
+            :footcite:p:`Westin1997`.
 
         Notes
         -----
@@ -1079,9 +1062,7 @@ class TensorFit:
 
         References
         ----------
-        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
+        .. footbibliography::
 
         """
         return planarity(self.evals)
@@ -1092,7 +1073,8 @@ class TensorFit:
         Returns
         -------
         linearity : array
-            Calculated linearity of the diffusion tensor [1]_.
+            Calculated linearity of the diffusion tensor
+            :footcite:p:`Westin1997`.
 
         Notes
         -----
@@ -1105,9 +1087,7 @@ class TensorFit:
 
         References
         ----------
-        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
+        .. footbibliography::
 
         """
         return linearity(self.evals)
@@ -1118,7 +1098,8 @@ class TensorFit:
         Returns
         -------
         sphericity : array
-            Calculated sphericity of the diffusion tensor [1]_.
+            Calculated sphericity of the diffusion tensor
+            :footcite:p:`Westin1997`.
 
         Notes
         -----
@@ -1130,9 +1111,7 @@ class TensorFit:
 
         References
         ----------
-        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
+        .. footbibliography::
 
         """
         return sphericity(self.evals)
@@ -1155,22 +1134,13 @@ class TensorFit:
 
         Notes
         -----
-        This is based on equation 3 in [1]_. To re-derive it from
-        scratch, follow steps in [2]_, Section 7.9 Equation
-        7.24 but with an $r^2$ term in the integral.
+        This is based on equation 3 in :footcite:p:`Aganj2010`. To re-derive it
+        from scratch, follow steps in :footcite:p:`Descoteaux2008b`, Section 7.9
+        Equation 7.24 but with an $r^2$ term in the integral.
 
         References
         ----------
-        .. [1] Aganj, I., Lenglet, C., Sapiro, G., Yacoub, E., Ugurbil,
-            K., & Harel, N. (2010). Reconstruction of the orientation
-            distribution function in single- and multiple-shell q-ball imaging
-            within constant solid angle. Magnetic Resonance in Medicine, 64(2),
-            554-566. doi:DOI: 10.1002/mrm.22365
-
-        .. [2] Descoteaux, M. (2008). PhD Thesis: High Angular
-           Resolution Diffusion MRI: from Local Estimation to Segmentation and
-           Tractography.
-           ftp://ftp-sop.inria.fr/athena/Publications/PhDs/descoteaux_thesis.pdf
+        .. footbibliography::
 
         """
         odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
@@ -1408,7 +1378,9 @@ def iter_fit_tensor(step=1e4):
 def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
-    tensor using a linear regression model [1]_.
+    tensor using a linear regression model.
+
+    See :footcite:p:`Chung2006` for further details about the method.
 
     Parameters
     ----------
@@ -1461,9 +1433,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
 
     References
     ----------
-    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-       approaches for estimation of uncertainties of DTI parameters.
-       NeuroImage 33, 531-541.
+    .. footbibliography::
 
     """
     tol = 1e-6
@@ -1496,7 +1466,9 @@ def ols_fit_tensor(
 ):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
-    tensor using a linear regression model [1]_.
+    tensor using a linear regression model.
+
+    See :footcite:p:`Chung2006` for further details about the method.
 
     Parameters
     ----------
@@ -1536,9 +1508,7 @@ def ols_fit_tensor(
 
     References
     ----------
-    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-        approaches for estimation of uncertainties of DTI parameters.
-        NeuroImage 33, 531-541.
+    .. footbibliography::
 
     """
     tol = 1e-6
@@ -1598,8 +1568,8 @@ class _NllsHelper:
             The voxel signal in all gradient directions
 
         weighting : str, optional.
-             Whether to use the Geman-McClure weighting criterion (see [1]_
-             for details)
+             Whether to use the Geman-McClure weighting criterion (see
+            :footcite:p:`Chang2005` for details)
 
         sigma : float, array, optional
             If 'sigma' weighting is used, we will weight the error function
@@ -1609,7 +1579,8 @@ class _NllsHelper:
 
         Notes
         -----
-        The Geman-McClure M-estimator is described as follows [1]_ (page 1089):
+        The Geman-McClure M-estimator is described as follows
+        :footcite:p:`Chang2005` (page 1089):
         "The scale factor C affects the shape of the GMM
         [Geman-McClure M-estimator] weighting function and represents the
         expected spread of the residuals (i.e., the SD of the residuals) due
@@ -1631,8 +1602,7 @@ class _NllsHelper:
 
         References
         ----------
-        .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-        estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        .. footbibliography::
 
         """
         # This is the predicted signal given the params:
@@ -1679,7 +1649,8 @@ class _NllsHelper:
             return ans
 
     def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
-        """The Jacobian is the first derivative of the error function [1]_.
+        """The Jacobian is the first derivative of the error function
+        :footcite:p:`Koay2006c`.
 
         Parameters
         ----------
@@ -1705,13 +1676,11 @@ class _NllsHelper:
 
         Notes
         -----
-        This is an implementation of equation 14 in [1]_.
+        This is an implementation of equation 14 in :footcite:p:`Koay2006c`.
 
         References
         ----------
-        .. [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
-            A unifying theoretical and algorithmic framework for least squares
-            methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
+        .. footbibliography::
 
         """
         # minus sign, because derivative of residuals = data - y
@@ -1908,7 +1877,9 @@ def restore_fit_tensor(
     design_matrix, data, sigma=None, jac=True, return_S0_hat=False, fail_is_nan=False
 ):
     """
-    Use the RESTORE algorithm [1]_ to calculate a robust tensor fit
+    Use the RESTORE algorithm to calculate a robust tensor fit.
+
+    See :footcite:p:`Chang2005` for further details about the method.
 
     Parameters
     ----------
@@ -1922,7 +1893,7 @@ def restore_fit_tensor(
         dimension should contain the data. It makes no copies of data.
 
     sigma : float, array of shape [n_directions], array of shape [X, Y, Z]
-        An estimate of the variance. [1]_ recommend to use
+        An estimate of the variance. :footcite:t:`Chang2005` recommend to use
         1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
         Array with ndim > 1 corresponds to spatially varying sigma, so if
@@ -1946,8 +1917,7 @@ def restore_fit_tensor(
 
     References
     ----------
-    .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-       estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+    .. footbibliography::
 
     """
     # Detect number of parameters to estimate from design_matrix length plus
