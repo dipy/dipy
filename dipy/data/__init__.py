@@ -171,7 +171,7 @@ def get_sim_voxels(*, name="fib1"):
     Examples
     --------
     >>> from dipy.data import get_sim_voxels
-    >>> sv=get_sim_voxels('fib1')
+    >>> sv=get_sim_voxels(name='fib1')
     >>> sv['data'].shape == (100, 102)
     True
     >>> sv['fibres']
@@ -182,7 +182,7 @@ def get_sim_voxels(*, name="fib1"):
     True
     >>> sv['snr']
     '60'
-    >>> sv2=get_sim_voxels('fib2')
+    >>> sv2=get_sim_voxels(name='fib2')
     >>> sv2['fibres']
     '2'
     >>> sv2['snr']
@@ -217,7 +217,7 @@ def get_skeleton(*, name="C1"):
     Examples
     --------
     >>> from dipy.data import get_skeleton
-    >>> C=get_skeleton('C1')
+    >>> C=get_skeleton(name='C1')
     >>> len(C.keys())
     117
     >>> for c in C: break

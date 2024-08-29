@@ -30,7 +30,7 @@ def find_qspace_neighbors(gtab):
     >>> import numpy as np
     >>> gtab = gradient_table(
     ...     np.array([0, 1000, 1000, 2000]),
-    ...     np.array([
+    ...     bvecs=np.array([
     ...         [1, 0, 0],
     ...         [1, 0, 0],
     ...         [0.99, 0.0001, 0.0001],

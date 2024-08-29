@@ -41,7 +41,7 @@ class Dpy:
         >>> def dpy_example():
         ...     fd,fname = mkstemp()
         ...     fname += '.dpy'#add correct extension
-        ...     dpw = Dpy(fname,'w')
+        ...     dpw = Dpy(fname, mode='w')
         ...     A=np.ones((5,3))
         ...     B=2*A.copy()
         ...     C=3*A.copy()
@@ -49,7 +49,7 @@ class Dpy:
         ...     dpw.write_track(B)
         ...     dpw.write_track(C)
         ...     dpw.close()
-        ...     dpr = Dpy(fname,'r')
+        ...     dpr = Dpy(fname, mode='r')
         ...     dpr.read_track()
         ...     dpr.read_track()
         ...     dpr.read_tracksi([0, 1, 2, 0, 0, 2])
