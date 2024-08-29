@@ -119,10 +119,11 @@ mean_signal = np.mean(data[mask_cc_part], axis=0)
 # Now, we need a good background estimation. We will reuse the brain mask
 # computed before and invert it to catch the outside of the brain. This could
 # also be determined manually with a ROI in the background.
+#
 # .. warning::
 #
-# Certain MR manufacturers mask out the outside of the brain with 0's.
-# One thus has to be careful how the noise ROI is defined].
+#    Certain MR manufacturers mask out the outside of the brain with 0's.
+#    One thus has to be careful how the noise ROI is defined.
 
 mask_noise = binary_dilation(mask, iterations=10)
 mask_noise[..., : mask_noise.shape[-1] // 2] = 1
