@@ -12,7 +12,7 @@ properties of water diffusion which is a consequence of the existence of tissue
 barriers and compartments. In these simulations compartmental heterogeneity is
 taken into account by modeling different compartments for the intra- and
 extra-cellular media of two populations of fibers. These simulations are
-performed according to [RNH2015]_.
+performed according to :footcite:p:`NetoHenriques2015`.
 
 We first import all relevant modules.
 """
@@ -135,7 +135,5 @@ plt.savefig("simulated_dki_signal.png", bbox_inches="tight")
 # References
 # ----------
 #
-# .. [RNH2015] R. Neto Henriques et al., "Exploring the 3D geometry of the
-#    diffusion kurtosis tensor - Impact on the development of robust
-#    tractography procedures and novel biomarkers", NeuroImage (2015) 111,
-#    85-99.
+# .. footbibliography::
+#

@@ -466,7 +466,7 @@ def directional_diffusion_variance(kt, V):
     sphere for a single voxel
 
     See :footcite:p:`Jensen2005`, :footcite:p:`NetoHenriques2015`, and
-    :footcite:p:`NetoHenriques2021` for further details about the method.
+    :footcite:p:`NetoHenriques2021a` for further details about the method.
 
     Parameters
     ----------
@@ -512,7 +512,7 @@ def directional_kurtosis(
     r"""Calculate the apparent kurtosis coefficient (akc) in each direction of
     a sphere for a single voxel.
 
-    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021` for
+    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021a` for
     further details about the method.
 
     Parameters
@@ -574,7 +574,7 @@ def apparent_kurtosis_coef(
     r"""Calculate the apparent kurtosis coefficient (AKC) in each direction
     of a sphere.
 
-    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021` for
+    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021a` for
     further details about the method.
 
     Parameters
@@ -673,8 +673,8 @@ def apparent_kurtosis_coef(
 def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True):
     r""" Compute mean kurtosis (MK) from the kurtosis tensor.
 
-    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021` for further
-    details about the method.
+    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
@@ -709,7 +709,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
     -----
     The MK is defined as the average of directional kurtosis coefficients
     across all spatial directions, which can be formulated by the following
-    surface integral :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021`:
+    surface integral :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`:
 
     .. math::
 
@@ -720,7 +720,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
     :footcite:p:`Hardin1996`.
 
     Alternatively, MK can be solved from the analytical solution derived by
-    :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021`. This solution is
+    :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`. This solution is
     given by:
 
     .. math::
@@ -946,8 +946,8 @@ def radial_kurtosis(
 ):
     r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor.
 
-    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021` for further
-    details about the method.
+    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
@@ -983,7 +983,7 @@ def radial_kurtosis(
     -----
     RK is defined as the average of the directional kurtosis perpendicular
     to the fiber's main direction e1 :footcite:p:`Tabesh2011`,
-    :footcite:p:`NetoHenriques2021`:
+    :footcite:p:`NetoHenriques2021a`:
 
     .. math::
 
@@ -992,7 +992,7 @@ def radial_kurtosis(
 
     This equation can be numerically computed by averaging apparent
     directional kurtosis samples for directions perpendicular to e1
-    :footcite:p:`NetoHenriques2021`.
+    :footcite:p:`NetoHenriques2021a`.
 
     Otherwise, RK can be calculated from its analytical solution
     :footcite:p:`Tabesh2011`:
@@ -1085,7 +1085,7 @@ def radial_kurtosis(
 def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
     r"""Compute axial kurtosis (AK) from the kurtosis tensor.
 
-    See :footcite:p:`Tabesh2011` and :footcite:`NetoHenriques2021` for further
+    See :footcite:p:`Tabesh2011` and :footcite:`NetoHenriques2021a` for further
     details about the method.
 
     Parameters
@@ -1123,7 +1123,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
     Notes
     -----
     AK is defined as the directional kurtosis parallel to the fiber's main
-    direction e1 :footcite:p:`Tabesh2011`, :footcite:`NetoHenriques2021`. You
+    direction e1 :footcite:p:`Tabesh2011`, :footcite:`NetoHenriques2021a`. You
     can compute AK using to approaches:
 
     1) AK is calculated from rotated diffusion kurtosis tensor
@@ -1134,7 +1134,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
             \frac{(\lambda_{1}+\lambda_{2}+\lambda_{3})^2}{(9 \lambda_{1}^2)}
 
     2) AK can be sampled from the principal axis of the diffusion tensor
-       :footcite:`NetoHenriques2021`:
+       :footcite:`NetoHenriques2021a`:
 
     .. math::
         AK = K(\mathbf{e}_1)
@@ -1298,7 +1298,7 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
 def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
     """Compute kurtosis maximum value.
 
-    See :footcite:`NetoHenriques2021` for further details about the method.
+    See :footcite:`NetoHenriques2021a` for further details about the method.
 
     Parameters
     ----------
@@ -1534,7 +1534,7 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
 def kurtosis_fractional_anisotropy(dki_params):
     r"""Compute the anisotropy of the kurtosis tensor (KFA).
 
-    See :footcite:p:`Glenn2015` and :footcite:p:`NetoHenriques2021` for further
+    See :footcite:p:`Glenn2015` and :footcite:p:`NetoHenriques2021a` for further
     details about the method.
 
     Parameters
@@ -1628,8 +1628,8 @@ def dki_prediction(dki_params, gtab, S0=1.0):
 
         S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
 
-    See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021` for further
-    details about the method.
+    See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
@@ -1695,7 +1695,7 @@ class DiffusionKurtosisModel(ReconstModel):
     def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
         """Diffusion Kurtosis Tensor Model.
 
-        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021` for
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
         further details about the model.
 
         Parameters
@@ -1890,7 +1890,7 @@ class DiffusionKurtosisModel(ReconstModel):
     def predict(self, dki_params, S0=1.0):
         """Predict a signal for this DKI model class instance given parameters
 
-        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021` for
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
         further details about the method.
 
         Parameters
@@ -1993,7 +1993,7 @@ class DiffusionKurtosisFit(TensorFit):
     def mk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r""" Compute mean kurtosis (MK) from the kurtosis tensor.
 
-        See :footcite:t:`Tabesh2011` and :footcite:p:`NetoHenriques2021` for
+        See :footcite:t:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
         further details about the method.
 
         Parameters
@@ -2022,7 +2022,7 @@ class DiffusionKurtosisFit(TensorFit):
         The MK is defined as the average of directional kurtosis coefficients
         across all spatial directions, which can be formulated by the following
         surface integral :footcite:p:`Tabesh2011`,
-        :footcite:p:`NetoHenriques2021`:
+        :footcite:p:`NetoHenriques2021a`:
 
         .. math::
 
@@ -2081,7 +2081,7 @@ class DiffusionKurtosisFit(TensorFit):
         r"""
         Compute axial kurtosis (AK) of a diffusion kurtosis tensor.
 
-        See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021` for
+        See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
         further details about the method.
 
         Parameters
@@ -2110,7 +2110,7 @@ class DiffusionKurtosisFit(TensorFit):
         Notes
         -----
         AK is defined as the directional kurtosis parallel to the fiber's main
-        direction e1 :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021`.
+        direction e1 :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`.
         You can compute AK using to approaches:
 
         1) AK is calculated from rotated diffusion kurtosis tensor, i.e.:
@@ -2166,7 +2166,7 @@ class DiffusionKurtosisFit(TensorFit):
         -----
         RK is defined as the average of the directional kurtosis perpendicular
         to the fiber's main direction e1 :footcite:p:`Tabesh2011`,
-        :footcite:p:`NetoHenriques2021`:
+        :footcite:p:`NetoHenriques2021a`:
 
         .. math::
 
@@ -2175,7 +2175,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         This equation can be numerically computed by averaging apparent
         directional kurtosis samples for directions perpendicular to e1
-        :footcite:p:`NetoHenriques2021`.
+        :footcite:p:`NetoHenriques2021a`.
 
         Otherwise, RK can be calculated from its analytical solution
         :footcite:p:`Tabesh2011`:
@@ -2217,7 +2217,7 @@ class DiffusionKurtosisFit(TensorFit):
     def kmax(self, sphere="repulsion100", gtol=1e-5, mask=None):
         """Compute the maximum value of a single voxel kurtosis tensor
 
-        See :footcite:p:`NetoHenriques2021` for further details about the
+        See :footcite:p:`NetoHenriques2021a` for further details about the
         method.
 
         Parameters
@@ -2362,7 +2362,7 @@ class DiffusionKurtosisFit(TensorFit):
         r"""Given a DKI model fit, predict the signal on the vertices of a
         gradient table
 
-        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021` for
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
         further details about the method.
 
         Parameters

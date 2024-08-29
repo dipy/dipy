@@ -4,14 +4,14 @@ Crossing-preserving contextual enhancement
 ==========================================
 
 This demo presents an example of crossing-preserving contextual enhancement of
-FOD/ODF fields [Meesters2016]_, implementing the contextual PDE framework
-of [Portegies2015a]_ for processing HARDI data. The aim is to enhance the
-alignment of elongated structures in the data such that crossing/junctions are
-maintained while reducing noise and small incoherent structures. This is
-achieved via a hypo-elliptic 2nd order PDE in the domain of coupled positions
-and orientations :math:`\\mathbb{R}^3 \\rtimes S^2`. This domain carries a
-non-flat geometrical differential structure that allows including a notion of
-alignment between neighboring points.
+FOD/ODF fields :footcite:p:`Meesters2016a`, implementing the contextual PDE
+framework of :footcite:p:`Portegies2015b` for processing HARDI data. The aim is
+to enhance the alignment of elongated structures in the data such that
+crossing/junctions are maintained while reducing noise and small incoherent
+structures. This is achieved via a hypo-elliptic 2nd order PDE in the domain of
+coupled positions and orientations :math:`\\mathbb{R}^3 \\rtimes S^2`. This
+domain carries a non-flat geometrical differential structure that allows
+including a notion of alignment between neighboring points.
 
 Let :math:`({\\bf y},{\\bf n}) \\in \\mathbb{R}^3\rtimes S^2` where
 :math:`{\\bf y} \\in \\mathbb{R}^{3}` denotes the spatial part, and
@@ -58,7 +58,7 @@ Note that the shift-twist convolution differs from a Euclidean convolution and
 takes into account the non-flat structure of the space
 :math:`\\mathbb{R}^3\\rtimes S^2`.
 
-The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken2011]_.
+The kernel :math:`P_t` has a stochastic interpretation :footcite:p:`Duits2011`.
 It can be seen as the limiting distribution obtained by accumulating random
 walks of particles in the position/orientation domain, where in each step the
 particles can (randomly) move forward/backward along their current orientation,
@@ -71,10 +71,10 @@ the process for contour enhancement of 2D images.
 
    The random motion of particles (a) and its corresponding probability map
    (b) in 2D. The 3D kernel is shown on the right. Adapted from
-   [Portegies2015a]_.
+   :footcite:p:`Portegies2015b`.
 
 In practice, as the exact analytical formulas for the kernel :math:`P_t`
-are unknown, we use the approximation given in [Portegies2015b]_.
+are unknown, we use the approximation given in :footcite:p:`Portegies2015a`.
 
 """
 
@@ -144,7 +144,7 @@ csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff
 
 ###############################################################################
-# Inspired by [Rodrigues2010]_, a lookup-table is created, containing
+# Inspired by :footcite:p:`Rodrigues2010`, a lookup-table is created, containing
 # rotated versions of the kernel :math:`P_t` sampled over a discrete set of
 # orientations. In order to ensure rotationally invariant processing, the
 # discrete orientations are required to be equally distributed over a sphere.
@@ -264,26 +264,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Meesters2016] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-#    R. Duits. (2016) Fast implementations of contextual PDE’s for HARDI data
-#    processing in DIPY. ISMRM 2016 conference.
+# .. footbibliography::
 #
-# .. [Portegies2015a] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-#    G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI by
-#    Combining Contextual PDE flow with Constrained Spherical Deconvolution.
-#    PLoS One.
-#
-# .. [Portegies2015b] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-#    (2015) New Approximation of a Scale Space Kernel on SE(3) and Applications
-#    in Neuroimaging. Fifth International Conference on Scale Space and
-#    Variational Methods in Computer Vision.
-#
-# .. [DuitsAndFranken2011] R. Duits and E. Franken (2011) Left-invariant
-#    diffusions on the space of positions and orientations and their
-#    application to crossing-preserving smoothing of HARDI images.
-#    International Journal of Computer Vision, 92:231-264.
-#
-# .. [Rodrigues2010] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
-#    Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics
-#    Workshop on Visual Computing for Biology and Medicine. The Eurographics
-#    Association.

@@ -5,7 +5,8 @@ Local reconstruction using the Histological ResDNN
 
 A data-driven approach to modeling the non-linear mapping between observed
 DW-MRI signals and ground truth structures using sequential deep neural network
-regression with residual block deep neural network (ResDNN) [1, 2].
+regression with residual block deep neural network (ResDNN)
+:footcite:p:`Nath2018`, :footcite:p:`Nath2019`.
 
 Training was performed on two 3-D histology datasets of squirrel monkey brains
 and validated on a third. A second validation was performed on HCP datasets.
@@ -132,13 +133,6 @@ window.record(
 #
 # References
 # ----------
-# ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-#     C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-#     Deep learning reveals untapped information for local white-matter
-#     fiber reconstruction in diffusion-weighted MRI.
-#     Magnetic resonance imaging, 62, 220-227.
-# ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-#     P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-#     Deep learning captures more accurate diffusion fiber orientations
-#     distributions than constrained spherical deconvolution.
-#     arXiv preprint arXiv:1911.07927.
+#
+# .. footbibliography::
+#

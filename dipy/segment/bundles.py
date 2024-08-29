@@ -166,7 +166,7 @@ def bundle_shape_similarity(
     """Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
 
-    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020` for further
+    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020a` for further
     details about the method.
 
     Parameters
@@ -500,13 +500,13 @@ class RecoBundles:
     ):
         """Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
-        first output of recobundle by applying second local slr (optional),
+        first output of RecoBundles by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
         This time, search space is created using pruned bundle and not model
         bundle.
 
-        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020` for
+        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020a` for
         further details about the method.
 
         Parameters

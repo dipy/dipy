@@ -158,7 +158,7 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 ###############################################################################
 # Finally, we can bring it all together using ``LocalTracking``, using
-# the EuDX algorithm [Garyfallidis12]_. ``EuDX`` [Garyfallidis12]_ is a fast
+# the EuDX algorithm :footcite:p:`Garyfallidis2012b`. ``EuDX`` is a fast
 # algorithm that we use here to generate streamlines. This algorithm is what is
 # used here and the default option when providing the output of peaks directly
 # in LocalTracking.
@@ -209,5 +209,6 @@ save_trk(sft, "tractogram_EuDX.trk", streamlines)
 ###############################################################################
 # References
 # ----------
-# .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography"
-#    PhD thesis, University of Cambridge, 2012.
+#
+# .. footbibliography::
+#

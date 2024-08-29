@@ -3,10 +3,10 @@
 Applying positivity constraints to Q-space Trajectory Imaging (QTI+)
 =====================================================================
 
-Q-space trajectory imaging (QTI) [1]_ with applied positivity constraints
-(QTI+) is an estimation framework proposed by Herberthson et al. [2]_ which
-enforces necessary constraints during the estimation of the QTI model
-parameters.
+Q-space trajectory imaging (QTI) :footcite:p:`Westin2016` with applied
+positivity constraints (QTI+) is an estimation framework proposed by
+:footcite:t:`Herberthson2021` which enforces necessary constraints during the
+estimation of the QTI model parameters.
 
 This tutorial briefly summarizes the theory and provides a comparison between
 performing the constrained and unconstrained QTI reconstruction in DIPY.
@@ -99,10 +99,10 @@ representation, $\\mathbf{C}$, should be positive semi-definite:
 $\\mathbf{C} \\succeq 0$
 
 When not imposed, violations of these conditions can occur in presence of noise
-and/or in sparsely sampled data. This could results in metrics derived from the
+and/or in sparsely sampled data. This could result in metrics derived from the
 model parameters to be unreliable. Both these conditions can be enfoced while
 estimating the QTI model's parameters using semidefinite programming (SDP) as
-shown by Herberthson et al. [2]_. This corresponds to solving the problem
+shown by :footcite:t:`Herberthson2021`. This corresponds to solving the problem
 
 .. math::
 
@@ -151,7 +151,7 @@ from dipy.viz.plotting import compare_qti_maps
 #
 # The full dataset used in this tutorial was originally published at
 # https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
-# and is described in [3]_.
+# and is described in :footcite:p:`Szczepankiewicz2019`.
 #
 #
 # First, let's load the complete dataset and create the gradient table.
@@ -234,19 +234,11 @@ compare_qti_maps(qtifit_217, qtifit_unconstrained, qtifit_constrained, wm_mask)
 # sampled diffusion data.
 #
 # For more information about QTI and QTI+, please read the articles by
-# Westin et al. [1]_ and Herberthson et al. [2]_.
+# :footcite:p:`Westin2016` and :footcite:t:`Herberthson2021`.
 #
 #
 # References
 # ----------
-# .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
-#    multidimensional diffusion MRI of the human brain." Neuroimage 135
-#    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
-# .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
-#    Ozarslan E., "Q-space trajectory imaging with positivity constraints
-#    (QTI+)" in Neuroimage, Volume 238, 2021.
-#    https://doi.org/10.1016/j.neuroimage.2021.118198
-# .. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
-#    tensor-valued diffusion MRI data by free waveform encoding in healthy
-#    brain, water, oil and liquid crystals. Data in Brief (2019),
-#    DOI: https://doi.org/10.1016/j.dib.2019.104208
+#
+# .. footbibliography::
+#

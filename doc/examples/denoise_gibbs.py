@@ -7,14 +7,17 @@ Magnetic Resonance (MR) images are reconstructed from the Fourier coefficients
 of acquired k-space images. Since only a finite number of Fourier coefficients
 can be acquired in practice, reconstructed MR images can be corrupted by Gibbs
 artefacts, which is manifested by intensity oscillations adjacent to edges of
-different tissues types [1]_. Although this artefact affects MR images in
-general, in the context of diffusion-weighted imaging, Gibbs oscillations
-can be magnified in derived diffusion-based estimates [1]_, [2]_.
+different tissues types :footcite:p:`Veraart2016a`. Although this artefact
+affects MR images in general, in the context of diffusion-weighted imaging,
+Gibbs oscillations can be magnified in derived diffusion-based estimates
+:footcite:p:`Veraart2016a`, :footcite:p:`Perrone2015`.
 
 In the following example, we show how to suppress Gibbs artefacts of MR images.
 This algorithm is based on an adapted version of a sub-voxel Gibbs suppression
-procedure [3]_. Full details of the implemented algorithm can be found in
-chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using this code).
+procedure :footcite:p:`Kellner2016`. Full details of the implemented algorithm
+can be found in chapter 3 of :footcite:p:`NetoHenriques2018` (please cite
+:footcite:p:`Kellner2016`, :footcite:p:`NetoHenriques2018` if you are using this
+code).
 
 The algorithm to suppress Gibbs oscillations can be imported from the denoise
 module of dipy:
@@ -159,7 +162,7 @@ fig1.savefig("Gibbs_suppression_structural.png")
 # Now let's show how to use the Gibbs suppression algorithm in
 # diffusion-weighted images. We fetch the multi-shell diffusion-weighted
 # dataset which was kindly supplied by Romain Valabrègue,
-# CENIR, ICM, Paris [5]_.
+# CENIR, ICM, Paris :footcite:p:`Valabregue2015`.
 
 
 bvals = [200, 400, 1000, 2000]
@@ -308,20 +311,6 @@ fig3.savefig("Gibbs_suppression_msdki.png")
 #
 # References
 # ----------
-# .. [1] Veraart, J., Fieremans, E., Jelescu, I.O., Knoll, F., Novikov, D.S.,
-#        2015. Gibbs Ringing in Diffusion MRI. Magn Reson Med 76(1): 301-314.
-#        https://doi.org/10.1002/mrm.25866
-# .. [2] Perrone, D., Aelterman, J., Pižurica, A., Jeurissen, B., Philips, W.,
-#        Leemans A., 2015. The effect of Gibbs ringing artifacts on measures
-#        derived from diffusion MRI. Neuroimage 120, 441-455.
-#        https://doi.org/10.1016/j.neuroimage.2015.06.068.
-# .. [3] Kellner, E., Dhital, B., Kiselev, V.G, Reisert, M., 2016.
-#        Gibbs‐ringing artifact removal based on local subvoxel‐shifts. Magn
-#        Reson Med 76:1574–1581.
-#        https://doi.org/10.1002/mrm.26054.
-# .. [4] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-#        Analysis and their Application to the Healthy Ageing Brain
-#        (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-# .. [5] Valabrègue, R. (2015). Diffusion MRI measured at multiple b-values.
-#        Retrieved from:
-#        https://digital.lib.washington.edu/researchworks/handle/1773/33311
+#
+# .. footbibliography::
+#

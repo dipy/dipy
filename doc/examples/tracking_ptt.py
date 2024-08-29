@@ -2,7 +2,7 @@
 ===============================
 Parallel Transport Tractography
 ===============================
-Parallel Transport Tractography (PTT) [Aydogan2021]_
+Parallel Transport Tractography (PTT) :footcite:p:`Aydogan2021`
 
 Let's start by importing the necessary modules.
 """
@@ -85,6 +85,6 @@ if has_fury:
 #
 # References
 # ----------
-# .. [Aydogan2021] Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE
-#     Trans Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
-#     Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.
+#
+# .. footbibliography::
+#

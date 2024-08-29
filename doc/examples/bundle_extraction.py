@@ -3,8 +3,8 @@
 Automatic Fiber Bundle Extraction with RecoBundles
 ==================================================
 
-This example explains how we can use RecoBundles [Garyfallidis17]_ to extract
-bundles from tractograms.
+This example explains how we can use RecoBundles :footcite:p:`Garyfallidis2018`
+to extract bundles from tractograms.
 
 First import the necessary modules.
 """
@@ -102,7 +102,7 @@ if interactive:
 #
 #
 #
-# Extracting bundles using RecoBundles [Garyfallidis17]_
+# Extracting bundles using RecoBundles :footcite:p:`Garyfallidis2018`
 #
 # RecoBundles requires a model (reference) bundle and tries to extract similar
 # looking bundle from the input tractogram. There are some key parameters that
@@ -607,12 +607,5 @@ save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
 # References
 # ----------
 #
-# .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-#         bundles using local and global streamline-based registration
-#         and clustering, Neuroimage, 2017.
+# .. footbibliography::
 #
-# .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-#         Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-#         Garyfallidis, E. Bundle analytics, a computational framework for
-#         investigating the shapes and profiles of brain pathways across
-#         populations. Sci Rep 10, 17149 (2020)

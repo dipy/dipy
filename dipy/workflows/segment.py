@@ -125,7 +125,7 @@ class RecoBundlesFlow(Workflow):
     ):
         """Recognize bundles
 
-        See :footcite:p:`Garyfallidis2018` and :footcite:p:`Chandio2020` for
+        See :footcite:p:`Garyfallidis2018` and :footcite:p:`Chandio2020a` for
         further details about the method.
 
         Parameters

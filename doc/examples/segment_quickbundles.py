@@ -3,8 +3,8 @@
 Tractography Clustering with QuickBundles
 =========================================
 
-This example explains how we can use QuickBundles [Garyfallidis12]_ to
-simplify/cluster streamlines.
+This example explains how we can use QuickBundles
+:footcite:p:`Garyfallidis2012a` to simplify/cluster streamlines.
 
 First import the necessary modules.
 """
@@ -125,6 +125,5 @@ save_pickle("QB.pkl", clusters)
 # References
 # ----------
 #
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#                     tractography simplification, Frontiers in Neuroscience,
-#                     vol 6, no 175, 2012.
+# .. footbibliography::
+#

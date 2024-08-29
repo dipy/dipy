@@ -4,7 +4,7 @@ Surface seeding for tractography
 ========================================
 
 Surface seeding is a way to generate initial position for tractography
-from cortical surfaces position [Stonge2018]_.
+from cortical surfaces position :footcite:p:`StOnge2018`.
 """
 
 from fury.io import load_polydata
@@ -121,5 +121,6 @@ window.record(scene=scene, out_path="surface_seed2.png", size=(600, 600))
 #
 # References
 # ----------
-# .. [Stonge2018] St-Onge, E., Daducci, A., Girard, G., & Descoteaux, M.
-#     Surface-enhanced tractography (SET). NeuroImage, 169, 524-539, 2018.
+#
+# .. footbibliography::
+#

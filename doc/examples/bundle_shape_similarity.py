@@ -3,9 +3,9 @@
 BUAN Bundle Shape Similarity Score
 ==================================
 
-This example explains how we can use BUAN [Chandio2020]_ to calculate shape
-similarity between two given bundles. Where, shape similarity score of 1 means
-two bundles are extremely close in shape and 0 implies no shape similarity
+This example explains how we can use BUAN :footcite:p:`Chandio2020a` to calculate
+shape similarity between two given bundles. Where, shape similarity score of 1
+means two bundles are extremely close in shape and 0 implies no shape similarity
 whatsoever.
 
 Shape similarity score can be used to compare populations or individuals.
@@ -104,8 +104,5 @@ print("Shape similarity score = ", ba_score)
 # References
 # ----------
 #
-# .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-#         Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-#         Garyfallidis, E. Bundle analytics, a computational framework for
-#         investigating the shapes and profiles of brain pathways across
-#         populations. Sci Rep 10, 17149 (2020)
+# .. footbibliography::
+#

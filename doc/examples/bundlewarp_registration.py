@@ -4,12 +4,12 @@ Nonrigid Bundle Registration with BundleWarp
 ============================================
 
 This example explains how you can nonlinearly register two bundles from two
-different subjects directly in the space of streamlines [Chandio23]_,
-[Chandio20]_.
+different subjects directly in the space of streamlines
+:footcite:p:`Chandio2023`, :footcite:p:`Chandio2020b`.
 
 To show the concept, we will use two pre-saved uncinate fasciculus bundles. The
 algorithm used here is called BundleWarp, streamline-based nonlinear
-registration of white matter tracts [Chandio23]_.
+registration of white matter tracts :footcite:p:`Chandio2023`.
 
 """
 
@@ -205,9 +205,4 @@ save_tractogram(new_tractogram, "fully_deformed_bundle.trk", bbox_valid_check=Fa
 # References
 # ----------
 #
-# .. [Chandio23] Chandio et al., "BundleWarp, streamline-based nonlinear
-#                     registration of white matter tracts."
-#                     bioRxiv (2023): 2023-01.
-# .. [Chandio20] Chandio and Garyfallidis., "StND: Streamline-based non-rigid
-#                     partial-deformation tractography registration." Medical
-#                     Imaging Meets NeurIPS (2020).
+# .. footbibliography::

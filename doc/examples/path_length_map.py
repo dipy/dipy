@@ -9,7 +9,7 @@ The Path Length Map is a volume in which each voxel's value is the shortest
 distance along a streamline to a given region of interest (ROI). This map can
 be used to anisotropically modify radiation therapy treatment contours based
 on a tractography model of the local white matter anatomy, as described in
-[Jordan_2018_plm]_, by executing this tutorial with the gross tumor volume
+:footcite:p:`Jordan2019`, by executing this tutorial with the gross tumor volume
 (GTV) as the ROI.
 
 .. note::
@@ -180,6 +180,5 @@ fig.savefig("Path_Length_Map.png")
 # References
 # ----------
 #
-# .. [Jordan_2018_plm] Jordan K. et al., "An Open-Source Tool for Anisotropic
-#    Radiation Therapy Planning in Neuro-oncology Using DW-MRI Tractography",
-#    PREPRINT (biorxiv), 2018.
+# .. footbibliography::
+#

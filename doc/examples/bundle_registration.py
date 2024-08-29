@@ -4,12 +4,12 @@ Direct Bundle Registration
 ==========================
 
 This example explains how you can register two bundles from two different
-subjects directly in the space of streamlines [Garyfallidis15]_,
-[Garyfallidis14]_.
+subjects directly in the space of streamlines :footcite:p:`Garyfallidis2014`,
+:footcite:p:`Garyfallidis2015`.
 
 To show the concept we will use two pre-saved cingulum bundles. The algorithm
 used here is called Streamline-based Linear Registration (SLR)
-[Garyfallidis15]_.
+:footcite:p:`Garyfallidis2015`.
 """
 
 from time import sleep
@@ -29,7 +29,7 @@ cb_subj1, cb_subj2 = two_cingulum_bundles()
 # streamlines so that they both have the same number of points per streamline.
 # Here we will use 20 points. This step is not optional. Inputting streamlines
 # with a different number of points will break the theoretical advantages of
-# using the SLR as explained in [Garyfallidis15]_.
+# using the SLR as explained in :footcite:p:`Garyfallidis2015`.
 
 cb_subj1 = set_number_of_points(cb_subj1, 20)
 cb_subj2 = set_number_of_points(cb_subj2, 20)
@@ -195,8 +195,4 @@ show_both_bundles(
 # References
 # ----------
 #
-# .. [Garyfallidis15] Garyfallidis et al., "Robust and efficient linear
-#                     registration of white-matter fascicles in the space
-#                     of streamlines", Neuroimage, 117:124-140, 2015.
-# .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber bundle
-#                     alignment for group comparisons", ISMRM, 2014.
+# .. footbibliography::

@@ -5,7 +5,8 @@ Crossing invariant fiber response function with FORECAST model
 
 We show how to obtain a voxel specific response function in the form of
 axially symmetric tensor and the fODF using the FORECAST model from
-[Anderson2005]_ , [Kaden2016]_ and [Zucchelli2017]_.
+:footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a` and
+:footcite:p:`Zucchelli2017`.
 
 First import the necessary modules:
 """
@@ -25,8 +26,8 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial. Our implementation of FORECAST
 # requires multi-shell `data.fetch_hbn()` provides data that was acquired using
 # b-values of 1000 and 2000 as part of the Healthy Brain Network study
-# [Alexander2017]_ and was preprocessed and quality controlled in the HBN-POD2
-# dataset [RichieHalford2022]_.
+# :footcite:p:`Alexander2017` and was preprocessed and quality controlled in the
+# HBN-POD2 dataset :footcite:p:`RichieHalford2022`.
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
 dwi_path = op.join(
@@ -85,9 +86,9 @@ fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 f_fit = fm.fit(data_small, mask_small)
 
 ###############################################################################
-# Calculate the crossing invariant tensor indices [Kaden2016]_ : the parallel
-# diffusivity, the perpendicular diffusivity, the fractional anisotropy and
-# the mean diffusivity.
+# Calculate the crossing invariant tensor indices :footcite:p:`Kaden2016a`: the
+# parallel diffusivity, the perpendicular diffusivity, the fractional anisotropy
+# and the mean diffusivity.
 
 d_par = f_fit.dpar
 d_perp = f_fit.dperp
@@ -159,22 +160,5 @@ window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=
 # References
 # ----------
 #
-# .. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation
-#        Distributions Using High Angular Resolution Diffusion Imaging",
-#        Magnetic Resonance in Medicine, 2005.
+# .. footbibliography::
 #
-# .. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon
-#        Diffusion Coefficients in Brain White Matter", Magnetic Resonance
-#        in Medicine, 2016.
-#
-# .. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework
-#        for Diffusion MRI microstructural model estimation", MICCAI Workshop
-#        on Computational DIFFUSION MRI (CDMRI), 2017.
-#
-# .. [Alexander2017] Alexander LM, Escalera J, Ai L, et al. An open resource
-#        for transdiagnostic research in pediatric mental health and learning
-#        disorders. Sci Data. 2017;4:170181.
-#
-# .. [RichieHalford2022] Richie-Halford A, Cieslak M, Ai L, et al. An
-#        analysis-ready and quality controlled resource for pediatric brain
-#        white-matter research. Scientific Data. 2022;9(1):1-27.

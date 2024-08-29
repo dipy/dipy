@@ -7,7 +7,7 @@ Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography
 results is to use a forward model that predicts the signal from each of a set
 of streamlines, and then fit a linear model to these simultaneous predictions
-[Pestilli2014]_.
+:footcite:p:`Pestilli2014`.
 
 We will use streamlines generated using probabilistic tracking on CSA
 peaks. For brevity, we will include in this example only streamlines going
@@ -135,7 +135,7 @@ fiber_model = life.FiberModel(gtab)
 # the voxels. The  expected contributions of the streamline are calculated
 # using a forward model, where each node of the streamline is modeled as a
 # cylindrical fiber compartment with Gaussian diffusion, using the diffusion
-# tensor model. See [Pestilli2014]_ for more detail on the model, and
+# tensor model. See :footcite:p:`Pestilli2014` for more detail on the model, and
 # variations of this model.
 
 fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
@@ -334,6 +334,5 @@ fig.savefig("spatial_errors.png")
 # References
 # ----------
 #
-# .. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
-#    B.A. (2014). Validation and statistical inference in living connectomes.
-#    Nature Methods 11: 1058-1063. doi:10.1038/nmeth.3098
+# .. footbibliography::
+#

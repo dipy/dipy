@@ -5,8 +5,9 @@
 Reconstruction with the Sparse Fascicle Model
 ==============================================
 
-In this example, we will use the Sparse Fascicle Model (SFM) [Rokem2015]_, to
-reconstruct the fiber Orientation Distribution Function (fODF) in every voxel.
+In this example, we will use the Sparse Fascicle Model (SFM)
+:footcite:p:`Rokem2015`, to reconstruct the fiber Orientation Distribution
+Function (fODF) in every voxel.
 
 First, we import the modules we will use in this example:
 """
@@ -40,8 +41,9 @@ interactive = False
 ###############################################################################
 # Reconstruction of the fiber ODF in each voxel guides subsequent tracking
 # steps. Here, the model is the Sparse Fascicle Model, described in
-# [Rokem2014]_. This model reconstructs the diffusion signal as a combination
-# of the signals from different fascicles. This model can be written as:
+# :footcite:p:`Rokem2015`. This model reconstructs the diffusion signal as a
+# combination of the signals from different fascicles. This model can be written
+# as:
 #
 # .. math::
 #
@@ -57,7 +59,7 @@ interactive = False
 # (e.g. in corpus callosum).
 #
 # Sparsity constraints on the fiber ODF ($\beta$) are set through the Elastic
-# Net algorithm [Zou2005]_.
+# Net algorithm :footcite:p:`Zou2005`.
 #
 # Elastic Net optimizes the following cost function:
 #
@@ -166,10 +168,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-#    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-#    (2015). Evaluating the accuracy of diffusion MRI models in white
-#    matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+# .. footbibliography::
 #
-# .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
-#    selection via the elastic net. J R Stat Soc B:301-320

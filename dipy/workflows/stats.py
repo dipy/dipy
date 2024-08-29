@@ -192,7 +192,7 @@ def buan_bundle_profiles(
     Applies statistical analysis on bundles and saves the results
     in a directory specified by ``out_dir``.
 
-    See :footcite:p:`Chandio2020` for further details about the method.
+    See :footcite:p:`Chandio2020a` for further details about the method.
 
     Parameters
     ----------
@@ -329,7 +329,7 @@ class BundleAnalysisTractometryFlow(Workflow):
         Applies statistical analysis on bundles of subjects and saves the
         results in a directory specified by ``out_dir``.
 
-        See :footcite:p:`Chandio2020` for further details about the method.
+        See :footcite:p:`Chandio2020a` for further details about the method.
 
         Parameters
         ----------
@@ -557,7 +557,7 @@ class BundleShapeAnalysis(Workflow):
         Applies bundle shape similarity analysis on bundles of subjects and
         saves the results in a directory specified by ``out_dir``.
 
-        See :footcite:p:`Chandio2020` for further details about the method.
+        See :footcite:p:`Chandio2020a` for further details about the method.
 
         Parameters
         ----------

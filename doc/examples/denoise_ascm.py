@@ -3,12 +3,12 @@
 Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 ==============================================================
 
-The adaptive soft coefficient matching (ASCM) as described in [Coupe11]_ is a
-improved extension of non-local means (NLMEANS) denoising. ASCM gives a better
-denoised images from two standard non-local means denoised versions of the
-original data with different degrees sharpness. Here, one denoised input is
-more "smooth" than the other (the easiest way to achieve this denoising is use
-:ref:`non_local_means<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
+The adaptive soft coefficient matching (ASCM) as described in
+:footcite:p:`Coupe2012` is an improved extension of non-local means (NLMEANS)
+denoising. ASCM gives a better denoised images from two standard non-local means
+denoised versions of the original data with different degrees sharpness. Here,
+one denoised input is more "smooth" than the other (the easiest way to achieve
+this denoising is use :ref:`non_local_means<sphx_glr_examples_built_preprocessing_denoise_nlmeans.py>`
 with two different patch radii).
 
 ASCM involves these basic steps
@@ -24,7 +24,7 @@ This way ASCM gives us a well denoised output while preserving the sharpness
 of the image features.
 
 Let us load the necessary modules
-"""
+"""  # noqa: E501
 
 from time import time
 
@@ -160,7 +160,5 @@ plt.savefig("ascm_comparison.png", bbox_inches="tight")
 # References
 # ----------
 #
-# ..  [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-#     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
-#     Denoising. IET Image Processing, Institution of Engineering and
-#     Technology, 2011. <00645538>
+# .. footbibliography::
+#

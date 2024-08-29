@@ -3,7 +3,7 @@
 Fast Streamline Search
 ======================
 
-This example explains how Fast Streamline Search [StOnge2022]_
+This example explains how Fast Streamline Search :footcite:p:`StOnge2022`
 can be used to find all similar streamlines.
 
 First import the necessary modules.
@@ -79,7 +79,7 @@ else:
 #
 #
 #
-# Search for all similar streamlines  [StOnge2022]_
+# Search for all similar streamlines :footcite:p:`StOnge2022`
 #
 # Fast Streamline Search can do a radius search to find all streamlines that
 # are similar to from one tractogram to another. It returns the distance
@@ -201,6 +201,5 @@ else:
 # References
 # ----------
 #
-# .. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
-#                 An Exact Technique for Diffusion MRI Tractography.
-#                 Neuroinformatics, 2022.
+# .. footbibliography::
+#

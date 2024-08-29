@@ -2,10 +2,10 @@
 ===============================
 Particle Filtering Tractography
 ===============================
-Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
-volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
-and not incorrectly stopping in the white matter or in the corticospinal fluid.
-It relies on a stopping criterion that identifies the tissue where the
+Particle Filtering Tractography (PFT) :footcite:p:`Girard2014` uses tissue
+partial volume estimation (PVE) to reconstruct trajectories connecting the gray
+matter, and not incorrectly stopping in the white matter or in the corticospinal
+fluid. It relies on a stopping criterion that identifies the tissue where the
 streamline stopped. If the streamline correctly stopped in the gray matter, the
 trajectory is kept. If the streamline incorrectly stopped in the white matter
 or in the corticospinal fluid, PFT uses anatomical information to find an
@@ -73,14 +73,14 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 ###############################################################################
 # CMC/ACT Stopping Criterion
 # ==========================
-# Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
-# tractography (ACT) [Smith2012]_ both uses PVEs information from
-# anatomical images to determine when the tractography stops.
-# Both stopping criterion use a trilinear interpolation
-# at the tracking position. CMC stopping criterion uses a probability derived
-# from the PVE maps to determine if the streamline reaches a 'valid' or
-# 'invalid' region. ACT uses a fixed threshold on the PVE maps. Both stopping
-# criterion can be used in conjunction with PFT. In this example, we used CMC.
+# Continuous map criterion (CMC) :footcite:p:`Girard2014` and
+# Anatomically-constrained tractography (ACT) :footcite:p:`Smith2012` both use
+# PVEs information from anatomical images to determine when the tractography
+# stops. Both stopping criterion use a trilinear interpolation at the tracking
+# position. CMC stopping criterion uses a probability derived from the PVE maps
+# to determine if the streamline reaches a 'valid' or 'invalid' region. ACT uses
+# a fixed threshold on the PVE maps. Both stopping criterion can be used in
+# conjunction with PFT. In this example, we used CMC.
 
 voxel_size = np.average(voxel_size[1:4])
 step_size = 0.2
@@ -175,11 +175,6 @@ if has_fury:
 #
 # References
 # ----------
-# .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-#     Towards quantitative connectivity analysis: reducing tractography biases.
-#     NeuroImage, 98, 266-278, 2014.
 #
-# .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-#     Anatomically-constrained tractography: Improved diffusion MRI
-#     streamlines tractography through effective use of anatomical
-#     information. NeuroImage, 63(3), 1924-1938, 2012.
+# .. footbibliography::
+#

@@ -13,14 +13,14 @@ approximates the diffusion pattern as a 3D Gaussian distribution, and has only
 models are also not nested, so they cannot be compared using the
 log-likelihood ratio.
 
-A general way to perform model comparison is cross-validation [Hastie2008]_. In
-this method, a model is fit to some of the data (a *learning set*) and the
-model is then used to predict a held-out set (a *testing set*). The model
-predictions can then be compared to estimate prediction error on the held out
-set. This method has been used for comparison of models such as DTI and CSD
-[Rokem2014]_, and has the advantage that it the comparison is imprevious to
-differences in the number of parameters in the model, and it can be used to
-compare models that are not nested.
+A general way to perform model comparison is cross-validation
+:footcite:p:`Hastie2009`. In this method, a model is fit to some of the data (a
+*learning set*) and the model is then used to predict a held-out set (a
+*testing set*). The model predictions can then be compared to estimate
+prediction error on the held out set. This method has been used for comparison
+of models such as DTI and CSD :footcite:p:`Rokem2014`, and has the advantage
+that it the comparison is imprevious to differences in the number of
+in the model, and it can be used to compare models that are not nested.
 
 In DIPY_, we include an implementation of k-fold cross-validation. In this
 method, the data is divided into $k$ different segments. In each iteration
@@ -171,10 +171,5 @@ print(
 # References
 # ----------
 #
-# .. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
-#    of Statistical Learning: Data Mining, Inference and
-#    Prediction. Springer-Verlag, Berlin
+# .. footbibliography::
 #
-# .. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
-#    Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
-#    multiple b-values with cross-validation. ISMRM 2014.
