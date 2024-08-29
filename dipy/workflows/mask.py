@@ -5,7 +5,6 @@ import logging
 import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti
-from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
@@ -14,8 +13,7 @@ class MaskFlow(Workflow):
     def get_short_name(cls):
         return "mask"
 
-    @warning_for_keywords()
-    def run(self, input_files, lb, *, ub=np.inf, out_dir="", out_mask="mask.nii.gz"):
+    def run(self, input_files, lb, ub=np.inf, out_dir="", out_mask="mask.nii.gz"):
         """Workflow for creating a binary mask
 
         Parameters

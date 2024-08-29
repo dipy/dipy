@@ -38,18 +38,18 @@ logging.basicConfig(
 
 
 def test_io_info():
-    fimg, fbvals, fbvecs = get_fnames("small_101D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fbvecs])
 
-    fimg, fbvals, fvecs = get_fnames("small_25")
+    fimg, fbvals, fvecs = get_fnames(name="small_25")
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fvecs])
 
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
 
-    filepath_dix, _, _ = get_fnames("gold_standard_tracks")
+    filepath_dix, _, _ = get_fnames(name="gold_standard_tracks")
     io_info_flow = IoInfoFlow()
     io_info_flow.run([filepath_dix["gs.trx"], filepath_dix["gs.trk"]])
 
@@ -120,7 +120,7 @@ def test_split_flow():
 def test_concatenate_flow():
     with TemporaryDirectory() as out_dir:
         concatenate_flow = ConcatenateTractogramFlow()
-        data_path, _, _ = get_fnames("gold_standard_tracks")
+        data_path, _, _ = get_fnames(name="gold_standard_tracks")
         input_files = [
             v
             for k, v in data_path.items()
@@ -174,7 +174,7 @@ def test_convert_sh_flow():
 
 def test_convert_tractogram_flow():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames("gold_standard_tracks")
+        data_path, _, _ = get_fnames(name="gold_standard_tracks")
         input_files = [v for k, v in data_path.items() if k in ["gs.tck", "gs.trx"]]
 
         convert_tractogram_flow = ConvertTractogramFlow(mix_names=True)
@@ -203,9 +203,9 @@ def test_convert_tensors_flow():
         filepath_out = os.path.join(out_dir, filename_out)
 
         # Create an input image
-        fdata, fbval, fbvec = get_fnames("small_25")
+        fdata, fbval, fbvec = get_fnames(name="small_25")
         data, affine = load_nifti(fdata)
-        gtab = grad.gradient_table(fbval, fbvec)
+        gtab = grad.gradient_table(fbval, bvecs=fbvec)
         tenmodel = dti.TensorModel(gtab)
         tenfit = tenmodel.fit(data)
 

@@ -52,7 +52,7 @@ def _copydoc(obj):
     return bandit
 
 
-@deprecated_params("n", "l_values", since="1.9", until="2.0")
+@deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
 def forward_sdeconv_mat(r_rh, l_values):
     """Build forward spherical deconvolution matrix
 
@@ -83,7 +83,7 @@ def forward_sdeconv_mat(r_rh, l_values):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -138,7 +138,7 @@ def sh_to_rh(r_sh, m_values, l_values):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -185,7 +185,7 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -255,7 +255,7 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -305,7 +305,7 @@ def real_sph_harm(m_values, l_values, theta, phi):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -370,7 +370,7 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -431,7 +431,7 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     return real_sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics.
 
@@ -490,7 +490,7 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     return real_sh, m_values, l_values
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics.
 
@@ -556,7 +556,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     since="1.3",
     until="2.0",
 )
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     r"""
     Compute real symmetric spherical harmonics.
@@ -612,7 +612,7 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     since="1.3",
     until="2.0",
 )
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_basis(sh_order_max, theta, phi):
     r"""Samples a real symmetric spherical harmonic basis at point on the sphere
 
@@ -668,7 +668,7 @@ sph_harm_lookup = {
 }
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def sph_harm_ind_list(sh_order_max, full_basis=False):
     """
     Returns the order (``l``) and phase_factor (``m``) of all the symmetric
@@ -856,7 +856,7 @@ class SphHarmModel(OdfModel, Cache):
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(
         self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5, assume_normed=False
     ):
@@ -1215,7 +1215,7 @@ class ResidualBootstrapWrapper:
         return signal
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def sf_to_sh(
     sf,
     sphere,
@@ -1279,7 +1279,7 @@ def sf_to_sh(
     return sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def sh_to_sf(
     sh, sphere, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
 ):
@@ -1333,7 +1333,7 @@ def sh_to_sf(
     return sf
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def sh_to_sf_matrix(
     sphere,
     sh_order_max=4,

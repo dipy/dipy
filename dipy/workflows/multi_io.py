@@ -213,7 +213,12 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
             outputs.append(values[arv])
 
     return io_iterator(
-        inputs, out_dir, outputs, output_strategy, mix_names, out_keys=out_keys
+        inputs,
+        out_dir,
+        outputs,
+        output_strategy=output_strategy,
+        mix_names=mix_names,
+        out_keys=out_keys,
     )
 
 
@@ -258,8 +263,8 @@ class IOIterator:
                 self.inputs,
                 self.out_dir,
                 self.out_fnames,
-                self.output_strategy,
-                self.mix_names,
+                output_strategy=self.output_strategy,
+                mix_names=self.mix_names,
             )
 
             self.create_directories()

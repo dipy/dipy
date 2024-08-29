@@ -33,14 +33,12 @@ class SNRinCCFlow(Workflow):
     def get_short_name(cls):
         return "snrincc"
 
-    @warning_for_keywords()
     def run(
         self,
         data_files,
         bvals_files,
         bvecs_files,
         mask_file,
-        *,
         bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1),
         out_dir="",
         out_file="product.json",

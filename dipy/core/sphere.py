@@ -410,7 +410,7 @@ class HemiSphere(Sphere):
 
         """
         sphere = self.mirror()
-        sphere = sphere.subdivide(n)
+        sphere = sphere.subdivide(n=n)
         return HemiSphere.from_sphere(sphere)
 
     def find_closest(self, xyz):

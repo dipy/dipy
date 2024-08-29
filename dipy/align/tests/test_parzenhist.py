@@ -147,7 +147,7 @@ def test_parzen_joint_histogram():
                 static_mask = np.array([0, 1, 1, 0])
                 moving_mask = np.array([1, 0, 0, 1])
 
-                P.setup(static, moving, static_mask, moving_mask)
+                P.setup(static, moving, smask=static_mask, mmask=moving_mask)
 
                 # Test bin_normalize_static at the boundary
                 normalized = P.bin_normalize_static(min_int)
@@ -295,7 +295,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
         raise ValueError("Transform and requested volume have different dims.")
     zero_slices = nslices // 3
 
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     moving_slice = np.load(fname)
     moving_slice = moving_slice[40:180, 50:210]
 
@@ -321,7 +321,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
-    static = np.array(transform_method(moving.astype(np.float32), shape, M))
+    static = np.array(transform_method(moving.astype(np.float32), shape, affine=M))
     static = static.astype(np.float64)
     static_g2w = np.eye(dim + 1)
     smask = np.ones_like(static, dtype=np.int32)
@@ -368,13 +368,13 @@ def test_joint_pdf_gradients_dense(rng):
             setup_random_transform(transform, factor, nslices, 5.0, rng=rng)
         )
         parzen_hist = ParzenJointHistogram(32)
-        parzen_hist.setup(static, moving, smask, mmask)
+        parzen_hist.setup(static, moving, smask=smask, mmask=mmask)
 
         # Compute the gradient at theta with the implementation under test
         M = transform.param_to_matrix(theta)
         shape = np.array(static.shape, dtype=np.int32)
 
-        moved = transform_method(moving.astype(np.float32), shape, M)
+        moved = transform_method(moving.astype(np.float32), shape, affine=M)
         moved = np.array(moved)
         parzen_hist.update_pdfs_dense(
             static.astype(np.float64), moved.astype(np.float64)
@@ -394,8 +394,8 @@ def test_joint_pdf_gradients_dense(rng):
             moved.astype(np.float64),
             grid_to_space,
             mgrad,
-            smask,
-            mmask,
+            smask=smask,
+            mmask=mmask,
         )
         actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
@@ -410,7 +410,7 @@ def test_joint_pdf_gradients_dense(rng):
             # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            moved = transform_method(moving.astype(np.float32), shape, M)
+            moved = transform_method(moving.astype(np.float32), shape, affine=M)
             moved = np.array(moved)
             parzen_hist.update_pdfs_dense(
                 static.astype(np.float64), moved.astype(np.float64)
@@ -463,13 +463,13 @@ def test_joint_pdf_gradients_sparse(rng):
             setup_random_transform(transform, factor, nslices, 5.0, rng=rng)
         )
         parzen_hist = ParzenJointHistogram(32)
-        parzen_hist.setup(static, moving, smask, mmask)
+        parzen_hist.setup(static, moving, smask=smask, mmask=mmask)
 
         # Sample the fixed-image domain
         k = 3
         sigma = 0.25
         shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2w, sigma, rng)
+        samples = sample_domain_regular(k, shape, static_g2w, sigma=sigma, rng=rng)
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_g2w)
@@ -557,8 +557,10 @@ def test_sample_domain_regular():
     n = shape[0] * shape[1]
     k = 2
     # Verify exception is raised with invalid affine
-    assert_raises(ValueError, sample_domain_regular, k, shape, invalid_affine, sigma)
-    samples = sample_domain_regular(k, shape, affine, sigma)
+    assert_raises(
+        ValueError, sample_domain_regular, k, shape, invalid_affine, sigma=sigma
+    )
+    samples = sample_domain_regular(k, shape, affine, sigma=sigma)
     isamples = np.array(samples, dtype=np.int32)
     indices = isamples[:, 0] * shape[1] + isamples[:, 1]
     # Verify correct number of points sampled
@@ -577,8 +579,10 @@ def test_sample_domain_regular():
     n = shape[0] * shape[1] * shape[2]
     k = 10
     # Verify exception is raised with invalid affine
-    assert_raises(ValueError, sample_domain_regular, k, shape, invalid_affine, sigma)
-    samples = sample_domain_regular(k, shape, affine, sigma)
+    assert_raises(
+        ValueError, sample_domain_regular, k, shape, invalid_affine, sigma=sigma
+    )
+    samples = sample_domain_regular(k, shape, affine, sigma=sigma)
     isamples = np.array(samples, dtype=np.int32)
     indices = (
         isamples[:, 0] * shape[1] * shape[2]

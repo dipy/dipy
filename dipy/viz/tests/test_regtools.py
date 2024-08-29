@@ -23,10 +23,12 @@ def test_plot_2d_diffeomorphic_map(rng):
     dim = static.ndim
     metric = SSDMetric(dim)
     level_iters = [200, 100, 50, 25]
-    sdr = SymmetricDiffeomorphicRegistration(metric, level_iters, inv_iter=50)
+    sdr = SymmetricDiffeomorphicRegistration(
+        metric=metric, level_iters=level_iters, inv_iter=50
+    )
     mapping = sdr.optimize(static, moving)
     # Smoke testing of plots
-    ff = regtools.plot_2d_diffeomorphic_map(mapping, 10)
+    ff = regtools.plot_2d_diffeomorphic_map(mapping, delta=10)
     # Default shape is static shape, moving shape
     npt.assert_equal(ff[0].shape, st_shape)
     npt.assert_equal(ff[1].shape, mv_shape)

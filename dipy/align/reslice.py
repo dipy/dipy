@@ -58,7 +58,7 @@ def reslice(
     >>> from dipy.io.image import load_nifti
     >>> from dipy.align.reslice import reslice
     >>> from dipy.data import get_fnames
-    >>> f_name = get_fnames('aniso_vox')
+    >>> f_name = get_fnames(name="aniso_vox")
     >>> data, affine, zooms = load_nifti(f_name, return_voxsize=True)
     >>> data.shape == (58, 58, 24)
     True

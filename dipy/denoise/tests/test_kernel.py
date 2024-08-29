@@ -153,7 +153,7 @@ def test_normalization():
 def test_kernel_input():
     """Test the kernel for inputs of type Sphere, type int and for input None"""
 
-    sph = Sphere(1, 0, 0)
+    sph = Sphere(x=1, y=0, z=0)
     D33 = 1.0
     D44 = 0.04
     t = 1

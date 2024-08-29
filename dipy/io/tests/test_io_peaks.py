@@ -37,7 +37,7 @@ def test_io_peaks(rng):
         pam2.affine = None
 
         fname2 = "test2.pam5"
-        save_peaks(pjoin(tmpdir, fname2), pam2, np.eye(4))
+        save_peaks(pjoin(tmpdir, fname2), pam2, affine=np.eye(4))
         pam2_res = load_peaks(pjoin(tmpdir, fname2), verbose=True)
         npt.assert_array_equal(pam.peak_dirs, pam2_res.peak_dirs)
 
@@ -82,7 +82,7 @@ def test_io_peaks(rng):
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
         del pam.odf
         save_peaks(pjoin(tmpdir, fname6), pam)
-        pam_tmp = load_peaks(pjoin(tmpdir, fname6), True)
+        pam_tmp = load_peaks(pjoin(tmpdir, fname6), verbose=True)
         npt.assert_equal(pam_tmp.odf, None)
 
         fname7 = "test7.paw"
@@ -104,7 +104,7 @@ def test_io_peaks(rng):
             fname_dirs,
             fname_values,
             fname_indices,
-            fname_gfa,
+            fname_gfa=fname_gfa,
             reshape_dirs=False,
         )
 

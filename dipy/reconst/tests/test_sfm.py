@@ -35,7 +35,7 @@ def test_design_matrix():
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = load_nifti_data(fdata)
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     for n_procs in [1, 2]:
         for iso in [sfm.ExponentialIsotropicModel, None]:
             sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
@@ -65,13 +65,13 @@ def test_sfm():
 def test_predict():
     SNR = 1000
     S0 = 100
-    _, fbvals, fbvecs = dpd.get_fnames("small_64D")
+    _, fbvals, fbvecs = dpd.get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
     S, sticks = sims.multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=[10, 90], snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=[10, 90], snr=SNR
     )
 
     sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
@@ -80,26 +80,26 @@ def test_predict():
     npt.assert_(xval.coeff_of_determination(pred, S) > 97)
 
     # Should be possible to predict using a different gtab:
-    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
     new_pred = sffit.predict(new_gtab)
     npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
 
     # Should be possible to predict for a single direction:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
-        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
 
     # Fitting and predicting with a volume of data:
-    fdata, fbval, fbvec = dpd.get_fnames("small_25")
-    gtab = grad.gradient_table(fbval, fbvec)
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_25")
+    gtab = grad.gradient_table(fbval, bvecs=fbvec)
     data = load_nifti_data(fdata)
     sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
     sffit = sfmodel.fit(data)
     pred = sffit.predict()
 
     # Should be possible to predict using a different gtab:
-    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(
         new_pred.shape,
@@ -109,7 +109,7 @@ def test_predict():
     # Should be possible to predict for a single direction:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
-        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
 
@@ -121,7 +121,7 @@ def test_predict():
     npt.assert_equal(pred.shape, data.shape)
 
     # Should be possible to predict using a different gtab:
-    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(
         new_pred.shape,
@@ -132,7 +132,7 @@ def test_predict():
     # Should be possible to predict for a single direction:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
-        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs=bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
     npt.assert_equal(new_pred[0, 0, 0], 0)
@@ -141,7 +141,7 @@ def test_predict():
 def test_sfm_background():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = load_nifti_data(fdata)
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     to_fit = data[0, 0, 0]
     to_fit[gtab.b0s_mask] = 0
     sfmodel = sfm.SparseFascicleModel(gtab, solver="NNLS")
@@ -152,7 +152,7 @@ def test_sfm_background():
 def test_sfm_stick():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = load_nifti_data(fdata)
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver="NNLS", response=[0.001, 0, 0])
     sffit1 = sfmodel.fit(data[0, 0, 0])
     sphere = dpd.get_sphere()
@@ -164,7 +164,7 @@ def test_sfm_stick():
     mevals = np.array(([0.001, 0, 0], [0.001, 0, 0]))
     angles = [(0, 0), (60, 0)]
     S, sticks = sims.multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
     )
 
     sfmodel = sfm.SparseFascicleModel(gtab, solver="NNLS", response=[0.001, 0, 0])
@@ -184,7 +184,7 @@ def test_sfm_sklearnlinearsolver():
             self.coef_ = np.ones(X.shape[-1])
 
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver())
 
     npt.assert_(isinstance(sfmodel.solver, SillySolver))
@@ -197,7 +197,7 @@ def test_sfm_sklearnlinearsolver():
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data_dti = load_nifti_data(fdata)
-    gtab_dti = grad.gradient_table(fbvals, fbvecs)
+    gtab_dti = grad.gradient_table(fbvals, bvecs=fbvecs)
     data_multi, gtab_multi = dpd.dsi_deconv_voxels()
 
     for data, gtab in zip([data_dti, data_multi], [gtab_dti, gtab_multi]):
@@ -231,7 +231,7 @@ def test_exponential_iso():
         mevals = np.array(([0.0015, 0.0005, 0.0005], [0.0015, 0.0005, 0.0005]))
         angles = [(0, 0), (60, 0)]
         S, sticks = sims.multi_tensor(
-            gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR
+            gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
         )
         sffit = sfmodel.fit(S)
         pred = sffit.predict()

@@ -46,7 +46,7 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 
@@ -356,7 +356,7 @@ class GradientTable:
         --------
         >>> bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
         >>> bvecs = generate_bvecs(bvals.shape[-1])
-        >>> gtab = gradient_table(bvals, bvecs)
+        >>> gtab = gradient_table(bvals, bvecs=bvecs)
         >>> len(gtab)
         9
         """
@@ -725,10 +725,10 @@ def gradient_table(
     ...                   [sq2, sq2, 0],
     ...                   [sq2, 0, sq2],
     ...                   [0, sq2, sq2]])
-    >>> gt = gradient_table(bvals, bvecs)
+    >>> gt = gradient_table(bvals, bvecs=bvecs)
     >>> gt.bvecs.shape == bvecs.shape
     True
-    >>> gt = gradient_table(bvals, bvecs.T)
+    >>> gt = gradient_table(bvals, bvecs=bvecs.T)
     >>> gt.bvecs.shape == bvecs.T.shape
     False
 
@@ -846,7 +846,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
     return_bvecs[~gtab.b0s_mask] = new_bvecs
     return gradient_table(
         gtab.bvals,
-        return_bvecs,
+        bvecs=return_bvecs,
         big_delta=gtab.big_delta,
         small_delta=gtab.small_delta,
         b0_threshold=gtab.b0_threshold,
@@ -964,8 +964,8 @@ def unique_bvals_tolerance(bvals, *, tol=20):
 
     # Checking for overlap with get_bval_indices
     for i, ubval in enumerate(ubvals[:-1]):
-        indices_1 = get_bval_indices(bvals, ubval, tol)
-        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol)
+        indices_1 = get_bval_indices(bvals, ubval, tol=tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol=tol)
         if len(np.intersect1d(indices_1, indices_2)) != 0:
             msg = """There is overlap in clustering of b-values.
             The tolerance factor might be too high."""
@@ -1022,7 +1022,7 @@ def unique_bvals_magnitude(bvals, *, bmag=None, rbvals=False):
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 

@@ -41,7 +41,6 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return "mapmri"
 
-    @warning_for_keywords()
     def run(
         self,
         data_files,
@@ -49,7 +48,6 @@ class ReconstMAPMRIFlow(Workflow):
         bvecs_files,
         small_delta,
         big_delta,
-        *,
         b0_threshold=50.0,
         laplacian=True,
         positivity=True,
@@ -276,14 +274,12 @@ class ReconstDtiFlow(Workflow):
     def get_short_name(cls):
         return "dti"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         fit_method="WLS",
         b0_threshold=50,
         bvecs_tol=0.01,
@@ -455,10 +451,10 @@ class ReconstDtiFlow(Workflow):
                 mask,
                 bval,
                 bvec,
-                b0_threshold,
-                bvecs_tol,
-                fit_method,
-                optional_args,
+                b0_threshold=b0_threshold,
+                bvecs_tol=bvecs_tol,
+                fit_method=fit_method,
+                optional_args=optional_args,
             )
 
             if not save_metrics:
@@ -556,18 +552,16 @@ class ReconstDtiFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 
-    @warning_for_keywords()
     def get_fitted_tensor(
         self,
         data,
         mask,
         bval,
         bvec,
-        *,
         b0_threshold=50,
         bvecs_tol=0.01,
         fit_method="WLS",
@@ -575,7 +569,9 @@ class ReconstDtiFlow(Workflow):
     ):
         logging.info("Tensor estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)
+        gtab = gradient_table(
+            bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+        )
 
         tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
         tenfit = tenmodel.fit(data, mask)
@@ -588,14 +584,12 @@ class ReconstDsiFlow(Workflow):
     def get_short_name(cls):
         return "dsi"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         qgrid_size=17,
         r_start=2.1,
         r_end=6.0,
@@ -687,7 +681,7 @@ class ReconstDsiFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            gtab = gradient_table(bvals, bvecs)
+            gtab = gradient_table(bvals, bvecs=bvecs)
             mask = load_nifti_data(mask).astype(bool)
 
             dsi_model = DiffusionSpectrumModel(
@@ -728,7 +722,7 @@ class ReconstDsiFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 
@@ -740,14 +734,12 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return "csd"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
@@ -866,7 +858,7 @@ class ReconstCSDFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
@@ -942,7 +934,7 @@ class ReconstCSDFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 
@@ -960,14 +952,12 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return "csa"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         sh_order=6,
         odf_to_sh_order=8,
         b0_threshold=50.0,
@@ -1069,7 +1059,7 @@ class ReconstCSAFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
@@ -1105,7 +1095,7 @@ class ReconstCSAFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 
@@ -1123,14 +1113,12 @@ class ReconstDkiFlow(Workflow):
     def get_short_name(cls):
         return "dki"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         fit_method="WLS",
         b0_threshold=50.0,
         sigma=None,
@@ -1298,8 +1286,8 @@ class ReconstDkiFlow(Workflow):
                 mask,
                 bval,
                 bvec,
-                b0_threshold,
-                fit_method,
+                b0_threshold=b0_threshold,
+                fit_method=fit_method,
                 optional_args=optional_args,
             )
 
@@ -1404,18 +1392,16 @@ class ReconstDkiFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 
-    @warning_for_keywords()
     def get_fitted_tensor(
         self,
         data,
         mask,
         bval,
         bvec,
-        *,
         b0_threshold=50,
         fit_method="WLS",
         optional_args=None,
@@ -1433,7 +1419,7 @@ class ReconstDkiFlow(Workflow):
                     stacklevel=2,
                 )
 
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method, **optional_args)
         dkfit = dkmodel.fit(data, mask)
 
@@ -1445,14 +1431,12 @@ class ReconstIvimFlow(Workflow):
     def get_short_name(cls):
         return "ivim"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        *,
         split_b_D=400,
         split_b_S0=200,
         b0_threshold=0,
@@ -1530,7 +1514,9 @@ class ReconstIvimFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
-            ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec, b0_threshold)
+            ivimfit, _ = self.get_fitted_ivim(
+                data, mask, bval, bvec, b0_threshold=b0_threshold
+            )
 
             if not save_metrics:
                 save_metrics = ["S0_predicted", "perfusion_fraction", "D_star", "D"]
@@ -1570,7 +1556,7 @@ class ReconstIvimFlow(Workflow):
                     stacklevel=2,
                 )
 
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
         ivimfit = ivimmodel.fit(data, mask)
 
@@ -1582,8 +1568,7 @@ class ReconstRUMBAFlow(Workflow):
     def get_short_name(cls):
         return "rumba"
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
-    @warning_for_keywords()
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def run(
         self,
         input_files,
@@ -1765,10 +1750,10 @@ class ReconstRUMBAFlow(Workflow):
                     )
 
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
 
-            sphere = get_sphere(sphere_name)
+            sphere = get_sphere(name=sphere_name)
 
             # Compute the FRF
             wm_response, _ = auto_response_ssst(
@@ -1818,7 +1803,7 @@ class ReconstRUMBAFlow(Workflow):
                     opeaks_dir,
                     opeaks_values,
                     opeaks_indices,
-                    ogfa,
+                    fname_gfa=ogfa,
                     reshape_dirs=True,
                 )
 

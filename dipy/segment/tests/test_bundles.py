@@ -19,7 +19,7 @@ is_big_endian = "big" in sys.byteorder.lower()
 def setup_module():
     global f, f1, f2, f3, fornix
 
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
     f = Streamlines(fornix)

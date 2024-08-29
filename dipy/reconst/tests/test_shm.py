@@ -210,7 +210,7 @@ def test_real_sym_sh_mrtrix():
 
 def test_real_sym_sh_basis():
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-    sphere = hemi_icosahedron.subdivide(2)
+    sphere = hemi_icosahedron.subdivide(n=2)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
@@ -242,7 +242,7 @@ def test_real_sh_descoteaux1():
     # The tournier07 basis should be the same as re-ordering and re-scaling the
     # descoteaux07 basis
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
-    sphere = hemi_icosahedron.subdivide(2)
+    sphere = hemi_icosahedron.subdivide(n=2)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
@@ -264,7 +264,7 @@ def test_real_sh_descoteaux1():
 
 
 def test_real_sh_tournier():
-    vertices = hemi_icosahedron.subdivide(2).vertices
+    vertices = hemi_icosahedron.subdivide(n=2).vertices
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
@@ -297,7 +297,7 @@ def test_real_sh_tournier():
 
 
 def test_real_sh_descoteaux2():
-    vertices = hemi_icosahedron.subdivide(2).vertices
+    vertices = hemi_icosahedron.subdivide(n=2).vertices
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
@@ -361,7 +361,7 @@ def test_sh_to_sf_matrix():
 
 
 def test_smooth_pinv():
-    hemi = hemi_icosahedron.subdivide(2)
+    hemi = hemi_icosahedron.subdivide(n=2)
     m_values, l_values = sph_harm_ind_list(4)
 
     with warnings.catch_warnings():
@@ -428,19 +428,19 @@ def test_normalize_data():
 
 
 def make_fake_signal():
-    hemisphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(n=2)
     bvecs = np.concatenate(([[0, 0, 0]], hemisphere.vertices))
     bvals = np.zeros(len(bvecs)) + 2000
     bvals[0] = 0
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     evals = np.array([[2.1, 0.2, 0.2], [0.2, 2.1, 0.2]]) * 10**-3
     evecs0 = np.eye(3)
     evecs1 = evecs0
     a = evecs0[0]
     b = evecs1[1]
-    S1 = single_tensor(gtab, 0.55, evals[0], evecs0)
-    S2 = single_tensor(gtab, 0.45, evals[1], evecs1)
+    S1 = single_tensor(gtab, 0.55, evals=evals[0], evecs=evecs0)
+    S2 = single_tensor(gtab, 0.45, evals=evals[1], evecs=evecs1)
     return S1 + S2, gtab, np.vstack([a, b])
 
 
@@ -449,7 +449,7 @@ class TestQballModel:
 
     def test_single_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
-        sphere = hemi_icosahedron.subdivide(4)
+        sphere = hemi_icosahedron.subdivide(n=4)
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -583,7 +583,7 @@ class TestQballModel:
     def test_gfa(self):
         signal, gtab, expected = make_fake_signal()
         signal = np.ones((2, 3, 4, 1)) * signal
-        sphere = hemi_icosahedron.subdivide(3)
+        sphere = hemi_icosahedron.subdivide(n=3)
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -662,7 +662,7 @@ class TestCsaOdfModel(TestQballModel):
 
 
 def test_hat_and_lcr():
-    hemi = hemi_icosahedron.subdivide(3)
+    hemi = hemi_icosahedron.subdivide(n=3)
     m_values, l_values = sph_harm_ind_list(8)
 
     with warnings.catch_warnings():
@@ -732,7 +732,7 @@ def test_ResidualBootstrapWrapper():
 def test_sf_to_sh():
     # Subdividing a hemi_icosahedron twice produces 81 unique points, which
     # is more than enough to fit a order 8 (45 coefficients) spherical harmonic
-    hemisphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(n=2)
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
@@ -1068,7 +1068,7 @@ def test_calculate_max_order():
 
 
 def test_convert_sh_to_full_basis():
-    hemisphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(n=2)
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
@@ -1096,7 +1096,7 @@ def test_convert_sh_to_full_basis():
 
 
 def test_convert_sh_from_legacy():
-    hemisphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(n=2)
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
@@ -1149,7 +1149,7 @@ def test_convert_sh_from_legacy():
 
 
 def test_convert_sh_to_legacy():
-    hemisphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(n=2)
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])

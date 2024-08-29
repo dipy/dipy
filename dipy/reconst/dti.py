@@ -632,7 +632,7 @@ def apparent_diffusion_coef(q_form, sphere):
     """
     bvecs = sphere.vertices
     bvals = np.ones(bvecs.shape[0])
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     D = design_matrix(gtab)[:, :6]
     return -np.dot(lower_triangular(q_form), D.T)
 
@@ -788,7 +788,9 @@ class TensorModel(ReconstModel):
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if adjacency > 0:
-            self.kwargs["adjacency"] = adjacency_calc(img_shape, mask, adjacency)
+            self.kwargs["adjacency"] = adjacency_calc(
+                img_shape, mask=mask, cutoff=adjacency
+            )
 
         if "sigma" in self.kwargs:
             sigma = self.kwargs["sigma"]
@@ -2268,7 +2270,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     """
     max_evecs = evecs[..., :, 0]
     if odf_vertices is None:
-        odf_vertices = get_sphere("symmetric362").vertices
+        odf_vertices = get_sphere(name="symmetric362").vertices
     tup = max_evecs.shape[:-1]
     mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
     IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])

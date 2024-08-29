@@ -180,7 +180,7 @@ class MapmriModel(ReconstModel, Cache):
         >>> from dipy.data import dsi_voxels, default_sphere
         >>> from dipy.core.gradients import gradient_table
         >>> _, gtab_ = dsi_voxels()
-        >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
+        >>> gtab = gradient_table(gtab_.bvals, bvecs=gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
         >>> from dipy.sims.voxel import sticks_and_ball
         >>> data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=1,

@@ -15,7 +15,7 @@ from dipy.tracking.streamline import Streamlines
 
 
 def test_whole_brain_slr():
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
 
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
@@ -92,7 +92,7 @@ def test_whole_brain_slr():
 
 
 def test_slr_one_streamline():
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
 
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 

@@ -22,7 +22,7 @@ FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
 def setup_module():
     global FILEPATH_DIX, STREAMLINE, STREAMLINES
     try:
-        FILEPATH_DIX, _, _ = get_fnames("gold_standard_tracks")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_tracks")
     except (HTTPError, URLError) as e:
         FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
         error_msg = f'"Tests Data failed to download." Reason: {e}'

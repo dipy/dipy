@@ -50,14 +50,14 @@ def setup_module():
     global mevals_cross, angles_cross, frac_cross, kt_cross
     global dt_sph, evals_sph, kt_sph, params_sph
 
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
     # Simulation 1. signals of two crossing fibers are simulated
     mevals_cross = np.array(

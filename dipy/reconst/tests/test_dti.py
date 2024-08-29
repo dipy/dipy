@@ -54,13 +54,13 @@ def test_tensor_algebra(rng):
 
 
 def test_odf_with_zeros():
-    fdata, fbval, fbvec = get_fnames("small_25")
-    gtab = grad.gradient_table(fbval, fbvec)
+    fdata, fbval, fbvec = get_fnames(name="small_25")
+    gtab = grad.gradient_table(fbval, bvecs=fbvec)
     data = load_nifti_data(fdata)
     dm = dti.TensorModel(gtab)
     df = dm.fit(data)
     df.evals[0, 0, 0] = np.array([0, 0, 0])
-    sphere = create_unit_sphere(4)
+    sphere = create_unit_sphere(recursion_level=4)
     odf = df.odf(sphere)
     npt.assert_equal(odf[0, 0, 0], np.zeros(sphere.vertices.shape[0]))
 
@@ -84,9 +84,9 @@ def test_mode_with_isotropic():
 
 
 def test_tensor_model():
-    fdata, fbval, fbvec = get_fnames("small_25")
+    fdata, fbval, fbvec = get_fnames(name="small_25")
     data1 = load_nifti_data(fdata)
-    gtab1 = grad.gradient_table(fbval, fbvec)
+    gtab1 = grad.gradient_table(fbval, bvecs=fbvec)
     data2, gtab2 = dsi_voxels()
     for data, gtab in zip([data1, data2], [gtab1, gtab2]):
         dm = dti.TensorModel(gtab, "LS")
@@ -96,7 +96,7 @@ def test_tensor_model():
         dtifit = dm.fit(data[0, 0, 0])
         npt.assert_equal(dtifit.fa < 0.9, True)
         npt.assert_equal(dtifit.fa > 0, True)
-        sphere = create_unit_sphere(4)
+        sphere = create_unit_sphere(recursion_level=4)
         npt.assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
         # Check that the multivoxel case works:
         dtifit = dm.fit(data)
@@ -127,7 +127,7 @@ def test_tensor_model():
 
     # Make some synthetic data
     b0 = 1000.0
-    bvals, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bvals, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     # The first b value is 0., so we take the second one:
     B = bvals[1]
@@ -260,17 +260,17 @@ def test_ga_of_zero():
 
 
 def test_diffusivities():
-    psphere = get_sphere("symmetric362")
+    psphere = get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, "LS")
     dmfit = dm.fit(S)
@@ -354,7 +354,7 @@ def test_wls_and_ls_fit():
 
     # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
     b0 = 1000.0
-    bval, bvec = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     B = bval[1]
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
@@ -362,7 +362,7 @@ def test_wls_and_ls_fit():
     md = evals.mean()
     tensor = from_lower_triangular(D)
     # Design Matrix
-    gtab = grad.gradient_table(bval, bvec)
+    gtab = grad.gradient_table(bval, bvecs=bvec)
     X = dti.design_matrix(gtab)
     # Signals
     Y = np.exp(np.dot(X, D))
@@ -414,7 +414,7 @@ def test_masked_array_with_tensor():
     data = np.ones((2, 4, 56))
     mask = np.array([[True, False, False, True], [True, False, True, False]])
 
-    bval, bvec = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
 
     tensor_model = TensorModel(gtab)
@@ -439,7 +439,7 @@ def test_masked_array_with_tensor():
 
 
 def test_fit_method_error():
-    bval, bvec = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
 
     # This should work (smoke-testing!):
@@ -481,7 +481,7 @@ def test_from_lower_triangular():
 
 
 def test_all_constant():
-    bvals, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bvals, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     fit_methods = ["LS", "OLS", "NNLS", "RESTORE"]
     for _ in fit_methods:
@@ -492,7 +492,7 @@ def test_all_constant():
 
 
 def test_all_zeros():
-    bvals, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
+    bvals, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     fit_methods = ["LS", "OLS", "NNLS", "RESTORE"]
     for _ in fit_methods:
@@ -543,8 +543,8 @@ def test_mask():
 @set_random_number_generator()
 def test_nnls_jacobian_func(rng):
     b0 = 1000.0
-    bval, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
-    gtab = grad.gradient_table(bval, bvecs)
+    bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
+    gtab = grad.gradient_table(bval, bvecs=bvecs)
     B = bval[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
@@ -597,8 +597,8 @@ def test_nlls_fit_tensor():
     """
 
     b0 = 1000.0
-    bvals, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
-    gtab = grad.gradient_table(bvals, bvecs)
+    bvals, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     B = bvals[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
@@ -644,8 +644,8 @@ def test_nlls_fit_tensor():
     npt.assert_raises(ValueError, tensor_model.fit, Y)
 
     # Use NLLS with some actual 4D data:
-    data, bvals, bvecs = get_fnames("small_25")
-    gtab = grad.gradient_table(bvals, bvecs)
+    data, bvals, bvecs = get_fnames(name="small_25")
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     tm1 = dti.TensorModel(gtab, fit_method="NLLS")
     dd = load_nifti_data(data)
     tf1 = tm1.fit(dd)
@@ -655,7 +655,7 @@ def test_nlls_fit_tensor():
     npt.assert_array_almost_equal(tf1.fa, tf2.fa, decimal=1)
 
     # Reduce amount of data, to cause NLLS to fail
-    gtab_less = grad.gradient_table(gtab.bvals[0:3], gtab.bvecs[0:3, :])
+    gtab_less = grad.gradient_table(gtab.bvals[0:3], bvecs=gtab.bvecs[0:3, :])
     Y_less = Y[..., 0:3].copy()
 
     # Test warning for failure of NLLS method, resort to OLS result
@@ -694,8 +694,8 @@ def test_restore():
     Test the implementation of the RESTORE algorithm
     """
     b0 = 1000.0
-    bval, bvecs = read_bvals_bvecs(*get_fnames("55dir_grad"))
-    gtab = grad.gradient_table(bval, bvecs)
+    bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
+    gtab = grad.gradient_table(bval, bvecs=bvecs)
     B = bval[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
@@ -785,17 +785,17 @@ def test_predict():
     """
     Test model prediction API
     """
-    psphere = get_sphere("symmetric362")
+    psphere = get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[1, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, "LS", return_S0_hat=True)
     dmfit = dm.fit(S)
@@ -807,7 +807,7 @@ def test_predict():
     data = load_nifti_data(fdata)
     # Make the data cube a bit larger:
     data = np.tile(data.T, 2).T
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     dtim = dti.TensorModel(gtab)
     dtif = dtim.fit(data)
     S0 = np.mean(data[..., gtab.b0s_mask], -1)
@@ -848,11 +848,11 @@ def test_predict():
 
 
 def test_eig_from_lo_tri():
-    psphere = get_sphere("symmetric362")
+    psphere = get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
@@ -861,8 +861,8 @@ def test_eig_from_lo_tri():
     S = np.array(
         [
             [
-                single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None),
-                single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None),
+                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
             ]
         ]
     )
@@ -877,7 +877,7 @@ def test_eig_from_lo_tri():
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_fnames()
     data = load_nifti_data(fdata)
-    gtab = grad.gradient_table(fbvals, fbvecs)
+    gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
 
     idx = tuple(np.array(np.where(data == np.min(data)))[:-1, 0])
     ten_model = dti.TensorModel(gtab)
@@ -909,9 +909,9 @@ def test_decompose_tensor_nan():
 
 
 def test_design_matrix_lte():
-    _, fbval, fbvec = get_fnames("small_25")
-    gtab_btens_none = grad.gradient_table(fbval, fbvec)
-    gtab_btens_lte = grad.gradient_table(fbval, fbvec, btens="LTE")
+    _, fbval, fbvec = get_fnames(name="small_25")
+    gtab_btens_none = grad.gradient_table(fbval, bvecs=fbvec)
+    gtab_btens_lte = grad.gradient_table(fbval, bvecs=fbvec, btens="LTE")
 
     B_btens_none = dti.design_matrix(gtab_btens_none)
     B_btens_lte = dti.design_matrix(gtab_btens_lte)

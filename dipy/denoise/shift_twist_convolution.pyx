@@ -13,7 +13,7 @@ from dipy.utils.deprecator import deprecated_params
 from dipy.testing.decorators import warning_for_keywords
 
 
-@deprecated_params('sh_order', 'sh_order_max', since='1.9', until='2.0')
+@deprecated_params('sh_order', new_name='sh_order_max', since='1.9', until='2.0')
 @warning_for_keywords()
 def convolve(odfs_sh, kernel, sh_order_max, *, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and

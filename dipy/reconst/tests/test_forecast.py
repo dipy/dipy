@@ -37,7 +37,7 @@ def setup_module():
     data.sh_order_max = 6
     data.lambda_lb = 1e-8
     data.lambda_csd = 1.0
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     data.sphere = sphere.vertices[0 : int(sphere.vertices.shape[0] / 2), :]
 
 
@@ -58,7 +58,7 @@ def test_forecast_positive_constrain():
         )
     f_fit = fm.fit(data.S)
 
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -74,7 +74,7 @@ def test_forecast_positive_constrain():
 
 
 def test_forecast_csd():
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",

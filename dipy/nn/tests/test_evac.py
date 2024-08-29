@@ -13,7 +13,7 @@ if have_tf:
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights():
-    file_path = get_fnames("evac_test_data")
+    file_path = get_fnames(name="evac_test_data")
     input_arr = np.load(file_path)["input"][0]
     output_arr = np.load(file_path)["output"][0]
 
@@ -24,7 +24,7 @@ def test_default_weights():
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights_batch():
-    file_path = get_fnames("evac_test_data")
+    file_path = get_fnames(name="evac_test_data")
     input_arr = np.load(file_path)["input"]
     output_arr = np.load(file_path)["output"]
     input_arr = list(input_arr)

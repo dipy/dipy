@@ -25,13 +25,13 @@ FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
 def setup_module():
     global gtab_2s, DWIsim, DWIsim_all_taylor, FIE, RDI, ADI, ADE, Tor, RDE
 
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
     # single fiber simulate (which is the assumption of our model)
     FIE = np.array([[[0.30, 0.32], [0.74, 0.51]], [[0.47, 0.21], [0.80, 0.63]]])

@@ -65,10 +65,10 @@ def test_LSCv2(verbose=False, rng=None):
         print(t2 - t1)
         print(len(C5))
 
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
-    T3 = set_number_of_points(fornix, 6)
+    T3 = set_number_of_points(fornix, nb_points=6)
 
     if verbose:
         print("lenT3", len(T3))

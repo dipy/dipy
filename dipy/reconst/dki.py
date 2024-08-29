@@ -795,7 +795,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
 
     else:
         # Numerical Solution using t-design of 45 directions
-        V = np.loadtxt(get_fnames("t-design"))
+        V = np.loadtxt(get_fnames(name="t-design"))
         sph = dps.Sphere(xyz=V)
         KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
         MK = np.mean(KV, axis=-1)
@@ -1340,7 +1340,7 @@ def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere("repulsion100")
+        sphere = get_sphere(name="repulsion100")
 
     # select voxels where to find fiber directions
     if mask is None:

@@ -177,7 +177,7 @@ class DeepN4:
         r"""
         Load the model pre-training weights to use for the fitting.
         """
-        fetch_model_weights_path = get_fnames("deepn4_default_weights")
+        fetch_model_weights_path = get_fnames(name="deepn4_default_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):

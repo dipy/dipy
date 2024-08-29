@@ -15,7 +15,6 @@ from dipy.align.streamwarp import bundlewarp
 from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
@@ -61,12 +60,10 @@ class ResliceFlow(Workflow):
     def get_short_name(cls):
         return "reslice"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         new_vox_size,
-        *,
         order=1,
         mode="constant",
         cval=0,
@@ -114,7 +111,7 @@ class ResliceFlow(Workflow):
                 affine,
                 vox_sz,
                 new_vox_size,
-                order,
+                order=order,
                 mode=mode,
                 cval=cval,
                 num_processes=num_processes,
@@ -128,12 +125,10 @@ class SlrWithQbxFlow(Workflow):
     def get_short_name(cls):
         return "slrwithqbx"
 
-    @warning_for_keywords()
     def run(
         self,
         static_files,
         moving_files,
-        *,
         x0="affine",
         rm_small_clusters=50,
         qbx_thr=(40, 30, 20, 15),
@@ -237,7 +232,7 @@ class SlrWithQbxFlow(Workflow):
             moved, affine, centroids_static, centroids_moving = slr_with_qbx(
                 static,
                 moving,
-                x0,
+                x0=x0,
                 rm_small_clusters=rm_small_clusters,
                 greater_than=greater_than,
                 less_than=less_than,
@@ -296,12 +291,10 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
-    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
-        *,
         transform="affine",
         nbins=32,
         sampling_prop=None,
@@ -454,14 +447,14 @@ class ImageRegistrationFlow(Workflow):
                 moved_image, affine_matrix = affine_registration(
                     moving,
                     static,
-                    moving_grid2world,
-                    static_grid2world,
-                    pipeline,
-                    starting_affine,
-                    metric,
-                    level_iters,
-                    sigmas,
-                    factors,
+                    moving_affine=moving_grid2world,
+                    static_affine=static_grid2world,
+                    pipeline=pipeline,
+                    starting_affine=starting_affine,
+                    metric=metric,
+                    level_iters=level_iters,
+                    sigmas=sigmas,
+                    factors=factors,
                     nbins=nbins,
                     sampling_proportion=sampling_prop,
                 )
@@ -469,14 +462,14 @@ class ImageRegistrationFlow(Workflow):
                 moved_image, affine_matrix, xopt, fopt = affine_registration(
                     moving,
                     static,
-                    moving_grid2world,
-                    static_grid2world,
-                    pipeline,
-                    starting_affine,
-                    metric,
-                    level_iters,
-                    sigmas,
-                    factors,
+                    moving_affine=moving_grid2world,
+                    static_affine=static_grid2world,
+                    pipeline=pipeline,
+                    starting_affine=starting_affine,
+                    metric=metric,
+                    level_iters=level_iters,
+                    sigmas=sigmas,
+                    factors=factors,
                     ret_metric=True,
                     nbins=nbins,
                     sampling_proportion=sampling_prop,
@@ -496,13 +489,11 @@ class ImageRegistrationFlow(Workflow):
 
 
 class ApplyTransformFlow(Workflow):
-    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
         transform_map_file,
-        *,
         transform_type="affine",
         out_dir="",
         out_file="transformed.nii.gz",
@@ -608,12 +599,10 @@ class ApplyTransformFlow(Workflow):
 
 
 class SynRegistrationFlow(Workflow):
-    @warning_for_keywords()
     def run(
         self,
         static_image_files,
         moving_image_files,
-        *,
         prealign_file="",
         inv_static=False,
         level_iters=(10, 10, 5),
@@ -842,9 +831,9 @@ class SynRegistrationFlow(Workflow):
             mapping = sdr.optimize(
                 static_image,
                 moving_image,
-                static_grid2world,
-                moving_grid2world,
-                prealign,
+                static_grid2world=static_grid2world,
+                moving_grid2world=moving_grid2world,
+                prealign=prealign,
             )
 
             mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
@@ -867,13 +856,11 @@ class MotionCorrectionFlow(Workflow):
     DWI dataset.
     """
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
-        *,
         b0_threshold=50,
         bvecs_tol=0.01,
         out_dir="",
@@ -925,7 +912,7 @@ class MotionCorrectionFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
 
             reg_img, reg_affines = motion_correction(
@@ -947,12 +934,10 @@ class BundleWarpFlow(Workflow):
     def get_short_name(cls):
         return "bundlewarp"
 
-    @warning_for_keywords()
     def run(
         self,
         static_file,
         moving_file,
-        *,
         dist=None,
         alpha=0.3,
         beta=20,
@@ -1024,8 +1009,8 @@ class BundleWarpFlow(Workflow):
         static, _ = static_obj.streamlines, static_obj.header
         moving, moving_header = moving_obj.streamlines, moving_obj.header
 
-        static = set_number_of_points(static, 20)
-        moving = set_number_of_points(moving, 20)
+        static = set_number_of_points(static, nb_points=20)
+        moving = set_number_of_points(moving, nb_points=20)
 
         deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
             static,

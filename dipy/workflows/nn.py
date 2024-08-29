@@ -4,7 +4,6 @@ import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.evac import EVACPlus
-from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
@@ -13,11 +12,9 @@ class EVACPlusFlow(Workflow):
     def get_short_name(cls):
         return "evacplus"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         save_masked=False,
         out_dir="",
         out_mask="brain_mask.nii.gz",
@@ -63,7 +60,7 @@ class EVACPlusFlow(Workflow):
             logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
-                save_nifti(masked_out_path, masked_volume, affine, img.header)
+                save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
 
                 logging.info(f"Masked volume saved as {masked_out_path}")
             empty_flag = False

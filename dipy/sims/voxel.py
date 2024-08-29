@@ -449,9 +449,9 @@ def multi_tensor(
     >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
+    >>> fimg, fbvals, fbvecs = get_fnames(name='small_101D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    >>> gtab = gradient_table(bvals, bvecs)
+    >>> gtab = gradient_table(bvals, bvecs=bvecs)
     >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> e0 = np.array([1, 0, 0.])
     >>> e1 = np.array([0., 1, 0])
@@ -535,11 +535,11 @@ def multi_tensor_dki(
     >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_fnames('small_64D')
+    >>> fimg, fbvals, fbvecs = get_fnames(name='small_64D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     >>> bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     >>> bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    >>> gtab = gradient_table(bvals_2s, bvecs_2s)
+    >>> gtab = gradient_table(bvals_2s, bvecs=bvecs_2s)
     >>> mevals = np.array([[0.00099, 0, 0],[0.00226, 0.00087, 0.00087]])
     >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
 
@@ -574,24 +574,24 @@ def multi_tensor_dki(
 
     # compute voxel's KT
     kt = np.zeros(15)
-    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT, MD)
-    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT, MD)
-    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT, MD)
-    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT, MD)
-    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT, MD)
-    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT, MD)
-    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT, MD)
-    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT, MD)
-    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT, MD)
-    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT, MD)
-    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT, MD)
-    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT, MD)
-    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT, MD)
-    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT, MD)
-    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
+    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT=DT, MD=MD)
+    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT=DT, MD=MD)
+    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT=DT, MD=MD)
+    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT=DT, MD=MD)
+    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT=DT, MD=MD)
+    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT=DT, MD=MD)
+    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT=DT, MD=MD)
+    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT=DT, MD=MD)
+    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT=DT, MD=MD)
+    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT=DT, MD=MD)
+    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT=DT, MD=MD)
+    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT=DT, MD=MD)
+    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT=DT, MD=MD)
+    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT=DT, MD=MD)
+    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT=DT, MD=MD)
 
     # compute S based on the DT and KT
-    S = dki_signal(gtab, dt, kt, S0, snr)
+    S = dki_signal(gtab, dt, kt, S0=S0, snr=snr)
 
     return S, dt, kt
 
@@ -901,7 +901,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
         ] * len(mf)
 
     for j, f in enumerate(mf):
-        rtop += f * single_tensor_rtop(mevals[j], tau=tau)
+        rtop += f * single_tensor_rtop(evals=mevals[j], tau=tau)
     return rtop
 
 
@@ -1070,5 +1070,5 @@ def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
         ] * len(mf)
 
     for j, f in enumerate(mf):
-        msd += f * single_tensor_msd(mevals[j], tau=tau)
+        msd += f * single_tensor_msd(evals=mevals[j], tau=tau)
     return msd

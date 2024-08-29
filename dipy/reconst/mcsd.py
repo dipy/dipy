@@ -25,7 +25,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 SH_CONST = 0.5 / np.sqrt(np.pi)
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     """
     Builds a basis for multi-shell multi-tissue CSD model.
@@ -67,7 +67,7 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
 
 
 class MultiShellResponse:
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(self, response, sh_order_max, shells, S0=None):
         """Estimate Multi Shell response function for multiple tissues and
         multiple shells.
@@ -104,7 +104,7 @@ class MultiShellResponse:
         return self.response.shape[1] - (self.sh_order_max // 2) - 1
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
@@ -159,7 +159,7 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(
         self, gtab, response, reg_sphere=default_sphere, sh_order_max=8, iso=2, tol=20
     ):
@@ -442,7 +442,7 @@ class QpFitter:
         return fodf_sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def multi_shell_fiber_response(
     sh_order_max, bvals, wm_rf, gm_rf, csf_rf, sphere=None, tol=20, btens=None
 ):
@@ -513,7 +513,9 @@ def multi_shell_fiber_response(
 
     if bvals[0] < tol:
         gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
-        wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
+        wm_response = single_tensor(
+            gtab, wm_rf[0, 3], evals=wm_rf[0, :3], evecs=evecs, snr=None
+        )
         response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         response[0, 1] = gm_rf[0, 3] / A
@@ -522,7 +524,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals[1:]):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i + 1])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i + 1, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -538,7 +540,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -733,9 +735,9 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
     btens = gtab.btens
 
-    list_bvals = unique_bvals_tolerance(bvals, tol)
+    list_bvals = unique_bvals_tolerance(bvals, tol=tol)
 
-    b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
+    b0_indices = get_bval_indices(bvals, list_bvals[0], tol=tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
 
     masks = [mask_wm, mask_gm, mask_csf]
@@ -743,7 +745,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     for mask in masks:
         responses = []
         for bval in list_bvals[1:]:
-            indices = get_bval_indices(bvals, bval, tol)
+            indices = get_bval_indices(bvals, bval, tol=tol)
 
             bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
@@ -755,7 +757,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
             data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
 
-            gtab = gradient_table(bvals_sub, bvecs_sub, btens=btens_sub)
+            gtab = gradient_table(bvals_sub, bvecs=bvecs_sub, btens=btens_sub)
             response, _ = response_from_mask_ssst(gtab, data_conc, mask)
 
             responses.append(list(np.concatenate([response[0], [response[1]]])))

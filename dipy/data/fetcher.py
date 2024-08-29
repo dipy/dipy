@@ -227,7 +227,7 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         _log(f'Downloading "{f}" to {folder}')
         _log(f"From: {url}")
         _get_file_data(fullpath, url, use_headers=use_headers)
-        check_md5(fullpath, md5)
+        check_md5(fullpath, stored_md5=md5)
     if all_skip:
         _already_there_msg(folder)
     else:
@@ -295,7 +295,7 @@ def _make_fetcher(
             (f, n),
         ) in enumerate(zip(remote_fnames, local_fnames)):
             files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
-        fetch_data(files, folder, data_size, use_headers=use_headers)
+        fetch_data(files, folder, data_size=data_size, use_headers=use_headers)
 
         if msg is not None:
             _log(msg)
@@ -330,7 +330,7 @@ fetch_isbi2013_2shell = _make_fetcher(
     UW_RW_URL + "1773/38465/",
     ["phantom64.nii.gz", "phantom64.bval", "phantom64.bvec"],
     ["phantom64.nii.gz", "phantom64.bval", "phantom64.bvec"],
-    [
+    md5_list=[
         "42911a70f232321cf246315192d69c42",
         "90e8cf66e0f4d9737a3b3c0da24df5ea",
         "4b7aa2757a1ccab140667b76e8075cb1",
@@ -345,7 +345,7 @@ fetch_stanford_labels = _make_fetcher(
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["aparc-reduced.nii.gz", "label_info.txt"],
     ["aparc-reduced.nii.gz", "label_info.txt"],
-    ["742de90090d06e687ce486f680f6d71a", "39db9f0f5e173d7a2c2e51b07d5d711b"],
+    md5_list=["742de90090d06e687ce486f680f6d71a", "39db9f0f5e173d7a2c2e51b07d5d711b"],
     doc="Download reduced freesurfer aparc image from stanford web site",
 )
 
@@ -355,7 +355,7 @@ fetch_sherbrooke_3shell = _make_fetcher(
     UW_RW_URL + "1773/38475/",
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
-    [
+    md5_list=[
         "0b735e8f16695a37bfbd66aab136eb66",
         "e9b9bb56252503ea49d31fb30a0ac637",
         "0c83f7e8b917cd677ad58a078658ebb7",
@@ -370,7 +370,7 @@ fetch_stanford_hardi = _make_fetcher(
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["dwi.nii.gz", "dwi.bvals", "dwi.bvecs"],
     ["HARDI150.nii.gz", "HARDI150.bval", "HARDI150.bvec"],
-    [
+    md5_list=[
         "0b18513b46132b4d1051ed3364f2acbc",
         "4e08ee9e2b1d2ec3fddb68c70ae23c36",
         "4c63a586f29afc6a48a5809524a76cb4",
@@ -384,7 +384,7 @@ fetch_resdnn_weights = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["22736240"],
     ["resdnn_weights_mri_2018.h5"],
-    ["f0e118d72ab804a464494bd9015227f4"],
+    md5_list=["f0e118d72ab804a464494bd9015227f4"],
     doc="Download ResDNN model weights for Nath et. al 2018",
 )
 
@@ -400,7 +400,7 @@ fetch_synb0_weights = _make_fetcher(
         "synb0_default_weights4.h5",
         "synb0_default_weights5.h5",
     ],
-    [
+    md5_list=[
         "a9362c75bc28616167a11a42fe5d004e",
         "9dc9353d6ff741d8e22b8569f157c56e",
         "e548f341e4f12d63dfbed306233fddce",
@@ -416,7 +416,7 @@ fetch_synb0_test = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["36379911", "36671850"],
     ["test_input_synb0.npz", "test_output_synb0.npz"],
-    ["987203aa73de2dac8770f39ed506dc0c", "515544fbcafd9769785502821b47b661"],
+    md5_list=["987203aa73de2dac8770f39ed506dc0c", "515544fbcafd9769785502821b47b661"],
     doc="Download Synb0 test data for Schilling et. al 2019",
 )
 
@@ -426,7 +426,7 @@ fetch_deepn4_weights = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["44673313"],
     ["model_weights.h5"],
-    ["ef264edd554177a180cf99162dbd2745"],
+    md5_list=["ef264edd554177a180cf99162dbd2745"],
     doc="Download DeepN4 model weights for Kanakaraj et. al 2024",
 )
 
@@ -436,7 +436,7 @@ fetch_deepn4_test = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["44672131", "44672134"],
     ["test_input_deepn4.npz", "test_output_deepn4.npz"],
-    ["69c48ae066cee970087dd84437d5d5ce", "a90d571c935d4b2975715935a22d4bac"],
+    md5_list=["69c48ae066cee970087dd84437d5d5ce", "a90d571c935d4b2975715935a22d4bac"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -446,7 +446,7 @@ fetch_evac_weights = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["43037191"],
     ["evac_default_weights.h5"],
-    ["491cfa4f9a2860fad6c19f2b71b918e1"],
+    md5_list=["491cfa4f9a2860fad6c19f2b71b918e1"],
     doc="Download EVAC+ model weights for Park et. al 2022",
 )
 
@@ -456,7 +456,7 @@ fetch_evac_test = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["43040074"],
     ["evac_test_data.npz"],
-    ["a5ad7116c9914a53ba891f9e73f3a132"],
+    md5_list=["a5ad7116c9914a53ba891f9e73f3a132"],
     doc="Download EVAC+ test data for Park et. al 2022",
 )
 
@@ -466,7 +466,7 @@ fetch_stanford_t1 = _make_fetcher(
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["t1.nii.gz"],
     ["t1.nii.gz"],
-    ["a6a140da6a947d4131b2368752951b0a"],
+    md5_list=["a6a140da6a947d4131b2368752951b0a"],
 )
 
 fetch_stanford_pve_maps = _make_fetcher(
@@ -475,7 +475,7 @@ fetch_stanford_pve_maps = _make_fetcher(
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["pve_csf.nii.gz", "pve_gm.nii.gz", "pve_wm.nii.gz"],
     ["pve_csf.nii.gz", "pve_gm.nii.gz", "pve_wm.nii.gz"],
-    [
+    md5_list=[
         "2c498e4fed32bca7f726e28aa86e9c18",
         "1654b20aeb35fc2734a0d7928b713874",
         "2e244983cf92aaf9f9d37bc7716b37d5",
@@ -492,7 +492,7 @@ fetch_stanford_tracks = _make_fetcher(
     [
         "hardi-lr-superiorfrontal.trk",
     ],
-    [
+    md5_list=[
         "2d49aaf6ad6c10d8d069bfb319bf3541",
     ],
     doc="Download stanford track for examples",
@@ -505,7 +505,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
     UW_RW_URL + "1773/38480/",
     ["DSI203.nii.gz", "DSI203.bval", "DSI203.bvec", "DSI203_license.txt"],
     ["DSI203.nii.gz", "DSI203.bval", "DSI203.bvec", "DSI203_license.txt"],
-    [
+    md5_list=[
         "950408c0980a7154cb188666a885a91f",
         "602e5cb5fad2e7163e8025011d8a6755",
         "a95eb1be44748c20214dc7aa654f9e6b",
@@ -523,7 +523,7 @@ fetch_syn_data = _make_fetcher(
     UW_RW_URL + "1773/38476/",
     ["t1.nii.gz", "b0.nii.gz"],
     ["t1.nii.gz", "b0.nii.gz"],
-    ["701bda02bb769655c7d4a9b1df2b73a6", "e4b741f0c77b6039e67abb2885c97a78"],
+    md5_list=["701bda02bb769655c7d4a9b1df2b73a6", "e4b741f0c77b6039e67abb2885c97a78"],
     data_size="12MB",
     doc="Download t1 and b0 volumes from the same session",
 )
@@ -544,7 +544,7 @@ fetch_mni_template = _make_fetcher(
         "mni_icbm152_t1_tal_nlin_asym_09c_mask.nii",
         "mni_icbm152_t1_tal_nlin_asym_09c.nii",
     ],
-    [
+    md5_list=[
         "f41f2e1516d880547fbf7d6a83884f0d",
         "1ea8f4f1e41bc17a94602e48141fdbc8",
         "a243e249cd01a23dc30f033b9656a786",
@@ -560,7 +560,7 @@ fetch_scil_b0 = _make_fetcher(
     UW_RW_URL + "1773/38479/",
     ["datasets_multi-site_all_companies.zip"],
     ["datasets_multi-site_all_companies.zip"],
-    ["e9810fa5bf21b99da786647994d7d5b7"],
+    md5_list=["e9810fa5bf21b99da786647994d7d5b7"],
     doc="Download b=0 datasets from multiple MR systems (GE, Philips, "
     + "Siemens) and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
@@ -573,7 +573,7 @@ fetch_bundles_2_subjects = _make_fetcher(
     UW_RW_URL + "1773/38477/",
     ["bundles_2_subjects.tar.gz"],
     ["bundles_2_subjects.tar.gz"],
-    ["97756fbef11ce2df31f1bedf1fc7aac7"],
+    md5_list=["97756fbef11ce2df31f1bedf1fc7aac7"],
     data_size="234MB",
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True,
@@ -585,7 +585,7 @@ fetch_ivim = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["5305243", "5305246", "5305249"],
     ["ivim.nii.gz", "ivim.bval", "ivim.bvec"],
-    [
+    md5_list=[
         "cda596f89dc2676af7d9bf1cabccf600",
         "f03d89f84aa9a9397103a400e43af43a",
         "fb633a06b02807355e49ccd85cb92565",
@@ -609,7 +609,7 @@ fetch_cfin_multib = _make_fetcher(
         "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval",
         "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec",
     ],
-    [
+    md5_list=[
         "889883b5e7d93a6e372bc760ea887e7c",
         "9daea1d01d68fd0055a3b34f5ffd5f6e",
         "3ee44135fde7ea5c9b8c801414bdde2c",
@@ -643,7 +643,7 @@ fetch_file_formats = _make_fetcher(
         "rpt_m_sub.dpy",
         "template0.nii.gz",
     ],
-    [
+    md5_list=[
         "78ed7bead3e129fb4b4edd6da1d7e2d2",
         "20009796ccd43dc8d2d5403b25dff717",
         "8afa8419e2efe04ede75cce1f53c77d8",
@@ -661,7 +661,7 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["13638644"],
     ["Atlas_80_Bundles.zip"],
-    ["78331d527a10ec000d4f33bac472e099"],
+    md5_list=["78331d527a10ec000d4f33bac472e099"],
     doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
     data_size="300MB",
     unzip=True,
@@ -673,7 +673,7 @@ fetch_30_bundle_atlas_hcp842 = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["26842853"],
     ["Atlas_30_Bundles.zip"],
-    ["f3922cdbea4216823798fade128d6782"],
+    md5_list=["f3922cdbea4216823798fade128d6782"],
     doc="Download atlas tractogram from the hcp842 dataset with 30 bundles",
     data_size="207.09MB",
     unzip=True,
@@ -685,7 +685,7 @@ fetch_target_tractogram_hcp = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["12871127"],
     ["hcp_tractogram.zip"],
-    ["fa25ef19c9d3748929b6423397963b6a"],
+    md5_list=["fa25ef19c9d3748929b6423397963b6a"],
     doc="Download tractogram of one of the hcp dataset subjects",
     data_size="541MB",
     unzip=True,
@@ -698,7 +698,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["14035265"],
     ["hcp_bundle_fa.nii.gz"],
-    ["2d5c0036b0575597378ddf39191028ea"],
+    md5_list=["2d5c0036b0575597378ddf39191028ea"],
     doc=("Download map of FA within two bundles in one of the hcp dataset subjects"),
     data_size="230kb",
 )
@@ -736,7 +736,7 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
         "subject1_scheme_retest.txt",
         "subject2_scheme_retest.txt",
     ],
-    [
+    md5_list=[
         "ebd7441f32c40e25c28b9e069bd81981",
         "dd6a64dd68c8b321c75b9d5fb42c275a",
         "830a7a028a66d1b9812f93309a3f9eae",
@@ -787,7 +787,7 @@ fetch_gold_standard_io = _make_fetcher(
         "points_data.json",
         "streamlines_data.json",
     ],
-    [
+    md5_list=[
         "3acf565779f4d5107f96b2ef90578d64",
         "151a30cf356c002060d720bf9d577245",
         "a6587f1a3adc4df076910c4d72eb4161",
@@ -812,7 +812,7 @@ fetch_qte_lte_pte = _make_fetcher(
     "https://zenodo.org/record/4624866/files/",
     ["lte-pte.nii.gz", "lte-pte.bval", "lte-pte.bvec", "mask.nii.gz"],
     ["lte-pte.nii.gz", "lte-pte.bval", "lte-pte.bvec", "mask.nii.gz"],
-    [
+    md5_list=[
         "f378b2cd9f57625512002b9e4c0f1660",
         "5c25d24dd3df8590582ed690507a8769",
         "31abe55dfda7ef5fdf5015d0713be9b0",
@@ -843,7 +843,7 @@ fetch_cti_rat1 = _make_fetcher(
         "bvec2.bvec",
         "Rat1_mask.nii",
     ],
-    [
+    md5_list=[
         "2f855e7826f359d80cfd6f094d3a7008",
         "1deed2a91e20104ca42d7482cc096a9a",
         "40a4f5131b8a64608d16b0c6c5ad0837",
@@ -867,7 +867,7 @@ fetch_fury_surface = _make_fetcher(
     "https://raw.githubusercontent.com/fury-gl/fury-data/master/surfaces/",
     ["100307_white_lh.vtk"],
     ["100307_white_lh.vtk"],
-    ["dbec91e29af15541a5cb36d80977b26b"],
+    md5_list=["dbec91e29af15541a5cb36d80977b26b"],
     doc="Surface for testing and examples",
     data_size="11MB",
 )
@@ -948,7 +948,7 @@ fetch_ptt_minimal_dataset = _make_fetcher(
     "https://raw.githubusercontent.com/dipy/dipy_datatest/main/",
     ["ptt_fod.nii", "ptt_seed_coords.txt", "ptt_seed_image.nii"],
     ["ptt_fod.nii", "ptt_seed_coords.txt", "ptt_seed_image.nii"],
-    [
+    md5_list=[
         "6e454f8088b64e7b85218c71010d8dbe",
         "8c2d71fb95020e2bb1743623eb11c2a6",
         "9cb88f88d664019ba80c0b372c8bafec",
@@ -967,7 +967,7 @@ fetch_bundle_warp_dataset = _make_fetcher(
         "m_UF_L.trk",
         "s_UF_L.trk",
     ],
-    ["4db38ca1e80c16d6e3a97f88f0611187", "c1499005baccfab865ce38368d7a4c7f"],
+    md5_list=["4db38ca1e80c16d6e3a97f88f0611187", "c1499005baccfab865ce38368d7a4c7f"],
     doc="Download Bundle Warp dataset",
 )
 
@@ -1062,7 +1062,7 @@ fetch_disco1_dataset = _make_fetcher(
         "DiSCo1_Strands_Trajectories.tck",
         "DiSCo1_Strands_Trajectories.trk",
     ],
-    [
+    md5_list=[
         "c03cfec8ee605a54866ef09c3c8ba31d",
         "b8443aee0a2d2b60ee658a2342cccf0f",
         "4ac749bb584e6963851ee170e137e3ec",
@@ -1204,7 +1204,7 @@ fetch_disco2_dataset = _make_fetcher(
         "DiSCo2_Strands_Trajectories.tck",
         "DiSCo2_Connectivity_Matrix_Cross-Sectional_Area.txt",
     ],
-    [
+    md5_list=[
         "c03cfec8ee605a54866ef09c3c8ba31d",
         "b8443aee0a2d2b60ee658a2342cccf0f",
         "4ac749bb584e6963851ee170e137e3ec",
@@ -1346,7 +1346,7 @@ fetch_disco3_dataset = _make_fetcher(
         "DiSCo3_Connectivity_Matrix_Strands_Count.txt",
         "DiSCo3_Strands_Diameters.txt",
     ],
-    [
+    md5_list=[
         "c03cfec8ee605a54866ef09c3c8ba31d",
         "b8443aee0a2d2b60ee658a2342cccf0f",
         "4ac749bb584e6963851ee170e137e3ec",
@@ -1452,7 +1452,7 @@ def get_fnames(*, name="small_64D"):
     >>> import numpy as np
     >>> from dipy.io.image import load_nifti
     >>> from dipy.data import get_fnames
-    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
+    >>> fimg, fbvals, fbvecs = get_fnames(name='small_101D')
     >>> bvals=np.loadtxt(fbvals)
     >>> bvecs=np.loadtxt(fbvecs).T
     >>> data, affine = load_nifti(fimg)
@@ -1777,7 +1777,7 @@ def read_scil_b0():
         Nifti1Image
 
     """
-    fnames = get_fnames("scil_b0")
+    fnames = get_fnames(name="scil_b0")
     return nib.load(fnames[0])
 
 
@@ -1790,7 +1790,7 @@ def read_siemens_scil_b0():
         Nifti1Image
 
     """
-    fnames = get_fnames("scil_b0")
+    fnames = get_fnames(name="scil_b0")
     return nib.load(fnames[1])
 
 
@@ -1805,9 +1805,9 @@ def read_isbi2013_2shell():
         GradientTable
 
     """
-    fraw, fbval, fbvec = get_fnames("isbi2013_2shell")
+    fraw, fbval, fbvec = get_fnames(name="isbi2013_2shell")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
 
@@ -1823,9 +1823,9 @@ def read_sherbrooke_3shell():
         GradientTable
 
     """
-    fraw, fbval, fbvec = get_fnames("sherbrooke_3shell")
+    fraw, fbval, fbvec = get_fnames(name="sherbrooke_3shell")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
 
@@ -1835,7 +1835,7 @@ def read_stanford_labels():
     # First get the hardi data
     hard_img, gtab = read_stanford_hardi()
     # Fetch and load
-    labels_file = get_fnames("stanford_labels")
+    labels_file = get_fnames(name="stanford_labels")
     labels_img = nib.load(labels_file)
     return hard_img, gtab, labels_img
 
@@ -1851,21 +1851,21 @@ def read_stanford_hardi():
         GradientTable
 
     """
-    fraw, fbval, fbvec = get_fnames("stanford_hardi")
+    fraw, fbval, fbvec = get_fnames(name="stanford_hardi")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
 
 
 def read_stanford_t1():
-    f_t1 = get_fnames("stanford_t1")
+    f_t1 = get_fnames(name="stanford_t1")
     img = nib.load(f_t1)
     return img
 
 
 def read_stanford_pve_maps():
-    f_pve_csf, f_pve_gm, f_pve_wm = get_fnames("stanford_pve_maps")
+    f_pve_csf, f_pve_gm, f_pve_wm = get_fnames(name="stanford_pve_maps")
     img_pve_csf = nib.load(f_pve_csf)
     img_pve_gm = nib.load(f_pve_gm)
     img_pve_wm = nib.load(f_pve_wm)
@@ -1883,10 +1883,10 @@ def read_taiwan_ntu_dsi():
         GradientTable
 
     """
-    fraw, fbval, fbvec = get_fnames("taiwan_ntu_dsi")
+    fraw, fbval, fbvec = get_fnames(name="taiwan_ntu_dsi")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
 
@@ -1902,7 +1902,7 @@ def read_syn_data():
         Nifti1Image
 
     """
-    t1_name, b0_name = get_fnames("syn_data")
+    t1_name, b0_name = get_fnames(name="syn_data")
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
@@ -2225,7 +2225,7 @@ def read_cenir_multib(*, bvals=None):
     aff = nib.load(file_dict[bval]["DWI"]).affine
     return (
         nib.Nifti1Image(np.concatenate(data, -1), aff),
-        gradient_table(bval_list, np.concatenate(bvec_list, -1)),
+        gradient_table(bval_list, bvecs=np.concatenate(bvec_list, -1)),
     )
 
 
@@ -2317,9 +2317,9 @@ def read_ivim():
         GradientTable
 
     """
-    fraw, fbval, fbvec = get_fnames("ivim")
+    fraw, fbval, fbvec = get_fnames(name="ivim")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
     img = nib.load(fraw)
     return img, gtab
 
@@ -2335,9 +2335,9 @@ def read_cfin_dwi():
         GradientTable
 
     """
-    fraw, fbval, fbvec, _ = get_fnames("cfin_multib")
+    fraw, fbval, fbvec, _ = get_fnames(name="cfin_multib")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
 
@@ -2351,7 +2351,7 @@ def read_cfin_t1():
         Nifti1Image
 
     """
-    _, _, _, fraw = get_fnames("cfin_multib")
+    _, _, _, fraw = get_fnames(name="cfin_multib")
     img = nib.load(fraw)
     return img  # , gtab
 
@@ -2447,13 +2447,13 @@ def read_qte_lte_pte():
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     """
-    fdata, fbval, fbvec, fmask = get_fnames("qte_lte_pte")
+    fdata, fbval, fbvec, fmask = get_fnames(name="qte_lte_pte")
     data_img = nib.load(fdata)
     mask_img = nib.load(fmask)
     bvals = np.loadtxt(fbval)
     bvecs = np.loadtxt(fbvec)
     btens = np.array(["LTE" for i in range(61)] + ["PTE" for i in range(61)])
-    gtab = gradient_table(bvals, bvecs, btens=btens)
+    gtab = gradient_table(bvals, bvecs=bvecs, btens=btens)
     return data_img, mask_img, gtab
 
 
@@ -2470,7 +2470,7 @@ def read_DiB_70_lte_pte_ste():
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     """
-    fdata, fbval, fbvec, fmask = get_fnames("DiB_70_lte_pte_ste")
+    fdata, fbval, fbvec, fmask = get_fnames(name="DiB_70_lte_pte_ste")
     data_img = nib.load(fdata)
     mask_img = nib.load(fmask)
     bvals = np.loadtxt(fbval)
@@ -2488,7 +2488,7 @@ def read_DiB_70_lte_pte_ste():
         + ["PTE" for i in range(10)]
         + ["STE" for i in range(6)]
     )
-    gtab = gradient_table(bvals, bvecs, btens=btens)
+    gtab = gradient_table(bvals, bvecs=bvecs, btens=btens)
     return data_img, mask_img, gtab
 
 
@@ -2505,7 +2505,7 @@ def read_DiB_217_lte_pte_ste():
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     """
-    fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames("DiB_217_lte_pte_ste")
+    fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames(name="DiB_217_lte_pte_ste")
     _, folder = fetch_DiB_217_lte_pte_ste()
     if op.isfile(pjoin(folder, "DiB_217_lte_pte_ste.nii.gz")):
         data_img = nib.load(pjoin(folder, "DiB_217_lte_pte_ste.nii.gz"))
@@ -2533,7 +2533,7 @@ def read_DiB_217_lte_pte_ste():
         + ["PTE" for i in range(46)]
         + ["STE" for i in range(10)]
     )
-    gtab = gradient_table(bvals, bvecs, btens=btens)
+    gtab = gradient_table(bvals, bvecs=bvecs, btens=btens)
     return data_img, mask_img, gtab
 
 
@@ -2548,7 +2548,7 @@ def extract_example_tracts(out_dir):
 
     """
 
-    fname = get_fnames("minimal_bundles")
+    fname = get_fnames(name="minimal_bundles")
 
     with zipfile.ZipFile(fname, "r") as zip_obj:
         zip_obj.extractall(out_dir)

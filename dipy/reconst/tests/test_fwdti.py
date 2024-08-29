@@ -32,14 +32,14 @@ def setup_module():
     """Module-level setup"""
     global gtab, gtab_2s, mevals, model_params_mv
     global DWI, FAref, GTF, MDref, FAdti, MDdti
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # FW model requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
     # Simulation a typical DT and DW signal for no water contamination
     # S0 = np.array(100)

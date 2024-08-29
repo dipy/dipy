@@ -134,11 +134,11 @@ def test_predict_shape_and_masking():
     resdnn_model = HistoResDNN()
     resdnn_model.fetch_default_weights()
 
-    dwi_fname, bval_fname, bvec_fname = get_fnames("stanford_hardi")
+    dwi_fname, bval_fname, bvec_fname = get_fnames(name="stanford_hardi")
     data, _ = load_nifti(dwi_fname)
     data = np.squeeze(data)
     bvals, bvecs = read_bvals_bvecs(bval_fname, bvec_fname)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     mask = np.zeros(data.shape[0:3], dtype=bool)
     mask[38:40, 45:50, 35:40] = 1
@@ -156,13 +156,13 @@ def test_predict_shape_and_masking():
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_wrong_sh_order_weights():
     resdnn_model = HistoResDNN(sh_order_max=6)
-    fetch_model_weights_path = get_fnames("histo_resdnn_weights")
+    fetch_model_weights_path = get_fnames(name="histo_resdnn_weights")
     assert_raises(ValueError, resdnn_model.load_model_weights, fetch_model_weights_path)
 
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_wrong_sh_order_input():
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames("histo_resdnn_weights")
+    fetch_model_weights_path = get_fnames(name="histo_resdnn_weights")
     resdnn_model.load_model_weights(fetch_model_weights_path)
     assert_raises(ValueError, resdnn_model._HistoResDNN__predict, np.zeros((1, 28)))

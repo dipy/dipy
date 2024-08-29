@@ -35,12 +35,14 @@ class BenchQuickbundles:
             "expected_nb_clusters": 4 * 8,
         }
 
-        fname = get_fnames("fornix")
+        fname = get_fnames(name="fornix")
 
         fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
         fornix_streamlines = Streamlines(fornix)
-        fornix_streamlines = set_number_of_points(fornix_streamlines, nb_points)
+        fornix_streamlines = set_number_of_points(
+            fornix_streamlines, nb_points=nb_points
+        )
 
         # Create eight copies of the fornix to be clustered (one in
         # each octant).

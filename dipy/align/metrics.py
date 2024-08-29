@@ -522,7 +522,7 @@ class EMMetric(SimilarityMetric):
         Computes the forward update field to register the moving image towards
         the static image in a gradient-based optimization algorithm
         """
-        return self.compute_step(True)
+        return self.compute_step(forward_step=True)
 
     def compute_backward(self):
         r"""Computes one step bringing the static image towards the moving.
@@ -530,7 +530,7 @@ class EMMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        return self.compute_step(False)
+        return self.compute_step(forward_step=False)
 
     @warning_for_keywords()
     def compute_gauss_newton_step(self, *, forward_step=True):
@@ -671,7 +671,11 @@ class EMMetric(SimilarityMetric):
         shape = np.array(self.static_image.shape, dtype=np.int32)
         affine = self.static_affine
         self.static_image_mask = transformation.transform(
-            self.static_image_mask, "nearest", None, shape, affine
+            self.static_image_mask,
+            interpolation="nearest",
+            image_world2grid=None,
+            out_shape=shape,
+            out_grid2world=affine,
         )
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
@@ -698,7 +702,11 @@ class EMMetric(SimilarityMetric):
         shape = np.array(self.moving_image.shape, dtype=np.int32)
         affine = self.moving_affine
         self.moving_image_mask = transformation.transform(
-            self.moving_image_mask, "nearest", None, shape, affine
+            self.moving_image_mask,
+            interpolation="nearest",
+            image_world2grid=None,
+            out_shape=shape,
+            out_grid2world=affine,
         )
 
 
@@ -792,7 +800,7 @@ class SSDMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
-        return self.compute_step(True)
+        return self.compute_step(forward_step=True)
 
     def compute_backward(self):
         r"""Computes one step bringing the static image towards the moving.
@@ -800,7 +808,7 @@ class SSDMetric(SimilarityMetric):
         Computes the updated displacement field to be used for registration of
         the static image towards the moving image
         """
-        return self.compute_step(False)
+        return self.compute_step(forward_step=False)
 
     @warning_for_keywords()
     def compute_gauss_newton_step(self, *, forward_step=True):
@@ -1021,7 +1029,7 @@ def v_cycle_2d(
         sub_residual,
         sublambda_param,
         sub_displacement,
-        depth + 1,
+        depth=depth + 1,
     )
     # displacement += np.array(
     #    vfu.upsample_displacement_field(sub_displacement, shape))
@@ -1143,7 +1151,7 @@ def v_cycle_3d(
         sub_residual,
         sublambda_param,
         sub_displacement,
-        depth + 1,
+        depth=depth + 1,
     )
     del subdelta_field
     del subsigma_sq_field

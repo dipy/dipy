@@ -255,8 +255,9 @@ class ParzenJointHistogram:
                                       self.padding, self.joint,
                                       self.smarginal, self.mmarginal)
 
+    @warning_for_keywords()
     def update_gradient_dense(self, theta, transform, static, moving,
-                              grid2world, mgradient, smask=None, mmask=None):
+                              grid2world, mgradient, *, smask=None, mmask=None):
         r""" Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
@@ -311,7 +312,7 @@ class ParzenJointHistogram:
             raise ValueError('Invalid gradient field dimensions.')
 
         if not self.setup_called:
-            self.setup(static, moving, smask, mmask)
+            self.setup(static, moving, smask=smask, mmask=mmask)
 
         n = theta.shape[0]
         nbins = self.nbins

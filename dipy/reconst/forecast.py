@@ -40,7 +40,7 @@ class ForecastModel(OdfModel, Cache):
     The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def __init__(
         self,
         gtab,
@@ -430,7 +430,7 @@ def psi_l(ell, b):
     return v
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     r"""Compute the FORECAST radial matrix"""
     n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
@@ -448,7 +448,7 @@ def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     return M
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def rho_matrix(sh_order_max, vecs):
     r"""Compute the SH matrix $\rho$"""
 
@@ -467,7 +467,7 @@ def rho_matrix(sh_order_max, vecs):
     return rho
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def lb_forecast(sh_order_max):
     r"""Returns the Laplace-Beltrami regularization matrix for FORECAST"""
     n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)

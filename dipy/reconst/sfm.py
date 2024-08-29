@@ -294,7 +294,7 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mat_gtab = grad.gradient_table(
-                gtab.bvals[~gtab.b0s_mask], gtab.bvecs[~gtab.b0s_mask]
+                gtab.bvals[~gtab.b0s_mask], bvecs=gtab.bvecs[~gtab.b0s_mask]
             )
         # Preallocate:
         mat = np.empty((np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))

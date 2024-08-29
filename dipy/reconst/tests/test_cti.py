@@ -47,7 +47,7 @@ def setup_module():
     bvecs1 = np.concatenate([hsph_updated.vertices] * 4)
     bvecs1 = np.append(bvecs1, [[0, 0, 0]], axis=0)
     bvals1 = np.array([2] * 20 + [1] * 20 + [1] * 20 + [1] * 20 + [0])
-    gtab1 = gradient_table(bvals1, bvecs1)
+    gtab1 = gradient_table(bvals1, bvecs=bvecs1)
 
     # Generating perpendicular directions to hsph_updated
     hsph_updated90 = _perpendicular_directions_temp(hsph_updated.vertices)
@@ -60,7 +60,7 @@ def setup_module():
     )
     bvecs2 = np.append(bvecs2, [[0, 0, 0]], axis=0)
     bvals2 = np.array([0] * 20 + [1] * 20 + [1] * 20 + [0] * 20 + [0])
-    gtab2 = gradient_table(bvals2, bvecs2)
+    gtab2 = gradient_table(bvals2, bvecs=bvecs2)
 
     e1 = bvecs1
     e2 = bvecs2
@@ -73,7 +73,7 @@ def setup_module():
         b[0, 0] = bvals1[i]
         b[1, 1] = bvals2[i]
         B[i] = np.matmul(V[i], np.matmul(b, V_transpose[i]))
-    gtab = gradient_table(bvals1, bvecs1, btens=B)
+    gtab = gradient_table(bvals1, bvecs=bvecs1, btens=B)
     S0 = 100
     anisotropic_DTD = _anisotropic_DTD()
     isotropic_DTD = _isotropic_DTD()
