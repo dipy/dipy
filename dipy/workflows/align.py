@@ -149,7 +149,7 @@ class SlrWithQbxFlow(Workflow):
         For efficiency we apply the registration on cluster centroids and
         remove small clusters.
 
-        See :footcite:p:`Garyfallidis2014`, :footcite:p:`Garyfallidis2015`,
+        See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015`,
         :footcite:p:`Garyfallidis2018` for further details.
 
         Parameters
