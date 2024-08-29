@@ -105,9 +105,9 @@ def cmp_pkg_version(version_str, *, pkg_version_str=__version__):
 
     Examples
     --------
-    >>> cmp_pkg_version('1.2.1', '1.2.0')
+    >>> cmp_pkg_version('1.2.1', pkg_version_str='1.2.0')
     1
-    >>> cmp_pkg_version('1.2.0dev', '1.2.0')
+    >>> cmp_pkg_version('1.2.0dev', pkg_version_str='1.2.0')
     -1
 
     """
@@ -277,7 +277,7 @@ def deprecated_params(
     The deprecation warnings are not shown in the following examples.
     To deprecate a positional or keyword argument::
     >>> from dipy.utils.deprecator import deprecated_params
-    >>> @deprecated_params('sig', 'sigma', '0.3')
+    >>> @deprecated_params('sig', new_name='sigma', since='0.3')
     ... def test(sigma):
     ...     return sigma
     >>> test(2)
@@ -290,8 +290,8 @@ def deprecated_params(
     It is also possible to replace multiple arguments. The ``old_name``,
     ``new_name`` and ``since`` have to be `tuple` or `list` and contain the
     same number of entries::
-    >>> @deprecated_params(['a', 'b'], ['alpha', 'beta'],
-    ...                    ['0.2', 0.4])
+    >>> @deprecated_params(['a', 'b'], new_name=['alpha', 'beta'],
+    ...                    since=['0.2', 0.4])
     ... def test(alpha, beta):
     ...     return alpha, beta
     >>> test(a=2, b=3)  # doctest: +SKIP

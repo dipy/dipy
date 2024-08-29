@@ -302,15 +302,15 @@ def frenet_serret(xyz):
     dxyz = np.gradient(xyz)[0]
     ddxyz = np.gradient(dxyz)[0]
     # Tangent
-    T = np.divide(dxyz, magn(dxyz, 3))
+    T = np.divide(dxyz, magn(dxyz, n=3))
     # Derivative of Tangent
     dT = np.gradient(T)[0]
     # Normal
-    N = np.divide(dT, magn(dT, 3))
+    N = np.divide(dT, magn(dT, n=3))
     # Binormal
     B = np.cross(T, N)
     # Curvature
-    k = magn(np.cross(dxyz, ddxyz), 1) / (magn(dxyz, 1) ** 3)
+    k = magn(np.cross(dxyz, ddxyz), n=1) / (magn(dxyz, n=1) ** 3)
     # Torsion
     # (In matlab was t=dot(-B,N,2))
     t = np.sum(-B * N, axis=1)
@@ -358,7 +358,7 @@ def mean_curvature(xyz):
     ddxyz = np.gradient(dxyz)[0]
 
     # Curvature
-    k = magn(np.cross(dxyz, ddxyz), 1) / (magn(dxyz, 1) ** 3)
+    k = magn(np.cross(dxyz, ddxyz), n=1) / (magn(dxyz, n=1) ** 3)
 
     return np.mean(k)
 
@@ -452,7 +452,7 @@ def longest_track_bundle(bundle, *, sort=False):
     >>> longest_track_bundle(bundle)
     array([[0, 0, 0],
            [4, 4, 4]])
-    >>> longest_track_bundle(bundle, True) #doctest: +ELLIPSIS
+    >>> longest_track_bundle(bundle, sort=True) #doctest: +ELLIPSIS
     array([0, 1]...)
 
     """
@@ -665,7 +665,7 @@ def spline(xyz, *, s=3, k=2, nest=-1):
     >>> y+= np.random.normal(scale=0.1, size=y.shape)
     >>> z+= np.random.normal(scale=0.1, size=z.shape)
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyzn=spline(xyz,3,2,-1)
+    >>> xyzn=spline(xyz,s=3,k=2,nest=-1)
     >>> len(xyzn) > len(xyz)
     True
 

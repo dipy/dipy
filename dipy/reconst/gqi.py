@@ -53,7 +53,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> from dipy.data import dsi_voxels
         >>> data, gtab = dsi_voxels()
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere
-        >>> sphere = create_unit_sphere(5)
+        >>> sphere = create_unit_sphere(recursion_level=5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
         >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.1)
         >>> voxel_signal = data[0, 0, 0]

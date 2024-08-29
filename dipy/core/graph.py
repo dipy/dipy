@@ -20,10 +20,10 @@ class Graph:
         --------
         >>> from dipy.core.graph import Graph
         >>> g=Graph()
-        >>> g.add_node('a',5)
-        >>> g.add_node('b',6)
-        >>> g.add_node('c',10)
-        >>> g.add_node('d',11)
+        >>> g.add_node('a', attr=5)
+        >>> g.add_node('b', attr=6)
+        >>> g.add_node('c', attr=10)
+        >>> g.add_node('d', attr=11)
         >>> g.add_edge('a','b')
         >>> g.add_edge('b','c')
         >>> g.add_edge('c','d')
