@@ -356,7 +356,9 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         ----------
         .. footbibliography::
         """
-        DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args, **kwargs)
+        DiffusionKurtosisModel.__init__(
+            self, gtab, fit_method=fit_method, *args, **kwargs
+        )
 
     def fit(self, data, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
         """Fit method of the Diffusion Kurtosis Microstructural Model
