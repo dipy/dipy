@@ -7,6 +7,7 @@ python_sources = [
   'model.py',
   'synb0.py',
   'utils.py',
+  'finta_model.py',
   ]
 
 

@@ -1,8 +1,85 @@
+import logging
+
 import numpy as np
 from scipy.ndimage import affine_transform, label
 
 from dipy.align.reslice import reslice
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.optpkg import optional_package
+
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+if have_tf:
+    from keras import Sequential
+    from keras.layers import Layer
+    from tensorflow import pad as tf_pad
+else:
+    have_tf = False
+
+    class Model:
+        pass
+
+    class Layer:
+        pass
+
+    logging.warning("TensorFlow not installed. Some functions may not work.")
+
+
+# Dictionary to store the expected output shape of the encoder in the SAE.
+dict_kernel_encoder_shape = {1: 12288, 2: 10240, 3: 8192, 4: 7168, 5: 5120}
+
+
+class ReflectionPadding1D(Layer):
+    def __init__(self, padding: int = 1, **kwargs):
+        """Custom Reflection Padding 1D layer, based on the PyTorch ``ReflectionPad1d``
+        layer.
+
+        Parameters
+        ----------
+        padding : int, optional
+            Amount of padding in the input tensor, by default 1
+        """
+        super(ReflectionPadding1D, self).__init__(**kwargs)
+        self.padding = padding
+
+    def call(self, inputs):
+        """Run ``inputs`` through the layer.
+
+        Parameters
+        ----------
+        inputs : tf.Tensor
+            The input tensor to be run through the layer.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor, result of operation.
+        """
+
+        return tf_pad(
+            inputs, [[0, 0], [self.padding, self.padding], [0, 0]], mode="REFLECT"
+        )
+
+
+def pre_pad(layer: Layer):
+    """Function to pre-pad a layer with a ReflectionPadding1D layer.
+
+    Parameters
+    ----------
+    layer : keras.layers.Layer
+        Layer to apply ReflectionPadding1D to.
+
+    Returns
+    -------
+    keras.layers.Layer
+        Layer with ReflectionPadding1D layer applied.
+    """
+
+    if not isinstance(layer, Layer):
+        raise ValueError(
+            "Input must be an instance of keras.layers.Layer."
+            " Pass a layer to apply ReflectionPadding1D to."
+        )
+    return Sequential([ReflectionPadding1D(padding=1), layer])
 
 
 @warning_for_keywords()
