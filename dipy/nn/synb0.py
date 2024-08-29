@@ -283,8 +283,8 @@ class Synb0:
         # Normalize the data.
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = normalize(T1[i], 0, 150, -1, 1)
-            b0[i] = normalize(b0[i], 0, p99[i], -1, 1)
+            T1[i] = normalize(T1[i], min_v=0, max_v=150, new_min=-1, new_max=1)
+            b0[i] = normalize(b0[i], min_v=0, max_v=p99[i], new_min=-1, new_max=1)
 
         if dim == 3:
             if batch_size is not None:

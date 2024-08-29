@@ -62,7 +62,7 @@ def test_horizon_flow(rng):
     images = None
 
     horizon(
-        tractograms,
+        tractograms=tractograms,
         images=images,
         cluster=True,
         cluster_thr=5,
@@ -78,7 +78,7 @@ def test_horizon_flow(rng):
     buan_colors = np.ones(streamlines.get_data().shape)
 
     horizon(
-        tractograms,
+        tractograms=tractograms,
         buan=True,
         buan_colors=buan_colors,
         world_coords=True,
@@ -90,7 +90,7 @@ def test_horizon_flow(rng):
     images = [(data, affine, "test/test.nii.gz")]
 
     horizon(
-        tractograms,
+        tractograms=tractograms,
         images=images,
         cluster=True,
         cluster_thr=5,

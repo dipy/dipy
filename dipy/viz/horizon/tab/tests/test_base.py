@@ -110,7 +110,7 @@ def test_build_slider():
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_checkbox():
-    checkbox = build_checkbox(["Hello", "Hi"], ["Hello"])
+    checkbox = build_checkbox(labels=["Hello", "Hi"], checked_labels=["Hello"])
 
     npt.assert_equal(len(checkbox.obj.checked_labels), 1)
     npt.assert_equal(len(checkbox.obj.labels), 2)
@@ -133,7 +133,7 @@ def test_build_checkbox():
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_build_radio():
-    radio = build_radio_button(["Hello", "Hi"], ["Hello"])
+    radio = build_radio_button(labels=["Hello", "Hi"], checked_labels=["Hello"])
 
     npt.assert_equal(len(radio.obj.checked_labels), 1)
     npt.assert_equal(len(radio.obj.labels), 2)
@@ -161,13 +161,17 @@ def test_build_switcher():
         npt.assert_equal(none_switcher, None)
         check_for_warnings(l_warns, "No items passed in switcher")
 
-    switcher_label, switcher = build_switcher([{"label": "Hello", "value": "hello"}])
+    switcher_label, switcher = build_switcher(
+        items=[{"label": "Hello", "value": "hello"}]
+    )
     npt.assert_equal(switcher.selected_value[0], 0)
     npt.assert_equal(switcher.selected_value[1], "hello")
     npt.assert_equal(switcher_label.selected_value, "")
 
     switcher_label, switcher = build_switcher(
-        [{"label": "Hello", "value": "hello"}], "Greeting", 1
+        items=[{"label": "Hello", "value": "hello"}],
+        label="Greeting",
+        initial_selection=1,
     )
     npt.assert_equal(switcher.selected_value[0], 0)
     npt.assert_equal(switcher.selected_value[1], "hello")

@@ -381,7 +381,14 @@ class BundleAnalysisTractometryFlow(Workflow):
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
                 buan_bundle_profiles(
-                    model_bundle_folder, b, c, d, group_id, sub, no_disks, out_dir
+                    model_bundle_folder,
+                    b,
+                    c,
+                    d,
+                    group_id,
+                    sub,
+                    no_disks=no_disks,
+                    out_dir=out_dir,
                 )
 
 
@@ -632,7 +639,7 @@ class BundleShapeAnalysis(Workflow):
                     ).streamlines
 
                     ba_value = bundle_shape_similarity(
-                        bundle1, bundle2, rng, clust_thr, threshold
+                        bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
                     )
 
                     ba_matrix[i][j] = ba_value

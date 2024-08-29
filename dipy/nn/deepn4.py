@@ -252,7 +252,7 @@ class DeepN4:
             subj, 128
         )
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
-        input_data = normalize(input_data, 0, in_max, 0, 1)
+        input_data = normalize(input_data, min_v=0, max_v=in_max, new_min=0, new_max=1)
         input_data = np.squeeze(input_data)
         input_vols = np.zeros((1, 128, 128, 128, 1))
         input_vols[0, :, :, :, 0] = input_data
