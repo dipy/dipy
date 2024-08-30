@@ -15,7 +15,7 @@ Publications
 - :cite:t:`Rokem2015`
 - :cite:t:`Ocegueda2016`
 - :cite:t:`NetoHenriques2017`
-- :cite:t:`NetoHenriques2021`
+- :cite:t:`NetoHenriques2021a`
 
 A note on citing our work
 --------------------------
