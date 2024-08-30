@@ -49,8 +49,8 @@ from dipy.segment.mask import median_otsu
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was
 # kindly provided by Hansen and Jespersen (more details about the data are
-# provided in their paper [Hansen2016]_). The total size of the downloaded data
-# is 192 MBytes, however you only need to fetch it once.
+# provided in their paper :footcite:p:`Hansen2016a`). The total size of the
+# downloaded data is 192 MBytes, however you only need to fetch it once.
 
 dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames("cfin_multib")
 data, affine = load_nifti(dwi_fname)

@@ -4,7 +4,7 @@ Direct Bundle Registration
 ==========================
 
 This example explains how you can register two bundles from two different
-subjects directly in the space of streamlines :footcite:p:`Garyfallidis2014`,
+subjects directly in the space of streamlines :footcite:p:`Garyfallidis2014b`,
 :footcite:p:`Garyfallidis2015`.
 
 To show the concept we will use two pre-saved cingulum bundles. The algorithm
