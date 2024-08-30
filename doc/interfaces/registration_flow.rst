@@ -106,7 +106,7 @@ Apply a Transformation
 
 We can apply a transformation computed previously to an image. In order to do
 so, we need to specify the path of the static image file, moving image file,
-and transform map file, which is a text(*.txt) file containing the affine matrix
+and transform map file, which is a text(``*.txt``) file containing the affine matrix
 for the affine case and a nifti file containing the mapping displacement field
 in each voxel with this shape (x, y, z, 3, 2) for the diffeomorphic case,
 followed by optional arguments. In this case, we will be specifying the
