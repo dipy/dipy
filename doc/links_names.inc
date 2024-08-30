@@ -83,6 +83,7 @@
 
 .. Scientific Python practices
 .. _`Scientific Python`: https://scientific-python.org/
+.. _`Scientific Python SPECS`: https://scientific-python.org/specs
 .. _`SPEC 0 — Minimum Supported Versions`: https://scientific-python.org/specs/spec-0000/
 
 .. Other python projects
