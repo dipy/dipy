@@ -47,9 +47,8 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 ###############################################################################
-# This data set provides a label map (generated using `FreeSurfer
-# <https://surfer.nmr.mgh.harvard.edu/>`_), in which the white matter voxels
-# are labeled as either 1 or 2:
+# This data set provides a label map (generated using FreeSurfer_, in which the
+# white matter voxels are labeled as either 1 or 2:
 
 white_matter = (labels == 1) | (labels == 2)
 
