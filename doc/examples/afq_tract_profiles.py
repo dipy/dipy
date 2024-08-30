@@ -74,7 +74,7 @@ arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 # streamline. This is so that when we later extract values from a volume,
 # we will not have different streamlines going in opposite directions.
 #
-# To orient all the streamlines in each bundles, we will create standard
+# To orient all the streamlines in each bundle, we will create standard
 # streamlines, by finding the centroids of the left ARC and CST bundle models.
 #
 # The advantage of using the model bundles is that we can use the same
