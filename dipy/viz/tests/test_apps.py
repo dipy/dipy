@@ -128,7 +128,7 @@ def test_horizon(rng):
     tractograms = [sft]
     images = None
     horizon(
-        tractograms,
+        tractograms=tractograms,
         images=images,
         cluster=True,
         cluster_thr=5,
@@ -145,7 +145,7 @@ def test_horizon(rng):
     # tractograms in native coords (not supported for now)
     with npt.assert_raises(ValueError) as ve:
         horizon(
-            tractograms,
+            tractograms=tractograms,
             images=images,
             cluster=True,
             cluster_thr=5,
@@ -164,7 +164,7 @@ def test_horizon(rng):
     # only images
     tractograms = None
     horizon(
-        tractograms,
+        tractograms=tractograms,
         images=images,
         cluster=True,
         cluster_thr=5,
@@ -179,7 +179,7 @@ def test_horizon(rng):
 
     # no clustering tractograms and images
     horizon(
-        tractograms,
+        tractograms=tractograms,
         images=images,
         cluster=False,
         cluster_thr=5,

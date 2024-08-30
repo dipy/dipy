@@ -473,7 +473,9 @@ class EVACPlus:
         n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
             n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine, ori_shape = transform_img(n_T1[i], affine[i], voxsize[i])
+            t_img, t_affine, ori_shape = transform_img(
+                n_T1[i], affine[i], voxsize=voxsize[i]
+            )
             input_data[..., i] = t_img
             rev_affine[i] = t_affine
             ori_shapes[i] = ori_shape

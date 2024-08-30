@@ -243,14 +243,16 @@ class MapmriModel(ReconstModel, Cache):
                         " anistropic_scaling=True."
                     )
                 if radial_order > 10:
-                    self.sdp_constraints = load_sdp_constraints("hermite", 10)
+                    self.sdp_constraints = load_sdp_constraints("hermite", order=10)
                     warn(
                         "Global constraints are currently supported for"
                         " radial_order <= 10.",
                         stacklevel=2,
                     )
                 else:
-                    self.sdp_constraints = load_sdp_constraints("hermite", radial_order)
+                    self.sdp_constraints = load_sdp_constraints(
+                        "hermite", order=radial_order
+                    )
                 m = (2 + radial_order) * (4 + radial_order) * (3 + 2 * radial_order)
                 m = m // 24
                 self.sdp = PositiveDefiniteLeastSquares(m, A=self.sdp_constraints)

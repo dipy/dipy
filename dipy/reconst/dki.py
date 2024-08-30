@@ -1782,7 +1782,9 @@ class DiffusionKurtosisModel(ReconstModel):
                     msg = "Maximum convexity_level supported is 4."
                     warnings.warn(msg, stacklevel=2)
                     self.convexity_level = 4
-                self.sdp_constraints = load_sdp_constraints("dki", self.convexity_level)
+                self.sdp_constraints = load_sdp_constraints(
+                    "dki", order=self.convexity_level
+                )
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
         self.weights = fit_method in {"WLS", "WLLS", "UWLLS", "CWLS"}

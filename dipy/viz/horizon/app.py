@@ -329,8 +329,8 @@ class Horizon:
             active_streamlines, self.tractograms[0], Space.RASMM
         )
         hz2 = Horizon(
-            [active_sft],
-            self.images,
+            tractograms=[active_sft],
+            images=self.images,
             cluster=True,
             cluster_thr=self.cluster_thr / 2.0,
             random_colors=self.random_colors,
@@ -501,7 +501,7 @@ class Horizon:
                 # Information panel
                 # It will be changed once all the elements wrapped in horizon
                 # elements.
-                text_block = build_label(HELP_MESSAGE, 18)
+                text_block = build_label(HELP_MESSAGE, font_size=18)
 
                 self.help_panel = ui.Panel2D(
                     size=(300, 200),
@@ -549,7 +549,12 @@ class Horizon:
                         is_binary=binary_image,
                     )
                     self.__tabs.append(
-                        SlicesTab(slices_viz, title, fname, self._show_force_render)
+                        SlicesTab(
+                            slices_viz,
+                            title,
+                            fname,
+                            force_render=self._show_force_render,
+                        )
                     )
                     img_count += 1
 
