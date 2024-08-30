@@ -458,9 +458,9 @@ class QuickBundles(Clustering):
         considered as part of it.
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have
-        12 points.
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
