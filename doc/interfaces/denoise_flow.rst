@@ -139,6 +139,8 @@ values, and the output directory.
 We will create a directory where to save the denoised image (e.g.:
 ``denoise_nlmeans_output``)::
 
+    mkdir denoise_nlmeans_output
+
 The NLMEANS denoising is performed using the ``dipy_denoise_nlmeans`` command,
 e.g.::
 
