@@ -73,9 +73,10 @@ Symmetric Diffeomorphic Registration
 ------------------------------------
 
 Symmetric Diffeomorphic Registration is performed using the Symmetric
-Normalization (SyN) algorithm proposed by Avants et al. [Avants09]_ (also
-implemented in the ANTs software [Avants11]_). It is an optimization technique
-that brings the moving image closer to the static image.
+Normalization (SyN) algorithm proposed by :footcite:t:`Avants2008` (also
+implemented in the ANTs software :footcite:t:`Avants2009`). It is an
+optimization technique that brings the moving image closer to the static
+image.
 
 Create a directory in which to save the transformed image (e.g.:
 ``syn_reg_output``)::
@@ -127,7 +128,7 @@ to the specified output directory.
 Streamline-based Registration
 -----------------------------
 
-Streamline-based registration (SLR) [Garyfallidis15]_ is performed to align
+Streamline-based registration (SLR) :footcite:p:`Garyfallidis2015` is performed to align
 bundles of streamlines directly in the space of streamlines. The aim is to
 align the moving streamlines with the static streamlines.
 
@@ -149,17 +150,8 @@ Then, run the command as::
 This command will perform streamline-based registration and save the
 transformed files to the specified output directory.
 
+
 References
 ----------
 
-.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
-   Symmetric Diffeomorphic Image Registration with Cross-Correlation:
-   Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
-   26-41.
-
-.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-   Normalization Tools (ANTS), 1-35.
-
-.. [Garyfallidis15] Garyfallidis et al., “Robust and efficient linear registration
-   of white-matter fascicles in the space of streamlines”, Neuroimage,
-   117:124-140, 2015.
+.. footbibliography::

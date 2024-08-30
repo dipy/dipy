@@ -95,11 +95,11 @@ Diffusion Tensor Imaging (DTI)
 ------------------------------
 
 The diffusion tensor model is a model that describes the diffusion within a
-voxel. First proposed by Basser and colleagues [Basser1994]_, it has been very
-influential in demonstrating the utility of diffusion MRI in characterizing the
-micro-structure of white matter tissue and of the biophysical properties of
-tissue, inferred from local diffusion properties and it is still very commonly
-used.
+voxel. First proposed by Basser and colleagues :footcite:p:`Basser1994a`, it
+has been very influential in demonstrating the utility of diffusion MRI in
+characterizing the micro-structure of white matter tissue and of the
+biophysical properties of tissue, inferred from local diffusion properties
+and it is still very commonly used.
 
 The diffusion tensor models the diffusion signal as:
 
@@ -156,19 +156,19 @@ Diffusion Kurtosis Imaging (DKI)
 The diffusion kurtosis model is an expansion of the diffusion tensor model. In
 addition to the diffusion tensor (DT), the diffusion kurtosis model quantifies
 the degree to which water diffusion in biological tissues is non-Gaussian using
-the kurtosis tensor (KT) [Jensen2005]_.
+the kurtosis tensor (KT) :footcite:p:`Jensen2005`.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to characterize tissue microstructural
-heterogeneity [Jensen2010]_.
+heterogeneity :footcite:p:`Jensen2010`.
 
 Moreover, DKI can be used to:
 
 * Derive concrete biophysical parameters, such as the density of axonal fibers
-  and diffusion tortuosity [Fierem2011]_.
+  and diffusion tortuosity :footcite:p:`Fieremans2011`.
 
 * Resolve crossing fibers in tractography and to obtain invariant rotational
-  measures not limited to well-aligned fiber populations [NetoHe2015]_.
+  measures not limited to well-aligned fiber populations :footcite:p:`NetoHenriques2015`.
 
 We will use the ``cfin_multib`` dataset in DIPY to showcase this reconstruction
 method. You can also use your own data!
@@ -228,15 +228,15 @@ Intravoxel Incoherent Motion (IVIM)
 The intravoxel incoherent motion (IVIM) model describes diffusion and perfusion
 in the signal acquired with a diffusion MRI sequence that contains multiple low
 b-values. The IVIM model can be understood as an adaptation of the work of
-Stejskal and Tanner [Stejskal65]_ in biological tissue, and was proposed by Le
-Bihan [LeBihan84]_. The model assumes two compartments: a slow moving
+:footcite:t:`Stejskal1965` in biological tissue, and was proposed by
+:footcite:t:`LeBihan1988`. The model assumes two compartments: a slow moving
 compartment, where particles diffuse in a Brownian fashion as a consequence of
 thermal energy, and a fast moving compartment (the vascular compartment), where
 blood moves as a consequence of a pressure gradient. In the first compartment,
 the diffusion coefficient is $\mathbf{D}$ while in the second compartment, a
 pseudo diffusion term $\mathbf{D^*}$ is introduced that describes the
 displacement of the blood elements in an assumed randomly laid out vascular
-network, at the macroscopic level. According to [LeBihan84]_, $\mathbf{D^*}$ is
+network, at the macroscopic level. According to :footcite:p:`LeBihan1988`, $\mathbf{D^*}$ is
 greater than $\mathbf{D}$.
 
 We will be using the ``ivim`` dataset for the IVIM command line interface
@@ -271,33 +271,4 @@ saved to the current directory by default.
 References
 ----------
 
-.. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
-                spectroscopy and imaging.
-
-.. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
-                Diffusional Kurtosis Imaging: The Quantification of
-                Non_Gaussian Water Diffusion by Means of Magnetic Resonance
-                Imaging. Magnetic Resonance in Medicine 53: 1432-1440
-
-.. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
-                non-Gaussian water diffusion by kurtosis analysis. NMR in
-                Biomedicine 23(7): 698-710
-
-.. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
-                characterization with diffusion kurtosis imaging. NeuroImage
-                58: 177-188
-
-.. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-                Exploring the 3D geometry of the diffusion kurtosis tensor -
-                Impact on the development of robust tractography procedures and
-                novel biomarkers, NeuroImage 111: 85-99
-
-.. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
-                "Spin Diffusion Measurements: Spin Echoes in the Presence
-                of a Time-Dependent Field Gradient". The Journal of Chemical
-                Physics 42 (1): 288. Bibcode: 1965JChPh..42..288S.
-                doi:10.1063/1.1695690.
-
-.. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
-               and perfusion in intravoxel incoherent motion MR
-               imaging." Radiology 168.2 (1988): 497-505.
+.. footbibliography::
