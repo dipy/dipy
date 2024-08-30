@@ -54,6 +54,10 @@ numpydoc_show_inherited_class_members = {
     "dipy.viz.horizon.visualizer.peak.PeakActor": False
 }
 
+autodoc_skip_members = [
+    "docstring_addendum",
+]
+
 # Sphinx extension for BibTeX style citations.
 # https://github.com/mcmtroffaes/sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
@@ -559,3 +563,12 @@ sphinx_gallery_conf = {
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
+
+
+def setup(app):
+    def skip_doc_element(app, what, name, obj, would_skip, options):
+        if name in autodoc_skip_members:
+            return True
+        return would_skip
+
+    app.connect("autodoc-skip-member", skip_doc_element)
