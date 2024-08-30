@@ -150,7 +150,7 @@ Then, run the command as::
 This command will perform streamline-based registration and save the
 transformed files to the specified output directory.
 
-
+----------
 References
 ----------
 

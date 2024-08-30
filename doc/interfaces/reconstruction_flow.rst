@@ -267,7 +267,7 @@ This command will save the IVIM metrics to the directory ``recons_ivim_output``.
 In case the output directory was not specified, the output volumes will be
 saved to the current directory by default.
 
-
+----------
 References
 ----------
 

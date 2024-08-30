@@ -47,6 +47,7 @@ and write the artefact-free result to the ``motion_output`` directory.
 In case no output directory is specified, the corrected output volume
 is saved to the current directory by default.
 
+----------
 References
 ----------
 
