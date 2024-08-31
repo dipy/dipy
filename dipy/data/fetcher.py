@@ -1991,16 +1991,8 @@ mni_notes = """
 
     The following publications should be referenced when using these templates:
 
-    .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
-           and BDCG, Unbiased average age-appropriate atlases for pediatric
-           studies, NeuroImage, 54:1053-8119,
-           DOI: 10.1016/j.neuroimage.2010.07.033
-
-    .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
-            Unbiased nonlinear average age-appropriate brain templates from
-            birth to adulthood, NeuroImage, 47:S102
-            Organization for Human Brain Mapping 2009 Annual Meeting,
-            DOI: https://doi.org/10.1016/S1053-8119(09)70884-5
+    - :footcite:t:`Fonov2013`
+    - :footcite:t:`Fonov2009`
 
     **License for the MNI templates:**
 
@@ -2014,6 +2006,10 @@ mni_notes = """
     authors are not responsible for any data loss, equipment damage, property
     loss, or injury to subjects or patients resulting from the use or misuse
     of this software package.
+
+    References
+    ----------
+    .. footbibliography::
 """
 
 
