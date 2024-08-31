@@ -7,7 +7,6 @@ from libc.stdlib cimport malloc, free
 cimport numpy as cnp
 
 from dipy.tracking import Streamlines
-from dipy.testing.decorators import warning_for_keywords
 
 
 cdef extern from "dpy_math.h" nogil:
@@ -264,8 +263,7 @@ cdef void c_set_number_of_points_from_arraysequence(Streamline points,
         offset_out += nb_points
 
 
-@warning_for_keywords()
-def set_number_of_points(streamlines, *, nb_points=3):
+def set_number_of_points(streamlines, nb_points=3):
     """ Change the number of points of streamlines
         (either by downsampling or upsampling)
 
@@ -539,8 +537,7 @@ cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
     return nb_points
 
 
-@warning_for_keywords()
-def compress_streamlines(streamlines, *, tol_error=0.01, max_segment_length=10):
+def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     """ Compress streamlines by linearization.
 
     The compression :footcite:p:`Presseau2015` consists in merging consecutive

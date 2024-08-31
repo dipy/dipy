@@ -8,7 +8,6 @@ from cython.parallel import parallel, prange, threadid
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
@@ -19,11 +18,9 @@ cdef class FBCMeasures:
     cdef double [:, :] streamlines_lfbc
     cdef double [:] streamlines_rfbc
 
-    @warning_for_keywords()
     def __init__(self,
                  streamlines,
                  kernel,
-                 *,
                  min_fiberlength=10,
                  max_windowsize=7,
                  num_threads=None,
@@ -66,8 +63,7 @@ cdef class FBCMeasures:
                  num_threads=num_threads,
                  verbose=verbose)
 
-    @warning_for_keywords()
-    def get_points_rfbc_thresholded(self, threshold, *, emphasis=.5, verbose=False):
+    def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.
 
         Parameters
@@ -313,8 +309,7 @@ cdef class FBCMeasures:
                                              max_windowsize=max_windowsize)
 
 
-@warning_for_keywords()
-def compute_rfbc(streamlines_length, streamline_scores, *, max_windowsize=7):
+def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
     """ Compute the relative fiber to bundle coherence (RFBC)
 
     Parameters

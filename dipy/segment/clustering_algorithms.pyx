@@ -7,7 +7,6 @@ from dipy.segment.cythonutils cimport Data2D, shape2tuple
 from dipy.segment.metricspeed cimport Metric
 from dipy.segment.clusteringspeed cimport ClustersCentroid, QuickBundles, QuickBundlesX
 from dipy.segment.clustering import ClusterMapCentroid, ClusterCentroid
-from dipy.testing.decorators import warning_for_keywords
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -63,8 +62,7 @@ def peek(iterable):
     return first, iterator
 
 
-@warning_for_keywords()
-def quickbundles(streamlines, Metric metric, double threshold, *,
+def quickbundles(streamlines, Metric metric, double threshold,
                  long max_nb_clusters=BIGGEST_INT, ordering=None):
     """ Clusters streamlines using QuickBundles.
 
@@ -120,8 +118,7 @@ def quickbundles(streamlines, Metric metric, double threshold, *,
     return clusters_centroid2clustermap_centroid(qb.clusters)
 
 
-@warning_for_keywords()
-def quickbundlesx(streamlines, Metric metric, thresholds, *, ordering=None):
+def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     """ Clusters streamlines using QuickBundlesX.
 
     See :footcite:p:`Garyfallidis2012a` and :footcite:p:`Garyfallidis2016` for
