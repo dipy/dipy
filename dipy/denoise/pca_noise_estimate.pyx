@@ -12,7 +12,6 @@ cimport cython
 cimport numpy as cnp
 from warnings import warn
 
-from dipy.testing.decorators import warning_for_keywords
 
 # Try to get the SVD through direct API to lapack:
 try:
@@ -28,8 +27,7 @@ except ImportError:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-@warning_for_keywords()
-def pca_noise_estimate(data, gtab, *, patch_radius=1, correct_bias=True,
+def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                        smooth=2, images_as_samples=False):
     """ PCA based local noise estimation.
 

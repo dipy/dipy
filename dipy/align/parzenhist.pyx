@@ -9,7 +9,6 @@ cimport cython
 from dipy.align.fused_types cimport floating
 from dipy.align import vector_fields as vf
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
                                       _apply_affine_3d_x2,
@@ -73,8 +72,7 @@ class ParzenJointHistogram:
         self.padding = 2
         self.setup_called = False
 
-    @warning_for_keywords()
-    def setup(self, static, moving, *, smask=None, mmask=None):
+    def setup(self, static, moving, smask=None, mmask=None):
         r""" Compute histogram settings to store the PDF of input images
 
         Parameters
@@ -182,8 +180,7 @@ class ParzenJointHistogram:
         """
         return _bin_index(xnorm, self.nbins, self.padding)
 
-    @warning_for_keywords()
-    def update_pdfs_dense(self, static, moving, *, smask=None, mmask=None):
+    def update_pdfs_dense(self, static, moving, smask=None, mmask=None):
         r""" Computes the Probability Density Functions of two images
 
         The joint PDF is stored in self.joint. The marginal distributions
@@ -255,9 +252,8 @@ class ParzenJointHistogram:
                                       self.padding, self.joint,
                                       self.smarginal, self.mmarginal)
 
-    @warning_for_keywords()
     def update_gradient_dense(self, theta, transform, static, moving,
-                              grid2world, mgradient, *, smask=None, mmask=None):
+                              grid2world, mgradient, smask=None, mmask=None):
         r""" Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
@@ -1283,8 +1279,7 @@ def compute_parzen_mi(double[:, :] joint,
     return metric_value
 
 
-@warning_for_keywords()
-def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world, *,
+def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
                           double sigma=0.25, object rng=None):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 

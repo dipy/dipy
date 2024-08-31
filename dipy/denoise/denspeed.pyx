@@ -7,15 +7,14 @@ cimport cython
 from cython.parallel import parallel, prange
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
-from dipy.testing.decorators import warning_for_keywords
 
 from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-@warning_for_keywords()
-def nlmeans_3d(arr, *, mask=None, sigma=None, patch_radius=1,
+
+def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
                block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
 
