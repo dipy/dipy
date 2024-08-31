@@ -65,4 +65,3 @@ save_nifti(
 #
 # .. footbibliography::
 #
-# .. include:: ../links_names.inc

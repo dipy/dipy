@@ -300,6 +300,4 @@ References
 ----------
 .. footbibliography::
 
-.. include:: ../links_names.inc
-
 """
