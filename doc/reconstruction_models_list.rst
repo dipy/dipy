@@ -127,7 +127,7 @@
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      -
-     - `Tom Dela Haije < https://doi.org/10.1016/j.neuroimage.2019.116405>`__
+     - `Tom Dela Haije <https://doi.org/10.1016/j.neuroimage.2019.116405>`__
    * - MAPL
      - :bdg-danger:`No`
      - :bdg-success:`Yes`

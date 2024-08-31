@@ -62,7 +62,7 @@ if interactive:
 #
 #
 # We will register target tractogram to model atlas' space using streamlinear
-# registration (SLR) [Garyfallidis15]_
+# registration (SLR) :footcite:p:`Garyfallidis2015`.
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
     atlas,

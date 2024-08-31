@@ -13,7 +13,7 @@ example, some groups of participants (e.g. young children, patient groups,
 etc.) are particularly prone to motion and differences in tensor parameters and
 derived statistics (such as FA) due to motion would be confounded with actual
 differences in the physical properties of the white matter. An example of this
-was shown in a paper by :footcite:t:`Yendiki2014`_.
+was shown in a paper by :footcite:t:`Yendiki2014`.
 
 One of the strategies to deal with this problem is to apply an automatic method
 for detecting outliers in the data, excluding these outliers and refitting the

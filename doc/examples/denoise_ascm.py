@@ -89,7 +89,7 @@ den_final = adaptive_soft_matching(data, den_small, den_large, sigma[0])
 print("total time", time() - t)
 
 ###############################################################################
-# To access the quality of this denoising procedure, we plot the an axial slice
+# To access the quality of this denoising procedure, we plot an axial slice
 # of the original data, it's denoised output and residuals.
 
 axial_middle = data.shape[2] // 2

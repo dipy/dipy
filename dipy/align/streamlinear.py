@@ -365,8 +365,7 @@ class StreamlineLinearRegistration:
         bounds : list of tuples or None,
             If method == 'L_BFGS_B' then we can use bounded optimization.
             For example for the six parameters of rigid rotation we can set
-            the bounds = [(-30, 30), (-30, 30), (-30, 30),
-                          (-45, 45), (-45, 45), (-45, 45)]
+            the bounds = [(-30, 30), (-30, 30), (-30, 30), (-45, 45), (-45, 45), (-45, 45)]
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
@@ -393,7 +392,7 @@ class StreamlineLinearRegistration:
         ----------
         .. footbibliography::
 
-        """
+        """  # noqa: E501
         self.x0 = self._set_x0(x0)
         self.metric = metric
 

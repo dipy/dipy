@@ -704,26 +704,30 @@ def create_rspace(gridsize, radius_max):
 def shore_indices(radial_order, index):
     r"""Given the basis order and the index, return the shore indices n, l, m
     for modified Merlet's 3D-SHORE
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
-                                            \sum_{n=l}^{(N_{max}+l)/2}
-                                            \sum_{m=-l}^l c_{nlm}
-                                            \phi_{nlm}(q\textbf{u})
-                \end{equation}
+        :nowrap:
+
+        \begin{equation}
+            \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                                    \sum_{n=l}^{(N_{max}+l)/2}
+                                    \sum_{m=-l}^l c_{nlm}
+                                    \phi_{nlm}(q\textbf{u})
+        \end{equation}
 
     where $\phi_{nlm}$ is
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
-                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
-                        Y_l^m(\textbf{u}).
-                \end{equation}
+        :nowrap:
+
+        \begin{equation}
+            \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+                {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+                \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+                exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
+                L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+                Y_l^m(\textbf{u}).
+        \end{equation}
 
     Parameters
     ----------

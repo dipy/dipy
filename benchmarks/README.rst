@@ -100,7 +100,7 @@ TBD
 Writing Benchmarks ✏️
 ---------------------
 
-See `ASV documentation<https://asv.readthedocs.io/>`__ for basics on how to write benchmarks.
+See `ASV documentation <https://asv.readthedocs.io/>`__ for basics on how to write benchmarks.
 
 Things to consider:
 

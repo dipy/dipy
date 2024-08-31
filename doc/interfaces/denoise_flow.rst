@@ -117,12 +117,13 @@ output directory.
 Denoising using NLMEANS
 -----------------------
 
-In the Non-Local Means algorithm (NLMEANS) [Coupe08]_ and [Coupe11]_, the value
-of a pixel is replaced by an average of a set of other pixel values: the
-specific patches centered on the other pixels are contrasted to the patch
-centered on the pixel of interest, and the average only applies to pixels with
-patches close to the current patch. This algorithm can also restore good
-textures, which are distorted by other denoising algorithms.
+In the Non-Local Means algorithm (NLMEANS) :footcite:p:`Coupe2008`,
+:footcite:p:`Coupe2012`, the value of a pixel is replaced by an average of a
+set of other pixel values: the specific patches centered on the other pixels
+are contrasted to the patch centered on the pixel of interest, and the
+average only applies to pixels with patches close to the current patch. This
+algorithm can also restore good textures, which are distorted by other
+denoising algorithms.
 
 The Non-Local Means method can be used to denoise $N$-D image data (i.e. 2D, 3D,
 4D, etc.), and thus enhance their SNR.
@@ -137,6 +138,8 @@ values, and the output directory.
 
 We will create a directory where to save the denoised image (e.g.:
 ``denoise_nlmeans_output``)::
+
+    mkdir denoise_nlmeans_output
 
 The NLMEANS denoising is performed using the ``dipy_denoise_nlmeans`` command,
 e.g.::
@@ -216,12 +219,8 @@ Structural
 |  stanford_hardi T1 |      |image19|     |      |image20|     |
 +--------------------+--------------------+--------------------+
 
-
+----------
 References
 ----------
-.. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-    Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-.. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-    "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-    IET Image Processing, Institution of Engineering and Technology, 2011
+
+.. footbibliography::

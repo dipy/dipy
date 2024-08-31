@@ -17,9 +17,10 @@ Magnetic Resonance (MR) images are reconstructed from the Fourier coefficients
 of acquired k-space images. Since only a finite number of Fourier coefficients
 can be acquired in practice, reconstructed MR images can be corrupted by Gibbs
 artefacts, which is manifested by intensity oscillations adjacent to edges of
-different tissue types [Veraart15]_. Although this artefact affects MR images
-in general, in the context of diffusion-weighted imaging, Gibbs oscillations
-can be magnified in derived diffusion-based estimates [Veraart15]_, [Perrone15]_.
+different tissue types :footcite:p:`Veraart2016a`. Although this artefact
+affects MR images in general, in the context of diffusion-weighted imaging,
+Gibbs oscillations can be magnified in derived diffusion-based estimates
+:footcite:p:`Veraart2016a`, :footcite:p:`Perrone2015`.
 
 We will use the ``tissue_data`` dataset in DIPY to showcase the ability to
 remove Gibbs ringing artefacts. As with any other workflow in DIPY, you can
@@ -65,12 +66,8 @@ the Gibbs unringing effect.
 |         |image1|         |         |image2|         |
 +--------------------------+--------------------------+
 
+----------
 References
 ----------
-.. [Veraart15] Veraart, J., Fieremans, E., Jelescu, I.O., Knoll, F., Novikov, D.S.,
-    2015. Gibbs Ringing in Diffusion MRI. Magn Reson Med 76(1): 301-314.
-    https://doi.org/10.1002/mrm.25866
-.. [Perrone15] Perrone, D., Aelterman, J., Pižurica, A., Jeurissen, B., Philips, W.,
-    Leemans A., 2015. The effect of Gibbs ringing artifacts on measures
-    derived from diffusion MRI. Neuroimage 120, 441-455.
-    https://doi.org/10.1016/j.neuroimage.2015.06.068.
+
+.. footbibliography::

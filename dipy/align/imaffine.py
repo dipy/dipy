@@ -977,15 +977,16 @@ class AffineRegistration:
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
     docstring_addendum = (
-        """verbosity: int (one of {0, 1, 2, 3}), optional
+        """verbosity : int (one of {0, 1, 2, 3}), optional
             Set the verbosity level of the algorithm:
-            0 : do not print anything
-            1 : print information about the current status of the algorithm
-            2 : print high level information of the components involved in
-                the registration that can be used to detect a failing
-                component.
-            3 : print as much information as possible to isolate the cause
-                of a bug.
+
+            - 0 : do not print anything
+            - 1 : print information about the current status of the algorithm
+            - 2 : print high level information of the components involved in
+              the registration that can be used to detect a failing component.
+            - 3 : print as much information as possible to isolate the cause of
+              a bug.
+
             Default: % s
     """
         % VerbosityLevels.STATUS

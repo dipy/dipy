@@ -240,12 +240,11 @@ save_trk(sft, "lr-superiorfrontal.trk")
 #
 # .. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is
 #        a modified version of label map `aparc+aseg.mgz` created by
-#        `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus
-#        callosum region is a combination of the FreeSurfer labels 251-255.
-#        The remaining FreeSurfer labels were re-mapped and reduced so that
-#        they lie between 0 and 88. To see the FreeSurfer region, label and
-#        name, represented by each value, see `label_info.txt` in
-#        `~/.dipy/stanford_hardi`.
+#        FreeSurfer_. The corpus  callosum region is a combination of the
+#        FreeSurfer labels 251-255. The remaining FreeSurfer labels were
+#        re-mapped and reduced so that they lie between 0 and 88. To see the
+#        FreeSurfer region, label and name, represented by each value, see
+#        `label_info.txt` in `~/.dipy/stanford_hardi`.
 # .. [#] An affine transformation is a mapping between two coordinate systems
 #        that can represent scaling, rotation, shear, translation and
 #        reflection. Affine transformations are often represented using a 4x4

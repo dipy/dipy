@@ -4,8 +4,8 @@
 Nonrigid White Matter Bundle Registration with BundleWarp
 =========================================================
 
-This tutorial explains how we can use BundleWarp [Chandio2023]_ to nonlinearly
-register two bundles.
+This tutorial explains how we can use BundleWarp :footcite:p`Chandio2023` to
+nonlinearly register two bundles.
 
 
 First, we need to download static and moving bundles for this tutorial. Here,
@@ -35,7 +35,7 @@ moving bundle using a single regularization parameter, alpha (represented with
 the deformation and having points match very closely. The lower the value of
 alpha, the more closely the bundles would match. Here, we investigate how to
 warp moving bundle with different levels of deformations using BundleWarp
-registration method [Chandio23]_.
+registration method :footcite:p`Chandio2023`.
 
 --------------------------------------------
 Partially Deformable BundleWarp Registration
@@ -101,16 +101,10 @@ Visualizing the moved and static bundles after registration::
 For more information about each command line, please visit DIPY website `<https://dipy.org/>`_ .
 
 If you are using any of these commands please be sure to cite the relevant papers and
-DIPY [Garyfallidis14]_.
+DIPY :footcite:p:`Garyfallidis2014a`.
 
 ----------
 References
 ----------
 
-.. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01
-
-.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
-    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
-    "DIPY, a library for the analysis of diffusion MRI data".
-    Frontiers in Neuroinformatics, 1-18, 2014.
+.. footbibliography::
