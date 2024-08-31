@@ -208,9 +208,9 @@ fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(
 
 ###############################################################################
 # The results of FBC measures are visualized, showing the original fibers
-# colored by LFBC (see :ref:`optic_radiation_before_cleaning`), and the fibers
-# after the cleaning procedure via RFBC thresholding (see
-# :ref:`optic_radiation_after_cleaning`).
+# colored by LFBC (see :ref:`this figure <optic_radiation_before_cleaning>`),
+# and the fibers after the cleaning procedure via RFBC thresholding (see
+# :ref:`this other figure <optic_radiation_after_cleaning>`).
 
 # Create scene
 scene = window.Scene()
