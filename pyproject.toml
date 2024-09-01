@@ -114,14 +114,14 @@ extra = ["dipy[viz, ml]",
 
 doc = [
     "numpydoc",
-    "sphinx ~= 5.3",
+    "sphinx>=7.2.6",
     "texext",
     "tomli; python_version < \"3.11\"",
     "sphinxcontrib-bibtex",
     "sphinx_design",
     "sphinx-gallery>=0.10.0",
     "tomli>=2.0.1",
-    "grg-sphinx-theme>=0.2.0",
+    "grg-sphinx-theme>=0.4.0",
     "Jinja2"
 ]
 
