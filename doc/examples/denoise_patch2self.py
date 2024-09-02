@@ -25,8 +25,8 @@ distribution).
 The Patch2Self Framework:
 
 .. _patch2self:
-.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
-   :scale: 60 %
+.. image:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
+   :width: 70 %
    :align: center
 
 The above figure demonstrates the working of Patch2Self. The idea is to build

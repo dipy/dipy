@@ -101,10 +101,8 @@ This command will denoise the diffusion image and save it to the specified
 output directory.
 
 .. |image3| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_original.png?raw=true
-   :scale: 70%
    :align: middle
 .. |image4| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_denoise_MPPCA.png?raw=true
-   :scale: 70%
    :align: middle
 
 +--------------------+--------------------+
@@ -150,10 +148,8 @@ The command will denoise the input diffusion volume and write the result to the
 specified output directory.
 
 .. |image5| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_original.png?raw=true
-   :scale: 20%
    :align: middle
 .. |image6| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_NLMEANS.png?raw=true
-   :scale: 20%
    :align: middle
 
 +--------------------+--------------------+
