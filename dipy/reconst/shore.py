@@ -77,32 +77,31 @@ class ShoreModel(Cache):
         From the $c_i$ coefficients, there exists an analytical formula to
         estimate the ODF.
 
-
         Parameters
         ----------
         gtab : GradientTable,
             gradient directions and bvalues container class
-        radial_order : unsigned int,
+        radial_order : unsigned int, optional
             an even integer that represent the order of the basis
-        zeta : unsigned int,
+        zeta : unsigned int, optional
             scale factor
-        lambdaN : float,
+        lambdaN : float, optional
             radial regularisation constant
-        lambdaL : float,
+        lambdaL : float, optional
             angular regularisation constant
-        tau : float,
+        tau : float, optional
             diffusion time. By default the value that makes q equal to the
             square root of the b-value.
-        constrain_e0 : bool,
+        constrain_e0 : bool, optional
             Constrain the optimization such that E(0) = 1.
-        positive_constraint : bool,
+        positive_constraint : bool, optional
             Constrain the propagator to be positive.
-        pos_grid : int,
+        pos_grid : int, optional
             Grid that define the points of the EAP in which we want to enforce
             positivity.
-        pos_radius : float,
+        pos_radius : float, optional
             Radius of the grid of the EAP in which enforce positivity in
-            millimeters. By default 20e-03 mm.
+            millimeters.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for

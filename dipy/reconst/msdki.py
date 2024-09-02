@@ -236,9 +236,9 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
         in its last axis
     gtab : a GradientTable class instance
         The gradient table for this prediction
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
+        voxels.
 
     Notes
     -----
@@ -282,12 +282,12 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         gtab : GradientTable class instance
             Gradient table.
 
-        bmag : int
+        bmag : int, optional
             The order of magnitude that the bvalues have to differ to be
             considered an unique b-value. Default: derive this value from the
             maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
-        return_S0_hat : bool
+        return_S0_hat : bool, optional
             If True, also return S0 values for the fit.
 
         args, kwargs : arguments and keyword arguments passed to the
@@ -364,9 +364,9 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ----------
         msdki_params : ndarray
             The parameters of the mean signal diffusion kurtosis model
-        S0 : float or ndarray
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Returns
         -------

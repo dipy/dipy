@@ -73,24 +73,23 @@ def bundlewarp(
     moving : Streamlines
         Target bundle that will be moved/registered to match the static bundle
 
-    dist : float, optional.
-        Precomputed distance matrix (default None)
+    dist : float, optional
+        Precomputed distance matrix.
 
     alpha : float, optional
         Represents the trade-off between regularizing the deformation and
         having points match very closely. Lower value of alpha means high
-        deformations (default 0.3)
+        deformations.
 
     beta : int, optional
         Represents the strength of the interaction between points
-        Gaussian kernel size (default 20)
+        Gaussian kernel size.
 
     max_iter : int, optional
-        Maximum number of iterations for deformation process in ml-CPD method
-        (default 15)
+        Maximum number of iterations for deformation process in ml-CPD method.
 
     affine : boolean, optional
-        If False, use rigid registration as starting point (default True)
+        If False, use rigid registration as starting point.
 
     Returns
     -------

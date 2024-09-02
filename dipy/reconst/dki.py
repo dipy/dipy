@@ -430,7 +430,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
         elements of the diffusion tensor of the voxel.
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
@@ -525,22 +525,22 @@ def directional_kurtosis(
         elements of the kurtosis tensor of the voxel.
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
-        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        `min_kurtosis` are replaced with `min_kurtosis`.
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores :footcite:p:`Jensen2005`).
-    adc : ndarray(g,) (optional)
+    adc : ndarray(g,), optional
         Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
-    adv : ndarray(g,) (optional)
+    adv : ndarray(g,), optional
         Apparent diffusion variance (advc) in all g directions of a sphere for
         a single voxel.
 
@@ -589,12 +589,12 @@ def apparent_kurtosis_coef(
             3) Fifteen elements of the kurtosis tensor
     sphere : a Sphere class instance
         The AKC will be calculated for each of the vertices in the sphere
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`.
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
@@ -686,17 +686,17 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
         that consist of water confined to spherical pores
         :footcite:p:`Jensen2005`).
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`.
-    analytical : bool (optional)
+    analytical : bool, optional
         If True, MK is calculated using its analytical solution, otherwise an
         exact numerical estimator is used (see Notes).
 
@@ -960,17 +960,17 @@ def radial_kurtosis(
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
         that consist of water confined to spherical pores
         :footcite:p:`Jensen2005`).
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
-    analytical : bool (optional)
+        `max_kurtosis`.
+    analytical : bool, optional
         If True, RK is calculated using its analytical solution, otherwise an
         exact numerical estimator is used (see Notes). Default is set to True.
 
@@ -1099,21 +1099,20 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
         that consist of water confined to spherical pores
         :footcite:p:`Jensen2005`).
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
-    analytical : bool (optional)
+        `max_kurtosis`.
+    analytical : bool, optional
         If True, AK is calculated from rotated diffusion kurtosis tensor,
         otherwise it will be computed from the apparent diffusion kurtosis
         values along the principal axis of the diffusion tensor (see notes).
-        Default is set to True.
 
     Returns
     -------
@@ -1385,16 +1384,17 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
         that consist of water confined to spherical pores
         :footcite:p:`Jensen2005`).
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
+
     Returns
     -------
     mkt : array
@@ -1460,11 +1460,11 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`.
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`.
@@ -1644,7 +1644,7 @@ def dki_prediction(dki_params, gtab, S0=1.0):
             3) Fifteen elements of the kurtosis tensor
     gtab : a GradientTable class instance
         The gradient table for this prediction
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
 
@@ -1907,9 +1907,9 @@ class DiffusionKurtosisModel(ReconstModel):
                    first, second and third coordinates of the eigenvector
                 3. Fifteen elements of the kurtosis tensor
 
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         References
         ----------
@@ -2373,9 +2373,9 @@ class DiffusionKurtosisFit(TensorFit):
         gtab : a GradientTable class instance
             The gradient table for this prediction
 
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----
@@ -2484,7 +2484,7 @@ def ls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -2561,7 +2561,7 @@ def cls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -2622,7 +2622,7 @@ def Wrotate(kt, Basis):
         Vector with the 15 independent elements of the kurtosis tensor
     Basis : array (3, 3)
         Vectors of the basis column-wise oriented
-    inds : array(m, 4) (optional)
+    inds : array(m, 4), optional
         Array of vectors containing the four indexes of m specific elements of
         the rotated kurtosis tensor. If not specified all 15 elements of the
         rotated kurtosis tensor are computed.

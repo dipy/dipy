@@ -156,7 +156,7 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
     gtab2: dipy.core.gradients.GradientTable
         A GradientTable class instance for second DDE diffusion epoch
 
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
 
@@ -297,7 +297,7 @@ class CorrelationTensorModel(ReconstModel):
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels.
 
@@ -351,7 +351,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
 
@@ -552,7 +552,7 @@ def ls_fit_cti(
     inverse_design_matrix : array (43, g)
         Inverse of the design matrix.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise

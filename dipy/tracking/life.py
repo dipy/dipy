@@ -281,7 +281,7 @@ def voxel2streamline(streamline, affine, *, unique_idx=None):
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
-    unique_idx : array (optional).
+    unique_idx : array, optional.
        The unique indices in the streamlines
 
     Returns
@@ -454,7 +454,7 @@ class FiberModel(ReconstModel):
         affine : array_like (4, 4)
             The mapping from voxel coordinates to streamline points.
             The voxel_to_rasmm matrix, typically from a NIFTI file.
-        evals : array-like (optional)
+        evals : array-like, optional
             The eigenvalues of the tensor response function used in
             constructing the model signal. Default: [0.001, 0, 0]
         sphere: `dipy.core.Sphere` instance or False, optional

@@ -22,14 +22,13 @@ def add_noise(vol, *, snr=1.0, S0=None, noise_type="rician", rng=None):
     snr : float, optional
         The desired signal-to-noise ratio.  (See notes below.)
     S0 : float, optional
-        Reference signal for specifying `snr` (defaults to 1).
+        Reference signal for specifying `snr`.
     noise_type : string, optional
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise, 'rician' for Rice-distributed noise (default) or
         'rayleigh' for a Rayleigh distribution.
     rng : numpy.random.Generator class, optional
         Numpy's random generator for setting seed values when needed.
-        Default is None.
 
     Returns
     -------

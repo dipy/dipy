@@ -98,9 +98,9 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     expert_bundle : Streamlines
         Model bundle used as reference while extracting similar type bundle
         from input tractogram
-    nb_pts : integer (default 20)
+    nb_pts : integer, optional
         Discretizing streamlines to have nb_pts number of points
-    threshold : float (default 6)
+    threshold : float, optional
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
@@ -136,9 +136,9 @@ def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000)
         clustering threshold used in quickbundlesX
     rng : np.random.Generator
         numpy's random generator for generating random values.
-    nb_pts: integer (default 20)
+    nb_pts: integer, optional
         Discretizing streamlines to have nb_points number of points
-    select_randomly: integer (default 500000)
+    select_randomly: integer, optional
         Randomly select streamlines from the input bundle
 
     Returns
@@ -419,9 +419,9 @@ class RecoBundles:
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
             (default 'L-BFGS-B')
         pruning_thr : float, optional
-            Pruning after reducing the search space (default 5).
+            Pruning after reducing the search space.
         pruning_distance : string, optional
-            Pruning distance type can be mdf or mam (default mdf)
+            Pruning distance type can be mdf or mam.
 
         Returns
         -------

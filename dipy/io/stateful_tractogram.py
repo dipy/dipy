@@ -619,7 +619,7 @@ class StatefulTractogram:
 
         Parameters
         ----------
-        epsilon : float (optional)
+        epsilon : float, optional
             Epsilon value for the bounding box verification.
             Default is 1e-6.
 

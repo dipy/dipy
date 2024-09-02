@@ -40,14 +40,14 @@ cdef class EnhancementKernel:
             Angular diffusion
         t : float
             Diffusion time
-        force_recompute : boolean
+        force_recompute : boolean, optional
             Always compute the look-up table even if it is available
-            in cache. Default is False.
-        orientations : integer or Sphere object
+            in cache.
+        orientations : integer or Sphere object, optional
             Specify the number of orientations to be used with
             electrostatic repulsion, or provide a Sphere object.
             The default sphere is 'repulsion100'.
-        verbose : boolean
+        verbose : boolean, optional
             Enable verbose mode.
 
         References

@@ -81,7 +81,7 @@ def neighboring_dwi_correlation(dwi_data, gtab, *, mask=None):
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     mask : 3D ndarray, optional
-        optional mask of voxels to include in the NDC calculation
+        Mask of voxels to include in the NDC calculation
 
     Returns
     -------

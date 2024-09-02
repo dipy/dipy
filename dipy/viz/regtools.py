@@ -73,16 +73,16 @@ def overlay_images(
     img1 : array, shape(R, C)
         the image to be plotted on the green channel, to the right of the
         figure
-    title0 : string (optional)
+    title0 : string, optional
         the title to be written on top of the image to the left. By default, no
         title is displayed.
-    title_mid : string (optional)
+    title_mid : string, optional
         the title to be written on top of the middle image. By default, no
         title is displayed.
-    title1 : string (optional)
+    title1 : string, optional
         the title to be written on top of the image to the right. By default,
         no title is displayed.
-    fname : string (optional)
+    fname : string, optional
         the file name to write the resulting figure. If None (default), the
         image is not saved.
     fig_kwargs : dict
@@ -341,12 +341,12 @@ def plot_slices(V, *, slice_indices=None, fname=None, **fig_kwargs):
     ----------
     V : array, shape (S, R, C)
         the 3D volume to extract the slices from
-    slice_indices : array, shape (3,) (optional)
+    slice_indices : array, shape (3,), optional
         the indices of the sagittal (slice_indices[0]), coronal
         (slice_indices[1])
         and axial (slice_indices[2]) slices to be displayed. If None, the
         middle slices along each direction are displayed.
-    fname : string (optional)
+    fname : string, optional
         the name of the file to save the figure to. If None (default), the
         figure is not saved to disk.
     fig_kwargs : dict
@@ -406,19 +406,19 @@ def overlay_slices(
         the first volume to extract the slice from plotted to the left
     R : array, shape (S, R, C)
         the second volume to extract the slice from, plotted to the right
-    slice_index : int (optional)
+    slice_index : int, optional
         the index of the slices (along the axis given by slice_type) to be
         overlaid. If None, the slice along the specified axis is used
-    slice_type : int (optional)
+    slice_type : int, optional
         the type of slice to be extracted:
         0=sagittal, 1=coronal (default), 2=axial.
-    ltitle : string (optional)
+    ltitle : string, optional
         the string to be written as the title of the left image. By default,
         no title is displayed.
-    rtitle : string (optional)
+    rtitle : string, optional
         the string to be written as the title of the right image. By default,
         no title is displayed.
-    fname : string (optional)
+    fname : string, optional
         the name of the file to write the image to. If None (default), the
         figure is not saved to disk.
     fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.

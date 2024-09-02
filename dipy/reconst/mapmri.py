@@ -128,35 +128,35 @@ class MapmriModel(ReconstModel, Cache):
             everywhere using the constraints of :footcite:p:`Merlet2013`. Global
             constraints are currently supported for anisotropic_scaling=True and
             for radial_order <= 10.
-        pos_grid : integer,
+        pos_grid : int, optional
             The number of points in the grid that is used in the local
             positivity constraint.
-        pos_radius : float or string,
+        pos_radius : float or string, optional
             If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
             'adaptive', the maximum distance is dependent on the estimated
             tissue diffusivity. If 'infinity', semidefinite programming
             constraints are used :footcite:p:`DelaHaije2020`.
-        anisotropic_scaling : bool,
+        anisotropic_scaling : bool, optional
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
-        eigenvalue_threshold : float,
+        eigenvalue_threshold : float, optional
             Sets the minimum of the tensor eigenvalues in order to avoid
             stability problem.
-        bval_threshold : float,
+        bval_threshold : float, optional
             Sets the b-value threshold to be used in the scale factor
             estimation. In order for the estimated non-Gaussianity to have
             meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
-        dti_scale_estimation : bool,
+        dti_scale_estimation : bool, optional
             Whether or not DTI fitting is used to estimate the isotropic scale
             factor for isotropic MAP-MRI.
             When set to False the algorithm presets the isotropic tissue
             diffusivity to static_diffusivity. This vastly increases fitting
             speed but at the cost of slightly reduced fitting quality. Can
             still be used in combination with regularization and constraints.
-        static_diffusivity : float,
+        static_diffusivity : float, optional
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
             D=0.7e-3 :footcite:p:`Fick2016b`.
@@ -537,7 +537,7 @@ class MapmriFit(ReconstFit):
         return odf
 
     def odf_sh(self, s=2):
-        r"""Calculates the real analytical odf for a given discrete sphere.
+        """Calculates the real analytical odf for a given discrete sphere.
 
         Computes the design matrix of the ODF for the given sphere vertices
         and radial moment :footcite:p:`Ozarslan2013` eq. (32). The radial moment
@@ -564,7 +564,7 @@ class MapmriFit(ReconstFit):
         return odf
 
     def rtpp(self):
-        r"""Calculates the analytical return to the plane probability (RTPP).
+        """Calculates the analytical return to the plane probability (RTPP).
 
         RTPP is defined in :footcite:p:`Ozarslan2013` eq. (42). The analytical
         formula for the isotropic MAP-MRI basis was derived in
@@ -620,7 +620,7 @@ class MapmriFit(ReconstFit):
             return rtpp.sum()
 
     def rtap(self):
-        r"""Calculates the analytical return to the axis probability (RTAP).
+        """Calculates the analytical return to the axis probability (RTAP).
 
         RTAP is defined in :footcite:p:`Ozarslan2013` eq. (40, 44a). The
         analytical formula for the isotropic MAP-MRI basis was derived in
@@ -674,7 +674,7 @@ class MapmriFit(ReconstFit):
         return rtap
 
     def rtop(self):
-        r"""Calculates the analytical return to the origin probability (RTOP).
+        """Calculates the analytical return to the origin probability (RTOP).
 
         RTOP is defined in :footcite:p:`Ozarslan2013` eq. (36, 43). The
         analytical formula for the isotropic MAP-MRI basis was derived in
@@ -699,7 +699,7 @@ class MapmriFit(ReconstFit):
         return rtop
 
     def msd(self):
-        r"""Calculates the analytical Mean Squared Displacement (MSD).
+        """Calculates the analytical Mean Squared Displacement (MSD).
 
         It is defined as the Laplacian of the origin of the estimated signal
         :footcite:p:`Cheng2012`. The analytical formula for the MAP-MRI basis
@@ -747,7 +747,7 @@ class MapmriFit(ReconstFit):
         return msd
 
     def qiv(self):
-        r"""Calculates the analytical Q-space Inverse Variance (QIV).
+        """Calculates the analytical Q-space Inverse Variance (QIV).
 
         It is defined as the inverse of the Laplacian of the origin of the
         estimated propagator :footcite:p:`Hosseinbor2013` eq. (22). The
@@ -1000,7 +1000,7 @@ class MapmriFit(ReconstFit):
 
 
 def isotropic_scale_factor(mu_squared):
-    r"""Estimated isotropic scaling factor.
+    """Estimated isotropic scaling factor.
 
     See :footcite:p:`Ozarslan2013` Eq. (49).
 
@@ -1026,7 +1026,7 @@ def isotropic_scale_factor(mu_squared):
 
 
 def mapmri_index_matrix(radial_order):
-    r"""Calculates the indices for the MAPMRI basis in x, y and z.
+    """Calculates the indices for the MAPMRI basis in x, y and z.
 
     See :footcite:p:`Ozarslan2013` for a definition of MAPMRI.
 
@@ -1054,7 +1054,7 @@ def mapmri_index_matrix(radial_order):
 
 
 def b_mat(index_matrix):
-    r"""Calculates the B coefficients from
+    """Calculates the B coefficients from
 
     See :footcite:p:`Ozarslan2013` Eq. (27).
 
@@ -1087,7 +1087,7 @@ def b_mat(index_matrix):
 
 
 def b_mat_isotropic(index_matrix):
-    r"""Calculates the isotropic B coefficients.
+    """Calculates the isotropic B coefficients.
 
     See :footcite:p:`Ozarslan2013` Fig 8.
 
@@ -1115,7 +1115,7 @@ def b_mat_isotropic(index_matrix):
 
 
 def mapmri_phi_1d(n, q, mu):
-    r"""One dimensional MAPMRI basis function.
+    """One dimensional MAPMRI basis function.
 
     See :footcite:p:`Ozarslan2013` Eq. (4).
 
@@ -1145,7 +1145,7 @@ def mapmri_phi_1d(n, q, mu):
 
 
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
-    r"""Compute the MAPMRI phi matrix for the signal.
+    """Compute the MAPMRI phi matrix for the signal.
 
     See :footcite:p:`Ozarslan2013` eq. (23).
 
@@ -1191,7 +1191,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
 
 def mapmri_psi_1d(n, x, mu):
-    r"""One dimensional MAPMRI propagator basis function.
+    """One dimensional MAPMRI propagator basis function.
 
     See :footcite:p:`Ozarslan2013` Eq. (10).
 
@@ -1218,7 +1218,7 @@ def mapmri_psi_1d(n, x, mu):
 
 
 def mapmri_psi_matrix(radial_order, mu, rgrad):
-    r"""Compute the MAPMRI psi matrix for the propagator.
+    """Compute the MAPMRI psi matrix for the propagator.
 
     See :footcite:p:`Ozarslan2013` eq. (22).
 
@@ -1261,7 +1261,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_odf_matrix(radial_order, mu, s, vertices):
-    r"""Compute the MAPMRI ODF matrix.
+    """Compute the MAPMRI ODF matrix.
 
     See :footcite:p:`Ozarslan2013` Eq. (33).
 
@@ -1311,7 +1311,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
 
 def _odf_cfunc(n1, n2, n3, a, b, g, s):
-    r"""Compute the MAPMRI ODF function.
+    """Compute the MAPMRI ODF function.
 
     See :footcite:p:`Ozarslan2013` Eq. (34).
 
@@ -1340,7 +1340,7 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
 
 def mapmri_isotropic_phi_matrix(radial_order, mu, q):
-    r"""Three dimensional isotropic MAPMRI signal basis function
+    """Three dimensional isotropic MAPMRI signal basis function
 
     See :footcite:p:`Ozarslan2013` Eq. (61).
 
@@ -1380,7 +1380,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
 
 def mapmri_isotropic_radial_signal_basis(j, l_value, mu, qval):
-    r"""Radial part of the isotropic 1D-SHORE signal basis.
+    """Radial part of the isotropic 1D-SHORE signal basis.
 
     See :footcite:p:`Ozarslan2013` eq. (61).
 
@@ -1464,7 +1464,7 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
 
 
 def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
-    r"""Three dimensional isotropic MAPMRI propagator basis function.
+    """Three dimensional isotropic MAPMRI propagator basis function.
 
     See :footcite:p:`Ozarslan2013` Eq. (61).
 
@@ -1505,7 +1505,7 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_isotropic_radial_pdf_basis(j, l_value, mu, r):
-    r"""Radial part of the isotropic 1D-SHORE propagator basis.
+    """Radial part of the isotropic 1D-SHORE propagator basis.
 
     See :footcite:p:`Ozarslan2013` eq. (61).
 
@@ -1593,9 +1593,9 @@ def binomialfloat(n, k):
 
 
 def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
-    r"""Compute the isotropic MAPMRI ODF matrix.
+    """Compute the isotropic MAPMRI ODF matrix.
 
-    The computation follows :footcite:p:`Ozarslan2013` Eq. 32 but, it is done
+    The computation follows :footcite:p:`Ozarslan2013` Eq. 32, but it is done
     for the isotropic propagator in footcite:p:`Ozarslan2013` eq. (60).
     Analytical derivation in :footcite:p:`Fick2016b` eq. (C8).
 
@@ -1650,7 +1650,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
 
 def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
-    r"""Compute the isotropic MAPMRI ODF matrix.
+    """Compute the isotropic MAPMRI ODF matrix.
 
     The computation follows :footcite:p:`Ozarslan2013` Eq. 32, but it is done
     for the isotropic propagator in :footcite:p:`Ozarslan2013` eq. (60). Here
@@ -1705,7 +1705,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
 
 def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
-    r"""Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    """Computes the Laplacian regularization matrix for MAP-MRI's isotropic
     implementation.
 
     See :footcite:p:`Fick2016b` eq. (C7).
@@ -1732,7 +1732,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
 
 def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
-    r"""Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    """Computes the Laplacian regularization matrix for MAP-MRI's isotropic
     implementation.
 
     See :footcite:p:`Fick2016b` eq. (C7).
@@ -1816,7 +1816,7 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
 
 
 def mapmri_isotropic_index_matrix(radial_order):
-    r"""Calculates the indices for the isotropic MAPMRI basis.
+    """Calculates the indices for the isotropic MAPMRI basis.
 
     See :footcite:p:`Ozarslan2013` Fig 8.
 

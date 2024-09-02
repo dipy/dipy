@@ -1775,7 +1775,7 @@ def nlls_fit_tensor(
         M-estimator is used for weighting (see below).
 
     jac : bool, optional
-        Use the Jacobian? Default: True
+        Use the Jacobian?
 
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
@@ -1905,13 +1905,13 @@ def restore_fit_tensor(
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
         optimization procedure used to fit the tensor parameters (see also
-        :func:`nlls_fit_tensor`). Default: True
+        :func:`nlls_fit_tensor`).
 
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
 
     fail_is_nan : bool, optional
-        Boolean to set failed NL fitting to NaN (True) or LS (False, default).
+        Boolean to set failed NL fitting to NaN (True) or LS (False).
 
     Returns
     -------

@@ -153,17 +153,17 @@ def median_otsu(
     ----------
     input_volume : ndarray
         3D or 4D array of the brain volume.
-    vol_idx : None or array, optional.
+    vol_idx : None or array, optional
         1D array representing indices of ``axis=3`` of a 4D `input_volume`.
         None is only an acceptable input if ``input_volume`` is 3D.
-    median_radius : int
-        Radius (in voxels) of the applied median filter (default: 4).
-    numpass: int
-        Number of pass of the median filter (default: 4).
+    median_radius : int, optional
+        Radius (in voxels) of the applied median filter.
+    numpass: int, optional
+        Number of pass of the median filter.
     autocrop: bool, optional
         if True, the masked input_volume will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
-        upsampled to 1x1x1 resolution. (default: False).
+        upsampled to 1x1x1 resolution.
 
     dilate : None or int, optional
         number of iterations for binary dilation

@@ -315,9 +315,8 @@ class EVACPlus:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
         """
 
         if not have_tf:

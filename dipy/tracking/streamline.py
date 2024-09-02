@@ -472,9 +472,8 @@ def orient_by_rois(
         Whether to make the change in-place in the original list
         (and return a reference to the list), or to make a copy of the list
         and return this copy, with the relevant streamlines reoriented.
-        Default: False.
     as_generator : bool
-        Whether to return a generator as output. Default: False
+        Whether to return a generator as output.
 
     Returns
     -------
@@ -574,9 +573,8 @@ def orient_by_streamline(
         Whether to make the change in-place in the original input
         (and return a reference), or to make a copy of the list
         and return this copy, with the relevant streamlines reoriented.
-        Default: False.
     as_generator : bool
-        Whether to return a generator as output. Default: False
+        Whether to return a generator as output.
 
     Returns
     -------

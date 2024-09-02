@@ -359,8 +359,7 @@ class StreamlineLinearRegistration:
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
 
         method : str,
-            'L_BFGS_B' or 'Powell' optimizers can be used. Default is
-            'L_BFGS_B'.
+            'L_BFGS_B' or 'Powell' optimizers can be used.
 
         bounds : list of tuples or None,
             If method == 'L_BFGS_B' then we can use bounded optimization.
@@ -371,14 +370,13 @@ class StreamlineLinearRegistration:
 
         verbose : bool, optional.
             If True, if True then information about the optimization is shown.
-            Default: False.
 
         options : None or dict,
             Extra options to be used with the selected method.
 
         evolution : boolean
             If True save the transformation for each iteration of the
-            optimizer. Default is False. Supported only with Scipy >= 0.11.
+            optimizer. Supported only with Scipy >= 0.11.
 
         num_threads : int, optional
             Number of threads to be used for OpenMP parallelization. If None
@@ -1057,7 +1055,7 @@ def slr_with_qbx(
         Moving streamlines.
 
     x0 : str, optional.
-        rigid, similarity or affine transformation model (default affine)
+        rigid, similarity or affine transformation model
 
     rm_small_clusters : int, optional
         Remove clusters that have less than `rm_small_clusters`
@@ -1067,10 +1065,9 @@ def slr_with_qbx(
 
     select_random : int, optional.
         If not, None selects a random number of streamlines to apply clustering
-        Default None.
 
     verbose : bool, optional
-        If True, logs information about optimization. Default: False
+        If True, logs information about optimization.
 
     greater_than : int, optional
         Keep streamlines that have length greater than this value.
@@ -1236,32 +1233,32 @@ def groupwise_slr(
         List with streamlines of the bundles to be registered.
 
     x0 : str, optional
-        rigid, similarity or affine transformation model. Default: affine.
+        rigid, similarity or affine transformation model.
 
     tol : float, optional
-        Tolerance value to be used to assume convergence. Default: 0.
+        Tolerance value to be used to assume convergence.
 
     max_iter : int, optional
         Maximum number of iterations. Depending on the number of bundles to be
-        registered this may need to be larger. Default: 20.
+        registered this may need to be larger.
 
     qbx_thr : variable int, optional
         Thresholds for Quickbundles used for clustering streamlines and reduce
         computational time. If None, no clustering is performed. Higher values
-        cluster streamlines into a smaller number of centroids. Default: [4].
+        cluster streamlines into a smaller number of centroids.
 
     nb_pts : int, optional
-        Number of points for discretizing each streamline. Default: 20.
+        Number of points for discretizing each streamline.
 
     select_random : int, optional
         Maximum number of streamlines for each bundle. If None, all the
-        streamlines are used. Default: 10000.
+        streamlines are used.
 
     verbose : bool, optional
-        If True, logs information. Default: False.
+        If True, logs information.
 
     rng : np.random.Generator
-        If None, creates random generator in function. Default: None.
+        If None, creates random generator in function.
 
     References
     ----------

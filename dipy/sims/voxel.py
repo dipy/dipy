@@ -201,7 +201,7 @@ def sticks_and_ball(
 
 
 def callaghan_perpendicular(q, radius):
-    r"""Calculates the perpendicular diffusion signal E(q) in a cylinder of
+    """Calculates the perpendicular diffusion signal E(q) in a cylinder of
     radius R using the Soderman model.
 
     Assumes that the pulse length is infinitely short and the diffusion time is
@@ -268,7 +268,7 @@ def cylinders_and_ball_soderman(
     fractions=(35, 35),
     snr=20,
 ):
-    r"""Calculates the three-dimensional signal attenuation E(q) originating
+    """Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation.
 
     The diffusion signal is assumed to be separable  perpendicular and parallel
@@ -499,15 +499,15 @@ def multi_tensor_dki(
         Gradient table.
     mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
-    S0 : float (optional)
+    S0 : float, optional
         Unweighted signal value (b0 signal).
-    angles : array (K,2) or (K,3) (optional)
+    angles : array (K,2) or (K,3), optional
         List of K tensor directions of the diffusion tensor of each compartment
         in polar angles (in degrees) or unit vectors
-    fractions : float (K,) (optional)
+    fractions : float (K,), optional
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
-    snr : float (optional)
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
@@ -618,9 +618,9 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=N
         Element's index k (0 for x, 1 for y, 2 for z)
     ind_l: int
         Elements index l (0 for x, 1 for y, 2 for z)
-    DT : (3,3) ndarray (optional)
+    DT : (3,3) ndarray, optional
         Voxel's global diffusion tensor.
-    MD : float (optional)
+    MD : float, optional
         Voxel's global mean diffusivity.
 
     Returns
@@ -681,9 +681,9 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
         Elements of the diffusion tensor.
     kt : (15, ) ndarray
         Elements of the diffusion kurtosis tensor.
-    S0 : float (optional)
+    S0 : float, optional
         Strength of signal in the presence of no diffusion gradient.
-    snr : float (optional)
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
@@ -844,10 +844,10 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 
     Parameters
     ----------
-    evals : 1D arrays,
+    evals : 1D arrays, optional
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -877,10 +877,10 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     ----------
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
-    mevals : sequence of 1D arrays,
+    mevals : sequence of 1D arrays, optional
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -915,14 +915,14 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     ----------
     r : (N,3) or (M,N,3) ndarray
         Measurement positions in (x, y, z), either as a list or on a grid.
-    evals : (3,)
+    evals : (3,), optional
         Eigenvalues of diffusion tensor.  By default, use values typical for
         prolate white matter.
-    evecs : (3, 3) ndarray
+    evecs : (3, 3) ndarray, optional
         Eigenvectors of the tensor.  You can also think of these as the
         rotation matrix that determines the orientation of the diffusion
         tensor.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
 
@@ -975,7 +975,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
         or cartesian unit coordinates.
     fractions : sequence of floats,
         Percentages of the fractions for each tensor.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -1013,10 +1013,10 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 
     Parameters
     ----------
-    evals : 1D arrays,
+    evals : 1D arrays, optional
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -1046,10 +1046,10 @@ def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     ----------
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
-    mevals : sequence of 1D arrays,
+    mevals : sequence of 1D arrays, optional
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns

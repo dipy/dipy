@@ -40,9 +40,9 @@ class Cluster:
     ----------
     cluster_map : `ClusterMap` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -131,9 +131,9 @@ class ClusterCentroid(Cluster):
     ----------
     cluster_map : `ClusterMapCentroid` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -456,12 +456,12 @@ class QuickBundles(Clustering):
     threshold : float
         The maximum distance from a bundle for a streamline to be still
         considered as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance
         :footcite:p:`Garyfallidis2012a` is used and streamlines are
         automatically resampled so they have 12 points.
-    max_nb_clusters : int
+    max_nb_clusters : int, optional
         Limits the creation of bundles.
 
     Examples
@@ -530,7 +530,7 @@ class QuickBundles(Clustering):
         ----------
         streamlines : list of 2D arrays
             Each 2D array represents a sequence of 3D points (points, 3).
-        ordering : iterable of indices
+        ordering : iterable of indices, optional
             Specifies the order in which data points will be clustered.
 
         Returns
@@ -563,7 +563,7 @@ class QuickBundlesX(Clustering):
         Thresholds to use for each clustering layer. A threshold represents the
         maximum distance from a cluster for a streamline to be still considered
         as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance
         :footcite:p:`Garyfallidis2012a` is used and streamlines are

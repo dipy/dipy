@@ -176,7 +176,7 @@ class DiffusionSpectrumFit(OdfFit):
         Parameters
         ----------
         filtering : boolean, optional
-            Whether to perform Hanning filtering. Default: True
+            Whether to perform Hanning filtering.
 
         Returns
         -------
@@ -206,7 +206,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         normalized : boolean, optional
             Whether to normalize the propagator by its sum in order to obtain a
-            pdf. Default: True.
+            pdf.
 
         Returns
         -------
@@ -241,7 +241,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         normalized : boolean, optional
             Whether to normalize the propagator by its sum in order to obtain a
-            pdf. Default: True
+            pdf.
 
         Returns
         -------
@@ -521,16 +521,16 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-        qgrid_size : int,
+        qgrid_size : int, optional
             has to be an odd number. Sets the size of the q_space grid.
             For example if qgrid_size is 35 then the shape of the grid will be
             ``(35, 35, 35)``.
-        r_start : float,
+        r_start : float, optional
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
-        r_end : float,
+        r_end : float, optional
             Radial endpoint of ODF sampling
-        r_step : float,
+        r_step : float, optional
             Step size of the ODf sampling from r_start to r_end
         filter_width : float,
             Strength of the hanning filter

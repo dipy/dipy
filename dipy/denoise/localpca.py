@@ -198,23 +198,23 @@ def genpca(
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions. The first 3 dimension must have
         size >= 2 * patch_radius + 1 or size = 1.
-    sigma : float or 3D array (optional)
+    sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
         :footcite:p:`Veraart2016b`, :footcite:p:`Veraart2016c`.
-    mask : 3D boolean array (optional)
+    mask : 3D boolean array, optional
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int or 1D array (optional)
+    patch_radius : int or 1D array, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). E.g. patch_radius=2 gives 5x5x5 patches.
-    pca_method : 'eig' or 'svd' (optional)
+    pca_method : 'eig' or 'svd', optional
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
-    tau_factor : float (optional)
+    tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
 
@@ -225,12 +225,12 @@ def genpca(
         $\tau_{factor}$ can be set to a predefined values (e.g. $\tau_{factor} =
         2.3$ :footcite:p:`Manjon2013`), or automatically calculated using random
         matrix theory (in case that $\tau_{factor}$ is set to None).
-    return_sigma : bool (optional)
+    return_sigma : bool, optional
         If true, the Standard deviation of the noise will be returned.
-    out_dtype : str or dtype (optional)
+    out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
-    suppress_warning : bool (optional)
+    suppress_warning : bool, optional
         If true, suppress warning caused by patch_size < arr.shape[-1].
 
     Returns
@@ -413,30 +413,30 @@ def localpca(
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    sigma : float or 3D array (optional)
+    sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If not given,
         calculate using method in :footcite:t:`Manjon2013`.
-    mask : 3D boolean array (optional)
+    mask : 3D boolean array, optional
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int or 1D array (optional)
+    patch_radius : int or 1D array, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). E.g. patch_radius=2 gives 5x5x5 patches.
     gtab: gradient table object (optional if sigma is provided)
         gradient information for the data gives us the bvals and bvecs of
         diffusion data, which is needed to calculate noise level if sigma is
         not provided.
-    patch_radius_sigma : int (optional)
+    patch_radius_sigma : int, optional
         The radius of the local patch to be taken around each voxel (in
         voxels) for estimating sigma. E.g. patch_radius_sigma=2 gives
         5x5x5 patches.
-    pca_method : 'eig' or 'svd' (optional)
+    pca_method : 'eig' or 'svd', optional
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
-    tau_factor : float (optional)
+    tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
 
@@ -449,16 +449,16 @@ def localpca(
         set to None, it will be automatically calculated using the
         Marcenko-Pastur distribution :footcite:p:`Veraart2016c`. Default: 2.3
         according to :footcite:t:`Manjon2013`.
-    return_sigma : bool (optional)
+    return_sigma : bool, optional
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016c`.
-    correct_bias : bool (optional)
+    correct_bias : bool, optional
         Whether to correct for bias due to Rician noise. This is an
         implementation of equation 8 in :footcite:p:`Manjon2013`.
-    out_dtype : str or dtype (optional)
+    out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
-    suppress_warning : bool (optional)
+    suppress_warning : bool, optional
         If true, suppress warning caused by patch_size < arr.shape[-1].
 
     Returns
@@ -519,25 +519,25 @@ def mppca(
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    mask : 3D boolean array (optional)
+    mask : 3D boolean array, optional
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int or 1D array (optional)
+    patch_radius : int or 1D array, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). E.g. patch_radius=2 gives 5x5x5 patches.
-    pca_method : 'eig' or 'svd' (optional)
+    pca_method : 'eig' or 'svd', optional
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
-    return_sigma : bool (optional)
+    return_sigma : bool, optional
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
-    out_dtype : str or dtype (optional)
+    out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
-    suppress_warning : bool (optional)
+    suppress_warning : bool, optional
         If true, suppress warning caused by patch_size < arr.shape[-1].
 
     Returns

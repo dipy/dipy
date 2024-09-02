@@ -222,22 +222,20 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             function without diffusion weighting (i.e. S0).  This is to be able
             to generate a single fiber synthetic signal. The response function
             will be used as deconvolution kernel :footcite:p:`Tournier2007`.
-        reg_sphere : Sphere (optional)
+        reg_sphere : Sphere, optional
             sphere used to build the regularization B matrix.
-            Default: 'symmetric362'.
-        sh_order_max : int (optional)
-            maximal spherical harmonics order (l). Default: 8
-        lambda_ : float (optional)
+        sh_order_max : int, optional
+            maximal spherical harmonics order (l).
+        lambda_ : float, optional
             weight given to the constrained-positivity regularization part of
             the deconvolution equation (see :footcite:p:`Tournier2007`).
-            Default: 1
-        tau : float (optional)
+        tau : float, optional
             threshold controlling the amplitude below which the corresponding
             fODF is assumed to be zero.  Ideally, tau should be set to
             zero. However, to improve the stability of the algorithm, tau is
             set to tau*100 % of the mean fODF amplitude (here, 10% by default)
-            (see :footcite:p:`Tournier2007`). Default: 0.1.
-        convergence : int
+            (see :footcite:p:`Tournier2007`).
+        convergence : int, optional
             Maximum number of iterations to allow the deconvolution to
             converge.
 
@@ -757,12 +755,12 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     B_reg : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
         SH basis matrix used for deconvolution
-    lambda_ : float
-        lambda parameter in minimization equation (default 1.0)
-    tau : float
-        threshold (``tau *max(fODF)``) controlling the amplitude below
-        which the corresponding fODF is assumed to be zero.
-    r2_term : bool
+    lambda_ : float, optional
+         lambda parameter in minimization equation
+    tau : float, optional
+         threshold (``tau *max(fODF)``) controlling the amplitude below
+         which the corresponding fODF is assumed to be zero.
+    r2_term : bool, optional
         True if ODF is computed from model that uses the $r^2$ term in the
         integral.  Recall that Tuch's ODF (used in Q-ball Imaging
         :footcite:p:`Tuch2004`) and the true normalized ODF definition differ
@@ -868,24 +866,23 @@ def odf_sh_to_sharp(
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix
-    basis : {None, 'tournier07', 'descoteaux07'}
+    basis : {None, 'tournier07', 'descoteaux07'}, optional
         different spherical harmonic basis:
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007` basis,
         and ``descoteaux07`` for the Descoteaux 2007
         :footcite:p:`Descoteaux2007` basis (``None`` defaults to
         ``descoteaux07``).
-    ratio : float,
+    ratio : float, optional
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
-    sh_order_max : int
+    sh_order_max : int, optional
         maximal SH order ($l$) of the SH representation
-    lambda_ : float
-        lambda parameter (see odfdeconv) (default 1.0)
-    tau : float
+    lambda_ : float, optional
+        lambda parameter (see odfdeconv)
+    tau : float, optional
         tau parameter in the L matrix construction (see odfdeconv)
-        (default 0.1)
-    r2_term : bool
+    r2_term : bool, optional
         True if ODF is computed from model that uses the $r^2$ term in the
         integral.  Recall that Tuch's ODF (used in Q-ball Imaging
         :footcite:p:`Tuch2004`) and the true normalized ODF definition differ
@@ -1146,30 +1143,30 @@ def recursive_response(
         shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
         array.
     sh_order_max : int, optional
-        maximal spherical harmonics order (l). Default: 8
+        maximal spherical harmonics order (l).
     peak_thr : float, optional
         peak threshold, how large the second peak can be relative to the first
         peak in order to call it a single fiber population
-        :footcite:p:`Tax2014`. Default: 0.01
+        :footcite:p:`Tax2014`.
     init_fa : float, optional
-        FA of the initial 'fat' response function (tensor). Default: 0.08
+        FA of the initial 'fat' response function (tensor).
     init_trace : float, optional
-        trace of the initial 'fat' response function (tensor). Default: 0.0021
+        trace of the initial 'fat' response function (tensor).
     iter : int, optional
-        maximum number of iterations for calibration. Default: 8.
+        maximum number of iterations for calibration.
     convergence : float, optional
         convergence criterion, maximum relative change of SH
-        coefficients. Default: 0.001.
+        coefficients.
     parallel : bool, optional
         Whether to use parallelization in peak-finding during the calibration
-        procedure. Default: True
+        procedure.
     num_processes : int, optional
         If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()). If < 0 the maximal number of
         cores minus ``num_processes + 1`` is used (enter -1 to use as many
         cores as possible). 0 raises an error.
     sphere : Sphere, optional.
-        The sphere used for peak finding. Default: default_sphere.
+        The sphere used for peak finding.
 
     Returns
     -------
