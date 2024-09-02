@@ -163,6 +163,7 @@ if __name__ == '__main__':
                 format_title("output arguments(optional)"))
             help_txt = help_txt.replace("References:",
                                         format_title("References"))
+            help_txt = help_txt.replace(".. footbibliography::", "")
             help_txt = help_txt.rstrip()
             fp.write(help_txt)
 
