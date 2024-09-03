@@ -32,7 +32,7 @@ class Patch2SelfFlow(Workflow):
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
-        version=3,
+        ver=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
     ):
@@ -75,6 +75,8 @@ class Patch2SelfFlow(Workflow):
         shift_intensity : bool, optional
             Shifts the distribution of intensities per volume to give
             non-negative values
+        ver : int, optional
+            Version of the Patch2Self algorithm to use between  1 or 3. The default is 3
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -83,7 +85,15 @@ class Patch2SelfFlow(Workflow):
 
         References
         ----------
-        .. footbibliography::
+        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+           Denoising Diffusion MRI with Self-supervised Learning,
+           Advances in Neural Information Processing Systems 33 (2020)
+
+        .. [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
+                    E. Garyfallidis, Patch2Self2: Self-supervised Denoising
+                    on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
+                    Conference on Computer Vision and Pattern Recognition (2024),
+                    27641-27651.
 
         """
         io_it = self.get_io_iterator()
@@ -97,21 +107,34 @@ class Patch2SelfFlow(Workflow):
                 logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-
-                denoised_data = patch2self(
-                    data,
-                    bvals,
-                    model=model,
-                    b0_threshold=b0_threshold,
-                    alpha=alpha,
-                    verbose=verbose,
-                    patch_radius=patch_radius,
-                    b0_denoising=b0_denoising,
-                    clip_negative_vals=clip_negative_vals,
-                    shift_intensity=shift_intensity,
-                    version=version,
-                )
-                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
+                if ver == 1:
+                    denoised_data = patch2self(
+                        data,
+                        bvals,
+                        model=model,
+                        b0_threshold=b0_threshold,
+                        alpha=alpha,
+                        verbose=verbose,
+                        patch_radius=patch_radius,
+                        b0_denoising=b0_denoising,
+                        clip_negative_vals=clip_negative_vals,
+                        shift_intensity=shift_intensity,
+                        version=ver,
+                    )
+                elif ver == 3:
+                    denoised_data = patch2self(
+                        data,
+                        bvals,
+                        model=model,
+                        b0_threshold=b0_threshold,
+                        alpha=alpha,
+                        verbose=verbose,
+                        b0_denoising=b0_denoising,
+                        clip_negative_vals=clip_negative_vals,
+                        shift_intensity=shift_intensity,
+                        version=ver,
+                    )
+                save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info("Denoised volumes saved as %s", odenoised)
 

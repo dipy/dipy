@@ -152,6 +152,10 @@ fig1.savefig("denoised_patch2self.png")
 save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 
 ###############################################################################
+# You can also use Patch2Self version 1 to denoise the data by using version
+# argument. The default version is set to 3. To use version 1, you can call
+# Patch2Self as follows:
+#    patch2self(data, bvals, version=1)
 # Lastly, one can also use Patch2Self in batches if the number of gradient
 # directions is very high (>=200 volumes). For instance, if the data has 300
 # volumes, one can split the data into 2 batches, (150 directions each) and
@@ -172,5 +176,29 @@ save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 # References
 # ----------
 #
-# .. footbibliography::
+# .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+#                 Denoising Diffusion MRI with Self-supervised Learning,
+#                 Advances in Neural Information Processing Systems 33 (2020)
 #
+# .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
+#                 Weighted Image Denoising Using Overcomplete Local PCA" (2013)
+#                 PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
+#
+# .. [Veraa2016a] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+#                 mapping using random matrix theory. Magnetic Resonance in
+#                 Medicine. doi: 10.1002/mrm.26059.
+#
+# .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
+#              Barillot, An Optimized Blockwise Non Local Means Denoising
+#              Filter for 3D Magnetic Resonance Images, IEEE Transactions on
+#              Medical Imaging, 27(4):425-441, 2008
+#
+# .. [Knoll11] F. Knoll, K. Bredies, T. Pock, R. Stollberger, Second order
+#              total generalized variation (TGV) for MRI. Magnetic resonance
+#              in medicine, 65(2), pp.480-491.
+#
+# .. [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
+#                    E. Garyfallidis, Patch2Self2: Self-supervised Denoising
+#                    on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
+#                    Conference on Computer Vision and Pattern Recognition (2024),
+#                    27641-27651.

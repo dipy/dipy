@@ -432,10 +432,6 @@ def patch2self(
     ----------
     .. footbibliography::
 
-    [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-                    Denoising Diffusion MRI with Self-supervised Learning,
-                    Advances in Neural Information Processing Systems 33 (2020)
-
     [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
                     E. Garyfallidis, Patch2Self2: Self-supervised Denoising
                     on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
