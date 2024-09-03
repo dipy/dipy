@@ -134,7 +134,7 @@ class Patch2SelfFlow(Workflow):
                         shift_intensity=shift_intensity,
                         version=ver,
                     )
-                save_nifti(odenoised, denoised_data, affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volumes saved as %s", odenoised)
 
