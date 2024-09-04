@@ -70,7 +70,9 @@ def test_rumba():
         assert_raises(ValueError, model_fit.odf, sphere2)
         odf = model_fit.odf(sphere)
 
-        directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -81,7 +83,9 @@ def test_rumba():
             data, golden_directions = sb_dummies[sbd]
             model_fit = model.fit(data)
             odf = model_fit.odf(sphere)
-            directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+            directions, _, _ = peak_directions(
+                odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+            )
             if len(directions) <= 3:
                 # Verify small isotropic fraction in anisotropic case
                 assert_equal(model_fit.f_iso < 0.1, True)
@@ -139,7 +143,9 @@ def test_recursive_rumba():
 
     # Test peaks
     odf = model_fit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -164,7 +170,9 @@ def test_multishell_rumba():
 
     # Test peaks
     odf = model_fit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -286,7 +294,9 @@ def test_global_fit():
 
         odf = model_fit.odf(sphere)
 
-        directions, _, _ = peak_directions(odf[0, 0, 0], sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -300,7 +310,9 @@ def test_global_fit():
         odf = rumba_fit.odf(sphere)
         f_iso = rumba_fit.f_iso
 
-        directions, _, _ = peak_directions(odf[0, 0, 0], sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         if len(directions) <= 3:
             # Verify small isotropic fraction in anisotropic case
             assert_equal(f_iso[0, 0, 0] < 0.1, True)
