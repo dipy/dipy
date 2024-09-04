@@ -1,4 +1,5 @@
 from numpy.testing import assert_equal
+import pytest
 
 from dipy.align.streamwarp import (
     bundlewarp,
@@ -7,8 +8,13 @@ from dipy.align.streamwarp import (
 )
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import Streamlines, set_number_of_points
+from dipy.utils.optpkg import optional_package
+
+pd, have_pd, _ = optional_package("pandas")
+needs_pandas = pytest.mark.skipif(not have_pd, reason="Requires pandas")
 
 
+@needs_pandas
 def test_bundlewarp():
     cingulum_bundles = two_cingulum_bundles()
 
@@ -30,7 +36,7 @@ def test_bundlewarp():
 
     assert_equal(len(cb2), len(warp))
 
-
+@needs_pandas
 def test_bundlewarp_vector_filed():
     cingulum_bundles = two_cingulum_bundles()
     
@@ -55,6 +61,7 @@ def test_bundlewarp_vector_filed():
     assert_equal(len(colors), len(deformed_bundle.get_data()))
 
 
+@needs_pandas
 def test_bundle_shape_profile():
     cingulum_bundles = two_cingulum_bundles()
 
@@ -82,6 +89,7 @@ def test_bundle_shape_profile():
     assert_equal(len(shape_profile), n)
     assert_equal(len(stdv), n)
 
+@needs_pandas
 def test_transformation_dimensions():
     cingulum_bundles = two_cingulum_bundles()
 
