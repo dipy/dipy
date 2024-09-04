@@ -372,7 +372,7 @@ def test_odfdeconv():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        csd = ConstrainedSDTModel(gtab, ratio, None)
+        csd = ConstrainedSDTModel(gtab, ratio, reg_sphere=None)
 
     csd_fit = csd.fit(S)
     with warnings.catch_warnings():

@@ -17,6 +17,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivit
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
@@ -68,7 +69,8 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
 
 class MultiShellResponse:
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-    def __init__(self, response, sh_order_max, shells, S0=None):
+    @warning_for_keywords()
+    def __init__(self, response, sh_order_max, shells, *, S0=None):
         """Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
@@ -160,8 +162,16 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
 
 class MultiShellDeconvModel(shm.SphHarmModel):
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, response, reg_sphere=default_sphere, sh_order_max=8, iso=2, tol=20
+        self,
+        gtab,
+        response,
+        reg_sphere=default_sphere,
+        *,
+        sh_order_max=8,
+        iso=2,
+        tol=20,
     ):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
@@ -260,7 +270,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.l_values = l_values
         self.response = response
 
-    def predict(self, params, gtab=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, params, *, gtab=None, S0=None):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -440,8 +451,9 @@ class QpFitter:
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def multi_shell_fiber_response(
-    sh_order_max, bvals, wm_rf, gm_rf, csf_rf, sphere=None, tol=20, btens=None
+    sh_order_max, bvals, wm_rf, gm_rf, csf_rf, *, sphere=None, tol=20, btens=None
 ):
     """Fiber response function estimation for multi-shell data.
 
@@ -549,9 +561,11 @@ def multi_shell_fiber_response(
     return MultiShellResponse(response, sh_order_max, bvals, S0=S0)
 
 
+@warning_for_keywords()
 def mask_for_response_msmt(
     gtab,
     data,
+    *,
     roi_center=None,
     roi_radii=10,
     wm_fa_thr=0.7,
@@ -683,7 +697,8 @@ def mask_for_response_msmt(
     return mask_wm, mask_gm, mask_csf
 
 
-def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
+@warning_for_keywords()
+def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, *, tol=20):
     """Computation of multi-shell multi-tissue (msmt) response
         functions from given tissues masks.
 
@@ -767,9 +782,11 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     return wm_response, gm_response, csf_response
 
 
+@warning_for_keywords()
 def auto_response_msmt(
     gtab,
     data,
+    *,
     tol=20,
     roi_center=None,
     roi_radii=10,

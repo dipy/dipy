@@ -116,7 +116,7 @@ def test_mcsd_model_delta():
         )
         for i, s in enumerate([0, 1000, 2000, 3500]):
             g = GradientTable(default_sphere.vertices * s)
-            signal = model.predict(wm_delta, g)
+            signal = model.predict(wm_delta, gtab=g)
             expected = np.dot(response.response[i, iso:], B.T)
             npt.assert_array_almost_equal(signal, expected)
 
@@ -126,7 +126,7 @@ def test_mcsd_model_delta():
             message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        signal = model.predict(wm_delta, gtab)
+        signal = model.predict(wm_delta, gtab=gtab)
     fit = model.fit(signal)
     m = model.m_values
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0.0, 2)

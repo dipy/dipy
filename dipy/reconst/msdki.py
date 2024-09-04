@@ -10,9 +10,11 @@ from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
+from dipy.testing.decorators import warning_for_keywords
 
 
-def mean_signal_bvalue(data, gtab, bmag=None):
+@warning_for_keywords()
+def mean_signal_bvalue(data, gtab, *, bmag=None):
     """
     Computes the average signal across different diffusion directions
     for each unique b-value
@@ -154,7 +156,8 @@ def _diff_msk_from_awf(f, msk):
     return (G * dF - F * dG) / (G**2)
 
 
-def awf_from_msk(msk, mask=None):
+@warning_for_keywords()
+def awf_from_msk(msk, *, mask=None):
     """
     Computes the axonal water fraction from the mean signal kurtosis
     assuming the 2-compartmental spherical mean technique model.
@@ -222,7 +225,8 @@ def awf_from_msk(msk, mask=None):
     return awf
 
 
-def msdki_prediction(msdki_params, gtab, S0=1.0):
+@warning_for_keywords()
+def msdki_prediction(msdki_params, gtab, *, S0=1.0):
     """
     Predict the mean signal given the parameters of the mean signal DKI, an
     GradientTable object and S0 signal.
@@ -272,7 +276,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 class MeanDiffusionKurtosisModel(ReconstModel):
     """Mean signal Diffusion Kurtosis Model"""
 
-    def __init__(self, gtab, bmag=None, return_S0_hat=False, *args, **kwargs):
+    def __init__(self, gtab, *args, bmag=None, return_S0_hat=False, **kwargs):
         """Mean Signal Diffusion Kurtosis Model.
 
         See :footcite:p:`NetoHenriques2018` for further details about the model.
@@ -318,7 +322,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             mes = "MSDKI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the MSDKI model class
 
         Parameters
@@ -352,7 +357,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, msdki_params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, msdki_params, *, S0=1.0):
         """
         Predict a signal for this MeanDiffusionKurtosisModel class instance
         given parameters.
@@ -384,11 +390,12 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ----------
         .. footbibliography::
         """
-        return msdki_prediction(msdki_params, self.gtab, S0)
+        return msdki_prediction(msdki_params, self.gtab, S0=S0)
 
 
 class MeanDiffusionKurtosisFit:
-    def __init__(self, model, model_params, model_S0=None):
+    @warning_for_keywords()
+    def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a MeanDiffusionKurtosisFit class instance."""
         self.model = model
         self.model_params = model_params
@@ -534,7 +541,8 @@ class MeanDiffusionKurtosisFit:
         den = 3 + 2 * fe**3 + 4 * fe**4
         return np.sqrt(num / den)
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""
         Given a mean signal diffusion kurtosis model fit, predict the signal
         on the vertices of a sphere
@@ -570,10 +578,12 @@ class MeanDiffusionKurtosisFit:
         return msdki_prediction(self.model_params, gtab, S0=S0)
 
 
+@warning_for_keywords()
 def wls_fit_msdki(
     design_matrix,
     msignal,
     ng,
+    *,
     mask=None,
     min_signal=MIN_POSITIVE_SIGNAL,
     return_S0_hat=False,

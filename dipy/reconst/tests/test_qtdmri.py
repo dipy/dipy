@@ -436,12 +436,12 @@ def test_calling_cartesian_laplacian_with_precomputed_matrices(
         ind_mat,
         us,
         ut,
-        S_mat,
-        T_mat,
-        U_mat,
-        part1_reg_mat_tau,
-        part23_reg_mat_tau,
-        part4_reg_mat_tau,
+        S_mat=S_mat,
+        T_mat=T_mat,
+        U_mat=U_mat,
+        part1_ut_precomp=part1_reg_mat_tau,
+        part23_ut_precomp=part23_reg_mat_tau,
+        part4_ut_precomp=part4_reg_mat_tau,
     )
     laplacian_matrix_regular = qtdmri.qtdmri_laplacian_reg_matrix(ind_mat, us, ut)
     assert_array_almost_equal(laplacian_matrix_precomputed, laplacian_matrix_regular)

@@ -61,7 +61,7 @@ def test_minmax_normalize():
     assert_equal(odf2.min(), 0)
 
     odf3 = np.empty(odf.shape)
-    odf3 = minmax_normalize(odf, odf3)
+    odf3 = minmax_normalize(odf, out=odf3)
     assert_equal(odf3.max(), 1)
     assert_equal(odf3.min(), 0)
 

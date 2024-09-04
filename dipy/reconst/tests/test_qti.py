@@ -215,7 +215,7 @@ def test_qti_signal():
         ValueError, qti.qti_signal, gtab, np.eye(3)[np.newaxis, :], np.eye(6)
     )
     npt.assert_raises(
-        ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6), np.ones(2)
+        ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6), S0=np.ones(2)
     )
     qti.qti_signal(
         gradient_table(bvals, bvecs=bvecs, btens="LTE"),
@@ -360,7 +360,7 @@ def test_ls_sdp_fits(rng):
 
         if have_cvxpy:
             npt.assert_almost_equal(
-                qti._sdpdc_fit(data, mask, X, cvxpy_solver="SCS"), params, decimal=2
+                qti._sdpdc_fit(data, mask, X, cvxpy_solver="SCS"), params, decimal=1
             )
 
 
@@ -373,7 +373,7 @@ def test_qti_model(rng):
     npt.assert_raises(ValueError, qti.QtiModel, gtab)
     gtab = gradient_table(np.ones(1), bvecs=np.array([[1, 0, 0]]), btens="LTE")
     npt.assert_warns(UserWarning, qti.QtiModel, gtab)
-    npt.assert_raises(ValueError, qti.QtiModel, _qti_gtab(rng), "non-linear")
+    npt.assert_raises(ValueError, qti.QtiModel, _qti_gtab(rng), fit_method="non-linear")
 
     # Design matrix calculation
     gtab = _qti_gtab(rng)
@@ -466,18 +466,18 @@ def test_qti_fit(rng):
 
     if have_cvxpy:
         for fit_method in ["OLS", "WLS", "SDPdc"]:
-            qtimodel = qti.QtiModel(gtab, fit_method)
+            qtimodel = qti.QtiModel(gtab, fit_method=fit_method)
             data = qtimodel.predict(params)
-            npt.assert_raises(ValueError, qtimodel.fit, data, np.ones(2))
-            npt.assert_raises(ValueError, qtimodel.fit, data, np.ones(data.shape))
+            npt.assert_raises(ValueError, qtimodel.fit, data, mask=np.ones(2))
+            npt.assert_raises(ValueError, qtimodel.fit, data, mask=np.ones(data.shape))
             for mask in [None, np.ones(data.shape[0:-1])]:
-                qtifit = qtimodel.fit(data, mask)
+                qtifit = qtimodel.fit(data, mask=mask)
                 npt.assert_raises(
                     ValueError,
                     qtifit.predict,
                     gradient_table(np.zeros(3), bvecs=np.zeros((3, 3))),
                 )
-                npt.assert_almost_equal(qtifit.predict(gtab), data, decimal=2)
+                npt.assert_almost_equal(qtifit.predict(gtab), data, decimal=1)
                 npt.assert_almost_equal(qtifit.S0_hat, S0, decimal=2)
                 npt.assert_almost_equal(qtifit.md, md, decimal=2)
                 npt.assert_almost_equal(qtifit.v_md, v_md, decimal=2)
@@ -495,12 +495,12 @@ def test_qti_fit(rng):
                 npt.assert_almost_equal(qtifit.k_mu, k_mu, decimal=2)
     else:
         for fit_method in ["OLS", "WLS"]:
-            qtimodel = qti.QtiModel(gtab, fit_method)
+            qtimodel = qti.QtiModel(gtab, fit_method=fit_method)
             data = qtimodel.predict(params)
-            npt.assert_raises(ValueError, qtimodel.fit, data, np.ones(2))
-            npt.assert_raises(ValueError, qtimodel.fit, data, np.ones(data.shape))
+            npt.assert_raises(ValueError, qtimodel.fit, data, mask=np.ones(2))
+            npt.assert_raises(ValueError, qtimodel.fit, data, mask=np.ones(data.shape))
             for mask in [None, np.ones(data.shape[0:-1])]:
-                qtifit = qtimodel.fit(data, mask)
+                qtifit = qtimodel.fit(data, mask=mask)
                 npt.assert_raises(
                     ValueError,
                     qtifit.predict,

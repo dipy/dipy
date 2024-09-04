@@ -28,6 +28,7 @@ import dipy.data as dpd
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.cache import Cache
 import dipy.sims.voxel as sims
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 
@@ -42,7 +43,8 @@ lm, _, _ = optional_package("sklearn.linear_model")
 
 
 # First, a helper function to derive the fit signal for these models:
-def _to_fit_iso(data, gtab, mask=None):
+@warning_for_keywords()
+def _to_fit_iso(data, gtab, *, mask=None):
     if mask is None:
         mask = np.ones(data.shape[:-1], dtype=bool)
     # Turn it into a 2D thing:
@@ -86,7 +88,8 @@ class IsotropicModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """Fit an IsotropicModel.
 
         This boils down to finding the mean diffusion-weighted signal in each
@@ -136,7 +139,8 @@ class IsotropicFit(ReconstFit):
         self.model = model
         self.params = params
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """Predict the isotropic signal.
 
         Based on a gradient table. In this case, the (naive!) prediction will
@@ -165,7 +169,8 @@ class ExponentialIsotropicModel(IsotropicModel):
     with b-values
     """
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """
 
         Parameters
@@ -201,7 +206,8 @@ class ExponentialIsotropicFit(IsotropicFit):
     A fit to the ExponentialIsotropicModel object, based on data.
     """
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """
         Predict the isotropic signal, based on a gradient table. In this case,
         the prediction will be for an exponential decay with the mean
@@ -230,7 +236,8 @@ class ExponentialIsotropicFit(IsotropicFit):
             )
 
 
-def sfm_design_matrix(gtab, sphere, response, mode="signal"):
+@warning_for_keywords()
+def sfm_design_matrix(gtab, sphere, response, *, mode="signal"):
     """
     Construct the SFM design matrix
 
@@ -323,9 +330,11 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
 
 
 class SparseFascicleModel(ReconstModel, Cache):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         sphere=None,
         response=(0.0015, 0.0005, 0.0005),
         solver="ElasticNet",
@@ -437,9 +446,10 @@ class SparseFascicleModel(ReconstModel, Cache):
             The design matrix, where each column is a rotated version of the
             response function.
         """
-        return sfm_design_matrix(self.gtab, self.sphere, self.response, "signal")
+        return sfm_design_matrix(self.gtab, self.sphere, self.response, mode="signal")
 
-    def _fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
+    @warning_for_keywords()
+    def _fit_solver2voxels(self, isopredict, vox_data, vox, *, parallel=False):
         # In voxels in which S0 is 0, we just want to keep the
         # parameters at all-zeros, and avoid nasty sklearn errors:
         if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
@@ -463,7 +473,10 @@ class SparseFascicleModel(ReconstModel, Cache):
                 return np.zeros(self.design_matrix.shape[-1])
         return coef
 
-    def fit(self, data, mask=None, num_processes=1, parallel_backend="multiprocessing"):
+    @warning_for_keywords()
+    def fit(
+        self, data, *, mask=None, num_processes=1, parallel_backend="multiprocessing"
+    ):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -523,7 +536,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             flat_S = np.zeros(data_in_mask[..., ~self.gtab.b0s_mask].shape)
         else:
             flat_S = data_in_mask[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        isotropic = self.isotropic(self.gtab).fit(data, mask)
+        isotropic = self.isotropic(self.gtab).fit(data, mask=mask)
         flat_params = np.zeros((data_in_mask.shape[0], self.design_matrix.shape[-1]))
         del data_in_mask
         gc.collect()
@@ -566,7 +579,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         else:
             for vox, vox_data in enumerate(flat_S):
                 flat_params[vox] = self._fit_solver2voxels(
-                    isopredict, vox_data, vox, False
+                    isopredict, vox_data, vox, parallel=False
                 )
 
         del isopredict, flat_S
@@ -637,7 +650,8 @@ class SparseFascicleFit(ReconstFit):
             odf_matrix, self.beta.reshape(-1, self.beta.shape[-1]).T
         ).T.reshape(self.beta.shape[:-1] + (odf_matrix.shape[0],))
 
-    def predict(self, gtab=None, response=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, response=None, S0=None):
         """
         Predict the signal based on the SFM parameters
 
@@ -680,7 +694,7 @@ class SparseFascicleFit(ReconstFit):
             S0 = S0[..., None]
 
         pre_pred_sig = S0 * (
-            pred_weighted + self.iso.predict(gtab).reshape(pred_weighted.shape)
+            pred_weighted + self.iso.predict(gtab=gtab).reshape(pred_weighted.shape)
         )
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig

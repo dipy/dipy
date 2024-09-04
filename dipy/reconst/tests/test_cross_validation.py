@@ -32,7 +32,7 @@ def test_coeff_of_determination(rng):
 def test_dti_xval():
     data = load_nifti_data(fdata)
     gtab = gt.gradient_table(fbval, bvecs=fbvec)
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     # The data has 102 directions, so will not divide neatly into 10 bits
     npt.assert_raises(ValueError, xval.kfold_xval, dm, data, 10)
 
@@ -49,7 +49,7 @@ def test_dti_xval():
     ]
     S = sims.single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     kf_xval = xval.kfold_xval(dm, S, 2)
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1]) * 100)
