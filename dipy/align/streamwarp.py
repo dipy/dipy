@@ -11,7 +11,7 @@ from dipy.stats.analysis import assignment_map
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
 from dipy.viz.plotting import bundle_shape_profile
-
+from dipy.utils.optpkg import optional_package
 pd, have_pd, _ = optional_package("pandas")
 
 def average_bundle_length(bundle):
@@ -59,8 +59,9 @@ def find_missing(lst, cb):
 
 
 @warning_for_keywords()
-def bundlewarp(static, moving, *, dist=None, alpha=0.5, beta=20, max_iter=15,
-               affine=True):
+def bundlewarp(
+    static, moving, *, dist=None, alpha=0.5, beta=20, max_iter=15, affine=True
+):
 
     """Register two bundles using nonlinear method.
 
