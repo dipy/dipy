@@ -11,7 +11,6 @@ from libc.math cimport ceil, floor, fabs, sqrt
 import numpy as np
 cimport numpy as cnp
 from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
-from dipy.testing.decorators import warning_for_keywords
 
 
 @cython.boundscheck(False)
@@ -75,8 +74,7 @@ def _voxel2streamline(sl,
     return v2f ,v2fn
 
 
-@warning_for_keywords()
-def streamline_mapping(streamlines, *, affine=None,
+def streamline_mapping(streamlines, affine=None,
                        mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines.
 
@@ -328,8 +326,7 @@ cdef cnp.npy_intp _streamline_in_mask(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-@warning_for_keywords()
-def track_counts(tracks, vol_dims, *, vox_sizes=(1,1,1), return_elements=True):
+def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     """ Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm

@@ -380,7 +380,7 @@ def seeds_from_mask(mask, affine, *, density=(1, 1, 1)):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> seeds_from_mask(mask, np.eye(4), [1,1,1])
+    >>> seeds_from_mask(mask, np.eye(4), density=[1,1,1])
     array([[ 0.,  0.,  0.]])
 
     """
@@ -612,6 +612,9 @@ def target_line_based(streamlines, affine, target_mask, *, include=True):
     This function never returns single-point streamlines, whatever the
     value of `include`.
 
+    See :footcite:`Bresenham1965` and :footcite:p:`Houde2015` for further
+    details about the method.
+
     Parameters
     ----------
     streamlines : iterable
@@ -634,10 +637,7 @@ def target_line_based(streamlines, affine, target_mask, *, include=True):
 
     References
     ----------
-    [Bresenham5] Bresenham, Jack Elton. "Algorithm for computer control of a
-                 digital plotter", IBM Systems Journal, vol 4, no. 1, 1965.
-    [Houde15] Houde et al. How to avoid biased streamlines-based metrics for
-              streamlines with variable step sizes, ISMRM 2015.
+    .. footbibliography::
 
     See Also
     --------
@@ -1010,6 +1010,8 @@ def _as_segments(streamline, break_points):
 def max_angle_from_curvature(min_radius_curvature, step_size):
     """Get the maximum deviation angle from the minimum radius curvature.
 
+    See :footcite:p:`Tournier2012` for further details about the method.
+
     Parameters
     ----------
     min_radius_curvature: float
@@ -1025,8 +1027,7 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
 
     References
     ----------
-    For more information:
-    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+    .. footbibliography::
 
     """
     max_angle = 2.0 * np.arcsin(step_size / (2.0 * min_radius_curvature))
@@ -1040,6 +1041,8 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
 
 def min_radius_curvature_from_angle(max_angle, step_size):
     """Get minimum radius of curvature from a deviation angle.
+
+    See :footcite:p:`Tournier2012` for further details about the method.
 
     Parameters
     ----------
@@ -1057,8 +1060,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
 
     References
     ----------
-    More information:
-    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+    .. footbibliography::
 
     """
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:

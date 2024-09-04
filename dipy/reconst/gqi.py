@@ -7,43 +7,46 @@ import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
-    def __init__(self, gtab, method="gqi2", sampling_length=1.2, normalize_peaks=False):
-        r"""Generalized Q-Sampling Imaging [1]_
+    @warning_for_keywords()
+    def __init__(
+        self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
+    ):
+        r"""Generalized Q-Sampling Imaging.
+
+        See :footcite:t:`Yeh2010` for further details about the model.
 
         This model has the same assumptions as the DSI method i.e. Cartesian
         grid sampling in q-space and fast gradient switching.
 
-        Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
-        from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
-        the DSI ODF.
+        Implements equations 2.14 from :footcite:p:`Garyfallidis2012b` for
+        standard GQI and equation 2.16 from :footcite:p:`Garyfallidis2012b` for
+        GQI2. You can think of GQI2 as an analytical solution of the DSI ODF.
 
         Parameters
         ----------
         gtab : object,
             GradientTable
-        method : str,
+        method : str, optional
             'standard' or 'gqi2'
-        sampling_length : float,
+        sampling_length : float, optional
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
         normalize_peaks : bool, optional
             True to normalize peaks.
 
-        References
-        ----------
-        .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
-
-        .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-           thesis, University of Cambridge, 2012.
-
         Notes
         -----
         As of version 0.9, range of the sampling length in GQI2 has changed
-        to match the same scale used in the 'standard' method [1]_. This
-        means that the value of `sampling_length` should be approximately
-        1 - 1.3 (see [1]_, pg. 1628).
+        to match the same scale used in the 'standard' method
+        :footcite:t:`Yeh2010`. This means that the value of `sampling_length`
+        should be approximately 1 - 1.3 (see :footcite:t:`Yeh2010`, pg. 1628).
+
+        References
+        ----------
+        .. footbibliography::
 
         Examples
         --------
@@ -54,9 +57,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> from dipy.data import dsi_voxels
         >>> data, gtab = dsi_voxels()
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere
-        >>> sphere = create_unit_sphere(5)
+        >>> sphere = create_unit_sphere(recursion_level=5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
-        >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.1)
+        >>> gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.1)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
 
@@ -128,7 +131,8 @@ class GeneralizedQSamplingFit(OdfFit):
         return np.dot(self.data, self.gqi_vector)
 
 
-def normalize_qa(qa, max_qa=None):
+@warning_for_keywords()
+def normalize_qa(qa, *, max_qa=None):
     """Normalize quantitative anisotropy.
 
     Used mostly with GQI rather than GQI2.
@@ -157,10 +161,15 @@ def normalize_qa(qa, max_qa=None):
     return qa / max_qa
 
 
-def squared_radial_component(x, tol=0.01):
+@warning_for_keywords()
+def squared_radial_component(x, *, tol=0.01):
     """Part of the GQI2 integral
 
-    Eq.8 in the referenced paper by Yeh et al. 2010
+    Eq.8 in the referenced paper by :footcite:t:`Yeh2010`.
+
+    References
+    ----------
+    .. footbibliography::
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -169,7 +178,8 @@ def squared_radial_component(x, tol=0.01):
     return np.where(x_near_zero, 1.0 / 3, result)
 
 
-def npa(self, odf, width=5):
+@warning_for_keywords()
+def npa(self, odf, *, width=5):
     """non-parametric anisotropy
 
     Nimmo-Smith et al.  ISMRM 2011
@@ -187,7 +197,8 @@ def npa(self, odf, width=5):
     return t0, t1, t2, npa
 
 
-def equatorial_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def equatorial_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial zone conjugate
     to 'pole' with width half 'width' degrees
@@ -199,7 +210,8 @@ def equatorial_zone_vertices(vertices, pole, width=5):
     ]
 
 
-def polar_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def polar_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial band around
     the 'pole' of radius 'width' degrees

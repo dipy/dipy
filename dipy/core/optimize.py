@@ -251,24 +251,24 @@ def sparse_nnls(
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
 
-    momentum : float, optional (default: 1).
+    momentum : float, optional
         The persistence of the gradient.
 
-    step_size : float, optional (default: 0.01).
+    step_size : float, optional
         The increment of parameter update in each iteration
 
-    non_neg : Boolean, optional (default: True)
+    non_neg : Boolean, optional
         Whether to enforce non-negativity of the solution.
 
-    check_error_iter : int (default:10)
+    check_error_iter : int, optional
         How many rounds to run between error evaluation for
         convergence-checking.
 
-    max_error_checks : int (default: 10)
+    max_error_checks : int, optional
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_sse : float (default: 0.99)
+    converge_on_sse : float, optional
       a percentage improvement in SSE that is required each time to say
       that things are still going well.
 
@@ -386,7 +386,9 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 class PositiveDefiniteLeastSquares:
     @warning_for_keywords()
     def __init__(self, m, *, A=None, L=None):
-        r"""Regularized least squares with linear matrix inequality constraints [1]_.
+        r"""Regularized least squares with linear matrix inequality constraints.
+
+        See :footcite:p:`DelaHaije2020` for further details about the method.
 
         Generate a CVXPY representation of a regularized least squares
         optimization problem subject to linear matrix inequality constraints.
@@ -395,9 +397,9 @@ class PositiveDefiniteLeastSquares:
         ----------
         m : int
             Positive int indicating the number of regressors.
-        A : array (t = m + k + 1, p, p) (optional)
+        A : array (t = m + k + 1, p, p), optional
             Constraint matrices $A$.
-        L : array (m, m) (optional)
+        L : array (m, m), optional
             Regularization matrix $L$.
             Default: None.
 
@@ -419,13 +421,12 @@ class PositiveDefiniteLeastSquares:
         this type.
 
         This formulation is used here mainly to enforce polynomial
-        sum-of-squares constraints on various models, as described in [1]_.
+        sum-of-squares constraints on various models, as described in
+        :footcite:p:`DelaHaije2020`.
 
         References
         ----------
-        .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
-               for common diffusion MRI models using sum of squares
-               programming". NeuroImage 209, 2020, 116405.
+        .. footbibliography::
         """
         # Input
         self.A = A
@@ -492,12 +493,11 @@ class PositiveDefiniteLeastSquares:
             Design matrix.
         measurements : array (n)
             Measurements.
-        check : boolean (optional)
+        check : boolean, optional
             If True check whether the unconstrained optimization solution
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary
             constrained optimization calls.
-            Default: False
         kwargs : keyword arguments
             Arguments passed to the CVXPY solve method.
 

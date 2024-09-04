@@ -65,31 +65,33 @@ def bundlewarp(
 
     """Register two bundles using nonlinear method.
 
+     See :footcite:p:`Chandio2023` for further details about the method.
+
     Parameters
     ----------
     static : Streamlines
-        Reference/fixed bundle
+        Reference/fixed bundle.
 
     moving : Streamlines
-        Target bundle that will be moved/registered to match the static bundle
+        Target bundle that will be moved/registered to match the static bundle.
 
-    dist : float, optional.
-        Precomputed distance matrix
+    dist : float, optional
+        Precomputed distance matrix.
 
     alpha : float, optional
         Represents the trade-off between regularizing the deformation and
-        having points match very closely. The lower value of alpha means high
-        deformations
+        having points match very closely. Lower value of alpha means high
+        deformations.
 
     beta : int, optional
         Represents the strength of the interaction between points
-        Gaussian kernel size
+        Gaussian kernel size.
 
     max_iter : int, optional
-        Maximum number of iterations for deformation process in ml-CPD method
+        Maximum number of iterations for deformation process in ml-CPD method.
 
     affine : boolean, optional
-        If False, use rigid registration as the starting point
+        If False, use rigid registration as starting point.
 
     Returns
     -------
@@ -110,8 +112,7 @@ def bundlewarp(
 
     References
     ----------
-    .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01.
+    .. footbibliography::
 
     """
     if alpha <= 0.01:
@@ -218,13 +219,11 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
         Unitary vector directions
     colors : List
         Colors for bundle warping field vectors. Colors follow the convention
-        used in DTI-derived maps (e.g. color FA) [Pajevic1999]_.
+        used in DTI-derived maps (e.g. color FA) :footcite:p:`Pajevic1999`.
 
     References
     ----------
-    .. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
-       orientation of anisotropic tissues from diffusion tensor data: application
-       to white matter fiber tract mapping in the human brain.
+    .. footbibliography::
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)

@@ -43,7 +43,7 @@ def test_peak_directions_nl():
     assert_array_equal(values, abs(directions).sum(-1))
 
     # Test using a different sphere
-    sphere = unit_icosahedron.subdivide(4)
+    sphere = unit_icosahedron.subdivide(n=4)
     directions, values = peak_directions_nl(discrete_eval, sphere=sphere)
     assert_equal(directions.shape, (4, 3))
     assert_array_almost_equal(abs(directions), 1 / np.sqrt(3))
@@ -56,16 +56,16 @@ def test_peak_directions_nl():
         B = 1 + (x * z > 0) + 2 * (y * z > 0)
         return A * B
 
-    directions, values = peak_directions_nl(discrete_eval, 0.01)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.01)
     assert_equal(directions.shape, (4, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, 0.3)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.3)
     assert_equal(directions.shape, (3, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, 0.6)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.6)
     assert_equal(directions.shape, (2, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, 0.8)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.8)
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 4 * 3 / np.sqrt(3))
 
@@ -76,18 +76,18 @@ def test_peak_directions_nl():
         B = (x * z > 0) + 2 * (y * z > 0)
         return A * B
 
-    directions, values = peak_directions_nl(discrete_eval, 0.0)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.0)
     assert_equal(directions.shape, (3, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, 0.6)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.6)
     assert_equal(directions.shape, (2, 3))
 
-    directions, values = peak_directions_nl(discrete_eval, 0.8)
+    directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.8)
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 3 * 3 / np.sqrt(3))
 
 
-_sphere = create_unit_hemisphere(4)
+_sphere = create_unit_hemisphere(recursion_level=4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
 _gtab = GradientTable(np.ones((64, 3)))
 
@@ -127,7 +127,9 @@ def test_peak_directions():
     sphere = fit.model.sphere
 
     # Only one peak
-    direction, val, ind = peak_directions(odf, sphere, 0.5, 45)
+    direction, val, ind = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=45
+    )
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
@@ -135,24 +137,32 @@ def test_peak_directions():
 
     odf[0] = mx * 0.9
     # Two peaks, relative_threshold
-    direction, val, ind = peak_directions(odf, sphere, 1.0, 0)
+    direction, val, ind = peak_directions(
+        odf, sphere, relative_peak_threshold=1.0, min_separation_angle=0
+    )
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    direction, val, ind = peak_directions(odf, sphere, 0.8, 0)
+    direction, val, ind = peak_directions(
+        odf, sphere, relative_peak_threshold=0.8, min_separation_angle=0
+    )
     dir_e = sphere.vertices[[argmax, 0]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
     assert_array_equal(val, odf[ind])
 
     # Two peaks, angle_sep
-    direction, val, ind = peak_directions(odf, sphere, 0.0, 90)
+    direction, val, ind = peak_directions(
+        odf, sphere, relative_peak_threshold=0.0, min_separation_angle=90
+    )
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    direction, val, ind = peak_directions(odf, sphere, 0.0, 0)
+    direction, val, ind = peak_directions(
+        odf, sphere, relative_peak_threshold=0.0, min_separation_angle=0
+    )
     dir_e = sphere.vertices[[argmax, 0]]
     assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
@@ -160,17 +170,17 @@ def test_peak_directions():
 
 
 def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     S, sticks = multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=fractions, snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=fractions, snr=SNR
     )
 
-    sphere = get_sphere("symmetric724").subdivide(2)
+    sphere = get_sphere(name="symmetric724").subdivide(n=2)
 
     if half_sphere:
         sphere = HemiSphere.from_sphere(sphere)
@@ -189,17 +199,23 @@ def test_peak_directions_thorough():
     fractions = [50, 50]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two unequal fibers
     fractions = [75, 25]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.20, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.20, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers short angle (simulating very sharp ODF)
@@ -208,10 +224,14 @@ def test_peak_directions_thorough():
     angles = [(0, 0), (20, 0)]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 15.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=15.0
+    )
 
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
@@ -221,7 +241,9 @@ def test_peak_directions_thorough():
     angles = [(15, 0), (15, 0)]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 15.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=15.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
@@ -235,7 +257,9 @@ def test_peak_directions_thorough():
     fractions = [45, 45, 10]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers and one faulty
@@ -246,7 +270,9 @@ def test_peak_directions_thorough():
     fractions = [45, 45, 10]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two equal fibers and one very very annoying one
@@ -257,7 +283,9 @@ def test_peak_directions_thorough():
     fractions = [40, 40, 20]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # three peaks and one faulty
@@ -273,7 +301,9 @@ def test_peak_directions_thorough():
     fractions = [35, 35, 20, 10]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 3, 2)
 
     # four peaks
@@ -289,7 +319,9 @@ def test_peak_directions_thorough():
     fractions = [25, 25, 25, 25]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.15, 5.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.15, min_separation_angle=5.0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 4, 2)
 
     # four difficult peaks
@@ -305,11 +337,19 @@ def test_peak_directions_thorough():
     fractions = [30, 30, 20, 20]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0, min_separation_angle=0
+    )
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
 
     # test the asymmetric case
-    directions, values, indices = peak_directions(odf_gt, sphere, 0, 0, False)
+    directions, values, indices = peak_directions(
+        odf_gt,
+        sphere,
+        relative_peak_threshold=0,
+        min_separation_angle=0,
+        is_symmetric=False,
+    )
     expected = np.concatenate([sticks, -sticks], axis=0)
     assert_almost_equal(angular_similarity(directions, expected), 8, 1)
 
@@ -317,7 +357,9 @@ def test_peak_directions_thorough():
         mevals, angles, fractions, 100, None, half_sphere=True
     )
 
-    directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
+    directions, values, indices = peak_directions(
+        odf_gt, hsphere, relative_peak_threshold=0, min_separation_angle=0
+    )
     assert_equal(angular_similarity(directions, sticks) < 4, True)
 
     # four peaks and one them quite small
@@ -325,14 +367,18 @@ def test_peak_directions_thorough():
 
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0, min_separation_angle=0
+    )
     assert_equal(angular_similarity(directions, sticks) < 4, True)
 
     odf_gt, sticks, hsphere = _create_mt_sim(
         mevals, angles, fractions, 100, None, half_sphere=True
     )
 
-    directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
+    directions, values, indices = peak_directions(
+        odf_gt, hsphere, relative_peak_threshold=0, min_separation_angle=0
+    )
     assert_equal(angular_similarity(directions, sticks) < 4, True)
 
     # isotropic case
@@ -341,7 +387,9 @@ def test_peak_directions_thorough():
     fractions = [100.0]
     odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
 
-    directions, values, indices = peak_directions(odf_gt, sphere, 0.5, 25.0)
+    directions, values, indices = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
+    )
     assert_equal(len(values) > 10, True)
 
 
@@ -367,11 +415,15 @@ def test_difference_with_minmax():
 
     odf_gt_minmax = (odf_gt - odf_gt.min()) / (odf_gt.max() - odf_gt.min())
 
-    _, values_1, _ = peak_directions(odf_gt, sphere, 0.30, 25.0)
+    _, values_1, _ = peak_directions(
+        odf_gt, sphere, relative_peak_threshold=0.30, min_separation_angle=25.0
+    )
 
     assert_equal(len(values_1), 3)
 
-    _, values_2, _ = peak_directions(odf_gt_minmax, sphere, 0.30, 25.0)
+    _, values_2, _ = peak_directions(
+        odf_gt_minmax, sphere, relative_peak_threshold=0.30, min_separation_angle=25.0
+    )
 
     assert_equal(len(values_2), 3)
 
@@ -381,8 +433,8 @@ def test_difference_with_minmax():
     _, values_3, _ = peak_directions(
         odf_gt,
         sphere,
-        0.30,
-        25.0,
+        relative_peak_threshold=0.30,
+        min_separation_angle=25.0,
     )
 
     assert_equal(len(values_3), 4)
@@ -392,8 +444,8 @@ def test_difference_with_minmax():
     directions, values_4, indices = peak_directions(
         odf_gt,
         sphere,
-        0.60,
-        25.0,
+        relative_peak_threshold=0.60,
+        min_separation_angle=25.0,
     )
 
     assert_equal(len(values_4), 3)
@@ -406,7 +458,9 @@ def test_degenerate_cases(rng):
 
     # completely isotropic and degenerate case
     odf = np.zeros(sphere.vertices.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
     print(directions, values, indices)
 
     assert_equal(len(values), 0)
@@ -417,13 +471,17 @@ def test_degenerate_cases(rng):
     odf[0] = 0.020
     odf[1] = 0.018
 
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
     print(directions, values, indices)
 
     assert_equal(values[0], 0.02)
 
     odf = -np.ones(sphere.vertices.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
     print(directions, values, indices)
 
     assert_equal(len(values), 0)
@@ -433,18 +491,24 @@ def test_degenerate_cases(rng):
     odf[1] = 0.018
     odf[2] = -0.018
 
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
     assert_equal(values[0], 0.02)
 
     odf = np.ones(sphere.vertices.shape[0])
     odf += 0.1 * rng.random(odf.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
     assert_(all(values > values[0] * 0.5))
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
     odf[1:] = np.finfo(float).eps * rng.random(odf.shape[0] - 1)
-    directions, values, indices = peak_directions(odf, sphere, 0.5, 25)
+    directions, values, indices = peak_directions(
+        odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
+    )
 
     assert_equal(values[0], 1)
     assert_equal(len(values), 1)
@@ -453,7 +517,7 @@ def test_degenerate_cases(rng):
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
-    for sphere in [_sphere, get_sphere("symmetric642")]:
+    for sphere in [_sphere, get_sphere(name="symmetric642")]:
         # Test basic case
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
@@ -559,15 +623,15 @@ def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     data, _ = multi_tensor(
-        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
     )
 
     for sphere in [_sphere, default_sphere]:
@@ -583,8 +647,8 @@ def test_peaksFromModelParallel():
                 model,
                 data,
                 sphere,
-                0.5,
-                45,
+                relative_peak_threshold=0.5,
+                min_separation_angle=45,
                 normalize_peaks=True,
                 return_odf=True,
                 return_sh=True,
@@ -595,8 +659,8 @@ def test_peaksFromModelParallel():
                 model,
                 data,
                 sphere,
-                0.5,
-                45,
+                relative_peak_threshold=0.5,
+                min_separation_angle=45,
                 normalize_peaks=True,
                 return_odf=True,
                 return_sh=True,
@@ -607,8 +671,8 @@ def test_peaksFromModelParallel():
                 model,
                 data,
                 sphere,
-                0.5,
-                45,
+                relative_peak_threshold=0.5,
+                min_separation_angle=45,
                 normalize_peaks=True,
                 return_odf=True,
                 return_sh=True,
@@ -620,8 +684,8 @@ def test_peaksFromModelParallel():
                 model,
                 data,
                 sphere,
-                0.5,
-                45,
+                relative_peak_threshold=0.5,
+                min_separation_angle=45,
                 normalize_peaks=True,
                 return_odf=True,
                 return_sh=True,
@@ -663,17 +727,17 @@ def test_peaks_shm_coeff():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     sphere = default_sphere
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     data, _ = multi_tensor(
-        gtab, mevals, S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=SNR
     )
 
     with warnings.catch_warnings():
@@ -745,9 +809,9 @@ def test_peaks_from_positions():
     min_angle = 25
     npeaks = 5
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     voxels = []
     for _ in range(27):

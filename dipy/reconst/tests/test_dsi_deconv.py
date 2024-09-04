@@ -16,9 +16,9 @@ def test_dsi():
     # load repulsion 724 sphere
     sphere = default_sphere
     # load icosahedron sphere
-    sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_fnames("dsi515btable"))
-    gtab = gradient_table(btable[:, 0], btable[:, 1:])
+    sphere2 = create_unit_sphere(recursion_level=5)
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
+    gtab = gradient_table(btable[:, 0], bvecs=btable[:, 1:])
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -28,14 +28,18 @@ def test_dsi():
     # repulsion724
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
     # 5 subdivisions
     dsfit = ds.fit(data)
     odf2 = dsfit.odf(sphere2)
-    directions, _, _ = peak_directions(odf2, sphere2, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf2, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -44,7 +48,9 @@ def test_dsi():
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         odf = ds.fit(data).odf(sphere2)
-        directions, _, _ = peak_directions(odf, sphere2, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:

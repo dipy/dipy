@@ -4,9 +4,9 @@ Tracking with Robust Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ============================================================================
 
 Here, we demonstrate fiber tracking using a probabilistic direction getter
-and RUMBA-SD, a model introduced in [CanalesRodriguez2015]_. This model adapts
-Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi noise
-instead of Gaussian, which more accurately reflects the noise from MRI
+and RUMBA-SD, a model introduced in :footcite:p:`CanalesRodriguez2015`. This
+model adapts Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi
+noise instead of Gaussian, which more accurately reflects the noise from MRI
 scanners (see also
 :ref:`sphx_glr_examples_built_reconstruction_reconst_rumba.py`). This tracking
 tutorial is an extension on
@@ -150,10 +150,5 @@ save_trk(sft, "tractogram_probabilistic_rumba.trk")
 # References
 # ----------
 #
-# .. [CanalesRodriguez2015] Canales-Rodríguez, E. J., Daducci, A.,
-#    Sotiropoulos, S. N., Caruyer, E., Aja-Fernández, S., Radua, J.,
-#    Mendizabal, J. M. Y., Iturria-Medina, Y., Melie-García, L., Alemán-Gómez,
-#    Y., Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015).
-#    Spherical Deconvolution of Multichannel Diffusion MRI Data with
-#    Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE, 10(10),
-#    e0138910. https://doi.org/10.1371/journal.pone.0138910
+# .. footbibliography::
+#

@@ -89,7 +89,7 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
             pts = np.vstack((np.cos(t), t, i * np.ones(t.shape))).T
         else:
             pts = np.vstack((np.zeros(t.shape), t, i * np.ones(t.shape))).T
-        pts = set_number_of_points(pts, no_pts)
+        pts = set_number_of_points(pts, nb_points=no_pts)
         bundle.append(pts)
 
     return bundle

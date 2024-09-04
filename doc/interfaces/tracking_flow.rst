@@ -38,9 +38,10 @@ We will start by creating the directory to which to save the stopping file
 The workflow for each local tracking method requires the paths to the peaks and
 metrics files, stopping files, and seeding files. The default value for the
 local tracking method to be used (specified through the ``tracking_method``
-parameter) is ``eudx`` (EuDX tracking [Garyfallidis12]_). A number of optional
-arguments, such as the number of seeds per dimension within a voxel
-(``seed_density``), or the output directory (``out_dir``), can also be provided.
+parameter) is ``eudx`` (EuDX tracking :footcite:p:`Garyfallidis2012b`). A
+number of optional arguments, such as the number of seeds per dimension within
+a voxel (``seed_density``), or the output directory (``out_dir``), can also be
+provided.
 
 To get the stopping file, we will create a binary file of the GFA of the CSA
 reconstruction method and set a stopping criterion by calling the ``dipy_mask``
@@ -140,15 +141,16 @@ command as::
 Particle Filtering Tracking (PFT)
 ---------------------------------
 
-Particle Filtering Tracking (PFT) [Girard2014]_ uses tissue partial volume
-estimation (PVE) to reconstruct trajectories connecting the gray matter, and
-not prematurely stopping in the white matter or in the corticospinal fluid. It
-relies on a stopping criterion that identifies the tissue where the streamline
-stopped. If the streamline reaches the gray matter, the trajectory is kept. If
-the streamline incorrectly stopped in the white matter or in the cerebrospinal
-fluid, PFT uses anatomical information to find an alternative streamline
-segment to extend the trajectory. When this segment is found, the tractography
-continues until the streamline reaches the gray matter.
+Particle Filtering Tracking (PFT) :footcite:p:`Girard2014` uses tissue partial
+volume estimation (PVE) to reconstruct trajectories connecting the gray
+matter, and not prematurely stopping in the white matter or in the
+corticospinal fluid. It relies on a stopping criterion that identifies the
+tissue where the streamline stopped. If the streamline reaches the gray
+matter, the trajectory is kept. If the streamline incorrectly stopped in the
+white matter or in the cerebrospinal fluid, PFT uses anatomical information to
+find an alternative streamline segment to extend the trajectory. When this
+segment is found, the tractography continues until the streamline reaches the
+gray matter.
 
 We will use the ``stanford_hardi`` dataset in DIPY to showcase this tracking
 method. As with any other workflow in DIPY, you can also use your own data!
@@ -201,9 +203,4 @@ Overview of Fiber Tracking Methods
 References
 ----------
 
-.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography",
-    PhD thesis, University of Cambridge, 2012.
-
-.. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-    Towards quantitative connectivity analysis: reducing tractography biases.
-    NeuroImage, 98, 266-278, 2014.
+.. footbibliography::

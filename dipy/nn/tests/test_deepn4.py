@@ -13,7 +13,7 @@ if have_tf:
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights():
-    file_names = get_fnames("deepn4_test_data")
+    file_names = get_fnames(name="deepn4_test_data")
     input_arr = np.load(file_names[0])["img"]
     input_affine_arr = np.load(file_names[0])["affine"]
     target_arr = np.load(file_names[1])["corr"]
@@ -26,7 +26,7 @@ def test_default_weights():
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights_batch():
-    file_names = get_fnames("deepn4_test_data")
+    file_names = get_fnames(name="deepn4_test_data")
     input_arr = np.load(file_names[0])["img"]
     input_affine_arr = np.load(file_names[0])["affine"]
     target_arr = np.load(file_names[1])["corr"]

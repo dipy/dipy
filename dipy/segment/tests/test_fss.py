@@ -19,7 +19,7 @@ from dipy.testing import (
 
 def setup_module():
     global f1, f2
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 
     # Should work with both StatefulTractogram and streamlines (list of array)

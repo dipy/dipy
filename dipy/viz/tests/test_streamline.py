@@ -51,18 +51,18 @@ def test_output_created():
 
             view = "sagital"  # codespell:ignore sagital
             fname = os.path.join(temp_dir, f"test_{view}.png")
-            show_bundles(bundles, False, view=view, save_as=fname)
+            show_bundles(bundles, interactive=False, view=view, save_as=fname)
             assert_equal(os.path.exists(fname), True)
 
         views = ["axial", "sagittal", "coronal"]
 
         for view in views:
             fname = os.path.join(temp_dir, f"test_{view}.png")
-            show_bundles(bundles, False, view=view, save_as=fname)
+            show_bundles(bundles, interactive=False, view=view, save_as=fname)
             assert_equal(os.path.exists(fname), True)
 
         fname = os.path.join(temp_dir, "test_colors.png")
-        show_bundles(bundles, False, colors=colors, save_as=fname)
+        show_bundles(bundles, interactive=False, colors=colors, save_as=fname)
         assert_equal(os.path.exists(fname), True)
 
         # Check rendered image is not empty
@@ -78,7 +78,9 @@ def test_output_created():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_incorrect_view():
-    assert_raises(ValueError, show_bundles, bundles, False, "wrong_view")
+    assert_raises(
+        ValueError, show_bundles, bundles, interactive=False, view="wrong_view"
+    )
 
 
 @pytest.mark.skipif(
@@ -89,10 +91,10 @@ def test_bundlewarp_viz():
         cingulum_bundles = two_cingulum_bundles()
 
         cb1 = cingulum_bundles[0]
-        cb1 = Streamlines(set_number_of_points(cb1, 20))
+        cb1 = Streamlines(set_number_of_points(cb1, nb_points=20))
 
         cb2 = cingulum_bundles[1]
-        cb2 = Streamlines(set_number_of_points(cb2, 20))
+        cb2 = Streamlines(set_number_of_points(cb2, nb_points=20))
 
         deformed_bundle, affine_bundle, _, _, _ = bundlewarp(cb1, cb2)
 

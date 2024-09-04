@@ -7,7 +7,7 @@ from dipy.data import get_sphere
 from dipy.reconst.odf import OdfFit, OdfModel, gfa, minmax_normalize
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 
-_sphere = create_unit_hemisphere(4)
+_sphere = create_unit_hemisphere(recursion_level=4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
 _gtab = GradientTable(np.ones((64, 3)))
 
@@ -41,15 +41,17 @@ def test_minmax_normalize():
     S0 = 1
     SNR = 100
 
-    sphere = get_sphere("symmetric362")
+    sphere = get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], sphere.vertices))
     bvals = np.zeros(len(bvecs)) + bvalue
     bvals[0] = 0
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     evals = np.array(([0.0017, 0.0003, 0.0003], [0.0017, 0.0003, 0.0003]))
 
-    multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=SNR)
+    multi_tensor(
+        gtab, evals, S0=S0, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=SNR
+    )
     odf = multi_tensor_odf(
         sphere.vertices, evals, angles=[(0, 0), (90, 0)], fractions=[50, 50]
     )
@@ -59,7 +61,7 @@ def test_minmax_normalize():
     assert_equal(odf2.min(), 0)
 
     odf3 = np.empty(odf.shape)
-    odf3 = minmax_normalize(odf, odf3)
+    odf3 = minmax_normalize(odf, out=odf3)
     assert_equal(odf3.max(), 1)
     assert_equal(odf3.min(), 0)
 

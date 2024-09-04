@@ -33,14 +33,12 @@ class SNRinCCFlow(Workflow):
     def get_short_name(cls):
         return "snrincc"
 
-    @warning_for_keywords()
     def run(
         self,
         data_files,
         bvals_files,
         bvecs_files,
         mask_file,
-        *,
         bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1),
         out_dir="",
         out_file="product.json",
@@ -194,6 +192,8 @@ def buan_bundle_profiles(
     Applies statistical analysis on bundles and saves the results
     in a directory specified by ``out_dir``.
 
+    See :footcite:p:`Chandio2020a` for further details about the method.
+
     Parameters
     ----------
     model_bundle_folder : string
@@ -219,11 +219,7 @@ def buan_bundle_profiles(
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
+    .. footbibliography::
 
     """
 
@@ -333,6 +329,8 @@ class BundleAnalysisTractometryFlow(Workflow):
         Applies statistical analysis on bundles of subjects and saves the
         results in a directory specified by ``out_dir``.
 
+        See :footcite:p:`Chandio2020a` for further details about the method.
+
         Parameters
         ----------
 
@@ -352,11 +350,7 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
 
@@ -387,7 +381,14 @@ class BundleAnalysisTractometryFlow(Workflow):
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
                 buan_bundle_profiles(
-                    model_bundle_folder, b, c, d, group_id, sub, no_disks, out_dir
+                    model_bundle_folder,
+                    b,
+                    c,
+                    d,
+                    group_id,
+                    sub,
+                    no_disks=no_disks,
+                    out_dir=out_dir,
                 )
 
 
@@ -563,6 +564,8 @@ class BundleShapeAnalysis(Workflow):
         Applies bundle shape similarity analysis on bundles of subjects and
         saves the results in a directory specified by ``out_dir``.
 
+        See :footcite:p:`Chandio2020a` for further details about the method.
+
         Parameters
         ----------
 
@@ -581,11 +584,7 @@ class BundleShapeAnalysis(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
         rng = np.random.default_rng()
@@ -640,7 +639,7 @@ class BundleShapeAnalysis(Workflow):
                     ).streamlines
 
                     ba_value = bundle_shape_similarity(
-                        bundle1, bundle2, rng, clust_thr, threshold
+                        bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
                     )
 
                     ba_matrix[i][j] = ba_value

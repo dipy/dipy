@@ -186,7 +186,7 @@ def test_mapmri_signal_fitting(radial_order=6):
 
     mapm = MapmriModel(gtab, radial_order=radial_order, laplacian_weighting=0.02)
     mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+    S_reconst = mapfit.predict(gtab, S0=1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -225,7 +225,7 @@ def test_mapmri_signal_fitting(radial_order=6):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        S_reconst = mapfit.predict(gtab, 1.0)
+        S_reconst = mapfit.predict(gtab, S0=1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -254,7 +254,7 @@ def test_mapmri_signal_fitting(radial_order=6):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        S_reconst = mapfit.predict(gtab, 1.0)
+        S_reconst = mapfit.predict(gtab, S0=1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -285,7 +285,7 @@ def test_mapmri_signal_fitting(radial_order=6):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        S_reconst = mapfit.predict(gtab, 1.0)
+        S_reconst = mapfit.predict(gtab, S0=1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -316,7 +316,7 @@ def test_mapmri_signal_fitting(radial_order=6):
                 message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning,
             )
-            S_reconst = mapfit.predict(gtab, 1.0)
+            S_reconst = mapfit.predict(gtab, S0=1.0)
 
         # test the signal reconstruction
         S = S / S[0]
@@ -346,7 +346,7 @@ def test_mapmri_signal_fitting(radial_order=6):
                 message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning,
             )
-            S_reconst = mapfit.predict(gtab, 1.0)
+            S_reconst = mapfit.predict(gtab, S0=1.0)
 
         # test the signal reconstruction
         S = S / S[0]
@@ -436,7 +436,7 @@ def test_mapmri_signal_fitting_over_radial_order(order_max=8):
     for i, order in enumerate(orders):
         mapm = MapmriModel(gtab, radial_order=order, laplacian_regularization=False)
         mapfit = mapm.fit(S)
-        S_reconst = mapfit.predict(gtab, 100.0)
+        S_reconst = mapfit.predict(gtab, S0=100.0)
         error_array[i] = np.mean((S - S_reconst) ** 2)
     # check if the fitting error decreases as radial order increases
     assert_equal(np.diff(error_array) < 0.0, True)
@@ -1095,17 +1095,21 @@ def test_mapmri_odf(radial_order=6):
         laplacian_weighting=0.01,
     )
     # repulsion724
-    sphere2 = create_unit_sphere(5)
+    sphere2 = create_unit_sphere(recursion_level=5)
     mapfit = mapmod.fit(data)
     odf = mapfit.odf(sphere)
 
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
     # 5 subdivisions
     odf = mapfit.odf(sphere2)
-    directions, _, _ = peak_directions(odf, sphere2, 0.35, 25)
+    directions, _, _ = peak_directions(
+        odf, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -1114,7 +1118,9 @@ def test_mapmri_odf(radial_order=6):
         data, golden_directions = sb_dummies[sbd]
         asmfit = mapmod.fit(data)
         odf = asmfit.odf(sphere2)
-        directions, _, _ = peak_directions(odf, sphere2, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:
@@ -1151,6 +1157,6 @@ def test_mapmri_odf(radial_order=6):
             category=PendingDeprecationWarning,
         )
         odf_from_sh = sh_to_sf(
-            odf_sh, sphere, radial_order, basis_type=None, legacy=True
+            odf_sh, sphere, sh_order_max=radial_order, basis_type=None, legacy=True
         )
     assert_almost_equal(odf, odf_from_sh, 10)

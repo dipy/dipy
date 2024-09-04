@@ -187,7 +187,7 @@ def test_bundle_maps(rng):
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_odf_slicer(interactive=False):
     # Prepare our data
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     shape = (11, 11, 11, sphere.vertices.shape[0])
     odfs = np.ones(shape)
 
@@ -300,7 +300,7 @@ def test_odf_slicer(interactive=False):
         actor.odf_slicer,
         odfs,
         mask=None,
-        sphere=get_sphere("repulsion200"),
+        sphere=get_sphere(name="repulsion200"),
         scale=0.25,
     )
 
@@ -343,7 +343,11 @@ def test_odf_slicer(interactive=False):
     # Dimension mismatch between sphere vertices and dimension of
     # B matrix will raise an error.
     npt.assert_raises(
-        ValueError, actor.odf_slicer, odfs, mask=None, sphere=get_sphere("repulsion200")
+        ValueError,
+        actor.odf_slicer,
+        odfs,
+        mask=None,
+        sphere=get_sphere(name="repulsion200"),
     )
 
     # Test that constant colormap color works. Also test that sphere
@@ -367,7 +371,7 @@ def test_odf_slicer(interactive=False):
         window.show(scene)
 
     # Test that we can change the sphere on an active actor
-    new_sphere = get_sphere("symmetric362")
+    new_sphere = get_sphere(name="symmetric362")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -394,7 +398,7 @@ def test_tensor_slicer(interactive=False):
     mevals[..., :] = evals
     mevecs[..., :, :] = evecs
 
-    sphere = get_sphere("symmetric724")
+    sphere = get_sphere(name="symmetric724")
 
     affine = np.eye(4)
     scene = window.Scene()

@@ -12,7 +12,6 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
@@ -23,11 +22,9 @@ class IoInfoFlow(Workflow):
     def get_short_name(cls):
         return "io_info"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         b0_threshold=50,
         bvecs_tol=0.01,
         bshell_thr=100,
@@ -214,8 +211,7 @@ class FetchFlow(Workflow):
         else:
             return importlib.import_module(module_path)
 
-    @warning_for_keywords()
-    def run(self, data_names, *, out_dir=""):
+    def run(self, data_names, out_dir=""):
         """Download files to folder and check their md5 checksums.
 
         To see all available datasets, please type "list" in data_names.
@@ -288,8 +284,7 @@ class SplitFlow(Workflow):
     def get_short_name(cls):
         return "split"
 
-    @warning_for_keywords()
-    def run(self, input_files, *, vol_idx=0, out_dir="", out_split="split.nii.gz"):
+    def run(self, input_files, vol_idx=0, out_dir="", out_split="split.nii.gz"):
         """Splits the input 4D file and extracts the required 3D volume.
 
         Parameters
@@ -313,7 +308,7 @@ class SplitFlow(Workflow):
                 logging.info("Splitting and extracting 1st b0")
 
             split_vol = data[..., vol_idx]
-            save_nifti(osplit, split_vol, affine, image.header)
+            save_nifti(osplit, split_vol, affine, hdr=image.header)
 
             logging.info(f"Split volume saved as {osplit}")
 
@@ -323,11 +318,9 @@ class ConcatenateTractogramFlow(Workflow):
     def get_short_name(cls):
         return "concatracks"
 
-    @warning_for_keywords()
     def run(
         self,
         tractogram_files,
-        *,
         reference=None,
         delete_dpv=False,
         delete_dps=False,
@@ -414,11 +407,9 @@ class ConvertSHFlow(Workflow):
     def get_short_name(cls):
         return "convert_dipy_mrtrix"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         out_dir="",
         out_file="sh_convert_dipy_mrtrix_out.nii.gz",
     ):
@@ -445,7 +436,7 @@ class ConvertSHFlow(Workflow):
         for in_file, out_file in io_it:
             data, affine, image = load_nifti(in_file, return_img=True)
             data = convert_sh_descoteaux_tournier(data)
-            save_nifti(out_file, data, affine, image.header)
+            save_nifti(out_file, data, affine, hdr=image.header)
 
 
 class ConvertTensorsFlow(Workflow):
@@ -453,11 +444,9 @@ class ConvertTensorsFlow(Workflow):
     def get_short_name(cls):
         return "convert_tensors"
 
-    @warning_for_keywords()
     def run(
         self,
         tensor_files,
-        *,
         from_format="mrtrix",
         to_format="dipy",
         out_dir=".",
@@ -486,7 +475,7 @@ class ConvertTensorsFlow(Workflow):
             logging.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
-            save_nifti(otensor, data, affine, image.header)
+            save_nifti(otensor, data, affine, hdr=image.header)
 
 
 class ConvertTractogramFlow(Workflow):
@@ -494,11 +483,9 @@ class ConvertTractogramFlow(Workflow):
     def get_short_name(cls):
         return "convert_tractogram"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         reference=None,
         pos_dtype="float32",
         offsets_dtype="uint32",

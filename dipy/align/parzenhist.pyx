@@ -9,7 +9,6 @@ cimport cython
 from dipy.align.fused_types cimport floating
 from dipy.align import vector_fields as vf
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
                                       _apply_affine_3d_x2,
@@ -26,12 +25,13 @@ cdef extern from "dpy_math.h" nogil:
 class ParzenJointHistogram:
     def __init__(self, nbins):
         r""" Computes joint histogram and derivatives with Parzen windows
+        :footcite:p:`Parzen1962`.
 
         Base class to compute joint and marginal probability density
         functions and their derivatives with respect to a transform's
         parameters. The smooth histograms are computed by using Parzen
-        windows [Parzen62] with a cubic spline kernel, as proposed by
-        Mattes et al. [Mattes03]. This implementation is not tied to any
+        windows :footcite:p:`Parzen1962` with a cubic spline kernel, as proposed
+        by :footcite:t:`Mattes2003`. This implementation is not tied to any
         optimization (registration) method, the idea is that
         information-theoretic matching functionals (such as Mutual
         Information) can inherit from this class to perform the low-level
@@ -48,13 +48,7 @@ class ParzenJointHistogram:
 
         References
         ----------
-        [Parzen62] E. Parzen. On the estimation of a probability density
-                   function and the mode. Annals of Mathematical Statistics,
-                   33(3), 1065-1076, 1962.
-        [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-                   & Eubank, W. PET-CT image registration in the chest using
-                   free-form deformations. IEEE Transactions on Medical
-                   Imaging, 22(1), 120-8, 2003.
+        .. footbibliography::
 
         Notes
         -----
@@ -78,8 +72,7 @@ class ParzenJointHistogram:
         self.padding = 2
         self.setup_called = False
 
-    @warning_for_keywords()
-    def setup(self, static, moving, *, smask=None, mmask=None):
+    def setup(self, static, moving, smask=None, mmask=None):
         r""" Compute histogram settings to store the PDF of input images
 
         Parameters
@@ -187,8 +180,7 @@ class ParzenJointHistogram:
         """
         return _bin_index(xnorm, self.nbins, self.padding)
 
-    @warning_for_keywords()
-    def update_pdfs_dense(self, static, moving, *, smask=None, mmask=None):
+    def update_pdfs_dense(self, static, moving, smask=None, mmask=None):
         r""" Computes the Probability Density Functions of two images
 
         The joint PDF is stored in self.joint. The marginal distributions
@@ -316,7 +308,7 @@ class ParzenJointHistogram:
             raise ValueError('Invalid gradient field dimensions.')
 
         if not self.setup_called:
-            self.setup(static, moving, smask, mmask)
+            self.setup(static, moving, smask=smask, mmask=mmask)
 
         n = theta.shape[0]
         nbins = self.nbins
@@ -523,14 +515,12 @@ def cubic_spline(double[:] x):
 
 cdef inline double _cubic_spline(double x) nogil:
     r""" Cubic B-Spline evaluated at x
-    See eq. (3) of [Matttes03].
+
+    See eq. (3) of :footcite:t:`Mattes2003`.
 
     References
     ----------
-    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-               & Eubank, W. PET-CT image registration in the chest using
-               free-form deformations. IEEE Transactions on Medical Imaging,
-               22(1), 120-8, 2003.
+    .. footbibliography::
     """
     cdef:
         double absx = -x if x < 0.0 else x
@@ -563,14 +553,12 @@ def cubic_spline_derivative(double[:] x):
 
 cdef inline double _cubic_spline_derivative(double x) nogil:
     r""" Derivative of cubic B-Spline evaluated at x
-    See eq. (3) of [Mattes03].
+
+    See eq. (3) of :footcite:t:`Mattes2003`.
 
     References
     ----------
-    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-               & Eubank, W. PET-CT image registration in the chest using
-               free-form deformations. IEEE Transactions on Medical Imaging,
-               22(1), 120-8, 2003.
+    .. footbibliography::
     """
     cdef:
         double absx = -x if x < 0.0 else x
@@ -1291,8 +1279,7 @@ def compute_parzen_mi(double[:, :] joint,
     return metric_value
 
 
-@warning_for_keywords()
-def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world, *,
+def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
                           double sigma=0.25, object rng=None):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 

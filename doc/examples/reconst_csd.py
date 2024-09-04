@@ -7,7 +7,7 @@ Reconstruction with Constrained Spherical Deconvolution
 =======================================================
 
 This example shows how to use Constrained Spherical Deconvolution (CSD)
-introduced by Tournier et al. [Tournier2007]_.
+introduced by :footcite:p:`Tournier2007`.
 
 This method is mainly useful with datasets with gradient directions acquired on
 a spherical grid.
@@ -145,7 +145,7 @@ scene.rm(response_actor)
 # possible response function. For one, it depends on the diffusion tensor
 # (FA and first eigenvector), which has lower accuracy at high
 # b-values. Alternatively, the response function can be calibrated in a
-# data-driven manner [Tax2014]_.
+# data-driven manner :footcite:p:`Tax2014`.
 #
 # First, the data is deconvolved with a 'fat' response function. All voxels
 # that are considered to contain only one peak in this deconvolution (as
@@ -296,12 +296,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust
-#    determination of the fibre orientation distribution in diffusion MRI:
-#    Non-negativity constrained super-resolved spherical deconvolution",
-#    Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+# .. footbibliography::
 #
-# .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans,
-#    "Recursive calibration of the fiber response function for spherical
-#    deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80,
-#    2014.

@@ -5,10 +5,10 @@ Noise estimation using PIESNO
 
 Often, one is interested in estimating the noise in the diffusion signal. One
 of the methods to do this is the Probabilistic Identification and Estimation of
-Noise (PIESNO) framework [Koay2009]_. Using this method, one can detect the
-standard deviation of the noise from Diffusion-Weighted Imaging (DWI). PIESNO
-also works with multiple channel DWI datasets that are acquired from N array
-coils for both SENSE and GRAPPA reconstructions.
+Noise (PIESNO) framework :footcite:p:`Koay2009b`. Using this method, one can
+detect the standard deviation of the noise from Diffusion-Weighted Imaging
+(DWI). PIESNO also works with multiple channel DWI datasets that are acquired
+from N array coils for both SENSE and GRAPPA reconstructions.
 
 The PIESNO method works in two steps:
 
@@ -95,6 +95,5 @@ print("The std of the background is =", np.std(data[mask[..., :].astype(bool)]))
 # References
 # ----------
 #
-# .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
-#    Identification and Estimation of Noise (PIESNO): A self-consistent
-#    approach and its applications in MRI. JMR, 199(1):94-103, 2009.
+# .. footbibliography::
+#

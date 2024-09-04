@@ -120,8 +120,8 @@ class PeaksTab(HorizonTab):
 
         self._view_modes = ["Cross section", "Range"]
         self._view_mode_toggler = build_radio_button(
-            self._view_modes,
-            [self._view_modes[0]],
+            labels=self._view_modes,
+            checked_labels=[self._view_modes[0]],
             padding=1.5,
             on_change=self._toggle_view_mode,
         )

@@ -27,10 +27,14 @@ from dipy.reconst.dti import (
     trace,
 )
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.testing.decorators import warning_for_keywords
 
 
-def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
-    """Computes the axonal water fraction from DKI [1]_.
+@warning_for_keywords()
+def axonal_water_fraction(dki_params, *, sphere="repulsion100", gtol=1e-2, mask=None):
+    """Computes the axonal water fraction from DKI.
+
+    See :footcite:p:`Fieremans2011` for further details about the method.
 
     Parameters
     ----------
@@ -62,9 +66,7 @@ def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=Non
 
     References
     ----------
-    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
-           characterization with diffusional kurtosis imaging.
-           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
+    .. footbibliography::
     """
     kt_max = kurtosis_maximum(dki_params, sphere=sphere, gtol=gtol, mask=mask)
 
@@ -73,9 +75,12 @@ def axonal_water_fraction(dki_params, sphere="repulsion100", gtol=1e-2, mask=Non
     return awf
 
 
-def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None):
+@warning_for_keywords()
+def diffusion_components(dki_params, *, sphere="repulsion100", awf=None, mask=None):
     """Extracts the restricted and hindered diffusion tensors of well aligned
-    fibers from diffusion kurtosis imaging parameters [1]_.
+    fibers from diffusion kurtosis imaging parameters.
+
+    See :footcite:p:`Fieremans2011` for further details about the method.
 
     Parameters
     ----------
@@ -89,12 +94,13 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
         The sphere providing sample directions to sample the restricted and
-        hindered cellular diffusion tensors. For more details see [1]_.
-    awf : ndarray (optional)
+        hindered cellular diffusion tensors. For more details see
+        :footcite:p:`Fieremans2011`.
+    awf : ndarray, optional
         Array containing values of the axonal water fraction that has the shape
         dki_params.shape[:-1]. If not given this will be automatically computed
         using :func:`axonal_water_fraction` with function's default precision.
-    mask : ndarray (optional)
+    mask : ndarray, optional
         A boolean array used to mark the coordinates in the data that should be
         analyzed that has the shape dki_params.shape[:-1]
 
@@ -107,21 +113,20 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
 
     Notes
     -----
-    In the original article of DKI microstructural model [1]_, the hindered and
-    restricted tensors were defined as the intra-cellular and extra-cellular
-    diffusion compartments respectively.
+    In the original article of DKI microstructural model
+    :footcite:p:`Fieremans2011`, the hindered and restricted tensors were
+    defined as the intra-cellular and extra-cellular diffusion compartments
+    respectively.
 
     References
     ----------
-    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
-           characterization with diffusional kurtosis imaging.
-           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
+    .. footbibliography::
     """
     shape = dki_params.shape[:-1]
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere(sphere)
+        sphere = get_sphere(name=sphere)
 
     # select voxels where to apply the single fiber model
     if mask is None:
@@ -185,7 +190,8 @@ def diffusion_components(dki_params, sphere="repulsion100", awf=None, mask=None)
     return edt_all, idt_all
 
 
-def dkimicro_prediction(params, gtab, S0=1):
+@warning_for_keywords()
+def dkimicro_prediction(params, gtab, *, S0=1):
     r"""Signal prediction given the DKI microstructure model parameters.
 
     Parameters
@@ -204,9 +210,9 @@ def dkimicro_prediction(params, gtab, S0=1):
             6) Axonal water fraction
     gtab : a GradientTable class instance
         The gradient table for this prediction
-    S0 : float or ndarray
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
+        voxels
 
     Returns
     -------
@@ -226,9 +232,14 @@ def dkimicro_prediction(params, gtab, S0=1):
        direction, $f$ is the volume fraction of the restricted diffusion
        compartment (also known as the axonal water fraction).
 
-    2) In the original article of DKI microstructural model [1]_, the hindered
-       and restricted tensors were defined as the intra-cellular and
-       extra-cellular diffusion compartments respectively.
+    2) In the original article of DKI microstructural model
+       :footcite:p:`Fieremans2011`, the hindered and restricted tensors were
+       defined as the intra-cellular and extra-cellular diffusion compartments
+       respectively.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     # Initialize pred_sig
@@ -319,8 +330,10 @@ def _compartments_eigenvalues(cdt):
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """Class for the Diffusion Kurtosis Microstructural Model"""
 
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
-        """Initialize a KurtosisMicrostrutureModel class instance [1]_.
+    def __init__(self, gtab, *args, fit_method="WLS", **kwargs):
+        """Initialize a KurtosisMicrostrutureModel class instance.
+
+        See :footcite:p:`Fieremans2011` for further details about the model.
 
         Parameters
         ----------
@@ -345,13 +358,14 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
-        DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args, **kwargs)
+        DiffusionKurtosisModel.__init__(
+            self, gtab, fit_method=fit_method, *args, **kwargs
+        )
 
-    def fit(self, data, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, sphere="repulsion100", gtol=1e-2, awf_only=False):
         """Fit method of the Diffusion Kurtosis Microstructural Model
 
         Parameters
@@ -419,7 +433,8 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
 
         return KurtosisMicrostructuralFit(self, params)
 
-    def predict(self, params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, params, *, S0=1.0):
         """Predict a signal for the DKI microstructural model class instance
         given parameters.
 
@@ -438,23 +453,22 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                 5) Six elements of the restricted diffusion tensor
                 6) Axonal water fraction
 
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----
-        In the original article of DKI microstructural model [1]_, the hindered
-        and restricted tensors were defined as the intra-cellular and
-        extra-cellular diffusion compartments respectively.
+        In the original article of DKI microstructural model
+        :footcite:p:`Fieremans2011`, the hindered and restricted tensors were
+        defined as the intra-cellular and extra-cellular diffusion compartments
+        respectively.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
-        return dkimicro_prediction(params, self.gtab, S0)
+        return dkimicro_prediction(params, self.gtab, S0=S0)
 
 
 class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
@@ -482,15 +496,14 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        In the original article of DKI microstructural model [1]_, the hindered
-        and restricted tensors were defined as the intra-cellular and
-        extra-cellular diffusion compartments respectively.
+        In the original article of DKI microstructural model
+        :footcite:p:`Fieremans2011`, the hindered and restricted tensors were
+        defined as the intra-cellular and extra-cellular diffusion compartments
+        respectively.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         DiffusionKurtosisFit.__init__(self, model, model_params)
 
@@ -501,14 +514,13 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The volume fraction of the restricted diffusion compartment can be seem
-        as the volume fraction of the intra-cellular compartment [1]_.
+        The volume fraction of the restricted diffusion compartment can be seen
+        as the volume fraction of the intra-cellular compartment
+        :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         return self.model_params[..., 27]
 
@@ -518,14 +530,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The restricted diffusion tensor can be seem as the tissue's
-        intra-cellular diffusion compartment [1]_.
+        The restricted diffusion tensor can be seen as the tissue's
+        intra-cellular diffusion compartment :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         self._is_awfonly()
         return _compartments_eigenvalues(self.model_params[..., 34:40])
@@ -536,14 +546,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The hindered diffusion tensor can be seem as the tissue's
-        extra-cellular diffusion compartment [1]_.
+        The hindered diffusion tensor can be seen as the tissue's
+        extra-cellular diffusion compartment :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         self._is_awfonly()
         return _compartments_eigenvalues(self.model_params[..., 28:34])
@@ -551,13 +559,13 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     @property
     def axonal_diffusivity(self):
         """Returns the axonal diffusivity defined as the restricted diffusion
-        tensor trace [1]_.
+        tensor trace.
+
+        See :footcite:p:`Fieremans2011` for further details about the method.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         return trace(self.restricted_evals)
 
@@ -567,14 +575,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The hindered diffusion tensor can be seem as the tissue's
-        extra-cellular diffusion compartment [1]_.
+        The hindered diffusion tensor can be seen as the tissue's
+        extra-cellular diffusion compartment :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         return axial_diffusivity(self.hindered_evals)
 
@@ -584,14 +590,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The hindered diffusion tensor can be seem as the tissue's
-        extra-cellular diffusion compartment [1]_.
+        The hindered diffusion tensor can be seen as the tissue's
+        extra-cellular diffusion compartment :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         return radial_diffusivity(self.hindered_evals)
 
@@ -599,18 +603,18 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def tortuosity(self):
         """Returns the tortuosity of the hindered diffusion which is defined
         by ADe / RDe, where ADe and RDe are the axial and radial diffusivities
-        of the hindered compartment [1]_.
+        of the hindered compartment.
+
+        See :footcite:p:`Fieremans2011` for further details about the method.
 
         Notes
         -----
-        The hindered diffusion tensor can be seem as the tissue's
-        extra-cellular diffusion compartment [1]_.
+        The hindered diffusion tensor can be seen as the tissue's
+        extra-cellular diffusion compartment :footcite:p:`Fieremans2011`.
 
         References
         ----------
-        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
-               Characterization with Diffusion Kurtosis Imaging. Neuroimage
-               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        .. footbibliography::
         """
         return tortuosity(self.hindered_ad, self.hindered_rd)
 
@@ -622,14 +626,15 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                 "with input parameter awf_only set to False"
             )
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""Given a DKI microstructural model fit, predict the signal on the
         vertices of a gradient table
 
         gtab : a GradientTable class instance
             The gradient table for this prediction
 
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels.
 
@@ -648,4 +653,4 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         diffusion compartment (also known as the axonal water fraction).
         """
         self._is_awfonly()
-        return dkimicro_prediction(self.model_params, gtab, S0)
+        return dkimicro_prediction(self.model_params, gtab, S0=S0)

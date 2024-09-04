@@ -8,6 +8,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sh_descoteaux_from_index
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -15,54 +16,38 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 class ShoreModel(Cache):
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
-    (SHORE) [1]_ of the diffusion signal.
+    (SHORE) of the diffusion signal.
 
-    The main idea is to model the diffusion signal as a linear combination of
-    continuous functions $\phi_i$,
+    The main idea of SHORE :footcite:p:`Ozarslan2008` is to model the diffusion
+    signal as a linear combination of continuous functions $\phi_i$,
 
     .. math::
-        :nowrap:
-            \begin{equation}
-                S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
-            \end{equation}
+
+       S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q})
 
     where $\mathbf{q}$ is the wave vector which corresponds to different
     gradient directions. Numerous continuous functions $\phi_i$ can be used to
-    model $S$. Some are presented in [2,3,4]_.
+    model $S$. Some are presented in :footcite:p:`Merlet2013`,
+    :footcite:p:`Rathi2011`, and :footcite:p:`Cheng2011`.
 
     From the $c_i$ coefficients, there exist analytical formulae to estimate
     the ODF, the return to the origin probability (RTOP), the mean square
-    displacement (MSD), amongst others [5]_.
+    displacement (MSD), amongst others :footcite:p:`Ozarslan2013`.
 
     References
     ----------
-    .. [1] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
-           and estimation for one-dimensional q-space magnetic resonance
-           1D-SHORE)", Proc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
-
-    .. [2] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
-           estimation via Compressive Sensing in diffusion MRI", Medical
-           Image Analysis, 2013.
-
-    .. [3] Rathi Y. et al., "Sparse multi-shell diffusion imaging", MICCAI,
-           2011.
-
-    .. [4] Cheng J. et al., "Theoretical Analysis and Practical Insights on
-           EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
-           Computational Diffusion MRI, 2011.
-
-    .. [5] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+    .. footbibliography::
 
     Notes
     -----
     The implementation of SHORE depends on CVXPY (https://www.cvxpy.org/).
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         radial_order=6,
         zeta=700,
         lambdaN=1e-8,
@@ -75,19 +60,19 @@ class ShoreModel(Cache):
         cvxpy_solver=None,
     ):
         r"""Analytical and continuous modeling of the diffusion signal with
-        respect to the SHORE basis [1,2]_.
-        This implementation is a modification of SHORE presented in [1]_.
-        The modification was made to obtain the same ordering of the basis
-        presented in [2,3]_.
+        respect to the SHORE basis.
+
+        This implementation is a modification of SHORE presented in
+        :footcite:p:`Merlet2013`. The modification was made to obtain the same
+        ordering of the basis presented in :footcite:p:`Cheng2011`,
+        :footcite:p:`Ozarslan2013`.
 
         The main idea is to model the diffusion signal as a linear
         combination of continuous functions $\phi_i$,
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
-                \end{equation}
+
+           S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q})
 
         where $\mathbf{q}$ is the wave vector which corresponds to different
         gradient directions.
@@ -95,32 +80,31 @@ class ShoreModel(Cache):
         From the $c_i$ coefficients, there exists an analytical formula to
         estimate the ODF.
 
-
         Parameters
         ----------
         gtab : GradientTable,
             gradient directions and bvalues container class
-        radial_order : unsigned int,
+        radial_order : unsigned int, optional
             an even integer that represent the order of the basis
-        zeta : unsigned int,
+        zeta : unsigned int, optional
             scale factor
-        lambdaN : float,
+        lambdaN : float, optional
             radial regularisation constant
-        lambdaL : float,
+        lambdaL : float, optional
             angular regularisation constant
-        tau : float,
+        tau : float, optional
             diffusion time. By default the value that makes q equal to the
             square root of the b-value.
-        constrain_e0 : bool,
+        constrain_e0 : bool, optional
             Constrain the optimization such that E(0) = 1.
-        positive_constraint : bool,
+        positive_constraint : bool, optional
             Constrain the propagator to be positive.
-        pos_grid : int,
+        pos_grid : int, optional
             Grid that define the points of the EAP in which we want to enforce
             positivity.
-        pos_radius : float,
+        pos_radius : float, optional
             Radius of the grid of the EAP in which enforce positivity in
-            millimeters. By default 20e-03 mm.
+            millimeters.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See https://www.cvxpy.org/ for
@@ -129,17 +113,7 @@ class ShoreModel(Cache):
 
         References
         ----------
-        .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-        ODF estimation via Compressive Sensing in diffusion MRI", Medical
-        Image Analysis, 2013.
-
-        .. [2] Cheng J. et al., "Theoretical Analysis and Practical Insights
-        on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
-        Computational Diffusion MRI, 2011.
-
-        .. [3] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-           diffusion imaging method for mapping tissue microstructure",
-           NeuroImage, 2013.
+        .. footbibliography::
 
         Examples
         --------
@@ -215,7 +189,7 @@ class ShoreModel(Cache):
         # Generate the SHORE basis
         M = self.cache_get("shore_matrix", key=self.gtab)
         if M is None:
-            M = shore_matrix(self.radial_order, self.zeta, self.gtab, self.tau)
+            M = shore_matrix(self.radial_order, self.zeta, self.gtab, tau=self.tau)
             self.cache_set("shore_matrix", self.gtab, M)
 
         MpseudoInv = self.cache_get("shore_matrix_reg_pinv", key=self.gtab)
@@ -407,13 +381,13 @@ class ShoreFit:
 
     def rtop_signal(self):
         r"""Calculates the analytical return to origin probability (RTOP)
-        from the signal [1]_.
+        from the signal.
+
+        See :footcite:p:`Ozarslan2013` for further details about the method.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+        .. footbibliography::
         """
         rtop = 0
         c = self._shore_coef
@@ -430,13 +404,13 @@ class ShoreFit:
 
     def rtop_pdf(self):
         r"""Calculates the analytical return to origin probability (RTOP)
-        from the pdf [1]_.
+        from the pdf.
+
+        See :footcite:p:`Ozarslan2013` for further details about the method.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+        .. footbibliography::
         """
         rtop = 0
         c = self._shore_coef
@@ -452,23 +426,23 @@ class ShoreFit:
         return np.clip(rtop, 0, rtop.max())
 
     def msd(self):
-        r"""Calculates the analytical mean squared displacement (MSD) [1]_
+        r"""Calculates the analytical mean squared displacement (MSD).
+
+        See :footcite:p:`Wu2007` for a definition of the method.
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
-                    \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
-                    \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
-                \end{equation}
+           :nowrap:
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu
-        et al. [1]_).
+            MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
+            \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
+            \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
+
+        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see
+        :footcite:t:`Wu2007`).
 
         References
         ----------
-        .. [1] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        p. 617-629, 2007.
+        .. footbibliography::
         """
         msd = 0
         c = self._shore_coef
@@ -499,29 +473,31 @@ class ShoreFit:
         return self._shore_coef
 
 
-def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
-    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
+@warning_for_keywords()
+def shore_matrix(radial_order, zeta, gtab, *, tau=1 / (4 * np.pi**2)):
+    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
-                                            \sum_{n=l}^{(N_{max}+l)/2}
-                                            \sum_{m=-l}^l c_{nlm}
-                                            \phi_{nlm}(q\textbf{u})
-                \end{equation}
+        :nowrap:
+
+        \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                               \sum_{n=l}^{(N_{max}+l)/2}
+                               \sum_{m=-l}^l c_{nlm}
+                               \phi_{nlm}(q\textbf{u})
 
     where $\phi_{nlm}$ is
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
-                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
-                        Y_l^m(\textbf{u}).
-                \end{equation}
+        :nowrap:
+
+        \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+            {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+            \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+            exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
+            L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+            Y_l^m(\textbf{u})
 
     Parameters
     ----------
@@ -536,9 +512,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
 
     """
 
@@ -574,7 +548,9 @@ def _kappa(zeta, n, ell):
 
 
 def shore_matrix_pdf(radial_order, zeta, rtab):
-    r"""Compute the SHORE propagator matrix [1]_"
+    r"""Compute the SHORE propagator matrix.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     Parameters
     ----------
@@ -587,9 +563,7 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
     """
 
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
@@ -618,7 +592,9 @@ def _kappa_pdf(zeta, n, ell):
 
 
 def shore_matrix_odf(radial_order, zeta, sphere_vertices):
-    r"""Compute the SHORE ODF matrix [1]_"
+    r"""Compute the SHORE ODF matrix.
+
+    See :footcite:p:`Merlet2013` for the definition.
 
     Parameters
     ----------
@@ -631,9 +607,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
     References
     ----------
-    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
-       ODF estimation via Compressive Sensing in diffusion MRI", Medical
-       Image Analysis, 2013.
+    .. footbibliography::
     """
 
     r, theta, phi = cart2sphere(
@@ -733,26 +707,30 @@ def create_rspace(gridsize, radius_max):
 def shore_indices(radial_order, index):
     r"""Given the basis order and the index, return the shore indices n, l, m
     for modified Merlet's 3D-SHORE
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
-                                            \sum_{n=l}^{(N_{max}+l)/2}
-                                            \sum_{m=-l}^l c_{nlm}
-                                            \phi_{nlm}(q\textbf{u})
-                \end{equation}
+        :nowrap:
+
+        \begin{equation}
+            \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                                    \sum_{n=l}^{(N_{max}+l)/2}
+                                    \sum_{m=-l}^l c_{nlm}
+                                    \phi_{nlm}(q\textbf{u})
+        \end{equation}
 
     where $\phi_{nlm}$ is
+
     .. math::
-            :nowrap:
-                \begin{equation}
-                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
-                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
-                        Y_l^m(\textbf{u}).
-                \end{equation}
+        :nowrap:
+
+        \begin{equation}
+            \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+                {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+                \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+                exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
+                L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+                Y_l^m(\textbf{u}).
+        \end{equation}
 
     Parameters
     ----------

@@ -410,7 +410,7 @@ class HemiSphere(Sphere):
 
         """
         sphere = self.mirror()
-        sphere = sphere.subdivide(n)
+        sphere = sphere.subdivide(n=n)
         return HemiSphere.from_sphere(sphere)
 
     def find_closest(self, xyz):
@@ -641,11 +641,13 @@ def _grad_equality_constraints(vects):
 
 @warning_for_keywords()
 def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
-    r"""Electrostatic-repulsion objective function. The alpha parameter
-    controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
-    $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
-    The weights ensure equal importance of each shell to the objective
-    function [2]_ [3]_.
+    r"""Electrostatic-repulsion objective function.
+
+    The alpha parameter controls the power repulsion (energy varies as
+    $1 / r^\alpha$) :footcite:p:`Papadakis2000`. For $\alpha = 1.0$, this
+    corresponds to  electrostatic interaction energy. The weights ensure equal
+    importance of each shell to the objective function :footcite:p:`Cook2007`,
+    :footcite:p:`Caruyer2013`.
 
     Parameters
     ----------
@@ -663,15 +665,7 @@ def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
 
     References
     ----------
-    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
-           estimation of diffusion anisotropy." Magnetic Resonance Imaging
-           2000 Jul; 18(6): 671-679.
-    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
-           acquisition orders of diffusion‐weighted MRI measurements." Journal
-           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
-    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
-           multishell sampling schemes with uniform coverage in diffusion
-           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
+    .. footbibliography::
 
     """
 
@@ -696,9 +690,12 @@ def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
 
 @warning_for_keywords()
 def _get_grad_forces_alt(vects, *, alpha=2.0, **kwargs):
-    """1st-order derivative of electrostatic-like repulsion energy [1]_.
-    The weights ensure equal importance of each shell to the objective
-    function [2]_ [3]_.
+    """1st-order derivative of electrostatic-like repulsion energy.
+
+    The weights ensure equal importance of each  shell to the objective function
+    :footcite:p:`Cook2007`, :footcite:p:`Caruyer2013`.
+
+    See :footcite:p:`Papadakis2000` for more details about the definition.
 
     Parameters
     ----------
@@ -716,15 +713,7 @@ def _get_grad_forces_alt(vects, *, alpha=2.0, **kwargs):
 
     References
     ----------
-    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
-           estimation of diffusion anisotropy." Magnetic Resonance Imaging
-           2000 Jul; 18(6): 671-679.
-    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
-           acquisition orders of diffusion‐weighted MRI measurements." Journal
-           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
-    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
-           multishell sampling schemes with uniform coverage in diffusion
-           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
+    .. footbibliography::
 
     """
 

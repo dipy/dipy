@@ -156,7 +156,7 @@ def syn_registration(
     use_metric = syn_metric_dict[metric.upper()](dim, **metric_kwargs)
 
     sdr = SymmetricDiffeomorphicRegistration(
-        use_metric, level_iters, step_length=step_length
+        use_metric, level_iters=level_iters, step_length=step_length
     )
 
     mapping = sdr.optimize(
@@ -212,10 +212,13 @@ def register_dwi_to_template(
 
     Returns
     -------
-    warped_b0, mapping: The fist is an array with the b0 volume warped to the
-    template. If reg_method is "syn", the second is a DiffeomorphicMap class
-    instance that can be used to transform between the two spaces. Otherwise,
-    if reg_method is "aff", this is a 4x4 matrix encoding the affine transform.
+    warped_b0 : ndarray
+        b0 volume warped to the template.
+    mapping : DiffeomorphicMap or ndarray
+        If reg_method is "syn", a DiffeomorphicMap class instance that can be
+        used to transform between the two spaces. Otherwise, if reg_method is
+        "aff", a 4x4 matrix encoding the affine transform.
+
 
     Notes
     -----
@@ -233,7 +236,13 @@ def register_dwi_to_template(
     )
 
     if not isinstance(gtab, dpg.GradientTable):
-        gtab = dpg.gradient_table(*gtab)
+        if isinstance(gtab, (list, tuple)) and len(gtab) == 2:
+            bvals, bvecs = gtab
+            gtab = dpg.gradient_table(bvals, bvecs=bvecs)
+        else:
+            raise ValueError(
+                "gtab should be a GradientTable object or a tuple of (bvals, bvecs)"
+            )
 
     mean_b0 = np.mean(dwi_data[..., gtab.b0s_mask], -1)
     if reg_method.lower() == "syn":
@@ -314,8 +323,8 @@ def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
         codomain_img = nib.load(codomain_img)
 
     mapping = DiffeomorphicMap(
-        3,
-        disp_data.shape[:3],
+        dim=3,
+        disp_shape=disp_data.shape[:3],
         disp_grid2world=np.linalg.inv(disp_affine),
         domain_shape=domain_img.shape[:3],
         domain_grid2world=domain_img.affine,
@@ -378,7 +387,11 @@ def resample(
         )
     )
     affine_map = AffineMap(
-        between_affine, static.shape, static_affine, moving.shape, moving_affine
+        between_affine,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_affine,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_affine,
     )
     resampled = affine_map.transform(moving)
     return nib.Nifti1Image(resampled, static_affine)
@@ -568,8 +581,8 @@ def affine_registration(
                 moving,
                 transform,
                 None,
-                static_affine,
-                moving_affine,
+                static_grid2world=static_affine,
+                moving_grid2world=moving_affine,
                 starting_affine=starting_affine,
                 ret_metric=True,
                 static_mask=static_mask,
@@ -582,7 +595,11 @@ def affine_registration(
 
     # After doing all that, resample once at the end:
     affine_map = AffineMap(
-        final_affine, static.shape, static_affine, moving.shape, moving_affine
+        final_affine,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_affine,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_affine,
     )
 
     resampled = affine_map.transform(moving)
@@ -838,13 +855,13 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
 
     srr = StreamlineLinearRegistration()
     srm = srr.optimize(
-        static=set_number_of_points(static, n_points),
-        moving=set_number_of_points(moving, n_points),
+        static=set_number_of_points(static, nb_points=n_points),
+        moving=set_number_of_points(moving, nb_points=n_points),
     )
 
     aligned = srm.transform(moving)
     if native_resampled:
-        aligned = set_number_of_points(aligned, n_points)
+        aligned = set_number_of_points(aligned, nb_points=n_points)
         aligned = transform_tracking_output(aligned, np.linalg.inv(srm.matrix))
 
     return aligned, srm.matrix

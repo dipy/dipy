@@ -32,7 +32,7 @@ _, have_matplotlib, _ = optional_package("matplotlib")
 
 def test_stats():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_101D")
+        data_path, bval_path, bvec_path = get_fnames(name="small_101D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, "tmp_mask.nii.gz")
@@ -75,7 +75,7 @@ def test_stats():
 @set_random_number_generator()
 def test_buan_bundle_profiles(rng):
     with TemporaryDirectory() as dirpath:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
@@ -123,7 +123,7 @@ def test_buan_bundle_profiles(rng):
 @set_random_number_generator()
 def test_bundle_analysis_tractometry_flow(rng):
     with TemporaryDirectory() as dirpath:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
@@ -287,7 +287,7 @@ def test_linear_mixed_models_flow():
 @set_random_number_generator()
 def test_bundle_shape_analysis_flow(rng):
     with TemporaryDirectory() as dirpath:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)

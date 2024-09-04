@@ -7,8 +7,14 @@ from dipy.utils.deprecator import deprecated_params
 
 
 def _inv_nchi_cdf(N, K, alpha):
-    """Inverse CDF for the noncentral chi distribution
-    See [1]_ p.3 section 2.3"""
+    """Inverse CDF for the noncentral chi distribution.
+
+    See :footcite:t:`Koay2009b`, p.3 section 2.3.
+
+    References
+    ----------
+    .. footbibliography::
+    """
     return gammainccinv(N * K, 1 - alpha) / K
 
 
@@ -26,11 +32,14 @@ opt_quantile = {
 }
 
 
-@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
+
+    See :footcite:p:`Koay2009a` and :footcite:p:`Koay2009b` for further details
+    about the method.
 
     Parameters
     ----------
@@ -68,7 +77,7 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
-    mask : ndarray (optional)
+    mask : ndarray, optional
         A boolean mask indicating the voxels identified as pure noise.
 
     Notes
@@ -84,16 +93,7 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
 
     References
     ----------
-
-    .. [1] Koay CG, Ozarslan E and Pierpaoli C.
-       "Probabilistic Identification and Estimation of Noise (PIESNO):
-       A self-consistent approach and its applications in MRI."
-       Journal of Magnetic Resonance 2009; 199: 94-103.
-
-    .. [2] Koay CG, Ozarslan E and Basser PJ.
-       "A signal transformational framework for breaking the noise floor
-       and its applications in MRI."
-       Journal of Magnetic Resonance 2009; 197: 108-119.
+    .. footbibliography::
     """
 
     # This method works on a 2D array with repetitions as the third dimension,
@@ -146,7 +146,7 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     return sigma
 
 
-@deprecated_params("l", "step", since="1.10.0", until="1.12.0")
+@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def _piesno_3D(
     data,
@@ -161,6 +161,10 @@ def _piesno_3D(
 ):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
+
+    See :footcite:p:`Koay2009a` and :footcite:p:`Koay2009b` for further details
+    about the method.
+
     This is the slice by slice version for working on a 4D array.
 
     Parameters
@@ -172,27 +176,25 @@ def _piesno_3D(
     N : int
         The number of phase array coils of the MRI scanner.
 
-    alpha : float (optional)
+    alpha : float, optional
         Probabilistic estimation threshold for the gamma function.
-        Default: 0.01.
 
-    step : int (optional)
-        number of initial estimates for sigma to try. Default: 100.
+    step : int, optional
+        number of initial estimates for sigma to try.
 
-    itermax : int (optional)
+    itermax : int, optional
         Maximum number of iterations to execute if convergence
-        is not reached. Default: 100.
+        is not reached.
 
-    eps : float (optional)
+    eps : float, optional
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
-        Default: 1e-5.
 
-    return_mask : bool (optional)
+    return_mask : bool, optional
         If True, return a mask identifying all the pure noise voxel
-        that were found. Default: False.
+        that were found.
 
-    initial_estimation : float (optional)
+    initial_estimation : float, optional
         Upper bound for the initial estimation of sigma. default : None,
         which computes the optimal quantile for N.
 
@@ -213,16 +215,7 @@ def _piesno_3D(
 
     References
     ----------
-
-    .. [1] Koay CG, Ozarslan E and Pierpaoli C.
-    "Probabilistic Identification and Estimation of Noise (PIESNO):
-    A self-consistent approach and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 199: 94-103.
-
-    .. [2] Koay CG, Ozarslan E and Basser PJ.
-    "A signal transformational framework for breaking the noise floor
-    and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 197: 108-119.
+    .. footbibliography::
     """
 
     if np.all(data == 0):
@@ -297,16 +290,16 @@ def estimate_sigma(arr, *, disable_background_masking=False, N=0):
     arr : 3D or 4D ndarray
         The array to be estimated
 
-    disable_background_masking : bool, default False
+    disable_background_masking : bool, optional
         If True, uses all voxels for the estimation, otherwise, only non-zeros
         voxels are used. Useful if the background is masked by the scanner.
 
-    N : int, default 0
+    N : int, optional
         Number of coils of the receiver array. Use N = 1 in case of a SENSE
         reconstruction (Philips scanners) or the number of coils for a GRAPPA
         reconstruction (Siemens and GE). Use 0 to disable the correction factor,
-        as for example if the noise is Gaussian distributed. See [1] for more
-        information.
+        as for example if the noise is Gaussian distributed. See
+        :footcite:p:`Koay2006a` for more information.
 
     Returns
     -------
@@ -317,23 +310,17 @@ def estimate_sigma(arr, *, disable_background_masking=False, N=0):
     -----
     This function is the same as manually taking the standard deviation of the
     background and gives one value for the whole 3D array.
-    It also includes the coil-dependent correction factor of Koay 2006
-    (see [1]_, equation 18) with theta = 0.
-    Since this function was introduced in [2]_ for T1 imaging,
-    it is expected to perform ok on diffusion MRI data, but might oversmooth
-    some regions and leave others un-denoised for spatially varying noise
-    profiles. Consider using :func:`piesno` to estimate sigma instead if visual
-    inaccuracies are apparent in the denoised result.
+    It also includes the coil-dependent correction factor from
+    :footcite:t:`Koay2006a` (see equation 18 in :footcite:p:`Koay2006a`) with
+    theta = 0. Since this function was introduced in :footcite:p:`Coupe2008` for
+    T1 imaging, it is expected to perform ok on diffusion MRI data, but might
+    oversmooth some regions and leave others un-denoised for spatially varying
+    noise profiles. Consider using :func:`piesno` to estimate sigma instead if
+    visual inaccuracies are apparent in the denoised result.
 
     References
     ----------
-    .. [1] Koay, C. G., & Basser, P. J. (2006). Analytically exact correction
-       scheme for signal extraction from noisy magnitude MR signals.
-       Journal of Magnetic Resonance), 179(2), 317-22.
-
-    .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot,
-       C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
-       magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.
+    .. footbibliography::
 
     """
     k = np.zeros((3, 3, 3), dtype=np.int8)

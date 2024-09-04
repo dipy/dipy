@@ -157,9 +157,8 @@ class Synb0:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
         """
 
         if not have_tf:
@@ -183,7 +182,7 @@ class Synb0:
         idx : int
             The idx of the default weights. It can be from 0~4.
         """
-        fetch_model_weights_path = get_fnames("synb0_default_weights")
+        fetch_model_weights_path = get_fnames(name="synb0_default_weights")
         print(f"fetched {fetch_model_weights_path[idx]}")
         self.load_model_weights(fetch_model_weights_path[idx])
 
@@ -283,8 +282,8 @@ class Synb0:
         # Normalize the data.
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = normalize(T1[i], 0, 150, -1, 1)
-            b0[i] = normalize(b0[i], 0, p99[i], -1, 1)
+            T1[i] = normalize(T1[i], min_v=0, max_v=150, new_min=-1, new_max=1)
+            b0[i] = normalize(b0[i], min_v=0, max_v=p99[i], new_min=-1, new_max=1)
 
         if dim == 3:
             if batch_size is not None:

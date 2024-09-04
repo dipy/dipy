@@ -116,19 +116,19 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
     print("1")
     t = time()
-    new_data = nlmeans(data, sigma, mask, num_threads=1)
+    new_data = nlmeans(data, sigma, mask=mask, num_threads=1)
     duration_1core = time() - t
     print(duration_1core)
 
     print("All")
     t = time()
-    new_data2 = nlmeans(data, sigma, mask, num_threads=None)
+    new_data2 = nlmeans(data, sigma, mask=mask, num_threads=None)
     duration_all_core = time() - t
     print(duration_all_core)
 
     print("2")
     t = time()
-    new_data3 = nlmeans(data, sigma, mask, num_threads=2)
+    new_data3 = nlmeans(data, sigma, mask=mask, num_threads=2)
     duration_2core = time() - t
     print(duration_2core)
 

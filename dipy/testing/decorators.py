@@ -133,6 +133,9 @@ def warning_for_keywords(from_version="1.10.0", until_version="2.0.0"):
         def wrapper(*args, **kwargs):
             current_version = dipy.__version__
 
+            parsed_version = version.parse(current_version)
+            current_version = parsed_version.base_version
+
             def convert_positional_to_keyword(func, args, kwargs):
                 """
                 Converts excess positional arguments to keyword arguments.

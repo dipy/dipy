@@ -40,7 +40,7 @@ def create_unit_sphere(*, recursion_level=2):
     """
     if recursion_level > 7 or recursion_level < 1:
         raise ValueError("recursion_level must be between 1 and 7")
-    return unit_octahedron.subdivide(recursion_level - 1)
+    return unit_octahedron.subdivide(n=recursion_level - 1)
 
 
 @warning_for_keywords()
@@ -64,5 +64,5 @@ def create_unit_hemisphere(*, recursion_level=2):
     --------
     create_unit_sphere, Sphere, HemiSphere
     """
-    sphere = create_unit_sphere(recursion_level)
+    sphere = create_unit_sphere(recursion_level=recursion_level)
     return HemiSphere.from_sphere(sphere)

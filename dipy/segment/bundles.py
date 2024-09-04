@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 def bundle_adjacency(dtracks0, dtracks1, threshold):
     """Find bundle adjacency between two given tracks/bundles
 
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
+
     Parameters
     ----------
     dtracks0 : Streamlines
@@ -56,9 +58,7 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
     d01 = bundles_distances_mdf(dtracks0, dtracks1)
 
@@ -89,6 +89,8 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
 def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     """Calculates bundle adjacency score between two given bundles
 
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
+
     Parameters
     ----------
     recognized_bundle : Streamlines
@@ -96,9 +98,9 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
     expert_bundle : Streamlines
         Model bundle used as reference while extracting similar type bundle
         from input tractogram
-    nb_pts : integer (default 20)
+    nb_pts : integer, optional
         Discretizing streamlines to have nb_pts number of points
-    threshold : float (default 6)
+    threshold : float, optional
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
@@ -110,14 +112,12 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
-    recognized_bundle = set_number_of_points(recognized_bundle, nb_pts)
+    recognized_bundle = set_number_of_points(recognized_bundle, nb_points=nb_pts)
 
-    expert_bundle = set_number_of_points(expert_bundle, nb_pts)
+    expert_bundle = set_number_of_points(expert_bundle, nb_points=nb_pts)
 
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
@@ -125,6 +125,8 @@ def ba_analysis(recognized_bundle, expert_bundle, *, nb_pts=20, threshold=6.0):
 @warning_for_keywords()
 def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000):
     """Clusters bundles
+
+    See :footcite:p:`Garyfallidis2012a` for further details about the method.
 
     Parameters
     ----------
@@ -134,9 +136,9 @@ def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000)
         clustering threshold used in quickbundlesX
     rng : np.random.Generator
         numpy's random generator for generating random values.
-    nb_pts: integer (default 20)
+    nb_pts: integer, optional
         Discretizing streamlines to have nb_points number of points
-    select_randomly: integer (default 500000)
+    select_randomly: integer, optional
         Randomly select streamlines from the input bundle
 
     Returns
@@ -146,9 +148,7 @@ def cluster_bundle(bundle, clust_thr, rng, *, nb_pts=20, select_randomly=500000)
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     model_cluster_map = qbx_and_merge(
@@ -165,6 +165,9 @@ def bundle_shape_similarity(
 ):
     """Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
+
+    See :footcite:p:`Garyfallidis2012a`, :footcite:p:`Chandio2020a` for further
+    details about the method.
 
     Parameters
     ----------
@@ -189,15 +192,7 @@ def bundle_shape_similarity(
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
-
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-       tractography simplification, Frontiers in Neuroscience,
-       vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     if len(bundle1) == 0 or len(bundle2) == 0:
@@ -235,7 +230,8 @@ class RecoBundles:
 
         Extract bundles from a participants' tractograms using model bundles
         segmented from a different subject or an atlas of bundles.
-        See [Garyfallidis17]_ for the details.
+
+        See :footcite:p:`Garyfallidis2018` for the details.
 
         Parameters
         ----------
@@ -268,9 +264,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+        .. footbibliography::
         """
         map_ind = np.zeros(len(streamlines))
         for i in range(len(streamlines)):
@@ -323,7 +317,12 @@ class RecoBundles:
         thresholds = self.start_thr + [clust_thr]
 
         merged_cluster_map = qbx_and_merge(
-            self.streamlines, thresholds, nb_pts, None, self.rng, self.verbose
+            self.streamlines,
+            thresholds,
+            nb_pts=nb_pts,
+            select_randomly=None,
+            rng=self.rng,
+            verbose=self.verbose,
         )
 
         self.cluster_map = merged_cluster_map
@@ -354,6 +353,8 @@ class RecoBundles:
         pruning_distance="mdf",
     ):
         """Recognize the model_bundle in self.streamlines
+
+        See :footcite:p:`Garyfallidis2018` for further details about the method.
 
         Parameters
         ----------
@@ -407,20 +408,20 @@ class RecoBundles:
                 b) "similarity"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
                 c) "affine"
-                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
-            (default None)
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
+
         slr_bounds : array, optional
-            (default None)
+            SLR bounds.
         slr_select : tuple, optional
-            Select the number of streamlines from model to neirborhood of
+            Select the number of streamlines from model to neighborhood of
             model to perform the local SLR.
         slr_method : string, optional
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
             (default 'L-BFGS-B')
         pruning_thr : float, optional
-            Pruning after reducing the search space (default 5).
+            Pruning after reducing the search space.
         pruning_distance : string, optional
-            Pruning distance type can be mdf or mam (default mdf)
+            Pruning distance type can be mdf or mam.
 
         Returns
         -------
@@ -431,9 +432,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based registration and
-           clustering, Neuroimage, 2017.
+        .. footbibliography::
         """
         if self.verbose:
             t = time()
@@ -501,11 +500,14 @@ class RecoBundles:
     ):
         """Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
-        first output of recobundle by applying second local slr (optional),
+        first output of RecoBundles by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
         This time, search space is created using pruned bundle and not model
         bundle.
+
+        See :footcite:p:`Garyfallidis2018`, :footcite:p:`Chandio2020a` for
+        further details about the method.
 
         Parameters
         ----------
@@ -530,10 +532,10 @@ class RecoBundles:
 
             If 1D array with:
                 a) 6 elements then only rigid registration is performed with
-                the 3 first elements for translation and 3 for rotation.
+                   the 3 first elements for translation and 3 for rotation.
                 b) 7 elements also isotropic scaling is performed (similarity).
                 c) 12 elements then translation, rotation (in degrees),
-                scaling and shearing are performed (affine).
+                   scaling and shearing are performed (affine).
 
                 Here is an example of x0 with 12 elements:
                 ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
@@ -577,15 +579,7 @@ class RecoBundles:
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
-
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
         """
         if self.verbose:
             t = time()
@@ -671,8 +665,8 @@ class RecoBundles:
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
         ba_value = bundle_adjacency(
-            set_number_of_points(recog_centroids, 20),
-            set_number_of_points(model_centroids, 20),
+            set_number_of_points(recog_centroids, nb_points=20),
+            set_number_of_points(model_centroids, nb_points=20),
             threshold=10,
         )
 
@@ -680,8 +674,8 @@ class RecoBundles:
         static = select_random_set_of_streamlines(model_bundle, slr_select[0])
         moving = select_random_set_of_streamlines(pruned_streamlines, slr_select[1])
         nb_pts = 20
-        static = set_number_of_points(static, nb_pts)
-        moving = set_number_of_points(moving, nb_pts)
+        static = set_number_of_points(static, nb_points=nb_pts)
+        moving = set_number_of_points(moving, nb_points=nb_pts)
 
         BMD.setup(static, moving)
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0])  # affine
@@ -806,8 +800,8 @@ class RecoBundles:
             neighb_streamlines, select_target, rng=self.rng
         )
 
-        static = set_number_of_points(static, nb_pts)
-        moving = set_number_of_points(moving, nb_pts)
+        static = set_number_of_points(static, nb_points=nb_pts)
+        moving = set_number_of_points(moving, nb_points=nb_pts)
 
         slr = StreamlineLinearRegistration(
             metric=metric, x0=x0, bounds=bounds, method=method

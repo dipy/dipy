@@ -15,6 +15,7 @@ from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
 from dipy.sims.voxel import all_tensor_evecs, single_tensor
+from dipy.testing.decorators import warning_for_keywords
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
@@ -22,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 class RumbaSDModel(OdfModel):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         wm_response=(1.7e-3, 0.2e-3, 0.2e-3),
         gm_response=0.8e-3,
         csf_response=3.0e-3,
@@ -38,22 +41,23 @@ class RumbaSDModel(OdfModel):
         verbose=False,
     ):
         """
-        Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
+        Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
 
-        Modification of the Richardson-Lucy algorithm accounting for Rician
-        and Noncentral Chi noise distributions, which more accurately
-        represent MRI noise. Computes a maximum likelihood estimation of the
-        fiber orientation density function (fODF) at each voxel. Includes
-        white matter compartments alongside optional GM and CSF compartments
-        to account for partial volume effects. This fit can be performed
-        voxelwise or globally. The global fit will proceed more quickly than
-        the voxelwise fit provided that the computer has adequate RAM (>= 16 GB
-        should be sufficient for most datasets).
+        RUMBA-SD :footcite:p:`CanalesRodriguez2015` is a modification of the
+        Richardson-Lucy algorithm accounting for Rician and Noncentral Chi noise
+        distributions, which more accurately represent MRI noise. Computes a
+        maximum likelihood estimation of the fiber orientation density function
+        (fODF) at each voxel. Includes white matter compartments alongside
+        optional GM and CSF compartments to account for partial volume effects.
+        This fit can be performed voxelwise or globally. The global fit will
+        proceed more quickly than the voxelwise fit provided that the computer
+        has adequate RAM (>= 16 GB should be sufficient for most datasets).
 
         Kernel for deconvolution constructed using a priori knowledge of white
         matter response function, as well as the mean diffusivity of GM and/or
         CSF. RUMBA-SD is robust against impulse response imprecision, and thus
-        the default diffusivity values are often adequate [2]_.
+        the default diffusivity values are often adequate
+        :footcite:p:`DellAcqua2007`.
 
 
         Parameters
@@ -90,37 +94,21 @@ class RumbaSDModel(OdfModel):
         voxelwise : bool, optional
             If true, performs a voxelwise fit. If false, performs a global fit
             on the entire brain at once. The global fit requires a 4D brain
-            volume in `fit`. Default: True
+            volume in `fit`.
         use_tv : bool, optional
             If true, applies total variation regularization. This only takes
             effect in a global fit (`voxelwise` is set to `False`). TV can only
             be applied to 4D brain volumes with no singleton dimensions.
-            Default: False
         sphere : Sphere, optional
             Sphere on which to construct fODF. If None, uses `repulsion724`.
-            Default: None
         verbose : bool, optional
             If true, logs updates on estimated signal-to-noise ratio after each
             iteration. This only takes effect in a global fit (`voxelwise` is
-            set to `False`). Default: False
+            set to `False`).
 
         References
         ----------
-        .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N.,
-               Caruyer, E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-               Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y.,
-               Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R.
-               (2015). Spherical Deconvolution of Multichannel Diffusion MRI
-               Data with Non-Gaussian Noise Models and Spatial Regularization.
-               PLOS ONE, 10(10), e0138910.
-               https://doi.org/10.1371/journal.pone.0138910
-
-        .. [2] Dell’Acqua, F., Rizzo, G., Scifo, P., Clarke, R., Scotti, G., &
-               Fazio, F. (2007). A Model-Based Deconvolution Approach to Solve
-               Fiber Crossing in Diffusion-Weighted MR Imaging. IEEE
-               Transactions on Bio-Medical Engineering, 54, 462–472.
-               https://doi.org/10.1109/TBME.2006.888830
-
+        .. footbibliography::
 
         """
 
@@ -136,7 +124,7 @@ class RumbaSDModel(OdfModel):
         # Correct gradient table to contain b0 data at the beginning
         bvals_cor = np.concatenate(([0], gtab.bvals[self.where_dwi]))
         bvecs_cor = np.concatenate(([[0, 0, 0]], gtab.bvecs[self.where_dwi]))
-        gtab_cor = gradient_table(bvals_cor, bvecs_cor)
+        gtab_cor = gradient_table(bvals_cor, bvecs=bvecs_cor)
 
         # Initialize self.gtab
         OdfModel.__init__(self, gtab_cor)
@@ -174,7 +162,7 @@ class RumbaSDModel(OdfModel):
         self.verbose = verbose
 
         if sphere is None:
-            self.sphere = get_sphere("repulsion724")
+            self.sphere = get_sphere(name="repulsion724")
         else:
             self.sphere = sphere
 
@@ -186,7 +174,8 @@ class RumbaSDModel(OdfModel):
         # Fitting parameters
         self.kernel = None
 
-    def _global_fit(self, data, mask=None):
+    @warning_for_keywords()
+    def _global_fit(self, data, *, mask=None):
         """
         Fit fODF and GM/CSF volume fractions globally.
 
@@ -223,7 +212,7 @@ class RumbaSDModel(OdfModel):
         # Signal repair, normalization
 
         # Normalize data to mean b0 image
-        data = normalize_data(data, self.where_b0s, _EPS)
+        data = normalize_data(data, self.where_b0s, min_signal=_EPS)
         # Rearrange data to match corrected gradient table
         data = np.concatenate(
             (np.ones([*data.shape[:3], 1]), data[..., self.where_dwi]), axis=3
@@ -247,18 +236,19 @@ class RumbaSDModel(OdfModel):
             data,
             self.kernel,
             mask,
-            self.n_iter,
-            self.recon_type,
-            self.n_coils,
-            self.R,
-            self.use_tv,
-            self.verbose,
+            n_iter=self.n_iter,
+            recon_type=self.recon_type,
+            n_coils=self.n_coils,
+            R=self.R,
+            use_tv=self.use_tv,
+            verbose=self.verbose,
         )
 
         model_fit = RumbaFit(self, model_params)
         return model_fit
 
-    def _voxelwise_fit(self, data, mask=None):
+    @warning_for_keywords()
+    def _voxelwise_fit(self, data, *, mask=None):
         """
         Fit fODF and GM/CSF volume fractions voxelwise.
 
@@ -309,7 +299,11 @@ class RumbaSDModel(OdfModel):
 
                 # Fitting
                 model_param = rumba_deconv(
-                    vox_data, self.kernel, self.n_iter, self.recon_type, self.n_coils
+                    vox_data,
+                    self.kernel,
+                    n_iter=self.n_iter,
+                    recon_type=self.recon_type,
+                    n_coils=self.n_coils,
                 )
 
                 model_params[ijk] = model_param
@@ -338,7 +332,8 @@ class RumbaFit(OdfFit):
         self.model = model
         self.model_params = model_params
 
-    def odf(self, sphere=None):
+    @warning_for_keywords()
+    def odf(self, *, sphere=None):
         """
         Constructs fODF at discrete vertices on model sphere for each voxel.
 
@@ -442,7 +437,8 @@ class RumbaFit(OdfFit):
         combined = odf + self.f_iso[..., None] / odf.shape[-1]
         return combined
 
-    def predict(self, gtab=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=None):
         """
         Compute signal prediction on model gradient table given given fODF
         and GM/CSF volume fractions for each voxel.
@@ -490,15 +486,16 @@ class RumbaFit(OdfFit):
         return pred_sig
 
 
-def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
+@warning_for_keywords()
+def rumba_deconv(data, kernel, *, n_iter=600, recon_type="smf", n_coils=1):
     r"""
-    Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
+    Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD.
 
     Deconvolves the kernel from the diffusion-weighted signal by computing a
-    maximum likelihood estimation of the fODF. Minimizes the negative
-    log-likelihood of the data under Rician or Noncentral Chi noise
-    distributions by adapting the iterative technique developed in
-    Richardson-Lucy deconvolution.
+    maximum likelihood estimation of the fODF
+    :footcite:p:`CanalesRodriguez2015`. Minimizes the negative log-likelihood of
+    the data under Rician or Noncentral Chi noise distributions by adapting the
+    iterative technique developed in Richardson-Lucy deconvolution.
 
     Parameters
     ----------
@@ -552,9 +549,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
     fractions for each compartment.
 
     Modern MRI scanners produce noise following a Rician or Noncentral Chi
-    distribution, depending on their signal reconstruction technique [2]_.
-    Using this linear model, it can be shown that the likelihood of a signal
-    under a Noncentral Chi noise model is:
+    distribution, depending on their signal reconstruction technique
+    `footcite:p:`Constantinides1997`. Using this linear model, it can be shown
+    that the likelihood of a signal under a Noncentral Chi noise model is:
 
     $P(\textbf{S}|\textbf{H}, \textbf{f}, \sigma^2, n) = \prod_{i=1}^{N}\left(
     \frac{S_i}{\bar{S_i}}\right)^n\exp\left\{-\frac{1}{2\sigma^2}\left[
@@ -590,23 +587,11 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type="smf", n_coils=1):
     \circ\textbf{Hf})\circ\frac{I_n(\textbf{S}\circ\textbf{Hf}/\alpha^k)}
     {I_{n-1}(\textbf{S}\circ\textbf{Hf}/\alpha^k)} \right ]\right \}$
 
-    For more details, see [1]_.
+    For more details, see :footcite:p:`CanalesRodriguez2015`.
 
     References
     ----------
-    .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N., Caruyer,
-           E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-           Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y., Thiran,
-           J.-P.,Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015).
-           Spherical Deconvolution of Multichannel Diffusion MRI Data with
-           Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE,
-           10(10), e0138910. https://doi.org/10.1371/journal.pone.0138910
-
-    .. [2] Constantinides, C. D., Atalar, E., & McVeigh, E. R. (1997).
-           Signal-to-Noise Measurements in Magnitude Images from NMR Phased
-           Arrays. Magnetic Resonance in Medicine: Official Journal of the
-           Society of Magnetic Resonance in Medicine / Society of Magnetic
-           Resonance in Medicine, 38(5), 852–857.
+    .. footbibliography::
     """
 
     n_comp = kernel.shape[1]  # number of compartments
@@ -673,7 +658,7 @@ def mbessel_ratio(n, x):
     $I_{n}(x) / I_{n-1}(x)$
 
     using Perron's continued fraction equation where $I_n$ is the modified
-    Bessel function of first kind, order $n$ [1]_.
+    Bessel function of first kind, order $n$ :footcite:p:`Gautschi1978`.
 
     Parameters
     ----------
@@ -690,9 +675,7 @@ def mbessel_ratio(n, x):
 
     References
     ----------
-    .. [1] W. Gautschi and J. Slavik, “On the computation of modified Bessel
-           function ratios,” Math. Comp., vol. 32, no. 143, pp. 865–875, 1978,
-           doi: 10.1090/S0025-5718-1978-0470267-9
+    .. footbibliography::
     """
 
     y = x / (
@@ -791,7 +774,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
             indices = get_bval_indices(bvals, bval)
             with warnings.catch_warnings():  # extract relevant b-value
                 warnings.simplefilter("ignore")
-                gtab_sub = gradient_table(bvals[indices], bvecs[indices])
+                gtab_sub = gradient_table(bvals[indices], bvecs=bvecs[indices])
 
             for i in range(n_wm_comp):
                 # Signal generated by WM-fiber for each gradient direction
@@ -837,10 +820,12 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     return kernel
 
 
+@warning_for_keywords()
 def rumba_deconv_global(
     data,
     kernel,
     mask,
+    *,
     n_iter=600,
     recon_type="smf",
     n_coils=1,
@@ -852,12 +837,13 @@ def rumba_deconv_global(
     Fit fODF for all voxels simultaneously using RUMBA-SD.
 
     Deconvolves the kernel from the diffusion-weighted signal at each voxel by
-    computing a maximum likelihood estimation of the fODF [1]_. Global fitting
-    also permits the use of total variation regularization (RUMBA-SD + TV). The
-    spatial dependence introduced by TV promotes smoother solutions (i.e.
-    prevents oscillations), while still allowing for sharp discontinuities
-    [2]_. This promotes smoothness and continuity along individual tracts while
-    preventing smoothing of adjacent tracts.
+    computing a maximum likelihood estimation of the fODF
+    :footcite:p:`CanalesRodriguez2015`. Global fitting also permits the use of
+    total variation regularization (RUMBA-SD + TV). The spatial dependence
+    introduced by TV promotes smoother solutions (i.e. prevents oscillations),
+    while still allowing for sharp discontinuities :footcite:p:`Rudin1992`. This
+    promotes smoothness and continuity along individual tracts while preventing
+    smoothing of adjacent tracts.
 
     Generally, global_fit will proceed more quickly than the voxelwise fit
     provided that the computer has adequate RAM (>= 16 GB should be more than
@@ -876,20 +862,19 @@ def rumba_deconv_global(
         fit at these voxels (0 elsewhere).
     n_iter : int, optional
         Number of iterations for fODF estimation. Must be a positive int.
-        Default: 600
     recon_type : {'smf', 'sos'}, optional
         MRI reconstruction method: spatial matched filter (SMF) or
         sum-of-squares (SoS). SMF reconstruction generates Rician noise while
-        SoS reconstruction generates Noncentral Chi noise. Default: 'smf'
+        SoS reconstruction generates Noncentral Chi noise.
     n_coils : int, optional
         Number of coils in MRI scanner -- only relevant in SoS reconstruction.
-        Must be a positive int. Default: 1
+        Must be a positive int.
     use_tv : bool, optional
         If true, applies total variation regularization. This requires a brain
-        volume with no singleton dimensions. Default: True
+        volume with no singleton dimensions.
     verbose : bool, optional
         If true, logs updates on estimated signal-to-noise ratio after each
-        iteration. Default: False
+        iteration.
 
     Returns
     -------
@@ -930,26 +915,11 @@ def rumba_deconv_global(
 
     The regularization strength, $\alpha_{TV}$ is updated after each iteration
     by the discrepancy principle -- specifically, it is selected to match the
-    estimated variance after each iteration [3]_.
+    estimated variance after each iteration :footcite:p:`Chambolle2004`.
 
     References
     ----------
-    .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N., Caruyer,
-           E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-           Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y., Thiran,
-           J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015).
-           Spherical Deconvolution of Multichannel Diffusion MRI Data with
-           Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE,
-           10(10), e0138910. https://doi.org/10.1371/journal.pone.0138910
-
-    .. [2] Rudin, L. I., Osher, S., & Fatemi, E. (1992). Nonlinear total
-           variation based noise removal algorithms. Physica D: Nonlinear
-           Phenomena, 60(1), 259–268.
-           https://doi.org/10.1016/0167-2789(92)90242-F
-
-    .. [3] Chambolle A. An algorithm for total variation minimization and
-           applications. Journal of Mathematical Imaging and Vision. 2004;
-           20:89–97.
+    .. footbibliography::
     """
 
     # Crop data to reduce memory consumption
@@ -1133,7 +1103,8 @@ def _divergence(F):
     return fx + fy + fz
 
 
-def _reshape_2d_4d(M, mask, out=None):
+@warning_for_keywords()
+def _reshape_2d_4d(M, mask, *, out=None):
     """
     Faster reshape from 2D to 4D.
     """

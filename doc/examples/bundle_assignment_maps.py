@@ -3,8 +3,8 @@
 BUAN Bundle Assignment Maps Creation
 ====================================
 
-This example explains how we can use BUAN [Chandio2020]_ to create assignment
-maps on a bundle. Divide bundle into N smaller segments.
+This example explains how we can use BUAN :footcite:p:`Chandio2020a` to create
+assignment maps on a bundle. Divide bundle into N smaller segments.
 
 
 First import the necessary modules.
@@ -55,7 +55,8 @@ if interactive:
 #
 #
 #
-# Creating 100 bundle assignment maps on AF_L using BUAN [Chandio2020]_
+# Creating 100 bundle assignment maps on AF_L using BUAN
+# :footcite:p:`Chandio2020a`
 
 rng = np.random.default_rng()
 
@@ -95,8 +96,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-#         Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-#         Garyfallidis, E. Bundle analytics, a computational framework for
-#         investigating the shapes and profiles of brain pathways across
-#         populations. Sci Rep 10, 17149 (2020)
+# .. footbibliography::
+#

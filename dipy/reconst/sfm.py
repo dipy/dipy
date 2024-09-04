@@ -2,18 +2,12 @@
 The Sparse Fascicle Model.
 
 This is an implementation of the sparse fascicle model described in
-[Rokem2015]_. The multi b-value version of this model is described in
-[Rokem2014]_.
+:footcite:t:`Rokem2015`. The multi b-value version of this model is described
+in :footcite:t:`Rokem2014`.
 
-
-.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2015). Evaluating the accuracy of diffusion MRI models in white
-   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-.. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
-   Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
-   models at multiple b-values with cross-validation. ISMRM 2014.
+References
+----------
+.. footbibliography::
 """
 
 from collections import OrderedDict
@@ -34,6 +28,7 @@ import dipy.data as dpd
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.cache import Cache
 import dipy.sims.voxel as sims
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 
@@ -48,7 +43,8 @@ lm, _, _ = optional_package("sklearn.linear_model")
 
 
 # First, a helper function to derive the fit signal for these models:
-def _to_fit_iso(data, gtab, mask=None):
+@warning_for_keywords()
+def _to_fit_iso(data, gtab, *, mask=None):
     if mask is None:
         mask = np.ones(data.shape[:-1], dtype=bool)
     # Turn it into a 2D thing:
@@ -92,7 +88,8 @@ class IsotropicModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """Fit an IsotropicModel.
 
         This boils down to finding the mean diffusion-weighted signal in each
@@ -142,7 +139,8 @@ class IsotropicFit(ReconstFit):
         self.model = model
         self.params = params
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """Predict the isotropic signal.
 
         Based on a gradient table. In this case, the (naive!) prediction will
@@ -150,7 +148,7 @@ class IsotropicFit(ReconstFit):
 
         Parameters
         ----------
-        gtab : a GradientTable class instance (optional)
+        gtab : a GradientTable class instance, optional
             Defaults to use the gtab from the IsotropicModel from which this
             fit was derived.
 
@@ -171,7 +169,8 @@ class ExponentialIsotropicModel(IsotropicModel):
     with b-values
     """
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         """
 
         Parameters
@@ -207,7 +206,8 @@ class ExponentialIsotropicFit(IsotropicFit):
     A fit to the ExponentialIsotropicModel object, based on data.
     """
 
-    def predict(self, gtab=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None):
         """
         Predict the isotropic signal, based on a gradient table. In this case,
         the prediction will be for an exponential decay with the mean
@@ -215,7 +215,7 @@ class ExponentialIsotropicFit(IsotropicFit):
 
         Parameters
         ----------
-        gtab : a GradientTable class instance (optional)
+        gtab : a GradientTable class instance, optional
             Defaults to use the gtab from the IsotropicModel from which this
             fit was derived.
         """
@@ -236,7 +236,8 @@ class ExponentialIsotropicFit(IsotropicFit):
             )
 
 
-def sfm_design_matrix(gtab, sphere, response, mode="signal"):
+@warning_for_keywords()
+def sfm_design_matrix(gtab, sphere, response, *, mode="signal"):
     """
     Construct the SFM design matrix
 
@@ -282,35 +283,25 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
     >>> sphere = dpd.get_sphere()
     >>> from dipy.reconst.sfm import sfm_design_matrix
 
-    A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
+    A canonical tensor approximating corpus-callosum voxels
+    :footcite:p`Rokem2014`:
 
     >>> tensor_matrix = sfm_design_matrix(gtab, sphere,
     ...                                   [0.0015, 0.0005, 0.0005])
 
-    A 'stick' function ([Behrens2007]_):
+    A 'stick' function :footcite:p`Behrens2007`:
 
     >>> stick_matrix = sfm_design_matrix(gtab, sphere, [0.001, 0, 0])
 
-    Notes
-    -----
-    .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-       N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-       (2015). Evaluating the accuracy of diffusion MRI models in white
-       matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-    .. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
-       Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
-       models at multiple b-values with cross-validation. ISMRM 2014.
-
-    .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
-       (2007): Probabilistic diffusion tractography with multiple fibre
-       orientations: What can we gain? Neuroimage 34:144-55.
+    References
+    ----------
+    .. footbibliography::
     """
     if mode == "signal":
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mat_gtab = grad.gradient_table(
-                gtab.bvals[~gtab.b0s_mask], gtab.bvecs[~gtab.b0s_mask]
+                gtab.bvals[~gtab.b0s_mask], bvecs=gtab.bvecs[~gtab.b0s_mask]
             )
         # Preallocate:
         mat = np.empty((np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
@@ -339,9 +330,11 @@ def sfm_design_matrix(gtab, sphere, response, mode="signal"):
 
 
 class SparseFascicleModel(ReconstModel, Cache):
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         sphere=None,
         response=(0.0015, 0.0005, 0.0005),
         solver="ElasticNet",
@@ -378,11 +371,11 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         l1_ratio : float, optional
             Sets the balance between L1 and L2 regularization in ElasticNet
-            [Zou2005]_.
+            :footcite:p`Zou2005`.
 
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
-            regularization in ElasticNet [Zou2005]_.
+            regularization in ElasticNet :footcite:p`Zou2005`.
 
         isotropic : IsotropicModel class instance
             This is a class that implements the function that calculates the
@@ -395,15 +388,12 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Notes
         -----
-        This is an implementation of the SFM, described in [Rokem2015]_.
+        This is an implementation of the SFM, described in
+        :footcite:p`Rokem2015`.
 
-        .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-           N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-           (2014). Evaluating the accuracy of diffusion MRI models in white
-           matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
-
-        .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
-           selection via the elastic net. J R Stat Soc B:301-320
+        References
+        ----------
+        .. footbibliography::
         """
         ReconstModel.__init__(self, gtab)
 
@@ -456,9 +446,10 @@ class SparseFascicleModel(ReconstModel, Cache):
             The design matrix, where each column is a rotated version of the
             response function.
         """
-        return sfm_design_matrix(self.gtab, self.sphere, self.response, "signal")
+        return sfm_design_matrix(self.gtab, self.sphere, self.response, mode="signal")
 
-    def _fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
+    @warning_for_keywords()
+    def _fit_solver2voxels(self, isopredict, vox_data, vox, *, parallel=False):
         # In voxels in which S0 is 0, we just want to keep the
         # parameters at all-zeros, and avoid nasty sklearn errors:
         if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
@@ -482,7 +473,10 @@ class SparseFascicleModel(ReconstModel, Cache):
                 return np.zeros(self.design_matrix.shape[-1])
         return coef
 
-    def fit(self, data, mask=None, num_processes=1, parallel_backend="multiprocessing"):
+    @warning_for_keywords()
+    def fit(
+        self, data, *, mask=None, num_processes=1, parallel_backend="multiprocessing"
+    ):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -542,7 +536,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             flat_S = np.zeros(data_in_mask[..., ~self.gtab.b0s_mask].shape)
         else:
             flat_S = data_in_mask[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        isotropic = self.isotropic(self.gtab).fit(data, mask)
+        isotropic = self.isotropic(self.gtab).fit(data, mask=mask)
         flat_params = np.zeros((data_in_mask.shape[0], self.design_matrix.shape[-1]))
         del data_in_mask
         gc.collect()
@@ -585,7 +579,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         else:
             for vox, vox_data in enumerate(flat_S):
                 flat_params[vox] = self._fit_solver2voxels(
-                    isopredict, vox_data, vox, False
+                    isopredict, vox_data, vox, parallel=False
                 )
 
         del isopredict, flat_S
@@ -656,7 +650,8 @@ class SparseFascicleFit(ReconstFit):
             odf_matrix, self.beta.reshape(-1, self.beta.shape[-1]).T
         ).T.reshape(self.beta.shape[:-1] + (odf_matrix.shape[0],))
 
-    def predict(self, gtab=None, response=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, response=None, S0=None):
         """
         Predict the signal based on the SFM parameters
 
@@ -699,7 +694,7 @@ class SparseFascicleFit(ReconstFit):
             S0 = S0[..., None]
 
         pre_pred_sig = S0 * (
-            pred_weighted + self.iso.predict(gtab).reshape(pred_weighted.shape)
+            pred_weighted + self.iso.predict(gtab=gtab).reshape(pred_weighted.shape)
         )
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig

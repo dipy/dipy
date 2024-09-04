@@ -462,7 +462,12 @@ class DiffeomorphicMap:
         warp_f = self._get_warping_function(interpolation)
 
         warped = warp_f(
-            image, self.forward, affine_idx_in, affine_idx_out, affine_disp, out_shape
+            image,
+            self.forward,
+            affine_idx_in=affine_idx_in,
+            affine_idx_out=affine_idx_out,
+            affine_disp=affine_disp,
+            out_shape=out_shape,
         )
         return warped
 
@@ -580,7 +585,12 @@ class DiffeomorphicMap:
         warp_f = self._get_warping_function(interpolation)
 
         warped = warp_f(
-            image, self.backward, affine_idx_in, affine_idx_out, affine_disp, out_shape
+            image,
+            self.backward,
+            affine_idx_in=affine_idx_in,
+            affine_idx_out=affine_idx_out,
+            affine_disp=affine_disp,
+            out_shape=out_shape,
         )
 
         return warped
@@ -632,11 +642,19 @@ class DiffeomorphicMap:
             out_shape = np.asarray(out_shape, dtype=np.int32)
         if self.is_inverse:
             warped = self._warp_backward(
-                image, interpolation, image_world2grid, out_shape, out_grid2world
+                image,
+                interpolation=interpolation,
+                image_world2grid=image_world2grid,
+                out_shape=out_shape,
+                out_grid2world=out_grid2world,
             )
         else:
             warped = self._warp_forward(
-                image, interpolation, image_world2grid, out_shape, out_grid2world
+                image,
+                interpolation=interpolation,
+                image_world2grid=image_world2grid,
+                out_shape=out_shape,
+                out_grid2world=out_grid2world,
             )
         return np.asarray(warped)
 
@@ -685,11 +703,19 @@ class DiffeomorphicMap:
         """
         if self.is_inverse:
             warped = self._warp_forward(
-                image, interpolation, image_world2grid, out_shape, out_grid2world
+                image,
+                interpolation=interpolation,
+                image_world2grid=image_world2grid,
+                out_shape=out_shape,
+                out_grid2world=out_grid2world,
             )
         else:
             warped = self._warp_backward(
-                image, interpolation, image_world2grid, out_shape, out_grid2world
+                image,
+                interpolation=interpolation,
+                image_world2grid=image_world2grid,
+                out_shape=out_shape,
+                out_grid2world=out_grid2world,
             )
         return np.asarray(warped)
 
@@ -753,9 +779,13 @@ class DiffeomorphicMap:
         data = points.get_data() if is_streamline_obj else points
 
         if inverse:
-            out = self._warp_coordinates_backward(data, coord2world, world2coord)
+            out = self._warp_coordinates_backward(
+                data, coord2world=coord2world, world2coord=world2coord
+            )
         else:
-            out = self._warp_coordinates_forward(data, coord2world, world2coord)
+            out = self._warp_coordinates_forward(
+                data, coord2world=coord2world, world2coord=world2coord
+            )
 
         if is_streamline_obj:
             old_data_dtype = points._data.dtype
@@ -780,14 +810,14 @@ class DiffeomorphicMap:
 
         """
         inv = DiffeomorphicMap(
-            self.dim,
-            self.disp_shape,
-            self.disp_grid2world,
-            self.domain_shape,
-            self.domain_grid2world,
-            self.codomain_shape,
-            self.codomain_grid2world,
-            self.prealign,
+            dim=self.dim,
+            disp_shape=self.disp_shape,
+            disp_grid2world=self.disp_grid2world,
+            domain_shape=self.domain_shape,
+            domain_grid2world=self.domain_grid2world,
+            codomain_shape=self.codomain_shape,
+            codomain_grid2world=self.codomain_grid2world,
+            prealign=self.prealign,
         )
         inv.forward = self.forward
         inv.backward = self.backward
@@ -877,14 +907,14 @@ class DiffeomorphicMap:
 
         """
         new_map = DiffeomorphicMap(
-            self.dim,
-            self.disp_shape,
-            self.disp_grid2world,
-            self.domain_shape,
-            self.domain_grid2world,
-            self.codomain_shape,
-            self.codomain_grid2world,
-            self.prealign,
+            dim=self.dim,
+            disp_shape=self.disp_shape,
+            disp_grid2world=self.disp_grid2world,
+            domain_shape=self.domain_shape,
+            domain_grid2world=self.domain_grid2world,
+            codomain_shape=self.codomain_shape,
+            codomain_grid2world=self.codomain_grid2world,
+            prealign=self.prealign,
         )
         new_map.forward = self.forward
         new_map.backward = self.backward
@@ -1004,14 +1034,14 @@ class DiffeomorphicMap:
             self.codomain_shape,
         )
         simplified = DiffeomorphicMap(
-            self.dim,
-            self.disp_shape,
-            None,
-            self.domain_shape,
-            None,
-            self.codomain_shape,
-            None,
-            None,
+            dim=self.dim,
+            disp_shape=self.disp_shape,
+            disp_grid2world=None,
+            domain_shape=self.domain_shape,
+            domain_grid2world=None,
+            codomain_shape=self.codomain_shape,
+            codomain_grid2world=None,
+            prealign=None,
         )
         simplified.forward = new_forward
         simplified.backward = new_backward
@@ -1118,7 +1148,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
         """
-        super(SymmetricDiffeomorphicRegistration, self).__init__(metric)
+        super(SymmetricDiffeomorphicRegistration, self).__init__(metric=metric)
         if level_iters is None:
             level_iters = [100, 100, 25]
 
@@ -1280,10 +1310,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_ss = ScaleSpace(
             moving,
             self.levels,
-            moving_grid2world,
-            moving_spacing,
-            self.ss_sigma_factor,
-            self.mask0,
+            image_grid2world=moving_grid2world,
+            input_spacing=moving_spacing,
+            sigma_factor=self.ss_sigma_factor,
+            mask0=self.mask0,
         )
 
         if self.verbosity >= VerbosityLevels.STATUS:
@@ -1295,10 +1325,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.static_ss = ScaleSpace(
             static,
             self.levels,
-            static_grid2world,
-            static_spacing,
-            self.ss_sigma_factor,
-            self.mask0,
+            image_grid2world=static_grid2world,
+            input_spacing=static_spacing,
+            sigma_factor=self.ss_sigma_factor,
+            mask0=self.mask0,
         )
 
         if self.verbosity >= VerbosityLevels.DEBUG:
@@ -1327,14 +1357,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         domain_shape = static.shape
         domain_grid2world = static_grid2world
         self.static_to_ref = DiffeomorphicMap(
-            self.dim,
-            disp_shape,
-            disp_grid2world,
-            domain_shape,
-            domain_grid2world,
-            codomain_shape,
-            codomain_grid2world,
-            None,
+            dim=self.dim,
+            disp_shape=disp_shape,
+            disp_grid2world=disp_grid2world,
+            domain_shape=domain_shape,
+            domain_grid2world=domain_grid2world,
+            codomain_shape=codomain_shape,
+            codomain_grid2world=codomain_grid2world,
+            prealign=None,
         )
         self.static_to_ref.allocate()
 
@@ -1351,14 +1381,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         domain_shape = moving.shape
         domain_grid2world = moving_grid2world
         self.moving_to_ref = DiffeomorphicMap(
-            self.dim,
-            disp_shape,
-            disp_grid2world,
-            domain_shape,
-            domain_grid2world,
-            codomain_shape,
-            codomain_grid2world,
-            prealign_inv,
+            dim=self.dim,
+            disp_shape=disp_shape,
+            disp_grid2world=disp_grid2world,
+            domain_shape=domain_shape,
+            domain_grid2world=domain_grid2world,
+            codomain_shape=codomain_shape,
+            codomain_grid2world=codomain_grid2world,
+            prealign=prealign_inv,
         )
         self.moving_to_ref.allocate()
 
@@ -1398,10 +1428,18 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # Warp the input images (smoothed to the current scale) to the common
         # (reference) space at the current resolution
         wstatic = self.static_to_ref.transform_inverse(
-            current_static, "linear", None, current_disp_shape, current_disp_grid2world
+            current_static,
+            interpolation="linear",
+            image_world2grid=None,
+            out_shape=current_disp_shape,
+            out_grid2world=current_disp_grid2world,
         )
         wmoving = self.moving_to_ref.transform_inverse(
-            current_moving, "linear", None, current_disp_shape, current_disp_grid2world
+            current_moving,
+            interpolation="linear",
+            image_world2grid=None,
+            out_shape=current_disp_shape,
+            out_grid2world=current_disp_grid2world,
         )
         # Pass both images to the metric. Now both images are sampled on the
         # reference grid (equal to the static image's grid) and the direction
@@ -1543,7 +1581,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_disp_spacing,
                 self.inv_iter,
                 self.inv_tol,
-                self.static_to_ref.backward,
+                start=self.static_to_ref.backward,
             )
         )
 
@@ -1555,7 +1593,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_disp_spacing,
                 self.inv_iter,
                 self.inv_tol,
-                self.moving_to_ref.backward,
+                start=self.moving_to_ref.backward,
             )
         )
 
@@ -1567,7 +1605,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_disp_spacing,
                 self.inv_iter,
                 self.inv_tol,
-                self.static_to_ref.forward,
+                start=self.static_to_ref.forward,
             )
         )
 
@@ -1579,7 +1617,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_disp_spacing,
                 self.inv_iter,
                 self.inv_tol,
-                self.moving_to_ref.forward,
+                start=self.moving_to_ref.forward,
             )
         )
 

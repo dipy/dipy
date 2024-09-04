@@ -8,7 +8,6 @@ from cython.parallel import parallel, prange, threadid
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
@@ -28,6 +27,9 @@ cdef class FBCMeasures:
                  verbose=False):
         """ Compute the fiber to bundle coherence measures for a set of
         streamlines.
+
+        See :footcite:p`Meesters2016b` and :footcite:p:`Portegies2015b` for
+        further details about the method.
 
         Parameters
         ----------
@@ -52,25 +54,16 @@ cdef class FBCMeasures:
 
         References
         ----------
-        [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                           J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning
-                           output of tractography via fiber to bundle coherence,
-                           a new open source implementation. Human Brain Mapping
-                           conference 2016.
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-                         G.Girard, and R. Duits. (2015) Improving Fiber Alignment
-                         in HARDI by Combining Contextual PDE flow with
-                         Constrained Spherical Deconvolution. PLoS One.
+        .. footbibliography::
         """
         self.compute(streamlines,
-                     kernel,
-                     min_fiberlength,
-                     max_windowsize,
-                     num_threads,
-                     verbose)
+                 kernel,
+                 min_fiberlength=min_fiberlength,
+                 max_windowsize=max_windowsize,
+                 num_threads=num_threads,
+                 verbose=verbose)
 
-    @warning_for_keywords()
-    def get_points_rfbc_thresholded(self, threshold, *, emphasis=.5, verbose=False):
+    def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.
 
         Parameters
@@ -313,11 +306,10 @@ cdef class FBCMeasures:
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length,
                                              streamline_scores,
-                                             max_windowsize)
+                                             max_windowsize=max_windowsize)
 
 
-@warning_for_keywords()
-def compute_rfbc(streamlines_length, streamline_scores, *, max_windowsize=7):
+def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
     """ Compute the relative fiber to bundle coherence (RFBC)
 
     Parameters

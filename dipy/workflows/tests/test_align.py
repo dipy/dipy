@@ -32,7 +32,7 @@ _, have_pd, _ = optional_package("pandas")
 
 def test_reslice():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames("small_25")
+        data_path, _, _ = get_fnames(name="small_25")
         volume = load_nifti_data(data_path)
 
         reslice_flow = ResliceFlow()
@@ -49,7 +49,7 @@ def test_reslice():
 
 def test_slr_flow():
     with TemporaryDirectory() as out_dir:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
 
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
@@ -443,7 +443,7 @@ def test_apply_affine_transform():
 
 
 def test_motion_correction():
-    data_path, fbvals_path, fbvecs_path = get_fnames("small_64D")
+    data_path, fbvals_path, fbvecs_path = get_fnames(name="small_64D")
 
     with TemporaryDirectory() as out_dir:
         # Use an abbreviated data-set:
@@ -570,7 +570,7 @@ def test_syn_registration_flow():
 @pytest.mark.skipif(not have_pd, reason="Requires pandas")
 def test_bundlewarp_flow():
     with TemporaryDirectory() as out_dir:
-        data_path = get_fnames("fornix")
+        data_path = get_fnames(name="fornix")
 
         fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 

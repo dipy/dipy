@@ -10,6 +10,8 @@ particular set of data (different voxels, for example).
 
 """
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 class ReconstModel:
     """Abstract class for signal reconstruction models"""
@@ -25,7 +27,8 @@ class ReconstModel:
         """
         self.gtab = gtab
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         return ReconstFit(self, data)
 
 

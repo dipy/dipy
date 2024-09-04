@@ -6,9 +6,9 @@ Tracking with the Sparse Fascicle Model
 =======================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
-Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
-signal as a combination of the signals from different fascicles (see also
-:ref:`sphx_glr_examples_built_reconstruction_reconst_sfm.py`).
+Model (SFM), described in :footcite:p:`Rokem2015`. This model reconstructs the
+diffusion signal as a combination of the signals from different fascicles (see
+also :ref:`sphx_glr_examples_built_reconstruction_reconst_sfm.py`).
 """
 
 from numpy.linalg import inv
@@ -47,9 +47,8 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 ###############################################################################
-# This data set provides a label map (generated using `FreeSurfer
-# <https://surfer.nmr.mgh.harvard.edu/>`_), in which the white matter voxels
-# are labeled as either 1 or 2:
+# This data set provides a label map (generated using FreeSurfer_, in which the
+# white matter voxels are labeled as either 1 or 2:
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -170,7 +169,5 @@ save_trk(sft, "tractogram_sfm_detr.trk")
 # References
 # ----------
 #
-# .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-#    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015).
-#    Evaluating the accuracy of diffusion MRI models in white matter. PLoS
-#    ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+# .. footbibliography::
+#

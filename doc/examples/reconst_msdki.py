@@ -6,31 +6,32 @@ Mean signal diffusion kurtosis imaging (MSDKI)
 Diffusion Kurtosis Imaging (DKI) is one of the conventional ways to estimate
 the degree of non-Gaussian diffusion
 (see :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`)
-[Jensen2005]_. However, a limitation of DKI is that its measures are highly
-sensitive to noise and image artefacts. For instance, due to the low radial
-diffusivities, standard kurtosis estimates in regions of well-aligned voxel may
-be corrupted by implausible low or even negative values.
+:footcite:p:`Jensen2005`. However, a limitation of DKI is that its measures are
+highly sensitive to noise and image artefacts. For instance, due to the low
+radial diffusivities, standard kurtosis estimates in regions of well-aligned
+voxel may be corrupted by implausible low or even negative values.
 
 A way to overcome this issue is to characterize kurtosis from average signals
 across all directions acquired for each data b-value (also known as
-powder-averaged signals). Moreover, as previously pointed [NetoHe2015]_,
-standard kurtosis measures (e.g. radial, axial and standard mean kurtosis)
-do not only depend on microstructural properties but also on mesoscopic
-properties such as fiber dispersion or the intersection angle of crossing
-fibers. In contrary, the kurtosis from powder-average signals has the advantage
-of not depending on the fiber distribution functions [NetoHe2019]_,
-[Henriq2021]_
+powder-averaged signals). Moreover, as previously pointed
+:footcite:p:`NetoHenriques2015`, standard kurtosis measures (e.g. radial, axial
+and standard mean kurtosis) do not only depend on microstructural properties but
+also on mesoscopic properties such as fiber dispersion or the intersection angle
+of crossing fibers. In contrary, the kurtosis from powder-average signals has
+the advantage of not depending on the fiber distribution functions
+:footcite:p:`NetoHenriques2019`, :footcite:p:`NetoHenriques2021a`
 
 In short, in this tutorial we show how to characterize non-Gaussian diffusion
 in a more precise way and decoupled from confounding effects of tissue
 dispersion and crossing.
 
 In the first part of this example, we illustrate the properties of the measures
-obtained from the mean signal diffusion kurtosis imaging (MSDKI) [NetoHe2018]_
-[Henriq2021]_ using synthetic data. Secondly, the mean signal diffusion
-kurtosis imaging will be applied to in-vivo MRI data. Finally, we show how
-MSDKI provides the same information than common microstructural models such as
-the spherical mean technique [NetoHe2019]_, [Kaden2016b]_.
+obtained from the mean signal diffusion kurtosis imaging (MSDKI)
+:footcite:p:`NetoHenriques2018`, :footcite:p:`NetoHenriques2021a` using
+synthetic data. Secondly, the mean signal diffusion kurtosis imaging will be
+applied to in-vivo MRI data. Finally, we show how MSDKI provides the same
+information than common microstructural models such as the spherical mean
+technique :footcite:p:`NetoHenriques2019`, :footcite:p:`Kaden2016b`.
 
 Let's import all relevant modules:
 """
@@ -64,7 +65,7 @@ from dipy.sims.voxel import multi_tensor
 # this example, simulations are produced based on the sum of four diffusion
 # tensors to represent the intra- and extra-cellular spaces of two fiber
 # populations. The parameters of these tensors are adjusted according to
-# [NetoHe2015]_ (see also
+# :footcite:p:`NetoHenriques2015` (see also
 # :ref:`sphx_glr_examples_built_simulations_simulate_dki.py`).
 
 mevals = np.array(
@@ -220,8 +221,8 @@ fig1.savefig("MSDKI_simulations.png")
 # (see :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`), we use
 # fetch to download a multi-shell dataset which was kindly provided by Hansen
 # and Jespersen (more details about the data are provided in their paper
-# [Hansen2016]_). The total size of the downloaded data is 192 MBytes, however
-# you only need to fetch it once.
+# :footcite:p:`Hansen2016a`). The total size of the downloaded data is 192
+# MBytes, however you only need to fetch it once.
 
 fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
@@ -319,18 +320,20 @@ fig2.savefig("MSDKI_invivo.png")
 # however, in the upper part we ensure that direct contributions of fiber
 # dispersion were removed. The upper panels also reveal that MSDKI measures
 # are let sensitive to noise artefacts than standard DKI measures (as pointed
-# by [NetoHe2018]_), particularly one can observe that MSK maps always present
-# positive values in brain white matter regions, while implausible negative
-# kurtosis values are present in the MK maps in the same regions.
+# by :footcite:p:`NetoHenriques2018`), particularly one can observe that MSK
+# maps always present positive values in brain white matter regions, while
+# implausible negative kurtosis values are present in the MK maps in the same
+# regions.
 #
 # Relationship between MSDKI and SMT2
 # ===================================
-# As showed in [NetoHe2019]_, MSDKI captures the same information than the
-# spherical mean technique (SMT) microstructural models [Kaden2016b]_. In this
-# way, the SMT model parameters can be directly computed from MSDKI.
-# For instance, the axonal volume fraction (f), the intrinsic diffusivity (di),
-# and the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_
-# can be extracted using the following lines of code:
+# As showed in :footcite:p:`NetoHenriques2019`, MSDKI captures the same
+# information than the spherical mean technique (SMT) microstructural models
+# :footcite:p:`Kaden2016b`. In this way, the SMT model parameters can be
+# directly computed from MSDKI. For instance, the axonal volume fraction (f),
+# the intrinsic diffusivity (di), and the microscopic anisotropy of the SMT
+# 2-compartmental model :footcite:p:`NetoHenriques2019` can be extracted using
+# the following lines of code:
 
 F = msdki_fit.smt2f
 DI = msdki_fit.smt2di
@@ -371,7 +374,8 @@ fig3.savefig("MSDKI_SMT2_invivo.png")
 #
 # SMT2 model quantities extracted from MSDKI. From left to right, the figure
 # shows the axonal volume fraction (f), the intrinsic diffusivity (di), and
-# the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
+# the microscopic anisotropy of the SMT 2-compartmental model
+# :footcite:p:`NetoHenriques2019`.
 #
 #
 # The similar contrast of SMT2 f-parameter maps in comparison to MSK (first
@@ -379,39 +383,15 @@ fig3.savefig("MSDKI_SMT2_invivo.png")
 # captures the same tissue information but on different scales (but rescaled
 # to values between 0 and 1).  It is important to note that SMT model
 # parameters estimates should be used with care, because the SMT model was
-# shown to be invalid NetoHe2019]_. For instance, although SMT2 parameter f
-# and uFA may be a useful normalization of the degree of non-Gaussian
-# diffusion (note than both metrics have a range between 0 and 1), these
-# cannot be interpreted as a real biophysical estimates of axonal water
+# shown to be invalid:footcite:p:`NetoHenriques2019`. For instance, although
+# SMT2 parameter f and uFA may be a useful normalization of the degree of
+# non-Gaussian diffusion (note than both metrics have a range between 0 and 1),
+# these cannot be interpreted as a real biophysical estimates of axonal water
 # fraction and tissue microscopic anisotropy.
 #
 #
 # References
 # ----------
-# .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
-#                 Diffusional Kurtosis Imaging: The Quantification of
-#                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
-#                 Imaging. Magnetic Resonance in Medicine 53: 1432-1440
-# .. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-#                 Exploring the 3D geometry of the diffusion kurtosis tensor -
-#                 Impact on the development of robust tractography procedures
-#                 and novel biomarkers, NeuroImage 111: 85-99
-# .. [NetoHe2018] Henriques RN, 2018. Advanced Methods for Diffusion MRI Data
-#                 Analysis and their Application to the Healthy Ageing Brain
-#                 (Doctoral thesis). Downing College, University of Cambridge.
-#                 https://doi.org/10.17863/CAM.29356
-# .. [NetoHe2019] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-#                 anisotropy misestimation in spherical‐mean single diffusion
-#                 encoding MRI. Magnetic Resonance in Medicine (In press).
-#                 doi: 10.1002/mrm.27606
-# .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
-#                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                 Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                 Python Project. Frontiers in Human Neuroscience 15: 675433.
-# .. [Kaden2016b] Kaden E, Kelm ND, Carson RP, Does MD, Alexander DC (2016)
-#                 Multi-compartment microscopic diffusion imaging. NeuroImage
-#                 139: 346-359.
-# .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
-#                 kurtosis strategies, b-value optimization and exploration of
-#                 diffusion MRI contrast. Scientific Data 3: 160072
-#                 doi:10.1038/sdata.2016.72
+#
+# .. footbibliography::
+#

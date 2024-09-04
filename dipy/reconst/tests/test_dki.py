@@ -50,14 +50,14 @@ def setup_module():
     global mevals_cross, angles_cross, frac_cross, kt_cross
     global dt_sph, evals_sph, kt_sph, params_sph
 
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
     # Simulation 1. signals of two crossing fibers are simulated
     mevals_cross = np.array(
@@ -869,7 +869,7 @@ def test_kurtosis_maximum():
 
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
-    assert_almost_equal(dkiF.kmax(sphere, gtol=1e-5), RK)
+    assert_almost_equal(dkiF.kmax(sphere=sphere, gtol=1e-5), RK)
 
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
@@ -939,7 +939,7 @@ def test_multi_voxel_kurtosis_maximum():
     assert_almost_equal(k_max, RK, decimal=4)
 
     # TEST - when sphere is given
-    k_max = dki.kurtosis_maximum(dkiF.model_params, default_sphere)
+    k_max = dki.kurtosis_maximum(dkiF.model_params, sphere=default_sphere)
     assert_almost_equal(k_max, RK, decimal=4)
 
     # TEST - when mask is given

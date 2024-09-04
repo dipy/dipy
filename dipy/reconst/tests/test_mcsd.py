@@ -53,7 +53,7 @@ def get_test_data(rng):
         np.array([3.0e-3, 3.0e-3, 3.0e-3]),
     ]
     s0 = [0.8, 1, 4]
-    signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
+    signals = [single_tensor(gtab, x[0], evals=x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], 80, s0[0], rng=rng) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
@@ -116,7 +116,7 @@ def test_mcsd_model_delta():
         )
         for i, s in enumerate([0, 1000, 2000, 3500]):
             g = GradientTable(default_sphere.vertices * s)
-            signal = model.predict(wm_delta, g)
+            signal = model.predict(wm_delta, gtab=g)
             expected = np.dot(response.response[i, iso:], B.T)
             npt.assert_array_almost_equal(signal, expected)
 
@@ -126,7 +126,7 @@ def test_mcsd_model_delta():
             message=shm.descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        signal = model.predict(wm_delta, gtab)
+        signal = model.predict(wm_delta, gtab=gtab)
     fit = model.fit(signal)
     m = model.m_values
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0.0, 2)
@@ -179,7 +179,12 @@ def test_MultiShellDeconvModel():
     angles = [(0, 0), (60, 0)]
 
     S_wm, sticks = multi_tensor(
-        gtab, mevals, wm_response[0, 3], angles=angles, fractions=[30.0, 70.0], snr=None
+        gtab,
+        mevals,
+        S0=wm_response[0, 3],
+        angles=angles,
+        fractions=[30.0, 70.0],
+        snr=None,
     )
     S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
@@ -221,7 +226,12 @@ def test_MSDeconvFit():
     angles = [(0, 0), (60, 0)]
 
     S_wm, sticks = multi_tensor(
-        gtab, mevals, wm_response[0, 3], angles=angles, fractions=[30.0, 70.0], snr=None
+        gtab,
+        mevals,
+        S0=wm_response[0, 3],
+        angles=angles,
+        fractions=[30.0, 70.0],
+        snr=None,
     )
     S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])

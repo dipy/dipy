@@ -9,7 +9,6 @@ from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
@@ -28,11 +27,9 @@ class HorizonFlow(Workflow):
     def get_short_name(cls):
         return "horizon"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         cluster=False,
         rgb=False,
         cluster_thr=15.0,
@@ -54,7 +51,9 @@ class HorizonFlow(Workflow):
         out_dir="",
         out_stealth_png="tmp.png",
     ):
-        """Interactive medical visualization - Invert the Horizon! [Horizon_ISMRM19]_.
+        """Interactive medical visualization - Invert the Horizon!
+
+        See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
@@ -125,11 +124,7 @@ class HorizonFlow(Workflow):
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-            adaptive visualization, Proceedings of: International Society of
-            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
         super(HorizonFlow, self).__init__(force=True)
         verbose = True

@@ -9,7 +9,7 @@ applying non-rigid deformations.
 At times we will be interested in bringing a set of streamlines into some
 common, reference space to compute statistics out of the registered
 streamlines. For a discussion on the effects of spatial normalization
-approaches on tractography the work by Green et al. [Greene17]_ can be read.
+approaches on tractography the work by :footcite:t:`Greene2018` can be read.
 
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
@@ -122,8 +122,8 @@ warped_b0, warped_b0_affine = affine_registration(
 
 ###############################################################################
 # We now perform the non-rigid deformation using the Symmetric Diffeomorphic
-# Registration (SyN) Algorithm proposed by Avants et al. [Avants09]_ (also
-# implemented in the ANTs software [Avants11]_):
+# Registration (SyN) Algorithm proposed by :footcite:t:`Avants2008` (also
+# implemented in the ANTs software :footcite:p:`Avants2009`):
 
 level_iters = [10, 10, 5]
 
@@ -261,14 +261,5 @@ save_tractogram(
 # References
 # ----------
 #
-# .. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-#    (2009). Symmetric Diffeomorphic Image Registration with
-#    Cross-Correlation: Evaluating Automated Labeling of Elderly and
-#    Neurodegenerative Brain, 12(1), 26-41.
+# .. footbibliography::
 #
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#    Normalization Tools (ANTS), 1-35.
-#
-# .. [Greene17] Greene, C., Cieslak, M., & Grafton, S. T. (2017). Effect of
-#    different spatial normalization approaches on tractography and
-#    structural brain networks. Network Neuroscience, 1-19.

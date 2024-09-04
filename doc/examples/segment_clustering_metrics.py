@@ -7,7 +7,8 @@ This page lists available metrics that can be used by the tractography
 clustering framework. For every metric a brief description is provided
 explaining: what it does, when it's useful and how to use it. If you are not
 familiar with the tractography clustering framework, check this tutorial
-:ref:`clustering-framework`.
+:ref:`clustering-framework`. See :footcite:p:`Garyfallidis2012a` for more
+information on the metrics.
 
 .. contents:: Available Metrics
     :local:
@@ -157,6 +158,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+# .. footbibliography::
+#

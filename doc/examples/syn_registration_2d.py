@@ -3,8 +3,8 @@
 Symmetric Diffeomorphic Registration in 2D
 ==========================================
 This example explains how to register 2D images using the Symmetric
-Normalization (SyN) algorithm proposed by Avants et al. [Avants09]_
-(also implemented in the ANTs software [Avants11]_)
+Normalization (SyN) algorithm proposed by :footcite:t:`Avants2008` (also
+implemented in the ANTs software :footcite:p:`Avants2009`)
 
 We will perform the classic Circle-To-C experiment for diffeomorphic
 registration
@@ -241,10 +241,5 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, "diffeomorphic_map_b0s.png")
 # References
 # ----------
 #
-# .. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-#    (2009). Symmetric Diffeomorphic Image Registration with Cross-Correlation:
-#    Evaluating Automated Labeling of Elderly and Neurodegenerative Brain,
-#    12(1), 26-41.
+# .. footbibliography::
 #
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#    Normalization Tools (ANTS), 1-35.

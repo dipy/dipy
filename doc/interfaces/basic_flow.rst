@@ -4,12 +4,12 @@
 Introduction to command line interfaces
 ======================================================
 
-This tutorial provides a basic introduction to DIPY's [Garyfallidis14]_
+This tutorial provides a basic introduction to DIPY's :footcite:p:`Garyfallidis2014a`
 command line interfaces.
 
 Using a terminal, let's download a dataset. This is multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
-provided in their paper [Hansen2016]_). For this tutorial we will use
+provided in their paper :footcite:p:`Hansen2016a`). For this tutorial we will use
 a Linux terminal, please adapt accordingly if you are using Mac or Windows.
 
 First let's create a folder::
@@ -194,7 +194,8 @@ Visualize DEC map::
 
     Visualization of a slice from the first volume of DEC image
 
-We can now move to more advanced reconstruction models. One of the fastest we can use is Constant Solid Angle (CSA) [Aganj2010]_ ::
+We can now move to more advanced reconstruction models. One of the fastest we can use is Constant Solid Angle (CSA)
+:footcite:p:`Aganj2010` ::
 
     dipy_fit_csa dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
 
@@ -202,7 +203,8 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
     dipy_mask out_work/fa.nii.gz 0.4 --out_dir out_work/ --out_mask seed_mask.nii.gz
 
-Build tractography with the ``peaks.pam5`` file as input using the fast EuDX algorithm [Garyfallidis12]_ ::
+Build tractography with the ``peaks.pam5`` file as input using the fast EuDX algorithm
+:footcite:p:`Garyfallidis2012b` ::
 
     dipy_track out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
 
@@ -247,19 +249,4 @@ the DIPY developers so that they can continue maintaining and extending these to
 References
 ----------
 
-.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
-    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
-    "DIPY, a library for the analysis of diffusion MRI data".
-    Frontiers in Neuroinformatics, 1-18, 2014.
-
-.. [Aganj2010] Aganj I, Lenglet C, Sapiro G, Yacoub E, Ugurbil K, Harel N.
-   "Reconstruction of the orientation distribution function in single- and
-   multiple-shell q-ball imaging within constant solid angle", Magnetic
-   Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
-
-.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography",
-   PhD thesis, University of Cambridge, 2012.
-
-.. [Hansen2016] Hansen, B, Jespersen, SN (2016). "Data for evaluation of fast
-   kurtosis strategies, b-value optimization and exploration of diffusion MRI
-   contrast". Scientific Data 3: 160072 doi:10.1038/sdata.2016.72
+.. footbibliography::

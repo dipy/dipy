@@ -6,7 +6,7 @@ from dipy.utils.tractogram import concatenate_tractogram
 
 
 def test_concatenate():
-    filepath_dix, _, _ = get_fnames("gold_standard_tracks")
+    filepath_dix, _, _ = get_fnames(name="gold_standard_tracks")
     sft = load_tractogram(filepath_dix["gs.trk"], filepath_dix["gs.nii"])
     trx = tmm.load(filepath_dix["gs.trx"])
     concat = concatenate_tractogram([sft, trx])

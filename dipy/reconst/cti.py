@@ -16,6 +16,7 @@ from dipy.reconst.dti import (
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import cti_design_matrix as design_matrix
+from dipy.testing.decorators import warning_for_keywords
 
 
 def from_qte_to_cti(C):
@@ -111,7 +112,7 @@ def split_cti_params(cti_params):
 
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
-            first, second and third coordinates of the eigenvector
+               first, second and third coordinates of the eigenvector
             3. Fifteen elements of the kurtosis tensor
             4. Twenty-One elements of the covariance tensor
 
@@ -135,7 +136,8 @@ def split_cti_params(cti_params):
     return evals, evecs, kt, ct
 
 
-def cti_prediction(cti_params, gtab1, gtab2, S0=1):
+@warning_for_keywords()
+def cti_prediction(cti_params, gtab1, gtab2, *, S0=1):
     """Predict a signal given correlation tensor imaging parameters.
 
     Parameters
@@ -156,7 +158,7 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
     gtab2: dipy.core.gradients.GradientTable
         A GradientTable class instance for second DDE diffusion epoch
 
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
 
@@ -198,8 +200,10 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
 class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
-    def __init__(self, gtab1, gtab2, fit_method="WLS", *args, **kwargs):
-        """Correlation Tensor Imaging Model [1]_
+    def __init__(self, gtab1, gtab2, *args, fit_method="WLS", **kwargs):
+        """Correlation Tensor Imaging Model.
+
+        See :footcite:p:`NetoHenriques2020` for further details about the model.
 
         Parameters
         ----------
@@ -214,6 +218,9 @@ class CorrelationTensorModel(ReconstModel):
         **kwargs
             Arbitrary keyword arguments passed to the :func:`fit` method.
 
+        References
+        ----------
+        .. footbibliography::
         """
         self.gtab1 = gtab1
         self.gtab2 = gtab2
@@ -249,7 +256,8 @@ class CorrelationTensorModel(ReconstModel):
         self.weights = fit_method in {"WLS", "WLLS", "UWLLS"}
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the CTI model class.
 
         Parameters
@@ -273,7 +281,8 @@ class CorrelationTensorModel(ReconstModel):
 
         return CorrelationTensorFit(self, params)
 
-    def predict(self, cti_params, S0=1):
+    @warning_for_keywords()
+    def predict(self, cti_params, *, S0=1):
         """Predict a signal for the CTI model class instance given parameters
 
         Parameters
@@ -292,7 +301,7 @@ class CorrelationTensorModel(ReconstModel):
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels.
 
@@ -302,7 +311,7 @@ class CorrelationTensorModel(ReconstModel):
             Predicted signal based on the CTI model
         """
 
-        return cti_prediction(cti_params, self.gtab1, self.gtab2, S0)
+        return cti_prediction(cti_params, self.gtab1, self.gtab2, S0=S0)
 
 
 class CorrelationTensorFit(DiffusionKurtosisFit):
@@ -336,7 +345,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """
         return self.model_params[..., 27:48]
 
-    def predict(self, gtab1, gtab2, S0=1):
+    @warning_for_keywords()
+    def predict(self, gtab1, gtab2, *, S0=1):
         """Given a CTI model fit, predict the signal on the vertices of a
         gradient table
 
@@ -346,7 +356,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
 
@@ -355,7 +365,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         S : numpy.ndarray
             Predicted signal based on the CTI model
         """
-        return cti_prediction(self.model_params, gtab1, gtab2, S0)
+        return cti_prediction(self.model_params, gtab1, gtab2, S0=S0)
 
     @property
     def K_aniso(self):
@@ -363,7 +373,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         Notes
         -----
-        The $K_{aniso}$ is defined as [1]_:
+        The $K_{aniso}$ is defined as :footcite:p:`NetoHenriques2020`:
 
         .. math::
 
@@ -377,9 +387,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
         References
         ----------
-        .. [1]  [NetoHe2020] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2020.
-                Correlation tensor magnetic resonance imaging. Neuroimage 211.
-                doi: 10.1016/j.neuroimage.2020.116605
+        .. footbibliography::
         """
         C = self.ct
         D = self.quadratic_form
@@ -512,7 +520,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         return micro_K
 
 
-def params_to_cti_params(result, min_diffusivity=0):
+@warning_for_keywords()
+def params_to_cti_params(result, *, min_diffusivity=0):
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
     evals, evecs = decompose_tensor(
@@ -533,8 +542,9 @@ def params_to_cti_params(result, min_diffusivity=0):
     return cti_params
 
 
+@warning_for_keywords()
 def ls_fit_cti(
-    design_matrix, data, inverse_design_matrix, weights=True, min_diffusivity=0
+    design_matrix, data, inverse_design_matrix, *, weights=True, min_diffusivity=0
 ):
     r"""Compute the diffusion kurtosis and covariance tensors using an
     ordinary or weighted linear least squares approach
@@ -549,7 +559,7 @@ def ls_fit_cti(
     inverse_design_matrix : array (43, g)
         Inverse of the design matrix.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise

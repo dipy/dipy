@@ -74,15 +74,15 @@ def test_btable_prepare():
             [0, sq2, sq2],
         ]
     )
-    bt = gradient_table(bvals, bvecs)
+    bt = gradient_table(bvals, bvecs=bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
     # bt.info
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
-    bt = gradient_table(bvals, bvecs)
+    bt = gradient_table(bvals, bvecs=bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
-    bt2 = gradient_table(bvals, bvecs.T)
+    bt2 = gradient_table(bvals, bvecs=bvecs.T)
     npt.assert_array_equal(bt2.bvecs, bvecs)
     btab = np.concatenate((bvals[:, None], bvecs), axis=1)
     bt3 = gradient_table(btab)
@@ -122,7 +122,7 @@ def test_GradientTable():
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
 
     with warnings.catch_warnings(record=True) as l_warns:
-        _ = gradient_table(expected_bvals, expected_bvecs, b0_threshold=200)
+        _ = gradient_table(expected_bvals, bvecs=expected_bvecs, b0_threshold=200)
 
         # Select only UserWarning
         selected_w = [w for w in l_warns if issubclass(w.category, UserWarning)]
@@ -366,14 +366,14 @@ def test_b0s():
             [0, 0, 0],
         ]
     )
-    bt = gradient_table(bvals, bvecs)
+    bt = gradient_table(bvals, bvecs=bvecs)
     npt.assert_array_equal(np.where(bt.b0s_mask > 0)[0], np.array([0, 7]))
     npt.assert_array_equal(np.where(bt.b0s_mask == 0)[0], np.arange(1, 7))
 
 
 def test_gtable_from_files():
-    fimg, fbvals, fbvecs = get_fnames("small_101D")
-    gt = gradient_table(fbvals, fbvecs)
+    fimg, fbvals, fbvecs = get_fnames(name="small_101D")
+    gt = gradient_table(fbvals, bvecs=fbvecs)
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     npt.assert_array_equal(gt.bvals, bvals)
     npt.assert_array_equal(gt.bvecs, bvecs)
@@ -394,7 +394,7 @@ def test_deltas():
             [0, sq2, sq2],
         ]
     )
-    bt = gradient_table(bvals, bvecs, big_delta=5, small_delta=2)
+    bt = gradient_table(bvals, bvecs=bvecs, big_delta=5, small_delta=2)
     npt.assert_equal(bt.big_delta, 5)
     npt.assert_equal(bt.small_delta, 2)
 
@@ -415,7 +415,7 @@ def test_qvalues():
         ]
     )
     qvals = np.sqrt(bvals / 6) / (2 * np.pi)
-    bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
+    bt = gradient_table(bvals, bvecs=bvecs, big_delta=8, small_delta=6)
     npt.assert_almost_equal(bt.qvals, qvals)
 
 
@@ -514,7 +514,7 @@ def test_nan_bvecs():
     """
     fdata, fbvals, fbvecs = get_fnames()
     with warnings.catch_warnings(record=True) as l_warns:
-        gradient_table(fbvals, fbvecs)
+        gradient_table(fbvals, bvecs=fbvecs)
         # Select only UserWarning
         selected_w = [w for w in l_warns if issubclass(w.category, UserWarning)]
         npt.assert_(len(selected_w) == 0)
@@ -616,12 +616,12 @@ def test_unique_bvals_tolerance():
     # All unique b-values are kept if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     ubvals_gt = np.array([0, 990, 1000, 2000, 2050])
-    b = unique_bvals_tolerance(bvals, 0)
+    b = unique_bvals_tolerance(bvals, tol=0)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
-    b = unique_bvals_tolerance(bvals, 0.5)
+    b = unique_bvals_tolerance(bvals, tol=0.5)
     ubvals_gt = np.array([0, 0.995, 2.005])
     npt.assert_array_almost_equal(ubvals_gt, b)
 
@@ -635,25 +635,25 @@ def test_get_bval_indices():
     # Testing the tolerance factor on many b-values that are within tol.
     bvals = np.array([950, 980, 995, 1000, 1000, 1010, 1999, 2000, 2001, 0])
     indices_gt = np.array([0])
-    indices = get_bval_indices(bvals, 950, 20)
+    indices = get_bval_indices(bvals, 950, tol=20)
     npt.assert_array_almost_equal(indices_gt, indices)
     indices_gt = np.array([1, 2, 3, 4, 5])
-    indices = get_bval_indices(bvals, 1000, 20)
+    indices = get_bval_indices(bvals, 1000, tol=20)
     npt.assert_array_almost_equal(indices_gt, indices)
     indices_gt = np.array([6, 7, 8])
-    indices = get_bval_indices(bvals, 2001, 20)
+    indices = get_bval_indices(bvals, 2001, tol=20)
     npt.assert_array_almost_equal(indices_gt, indices)
 
     # All unique b-values indices are returned if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     indices_gt = np.array([2, 3])
-    indices = get_bval_indices(bvals, 1000, 0)
+    indices = get_bval_indices(bvals, 1000, tol=0)
     npt.assert_array_almost_equal(indices_gt, indices)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     indices_gt = np.array([0, 1, 2, 3])
-    indices = get_bval_indices(bvals, 0.995, 0.5)
+    indices = get_bval_indices(bvals, 0.995, tol=0.5)
     npt.assert_array_almost_equal(indices_gt, indices)
 
 
@@ -691,13 +691,13 @@ def test_unique_bvals_magnitude():
 def test_check_multi_b():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
     # We don't consider differences this small to be sufficient:
     bvals = np.array([1995, 1995, 1995, 1995, 2005, 2005, 2005, 2005, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     npt.assert_(not check_multi_b(gtab, 2, non_zero=True))
 
     # Unless you specify that you are interested in this magnitude of changes:
@@ -709,7 +709,7 @@ def test_check_multi_b():
     # Case that b-values are in ms/um2 (this should successfully pass)
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
@@ -943,7 +943,7 @@ def test_gradient_table_len():
             [0, sq2, sq2],
         ]
     )
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     exp_grad_count = len(bvals)
     obt_grad_count1 = gtab.__len__()
@@ -953,7 +953,9 @@ def test_gradient_table_len():
     # Test with big and small deltas
     big_delta = 5
     small_delta = 2
-    gtab = gradient_table(bvals, bvecs, big_delta=big_delta, small_delta=small_delta)
+    gtab = gradient_table(
+        bvals, bvecs=bvecs, big_delta=big_delta, small_delta=small_delta
+    )
 
     exp_grad_count = len(bvals)
     obt_grad_count1 = gtab.__len__()
@@ -963,7 +965,7 @@ def test_gradient_table_len():
     # Test with multi-shell gradient scheme
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     exp_grad_count = len(bvals)
     obt_grad_count1 = gtab.__len__()
@@ -971,8 +973,8 @@ def test_gradient_table_len():
     assert exp_grad_count == obt_grad_count1 == obt_grad_count2
 
     # Test reading gradient values from a file
-    _, fbvals, fbvecs = get_fnames("small_101D")
-    gtab = gradient_table(fbvals, fbvecs)
+    _, fbvals, fbvecs = get_fnames(name="small_101D")
+    gtab = gradient_table(fbvals, bvecs=fbvecs)
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     exp_grad_count = len(bvals)
@@ -981,7 +983,7 @@ def test_gradient_table_len():
     assert exp_grad_count == obt_grad_count1 == obt_grad_count2
 
     # Test with different shapes
-    gtab = gradient_table(bvals, bvecs.T)
+    gtab = gradient_table(bvals, bvecs=bvecs.T)
 
     exp_grad_count = len(bvals)
     obt_grad_count1 = gtab.__len__()

@@ -112,6 +112,8 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     Calculates assignment maps of the target bundle with reference to
     model bundle centroids.
 
+    See :footcite:p:`Chandio2020a` for further details about the method.
+
     Parameters
     ----------
     target_bundle : streamlines
@@ -129,11 +131,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-       Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-       Bundle analytics, a computational framework for investigating the
-       shapes and profiles of brain pathways across populations.
-       Sci Rep 10, 17149 (2020)
+    .. footbibliography::
 
     """
 
@@ -164,14 +162,13 @@ def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.m
         The streamlines to weight.
     n_points : int, optional
         The number of points to resample to. *If the `bundle` is an array, this
-        input is ignored*. Default: 100.
+        input is ignored*.
     return_mahalanobis : bool, optional
         Whether to return the Mahalanobis distance instead of the weights.
-        Default: False.
     stat : callable, optional.
         The statistic used to calculate the central tendency of streamlines in
         each node. Can be one of {`np.mean`, `np.median`} or other functions
-        that have similar API. Default: `np.mean`
+        that have similar API.`
 
     Returns
     -------
@@ -182,7 +179,7 @@ def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.m
 
     """
     # Resample to same length for each streamline:
-    bundle = set_number_of_points(bundle, n_points)
+    bundle = set_number_of_points(bundle, nb_points=n_points)
 
     # This is the output
     w = np.zeros((len(bundle), n_points))
@@ -246,7 +243,7 @@ def afq_profile(
     Calculates a summarized profile of data for a bundle or tract
     along its length.
 
-    Follows the approach outlined in [Yeatman2012]_.
+    Follows the approach outlined in :footcite:p:`Yeatman2012`.
 
     Parameters
     ----------
@@ -262,14 +259,14 @@ def afq_profile(
         The voxel_to_rasmm matrix, typically from a NIFTI file.
     n_points: int, optional
         The number of points to sample along the bundle. Default: 100.
-    orient_by: streamline, optional.
+    orient_by: streamline, optional
         A streamline to use as a standard to orient all of the streamlines in
         the bundle according to.
-    weights : 1D array or 2D array or callable (optional)
+    weights : 1D array or 2D array or callable, optional
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
-    profile_stat : callable
+    profile_stat : callable, optional
         The statistic used to average the profile across streamlines.
         If weights is not None, this must take weights as a keyword argument.
         The default, np.average, is the same as np.mean but takes weights
@@ -291,10 +288,7 @@ def afq_profile(
 
     References
     ----------
-    .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty,
-       Nathaniel J. Myall, Brian A. Wandell, and Heidi M. Feldman. 2012.
-       "Tract Profiles of White Matter Properties: Automating Fiber-Tract
-       Quantification" PloS One 7 (11): e49790.
+    .. footbibliography::
 
     """
     if orient_by is not None:
@@ -305,7 +299,7 @@ def afq_profile(
         raise ValueError("The bundle contains no streamlines")
 
     # Resample each streamline to the same number of points:
-    fgarray = set_number_of_points(bundle, n_points)
+    fgarray = set_number_of_points(bundle, nb_points=n_points)
 
     # Extract the values
     values = np.array(values_from_volume(data, fgarray, affine))

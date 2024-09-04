@@ -4,8 +4,9 @@ Affine Registration in 3D
 =========================
 
 This example explains how to compute an affine transformation to register two
-3D volumes by maximization of their Mutual Information [Mattes03]_. The
-optimization strategy is similar to that implemented in ANTS [Avants11]_.
+3D volumes by maximization of their Mutual Information :footcite:p:`Mattes2003`.
+The optimization strategy is similar to that implemented in ANTS
+:footcite:p:`Avants2009`.
 
 We will do this twice. The first part of this tutorial will walk through the
 details of the process with the object-oriented interface implemented in
@@ -128,9 +129,9 @@ metric = MutualInformationMetric(nbins, sampling_prop)
 
 ###############################################################################
 # To avoid getting stuck at local optima, and to accelerate convergence, we
-# use a multi-resolution strategy (similar to ANTS [Avants11]_) by building a
-# Gaussian Pyramid. To have as much flexibility as possible, the user can
-# specify how this Gaussian Pyramid is built. First of all, we need to
+# use a multi-resolution strategy (similar to ANTS :footcite:p:`Avants2009`) by
+# building a Gaussian Pyramid. To have as much flexibility as possible, the user
+# can specify how this Gaussian Pyramid is built. First of all, we need to
 # specify how many resolutions we want to use. This is indirectly specified by
 # just providing a list of the number of iterations we want to perform at each
 # resolution. Here we will just specify 3 resolutions and a large number of
@@ -372,9 +373,5 @@ regtools.overlay_slices(
 # References
 # ----------
 #
-# .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-#               Eubank, W. (2003). PET-CT image registration in the chest using
-#               free-form deformations. IEEE Transactions on Medical Imaging,
-#               22(1), 120-8.
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#               Normalization Tools (ANTS), 1-35.
+# .. footbibliography::
+#

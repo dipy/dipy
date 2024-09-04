@@ -359,13 +359,14 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                               floating[:,:,:] out):
     r"""Demons step for EM metric in 2D
 
-    Computes the demons step [Vercauteren09] for SSD-driven registration
-    ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
-    multi-modality images.
+    Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
+    registration ( eq. 4 in :footcite:p:`Vercauteren2009` ) using the EM
+    algorithm :footcite:p:`ArceSantana2014` to handle multi-modality images.
 
-    In this case, $\sigma_i$ in eq. 4 of [Vercauteren] is estimated using the EM
-    algorithm, while in the original version of diffeomorphic demons it is
-    estimated by the difference between the image values at each pixel.
+    In this case, $\sigma_i$ in eq. 4 of :footcite:p:`Vercauteren2009` is
+    estimated using the EM algorithm, while in the original version of
+    diffeomorphic demons it is estimated by the difference between the image
+    values at each pixel.
 
     Parameters
     ----------
@@ -385,7 +386,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
+        $\sigma_x^2$ in algorithm 1 of :footcite:p:`Vercauteren2009`
     out : array, shape (R, C, 2)
         the resulting demons step will be written to this array
 
@@ -399,14 +400,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
 
     References
     ----------
-    [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-             Non-rigid Multimodal Image Registration Based on the
-             Expectation-Maximization Algorithm, (168140), 36-47.
-
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp nr = delta_field.shape[0]
@@ -455,13 +449,14 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                               floating[:,:,:,:] out):
     r"""Demons step for EM metric in 3D
 
-    Computes the demons step [Vercauteren09] for SSD-driven registration
-    ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
-    multi-modality images.
+    Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
+    registration ( eq. 4 in :footcite:p:`Vercauteren2009` ) using the EM
+    algorithm :footcite:p:`ArceSantana2014` to handle multi-modality images.
 
-    In this case, $\sigma_i$ in eq. 4 of [Vercauteren09] is estimated using
-    the EM algorithm, while in the original version of diffeomorphic demons
-    it is estimated by the difference between the image values at each pixel.
+    In this case, $\sigma_i$ in eq. 4 of :footcite:p:`Vercauteren2009` is
+    estimated using the EM algorithm, while in the original version of
+    diffeomorphic demons it is estimated by the difference between the image
+    values at each pixel.
 
     Parameters
     ----------
@@ -481,7 +476,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
+        $\sigma_x^2$ in algorithm 1 of footcite:p:`Vercauteren2009`.
     out : array, shape (S, R, C, 2)
         the resulting demons step will be written to this array
 
@@ -495,14 +490,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
 
     References
     ----------
-    [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-             Non-rigid Multimodal Image Registration Based on the
-             Expectation-Maximization Algorithm, (168140), 36-47.
-
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp ns = delta_field.shape[0]

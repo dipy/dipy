@@ -13,7 +13,6 @@ from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
@@ -22,8 +21,10 @@ cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
 cdef double min_direct_flip_dist(double *a,double *b,
                                  cnp.npy_intp rows) noexcept nogil:
-    r""" Minimum of direct and flip average (MDF) distance [Garyfallidis12]
-    between two streamlines.
+    r""" Minimum of direct and flip average (MDF) distance between two
+    streamlines.
+
+    See :footcite:p:`Garyfallidis2012a` for a definition of the distance.
 
     Parameters
     ----------
@@ -41,9 +42,7 @@ cdef double min_direct_flip_dist(double *a,double *b,
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     cdef:
@@ -70,14 +69,12 @@ cdef double min_direct_flip_dist(double *a,double *b,
     return distf
 
 
-@warning_for_keywords()
 def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     double [:, ::1] moving,
                                     cnp.npy_intp static_size,
                                     cnp.npy_intp moving_size,
                                     cnp.npy_intp rows,
                                     double [:, ::1] D,
-                                    *,
                                     num_threads=None):
     """ MDF-based pairwise distance optimization function
 
@@ -132,13 +129,11 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     return np.asarray(D)
 
 
-@warning_for_keywords()
 def _bundle_minimum_distance(double [:, ::1] static,
                              double [:, ::1] moving,
                              cnp.npy_intp static_size,
                              cnp.npy_intp moving_size,
                              cnp.npy_intp rows,
-                             *,
                              num_threads=None):
     """ MDF-based pairwise distance optimization function
 
@@ -275,14 +270,11 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     distance metric. This means that we are weighting only one direction of the
     registration. Not both directions. This can be very useful when we want
     to register a big set of bundles to a small set of bundles.
-    See [Wanyan17]_.
+    See :footcite:p:`Wanyan2017`.
 
     References
     ----------
-    .. [Wanyan17] Wanyan and Garyfallidis, Important new insights for the
-    reduction of false positives in tractograms emerge from streamline-based
-    registration and pruning, International Society for Magnetic Resonance in
-    Medicine, Honolulu, Hawai, 2017.
+    .. footbibliography::
 
     """
 

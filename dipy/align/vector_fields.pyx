@@ -6,7 +6,6 @@
 import numpy as np
 cimport numpy as cnp
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.align.fused_types cimport floating, number
 from dipy.core.interpolation cimport (_interpolate_scalar_2d,
                                       _interpolate_scalar_3d,
@@ -446,11 +445,10 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     return np.asarray(comp), np.asarray(stats)
 
 
-@warning_for_keywords()
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
-                                       int max_iter, double tolerance, *,
+                                       int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
     r"""Computes the inverse of a 2D displacement fields
 
@@ -551,11 +549,10 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     return np.asarray(p)
 
 
-@warning_for_keywords()
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
-                                       int max_iter, double tol, *,
+                                       int max_iter, double tol,
                                        floating[:, :, :, :] start=None):
     r"""Computes the inverse of a 3D displacement fields
 
@@ -1324,8 +1321,7 @@ def warp_coordinates_2d(points,  floating[:, :, :] d1,
     return np.asarray(out)
 
 
-@warning_for_keywords()
-def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1, *,
+def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
@@ -1525,8 +1521,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
     return np.asarray(out)
 
 
-@warning_for_keywords()
-def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1, *,
+def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
@@ -1659,8 +1654,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1, *,
     return np.asarray(warped)
 
 
-@warning_for_keywords()
-def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape, *,
+def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                            double[:, :] affine=None):
     r"""Transforms a 3D volume by an affine transform with NN interpolation
 
@@ -1725,8 +1719,7 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape, *,
     return np.asarray(out)
 
 
-@warning_for_keywords()
-def warp_2d(floating[:, :] image, floating[:, :, :] d1, *,
+def warp_2d(floating[:, :] image, floating[:, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
@@ -1843,8 +1836,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1, *,
     return np.asarray(warped)
 
 
-@warning_for_keywords()
-def transform_2d_affine(floating[:, :] image, int[:] ref_shape, *,
+def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
                         double[:, :] affine=None):
     r"""Transforms a 2D image by an affine transform with bilinear interp.
 
@@ -1904,8 +1896,7 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape, *,
     return np.asarray(out)
 
 
-@warning_for_keywords()
-def warp_2d_nn(number[:, :] image, floating[:, :, :] d1, *,
+def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
@@ -2022,8 +2013,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1, *,
     return np.asarray(warped)
 
 
-@warning_for_keywords()
-def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape, *,
+def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
                            double[:, :] affine=None):
     r"""Transforms a 2D image by an affine transform with NN interpolation
 
@@ -2169,12 +2159,10 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
     return np.asarray(expanded)
 
 
-@warning_for_keywords()
 def create_random_displacement_2d(int[:] from_shape,
                                   double[:, :] from_grid2world,
                                   int[:] to_shape,
                                   double[:, :] to_grid2world,
-                                  *,
                                   object rng=None):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
@@ -2260,12 +2248,10 @@ def create_random_displacement_2d(int[:] from_shape,
     return np.asarray(output), np.asarray(int_field)
 
 
-@warning_for_keywords()
 def create_random_displacement_3d(int[:] from_shape,
                                   double[:, :] from_grid2world,
                                   int[:] to_shape,
                                   double[:, :] to_grid2world,
-                                  *,
                                   object rng=None):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 

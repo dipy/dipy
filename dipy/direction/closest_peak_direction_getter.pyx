@@ -163,11 +163,11 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             raise ValueError(msg)
 
         pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
     @classmethod
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                     pmf_threshold=0.1, basis_type=None, legacy=True,
+                    pmf_threshold=0.1, basis_type=None, legacy=True,
                      sh_to_pmf=False, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
@@ -219,7 +219,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         else:
             pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
                                     basis_type, legacy=legacy)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
 
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):

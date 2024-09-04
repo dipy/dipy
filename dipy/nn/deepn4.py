@@ -158,9 +158,8 @@ class DeepN4:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
         """
 
         if not have_tf:
@@ -177,7 +176,7 @@ class DeepN4:
         r"""
         Load the model pre-training weights to use for the fitting.
         """
-        fetch_model_weights_path = get_fnames("deepn4_default_weights")
+        fetch_model_weights_path = get_fnames(name="deepn4_default_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -252,7 +251,7 @@ class DeepN4:
             subj, 128
         )
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
-        input_data = normalize(input_data, 0, in_max, 0, 1)
+        input_data = normalize(input_data, min_v=0, max_v=in_max, new_min=0, new_max=1)
         input_data = np.squeeze(input_data)
         input_vols = np.zeros((1, 128, 128, 128, 1))
         input_vols[0, :, :, :, 0] = input_data

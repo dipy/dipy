@@ -3,8 +3,8 @@
 Reconstruct with Constant Solid Angle (Q-Ball)
 ==============================================
 
-We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et
-al. [Aganj2010]_ to your datasets.
+We show how to apply a Constant Solid Angle ODF (Q-Ball) model from
+:footcite:t:`Aganj2010` to your datasets.
 
 First import the necessary modules:
 """
@@ -118,7 +118,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Aganj2010] Aganj I, Lenglet C, Sapiro G, Yacoub E, Ugurbil K, Harel N.
-#    "Reconstruction of the orientation distribution function in single- and
-#    multiple-shell q-ball imaging within constant solid angle", Magnetic
-#    Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
+# .. footbibliography::
+#

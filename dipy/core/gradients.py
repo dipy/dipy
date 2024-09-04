@@ -39,14 +39,13 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 
@@ -356,7 +355,7 @@ class GradientTable:
         --------
         >>> bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
         >>> bvecs = generate_bvecs(bvals.shape[-1])
-        >>> gtab = gradient_table(bvals, bvecs)
+        >>> gtab = gradient_table(bvals, bvecs=bvecs)
         >>> len(gtab)
         9
         """
@@ -725,10 +724,10 @@ def gradient_table(
     ...                   [sq2, sq2, 0],
     ...                   [sq2, 0, sq2],
     ...                   [0, sq2, sq2]])
-    >>> gt = gradient_table(bvals, bvecs)
+    >>> gt = gradient_table(bvals, bvecs=bvecs)
     >>> gt.bvecs.shape == bvecs.shape
     True
-    >>> gt = gradient_table(bvals, bvecs.T)
+    >>> gt = gradient_table(bvals, bvecs=bvecs.T)
     >>> gt.bvecs.shape == bvecs.T.shape
     False
 
@@ -788,7 +787,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
     might cause systematic bias in rotationally invariant measures, such as FA
     and MD, and also cause characteristic biases in tractography, unless the
     gradient directions are appropriately reoriented to compensate for this
-    effect [Leemans2009]_.
+    effect :footcite:p:`Leemans2009`.
 
     Parameters
     ----------
@@ -808,9 +807,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
 
     References
     ----------
-    .. [Leemans2009] The B-Matrix Must Be Rotated When Correcting for
-       Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
-       MRM, 61: 1336-1349
+    .. footbibliography::
     """
     if isinstance(affines, list):
         affines = np.stack(affines, axis=-1)
@@ -848,7 +845,7 @@ def reorient_bvecs(gtab, affines, *, atol=1e-2):
     return_bvecs[~gtab.b0s_mask] = new_bvecs
     return gradient_table(
         gtab.bvals,
-        return_bvecs,
+        bvecs=return_bvecs,
         big_delta=gtab.big_delta,
         small_delta=gtab.small_delta,
         b0_threshold=gtab.b0_threshold,
@@ -966,8 +963,8 @@ def unique_bvals_tolerance(bvals, *, tol=20):
 
     # Checking for overlap with get_bval_indices
     for i, ubval in enumerate(ubvals[:-1]):
-        indices_1 = get_bval_indices(bvals, ubval, tol)
-        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol)
+        indices_1 = get_bval_indices(bvals, ubval, tol=tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol=tol)
         if len(np.intersect1d(indices_1, indices_2)) != 0:
             msg = """There is overlap in clustering of b-values.
             The tolerance factor might be too high."""
@@ -1017,14 +1014,13 @@ def unique_bvals_magnitude(bvals, *, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 
@@ -1094,14 +1090,11 @@ def _btens_to_params_2d(btens_2d, ztol):
 
     Notes
     -----
-    Implementation following [1].
+    Implementation following :footcite:t:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
     btens_2d[abs(btens_2d) <= ztol] = 0
@@ -1234,14 +1227,11 @@ def params_to_btens(bval, bdelta, b_eta):
 
     Notes
     -----
-    Implements eq. 7.11. p. 231 in [1].
+    Implements eq. 7.11. p. 231 in :footcite:p:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-       anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems:
-       Fluid Transport in Porous Solids and Heterogeneous Materials, Royal
-       Society of Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
 

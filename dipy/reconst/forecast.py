@@ -11,6 +11,7 @@ from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import real_sh_descoteaux_from_index
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
@@ -19,38 +20,33 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 class ForecastModel(OdfModel, Cache):
     r"""Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
-    (FORECAST) [1,2,3]_. FORECAST is a Spherical Deconvolution reconstruction
+    (FORECAST).
+
+    FORECAST :footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a`,
+    :footcite:p:`Zucchelli2017` is a Spherical Deconvolution reconstruction
     model for multi-shell diffusion data which enables the calculation of a
     voxel adaptive response function using the Spherical Mean Technique (SMT)
-    [2,3]_.
+    :footcite:p:`Kaden2016a`, :footcite:p:`Zucchelli2017`.
 
     With FORECAST it is possible to calculate crossing invariant parallel
     diffusivity, perpendicular diffusivity, mean diffusivity, and fractional
-    anisotropy [2]_
+    anisotropy :footcite:p:`Kaden2016a`.
 
     References
     ----------
-    .. [1] Anderson A. W., "Measurement of Fiber Orientation Distributions
-           Using High Angular Resolution Diffusion Imaging", Magnetic
-           Resonance in Medicine, 2005.
-
-    .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-           Coefficients in Brain White Matter", Magnetic Resonance in
-           Medicine, 2016.
-
-    .. [3] Zucchelli E. et al., "A generalized SMT-based framework for
-           Diffusion MRI microstructural model estimation", MICCAI Workshop
-           on Computational DIFFUSION MRI (CDMRI), 2017.
+    .. footbibliography::
 
     Notes
     -----
     The implementation of FORECAST may require CVXPY (https://www.cvxpy.org/).
     """
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         sh_order_max=8,
         lambda_lb=1e-3,
         dec_alg="CSD",
@@ -58,19 +54,19 @@ class ForecastModel(OdfModel, Cache):
         lambda_csd=1.0,
     ):
         r"""Analytical and continuous modeling of the diffusion signal with
-        respect to the FORECAST basis [1,2,3]_.
+        respect to the FORECAST basis.
+
         This implementation is a modification of the original FORECAST
-        model presented in [1]_ adapted for multi-shell data as in [2,3]_ .
+        model presented in :footcite:p:`Anderson2005` adapted for multi-shell
+        data as in :footcite:p:`Kaden2016a`, :footcite:p:`Zucchelli2017`.
 
         The main idea is to model the diffusion signal as the combination of a
         single fiber response function $F(\mathbf{b})$ times the fODF
         $\rho(\mathbf{v})$
 
         .. math::
-            :nowrap:
-                \begin{equation}
-                    E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}
-                \end{equation}
+
+            E(\mathbf{b}) = \int_{\mathbf{v} \in \mathcal{S}^2} \rho(\mathbf{v}) F({\mathbf{b}} | \mathbf{v}) d \mathbf{v}
 
         where $\mathbf{b}$ is the b-vector (b-value times gradient direction)
         and $\mathbf{v}$ is a unit vector representing a fiber direction.
@@ -83,34 +79,24 @@ class ForecastModel(OdfModel, Cache):
         ----------
         gtab : GradientTable,
             gradient directions and bvalues container class.
-        sh_order_max : unsigned int,
+        sh_order_max : unsigned int, optional
             an even integer that represent the maximal SH order ($l$) of the
             basis (max 12)
-        lambda_lb: float,
+        lambda_lb: float, optional
             Laplace-Beltrami regularization weight.
-        dec_alg : str,
+        dec_alg : str, optional
             Spherical deconvolution algorithm. The possible values are Weighted Least Squares ('WLS'),
             Positivity Constraints using CVXPY ('POS') and the Constraint
             Spherical Deconvolution algorithm ('CSD'). Default is 'CSD'.
-        sphere : array, shape (N,3),
+        sphere : array, shape (N,3), optional
             sphere points where to enforce positivity when 'POS' or 'CSD'
             dec_alg are selected.
-        lambda_csd : float,
+        lambda_csd : float, optional
             CSD regularization weight.
 
         References
         ----------
-        .. [1] Anderson A. W., "Measurement of Fiber Orientation Distributions
-               Using High Angular Resolution Diffusion Imaging", Magnetic
-               Resonance in Medicine, 2005.
-
-        .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-               Coefficients in Brain White Matter", Magnetic Resonance in
-               Medicine, 2016.
-
-        .. [3] Zucchelli M. et al., "A generalized SMT-based framework for
-               Diffusion MRI microstructural model estimation", MICCAI Workshop
-               on Computational DIFFUSION MRI (CDMRI), 2017.
+        .. footbibliography::
 
         Examples
         --------
@@ -307,7 +293,8 @@ class ForecastFit(OdfFit):
 
         self.rho = None
 
-    def odf(self, sphere, clip_negative=True):
+    @warning_for_keywords()
+    def odf(self, sphere, *, clip_negative=True):
         r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
@@ -341,7 +328,8 @@ class ForecastFit(OdfFit):
         md = (self.d_par + 2 * self.d_perp) / 3.0
         return md
 
-    def predict(self, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=1.0):
         r"""Calculates the fODF for a given discrete sphere.
 
         Parameters
@@ -379,7 +367,8 @@ class ForecastFit(OdfFit):
         return self.d_perp
 
 
-def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
+@warning_for_keywords()
+def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, *, w=1e-03):
     r"""Calculate the mean signal for each shell.
 
     Parameters
@@ -447,7 +436,7 @@ def psi_l(ell, b):
     return v
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     r"""Compute the FORECAST radial matrix"""
     n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)
@@ -465,7 +454,7 @@ def forecast_matrix(sh_order_max, d_par, d_perp, bvals):
     return M
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def rho_matrix(sh_order_max, vecs):
     r"""Compute the SH matrix $\rho$"""
 
@@ -484,7 +473,7 @@ def rho_matrix(sh_order_max, vecs):
     return rho
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def lb_forecast(sh_order_max):
     r"""Returns the Laplace-Beltrami regularization matrix for FORECAST"""
     n_c = int((sh_order_max + 1) * (sh_order_max + 2) / 2)

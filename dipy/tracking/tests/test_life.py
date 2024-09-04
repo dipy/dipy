@@ -55,19 +55,19 @@ def test_streamline_tensors():
 
 
 def test_streamline_signal():
-    data_file, bval_file, bvec_file = dpd.get_fnames("small_64D")
-    gtab = grad.gradient_table(bval_file, bvec_file)
+    data_file, bval_file, bvec_file = dpd.get_fnames(name="small_64D")
+    gtab = grad.gradient_table(bval_file, bvecs=bvec_file)
     evals = [0.0015, 0.0005, 0.0005]
     streamline1 = [
         [[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
         [[1, 2, 3], [4, 5, 3], [5, 6, 3]],
     ]
 
-    [life.streamline_signal(s, gtab, evals) for s in streamline1]
+    [life.streamline_signal(s, gtab, evals=evals) for s in streamline1]
 
     streamline2 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]]
 
-    [life.streamline_signal(s, gtab, evals) for s in streamline2]
+    [life.streamline_signal(s, gtab, evals=evals) for s in streamline2]
 
     npt.assert_array_equal(streamline2[0], streamline1[0])
 
@@ -97,9 +97,9 @@ def test_voxel2streamline():
 
 def test_FiberModel_init():
     # Get some small amount of data:
-    data_file, bval_file, bvec_file = dpd.get_fnames("small_64D")
+    data_file, bval_file, bvec_file = dpd.get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     FM = life.FiberModel(gtab)
     streamline_cases = [
         [
@@ -111,7 +111,7 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    for sphere in [None, False, dpd.get_sphere("symmetric362")]:
+    for sphere in [None, False, dpd.get_sphere(name="symmetric362")]:
         fiber_matrix, vox_coords = FM.setup(streamline_cases[0], affine, sphere=sphere)
         npt.assert_array_equal(
             np.array(vox_coords), np.array([[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]])
@@ -126,10 +126,10 @@ def test_FiberModel_init():
 
 
 def test_FiberFit():
-    data_file, bval_file, bvec_file = dpd.get_fnames("small_64D")
+    data_file, bval_file, bvec_file = dpd.get_fnames(name="small_64D")
     data = load_nifti_data(data_file)
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
-    gtab = grad.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
     FM = life.FiberModel(gtab)
     evals = [0.0015, 0.0005, 0.0005]
 
@@ -138,7 +138,7 @@ def test_FiberFit():
         [[1, 2, 3], [4, 5, 3], [5, 6, 3]],
     ]
 
-    fiber_matrix, vox_coords = FM.setup(streamline, np.eye(4), evals)
+    fiber_matrix, vox_coords = FM.setup(streamline, np.eye(4), evals=evals)
 
     w = np.array([0.5, 0.5])
     sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
@@ -155,7 +155,7 @@ def test_FiberFit():
     npt.assert_almost_equal(fit.predict()[1], fit.data[1], decimal=-1)
 
     # Predict with an input GradientTable
-    npt.assert_almost_equal(fit.predict(gtab)[1], fit.data[1], decimal=-1)
+    npt.assert_almost_equal(fit.predict(gtab=gtab)[1], fit.data[1], decimal=-1)
 
     npt.assert_almost_equal(
         this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]], fit.data
@@ -163,9 +163,9 @@ def test_FiberFit():
 
 
 def test_fit_data():
-    fdata, fbval, fbvec = dpd.get_fnames("small_25")
-    fstreamlines = dpd.get_fnames("small_25_streamlines")
-    gtab = grad.gradient_table(fbval, fbvec)
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_25")
+    fstreamlines = dpd.get_fnames(name="small_25_streamlines")
+    gtab = grad.gradient_table(fbval, bvecs=fbvec)
     ni_data = nib.load(fdata)
     data = np.asarray(ni_data.dataobj)
 

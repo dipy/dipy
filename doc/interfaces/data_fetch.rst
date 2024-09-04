@@ -22,4 +22,4 @@ For example, to download the ``sherbrooke_3shell`` dataset, you would run::
 
     dipy_fetch sherbrooke_3shell --out_dir data_folder
 
-You can find details about all the datasets available in DIPY :ref:`data`
+You can find details about all the datasets available in DIPY :ref:`data`.

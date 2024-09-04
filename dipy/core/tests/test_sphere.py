@@ -65,7 +65,9 @@ def test_bad_edges_faces():
 def test_sphere_construct():
     s0 = Sphere(xyz=verts)
     s1 = Sphere(theta=theta, phi=phi)
-    s2 = Sphere(*verts.T)
+    # Unpack verts.T into x, y, z and pass as keyword arguments
+    x, y, z = verts.T
+    s2 = Sphere(x=x, y=y, z=z)
 
     nt.assert_array_almost_equal(s0.theta, s1.theta)
     nt.assert_array_almost_equal(s0.theta, s2.theta)
@@ -143,12 +145,12 @@ def test_edges_faces():
 
 @pytest.mark.skipif(not have_delaunay, reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_sphere_subdivide():
-    sphere1 = unit_octahedron.subdivide(4)
+    sphere1 = unit_octahedron.subdivide(n=4)
     sphere2 = Sphere(xyz=sphere1.vertices)
     nt.assert_equal(sphere1.faces.shape, sphere2.faces.shape)
     nt.assert_equal(array_to_set(sphere1.faces), array_to_set(sphere2.faces))
 
-    sphere1 = unit_icosahedron.subdivide(4)
+    sphere1 = unit_icosahedron.subdivide(n=4)
     sphere2 = Sphere(xyz=sphere1.vertices)
     nt.assert_equal(sphere1.faces.shape, sphere2.faces.shape)
     nt.assert_equal(array_to_set(sphere1.faces), array_to_set(sphere2.faces))
@@ -158,13 +160,13 @@ def test_sphere_subdivide():
 
 
 def test_sphere_find_closest():
-    sphere1 = unit_octahedron.subdivide(4)
+    sphere1 = unit_octahedron.subdivide(n=4)
     for ii in range(sphere1.vertices.shape[0]):
         nt.assert_equal(sphere1.find_closest(sphere1.vertices[ii]), ii)
 
 
 def test_hemisphere_find_closest():
-    hemisphere1 = hemi_icosahedron.subdivide(4)
+    hemisphere1 = hemi_icosahedron.subdivide(n=4)
     for ii in range(hemisphere1.vertices.shape[0]):
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii]), ii)
         nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]), ii)
@@ -181,14 +183,14 @@ def test_hemisphere_subdivide():
     decimals = 6
     # Test HemiSphere.subdivide
     # Create a hemisphere by dividing a hemi-icosahedron
-    hemi1 = HemiSphere.from_sphere(unit_icosahedron).subdivide(4)
+    hemi1 = HemiSphere.from_sphere(unit_icosahedron).subdivide(n=4)
     vertices1 = np.round(hemi1.vertices, decimals)
     vertices1 *= flip(vertices1)
     order = np.lexsort(vertices1.T)
     vertices1 = vertices1[order]
 
     # Create a hemisphere from a subdivided sphere
-    sphere = unit_icosahedron.subdivide(4)
+    sphere = unit_icosahedron.subdivide(n=4)
     hemi2 = HemiSphere.from_sphere(sphere)
     vertices2 = np.round(hemi2.vertices, decimals)
     vertices2 *= flip(vertices2)
@@ -207,7 +209,9 @@ def test_hemisphere_subdivide():
 def test_hemisphere_constructor():
     s0 = HemiSphere(xyz=verts)
     s1 = HemiSphere(theta=theta, phi=phi)
-    s2 = HemiSphere(*verts.T)
+    # Unpack verts.T into x, y, z and pass as keyword arguments
+    x, y, z = verts.T
+    s2 = HemiSphere(x=x, y=y, z=z)
 
     uniq_verts = verts[::2].T
     rU, thetaU, phiU = cart2sphere(*uniq_verts)
@@ -318,14 +322,14 @@ def test_disperse_charges():
 
     charges = np.array([[3.0 / 5, 4.0 / 5, 0], [4.0 / 5, 3.0 / 5, 0]])
     expected_charges = np.array([[0, 1.0, 0], [1.0, 0, 0]])
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 0.2)
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, const=0.2)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.0)
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, const=20.0)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
@@ -335,7 +339,7 @@ def test_disperse_charges():
     charges = np.arange(21).reshape(7, 3)
     norms = np.sqrt((charges * charges).sum(-1))
     charges = charges / norms[:, None]
-    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 0.05)
+    d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, const=0.05)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii - 1] <= 0)

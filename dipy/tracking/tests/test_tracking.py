@@ -281,8 +281,8 @@ def test_tracking_max_angle(rng):
         return min_cos_sim
 
     for sphere in [
-        get_sphere("repulsion100"),
-        HemiSphere.from_sphere(get_sphere("repulsion100")),
+        get_sphere(name="repulsion100"),
+        HemiSphere.from_sphere(get_sphere(name="repulsion100")),
     ]:
         shape_img = [5, 5, 5]
         shape_img.extend([sphere.vertices.shape[0]])
@@ -424,7 +424,7 @@ def test_particle_filtering_tractography(rng):
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     step_size = 0.2
 
     # Simple tissue masks
@@ -824,7 +824,7 @@ def test_bootstap_peak_tracker():
     """This tests that the Bootstrap Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
 
     # A simple image with three possible configurations, a vertical tract,
     # a horizontal tract and a crossing
@@ -843,7 +843,7 @@ def test_bootstap_peak_tracker():
     bvals = np.ones(len(bvecs)) * 1000
     bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
     bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     angles = [(90, 90), (90, 0)]
     fracs = [50, 50]
     mevals = np.array([[1.5, 0.4, 0.4], [1.5, 0.4, 0.4]]) * 1e-3
@@ -851,8 +851,8 @@ def test_bootstap_peak_tracker():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]),
     ]
-    voxel1 = single_tensor(gtab, 1, mevals[0], mevecs[0], snr=None)
-    voxel2 = single_tensor(gtab, 1, mevals[0], mevecs[1], snr=None)
+    voxel1 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[0], snr=None)
+    voxel2 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[1], snr=None)
     voxel3, _ = multi_tensor(gtab, mevals, fractions=fracs, angles=angles, snr=None)
     data = np.tile(voxel3, [5, 6, 1, 1])
     data[simple_image == 1] = voxel1
@@ -870,7 +870,7 @@ def test_bootstap_peak_tracker():
     seeds = [np.array([0.0, 1.0, 0.0]), np.array([2.0, 4.0, 0.0])]
 
     sc = BinaryStoppingCriterion((simple_image > 0).astype(float))
-    sphere = HemiSphere.from_sphere(get_sphere("symmetric724"))
+    sphere = HemiSphere.from_sphere(get_sphere(name="symmetric724"))
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -1118,7 +1118,7 @@ def test_affine_transformations():
     # TST - in vivo affine example
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
-    fdata, _, _ = get_fnames("small_101D")
+    fdata, _, _ = get_fnames(name="small_101D")
     a6 = nib.load(fdata).affine
 
     for affine in [a0, a1, a2, a3, a4, a5, a6]:

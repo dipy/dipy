@@ -11,7 +11,6 @@ from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.stopping_criterion import (
@@ -133,13 +132,11 @@ class LocalFiberTrackingPAMFlow(Workflow):
         save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info(f"Saved {out_tract}")
 
-    @warning_for_keywords()
     def run(
         self,
         pam_files,
         stopping_files,
         seeding_files,
-        *,
         use_binary_mask=False,
         stopping_thr=0.2,
         seed_density=1,
@@ -154,6 +151,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
         """Workflow for Local Fiber Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
+
+        See :footcite:p:`Garyfallidis2012b` and :footcite:p:`Amirbekian2016`
+        for further details about the method.
 
         Parameters
         ----------
@@ -202,8 +202,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Garyfallidis, University of Cambridge, PhD thesis 2012.
-        Amirbekian, University of California San Francisco, PhD thesis 2017.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -234,7 +233,6 @@ class PFTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return "track_pft"
 
-    @warning_for_keywords()
     def run(
         self,
         pam_files,
@@ -242,7 +240,6 @@ class PFTrackingPAMFlow(Workflow):
         gm_files,
         csf_files,
         seeding_files,
-        *,
         step_size=0.2,
         seed_density=1,
         pmf_threshold=0.1,
@@ -257,7 +254,9 @@ class PFTrackingPAMFlow(Workflow):
     ):
         """Workflow for Particle Filtering Tracking.
 
-        This workflow use a saved peaks and metrics (PAM) file as input.
+        This workflow uses a saved peaks and metrics (PAM) file as input.
+
+        See :footcite:p:`Girard2014` for further details about the method.
 
         Parameters
         ----------
@@ -311,9 +310,7 @@ class PFTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M. Towards
-        quantitative connectivity analysis: reducing tractography biases.
-        NeuroImage, 98, 266-278, 2014.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()

@@ -40,7 +40,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.ifconfig",
     "math_dollar",  # has to go before numpydoc
-    # "numpydoc",
+    "numpydoc",
     "prepare_gallery",
     "sphinx_gallery.gen_gallery",
     "sphinxcontrib.bibtex",

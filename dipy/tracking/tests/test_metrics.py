@@ -27,7 +27,7 @@ def test_splines(rng):
     z += rng.normal(scale=0.1, size=z.shape)
     xyz = np.vstack((x, y, z)).T
     # get the B-splines smoothed result
-    tm.spline(xyz, 3, 2, -1)
+    tm.spline(xyz, s=3, k=2, nest=-1)
 
 
 def test_segment_intersection():

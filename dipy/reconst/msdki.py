@@ -10,9 +10,11 @@ from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
+from dipy.testing.decorators import warning_for_keywords
 
 
-def mean_signal_bvalue(data, gtab, bmag=None):
+@warning_for_keywords()
+def mean_signal_bvalue(data, gtab, *, bmag=None):
     """
     Computes the average signal across different diffusion directions
     for each unique b-value
@@ -74,14 +76,12 @@ def msk_from_awf(f):
 
     Notes
     -----
-    Computes mean signal kurtosis using equations 17 of [1]_
+    Computes mean signal kurtosis using equations 17 of
+    :footcite:p:`NetoHenriques2019`.
 
     References
     ----------
-    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-           anisotropy misestimation in spherical‐mean single diffusion
-           encoding MRI. Magnetic Resonance in Medicine (In press).
-           doi: 10.1002/mrm.27606
+    .. footbibliography::
     """
     msk_num = 216 * f - 504 * f**2 + 504 * f**3 - 180 * f**4
     msk_den = 135 - 360 * f + 420 * f**2 - 240 * f**3 + 60 * f**4
@@ -106,11 +106,16 @@ def _msk_from_awf_error(f, msk):
     -------
     error : float
        Error computed by subtracting msk with fun(f), where fun is the function
-       described in equation 17 of [1]_
+       described in equation 17 of :footcite:p:`NetoHenriques2019`.
 
     Notes
     -----
-    This function corresponds to the differential of equations 17 of [1]_
+    This function corresponds to the differential of equations 17 of
+    :footcite:p:`NetoHenriques2019`.
+
+    References
+    ----------
+    .. footbibliography::
     """
     return msk_from_awf(f) - msk
 
@@ -133,15 +138,14 @@ def _diff_msk_from_awf(f, msk):
 
     Notes
     -----
-    This function corresponds to the differential of equations 17 of [1]_.
+    This function corresponds to the differential of equations 17 of
+    :footcite:p:`NetoHenriques2019`.
+
     This function is applicable to both _msk_from_awf and _msk_from_awf_error.
 
     References
     ----------
-    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-           anisotropy misestimation in spherical‐mean single diffusion
-           encoding MRI. Magnetic Resonance in Medicine (In press).
-           doi: 10.1002/mrm.27606
+    .. footbibliography::
     """
     F = 216 * f - 504 * f**2 + 504 * f**3 - 180 * f**4  # Numerator
     G = 135 - 360 * f + 420 * f**2 - 240 * f**3 + 60 * f**4  # Denominator
@@ -152,10 +156,14 @@ def _diff_msk_from_awf(f, msk):
     return (G * dF - F * dG) / (G**2)
 
 
-def awf_from_msk(msk, mask=None):
+@warning_for_keywords()
+def awf_from_msk(msk, *, mask=None):
     """
     Computes the axonal water fraction from the mean signal kurtosis
-    assuming the 2-compartmental spherical mean technique model [1]_, [2]_
+    assuming the 2-compartmental spherical mean technique model.
+
+    See :footcite:p:`Kaden2016b` and :footcite:p:`NetoHenriques2019` for further
+    details about the method.
 
     Parameters
     ----------
@@ -173,16 +181,11 @@ def awf_from_msk(msk, mask=None):
     Notes
     -----
     Computes the axonal water fraction from the mean signal kurtosis
-    MSK using equation 17 of [1]_
+    MSK using equation 17 of :footcite:p:`NetoHenriques2019`.
 
     References
     ----------
-    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-           anisotropy misestimation in spherical‐mean single diffusion
-           encoding MRI. Magnetic Resonance in Medicine (In press).
-           doi: 10.1002/mrm.27606
-    .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
-           microscopic diffusion imaging. Neuroimage 139:346–359.
+    .. footbibliography::
     """
     awf = np.zeros(msk.shape)
 
@@ -222,10 +225,13 @@ def awf_from_msk(msk, mask=None):
     return awf
 
 
-def msdki_prediction(msdki_params, gtab, S0=1.0):
+@warning_for_keywords()
+def msdki_prediction(msdki_params, gtab, *, S0=1.0):
     """
     Predict the mean signal given the parameters of the mean signal DKI, an
     GradientTable object and S0 signal.
+
+    See :footcite:p:`NetoHenriques2018` for further details about the method.
 
     Parameters
     ----------
@@ -234,9 +240,9 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
         in its last axis
     gtab : a GradientTable class instance
         The gradient table for this prediction
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
+        voxels.
 
     Notes
     -----
@@ -246,10 +252,7 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 
     References
     ----------
-    .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain (Doctoral
-           thesis). Downing College, University of Cambridge.
-           https://doi.org/10.17863/CAM.29356
+    .. footbibliography::
     """
     A = design_matrix(round_bvals(gtab.bvals))
 
@@ -273,20 +276,22 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
 class MeanDiffusionKurtosisModel(ReconstModel):
     """Mean signal Diffusion Kurtosis Model"""
 
-    def __init__(self, gtab, bmag=None, return_S0_hat=False, *args, **kwargs):
-        """Mean Signal Diffusion Kurtosis Model [1]_.
+    def __init__(self, gtab, *args, bmag=None, return_S0_hat=False, **kwargs):
+        """Mean Signal Diffusion Kurtosis Model.
+
+        See :footcite:p:`NetoHenriques2018` for further details about the model.
 
         Parameters
         ----------
         gtab : GradientTable class instance
             Gradient table.
 
-        bmag : int
+        bmag : int, optional
             The order of magnitude that the bvalues have to differ to be
             considered an unique b-value. Default: derive this value from the
             maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
-        return_S0_hat : bool
+        return_S0_hat : bool, optional
             If True, also return S0 values for the fit.
 
         args, kwargs : arguments and keyword arguments passed to the
@@ -294,10 +299,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         References
         ----------
-        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-               Analysis and their Application to the Healthy Ageing Brain
-               (Doctoral thesis). Downing College, University of Cambridge.
-               https://doi.org/10.17863/CAM.29356
+        .. footbibliography::
 
         """
         ReconstModel.__init__(self, gtab)
@@ -320,7 +322,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             mes = "MSDKI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the MSDKI model class
 
         Parameters
@@ -354,18 +357,22 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, msdki_params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, msdki_params, *, S0=1.0):
         """
         Predict a signal for this MeanDiffusionKurtosisModel class instance
         given parameters.
+
+        See :footcite:p:`NetoHenriques2018` for further details about the
+        method.
 
         Parameters
         ----------
         msdki_params : ndarray
             The parameters of the mean signal diffusion kurtosis model
-        S0 : float or ndarray
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Returns
         -------
@@ -381,16 +388,14 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         References
         ----------
-        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-               Analysis and their Application to the Healthy Ageing Brain
-               (Doctoral thesis). Downing College, University of Cambridge.
-               https://doi.org/10.17863/CAM.29356
+        .. footbibliography::
         """
-        return msdki_prediction(msdki_params, self.gtab, S0)
+        return msdki_prediction(msdki_params, self.gtab, S0=S0)
 
 
 class MeanDiffusionKurtosisFit:
-    def __init__(self, model, model_params, model_S0=None):
+    @warning_for_keywords()
+    def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a MeanDiffusionKurtosisFit class instance."""
         self.model = model
         self.model_params = model_params
@@ -421,6 +426,9 @@ class MeanDiffusionKurtosisFit:
         Mean signal diffusivity (MSD) calculated from the mean signal
         Diffusion Kurtosis Model.
 
+        See :footcite:p:`NetoHenriques2018` for further details about the
+        method.
+
         Returns
         -------
         msd : ndarray
@@ -428,10 +436,7 @@ class MeanDiffusionKurtosisFit:
 
         References
         ----------
-        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-               Analysis and their Application to the Healthy Ageing Brain
-               (Doctoral thesis). Downing College, University of Cambridge.
-               https://doi.org/10.17863/CAM.29356
+        .. footbibliography::
         """
         return self.model_params[..., 0]
 
@@ -441,6 +446,9 @@ class MeanDiffusionKurtosisFit:
         Mean signal kurtosis (MSK) calculated from the mean signal
         Diffusion Kurtosis Model.
 
+        See :footcite:p:`NetoHenriques2018` for further details about the
+        method.
+
         Returns
         -------
         msk : ndarray
@@ -448,10 +456,7 @@ class MeanDiffusionKurtosisFit:
 
         References
         ----------
-        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-               Analysis and their Application to the Healthy Ageing Brain
-               (Doctoral thesis). Downing College, University of Cambridge.
-               https://doi.org/10.17863/CAM.29356
+        .. footbibliography::
         """
         return self.model_params[..., 1]
 
@@ -459,7 +464,10 @@ class MeanDiffusionKurtosisFit:
     def smt2f(self):
         r"""
         Computes the axonal water fraction from the mean signal kurtosis
-        assuming the 2-compartmental spherical mean technique model [1]_, [2]_
+        assuming the 2-compartmental spherical mean technique model.
+
+        See :footcite:p:`Kaden2016b` and :footcite:p:`NetoHenriques2019` for
+        further details about the method.
 
         Returns
         -------
@@ -469,16 +477,11 @@ class MeanDiffusionKurtosisFit:
         Notes
         -----
         Computes the axonal water fraction from the mean signal kurtosis
-        MSK using equation 17 of [1]_
+        MSK using equation 17 of :footcite:p:`NetoHenriques2019`.
 
         References
         ----------
-        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-               anisotropy misestimation in spherical‐mean single diffusion
-               encoding MRI. Magnetic Resonance in Medicine (In press).
-               doi: 10.1002/mrm.27606
-        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
-               microscopic diffusion imaging. Neuroimage 139:346–359.
+        .. footbibliography::
         """
         return awf_from_msk(self.msk)
 
@@ -487,7 +490,10 @@ class MeanDiffusionKurtosisFit:
         r"""
         Computes the intrinsic diffusivity from the mean signal diffusional
         kurtosis parameters assuming the 2-compartmental spherical mean
-        technique model [1]_, [2]_
+        technique model.
+
+        See :footcite:p:`Kaden2016b` and :footcite:p:`NetoHenriques2019` for
+        further details about the method.
 
         Returns
         -------
@@ -496,16 +502,12 @@ class MeanDiffusionKurtosisFit:
 
         Notes
         -----
-        Computes the intrinsic diffusivity using equation 16 of [1]_
+        Computes the intrinsic diffusivity using equation 16 of
+        :footcite:p:`NetoHenriques2019`.
 
         References
         ----------
-        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-               anisotropy misestimation in spherical‐mean single diffusion
-               encoding MRI. Magnetic Resonance in Medicine (In press).
-               doi: 10.1002/mrm.27606
-        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
-               microscopic diffusion imaging. Neuroimage 139:346–359.
+        .. footbibliography::
         """
         return 3 * self.msd / (1 + 2 * (1 - self.smt2f) ** 2)
 
@@ -514,7 +516,10 @@ class MeanDiffusionKurtosisFit:
         r"""
         Computes the microscopic fractional anisotropy from the mean signal
         diffusional kurtosis parameters assuming the 2-compartmental spherical
-        mean technique model [1]_, [2]_
+        mean technique model.
+
+        See :footcite:p:`Kaden2016b` and :footcite:p:`NetoHenriques2019` for
+        further details about the method.
 
         Returns
         -------
@@ -524,26 +529,26 @@ class MeanDiffusionKurtosisFit:
 
         Notes
         -----
-        Computes the intrinsic diffusivity using equation 10 of [1]_
+        Computes the intrinsic diffusivity using equation 10 of
+        :footcite:p:`NetoHenriques2019`.
 
         References
         ----------
-        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-               anisotropy misestimation in spherical‐mean single diffusion
-               encoding MRI. Magnetic Resonance in Medicine (In press).
-               doi: 10.1002/mrm.27606
-        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
-               microscopic diffusion imaging. Neuroimage 139:346–359.
+        .. footbibliography::
         """
         fe = 1 - self.smt2f
         num = 3 * (1 - 2 * fe**2 + fe**3)
         den = 3 + 2 * fe**3 + 4 * fe**4
         return np.sqrt(num / den)
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""
         Given a mean signal diffusion kurtosis model fit, predict the signal
         on the vertices of a sphere
+
+        See :footcite:p:`NetoHenriques2018` for further details about the
+        method.
 
         Parameters
         ----------
@@ -568,25 +573,26 @@ class MeanDiffusionKurtosisFit:
 
         References
         ----------
-        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-               Analysis and their Application to the Healthy Ageing Brain
-               (Doctoral thesis). Downing College, University of Cambridge.
-               https://doi.org/10.17863/CAM.29356
+        .. footbibliography::
         """
         return msdki_prediction(self.model_params, gtab, S0=S0)
 
 
+@warning_for_keywords()
 def wls_fit_msdki(
     design_matrix,
     msignal,
     ng,
+    *,
     mask=None,
     min_signal=MIN_POSITIVE_SIGNAL,
     return_S0_hat=False,
 ):
     r"""
     Fits the mean signal diffusion kurtosis imaging based on a weighted
-    least square solution [1]_.
+    least square solution.
+
+    See :footcite:p:`NetoHenriques2018` for further details about the method.
 
     Parameters
     ----------
@@ -617,10 +623,7 @@ def wls_fit_msdki(
 
     References
     ----------
-    .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain
-           (Doctoral thesis). Downing College, University of Cambridge.
-           https://doi.org/10.17863/CAM.29356
+    .. footbibliography::
     """
     params = np.zeros(msignal.shape[:-1] + (3,))
 

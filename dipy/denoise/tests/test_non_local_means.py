@@ -63,7 +63,7 @@ def test_nlmeans_wrong():
     assert_raises(ValueError, non_local_means, S0, 1.0)
     S0 = 100 + np.zeros((20, 20, 20))
     mask = np.ones((10, 10))
-    assert_raises(ValueError, non_local_means, S0, 1.0, mask)
+    assert_raises(ValueError, non_local_means, S0, 1.0, mask=mask)
 
 
 def test_nlmeans_4D_and_mask():

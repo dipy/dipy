@@ -39,10 +39,10 @@ def random_uniform_on_sphere(*, n=1, coords="xyz"):
     Examples
     --------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
-    >>> X = random_uniform_on_sphere(4, 'radians')
+    >>> X = random_uniform_on_sphere(n=4, coords='radians')
     >>> X.shape == (4, 2)
     True
-    >>> X = random_uniform_on_sphere(4, 'xyz')
+    >>> X = random_uniform_on_sphere(n=4, coords='xyz')
     >>> X.shape == (4, 3)
     True
     """

@@ -40,9 +40,9 @@ class Cluster:
     ----------
     cluster_map : `ClusterMap` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -131,9 +131,9 @@ class ClusterCentroid(Cluster):
     ----------
     cluster_map : `ClusterMapCentroid` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -146,7 +146,7 @@ class ClusterCentroid(Cluster):
     def __init__(self, centroid, *, id=0, indices=None, refdata=None):
         if refdata is None:
             refdata = Identity()
-        super(ClusterCentroid, self).__init__(id, indices, refdata)
+        super(ClusterCentroid, self).__init__(id=id, indices=indices, refdata=refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
@@ -441,26 +441,27 @@ class Clustering:
 
 
 class QuickBundles(Clustering):
-    r"""Clusters streamlines using QuickBundles [Garyfallidis12]_.
+    r"""Clusters streamlines using QuickBundles.
 
-    Given a list of streamlines, the QuickBundles algorithm sequentially
-    assigns each streamline to its closest bundle in $\mathcal{O}(Nk)$ where
-    $N$ is the number of streamlines and $k$ is the final number of bundles.
-    If for a given streamline its closest bundle is farther than `threshold`,
-    a new bundle is created and the streamline is assigned to it except if the
-    number of bundles has already exceeded `max_nb_clusters`.
+    Given a list of streamlines, the QuickBundles algorithm
+    :footcite:p:`Garyfallidis2012a` sequentially assigns each streamline to its
+    closest bundle in $\mathcal{O}(Nk)$ where $N$ is the number of streamlines
+    and $k$ is the final number of bundles. If for a given streamline its
+    closest bundle is farther than `threshold`, a new bundle is created and the
+    streamline is assigned to it except if the number of bundles has already
+    exceeded `max_nb_clusters`.
 
     Parameters
     ----------
     threshold : float
         The maximum distance from a bundle for a streamline to be still
         considered as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have
-        12 points.
-    max_nb_clusters : int
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
+    max_nb_clusters : int, optional
         Limits the creation of bundles.
 
     Examples
@@ -469,7 +470,7 @@ class QuickBundles(Clustering):
     >>> from dipy.data import get_fnames
     >>> from dipy.io.streamline import load_tractogram
     >>> from dipy.tracking.streamline import Streamlines
-    >>> fname = get_fnames('fornix')
+    >>> fname = get_fnames(name='fornix')
     >>> fornix = load_tractogram(fname, 'same',
     ...                          bbox_valid_check=False).streamlines
     >>> streamlines = Streamlines(fornix)
@@ -497,9 +498,7 @@ class QuickBundles(Clustering):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
     @warning_for_keywords()
@@ -531,7 +530,7 @@ class QuickBundles(Clustering):
         ----------
         streamlines : list of 2D arrays
             Each 2D array represents a sequence of 3D points (points, 3).
-        ordering : iterable of indices
+        ordering : iterable of indices, optional
             Specifies the order in which data points will be clustered.
 
         Returns
@@ -554,7 +553,9 @@ class QuickBundles(Clustering):
 
 
 class QuickBundlesX(Clustering):
-    r"""Clusters streamlines using QuickBundlesX [Garyfallidis16]_.
+    r"""Clusters streamlines using QuickBundlesX.
+
+    See :footcite:p:`Garyfallidis2016` for further details about the method.
 
     Parameters
     ----------
@@ -562,23 +563,15 @@ class QuickBundlesX(Clustering):
         Thresholds to use for each clustering layer. A threshold represents the
         maximum distance from a cluster for a streamline to be still considered
         as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12
-        points.
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
 
     @warning_for_keywords()
@@ -711,13 +704,16 @@ class TreeClusterMap(ClusterMap):
 def qbx_and_merge(
     streamlines, thresholds, *, nb_pts=20, select_randomly=None, rng=None, verbose=False
 ):
-    """Run QuickBundlesX and then run again on the centroids of the last layer
+    """Run QuickBundlesX and then run again on the centroids of the last layer.
 
     Running again QuickBundles at a layer has the effect of merging
     some of the clusters that may be originally divided because of branching.
     This function help obtain a result at a QuickBundles quality but with
     QuickBundlesX speed. The merging phase has low cost because it is applied
     only on the centroids rather than the entire dataset.
+
+    See :footcite:p:`Garyfallidis2012a` and :footcite:p:`Garyfallidis2016` for
+    further details about the method.
 
     Parameters
     ----------
@@ -742,15 +738,7 @@ def qbx_and_merge(
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
     t = time()
     len_s = len(streamlines)
@@ -760,7 +748,7 @@ def qbx_and_merge(
     if rng is None:
         rng = np.random.default_rng()
     indices = rng.choice(len_s, min(select_randomly, len_s), replace=False)
-    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+    sample_streamlines = set_number_of_points(streamlines, nb_points=nb_pts)
 
     if verbose:
         logger.info(f" Resampled to {nb_pts} points")

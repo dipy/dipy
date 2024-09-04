@@ -196,7 +196,7 @@ def normalized_vector(vec, *, axis=-1):
     True
 
     """
-    return vec / vector_norm(vec, axis, keepdims=True)
+    return vec / vector_norm(vec, axis=axis, keepdims=True)
 
 
 @warning_for_keywords()
@@ -327,7 +327,9 @@ def rodrigues_axis_rotation(r, theta):
 
 
 def nearest_pos_semi_def(B):
-    """Least squares positive semi-definite tensor estimation
+    """Least squares positive semi-definite tensor estimation.
+
+    See :footcite:p:`Niethammer2006` for further details about the method.
 
     Parameters
     ----------
@@ -349,10 +351,7 @@ def nearest_pos_semi_def(B):
 
     References
     ----------
-    .. [1] Niethammer M, San Jose Estepar R, Bouix S, Shenton M, Westin CF.
-           On diffusion tensor estimation. Conf Proc IEEE Eng Med Biol Soc.
-           2006;1:2622-5. PubMed PMID: 17946125; PubMed Central PMCID:
-           PMC2791793.
+    .. footbibliography::
 
     """
     B = np.asarray(B)
@@ -611,17 +610,17 @@ def euler_matrix(ai, aj, ak, *, axes="sxyz"):
     Examples
     --------
     >>> import numpy
-    >>> R = euler_matrix(1, 2, 3, 'syxz')
+    >>> R = euler_matrix(1, 2, 3, axes='syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
     True
-    >>> R = euler_matrix(1, 2, 3, (0, 1, 0, 1))
+    >>> R = euler_matrix(1, 2, 3, axes=(0, 1, 0, 1))
     >>> numpy.allclose(numpy.sum(R[0]), -0.383436184)
     True
     >>> ai, aj, ak = (4.0*math.pi) * (numpy.random.random(3) - 0.5)
     >>> for axes in _AXES2TUPLE.keys():
-    ...    _ = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes=axes)
     >>> for axes in _TUPLE2AXES.keys():
-    ...    _ = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes=axes)
 
     """
     try:
@@ -707,7 +706,9 @@ def compose_matrix(
     >>> angles = (np.random.random(3) - 0.5) * (2*math.pi)
     >>> trans = np.random.random(3) - 0.5
     >>> persp = np.random.random(4) - 0.5
-    >>> M0 = gm.compose_matrix(scale, shear, angles, trans, persp)
+    >>> M0 = gm.compose_matrix(
+    ...     scale=scale, shear=shear, angles=angles, translate=trans, perspective=persp
+    ... )
 
     """
     M = np.identity(4)
@@ -720,7 +721,7 @@ def compose_matrix(
         T[:3, 3] = translate[:3]
         M = np.dot(M, T)
     if angles is not None:
-        R = euler_matrix(angles[0], angles[1], angles[2], "sxyz")
+        R = euler_matrix(angles[0], angles[1], angles[2], axes="sxyz")
         M = np.dot(M, R)
     if shear is not None:
         Z = np.identity(4)

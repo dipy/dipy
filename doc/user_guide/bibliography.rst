@@ -5,4 +5,3 @@ General bibliography
 
 .. bibliography:: ./../references.bib
    :all:
-   :list: enumerated

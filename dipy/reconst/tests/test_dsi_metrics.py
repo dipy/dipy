@@ -8,8 +8,8 @@ from dipy.sims.voxel import multi_tensor, sticks_and_ball
 
 
 def test_dsi_metrics():
-    btable = np.loadtxt(get_fnames("dsi4169btable"))
-    gtab = gradient_table(btable[:, 0], btable[:, 1:])
+    btable = np.loadtxt(get_fnames(name="dsi4169btable"))
+    gtab = gradient_table(btable[:, 0], bvecs=btable[:, 1:])
     data, _ = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (60, 0)], fractions=[50, 50], snr=None
     )

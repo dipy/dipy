@@ -101,16 +101,14 @@ def add_noise(signal, snr, S0, *, noise_type="rician", rng=None):
 
     Notes
     -----
-    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
-    the standard deviation of the two Gaussian distributions forming the real
-    and imaginary components of the Rician noise distribution (see [2]_).
+    SNR is defined here, following :footcite:p:`Descoteaux2007`, as
+    ``S0 / sigma``, where ``sigma`` is the standard deviation of the two
+    Gaussian distributions forming the real and imaginary components of the
+    Rician noise distribution (see :footcite:p:`Gudbjartsson1995`).
 
     References
     ----------
-    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
-           fast and robust q-ball imaging. MRM, 58: 497-510
-    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
-           data. MRM 34: 910-914.
+    .. footbibliography::
 
     Examples
     --------
@@ -148,6 +146,8 @@ def sticks_and_ball(
 ):
     """Simulate the signal for a Sticks & Ball model.
 
+    See :footcite:p:`Behrens2007` for a definition of the Sticks & Ball model.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -175,9 +175,7 @@ def sticks_and_ball(
 
     References
     ----------
-    .. [1] Behrens et al., "Probabilistic diffusion
-           tractography with multiple fiber orientations:  what can we gain?",
-           Neuroimage, 2007.
+    .. footbibliography::
 
     """
     fractions = [f / 100.0 for f in fractions]
@@ -203,9 +201,13 @@ def sticks_and_ball(
 
 
 def callaghan_perpendicular(q, radius):
-    r"""Calculates the perpendicular diffusion signal E(q) in a cylinder of
-    radius R using the Soderman model [1]_. Assumes that the pulse length
-    is infinitely short and the diffusion time is infinitely long.
+    """Calculates the perpendicular diffusion signal E(q) in a cylinder of
+    radius R using the Soderman model.
+
+    Assumes that the pulse length is infinitely short and the diffusion time is
+    infinitely long.
+
+    See :footcite:p:`Soderman1995` for details about the Soderman model.
 
     Parameters
     ----------
@@ -221,9 +223,7 @@ def callaghan_perpendicular(q, radius):
 
     References
     ----------
-    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-           cylindrical geometry." Journal of Magnetic Resonance, Series A
-           117.1 (1995): 94-97.
+    .. footbibliography::
 
     """
     # Eq. [6] in the paper
@@ -268,12 +268,16 @@ def cylinders_and_ball_soderman(
     fractions=(35, 35),
     snr=20,
 ):
-    r"""Calculates the three-dimensional signal attenuation E(q) originating
-    from within a cylinder of radius R using the Soderman approximation [1]_.
-    The diffusion signal is assumed to be separable perpendicular and parallel
-    to the cylinder axis [2]_.
+    """Calculates the three-dimensional signal attenuation E(q) originating
+    from within a cylinder of radius R using the Soderman approximation.
+
+    The diffusion signal is assumed to be separable  perpendicular and parallel
+    to the cylinder axis :footcite:p:`Assaf2004`.
+
     This function is basically an extension of the ball and stick model.
     Setting the radius to zero makes them equivalent.
+
+    See :footcite:p:`Soderman1995` for details about the Soderman model.
 
     Parameters
     ----------
@@ -304,12 +308,7 @@ def cylinders_and_ball_soderman(
 
     References
     ----------
-    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-           cylindrical geometry." Journal of Magnetic Resonance, Series A
-           117.1 (1995): 94-97.
-    .. [2] Assaf, Yaniv, et al. "New modeling and experimental framework to
-           characterize hindered and restricted water diffusion in brain white
-           matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
+    .. footbibliography::
 
     """
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
@@ -342,6 +341,8 @@ def cylinders_and_ball_soderman(
 def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
     """Simulate diffusion-weighted signals with a single tensor.
 
+    See :footcite:p:`Stejskal1965`, :footcite:p:`Descoteaux2008b`.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -370,12 +371,7 @@ def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
 
     References
     ----------
-    .. [1] M. Descoteaux, "High Angular Resolution Diffusion MRI: from Local
-           Estimation to Segmentation and Tractography", PhD thesis,
-           University of Nice-Sophia Antipolis, p. 42, 2008.
-    .. [2] E. Stejskal and J. Tanner, "Spin diffusion measurements: spin echos
-           in the presence of a time-dependent field gradient", Journal of
-           Chemical Physics, nr. 42, pp. 288--292, 1965.
+    .. footbibliography::
 
     """
     if rng is None:
@@ -453,9 +449,9 @@ def multi_tensor(
     >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
+    >>> fimg, fbvals, fbvecs = get_fnames(name='small_101D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    >>> gtab = gradient_table(bvals, bvecs)
+    >>> gtab = gradient_table(bvals, bvecs=bvecs)
     >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> e0 = np.array([1, 0, 0.])
     >>> e1 = np.array([0., 1, 0])
@@ -495,21 +491,23 @@ def multi_tensor_dki(
     r"""Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
+    See :footcite:p:`NetoHenriques2015` for further details.
+
     Parameters
     ----------
     gtab : GradientTable
         Gradient table.
     mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
-    S0 : float (optional)
+    S0 : float, optional
         Unweighted signal value (b0 signal).
-    angles : array (K,2) or (K,3) (optional)
+    angles : array (K,2) or (K,3), optional
         List of K tensor directions of the diffusion tensor of each compartment
         in polar angles (in degrees) or unit vectors
-    fractions : float (K,) (optional)
+    fractions : float (K,), optional
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
-    snr : float (optional)
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
@@ -537,20 +535,17 @@ def multi_tensor_dki(
     >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_fnames('small_64D')
+    >>> fimg, fbvals, fbvecs = get_fnames(name='small_64D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     >>> bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     >>> bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    >>> gtab = gradient_table(bvals_2s, bvecs_2s)
+    >>> gtab = gradient_table(bvals_2s, bvecs=bvecs_2s)
     >>> mevals = np.array([[0.00099, 0, 0],[0.00226, 0.00087, 0.00087]])
     >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     if np.round(np.sum(fractions), 2) != 100.0:
@@ -579,24 +574,24 @@ def multi_tensor_dki(
 
     # compute voxel's KT
     kt = np.zeros(15)
-    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT, MD)
-    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT, MD)
-    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT, MD)
-    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT, MD)
-    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT, MD)
-    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT, MD)
-    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT, MD)
-    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT, MD)
-    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT, MD)
-    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT, MD)
-    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT, MD)
-    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT, MD)
-    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT, MD)
-    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT, MD)
-    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
+    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT=DT, MD=MD)
+    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT=DT, MD=MD)
+    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT=DT, MD=MD)
+    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT=DT, MD=MD)
+    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT=DT, MD=MD)
+    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT=DT, MD=MD)
+    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT=DT, MD=MD)
+    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT=DT, MD=MD)
+    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT=DT, MD=MD)
+    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT=DT, MD=MD)
+    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT=DT, MD=MD)
+    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT=DT, MD=MD)
+    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT=DT, MD=MD)
+    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT=DT, MD=MD)
+    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT=DT, MD=MD)
 
     # compute S based on the DT and KT
-    S = dki_signal(gtab, dt, kt, S0, snr)
+    S = dki_signal(gtab, dt, kt, S0=S0, snr=snr)
 
     return S, dt, kt
 
@@ -623,9 +618,9 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=N
         Element's index k (0 for x, 1 for y, 2 for z)
     ind_l: int
         Elements index l (0 for x, 1 for y, 2 for z)
-    DT : (3,3) ndarray (optional)
+    DT : (3,3) ndarray, optional
         Voxel's global diffusion tensor.
-    MD : float (optional)
+    MD : float, optional
         Voxel's global mean diffusivity.
 
     Returns
@@ -635,14 +630,12 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, *, DT=None, MD=N
 
     Notes
     -----
-    wijkl is calculated using equation 8 given in [1]_
+    wijkl is calculated using equation 8 given in
+    :footcite:p:`NetoHenriques2015`.
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     if DT is None:
@@ -678,6 +671,8 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
     tensors of a single voxel. Simulations are performed assuming the DKI
     model.
 
+    See :footcite:p:`NetoHenriques2015` for further details.
+
     Parameters
     ----------
     gtab : GradientTable
@@ -686,9 +681,9 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
         Elements of the diffusion tensor.
     kt : (15, ) ndarray
         Elements of the diffusion kurtosis tensor.
-    S0 : float (optional)
+    S0 : float, optional
         Strength of signal in the presence of no diffusion gradient.
-    snr : float (optional)
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
@@ -702,10 +697,7 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
-           diffusion kurtosis tensor - Impact on the development of robust
-           tractography procedures and novel biomarkers", NeuroImage (2015)
-           111, 85-99.
+    .. footbibliography::
 
     """
     dt = np.array(dt)
@@ -729,6 +721,8 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 def single_tensor_odf(r, *, evals=None, evecs=None):
     """Simulated ODF with a single tensor.
 
+    See :footcite:p:`Aganj2010` for further details.
+
     Parameters
     ----------
     r : (N,3) or (M,N,3) ndarray
@@ -748,10 +742,7 @@ def single_tensor_odf(r, *, evals=None, evecs=None):
 
     References
     ----------
-    .. [1] Aganj et al., "Reconstruction of the Orientation Distribution
-           Function in Single- and Multiple-Shell q-Ball Imaging Within
-           Constant Solid Angle", Magnetic Resonance in Medicine, nr. 64,
-           pp. 554--566, 2010.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -849,12 +840,14 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
     """Simulate a Single-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
-    evals : 1D arrays,
+    evals : 1D arrays, optional
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -864,8 +857,7 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -879,14 +871,16 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
-    mevals : sequence of 1D arrays,
+    mevals : sequence of 1D arrays, optional
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -896,8 +890,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     rtop = 0
@@ -908,7 +901,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
         ] * len(mf)
 
     for j, f in enumerate(mf):
-        rtop += f * single_tensor_rtop(mevals[j], tau=tau)
+        rtop += f * single_tensor_rtop(evals=mevals[j], tau=tau)
     return rtop
 
 
@@ -916,18 +909,20 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
     """Simulated ODF with a single tensor.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     r : (N,3) or (M,N,3) ndarray
         Measurement positions in (x, y, z), either as a list or on a grid.
-    evals : (3,)
+    evals : (3,), optional
         Eigenvalues of diffusion tensor.  By default, use values typical for
         prolate white matter.
-    evecs : (3, 3) ndarray
+    evecs : (3, 3) ndarray, optional
         Eigenvectors of the tensor.  You can also think of these as the
         rotation matrix that determines the orientation of the diffusion
         tensor.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
 
@@ -938,8 +933,7 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -967,6 +961,8 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor ODF.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     pdf_points : (N, 3) ndarray
@@ -979,7 +975,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
         or cartesian unit coordinates.
     fractions : sequence of floats,
         Percentages of the fractions for each tensor.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -989,8 +985,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     mf = [f / 100.0 for f in fractions]
@@ -1014,12 +1009,14 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
-    evals : 1D arrays,
+    evals : 1D arrays, optional
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -1029,8 +1026,7 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     if evals is None:
@@ -1044,14 +1040,16 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
     """Simulate a Multi-Tensor rtop.
 
+    See :footcite:p:`Cheng2012` for further details.
+
     Parameters
     ----------
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
-    mevals : sequence of 1D arrays,
+    mevals : sequence of 1D arrays, optional
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
-    tau : float,
+    tau : float, optional
         diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
@@ -1061,8 +1059,7 @@ def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
-           and Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. footbibliography::
 
     """
     msd = 0
@@ -1073,5 +1070,5 @@ def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
         ] * len(mf)
 
     for j, f in enumerate(mf):
-        msd += f * single_tensor_msd(mevals[j], tau=tau)
+        msd += f * single_tensor_msd(evals=mevals[j], tau=tau)
     return msd

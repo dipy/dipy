@@ -22,7 +22,9 @@ def nlmeans(
     rician=True,
     num_threads=None,
 ):
-    r"""Non-local means for denoising 3D and 4D images [Descoteaux08]_.
+    r"""Non-local means for denoising 3D and 4D images.
+
+    See :footcite:p:Descoteaux2008a` for further details about the method.
 
     Parameters
     ----------
@@ -52,10 +54,7 @@ def nlmeans(
 
     References
     ----------
-    .. [Descoteaux08] Descoteaux, Maxime and Wiest-Daesslé, Nicolas and Prima,
-                      Sylvain and Barillot, Christian and Deriche, Rachid
-                      Impact of Rician Adapted Non-Local Means Filtering on
-                      HARDI, MICCAI 2008
+    .. footbibliography::
 
     """
 
@@ -67,7 +66,13 @@ def nlmeans(
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return nlmeans_3d(
-            arr, mask, sigma, patch_radius, block_radius, rician, num_threads
+            arr,
+            mask=mask,
+            sigma=sigma,
+            patch_radius=patch_radius,
+            block_radius=block_radius,
+            rician=rician,
+            num_threads=num_threads,
         ).astype(arr.dtype)
 
     elif arr.ndim == 4:
@@ -81,12 +86,12 @@ def nlmeans(
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = nlmeans_3d(
                 arr[..., i],
-                mask,
-                sigma[..., i],
-                patch_radius,
-                block_radius,
-                rician,
-                num_threads,
+                mask=mask,
+                sigma=sigma[..., i],
+                patch_radius=patch_radius,
+                block_radius=block_radius,
+                rician=rician,
+                num_threads=num_threads,
             ).astype(arr.dtype)
 
         return denoised_arr

@@ -6,7 +6,6 @@ import logging
 
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
-from dipy.testing.decorators import warning_for_keywords
 from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
@@ -24,11 +23,14 @@ cdef class EnhancementKernel:
     cdef double [:, :, :, :, :] lookuptable
     cdef object sphere
 
-    @warning_for_keywords()
-    def __init__(self, D33, D44, t, *, force_recompute=False,
+    def __init__(self, D33, D44, t, force_recompute=False,
                  orientations=None, verbose=True):
         """ Compute a look-up table for the contextual
         enhancement kernel
+
+        See :footcite:p:`Meesters2016a`, :footcite:p:`Duits2011`,
+        :footcite:p:`Portegies2015a` and :footcite:p:`Portegies2015b` for
+        further details about the method.
 
         Parameters
         ----------
@@ -38,35 +40,19 @@ cdef class EnhancementKernel:
             Angular diffusion
         t : float
             Diffusion time
-        force_recompute : boolean
+        force_recompute : boolean, optional
             Always compute the look-up table even if it is available
-            in cache. Default is False.
-        orientations : integer or Sphere object
+            in cache.
+        orientations : integer or Sphere object, optional
             Specify the number of orientations to be used with
             electrostatic repulsion, or provide a Sphere object.
             The default sphere is 'repulsion100'.
-        verbose : boolean
+        verbose : boolean, optional
             Enable verbose mode.
 
         References
         ----------
-        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                             J. Portegies, R. Duits. (2016) Fast implementations
-                             of contextual PDE’s for HARDI data processing in
-                             DIPY. ISMRM 2016 conference.
-        [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions
-                        on the space of positions and orientations and their
-                        application to crossing-preserving smoothing of HARDI
-                        images. International Journal of Computer Vision, 92:231-264.
-        [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-                        (2015) New Approximation of a Scale Space Kernel on SE(3)
-                        and Applications in Neuroimaging. Fifth International
-                        Conference on Scale Space and Variational Methods in
-                        Computer Vision
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-                         G. Girard, and R. Duits. (2015) Improving Fiber
-                         Alignment in HARDI by Combining Contextual PDE flow with
-                         Constrained Spherical Deconvolution. PLoS One.
+        .. footbibliography::
         """
 
         # save parameters as class members
@@ -92,7 +78,7 @@ cdef class EnhancementKernel:
                 sphere, potential = disperse_charges(hsph_initial, 5000)
         else:
             # use default
-            sphere = get_sphere('repulsion100')
+            sphere = get_sphere(name="repulsion100")
 
         if sphere is not None:
             self.orientations_list = sphere.vertices

@@ -17,7 +17,7 @@ import dipy.sims.voxel as sims
 from dipy.testing.decorators import set_random_number_generator
 
 # We'll set these globally:
-fdata, fbval, fbvec = dpd.get_fnames("small_64D")
+fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
 
 
 @set_random_number_generator()
@@ -31,25 +31,25 @@ def test_coeff_of_determination(rng):
 
 def test_dti_xval():
     data = load_nifti_data(fdata)
-    gtab = gt.gradient_table(fbval, fbvec)
-    dm = dti.TensorModel(gtab, "LS")
+    gtab = gt.gradient_table(fbval, bvecs=fbvec)
+    dm = dti.TensorModel(gtab, fit_method="LS")
     # The data has 102 directions, so will not divide neatly into 10 bits
     npt.assert_raises(ValueError, xval.kfold_xval, dm, data, 10)
 
     # In simulation with no noise, COD should be perfect:
-    psphere = dpd.get_sphere("symmetric362")
+    psphere = dpd.get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = gt.gradient_table(bvals, bvecs)
+    gtab = gt.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = sims.single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    S = sims.single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, "LS")
+    dm = dti.TensorModel(gtab, fit_method="LS")
     kf_xval = xval.kfold_xval(dm, S, 2)
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1]) * 100)
@@ -67,23 +67,23 @@ def test_dti_xval():
 def test_csd_xval(rng):
     # First, let's see that it works with some data:
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Make it *small*
-    gtab = gt.gradient_table(fbval, fbvec)
+    gtab = gt.gradient_table(fbval, bvecs=fbvec)
     S0 = np.mean(data[..., gtab.b0s_mask])
     response = ([0.0015, 0.0003, 0.0001], S0)
 
     # In simulation, it should work rather well (high COD):
-    psphere = dpd.get_sphere("symmetric362")
+    psphere = dpd.get_sphere(name="symmetric362")
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = gt.gradient_table(bvals, bvecs)
+    gtab = gt.gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
     S0 = 100
-    S = sims.single_tensor(gtab, S0, mevals[0], mevecs[0], snr=None)
+    S = sims.single_tensor(gtab, S0, evals=mevals[0], evecs=mevecs[0], snr=None)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -138,7 +138,7 @@ def test_no_predict():
         def __init__(self, model, data, mask=None):
             base.ReconstFit.__init__(self, model, data)
 
-    gtab = gt.gradient_table(fbval, fbvec)
+    gtab = gt.gradient_table(fbval, bvecs=fbvec)
     my_model = NoPredictModel(gtab)
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Whatever
 

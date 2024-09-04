@@ -8,7 +8,6 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import Streamlines
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -19,11 +18,9 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
-    @warning_for_keywords()
     def run(
         self,
         input_files,
-        *,
         save_masked=False,
         median_radius=2,
         numpass=5,
@@ -90,7 +87,7 @@ class MedianOtsuFlow(Workflow):
             logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
-                save_nifti(masked_out_path, masked_volume, affine, img.header)
+                save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
 
                 logging.info(f"Masked volume saved as {masked_out_path}")
 
@@ -102,12 +99,10 @@ class RecoBundlesFlow(Workflow):
     def get_short_name(cls):
         return "recobundles"
 
-    @warning_for_keywords()
     def run(
         self,
         streamline_files,
         model_bundle_files,
-        *,
         greater_than=50,
         less_than=1000000,
         no_slr=False,
@@ -129,6 +124,9 @@ class RecoBundlesFlow(Workflow):
         out_recognized_labels="labels.npy",
     ):
         """Recognize bundles
+
+        See :footcite:p:`Garyfallidis2018` and :footcite:p:`Chandio2020a` for
+        further details about the method.
 
         Parameters
         ----------
@@ -181,15 +179,7 @@ class RecoBundlesFlow(Workflow):
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based registration and
-           clustering, Neuroimage, 2017.
-
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-           Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-           Garyfallidis, E. Bundle analytics, a computational framework for
-           investigating the shapes and profiles of brain pathways across
-           populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
         slr = not no_slr
@@ -327,16 +317,16 @@ class LabelsBundlesFlow(Workflow):
     def get_short_name(cls):
         return "labelsbundles"
 
-    @warning_for_keywords()
     def run(
         self,
         streamline_files,
         labels_files,
         out_dir="",
-        *,
         out_bundle="recognized_orig.trk",
     ):
         """Extract bundles using existing indices (labels)
+
+        See :footcite:p:`Garyfallidis2018` for further details about the method.
 
         Parameters
         ----------
@@ -351,9 +341,7 @@ class LabelsBundlesFlow(Workflow):
 
         References
         ----------
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-         bundles using local and global streamline-based registration and
-         clustering, Neuroimage, 2017.
+        .. footbibliography::
 
         """
         logging.info("### Labels to Bundles ###")

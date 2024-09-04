@@ -107,7 +107,7 @@ dev = [
 ]
 
 extra = ["dipy[viz, ml]",
-         "cvxpy",
+         "cvxpy<=1.4.4",
          "scikit-image",
          "boto3"
         ]
