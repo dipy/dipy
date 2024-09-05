@@ -175,9 +175,9 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
         Contains the info about the current local variables values.
     fnc : function
         The function to inspect
-    output_strategy : string
+    output_strategy : string, optional
         Controls the behavior of the IOIterator for output paths.
-    mix_names : bool
+    mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
 
     Returns
@@ -185,9 +185,18 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
         Properly instantiated IOIterator object.
 
     """
+
+    # Create a new object that does not contain the ``self`` dict item
+    def _selfless_dict(_values):
+        return {key: val for key, val in _values.items() if key != "self"}
+
     args, _, _, values = inspect.getargvalues(frame)
     args.remove("self")
-    del values["self"]
+    # Create a new object that does not contain the ``self`` dict item from the
+    # provided copy of the local symbol table returned by ``getargvalues``.
+    # Avoids attempting to remove it from the object returned by
+    # ``getargvalues``.
+    values = _selfless_dict(values)
 
     spargs, defaults = get_args_default(fnc)
 
