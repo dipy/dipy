@@ -45,7 +45,7 @@ def test_patch2self_random_noise(rng):
     # both clip and shift = True, and int patch_radius for version 1
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        S0den_clip = p2s.patch2self(
+        S0den_clip_1 = p2s.patch2self(
             S0,
             bvals,
             patch_radius=0,
@@ -55,13 +55,13 @@ def test_patch2self_random_noise(rng):
             version=1,
         )
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+    assert_greater(S0den_clip_1.min(), S0.min())
+    assert_equal(np.round(S0den_clip_1.mean()), 30)
 
     # both clip and shift = True for version 3
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        S0den_clip = p2s.patch2self(
+        S0den_clip_3 = p2s.patch2self(
             S0,
             bvals,
             model="ols",
@@ -70,8 +70,9 @@ def test_patch2self_random_noise(rng):
             version=3,
         )
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+    assert_greater(S0den_clip_3.min(), S0.min())
+    assert_equal(np.round(S0den_clip_3.mean()), 30)
+    assert_equal(S0den_clip_1, S0den_clip_3)
 
     # both clip and shift = False
     S0den_clip = p2s.patch2self(

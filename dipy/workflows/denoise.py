@@ -38,6 +38,9 @@ class Patch2SelfFlow(Workflow):
     ):
         """Workflow for Patch2Self denoising method.
 
+        See :footcite:p:`Fadnavis2020` for further details about the method.
+        See :footcite:p:`Fadnavis2024` for further details about the new method.
+
         It applies patch2self denoising :footcite:p:`Fadnavis2020` on each file
         found by 'globing' ``input_file`` and ``bval_file``. It saves the
         results in a directory specified by ``out_dir``.
@@ -76,7 +79,7 @@ class Patch2SelfFlow(Workflow):
             Shifts the distribution of intensities per volume to give
             non-negative values
         ver : int, optional
-            Version of the Patch2Self algorithm to use between  1 or 3. The default is 3
+            Version of the Patch2Self algorithm to use between  1 or 3.
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -85,15 +88,7 @@ class Patch2SelfFlow(Workflow):
 
         References
         ----------
-        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-           Denoising Diffusion MRI with Self-supervised Learning,
-           Advances in Neural Information Processing Systems 33 (2020)
-
-        .. [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
-                    E. Garyfallidis, Patch2Self2: Self-supervised Denoising
-                    on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
-                    Conference on Computer Vision and Pattern Recognition (2024),
-                    27641-27651.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()

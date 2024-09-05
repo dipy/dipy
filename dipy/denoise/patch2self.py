@@ -9,7 +9,6 @@ from tqdm import tqdm
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-# Import optional packages
 sklearn, has_sklearn, _ = optional_package("sklearn")
 linear_model, _, _ = optional_package("sklearn.linear_model")
 
@@ -367,6 +366,7 @@ def patch2self(
     """Patch2Self Denoiser.
 
     See :footcite:p:`Fadnavis2020` for further details about the method.
+    See :footcite:p:`Fadnavis2024` for further details about the new method.
 
     Parameters
     ----------
@@ -393,27 +393,27 @@ def patch2self(
             Default: 'ols'.
 
     b0_threshold : int, optional
-        Threshold for considering volumes as b0. Default: 50.
+        Threshold for considering volumes as b0.
 
     out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
 
     alpha : float, optional
-        Regularization parameter only for ridge regression model. Default: 1.0.
+        Regularization parameter only for ridge regression model.
 
     verbose : bool, optional
-        Show progress of Patch2Self and time taken. Default: False.
+        Show progress of Patch2Self and time taken.
 
     b0_denoising : bool, optional
-        Skips denoising b0 volumes if set to False. Default: True.
+        Skips denoising b0 volumes if set to False.
 
     clip_negative_vals : bool, optional
-        Sets negative values after denoising to 0 using `np.clip`. Default: False.
+        Sets negative values after denoising to 0 using `np.clip`.
 
     shift_intensity : bool, optional
         Shifts the distribution of intensities per volume to give
-        non-negative values. Default: True.
+        non-negative values.
 
     tmp_dir : str, optional
         The directory to save the temporary files. If None, the temporary
@@ -432,18 +432,9 @@ def patch2self(
     ----------
     .. footbibliography::
 
-    [Fadnavis24] S. Fadnavis, A. Chowdhury, J. Batson, P. Drineas,
-                    E. Garyfallidis, Patch2Self2: Self-supervised Denoising
-                    on Coresets via Matrix Sketching, Proceedings of the IEEE/CVF
-                    Conference on Computer Vision and Pattern Recognition (2024),
-                    27641-27651.
-
     """
     if out_dtype is None:
         out_dtype = data.dtype
-
-    if version not in [1, 3]:
-        raise ValueError("Invalid version. Should be 1 or 3.")
 
     if tmp_dir is None and version == 3:
         tmp_dir = tempfile.gettempdir()
@@ -512,6 +503,9 @@ def _validate_inputs(data, patch_radius, version, tmp_dir):
     -----
     If the input data has less than 10 3D volumes.
     """
+    if version not in [1, 3]:
+        raise ValueError("Invalid version. Should be 1 or 3.")
+
     if version == 1 and tmp_dir is not None:
         raise ValueError(
             "Temporary directory is not supported for Patch2Self version 1. \
@@ -629,9 +623,6 @@ def _patch2self_version1(
 
     if verbose is True:
         t1 = time.time()
-
-    if patch_radius == 0:
-        patch_radius = (0, 0, 0)
 
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3 or not b0_denoising:
