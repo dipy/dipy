@@ -48,7 +48,7 @@ def test_patch2self_random_noise(rng):
         S0den_clip_1 = p2s.patch2self(
             S0,
             bvals,
-            patch_radius=0,
+            patch_radius=(0, 0, 0),
             model="ols",
             clip_negative_vals=True,
             shift_intensity=True,
