@@ -299,7 +299,7 @@ def test_mask():
     mask_correct = data_multi[..., 0] > 0.2
     mask_not_correct = np.array([[False, True, False], [True, False]], dtype=object)
 
-    ivim_fit = ivim_model_trr.fit(data_multi, mask_correct)
+    ivim_fit = ivim_model_trr.fit(data_multi, mask=mask_correct)
     est_signal = ivim_fit.predict(gtab, S0=1.0)
     assert_array_equal(est_signal.shape, data_multi.shape)
     assert_array_almost_equal(est_signal, data_multi)
