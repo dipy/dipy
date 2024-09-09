@@ -444,6 +444,7 @@ def real_sh_tournier(sh_order_max, theta, phi, *, full_basis=False, legacy=True)
     The SH are computed as initially defined in :footcite:p:`Tournier2007` then
     updated in MRtrix3 :footcite:p:`Tournier2019`, where the real harmonic
     $Y_l^m$ is defined to be:
+
     .. math::
        :nowrap:
 
@@ -502,6 +503,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, *, full_basis=False, legacy=Tru
 
     The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
     real harmonic $Y_l^m$ is defined to be:
+
     .. math::
        :nowrap:
 
