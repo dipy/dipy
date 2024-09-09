@@ -1558,7 +1558,7 @@ class ReconstIvimFlow(Workflow):
 
         gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
-        ivimfit = ivimmodel.fit(data, mask)
+        ivimfit = ivimmodel.fit(data, mask=mask)
 
         return ivimfit, gtab
 
