@@ -10,8 +10,6 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from dipy.testing.decorators import warning_for_keywords
-
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     double fabs(double x)
