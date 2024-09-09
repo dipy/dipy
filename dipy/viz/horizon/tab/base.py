@@ -435,8 +435,8 @@ def build_slider(
     label_style_bold : bool, optional
         Is label should have bold style.
 
-    Return
-    ------
+    Returns
+    -------
     (label: HorizonUIElement, element(slider): HorizonUIElement)
     """
 
