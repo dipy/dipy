@@ -1671,15 +1671,9 @@ class _NllsHelper:
                 self.sqrt_w = np.sqrt(w)[:, None]
             return ans
 
-<<<<<<< HEAD
     def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         """The Jacobian is the first derivative of the error function
         :footcite:p:`Koay2006c`.
-=======
-    @warning_for_keywords()
-    def jacobian_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
-        """The Jacobian is the first derivative of the error function [1]_.
->>>>>>> 981987f2b (NF: Decorator Implementation)
 
         Parameters
         ----------
