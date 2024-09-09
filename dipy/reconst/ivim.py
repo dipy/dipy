@@ -285,7 +285,6 @@ class IvimModelTRR(ReconstModel):
 
         self.bounds = bounds or BOUNDS
 
-    @warning_for_keywords()
     @multi_voxel_fit
     def fit(self, data, **kwargs):
         """Fit method of the IvimModelTRR class.
