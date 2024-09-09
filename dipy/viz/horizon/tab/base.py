@@ -434,6 +434,8 @@ def build_slider(
         Size of label text to display with slider
     label_style_bold : bool, optional
         Is label should have bold style.
+    is_double_slider : bool, optional
+        True if the slider allows to adjust two values.
 
     Returns
     -------
