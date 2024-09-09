@@ -236,7 +236,7 @@ def test_multi_voxel_fit(rng):
     mask[1, 1] = 1
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
-    fit = model.fit(data, mask, another_kwarg="foo")
+    fit = model.fit(data, mask=mask, another_kwarg="foo")
     expected = np.zeros((3, 3, 3))
     expected[0, 0] = 2
     expected[1, 1] = 2
