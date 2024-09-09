@@ -466,8 +466,7 @@ def directional_diffusion(dt, V, *, min_diffusivity=0):
     return adc
 
 
-@warning_for_keywords()
-def directional_diffusion_variance(kt, V, *, min_kurtosis=-3 / 7):
+def directional_diffusion_variance(kt, V):
     r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
