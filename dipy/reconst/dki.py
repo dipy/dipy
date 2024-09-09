@@ -2336,7 +2336,6 @@ class DiffusionKurtosisFit(TensorFit):
             self.model_params, min_kurtosis=min_kurtosis, max_kurtosis=max_kurtosis
         )
 
-    @warning_for_keywords()
     def rtk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
         r"""Compute the rescaled radial tensor kurtosis (RTK).
 
