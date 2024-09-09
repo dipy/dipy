@@ -17,8 +17,7 @@ SCALAR_TYPES = np.ScalarType
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-@warning_for_keywords()
-def quick_squash(obj_arr, *, mask=None, fill=0):
+def quick_squash(obj_arr, mask=None, fill=0):
     """Try and make a standard array from an object array
 
     This function takes an object array and attempts to convert it to a more
