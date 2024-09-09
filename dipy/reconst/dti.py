@@ -1574,8 +1574,7 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    @warning_for_keywords()
-    def err_func(self, tensor, design_matrix, data, *, weighting=None, sigma=None):
+    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
