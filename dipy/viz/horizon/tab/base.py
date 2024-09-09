@@ -437,7 +437,10 @@ def build_slider(
 
     Returns
     -------
-    (label: HorizonUIElement, element(slider): HorizonUIElement)
+    label : HorizonUIElement
+        Slider label.
+    HorizonUIElement
+        Slider.
     """
 
     if is_double_slider and "ratio" in text_template:
