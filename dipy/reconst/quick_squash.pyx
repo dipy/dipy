@@ -7,8 +7,6 @@ cimport cython
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
-
 cdef enum:
     SCALAR, ARRAY
 
