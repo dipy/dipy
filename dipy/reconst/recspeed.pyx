@@ -35,11 +35,9 @@ cdef inline double* asdp(cnp.ndarray pt):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-@warning_for_keywords()
 def remove_similar_vertices(
     cython.floating[:, :] vertices,
     double theta,
-    *,
     bint return_mapping=False,
     bint return_index=False,
     bint remove_antipodal=True):
