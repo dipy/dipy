@@ -491,7 +491,7 @@ def build_slider(
         slider.handles[0].color = (1.0, 0.5, 0.0)
         slider.handles[1].color = (1.0, 0.5, 0.0)
 
-    return (slider_label, HorizonUIElement(True, initial_value, slider))
+    return slider_label, HorizonUIElement(True, initial_value, slider)
 
 
 @warning_for_keywords()
