@@ -26,7 +26,7 @@ from dipy.viz import actor, window
 ###############################################################################
 # Fetch and load a surface
 
-brain_lh = get_fnames("fury_surface")
+brain_lh = get_fnames(name="fury_surface")
 polydata = load_polydata(brain_lh)
 
 ###############################################################################

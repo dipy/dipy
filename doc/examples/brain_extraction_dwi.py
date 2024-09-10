@@ -23,7 +23,7 @@ from dipy.segment.mask import median_otsu
 # The ``scil_b0`` dataset contains different data from different companies and
 # models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 
-data_fnames = get_fnames("scil_b0")
+data_fnames = get_fnames(name="scil_b0")
 data, affine = load_nifti(data_fnames[1])
 data = np.squeeze(data)
 

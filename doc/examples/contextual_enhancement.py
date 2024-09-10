@@ -102,10 +102,10 @@ from dipy.viz import actor, window
 # spherical deconvolution is used to model the fiber orientations.
 
 # Read data
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data = load_nifti_data(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 # Add Rician noise
 b0_slice = data[:, :, :, 1]

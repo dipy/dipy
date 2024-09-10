@@ -24,9 +24,9 @@ from dipy.viz import actor, window
 # For the simulation we will use a standard DSI acquisition scheme with 514
 # gradient directions and 1 S0.
 
-btable = np.loadtxt(get_fnames("dsi515btable"))
+btable = np.loadtxt(get_fnames(name="dsi515btable"))
 
-gtab = gradient_table(btable[:, 0], btable[:, 1:])
+gtab = gradient_table(btable[:, 0], bvecs=btable[:, 1:])
 
 ###############################################################################
 # Let's create a multi tensor with 2 fiber directions at 60 degrees.
@@ -38,10 +38,10 @@ directions = [(-30, 0), (30, 0)]
 fractions = [50, 50]
 
 signal, _ = multi_tensor(
-    gtab, evals, 100, angles=directions, fractions=fractions, snr=None
+    gtab, evals, S0=100, angles=directions, fractions=fractions, snr=None
 )
 
-sphere = get_sphere("repulsion724").subdivide(1)
+sphere = get_sphere(name="repulsion724").subdivide(1)
 
 odf_gt = multi_tensor_odf(
     sphere.vertices, evals, angles=directions, fractions=fractions

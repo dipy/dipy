@@ -44,7 +44,7 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Then we load the data and the affine:
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("sherbrooke_3shell")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames(name="sherbrooke_3shell")
 data, affine = load_nifti(dwi_fname)
 
 

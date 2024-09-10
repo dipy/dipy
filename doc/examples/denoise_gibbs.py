@@ -36,7 +36,7 @@ from dipy.segment.mask import median_otsu
 # We first apply this algorithm to a T1-weighted dataset which can be fetched
 # using the following code:
 
-t1_fname, t1_denoised_fname, ap_fname = get_fnames("tissue_data")
+t1_fname, t1_denoised_fname, ap_fname = get_fnames(name="tissue_data")
 t1 = load_nifti_data(t1_denoised_fname)
 
 ###############################################################################

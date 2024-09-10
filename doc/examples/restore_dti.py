@@ -55,11 +55,11 @@ interactive = False
 # dataset of a single subject. The size of this dataset is 87 MBytes. You only
 # need to fetch once.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # We initialize a DTI model class instance using the gradient table used in

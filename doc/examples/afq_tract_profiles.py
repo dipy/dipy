@@ -64,8 +64,8 @@ arc_l_file = op.join(
     "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
 )
 
-cst_l = load_trk(cst_l_file, "same", bbox_valid_check=False).streamlines
-arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
+cst_l = load_trk(cst_l_file, reference="same", bbox_valid_check=False).streamlines
+arc_l = load_trk(arc_l_file, reference="same", bbox_valid_check=False).streamlines
 
 ###############################################################################
 # In the next step, we need to make sure that all the streamlines in each
@@ -83,8 +83,12 @@ arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 
 model_arc_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_arc_l = load_trk(model_arc_l_file, "same", bbox_valid_check=False).streamlines
-model_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False).streamlines
+model_arc_l = load_trk(
+    model_arc_l_file, reference="same", bbox_valid_check=False
+).streamlines
+model_cst_l = load_trk(
+    model_cst_l_file, reference="same", bbox_valid_check=False
+).streamlines
 
 
 feature = ResampleFeature(nb_points=100)
@@ -95,7 +99,7 @@ metric = AveragePointwiseEuclideanMetric(feature)
 # from the streamlines, we set the threshold to `np.inf`. We pull out the
 # centroid as the standard using QuickBundles :footcite:p:`Garyfallidis2012a`.
 
-qb = QuickBundles(np.inf, metric=metric)
+qb = QuickBundles(threshold=np.inf, metric=metric)
 
 cluster_cst_l = qb.cluster(model_cst_l)
 standard_cst_l = cluster_cst_l.centroids[0]
@@ -137,9 +141,9 @@ w_arc_l = dsa.gaussian_weights(oriented_arc_l)
 ###############################################################################
 # And then use the weights to calculate the tract profiles for each bundle
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine, weights=w_cst_l)
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=fa_affine, weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_arc_l, fa_affine, weights=w_arc_l)
+profile_af_l = dsa.afq_profile(fa, oriented_arc_l, affine=fa_affine, weights=w_arc_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 

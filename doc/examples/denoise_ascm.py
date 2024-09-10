@@ -42,10 +42,10 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Choose one of the data from the datasets in dipy_
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("sherbrooke_3shell")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames(name="sherbrooke_3shell")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 mask = data[..., 0] > 80
 data = data[..., 1]

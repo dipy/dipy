@@ -45,7 +45,9 @@ fetch_bundles_2_subjects()
 # ``af left`` (left arcuate fasciculus) and maps, e.g. FA for a specific
 # subject.
 
-res = read_bundles_2_subjects("subj_1", ["t1", "fa"], ["af.left", "cst.right", "cc_1"])
+res = read_bundles_2_subjects(
+    subj_id="subj_1", metrics=["t1", "fa"], bundles=["af.left", "cst.right", "cc_1"]
+)
 
 ###############################################################################
 # We will use 3 bundles, FA and the affine transformation that brings the voxel
@@ -121,7 +123,7 @@ scene.add(image_actor_y)
 # ``show``. The more appropriate way is to use them with the ``ShowManager``
 # object which allows accessing the pipeline in different areas. Here is how:
 
-show_m = window.ShowManager(scene, size=(1200, 900))
+show_m = window.ShowManager(scene=scene, size=(1200, 900))
 show_m.initialize()
 
 ###############################################################################

@@ -42,12 +42,12 @@ from dipy.viz import has_fury, horizon, regtools
 # moving and static images are assumed to be in RAS. The first one will be the
 # b0 from the Stanford HARDI dataset:
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 dwi_data, dwi_affine, dwi_img = load_nifti(hardi_fname, return_img=True)
 dwi_vox_size = dwi_img.header.get_zooms()[0]
 dwi_bvals, dwi_bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(dwi_bvals, dwi_bvecs)
+gtab = gradient_table(dwi_bvals, bvecs=dwi_bvecs)
 
 ###############################################################################
 # The second one will be the T2-contrast MNI template image. The resolution of
@@ -142,29 +142,29 @@ final_warped_b0, mapping = syn_registration(
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    0,
-    "Static",
-    "Moving",
-    "transformed_sagittal.png",
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_sagittal.png",
 )
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    1,
-    "Static",
-    "Moving",
-    "transformed_coronal.png",
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_coronal.png",
 )
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    2,
-    "Static",
-    "Moving",
-    "transformed_axial.png",
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_axial.png",
 )
 
 ###############################################################################

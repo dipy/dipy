@@ -24,7 +24,7 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Then, let's fetch and load a T1 data from Stanford University
 
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 data, affine = load_nifti(t1_fname)
 
 mask = data > 1500

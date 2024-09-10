@@ -46,7 +46,7 @@ gtab = gradient_table(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     ),
-    op.join(
+    bvecs=op.join(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),
@@ -133,7 +133,7 @@ plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 #
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Compute the fODFs.

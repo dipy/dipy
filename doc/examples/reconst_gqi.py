@@ -22,7 +22,7 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 ###############################################################################
 # Download and get the data filenames for this tutorial.
 
-fraw, fbval, fbvec = get_fnames("taiwan_ntu_dsi")
+fraw, fbval, fbvec = get_fnames(name="taiwan_ntu_dsi")
 
 ###############################################################################
 # img contains a nibabel Nifti1Image object (data) and gtab contains a
@@ -36,7 +36,7 @@ fraw, fbval, fbvec = get_fnames("taiwan_ntu_dsi")
 data, affine, voxel_size = load_nifti(fraw, return_voxsize=True)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 print(f"data.shape {data.shape}")
 
 ###############################################################################
@@ -60,7 +60,7 @@ gqfit = gqmodel.fit(dataslice, mask=mask)
 ###############################################################################
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Calculate the ODFs with this specific sphere

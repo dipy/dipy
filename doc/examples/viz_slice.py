@@ -149,7 +149,7 @@ window.record(
 # the ``ShowManager`` object, which allows accessing the pipeline in different
 # areas.
 
-show_m = window.ShowManager(scene, size=(1200, 900))
+show_m = window.ShowManager(scene=scene, size=(1200, 900))
 show_m.initialize()
 
 ###############################################################################
@@ -210,7 +210,7 @@ scene.projection("parallel")
 result_position.message = ""
 result_value.message = ""
 
-show_m_mosaic = window.ShowManager(scene, size=(1200, 900))
+show_m_mosaic = window.ShowManager(scene=scene, size=(1200, 900))
 show_m_mosaic.initialize()
 
 

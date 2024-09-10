@@ -38,13 +38,13 @@ interactive = False
 ###############################################################################
 # To begin, we read the Stanford HARDI data set into memory:
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # This data set provides a label map (generated using FreeSurfer_, in which the
@@ -119,7 +119,7 @@ streamlines = Streamlines(streamline_generator)
 # Next, we will create a visualization of these streamlines, relative to this
 # subject's T1-weighted anatomy:
 
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 t1_data, t1_aff = load_nifti(t1_fname)
 color = colormap.line_colors(streamlines)
 

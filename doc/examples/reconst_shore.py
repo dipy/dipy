@@ -29,11 +29,11 @@ from dipy.viz import actor, window
 # the data. They respectively correspond to ``(xmin,xmax,ymin,ymax,zmin,zmax)``
 # with x, y, z and the three axis defining the spatial positions of the voxels.
 
-fraw, fbval, fbvec = get_fnames("isbi2013_2shell")
+fraw, fbval, fbvec = get_fnames(name="isbi2013_2shell")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 data_small = data[10:40, 22, 10:40]
 
 print(f"data.shape {data.shape}")
@@ -73,7 +73,7 @@ asmfit = asm.fit(data_small)
 ###############################################################################
 # Load an odf reconstruction sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Compute the ODFs

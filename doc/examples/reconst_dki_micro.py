@@ -41,11 +41,11 @@ from dipy.segment.mask import median_otsu
 # (more details about the data are provided in their paper
 # :footcite:p:`Hansen2016a`).
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # For comparison, this dataset is pre-processed using the same steps used in

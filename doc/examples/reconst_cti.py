@@ -74,7 +74,7 @@ import dipy.reconst.cti as cti
 # The users should also ensure that the data is formatted correctly for the
 # CTI analysis they are performing.
 
-fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames("cti_rat1")
+fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames(name="cti_rat1")
 data, affine = load_nifti(fdata)
 bvals1, bvecs1 = read_bvals_bvecs(fbvals1, fbvecs1)
 bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
@@ -89,8 +89,8 @@ bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
 # define the b-values and b-vectors for each diffusion epoch in separate
 # gradient tables, as done in the above line of code.
 
-gtab1 = gradient_table(bvals1, bvecs1)
-gtab2 = gradient_table(bvals2, bvecs2)
+gtab1 = gradient_table(bvals1, bvecs=bvecs1)
+gtab2 = gradient_table(bvals2, bvecs=bvecs2)
 
 ###############################################################################
 # Before fitting the data, we perform some data pre-processing. We first
