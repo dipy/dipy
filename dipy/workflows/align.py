@@ -23,7 +23,7 @@ from dipy.workflows.workflow import Workflow
 pd, have_pd, _ = optional_package("pandas")
 
 if have_pd:
-    import pandas as pd
+    pass
 
 
 def check_dimensions(static, moving):
@@ -932,7 +932,6 @@ class MotionCorrectionFlow(Workflow):
 class BundleWarpFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-      
         return "bundlewarp"
 
     def run(
