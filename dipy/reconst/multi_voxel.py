@@ -12,7 +12,7 @@ from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.utils.parallel import paramap
 
 
-def _parallel_fit_worker(vox_data, single_voxel_fit):
+def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     """
     Works on a chunk of voxel data to create a list of
     single voxel fits.
@@ -25,7 +25,7 @@ def _parallel_fit_worker(vox_data, single_voxel_fit):
     single_voxel_fit : callable
         The fit function to use on each voxel.
     """
-    return [single_voxel_fit(data) for data in vox_data]
+    return [single_voxel_fit(data, **kwargs) for data in vox_data]
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -33,11 +33,12 @@ def multi_voxel_fit(single_voxel_fit):
     definition into a multi voxel model fit definition
     """
 
-    def new_fit(self, data, mask=None, **kwargs):
+    def new_fit(self, data, *, mask=None, **kwargs):
         """Fit method for every voxel in data"""
-        # If only one voxel just return a normal fit
+        # If only one voxel just return a standard fit, passing through
+        # the functions key-word arguments (no mask needed).
         if data.ndim == 1:
-            return single_voxel_fit(self, data)
+            return single_voxel_fit(self, data, **kwargs)
 
         # Make a mask if mask is None
         if mask is None:
@@ -57,7 +58,7 @@ def multi_voxel_fit(single_voxel_fit):
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
-                    fit_array[ijk] = single_voxel_fit(self, data[ijk])
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **kwargs)
                 bar.update()
             bar.close()
         else:
@@ -71,13 +72,18 @@ def multi_voxel_fit(single_voxel_fit):
                 data_to_fit[ii : ii + vox_per_chunk]
                 for ii in range(0, data_to_fit.shape[0], vox_per_chunk)
             ]
+            parallel_kwargs = {}
+            for kk in ["n_jobs", "vox_per_chunk", "engine", "verbose"]:
+                if kk in kwargs:
+                    parallel_kwargs[kk] = kwargs[kk]
             fit_array[np.where(mask)] = np.concatenate(
                 (
                     paramap(
                         _parallel_fit_worker,
                         chunks,
                         func_args=[single_voxel_with_self],
-                        **kwargs,
+                        func_kwargs=kwargs,
+                        **parallel_kwargs,
                     )
                 )
             )
