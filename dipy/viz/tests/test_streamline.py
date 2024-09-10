@@ -86,7 +86,8 @@ def test_incorrect_view():
 
 
 @pytest.mark.skipif(
-    not have_fury or not have_matplotlib or not have_pd, reason="Requires FURY, Matplotlib and Pandas"
+    not have_fury or not have_matplotlib or not have_pd,
+    reason="Requires FURY, Matplotlib and Pandas",
 )
 def test_bundlewarp_viz():
     with tempfile.TemporaryDirectory() as temp_dir:
