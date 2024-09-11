@@ -11,7 +11,10 @@ from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.stats.analysis import assignment_map
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
+from dipy.utils.optpkg import optional_package
 from dipy.viz.plotting import bundle_shape_profile
+
+pd, have_pd, _ = optional_package("pandas")
 
 
 def average_bundle_length(bundle):
@@ -59,7 +62,7 @@ def find_missing(lst, cb):
 
 @warning_for_keywords()
 def bundlewarp(
-    static, moving, *, dist=None, alpha=0.3, beta=20, max_iter=15, affine=True
+    static, moving, *, dist=None, alpha=0.5, beta=20, max_iter=15, affine=True
 ):
     """Register two bundles using nonlinear method.
 
@@ -68,10 +71,10 @@ def bundlewarp(
     Parameters
     ----------
     static : Streamlines
-        Reference/fixed bundle
+        Reference/fixed bundle.
 
     moving : Streamlines
-        Target bundle that will be moved/registered to match the static bundle
+        Target bundle that will be moved/registered to match the static bundle.
 
     dist : float, optional
         Precomputed distance matrix.
@@ -188,6 +191,8 @@ def bundlewarp(
         ty = ty.astype(float)
         deformed_bundle.append(ty)
         warp.append(pr)
+
+    warp = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
 
     # Returns deformed bundle, affinely moved bundle, distance matrix,
     # streamline correspondences, and warp field
