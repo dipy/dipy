@@ -22,9 +22,6 @@ from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
 
-if have_pd:
-    pass
-
 
 def check_dimensions(static, moving):
     """Check the dimensions of the input images.
