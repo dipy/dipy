@@ -43,7 +43,7 @@ interactive = False
 ###############################################################################
 # Prepare the synthetic DiSCo data for fast tracking. The ground-truth
 # connectome will be use to evaluate tractography performances.
-fnames = get_fnames("disco1")
+fnames = get_fnames(name="disco1")
 disco1_fnames = [f.split("/")[-1] for f in fnames]
 
 GT_connectome_fname = fnames[disco1_fnames.index(
@@ -80,7 +80,7 @@ plt.close()
 
 ###############################################################################
 # Prepare ODFs
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 GT_SH_fname = fnames[disco1_fnames.index("highRes_DiSCo1_Strand_ODFs.nii.gz")]
 GT_SH = load_nifti_data(GT_SH_fname)
 GT_ODF = sh_to_sf(GT_SH, sphere, sh_order_max=12,

@@ -17,21 +17,21 @@ from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_directions_pairs)
 
 
-def get_fast_tracking_performances(params, nbr_seeds=1000):
+def get_fast_tracking_performances(params, *, nbr_seeds=1000):
     """
     Return the performance of the fast tracking module
     using the tracking params, on the DiSCo dataset
     """
     # fetch the disco data
-    fnames = get_fnames("disco1")
-
+    fnames = get_fnames(name="disco1")
+    
     # prepare the GT connectome data
     GT_connectome = np.loadtxt(fnames[35])
     connectome_mask = np.tril(np.ones(GT_connectome.shape), -1) > 0
     labels = np.round(nib.load(fnames[23]).get_fdata()).astype(int)  # 6 low res
 
     # prepare ODFs
-    sphere = HemiSphere.from_sphere(get_sphere("repulsion724"))
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     GT_SH = nib.load(fnames[20]).get_fdata()  # 17 low res
     GT_ODF = sh_to_sf(GT_SH, sphere, sh_order_max=12, basis_type='tournier07', legacy=False)
     GT_ODF[GT_ODF<0] = 0
