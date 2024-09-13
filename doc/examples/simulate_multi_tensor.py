@@ -107,7 +107,7 @@ plt.savefig("simulated_signal.png", bbox_inches="tight")
 # cached spheres, which we can read in the following way.
 
 sphere = get_sphere(name="repulsion724")
-sphere = sphere.subdivide(2)
+sphere = sphere.subdivide(n=2)
 
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)
 

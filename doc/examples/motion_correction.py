@@ -50,7 +50,7 @@ gtab = gradient_table(bvals_small, bvecs=bvecs_small)
 # Start motion correction of our reduced DWI dataset(between-volumes motion
 # correction).
 
-data_corrected, reg_affines = motion_correction(data_small, gtab, affine)
+data_corrected, reg_affines = motion_correction(data_small, gtab, affine=affine)
 
 ###############################################################################
 # Save our DWI dataset corrected to a new Nifti file.

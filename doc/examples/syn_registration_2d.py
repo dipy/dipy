@@ -91,13 +91,13 @@ regtools.plot_2d_diffeomorphic_map(mapping, delta=10, fname="diffeomorphic_map.p
 # Now let's warp the moving image and see if it gets similar to the static
 # image
 
-warped_moving = mapping.transform(moving, "linear")
+warped_moving = mapping.transform(moving, interpolation="linear")
 regtools.overlay_images(
     static,
     warped_moving,
     title0="Static",
     title_mid="Overlay",
-    title_1="Warped moving",
+    title1="Warped moving",
     fname="direct_warp_result.png",
 )
 

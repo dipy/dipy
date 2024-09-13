@@ -126,7 +126,7 @@ TORT = dki_micro_fit.tortuosity
 ###############################################################################
 # These parameters are plotted below on top of the mean kurtosis maps:
 
-MK = dkifit.mk(0, 3)
+MK = dkifit.mk(min_kurtosis=0, max_kurtosis=3)
 
 axial_slice = 9
 

@@ -69,7 +69,11 @@ pre_align = np.array(
 # moving image towards the static image
 
 affine_map = AffineMap(
-    pre_align, static.shape, static_affine, moving.shape, moving_affine
+    pre_align,
+    domain_grid_shape=static.shape,
+    domain_grid2world=static_affine,
+    codomain_grid_shape=moving.shape,
+    codomain_grid2world=moving_affine,
 )
 
 resampled = affine_map.transform(moving)

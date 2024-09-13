@@ -154,8 +154,8 @@ FA_orig = dki_orig.fa
 FA_den = dki_den.fa
 MD_orig = dki_orig.md
 MD_den = dki_den.md
-MK_orig = dki_orig.mk(0, 3)
-MK_den = dki_den.mk(0, 3)
+MK_orig = dki_orig.mk(min_kurtosis=0, max_kurtosis=3)
+MK_den = dki_den.mk(min_kurtosis=0, max_kurtosis=3)
 
 
 fig2, ax = plt.subplots(2, 3, figsize=(10, 6), subplot_kw={"xticks": [], "yticks": []})
