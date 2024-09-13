@@ -162,7 +162,7 @@ dki_model = dki.DiffusionKurtosisModel(gtab)
 dki_fit = dki_model.fit(dwi)
 
 MD = dki_fit.md
-MK = dki_fit.mk(0, 3)
+MK = dki_fit.mk(min_kurtosis=0, max_kurtosis=3)
 
 ###############################################################################
 # Now we plot the results as a function of the ground truth intersection
@@ -270,7 +270,7 @@ dki_model = dki.DiffusionKurtosisModel(gtab)
 dki_fit = dki_model.fit(data, mask=mask)
 
 MD = dki_fit.md
-MK = dki_fit.mk(0, 3)
+MK = dki_fit.mk(min_kurtosis=0, max_kurtosis=3)
 
 ###############################################################################
 # Let's now visualize the data using matplotlib for a selected axial slice.

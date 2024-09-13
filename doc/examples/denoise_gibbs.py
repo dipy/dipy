@@ -167,7 +167,7 @@ fig1.savefig("Gibbs_suppression_structural.png")
 
 bvals = [200, 400, 1000, 2000]
 
-img, gtab = read_cenir_multib(bvals)
+img, gtab = read_cenir_multib(bvals=bvals)
 
 data = np.asarray(img.dataobj)
 

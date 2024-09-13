@@ -83,7 +83,7 @@ fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 ###############################################################################
 # Fit the FORECAST to the data
 
-f_fit = fm.fit(data_small, mask_small)
+f_fit = fm.fit(data_small, mask=mask_small)
 
 ###############################################################################
 # Calculate the crossing invariant tensor indices :footcite:p:`Kaden2016a`: the
