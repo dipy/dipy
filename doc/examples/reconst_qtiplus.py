@@ -178,7 +178,7 @@ mask[:, :, :13] = 0
 mask[:, :, 14:] = 0
 
 qtimodel_217 = qti.QtiModel(gtab_217)
-qtifit_217 = qtimodel_217.fit(data_217, mask)
+qtifit_217 = qtimodel_217.fit(data_217, mask=mask)
 
 ###############################################################################
 # Now we can fit the QTI model using the default unconstrained fitting method

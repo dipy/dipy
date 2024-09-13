@@ -89,7 +89,7 @@ sh_coeffs = sf_to_sh(odf, sphere, sh_order_max=sh_order_max, basis_type=sh_basis
 # reconstruct our original signal. We will now reproject our signal on a high
 # resolution sphere using ``sh_to_sf``.
 
-high_res_sph = get_sphere(name="symmetric724").subdivide(2)
+high_res_sph = get_sphere(name="symmetric724").subdivide(n=2)
 reconst = sh_to_sf(
     sh_coeffs, high_res_sph, sh_order_max=sh_order_max, basis_type=sh_basis
 )
