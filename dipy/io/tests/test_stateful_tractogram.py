@@ -1,6 +1,7 @@
 from copy import deepcopy
 import os
 from os.path import join as pjoin
+import sys
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
@@ -18,6 +19,7 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+is_big_endian = "big" in sys.byteorder.lower()
 
 
 FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
@@ -41,6 +43,7 @@ def teardown_module():
     FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 
 
+@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_direct_trx_loading():
     trx = tmm.load(FILEPATH_DIX["gs.trx"])
     tmp_dir = deepcopy(trx._uncompressed_folder_handle.name)
@@ -74,6 +77,7 @@ def test_tck_equal_in_vox_space():
     assert_allclose(tmp_points_vox, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
+@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_trx_equal_in_vox_space():
     sft = load_tractogram(
         FILEPATH_DIX["gs.trx"], FILEPATH_DIX["gs.nii"], to_space=Space.VOX
@@ -117,6 +121,7 @@ def test_tck_equal_in_rasmm_space():
     assert_allclose(tmp_points_rasmm, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
+@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_trx_equal_in_rasmm_space():
     sft = load_tractogram(
         FILEPATH_DIX["gs.trx"], FILEPATH_DIX["gs.nii"], to_space=Space.RASMM
@@ -160,6 +165,7 @@ def test_tck_equal_in_voxmm_space():
     assert_allclose(tmp_points_voxmm, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
+@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_trx_equal_in_voxmm_space():
     sft = load_tractogram(
         FILEPATH_DIX["gs.trx"], FILEPATH_DIX["gs.nii"], to_space=Space.VOXMM
@@ -366,6 +372,7 @@ def test_tck_iterative_saving_loading():
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.tck"))
 
 
+@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_trx_iterative_saving_loading():
     sft = load_tractogram(
         FILEPATH_DIX["gs.trx"], FILEPATH_DIX["gs.nii"], to_space=Space.RASMM

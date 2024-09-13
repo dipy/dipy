@@ -7,7 +7,7 @@ from libc.stdlib cimport malloc, free
 cimport numpy as cnp
 
 from dipy.tracking import Streamlines
-
+from dipy.utils.arrfuncs import as_native_array
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
@@ -99,15 +99,15 @@ def length(streamlines):
 
         arclengths = np.zeros(len(streamlines), dtype=np.float64)
 
-        if streamlines._data.dtype == np.float32:
+        if as_native_array(streamlines._data).dtype == np.float32:
             c_arclengths_from_arraysequence[float2d](
-                                    streamlines._data,
+                                    as_native_array(streamlines._data),
                                     streamlines._offsets.astype(np.intp),
                                     streamlines._lengths.astype(np.intp),
                                     arclengths)
         else:
             c_arclengths_from_arraysequence[double2d](
-                                      streamlines._data,
+                                      as_native_array(streamlines._data),
                                       streamlines._offsets.astype(np.intp),
                                       streamlines._lengths.astype(np.intp),
                                       arclengths)
@@ -319,7 +319,7 @@ def set_number_of_points(streamlines, nb_points=3):
             return Streamlines()
 
         nb_streamlines = len(streamlines)
-        dtype = streamlines._data.dtype
+        dtype = as_native_array(streamlines._data).dtype
         new_streamlines = Streamlines()
         new_streamlines._data = np.zeros((nb_streamlines * nb_points, 3),
                                          dtype=dtype)
@@ -330,12 +330,12 @@ def set_number_of_points(streamlines, nb_points=3):
 
         if dtype == np.float32:
             c_set_number_of_points_from_arraysequence[float2d](
-                streamlines._data, streamlines._offsets.astype(np.intp),
+                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
                 streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
         else:
             c_set_number_of_points_from_arraysequence[double2d](
-                streamlines._data, streamlines._offsets.astype(np.intp),
+                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
                 streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
 

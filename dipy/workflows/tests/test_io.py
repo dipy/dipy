@@ -36,6 +36,8 @@ logging.basicConfig(
     filemode="w",
 )
 
+is_big_endian = "big" in sys.byteorder.lower()
+
 
 def test_io_info():
     fimg, fbvals, fbvecs = get_fnames(name="small_101D")
@@ -50,8 +52,12 @@ def test_io_info():
     io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
 
     filepath_dix, _, _ = get_fnames(name="gold_standard_tracks")
+    if not is_big_endian:
+        io_info_flow = IoInfoFlow()
+        io_info_flow.run(filepath_dix["gs.trx"])
+
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([filepath_dix["gs.trx"], filepath_dix["gs.trk"]])
+    io_info_flow.run(filepath_dix["gs.trk"])
 
     io_info_flow = IoInfoFlow()
     npt.assert_raises(TypeError, io_info_flow.run, filepath_dix["gs.tck"])
@@ -175,7 +181,14 @@ def test_convert_sh_flow():
 def test_convert_tractogram_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames(name="gold_standard_tracks")
-        input_files = [v for k, v in data_path.items() if k in ["gs.tck", "gs.trx"]]
+        input_files = [
+            v
+            for k, v in data_path.items()
+            if k
+            in [
+                "gs.tck",
+            ]
+        ]
 
         convert_tractogram_flow = ConvertTractogramFlow(mix_names=True)
         convert_tractogram_flow.run(
@@ -187,13 +200,14 @@ def test_convert_tractogram_flow():
             ValueError, convert_tractogram_flow.run, input_files, out_dir=out_dir
         )
 
-        npt.assert_warns(
-            UserWarning,
-            convert_tractogram_flow.run,
-            data_path["gs.trx"],
-            out_dir=out_dir,
-            out_tractogram="gs_converted.trx",
-        )
+        if not is_big_endian:
+            npt.assert_warns(
+                UserWarning,
+                convert_tractogram_flow.run,
+                data_path["gs.trx"],
+                out_dir=out_dir,
+                out_tractogram="gs_converted.trx",
+            )
 
 
 def test_convert_tensors_flow():
