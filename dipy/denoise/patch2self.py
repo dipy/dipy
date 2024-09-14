@@ -13,16 +13,16 @@ sklearn, has_sklearn, _ = optional_package("sklearn")
 linear_model, _, _ = optional_package("sklearn.linear_model")
 
 
-def count_sketch(matrixA_name, matrixA_dtype, matrixA_shape, sketch_rows, tmp_dir):
+def count_sketch(matrixa_name, matrixa_dtype, matrixa_shape, sketch_rows, tmp_dir):
     """Count Sketching algorithm to reduce the size of the matrix.
 
     Parameters
     ----------
-    matrixA_name : str
+    matrixa_name : str
         The name of the memmap file containing the matrix A.
-    matrixA_dtype : dtype
+    matrixa_dtype : dtype
         The dtype of the matrix A.
-    matrixA_shape : tuple
+    matrixa_shape : tuple
         The shape of the matrix A.
     sketch_rows : int
         The number of rows in the sketch matrix.
@@ -31,47 +31,47 @@ def count_sketch(matrixA_name, matrixA_dtype, matrixA_shape, sketch_rows, tmp_di
 
     Returns
     -------
-    matrixC_name : str
+    matrixc_name : str
         The name of the memmap file containing the sketch matrix.
-    matrixC_dtype : dtype
+    matrixc_dtype : dtype
         The dtype of the sketch matrix.
-    matrixC_shape : tuple
+    matrixc_shape : tuple
         The shape of the sketch matrix.
 
     """
-    matrixA = np.squeeze(
-        np.memmap(matrixA_name, dtype=matrixA_dtype, mode="r+", shape=matrixA_shape)
-    ).reshape(np.prod(matrixA_shape[:-1]), matrixA_shape[-1])
+    matrixa = np.squeeze(
+        np.memmap(matrixa_name, dtype=matrixa_dtype, mode="r+", shape=matrixa_shape)
+    ).reshape(np.prod(matrixa_shape[:-1]), matrixa_shape[-1])
 
     with tempfile.NamedTemporaryFile(
         delete=False, dir=tmp_dir, suffix="matrix_t"
     ) as matrixt_file:
         matrixt = np.memmap(
-            matrixt_file.name, dtype=matrixA_dtype, mode="w+", shape=matrixA.shape
+            matrixt_file.name, dtype=matrixa_dtype, mode="w+", shape=matrixa.shape
         )
-        hashed_indices = np.random.choice(sketch_rows, matrixA.shape[0], replace=True)
-        rand_signs = np.random.choice(2, matrixA.shape[0], replace=True) * 2 - 1
-        for i in range(0, matrixA.shape[0], matrixA.shape[0] // 20):
-            end_index = min(i + matrixA.shape[0] // 20, matrixA.shape[0])
+        hashed_indices = np.random.choice(sketch_rows, matrixa.shape[0], replace=True)
+        rand_signs = np.random.choice(2, matrixa.shape[0], replace=True) * 2 - 1
+        for i in range(0, matrixa.shape[0], matrixa.shape[0] // 20):
+            end_index = min(i + matrixa.shape[0] // 20, matrixa.shape[0])
             matrixt[i:end_index, :] = (
-                matrixA[i:end_index, :] * rand_signs[i:end_index, np.newaxis]
+                matrixa[i:end_index, :] * rand_signs[i:end_index, np.newaxis]
             )
 
     with tempfile.NamedTemporaryFile(
         delete=False, dir=tmp_dir, suffix="matrix_C"
-    ) as matrixC_file:
-        matrixC = np.memmap(
-            matrixC_file.name,
-            dtype=matrixA_dtype,
+    ) as matrixc_file:
+        matrixc = np.memmap(
+            matrixc_file.name,
+            dtype=matrixa_dtype,
             mode="w+",
-            shape=(sketch_rows, matrixA.shape[1]),
+            shape=(sketch_rows, matrixa.shape[1]),
         )
-        np.add.at(matrixC, hashed_indices, matrixt)
-        matrixC.flush()
+        np.add.at(matrixc, hashed_indices, matrixt)
+        matrixc.flush()
         matrixt.flush()
     del matrixt
     os.unlink(matrixt_file.name)
-    return matrixC_file.name, matrixC.dtype, matrixC.shape
+    return matrixc_file.name, matrixc.dtype, matrixc.shape
 
 
 def _vol_split(train, vol_idx):
@@ -119,33 +119,29 @@ def _extract_3d_patches(arr, patch_radius):
         volume of the 4D DWI data.
 
     """
-    if isinstance(patch_radius, int):
-        patch_radius = np.ones(3, dtype=int) * patch_radius
-    if len(patch_radius) != 3:
-        raise ValueError("patch_radius should have length 3")
-    else:
-        patch_radius = np.asarray(patch_radius, dtype=int)
-    patch_size = 2 * patch_radius + 1
+    patch_radius = np.asarray(patch_radius, dtype=int)
+    if patch_radius.size == 1:
+        patch_radius = np.repeat(patch_radius, 3)
+    elif patch_radius.size != 3:
+        raise ValueError("patch_radius should have length 1 or 3")
 
+    patch_size = 2 * patch_radius + 1
     dim = arr.shape[-1]
 
-    all_patches = []
+    # Calculate the shape of the output array
+    output_shape = tuple(arr.shape[i] - 2 * patch_radius[i] for i in range(3))
+    total_patches = np.prod(output_shape)
 
-    # loop around and find the 3D patch for each direction
-    for i in range(patch_radius[0], arr.shape[0] - patch_radius[0], 1):
-        for j in range(patch_radius[1], arr.shape[1] - patch_radius[1], 1):
-            for k in range(patch_radius[2], arr.shape[2] - patch_radius[2], 1):
-                ix1 = i - patch_radius[0]
-                ix2 = i + patch_radius[0] + 1
-                jx1 = j - patch_radius[1]
-                jx2 = j + patch_radius[1] + 1
-                kx1 = k - patch_radius[2]
-                kx2 = k + patch_radius[2] + 1
+    # Use np.lib.stride_tricks.sliding_window_view for efficient patch extraction
+    from numpy.lib.stride_tricks import sliding_window_view
 
-                X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(np.prod(patch_size), dim)
-                all_patches.append(X)
+    patches = sliding_window_view(arr, tuple(patch_size) + (dim,))
 
-    return np.array(all_patches).T
+    # Reshape and transpose the patches to match the original function's output shape
+    all_patches = patches.reshape(total_patches, np.prod(patch_size), dim)
+    all_patches = all_patches.transpose(2, 1, 0)
+
+    return np.array(all_patches)
 
 
 def _fit_denoising_model(train, vol_idx, model, alpha, version):
@@ -381,16 +377,16 @@ def patch2self(
         voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
 
     model : string, or initialized linear model object.
-            This will determine the algorithm used to solve the set of linear
-            equations underlying this model. If it is a string it needs to be
-            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
-            it can be an object that inherits from
-            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
-            interface from Scikit-Learn:
-            `sklearn.linear_model.LinearRegression`,
-            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
-            and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ols'.
+        This will determine the algorithm used to solve the set of linear
+        equations underlying this model. If it is a string it needs to be
+        one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+        it can be an object that inherits from
+        `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+        interface from Scikit-Learn:
+        `sklearn.linear_model.LinearRegression`,
+        `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+        and other objects that inherit from `sklearn.base.RegressorMixin`.
+        Default: 'ols'.
 
     b0_threshold : int, optional
         Threshold for considering volumes as b0.
@@ -433,13 +429,10 @@ def patch2self(
     .. footbibliography::
 
     """
-    if out_dtype is None:
-        out_dtype = data.dtype
 
-    if tmp_dir is None and version == 3:
-        tmp_dir = tempfile.gettempdir()
-
-    _validate_inputs(data, patch_radius, version, tmp_dir)
+    out_dtype, tmp_dir = _validate_inputs(
+        data, out_dtype, patch_radius, version, tmp_dir
+    )
 
     if version == 1:
         return _patch2self_version1(
@@ -472,13 +465,16 @@ def patch2self(
         )
 
 
-def _validate_inputs(data, patch_radius, version, tmp_dir):
+def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
     """Validate inputs for patch2self function.
 
     Parameters
     ----------
     data : ndarray
         The 4D noisy DWI data to be denoised.
+
+    out_dtype : str or dtype
+        The dtype for the output array.
 
     patch_radius : int or 1D array
         The radius of the local patch to be taken around each voxel (in
@@ -502,7 +498,23 @@ def _validate_inputs(data, patch_radius, version, tmp_dir):
     Warns
     -----
     If the input data has less than 10 3D volumes.
+
+    Returns
+    -------
+    out_dtype : str or dtype
+        The dtype for the output array.
+
+    tmp_dir : str
+        The directory to save the temporary files. If None, the temporary
+        files are saved in the system's default temporary directory.
+
     """
+    if out_dtype is None:
+        out_dtype = data.dtype
+
+    if tmp_dir is None and version == 3:
+        tmp_dir = tempfile.gettempdir()
+
     if version not in [1, 3]:
         raise ValueError("Invalid version. Should be 1 or 3.")
 
@@ -526,6 +538,8 @@ def _validate_inputs(data, patch_radius, version, tmp_dir):
                 Patch2Self may not give optimal denoising performance.",
             stacklevel=2,
         )
+
+    return out_dtype, tmp_dir
 
 
 def _patch2self_version1(

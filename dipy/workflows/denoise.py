@@ -28,7 +28,7 @@ class Patch2SelfFlow(Workflow):
         b0_threshold=50,
         alpha=1.0,
         verbose=False,
-        patch_radius=0,
+        patch_radius=(0, 0, 0),
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
@@ -102,33 +102,20 @@ class Patch2SelfFlow(Workflow):
                 logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-                if ver == 1:
-                    denoised_data = patch2self(
-                        data,
-                        bvals,
-                        model=model,
-                        b0_threshold=b0_threshold,
-                        alpha=alpha,
-                        verbose=verbose,
-                        patch_radius=patch_radius,
-                        b0_denoising=b0_denoising,
-                        clip_negative_vals=clip_negative_vals,
-                        shift_intensity=shift_intensity,
-                        version=ver,
-                    )
-                elif ver == 3:
-                    denoised_data = patch2self(
-                        data,
-                        bvals,
-                        model=model,
-                        b0_threshold=b0_threshold,
-                        alpha=alpha,
-                        verbose=verbose,
-                        b0_denoising=b0_denoising,
-                        clip_negative_vals=clip_negative_vals,
-                        shift_intensity=shift_intensity,
-                        version=ver,
-                    )
+                extra_args = {"patch_radius": (0, 0, 0)} if ver == 1 else {}
+                denoised_data = patch2self(
+                    data,
+                    bvals,
+                    model=model,
+                    b0_threshold=b0_threshold,
+                    alpha=alpha,
+                    verbose=verbose,
+                    b0_denoising=b0_denoising,
+                    clip_negative_vals=clip_negative_vals,
+                    shift_intensity=shift_intensity,
+                    version=ver,
+                    **extra_args,
+                )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volumes saved as %s", odenoised)
