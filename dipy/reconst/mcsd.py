@@ -855,16 +855,16 @@ def auto_response_msmt(
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(
         gtab,
         data,
-        roi_center,
-        roi_radii,
-        wm_fa_thr,
-        gm_fa_thr,
-        csf_fa_thr,
-        gm_md_thr,
-        csf_md_thr,
+        roi_center=roi_center,
+        roi_radii=roi_radii,
+        wm_fa_thr=wm_fa_thr,
+        gm_fa_thr=gm_fa_thr,
+        csf_fa_thr=csf_fa_thr,
+        gm_md_thr=gm_md_thr,
+        csf_md_thr=csf_md_thr,
     )
     response_wm, response_gm, response_csf = response_from_mask_msmt(
-        gtab, data, mask_wm, mask_gm, mask_csf, tol
+        gtab, data, mask_wm, mask_gm, mask_csf, tol=tol
     )
 
     return response_wm, response_gm, response_csf
