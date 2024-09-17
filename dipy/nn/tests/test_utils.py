@@ -17,7 +17,7 @@ def test_norm(rng=None):
 @set_random_number_generator()
 def test_transform(rng=None):
     temp = rng.random((30, 31, 32))
-    temp2, new_affine, ori_shape = transform_img(
+    temp2, affine, mid_shape, offset_array, scale, crop_vs, pad_vs = transform_img(
         temp, np.eye(4), init_shape=(32, 32, 32), voxsize=np.ones(3) * 2
     )
     with warnings.catch_warnings():
@@ -31,10 +31,13 @@ def test_transform(rng=None):
         )
         temp2 = recover_img(
             temp2,
-            new_affine,
-            ori_shape,
+            affine,
+            mid_shape,
             temp.shape,
-            init_shape=(32, 32, 32),
-            voxsize=np.ones(3) * 2,
+            offset_array,
+            np.ones(3) * 2,
+            scale,
+            crop_vs,
+            pad_vs,
         )
     np.testing.assert_almost_equal(np.array(temp.shape), np.array(temp2.shape))

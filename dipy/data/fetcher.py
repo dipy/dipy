@@ -434,9 +434,9 @@ fetch_deepn4_test = _make_fetcher(
     "fetch_deepn4_test",
     pjoin(dipy_home, "deepn4"),
     "https://ndownloader.figshare.com/files/",
-    ["44672131", "44672134"],
+    ["48842938", "48842941"],
     ["test_input_deepn4.npz", "test_output_deepn4.npz"],
-    md5_list=["69c48ae066cee970087dd84437d5d5ce", "a90d571c935d4b2975715935a22d4bac"],
+    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "8f52bdfceef93a5acae7c32a2c63a7c6"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -454,9 +454,9 @@ fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
     pjoin(dipy_home, "evac"),
     "https://ndownloader.figshare.com/files/",
-    ["43040074"],
+    ["48891958"],
     ["evac_test_data.npz"],
-    md5_list=["a5ad7116c9914a53ba891f9e73f3a132"],
+    md5_list=["072a0dd6d2cddf8a3697b6a772e06e29"],
     doc="Download EVAC+ test data for Park et. al 2022",
 )
 
