@@ -49,7 +49,7 @@ the key characteristics of the original bundle.
 
 
 The following BundleWarp workflow requires two positional input arguments;
- ``static`` and ``moving`` .trk files. In our case, the ``static`` input bundle
+``static`` and ``moving`` .trk files. In our case, the ``static`` input bundle
 is the ``s_UF_L.trk``, and the ``moving`` is ``m_UF_L.trk``.
 
 Run the following workflow::
