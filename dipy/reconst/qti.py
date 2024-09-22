@@ -20,7 +20,7 @@ cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 # XXX Eventually to be replaced with `reconst.dti.lower_triangular`
 def from_3x3_to_6x1(T):
-    """Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
+    r"""Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
 
     Parameters
     ----------
@@ -65,7 +65,7 @@ def from_3x3_to_6x1(T):
 
 
 def from_6x1_to_3x3(V):
-    """Convert 6 x 1 vectors into symmetric 3 x 3 matrices.
+    r"""Convert 6 x 1 vectors into symmetric 3 x 3 matrices.
 
     Parameters
     ----------
@@ -103,7 +103,7 @@ def from_6x1_to_3x3(V):
 
 
 def from_6x6_to_21x1(T):
-    """Convert symmetric 6 x 6 matrices into 21 x 1 vectors.
+    r"""Convert symmetric 6 x 6 matrices into 21 x 1 vectors.
 
     Parameters
     ----------
@@ -171,7 +171,7 @@ def from_6x6_to_21x1(T):
 
 
 def from_21x1_to_6x6(V):
-    """Convert 21 x 1 vectors into symmetric 6 x 6 matrices.
+    r"""Convert 21 x 1 vectors into symmetric 6 x 6 matrices.
 
     Parameters
     ----------
@@ -260,7 +260,7 @@ def from_21x1_to_6x6(V):
 
 
 def cvxpy_1x6_to_3x3(V):
-    """Convert a 1 x 6 vector into a symmetric 3 x 3 matrix.
+    r"""Convert a 1 x 6 vector into a symmetric 3 x 3 matrix.
 
     Parameters
     ----------
@@ -299,7 +299,7 @@ def cvxpy_1x6_to_3x3(V):
 
 
 def cvxpy_1x21_to_6x6(V):
-    """Convert 1 x 21 vector into a symmetric 6 x 6 matrix.
+    r"""Convert 1 x 21 vector into a symmetric 6 x 6 matrix.
 
     Parameters
     ----------
@@ -390,7 +390,7 @@ E_tsym = E_bulk + 0.4 * E_shear
 
 
 def dtd_covariance(DTD):
-    """Calculate covariance of a diffusion tensor distribution (DTD).
+    r"""Calculate covariance of a diffusion tensor distribution (DTD).
 
     Parameters
     ----------
@@ -433,7 +433,7 @@ def dtd_covariance(DTD):
 
 @warning_for_keywords()
 def qti_signal(gtab, D, C, *, S0=1):
-    """Generate signals using the covariance tensor signal representation.
+    r"""Generate signals using the covariance tensor signal representation.
 
     Parameters
     ----------
@@ -508,7 +508,7 @@ def qti_signal(gtab, D, C, *, S0=1):
 
 
 def design_matrix(btens):
-    """Calculate the design matrix from the b-tensors.
+    r"""Calculate the design matrix from the b-tensors.
 
     Parameters
     ----------
@@ -873,7 +873,7 @@ class QtiFit:
 
     @auto_attr
     def md(self):
-        """Mean diffusivity.
+        r"""Mean diffusivity.
 
         Returns
         -------
@@ -895,7 +895,7 @@ class QtiFit:
 
     @auto_attr
     def v_md(self):
-        """Variance of microscopic mean diffusivities.
+        r"""Variance of microscopic mean diffusivities.
 
         Returns
         -------
@@ -916,7 +916,7 @@ class QtiFit:
 
     @auto_attr
     def v_shear(self):
-        """Shear variance.
+        r"""Shear variance.
 
         Returns
         -------
@@ -937,7 +937,7 @@ class QtiFit:
 
     @auto_attr
     def v_iso(self):
-        """Total isotropic variance.
+        r"""Total isotropic variance.
 
         Returns
         -------
@@ -971,7 +971,7 @@ class QtiFit:
 
     @auto_attr
     def mean_d_sq(self):
-        """Average of microscopic diffusion tensors' outer products with
+        r"""Average of microscopic diffusion tensors' outer products with
         themselves.
 
         Returns
@@ -995,7 +995,7 @@ class QtiFit:
 
     @auto_attr
     def c_md(self):
-        """Normalized variance of mean diffusivities.
+        r"""Normalized variance of mean diffusivities.
 
         Returns
         -------
@@ -1022,7 +1022,7 @@ class QtiFit:
 
     @auto_attr
     def c_mu(self):
-        """Normalized microscopic anisotropy.
+        r"""Normalized microscopic anisotropy.
 
         Returns
         -------
@@ -1055,7 +1055,7 @@ class QtiFit:
 
     @auto_attr
     def ufa(self):
-        """Microscopic fractional anisotropy.
+        r"""Microscopic fractional anisotropy.
 
         Returns
         -------
@@ -1074,7 +1074,7 @@ class QtiFit:
 
     @auto_attr
     def c_m(self):
-        """Normalized macroscopic anisotropy.
+        r"""Normalized macroscopic anisotropy.
 
         Returns
         -------
@@ -1108,7 +1108,7 @@ class QtiFit:
 
     @auto_attr
     def fa(self):
-        """Fractional anisotropy.
+        r"""Fractional anisotropy.
 
         Returns
         -------
@@ -1127,7 +1127,7 @@ class QtiFit:
 
     @auto_attr
     def c_c(self):
-        """Microscopic orientation coherence.
+        r"""Microscopic orientation coherence.
 
         Returns
         -------
@@ -1165,7 +1165,7 @@ class QtiFit:
 
     @auto_attr
     def k_bulk(self):
-        """Bulk kurtosis.
+        r"""Bulk kurtosis.
 
         Returns
         -------
@@ -1224,7 +1224,7 @@ class QtiFit:
 
     @auto_attr
     def k_mu(self):
-        """Microscopic kurtosis.
+        r"""Microscopic kurtosis.
 
         Returns
         -------
