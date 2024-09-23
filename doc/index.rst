@@ -90,16 +90,10 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.9.0** is now available. New features include:
+**DIPY 1.10.0** is now available. New features include:
 
-- Numpy 2.0.0 support.
-- DeepN4 novel DL-based N4 Bias Correction method added.
-- Multiple Workflows added.
-- Large update of DIPY Horizon features.
-- Pytest for Cython files (``*.pyx``) added.
-- Large documentation update.
-- Support of Python 3.8 removed.
-- Closed 142 issues and merged 60 pull requests.
+-
+-
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -107,9 +101,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.10.0 <release_notes/release1.10>` released October 11, 2024.
 - :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 - :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
-- :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
+
 
 
 See some of our :ref:`Past Announcements <old_news>`
