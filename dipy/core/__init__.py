@@ -1,2 +1,2 @@
 # Init for core dipy objects
-""" Core objects """
+"""Core objects"""

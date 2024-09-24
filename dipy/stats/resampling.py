@@ -5,8 +5,7 @@ import scipy as sp
 
 
 def bs_se(bs_pdf):
-    """ Calculate the bootstrap standard error estimate of a statistic.
-    """
+    """Calculate the bootstrap standard error estimate of a statistic."""
     N = len(bs_pdf)
     return np.std(bs_pdf) * np.sqrt(N / (N - 1))
 
@@ -120,31 +119,30 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     sigma_hat = np.zeros(x.shape)
     delta_hat = np.zeros(x.shape)
     for i in range(0, n):
-        sigma_hat[i] = __tt_dot(i, x, p_0, statistic, eps)**2
+        sigma_hat[i] = __tt_dot(i, x, p_0, statistic, eps) ** 2
         delta_hat[i] = __tt_dot(i, x, p_0, statistic, eps)
-    sigma_hat = (sigma_hat / n**2)**0.5
+    sigma_hat = (sigma_hat / n**2) ** 0.5
     # estimate the bias (z_0) and the acceleration (a_hat)
     a_num = np.zeros(x.shape)
     a_dem = np.zeros(x.shape)
     for i in range(0, n):
-        a_num[i] = __tt_dot(i, x, p_0, statistic, eps)**3
-        a_dem[i] = __tt_dot(i, x, p_0, statistic, eps)**2
+        a_num[i] = __tt_dot(i, x, p_0, statistic, eps) ** 3
+        a_dem[i] = __tt_dot(i, x, p_0, statistic, eps) ** 2
     a_hat = 1 / 6 * a_num / a_dem**1.5
     z_0 = __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat)
     # define helper variables -- w and l
     w = z_0 + __calc_z_alpha(1 - alpha)
-    l = w / (1 - a_hat * w)**2
-    return __tt(x, p_0 + l * delta_hat / sigma_hat, statistic)
+    ell = w / (1 - a_hat * w) ** 2
+    return __tt(x, p_0 + ell * delta_hat / sigma_hat, statistic)
 
 
 def __calc_z_alpha(alpha):
-    """ Calculate inverse of cdf of standard normal (quantile function).
-    """
+    """Calculate inverse of cdf of standard normal (quantile function)."""
     return 2**0.5 * sp.special.erfinv(2 * alpha - 1)
 
 
 def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
-    """ calculate the bias z_0 for abc method.
+    """calculate the bias z_0 for abc method.
 
     See Also
     --------
@@ -158,11 +156,11 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
         b_hat[i] = __tt_dot_dot(i, x, p_0, statistic, eps)
         tt_dot[i] = __tt_dot(i, x, p_0, statistic, eps)
     b_hat = b_hat / (2 * n**2)
-    c_q_hat = (__tt(x, ((1 - eps) * p_0 + eps * tt_dot /
-                        (n**2 * sigma_hat)), statistic) +
-               __tt(x, ((1 - eps) * p_0 - eps * tt_dot /
-                        (n**2 * sigma_hat)), statistic) -
-               2 * __tt(x, p_0, statistic)) / eps**2
+    c_q_hat = (
+        __tt(x, ((1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)), statistic)
+        + __tt(x, ((1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)), statistic)
+        - 2 * __tt(x, p_0, statistic)
+    ) / eps**2
     return a_hat - (b_hat / sigma_hat - c_q_hat)
 
 
@@ -190,22 +188,23 @@ def __tt(x, p_0, statistic=bs_se):
 
 
 def __tt_dot(i, x, p_0, statistic, eps):
-    """First numerical derivative of __tt.
-    """
+    """First numerical derivative of __tt."""
     e = np.zeros(x.shape)
     e[i] = 1
-    return ((__tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) -
-             __tt(x, p_0, statistic)) / eps)
+    return (
+        __tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) - __tt(x, p_0, statistic)
+    ) / eps
 
 
 def __tt_dot_dot(i, x, p_0, statistic, eps):
-    """Second numerical derivative of __tt.
-    """
+    """Second numerical derivative of __tt."""
     e = np.zeros(x.shape)
     e[i] = 1
-    return (__tt_dot(i, x, p_0, statistic, eps) / eps +
-            (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) -
-             __tt(x, p_0, statistic)) / eps**2)
+    return (
+        __tt_dot(i, x, p_0, statistic, eps) / eps
+        + (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) - __tt(x, p_0, statistic))
+        / eps**2
+    )
 
 
 def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
@@ -266,7 +265,7 @@ def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
 
     """
     N = len(pdf)
-    pdf_mask = np.ones((N,), dtype='int16')  # keeps track of all n - 1 indexes
+    pdf_mask = np.ones((N,), dtype="int16")  # keeps track of all n - 1 indexes
     mask_index = np.copy(pdf_mask)
     if M is None:
         M = N
@@ -286,8 +285,11 @@ def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
         jk_pdf[ii] = statistic(pdf[mask_index > 0])  # compute n-1 statistic
         mask_index[int(rand_index)] = 1
 
-    return (jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)),
-            np.sqrt(N - 1) * np.std(jk_pdf))
+    return (
+        jk_pdf,
+        (N - 1) * (np.mean(jk_pdf) - statistic(pdf)),
+        np.sqrt(N - 1) * np.std(jk_pdf),
+    )
 
 
 def residual_bootstrap(data):

@@ -16,11 +16,21 @@ from dipy.workflows.workflow import Workflow
 class MedianOtsuFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'medotsu'
+        return "medotsu"
 
-    def run(self, input_files, save_masked=False, median_radius=2, numpass=5,
-            autocrop=False, vol_idx=None, dilate=None, out_dir='',
-            out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz'):
+    def run(
+        self,
+        input_files,
+        save_masked=False,
+        median_radius=2,
+        numpass=5,
+        autocrop=False,
+        vol_idx=None,
+        dilate=None,
+        out_dir="",
+        out_mask="brain_mask.nii.gz",
+        out_masked="dwi_masked.nii.gz",
+    ):
         """Workflow wrapping the median_otsu segmentation method.
 
         Applies median_otsu segmentation on each file found by 'globing'
@@ -60,8 +70,7 @@ class MedianOtsuFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, mask_out_path, masked_out_path in io_it:
-            logging.info('Applying median_otsu segmentation on {0}'.
-                         format(fpath))
+            logging.info(f"Applying median_otsu segmentation on {fpath}")
 
             data, affine, img = load_nifti(fpath, return_img=True)
             masked_volume, mask_volume = median_otsu(
@@ -69,18 +78,18 @@ class MedianOtsuFlow(Workflow):
                 vol_idx=vol_idx,
                 median_radius=median_radius,
                 numpass=numpass,
-                autocrop=autocrop, dilate=dilate)
+                autocrop=autocrop,
+                dilate=dilate,
+            )
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
-            logging.info('Mask saved as {0}'.format(mask_out_path))
+            logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
-                save_nifti(masked_out_path, masked_volume, affine,
-                           img.header)
+                save_nifti(masked_out_path, masked_volume, affine, img.header)
 
-                logging.info('Masked volume saved as {0}'.
-                             format(masked_out_path))
+                logging.info(f"Masked volume saved as {masked_out_path}")
 
         return io_it
 
@@ -88,25 +97,33 @@ class MedianOtsuFlow(Workflow):
 class RecoBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'recobundles'
+        return "recobundles"
 
-    def run(self, streamline_files, model_bundle_files,
-            greater_than=50, less_than=1000000,
-            no_slr=False, clust_thr=15.,
-            reduction_thr=15.,
-            reduction_distance='mdf',
-            model_clust_thr=2.5,
-            pruning_thr=8.,
-            pruning_distance='mdf',
-            slr_metric='symmetric',
-            slr_transform='similarity',
-            slr_matrix='small',
-            refine=False, r_reduction_thr=12.,
-            r_pruning_thr=6., no_r_slr=False,
-            out_dir='',
-            out_recognized_transf='recognized.trk',
-            out_recognized_labels='labels.npy'):
-        """ Recognize bundles
+    def run(
+        self,
+        streamline_files,
+        model_bundle_files,
+        greater_than=50,
+        less_than=1000000,
+        no_slr=False,
+        clust_thr=15.0,
+        reduction_thr=15.0,
+        reduction_distance="mdf",
+        model_clust_thr=2.5,
+        pruning_thr=8.0,
+        pruning_distance="mdf",
+        slr_metric="symmetric",
+        slr_transform="similarity",
+        slr_matrix="small",
+        refine=False,
+        r_reduction_thr=12.0,
+        r_pruning_thr=6.0,
+        no_r_slr=False,
+        out_dir="",
+        out_recognized_transf="recognized.trk",
+        out_recognized_labels="labels.npy",
+    ):
+        """Recognize bundles
 
         Parameters
         ----------
@@ -173,112 +190,128 @@ class RecoBundlesFlow(Workflow):
         slr = not no_slr
         r_slr = not no_r_slr
 
-        bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45),
-                  (0.8, 1.2), (0.8, 1.2), (0.8, 1.2)]
+        bounds = [
+            (-30, 30),
+            (-30, 30),
+            (-30, 30),
+            (-45, 45),
+            (-45, 45),
+            (-45, 45),
+            (0.8, 1.2),
+            (0.8, 1.2),
+            (0.8, 1.2),
+        ]
 
         slr_matrix = slr_matrix.lower()
-        if slr_matrix == 'nano':
+        if slr_matrix == "nano":
             slr_select = (100, 100)
-        if slr_matrix == 'tiny':
+        if slr_matrix == "tiny":
             slr_select = (250, 250)
-        if slr_matrix == 'small':
+        if slr_matrix == "small":
             slr_select = (400, 400)
-        if slr_matrix == 'medium':
+        if slr_matrix == "medium":
             slr_select = (600, 600)
-        if slr_matrix == 'large':
+        if slr_matrix == "large":
             slr_select = (800, 800)
-        if slr_matrix == 'huge':
+        if slr_matrix == "huge":
             slr_select = (1200, 1200)
 
         slr_transform = slr_transform.lower()
-        if slr_transform == 'translation':
+        if slr_transform == "translation":
             bounds = bounds[:3]
-        if slr_transform == 'rigid':
+        if slr_transform == "rigid":
             bounds = bounds[:6]
-        if slr_transform == 'similarity':
+        if slr_transform == "similarity":
             bounds = bounds[:7]
-        if slr_transform == 'scaling':
+        if slr_transform == "scaling":
             bounds = bounds[:9]
 
-        logging.info('### RecoBundles ###')
+        logging.info("### RecoBundles ###")
 
         io_it = self.get_io_iterator()
 
         t = time()
         logging.info(streamline_files)
-        input_obj = load_tractogram(streamline_files, 'same',
-                                    bbox_valid_check=False)
+        input_obj = load_tractogram(streamline_files, "same", bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
-        logging.info(' Loading time %0.3f sec' % (time() - t,))
+        logging.info(f" Loading time {time() - t:0.3f} sec")
 
-        rb = RecoBundles(streamlines, greater_than=greater_than,
-                         less_than=less_than)
+        rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = load_tractogram(mb, 'same',
-                                           bbox_valid_check=False).streamlines
-            logging.info(' Loading time %0.3f sec' % (time() - t,))
+            model_bundle = load_tractogram(
+                mb, "same", bbox_valid_check=False
+            ).streamlines
+            logging.info(f" Loading time {time() - t:0.3f} sec")
             logging.info("model file = ")
             logging.info(mb)
 
-            recognized_bundle, labels = \
-                rb.recognize(
-                    model_bundle,
-                    model_clust_thr=model_clust_thr,
-                    reduction_thr=reduction_thr,
-                    reduction_distance=reduction_distance,
-                    pruning_thr=pruning_thr,
-                    pruning_distance=pruning_distance,
-                    slr=slr,
-                    slr_metric=slr_metric,
-                    slr_x0=slr_transform,
-                    slr_bounds=bounds,
-                    slr_select=slr_select,
-                    slr_method='L-BFGS-B')
+            recognized_bundle, labels = rb.recognize(
+                model_bundle,
+                model_clust_thr=model_clust_thr,
+                reduction_thr=reduction_thr,
+                reduction_distance=reduction_distance,
+                pruning_thr=pruning_thr,
+                pruning_distance=pruning_distance,
+                slr=slr,
+                slr_metric=slr_metric,
+                slr_x0=slr_transform,
+                slr_bounds=bounds,
+                slr_select=slr_select,
+                slr_method="L-BFGS-B",
+            )
 
             if refine:
-
                 if len(recognized_bundle) > 1:
-
                     # affine
-                    x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
-                    affine_bounds = [(-30, 30), (-30, 30), (-30, 30),
-                                     (-45, 45), (-45, 45), (-45, 45),
-                                     (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
-                                     (-10, 10), (-10, 10), (-10, 10)]
+                    x0 = np.array([0, 0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0])
+                    affine_bounds = [
+                        (-30, 30),
+                        (-30, 30),
+                        (-30, 30),
+                        (-45, 45),
+                        (-45, 45),
+                        (-45, 45),
+                        (0.8, 1.2),
+                        (0.8, 1.2),
+                        (0.8, 1.2),
+                        (-10, 10),
+                        (-10, 10),
+                        (-10, 10),
+                    ]
 
-                    recognized_bundle, labels = \
-                        rb.refine(
-                            model_bundle,
-                            recognized_bundle,
-                            model_clust_thr=model_clust_thr,
-                            reduction_thr=r_reduction_thr,
-                            reduction_distance=reduction_distance,
-                            pruning_thr=r_pruning_thr,
-                            pruning_distance=pruning_distance,
-                            slr=r_slr,
-                            slr_metric=slr_metric,
-                            slr_x0=x0,
-                            slr_bounds=affine_bounds,
-                            slr_select=slr_select,
-                            slr_method='L-BFGS-B')
+                    recognized_bundle, labels = rb.refine(
+                        model_bundle,
+                        recognized_bundle,
+                        model_clust_thr=model_clust_thr,
+                        reduction_thr=r_reduction_thr,
+                        reduction_distance=reduction_distance,
+                        pruning_thr=r_pruning_thr,
+                        pruning_distance=pruning_distance,
+                        slr=r_slr,
+                        slr_metric=slr_metric,
+                        slr_x0=x0,
+                        slr_bounds=affine_bounds,
+                        slr_select=slr_select,
+                        slr_method="L-BFGS-B",
+                    )
 
             if len(labels) > 0:
                 ba, bmd = rb.evaluate_results(
-                    model_bundle, recognized_bundle,
-                    slr_select)
+                    model_bundle, recognized_bundle, slr_select
+                )
 
-                logging.info("Bundle adjacency Metric {0}".format(ba))
-                logging.info("Bundle Min Distance Metric {0}".format(bmd))
+                logging.info(f"Bundle adjacency Metric {ba}")
+                logging.info(f"Bundle Min Distance Metric {bmd}")
 
-            new_tractogram = StatefulTractogram(recognized_bundle,
-                                                streamline_files, Space.RASMM)
+            new_tractogram = StatefulTractogram(
+                recognized_bundle, streamline_files, Space.RASMM
+            )
             save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
-            logging.info('Saving output files ...')
+            logging.info("Saving output files ...")
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
             logging.info(out_labels)
@@ -287,12 +320,16 @@ class RecoBundlesFlow(Workflow):
 class LabelsBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'labelsbundles'
+        return "labelsbundles"
 
-    def run(self, streamline_files, labels_files,
-            out_dir='',
-            out_bundle='recognized_orig.trk'):
-        """ Extract bundles using existing indices (labels)
+    def run(
+        self,
+        streamline_files,
+        labels_files,
+        out_dir="",
+        out_bundle="recognized_orig.trk",
+    ):
+        """Extract bundles using existing indices (labels)
 
         Parameters
         ----------
@@ -312,24 +349,22 @@ class LabelsBundlesFlow(Workflow):
          clustering, Neuroimage, 2017.
 
         """
-        logging.info('### Labels to Bundles ###')
+        logging.info("### Labels to Bundles ###")
 
         io_it = self.get_io_iterator()
         for f_steamlines, f_labels, out_bundle in io_it:
-
             logging.info(f_steamlines)
-            sft = load_tractogram(f_steamlines, 'same',
-                                  bbox_valid_check=False)
+            sft = load_tractogram(f_steamlines, "same", bbox_valid_check=False)
             streamlines = sft.streamlines
 
             logging.info(f_labels)
             location = np.load(f_labels)
-            if len(location) < 1 :
+            if len(location) < 1:
                 bundle = Streamlines([])
             else:
                 bundle = streamlines[location]
 
-            logging.info('Saving output files ...')
+            logging.info("Saving output files ...")
             new_sft = StatefulTractogram(bundle, sft, Space.RASMM)
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)

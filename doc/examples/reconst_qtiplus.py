@@ -26,7 +26,7 @@ defined as
    \\mathbb{C} = \\langle \\mathbf{D} \\otimes \\mathbf{D} \\rangle - \\langle
    \\mathbf{D} \\rangle \\otimes \\langle \\mathbf{D} \\rangle ,
 
-where $\otimes$ denotes a tensor outer product. $\mathbb{C}$ has 21 unique
+where $\\otimes$ denotes a tensor outer product. $\\mathbb{C}$ has 21 unique
 elements and enables the calculation of several microstructural parameters.
 
 Using the cumulant expansion, the diffusion-weighted signal can be approximated
@@ -209,7 +209,7 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 # performed in the next line will take approximately 15 minutes when using SCS,
 # and 2 minute when using Mosek!
 
-qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc')
+qtimodel_constrained = qti.QtiModel(gtab_70, fit_method="SDPdc")
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
 ###############################################################################

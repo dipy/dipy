@@ -8,22 +8,25 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 def func(x):
-    return x[0]**2 + x[1]**2 + x[2]**2
+    return x[0] ** 2 + x[1] ** 2 + x[2] ** 2
 
 
 def func2(x):
-    return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
+    return x[0] ** 2 + 0.5 * x[1] ** 2 + 0.2 * x[2] ** 2 + 0.2 * x[3] ** 2
 
 
 def test_optimize_new_scipy():
-    opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
+    opt = Optimizer(fun=func, x0=np.array([1.0, 1.0, 1.0]), method="Powell")
 
     npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
     npt.assert_almost_equal(opt.fopt, 0)
 
-    opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
-                    options={'maxcor': 10, 'ftol': 1e-7,
-                             'gtol': 1e-5, 'eps': 1e-8})
+    opt = Optimizer(
+        fun=func,
+        x0=np.array([1.0, 1.0, 1.0]),
+        method="L-BFGS-B",
+        options={"maxcor": 10, "ftol": 1e-7, "gtol": 1e-5, "eps": 1e-8},
+    )
 
     npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
     npt.assert_almost_equal(opt.fopt, 0)
@@ -31,30 +34,38 @@ def test_optimize_new_scipy():
 
     npt.assert_equal(opt.evolution, None)
 
-    opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
-                    options={'maxcor': 10, 'ftol': 1e-7,
-                             'gtol': 1e-5, 'eps': 1e-8},
-                    evolution=False)
+    opt = Optimizer(
+        fun=func,
+        x0=np.array([1.0, 1.0, 1.0]),
+        method="L-BFGS-B",
+        options={"maxcor": 10, "ftol": 1e-7, "gtol": 1e-5, "eps": 1e-8},
+        evolution=False,
+    )
 
     npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
     npt.assert_almost_equal(opt.fopt, 0)
 
     opt.print_summary()
 
-    opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
-                    method='L-BFGS-B',
-                    options={'maxcor': 10, 'ftol': 1e-7,
-                             'gtol': 1e-5, 'eps': 1e-8},
-                    evolution=True)
+    opt = Optimizer(
+        fun=func2,
+        x0=np.array([1.0, 1.0, 1.0, 5.0]),
+        method="L-BFGS-B",
+        options={"maxcor": 10, "ftol": 1e-7, "gtol": 1e-5, "eps": 1e-8},
+        evolution=True,
+    )
 
     npt.assert_equal(opt.evolution.shape, (opt.nit, 4))
 
-    opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
-                    method='Powell',
-                    options={'xtol': 1e-6, 'ftol': 1e-6, 'maxiter': 1e6},
-                    evolution=True)
+    opt = Optimizer(
+        fun=func2,
+        x0=np.array([1.0, 1.0, 1.0, 5.0]),
+        method="Powell",
+        options={"xtol": 1e-6, "ftol": 1e-6, "maxiter": 1e6},
+        evolution=True,
+    )
 
-    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.0]))
 
 
 @set_random_number_generator()
@@ -96,8 +107,7 @@ def test_spdot(rng):
     B_sparse = sps.csr_matrix(B)
     dense_dot = np.dot(A, B)
     # Try all the different variations:
-    npt.assert_array_almost_equal(dense_dot,
-                                  spdot(A_sparse, B_sparse).todense())
+    npt.assert_array_almost_equal(dense_dot, spdot(A_sparse, B_sparse).todense())
     npt.assert_array_almost_equal(dense_dot, spdot(A, B_sparse))
     npt.assert_array_almost_equal(dense_dot, spdot(A_sparse, B))
 

@@ -45,20 +45,19 @@ fetch_bundles_2_subjects()
 # ``af left`` (left arcuate fasciculus) and maps, e.g. FA for a specific
 # subject.
 
-res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
-                              ['af.left', 'cst.right', 'cc_1'])
+res = read_bundles_2_subjects("subj_1", ["t1", "fa"], ["af.left", "cst.right", "cc_1"])
 
 ###############################################################################
 # We will use 3 bundles, FA and the affine transformation that brings the voxel
 # coordinates to world coordinates (RAS 1mm).
 
-streamlines = Streamlines(res['af.left'])
-streamlines.extend(res['cst.right'])
-streamlines.extend(res['cc_1'])
+streamlines = Streamlines(res["af.left"])
+streamlines.extend(res["cst.right"])
+streamlines.extend(res["cc_1"])
 
-data = res['fa']
+data = res["fa"]
 shape = data.shape
-affine = res['affine']
+affine = res["affine"]
 
 ###############################################################################
 # With our current design it is easy to decide in which space you want the
@@ -74,6 +73,7 @@ world_coords = True
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
+
     streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
 ###############################################################################
@@ -100,20 +100,11 @@ image_actor_z.opacity(slicer_opacity)
 
 image_actor_x = image_actor_z.copy()
 x_midpoint = int(np.round(shape[0] / 2))
-image_actor_x.display_extent(x_midpoint,
-                             x_midpoint, 0,
-                             shape[1] - 1,
-                             0,
-                             shape[2] - 1)
+image_actor_x.display_extent(x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
 
 image_actor_y = image_actor_z.copy()
 y_midpoint = int(np.round(shape[1] / 2))
-image_actor_y.display_extent(0,
-                             shape[0] - 1,
-                             y_midpoint,
-                             y_midpoint,
-                             0,
-                             shape[2] - 1)
+image_actor_y.display_extent(0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
 
 ###############################################################################
 # Connect the actors with the Scene.
@@ -137,28 +128,33 @@ show_m.initialize()
 # After we have initialized the ``ShowManager`` we can go ahead and create
 # sliders to move the slices and change their opacity.
 
-line_slider_z = ui.LineSlider2D(min_value=0,
-                                max_value=shape[2] - 1,
-                                initial_value=shape[2] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+line_slider_z = ui.LineSlider2D(
+    min_value=0,
+    max_value=shape[2] - 1,
+    initial_value=shape[2] / 2,
+    text_template="{value:.0f}",
+    length=140,
+)
 
-line_slider_x = ui.LineSlider2D(min_value=0,
-                                max_value=shape[0] - 1,
-                                initial_value=shape[0] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+line_slider_x = ui.LineSlider2D(
+    min_value=0,
+    max_value=shape[0] - 1,
+    initial_value=shape[0] / 2,
+    text_template="{value:.0f}",
+    length=140,
+)
 
-line_slider_y = ui.LineSlider2D(min_value=0,
-                                max_value=shape[1] - 1,
-                                initial_value=shape[1] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+line_slider_y = ui.LineSlider2D(
+    min_value=0,
+    max_value=shape[1] - 1,
+    initial_value=shape[1] / 2,
+    text_template="{value:.0f}",
+    length=140,
+)
 
-opacity_slider = ui.LineSlider2D(min_value=0.0,
-                                 max_value=1.0,
-                                 initial_value=slicer_opacity,
-                                 length=140)
+opacity_slider = ui.LineSlider2D(
+    min_value=0.0, max_value=1.0, initial_value=slicer_opacity, length=140
+)
 
 ###############################################################################
 # Now we will write callbacks for the sliders and register them.
@@ -199,8 +195,8 @@ def build_label(text):
     label = ui.TextBlock2D()
     label.message = text
     label.font_size = 18
-    label.font_family = 'Arial'
-    label.justification = 'left'
+    label.font_family = "Arial"
+    label.justification = "left"
     label.bold = False
     label.italic = False
     label.shadow = False
@@ -218,10 +214,7 @@ opacity_slider_label = build_label(text="Opacity")
 ###############################################################################
 # Now we will create a ``panel`` to contain the sliders and labels.
 
-panel = ui.Panel2D(size=(300, 200),
-                   color=(1, 1, 1),
-                   opacity=0.1,
-                   align="right")
+panel = ui.Panel2D(size=(300, 200), color=(1, 1, 1), opacity=0.1, align="right")
 panel.center = (1030, 120)
 
 panel.add_element(line_slider_label_x, (0.1, 0.75))
@@ -269,15 +262,14 @@ scene.zoom(1.5)
 scene.reset_clipping_range()
 
 if interactive:
-
     show_m.add_window_callback(win_callback)
     show_m.render()
     show_m.start()
 
 else:
-
-    window.record(scene, out_path='bundles_and_3_slices.png', size=(1200, 900),
-                  reset_camera=False)
+    window.record(
+        scene, out_path="bundles_and_3_slices.png", size=(1200, 900), reset_camera=False
+    )
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

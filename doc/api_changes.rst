@@ -8,6 +8,13 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.10.0 changes
 ------------------
 
+**Reconstruction**
+
+- Applied the change of the default `cvxpy` solver from `ECOS` to `CLARABEL`.
+  Starting in CXVPY 1.6.0, ECOS will no longer be installed by default with
+  CVXPY. Since we do not want to add an explicit dependency on ECOS, we
+  switched to the new default solver, Clarabel.
+
 **Workflows**
 - The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
   this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.

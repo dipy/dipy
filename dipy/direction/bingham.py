@@ -8,10 +8,12 @@ References
 ----------
 .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
         anisotropy: Extraction of bundle-specific structural metrics from
-        crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
-.. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-        and their application to the healthy ageing brain.” Apollo -
-        University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+        crossing fiber models. NeuroImage 2014;100:176-91.
+.. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
+        Distribution Functions. in: Advanced methods for diffusion MRI data
+        analysis and their application to the healthy ageing brain. Apollo -
+        University of Cambridge Repository. Doctoral Thesis 2018.
+        doi: 10.17863/CAM.29356.
 """
 
 import numpy as np
@@ -157,7 +159,7 @@ def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
             anisotropy: Extraction of bundle-specific structural metrics from
-            crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+            crossing fiber models. NeuroImage 2014;100:176-91.
     """
     # extract all maxima on the ODF
     dirs, vals, inds = peak_directions(odf, sphere,
@@ -273,6 +275,7 @@ def bingham_to_sf(bingham_params, sphere, *, mask=None):
 def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     """
     Compute fiber density for each lobe for a given Bingham ODF.
+    Measured in the unit 1/mm^3.
 
     Parameters
     ----------
@@ -305,8 +308,8 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     References
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-           anisotropy: Extraction of bundle-specific structural metrics from
-           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+            anisotropy: Extraction of bundle-specific structural metrics from
+            crossing fiber models. NeuroImage 2014;100:176-91.
     """
     sphere = unit_icosahedron.subdivide(subdivide)
 
@@ -346,6 +349,7 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
 def bingham_fiber_spread(f0, fd):
     """
     Compute fiber spread for each lobe for a given Bingham volume.
+    Measured in radians.
 
     Parameters
     ----------
@@ -367,8 +371,8 @@ def bingham_fiber_spread(f0, fd):
     References
     ----------
     .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-           anisotropy: Extraction of bundle-specific structural metrics from
-           crossing fiber models. NeuroImage. 2014 Oct 15;100:176-91.
+            anisotropy: Extraction of bundle-specific structural metrics from
+            crossing fiber models. NeuroImage 2014;100:176-91.
     """
     fs = np.zeros(f0.shape)
     fs[f0 > 0] = fd[f0 > 0] / f0[f0 > 0]
@@ -402,13 +406,14 @@ def k2odi(k):
 
     References
     ----------
-    .. [1] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+    .. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
+            Distribution Functions. in: Advanced methods for diffusion MRI data
+            analysis and their application to the healthy ageing brain. Apollo -
+            University of Cambridge Repository. Doctoral Thesis 2018.
+            doi: 10.17863/CAM.29356.
+    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
             NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4),
-            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
-    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo -
-            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+            density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
     """
     odi = np.zeros(k.shape)
     odi[k > 0] = 2/np.pi * np.arctan(1 / k[k > 0])
@@ -441,13 +446,14 @@ def odi2k(odi):
 
     References
     ----------
-    .. [1] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
+    .. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
+            Distribution Functions. in: Advanced methods for diffusion MRI data
+            analysis and their application to the healthy ageing brain. Apollo -
+            University of Cambridge Repository. Doctoral Thesis 2018.
+            doi: 10.17863/CAM.29356.
+    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
             NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. Neuroimage. 2012; 61(4),
-            1000-1016. doi: 10.1016/j.neuroimage.2012.03.072
-    .. [2] R. Neto Henriques, “Advanced methods for diffusion MRI data analysis
-            and their application to the healthy ageing brain.” Apollo -
-            University of Cambridge Repository, 2018. doi: 10.17863/CAM.29356.
+            density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
     """
     k = np.zeros(odi.shape)
     k[odi > 0] = 1/np.tan(np.pi/2 * odi[odi > 0])
@@ -541,7 +547,8 @@ class BinghamMetrics:
 
     @auto_attr
     def amplitude_lobe(self):
-        """ Maximum Bingham Amplitude for each ODF lobe."""
+        """ Maximum Bingham Amplitude for each ODF lobe.
+        Measured in the unit 1/mm^3*rad."""
         return self.model_params[..., 0]
 
     @auto_attr
@@ -569,8 +576,8 @@ class BinghamMetrics:
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-            Zhang H. Bingham-NODDI: Mapping anisotropic orientation dispersion
-            of neurites using diffusion MRI NeuroImage. 2016; 133:207-223.
+                Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
+                of neurites using diffusion MRI. NeuroImage 2016;133:207-223.
         """
         return np.sqrt(self.kappa1_lobe * self.kappa2_lobe)
 
@@ -588,15 +595,15 @@ class BinghamMetrics:
 
     @auto_attr
     def odi_total_lobe(self):
-        """ Overall Orientation Dispersion Index (ODI) computed for am
-        ODF peak from the overall concentration parameter (k_total).
+        """ Overall Orientation Dispersion Index (ODI) computed for an
+        ODF lobe from the overall concentration parameter (k_total).
         Defined by equation 20 in [4]_.
 
         References
         ----------
         .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-            Zhang H. Bingham-NODDI: Mapping anisotropic orientation dispersion
-            of neurites using diffusion MRI NeuroImage. 2016; 133:207-223.
+                Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
+                of neurites using diffusion MRI. NeuroImage 2016;133:207-223.
         """
         return k2odi(self.kappa_total_lobe)
 
@@ -643,10 +650,9 @@ class BinghamMetrics:
 
         References
         ----------
-        .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond
-               fractional anisotropy: Extraction of bundle-specific structural
-               metrics from crossing fiber models. NeuroImage. 2014 Oct 15;
-               100:176-91.
+        .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
+                anisotropy: Extraction of bundle-specific structural metrics from
+                crossing fiber models. NeuroImage 2014;100:176-91.
         """
         return bingham_fiber_spread(self.amplitude_lobe, self.fd_lobe)
 
@@ -677,7 +683,7 @@ class BinghamMetrics:
 def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
                   npeaks=5, min_sep_angle=60, rel_th=0.1):
     """
-    Fit the Bingham function from a volume of ODF.
+    Fit the Bingham function from an image volume of ODFs.
 
     Parameters
     ----------
@@ -728,15 +734,15 @@ def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
 def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *, mask=None,
                   npeaks=5, min_sep_angle=60, rel_th=0.1):
     """
-    Fit the Bingham function from an ODF's spherical harmonics (SH)
-    representation.
+    Fit the Bingham function from an image volume of spherical harmonics (SH)
+    representing ODFs.
 
     Parameters
     ----------
     sh : ndarray
         SH coefficients representing a spherical function.
-    sphere : Sphere
-        The points on which to sample the spherical function.
+    sphere : `Sphere` class instance
+        The Sphere providing the odf's discrete directions.
     sh_order_max: int
         Maximum order used for the SH reconstruction.
     max_search_angle: float.

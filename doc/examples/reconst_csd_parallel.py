@@ -12,7 +12,6 @@ Import modules, fetch and read data, apply the mask and calculate the response
 function.
 """
 
-import multiprocessing
 import time
 
 from dipy.core.gradients import gradient_table
@@ -23,15 +22,16 @@ from dipy.io.image import load_nifti
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.segment.mask import median_otsu
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
-                             numpass=1, autocrop=False, dilate=2)
+maskdata, mask = median_otsu(
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=False, dilate=2
+)
 
 response, ratio = auto_response_ssst(gtab, maskdata, roi_radii=10, fa_thr=0.7)
 
@@ -52,40 +52,44 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 # duration of execution with or without parallelism.
 
 start_time = time.time()
-csd_peaks_parallel = peaks_from_model(model=csd_model,
-                                      data=data,
-                                      sphere=default_sphere,
-                                      relative_peak_threshold=.5,
-                                      min_separation_angle=25,
-                                      mask=mask,
-                                      return_sh=True,
-                                      return_odf=False,
-                                      normalize_peaks=True,
-                                      npeaks=5,
-                                      parallel=True,
-                                      num_processes=2)
+csd_peaks_parallel = peaks_from_model(
+    model=csd_model,
+    data=data,
+    sphere=default_sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_sh=True,
+    return_odf=False,
+    normalize_peaks=True,
+    npeaks=5,
+    parallel=True,
+    num_processes=2,
+)
 
 time_parallel = time.time() - start_time
 print(f"peaks_from_model using 2 processes ran in : {time_parallel} seconds")
 
 start_time = time.time()
-csd_peaks = peaks_from_model(model=csd_model,
-                             data=data,
-                             sphere=default_sphere,
-                             relative_peak_threshold=.5,
-                             min_separation_angle=25,
-                             mask=mask,
-                             return_sh=True,
-                             return_odf=False,
-                             normalize_peaks=True,
-                             npeaks=5,
-                             parallel=False,
-                             num_processes=None)
+csd_peaks = peaks_from_model(
+    model=csd_model,
+    data=data,
+    sphere=default_sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+    return_sh=True,
+    return_odf=False,
+    normalize_peaks=True,
+    npeaks=5,
+    parallel=False,
+    num_processes=None,
+)
 
 time_single = time.time() - start_time
-print("peaks_from_model ran in :" + str(time_single) + " seconds")
+print(f"peaks_from_model ran in : {time_single} seconds")
 
-print("Speedup factor : " + str(time_single / time_parallel))
+print(f"Speedup factor : {time_single / time_parallel}")
 
 ###############################################################################
 # In Windows if you get a runtime error about frozen executable please start

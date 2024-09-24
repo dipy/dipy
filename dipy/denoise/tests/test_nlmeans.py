@@ -19,14 +19,14 @@ from dipy.utils.omp import cpu_count, have_openmp
 @set_random_number_generator()
 def test_nlmeans_padding(rng):
     S0 = 100 + 2 * rng.standard_normal((50, 50, 50))
-    S0 = S0.astype('f8')
+    S0 = S0.astype("f8")
     S0n = add_padding_reflection(S0, 5)
     S0n2 = remove_padding(S0n, 5)
     assert_equal(S0.shape, S0n2.shape)
 
 
 def test_nlmeans_static():
-    S0 = 100 * np.ones((20, 20, 20), dtype='f8')
+    S0 = 100 * np.ones((20, 20, 20), dtype="f8")
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False)
     assert_array_almost_equal(S0, S0n)
 
@@ -67,8 +67,7 @@ def test_nlmeans_boundary(rng):
 
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
-            rician=False)
+    nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise), rician=False)
 
     print(S0[9, 9, 9])
     print(S0[10, 10, 10])
@@ -78,7 +77,7 @@ def test_nlmeans_boundary(rng):
 
 
 def test_nlmeans_4D_and_mask():
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f8')
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype="f8")
 
     mask = np.zeros((20, 20, 20))
     mask[10, 10, 10] = 1
@@ -90,8 +89,7 @@ def test_nlmeans_4D_and_mask():
 
 
 def test_nlmeans_dtype():
-
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype="f4")
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
     S0n = nlmeans(S0, sigma=1, mask=mask, rician=True)
@@ -103,8 +101,8 @@ def test_nlmeans_dtype():
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
 
-@pytest.mark.skipif(not have_openmp,
-                    reason='OpenMP does not appear to be available')
+
+@pytest.mark.skipif(not have_openmp, reason="OpenMP does not appear to be available")
 def test_nlmeans_4d_3dsigma_and_threads():
     # Input is 4D data and 3D sigma
     data = np.ones((50, 50, 50, 5))
@@ -114,21 +112,21 @@ def test_nlmeans_4d_3dsigma_and_threads():
     # mask[25-10:25+10] = 1
     mask[:] = 1
 
-    print('cpu count %d' % (cpu_count(),))
+    print(f"cpu count {cpu_count()}")
 
-    print('1')
+    print("1")
     t = time()
     new_data = nlmeans(data, sigma, mask, num_threads=1)
     duration_1core = time() - t
     print(duration_1core)
 
-    print('All')
+    print("All")
     t = time()
     new_data2 = nlmeans(data, sigma, mask, num_threads=None)
     duration_all_core = time() - t
     print(duration_all_core)
 
-    print('2')
+    print("2")
     t = time()
     new_data3 = nlmeans(data, sigma, mask, num_threads=2)
     duration_2core = time() - t
@@ -138,10 +136,8 @@ def test_nlmeans_4d_3dsigma_and_threads():
     assert_array_almost_equal(new_data2, new_data3)
 
     if cpu_count() > 2:
-
         assert_equal(duration_all_core < duration_2core, True)
         assert_equal(duration_2core < duration_1core, True)
 
     if cpu_count() == 2:
-
         assert_greater(duration_1core, duration_2core)

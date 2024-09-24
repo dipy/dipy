@@ -10,6 +10,8 @@ First create your ``CombinedWorkflow`` class. Your ``CombinedWorkflow`` class
 file is usually located in the ``dipy/workflows`` directory.
 """
 
+import os
+
 from dipy.workflows.combined_workflow import CombinedWorkflow
 
 ###############################################################################
@@ -24,24 +26,27 @@ from dipy.workflows.segment import MedianOtsuFlow
 
 
 class DenoiseAndSegment(CombinedWorkflow):
-
     """
     ``DenoiseAndSegment`` is the name of our combined workflow. Note that
     it needs to extend CombinedWorkflow for everything to work properly.
     """
 
     def _get_sub_flows(self):
-        return [
-            NLMeansFlow,
-            MedianOtsuFlow
-        ]
+        return [NLMeansFlow, MedianOtsuFlow]
 
         """
         It is mandatory to implement this method if you want to make all the
         sub workflows parameters available in commandline.
         """
 
-    def run(self, input_files, out_dir='', out_file='processed.nii.gz'):
+    def run(
+        self,
+        input_files,
+        out_dir="",
+        out_denoised="processed.nii.gz",
+        out_mask="brain_mask.nii.gz",
+        out_masked="dwi_masked.nii.gz",
+    ):
         """
         Parameters
         ----------
@@ -52,8 +57,14 @@ class DenoiseAndSegment(CombinedWorkflow):
         out_dir : string, optional
             Where the resulting file will be saved. (default '')
 
-        out_file : string, optional
-            Name of the result file to be saved. (default 'processed.nii.gz')
+        out_denoised : string, optional
+            Name of the denoised file to be saved.
+
+        out_mask : string, optional
+            Name of the Otsu mask file to be saved.
+
+        out_masked : string, optional
+            Name of the Otsu masked file to be saved.
         """
 
         """
@@ -69,13 +80,27 @@ class DenoiseAndSegment(CombinedWorkflow):
 
         io_it = self.get_io_iterator()
 
-        for in_file, out_file in io_it:
+        for fnames in io_it:
+            in_fname = fnames[0]
+            _out_denoised = os.path.basename(fnames[1])
+            _out_mask = os.path.basename(fnames[2])
+            _out_masked = os.path.basename(fnames[3])
+
             nl_flow = NLMeansFlow()
-            self.run_sub_flow(nl_flow, in_file, out_dir=out_dir)
-            denoised = nl_flow.last_generated_outputs['out_denoised']
+            self.run_sub_flow(
+                nl_flow, in_fname, out_dir=out_dir, out_denoised=_out_denoised
+            )
+            denoised = nl_flow.last_generated_outputs["out_denoised"]
 
             me_flow = MedianOtsuFlow()
-            self.run_sub_flow(me_flow, denoised, out_dir=out_dir)
+            self.run_sub_flow(
+                me_flow,
+                denoised,
+                out_dir=out_dir,
+                out_mask=_out_mask,
+                out_masked=_out_masked,
+            )
+
 
 ###############################################################################
 # Use ``self.get_io_iterator()`` in every workflow you create. This creates

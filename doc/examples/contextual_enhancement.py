@@ -102,7 +102,7 @@ from dipy.viz import actor, window
 # spherical deconvolution is used to model the fiber orientations.
 
 # Read data
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 data = load_nifti_data(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
@@ -111,15 +111,16 @@ gtab = gradient_table(bvals, bvecs)
 b0_slice = data[:, :, :, 1]
 b0_mask, mask = median_otsu(b0_slice)
 rng = np.random.default_rng(1)
-data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]),
-                       noise_type='rician', rng=rng)
+data_noisy = add_noise(
+    data, 10.0, np.mean(b0_slice[mask]), noise_type="rician", rng=rng
+)
 
 # Select a small part of it.
 padding = 3  # Include a larger region to avoid boundary effects
-data_small = data[25-padding:40+padding, 65-padding:80+padding, 35:42]
-data_noisy_small = data_noisy[25-padding:40+padding,
-                              65-padding:80+padding,
-                              35:42]
+data_small = data[25 - padding : 40 + padding, 65 - padding : 80 + padding, 35:42]
+data_noisy_small = data_noisy[
+    25 - padding : 40 + padding, 65 - padding : 80 + padding, 35:42
+]
 
 ###############################################################################
 # Enables/disables interactive visualization
@@ -137,8 +138,7 @@ csd_fit_orig = csd_model_orig.fit(data_small)
 csd_shm_orig = csd_fit_orig.shm_coeff
 
 # Perform CSD on the original data + noise
-response, ratio = auto_response_ssst(gtab, data_noisy, roi_radii=10,
-                                     fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data_noisy, roi_radii=10, fa_thr=0.7)
 csd_model_noisy = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff
@@ -164,18 +164,18 @@ scene = window.Scene()
 # convolve kernel with delta spike
 spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
 spike[3, 3, 3, 0] = 1
-spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order_max=8), k,
-                          sh_order_max=8, test_mode=True)
+spike_shm_conv = convolve(
+    sf_to_sh(spike, k.get_sphere(), sh_order_max=8), k, sh_order_max=8, test_mode=True
+)
 
 spike_sf_conv = sh_to_sf(spike_shm_conv, default_sphere, sh_order_max=8)
-model_kernel = actor.odf_slicer(spike_sf_conv * 6,
-                                sphere=default_sphere,
-                                norm=False,
-                                scale=0.4)
+model_kernel = actor.odf_slicer(
+    spike_sf_conv * 6, sphere=default_sphere, norm=False, scale=0.4
+)
 model_kernel.display(x=3)
 scene.add(model_kernel)
 scene.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
-window.record(scene, out_path='kernel.png', size=(900, 900))
+window.record(scene, out_path="kernel.png", size=(900, 900))
 if interactive:
     window.show(scene)
 
@@ -196,10 +196,9 @@ csd_shm_enh = convolve(csd_shm_noisy, k, sh_order_max=8)
 
 # Sharpen via the Sharpening Deconvolution Transform
 
-csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh,
-                                    default_sphere,
-                                    sh_order_max=8,
-                                    lambda_=0.1)
+csd_shm_enh_sharp = odf_sh_to_sharp(
+    csd_shm_enh, default_sphere, sh_order_max=8, lambda_=0.1
+)
 
 # Convert raw and enhanced data to discrete form
 csd_sf_orig = sh_to_sf(csd_shm_orig, default_sphere, sh_order_max=8)
@@ -218,39 +217,38 @@ csd_sf_enh_sharp /= np.amax(csd_sf_enh_sharp) * 1.25
 scene = window.Scene()
 
 # original ODF field
-fodf_spheres_org = actor.odf_slicer(csd_sf_orig,
-                                    sphere=default_sphere,
-                                    scale=0.4,
-                                    norm=False)
+fodf_spheres_org = actor.odf_slicer(
+    csd_sf_orig, sphere=default_sphere, scale=0.4, norm=False
+)
 fodf_spheres_org.display(z=3)
 fodf_spheres_org.SetPosition(0, 25, 0)
 scene.add(fodf_spheres_org)
 
 # ODF field with added noise
-fodf_spheres = actor.odf_slicer(csd_sf_noisy,
-                                sphere=default_sphere,
-                                scale=0.4,
-                                norm=False,)
+fodf_spheres = actor.odf_slicer(
+    csd_sf_noisy,
+    sphere=default_sphere,
+    scale=0.4,
+    norm=False,
+)
 fodf_spheres.SetPosition(0, 0, 0)
 scene.add(fodf_spheres)
 
 # Enhancement of noisy ODF field
-fodf_spheres_enh = actor.odf_slicer(csd_sf_enh,
-                                    sphere=default_sphere,
-                                    scale=0.4,
-                                    norm=False)
+fodf_spheres_enh = actor.odf_slicer(
+    csd_sf_enh, sphere=default_sphere, scale=0.4, norm=False
+)
 fodf_spheres_enh.SetPosition(25, 0, 0)
 scene.add(fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = actor.odf_slicer(csd_sf_enh_sharp,
-                                          sphere=default_sphere,
-                                          scale=0.4,
-                                          norm=False)
+fodf_spheres_enh_sharp = actor.odf_slicer(
+    csd_sf_enh_sharp, sphere=default_sphere, scale=0.4, norm=False
+)
 fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
 scene.add(fodf_spheres_enh_sharp)
 
-window.record(scene, out_path='enhancements.png', size=(900, 900))
+window.record(scene, out_path="enhancements.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

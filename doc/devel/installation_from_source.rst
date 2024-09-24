@@ -212,7 +212,7 @@ variables. For example, you can add the following lines to your ``~/.bash_profil
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
-Whether you are using Anaconda_ or Hombrew/python.org Python, you will need to then
+Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to then
 run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 

@@ -24,10 +24,9 @@ from dipy.workflows.workflow import Workflow
 class LocalFiberTrackingPAMFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'track_local'
+        return "track_local"
 
-    def _get_direction_getter(self, strategy_name, pam, pmf_threshold,
-                              max_angle):
+    def _get_direction_getter(self, strategy_name, pam, pmf_threshold, max_angle):
         """Get Tracking Direction Getter object.
 
         Parameters
@@ -48,87 +47,107 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Used to get directions for fiber tracking.
 
         """
-        dg, msg = None, ''
+        dg, msg = None, ""
         if strategy_name.lower() in ["deterministic", "det"]:
             msg = "Deterministic"
             dg = DeterministicMaximumDirectionGetter.from_shcoeff(
                 pam.shm_coeff,
                 sphere=pam.sphere,
                 max_angle=max_angle,
-                pmf_threshold=pmf_threshold)
+                pmf_threshold=pmf_threshold,
+            )
         elif strategy_name.lower() in ["probabilistic", "prob"]:
             msg = "Probabilistic"
             dg = ProbabilisticDirectionGetter.from_shcoeff(
                 pam.shm_coeff,
                 sphere=pam.sphere,
                 max_angle=max_angle,
-                pmf_threshold=pmf_threshold)
+                pmf_threshold=pmf_threshold,
+            )
         elif strategy_name.lower() in ["closestpeaks", "cp"]:
             msg = "ClosestPeaks"
             dg = ClosestPeakDirectionGetter.from_shcoeff(
                 pam.shm_coeff,
                 sphere=pam.sphere,
                 max_angle=max_angle,
-                pmf_threshold=pmf_threshold)
-        elif strategy_name.lower() in ["eudx", ]:
+                pmf_threshold=pmf_threshold,
+            )
+        elif strategy_name.lower() in [
+            "eudx",
+        ]:
             msg = "Eudx"
             dg = pam
         else:
             msg = "No direction getter defined. Eudx"
             dg = pam
 
-        logging.info('{0} direction getter strategy selected'.format(msg))
+        logging.info(f"{msg} direction getter strategy selected")
         return dg
 
-    def _core_run(self, stopping_path, use_binary_mask, stopping_thr,
-                  seeding_path, seed_density, step_size, direction_getter,
-                  out_tract, save_seeds):
-
+    def _core_run(
+        self,
+        stopping_path,
+        use_binary_mask,
+        stopping_thr,
+        seeding_path,
+        seed_density,
+        step_size,
+        direction_getter,
+        out_tract,
+        save_seeds,
+    ):
         stop, affine = load_nifti(stopping_path)
         if use_binary_mask:
             stopping_criterion = BinaryStoppingCriterion(stop > stopping_thr)
         else:
             stopping_criterion = ThresholdStoppingCriterion(stop, stopping_thr)
-        logging.info('stopping criterion done')
+        logging.info("stopping criterion done")
         seed_mask, _ = load_nifti(seeding_path)
-        seeds = \
-            utils.seeds_from_mask(
-                seed_mask, affine,
-                density=[seed_density, seed_density, seed_density])
-        logging.info('seeds done')
+        seeds = utils.seeds_from_mask(
+            seed_mask, affine, density=[seed_density, seed_density, seed_density]
+        )
+        logging.info("seeds done")
 
-        tracking_result = LocalTracking(direction_getter,
-                                        stopping_criterion,
-                                        seeds,
-                                        affine,
-                                        step_size=step_size,
-                                        save_seeds=save_seeds)
+        tracking_result = LocalTracking(
+            direction_getter,
+            stopping_criterion,
+            seeds,
+            affine,
+            step_size=step_size,
+            save_seeds=save_seeds,
+        )
 
-        logging.info('LocalTracking initiated')
+        logging.info("LocalTracking initiated")
 
         if save_seeds:
             streamlines, seeds = zip(*tracking_result)
-            seeds = {'seeds': seeds}
+            seeds = {"seeds": seeds}
         else:
             streamlines = list(tracking_result)
             seeds = {}
 
-        sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
-                                 data_per_streamline=seeds)
+        sft = StatefulTractogram(
+            streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
+        )
         save_tractogram(sft, out_tract, bbox_valid_check=False)
-        logging.info('Saved {0}'.format(out_tract))
+        logging.info(f"Saved {out_tract}")
 
-    def run(self, pam_files, stopping_files, seeding_files,
-            use_binary_mask=False,
-            stopping_thr=0.2,
-            seed_density=1,
-            step_size=0.5,
-            tracking_method="eudx",
-            pmf_threshold=0.1,
-            max_angle=30.,
-            out_dir='',
-            out_tractogram='tractogram.trk',
-            save_seeds=False):
+    def run(
+        self,
+        pam_files,
+        stopping_files,
+        seeding_files,
+        use_binary_mask=False,
+        stopping_thr=0.2,
+        seed_density=1,
+        step_size=0.5,
+        tracking_method="eudx",
+        pmf_threshold=0.1,
+        max_angle=30.0,
+        out_dir="",
+        out_tractogram="tractogram.trk",
+        save_seeds=False,
+    ):
         """Workflow for Local Fiber Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -187,37 +206,50 @@ class LocalFiberTrackingPAMFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for pams_path, stopping_path, seeding_path, out_tract in io_it:
-
-            logging.info('Local tracking on {0}'
-                         .format(pams_path))
+            logging.info(f"Local tracking on {pams_path}")
 
             pam = load_peaks(pams_path, verbose=False)
-            dg = self._get_direction_getter(tracking_method, pam,
-                                            pmf_threshold=pmf_threshold,
-                                            max_angle=max_angle)
+            dg = self._get_direction_getter(
+                tracking_method, pam, pmf_threshold=pmf_threshold, max_angle=max_angle
+            )
 
-            self._core_run(stopping_path, use_binary_mask, stopping_thr,
-                           seeding_path, seed_density, step_size, dg,
-                           out_tract, save_seeds)
+            self._core_run(
+                stopping_path,
+                use_binary_mask,
+                stopping_thr,
+                seeding_path,
+                seed_density,
+                step_size,
+                dg,
+                out_tract,
+                save_seeds,
+            )
 
 
 class PFTrackingPAMFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'track_pft'
+        return "track_pft"
 
-    def run(self, pam_files, wm_files, gm_files, csf_files, seeding_files,
-            step_size=0.2,
-            seed_density=1,
-            pmf_threshold=0.1,
-            max_angle=20.,
-            pft_back=2,
-            pft_front=1,
-            pft_count=15,
-            out_dir='',
-            out_tractogram='tractogram.trk',
-            save_seeds=False,
-            min_wm_pve_before_stopping=0):
+    def run(
+        self,
+        pam_files,
+        wm_files,
+        gm_files,
+        csf_files,
+        seeding_files,
+        step_size=0.2,
+        seed_density=1,
+        pmf_threshold=0.1,
+        max_angle=20.0,
+        pft_back=2,
+        pft_front=1,
+        pft_count=15,
+        out_dir="",
+        out_tractogram="tractogram.trk",
+        save_seeds=False,
+        min_wm_pve_before_stopping=0,
+    ):
         """Workflow for Particle Filtering Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -281,11 +313,8 @@ class PFTrackingPAMFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract \
-                in io_it:
-
-            logging.info('Particle Filtering tracking on {0}'
-                         .format(pams_path))
+        for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract in io_it:
+            logging.info(f"Particle Filtering tracking on {pams_path}")
 
             pam = load_peaks(pams_path, verbose=False)
 
@@ -294,42 +323,48 @@ class PFTrackingPAMFlow(Workflow):
             csf, _ = load_nifti(csf_path)
             avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
             stopping_criterion = CmcStoppingCriterion.from_pve(
-                wm, gm, csf, step_size=step_size, average_voxel_size=avs)
-            logging.info('stopping criterion done')
+                wm, gm, csf, step_size=step_size, average_voxel_size=avs
+            )
+            logging.info("stopping criterion done")
             seed_mask, _ = load_nifti(seeding_path)
-            seeds = utils.seeds_from_mask(seed_mask, affine,
-                                          density=[seed_density, seed_density,
-                                                   seed_density])
-            logging.info('seeds done')
+            seeds = utils.seeds_from_mask(
+                seed_mask, affine, density=[seed_density, seed_density, seed_density]
+            )
+            logging.info("seeds done")
             dg = ProbabilisticDirectionGetter
 
-            direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                               max_angle=max_angle,
-                                               sphere=pam.sphere,
-                                               pmf_threshold=pmf_threshold)
+            direction_getter = dg.from_shcoeff(
+                pam.shm_coeff,
+                max_angle=max_angle,
+                sphere=pam.sphere,
+                pmf_threshold=pmf_threshold,
+            )
 
             tracking_result = ParticleFilteringTracking(
                 direction_getter,
                 stopping_criterion,
-                seeds, affine,
+                seeds,
+                affine,
                 step_size=step_size,
                 pft_back_tracking_dist=pft_back,
                 pft_front_tracking_dist=pft_front,
                 pft_max_trial=20,
                 particle_count=pft_count,
                 save_seeds=save_seeds,
-                min_wm_pve_before_stopping=min_wm_pve_before_stopping)
+                min_wm_pve_before_stopping=min_wm_pve_before_stopping,
+            )
 
-            logging.info('ParticleFilteringTracking initiated')
+            logging.info("ParticleFilteringTracking initiated")
 
             if save_seeds:
                 streamlines, seeds = zip(*tracking_result)
-                seeds = {'seeds': seeds}
+                seeds = {"seeds": seeds}
             else:
                 streamlines = list(tracking_result)
                 seeds = {}
 
-            sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
-                                     data_per_streamline=seeds)
+            sft = StatefulTractogram(
+                streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
+            )
             save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logging.info('Saved {0}'.format(out_tract))
+            logging.info(f"Saved {out_tract}")

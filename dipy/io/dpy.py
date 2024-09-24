@@ -1,11 +1,11 @@
-""" A class for handling large tractography datasets.
+"""A class for handling large tractography datasets.
 
-    It is built using the h5py which in turn implement
-    key features of the HDF5 (hierarchical data format) API [1]_.
+It is built using the h5py which in turn implement
+key features of the HDF5 (hierarchical data format) API [1]_.
 
-    References
-    ----------
-    .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
+References
+----------
+.. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
 """
 
 import h5py
@@ -13,12 +13,12 @@ from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 
 # Make sure not to carry across setup module from * import
-__all__ = ['Dpy']
+__all__ = ["Dpy"]
 
 
 class Dpy:
-    def __init__(self, fname, mode='r', compression=0):
-        """ Advanced storage system for tractography based on HDF5
+    def __init__(self, fname, mode="r", compression=0):
+        """Advanced storage system for tractography based on HDF5
 
         Parameters
         ----------
@@ -57,91 +57,76 @@ class Dpy:
         self.f = h5py.File(fname, mode=self.mode)
         self.compression = compression
 
-        if self.mode == 'w':
+        if self.mode == "w":
+            self.f.attrs["version"] = "0.0.1"
 
-            self.f.attrs['version'] = '0.0.1'
-
-            self.streamlines = self.f.create_group('streamlines')
+            self.streamlines = self.f.create_group("streamlines")
 
             self.tracks = self.streamlines.create_dataset(
-                    'tracks',
-                    shape=(0, 3),
-                    dtype='f4',
-                    maxshape=(None, 3), chunks=True)
+                "tracks", shape=(0, 3), dtype="f4", maxshape=(None, 3), chunks=True
+            )
 
             self.offsets = self.streamlines.create_dataset(
-                    'offsets',
-                    shape=(1,),
-                    dtype='i8',
-                    maxshape=(None,), chunks=True)
+                "offsets", shape=(1,), dtype="i8", maxshape=(None,), chunks=True
+            )
 
             self.curr_pos = 0
             self.offsets[:] = np.array([self.curr_pos]).astype(np.int64)
 
-        if self.mode == 'r':
-            self.tracks = self.f['streamlines']['tracks']
-            self.offsets = self.f['streamlines']['offsets']
+        if self.mode == "r":
+            self.tracks = self.f["streamlines"]["tracks"]
+            self.offsets = self.f["streamlines"]["offsets"]
             self.track_no = len(self.offsets) - 1
             self.offs_pos = 0
 
     def version(self):
-
-        return self.f.attrs['version']
+        return self.f.attrs["version"]
 
     def write_track(self, track):
-        """ write on track each time
-        """
+        """write on track each time"""
         self.tracks.resize(self.tracks.shape[0] + track.shape[0], axis=0)
-        self.tracks[-track.shape[0]:] = track.astype(np.float32)
+        self.tracks[-track.shape[0] :] = track.astype(np.float32)
         self.curr_pos += track.shape[0]
 
         self.offsets.resize(self.offsets.shape[0] + 1, axis=0)
         self.offsets[-1] = self.curr_pos
 
     def write_tracks(self, tracks):
-        """ write many tracks together
-        """
+        """write many tracks together"""
 
-        self.tracks.resize(self.tracks.shape[0] + tracks._data.shape[0],
-                           axis=0)
-        self.tracks[-tracks._data.shape[0]:] = tracks._data
+        self.tracks.resize(self.tracks.shape[0] + tracks._data.shape[0], axis=0)
+        self.tracks[-tracks._data.shape[0] :] = tracks._data
 
-        self.offsets.resize(self.offsets.shape[0] + tracks._offsets.shape[0],
-                            axis=0)
-        self.offsets[-tracks._offsets.shape[0]:] = \
-            self.offsets[-tracks._offsets.shape[0] - 1] + \
-            tracks._offsets + tracks._lengths
+        self.offsets.resize(self.offsets.shape[0] + tracks._offsets.shape[0], axis=0)
+        self.offsets[-tracks._offsets.shape[0] :] = (
+            self.offsets[-tracks._offsets.shape[0] - 1]
+            + tracks._offsets
+            + tracks._lengths
+        )
 
     def read_track(self):
-        """ read one track each time
-        """
-        off0, off1 = self.offsets[self.offs_pos:self.offs_pos + 2]
+        """read one track each time"""
+        off0, off1 = self.offsets[self.offs_pos : self.offs_pos + 2]
         self.offs_pos += 1
         return self.tracks[off0:off1]
 
     def read_tracksi(self, indices):
-        """ read tracks with specific indices
-        """
+        """read tracks with specific indices"""
         tracks = Streamlines()
         for i in indices:
-            off0, off1 = self.offsets[i:i + 2]
+            off0, off1 = self.offsets[i : i + 2]
             tracks.append(self.tracks[off0:off1])
         return tracks
 
     def read_tracks(self):
-        """ read the entire tractography
-        """
-        I = self.offsets[:]
+        """read the entire tractography"""
+        offsets = self.offsets[:]
         TR = self.tracks[:]
         tracks = Streamlines()
-        for i in range(len(I) - 1):
-            off0, off1 = I[i:i + 2]
+        for i in range(len(offsets) - 1):
+            off0, off1 = offsets[i : i + 2]
             tracks.append(TR[off0:off1])
         return tracks
 
     def close(self):
         self.f.close()
-
-
-if __name__ == '__main__':
-    pass

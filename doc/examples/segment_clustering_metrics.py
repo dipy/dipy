@@ -15,6 +15,7 @@ familiar with the tractography clustering framework, check this tutorial
 
 Let's start by importing the necessary modules.
 """
+
 import numpy as np
 
 from dipy.segment.clustering import QuickBundles
@@ -39,10 +40,11 @@ def get_streamlines():
     from dipy.data import get_fnames
     from dipy.io.streamline import load_tractogram
 
-    fname = get_fnames('fornix')
-    fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+    fname = get_fnames("fornix")
+    fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 
     return fornix.streamlines
+
 
 ###############################################################################
 # .. _clustering-examples-AveragePointwiseEuclideanMetric:
@@ -73,7 +75,7 @@ streamlines = set_number_of_points(streamlines, nb_points=12)
 
 # Create the instance of `AveragePointwiseEuclideanMetric` to use.
 metric = AveragePointwiseEuclideanMetric()
-qb = QuickBundles(threshold=10., metric=metric)
+qb = QuickBundles(threshold=10.0, metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
@@ -102,7 +104,7 @@ streamlines = set_number_of_points(streamlines, nb_points=nb_points)
 
 # Create the instance of `SumPointwiseEuclideanMetric` to use.
 metric = SumPointwiseEuclideanMetric()
-qb = QuickBundles(threshold=10.*nb_points, metric=metric)
+qb = QuickBundles(threshold=10.0 * nb_points, metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
@@ -142,7 +144,7 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path='cosine_metric.png', size=(600, 600))
+window.record(scene, out_path="cosine_metric.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

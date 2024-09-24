@@ -14,11 +14,23 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
-
-    def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None,
-                 hess=None, hessp=None, bounds=None, constraints=(),
-                 tol=None, callback=None, options=None, evolution=False):
-        """ A class for handling minimization of scalar function of one or more
+    def __init__(
+        self,
+        fun,
+        x0,
+        args=(),
+        method="L-BFGS-B",
+        jac=None,
+        hess=None,
+        hessp=None,
+        bounds=None,
+        constraints=(),
+        tol=None,
+        callback=None,
+        options=None,
+        evolution=False,
+    ):
+        """A class for handling minimization of scalar function of one or more
         variables.
 
         Parameters
@@ -121,49 +133,65 @@ class Optimizer:
         self._evol_kx = None
 
         if evolution is True:
-
             self._evol_kx = []
 
             def history_of_x(kx):
                 self._evol_kx.append(kx)
-            res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                           constraints, tol, callback=history_of_x,
-                           options=options)
+
+            res = minimize(
+                fun,
+                x0,
+                args,
+                method,
+                jac,
+                hess,
+                hessp,
+                bounds,
+                constraints,
+                tol,
+                callback=history_of_x,
+                options=options,
+            )
 
         else:
-
-            res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                           constraints, tol, callback, options)
+            res = minimize(
+                fun,
+                x0,
+                args,
+                method,
+                jac,
+                hess,
+                hessp,
+                bounds,
+                constraints,
+                tol,
+                callback,
+                options,
+            )
 
         self.res = res
 
     @property
     def xopt(self):
-
-        return self.res['x']
+        return self.res["x"]
 
     @property
     def fopt(self):
-
-        return self.res['fun']
+        return self.res["fun"]
 
     @property
     def nit(self):
-
-        return self.res['nit']
+        return self.res["nit"]
 
     @property
     def nfev(self):
-
-        return self.res['nfev']
+        return self.res["nfev"]
 
     @property
     def message(self):
-
-        return self.res['message']
+        return self.res["message"]
 
     def print_summary(self):
-
         print(self.res)
 
     @property
@@ -201,13 +229,16 @@ def spdot(A, B):
         return np.dot(A, B)
 
 
-def sparse_nnls(y, X,
-                momentum=1,
-                step_size=0.01,
-                non_neg=True,
-                check_error_iter=10,
-                max_error_checks=10,
-                converge_on_sse=0.99):
+def sparse_nnls(
+    y,
+    X,
+    momentum=1,
+    step_size=0.01,
+    non_neg=True,
+    check_error_iter=10,
+    max_error_checks=10,
+    converge_on_sse=0.99,
+):
     """
     Solve y=Xh for h, using gradient descent, with X a sparse matrix.
 
@@ -252,7 +283,7 @@ def sparse_nnls(y, X,
     h_best = h
     iteration = 1
     ss_residuals_min = np.inf  # This will keep track of the best solution
-    sse_best = np.inf   # This will keep track of the best performance so far
+    sse_best = np.inf  # This will keep track of the best performance so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
 
@@ -262,8 +293,7 @@ def sparse_nnls(y, X,
             gradient = spdot(X.T, spdot(X, h) - y)
             gradient += momentum * gradient
             # Normalize to unit-length
-            unit_length_gradient = (gradient /
-                                    np.sqrt(np.dot(gradient, gradient)))
+            unit_length_gradient = gradient / np.sqrt(np.dot(gradient, gradient))
             # Update the parameters in the direction of the gradient:
             h -= step_size * unit_length_gradient
             if non_neg:
@@ -306,13 +336,14 @@ class SKLearnLinearSolver(metaclass=abc.ABCMeta):
     such that an estimate of y can be calculated as:
     `y_hat = np.dot(X, SKLearnLinearSolver.coef_.T)`
     """
+
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
 
     @abc.abstractmethod
     def fit(self, X, y):
-        """Implement for all derived classes """
+        """Implement for all derived classes"""
 
     def predict(self, X):
         """
@@ -337,6 +368,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
     A sklearn-like interface to scipy.optimize.nnls
 
     """
+
     def fit(self, X, y):
         """
         Fit the NonNegativeLeastSquares linear model to data
@@ -351,9 +383,8 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 
 
 class PositiveDefiniteLeastSquares:
-
     def __init__(self, m, A=None, L=None):
-        r""" Regularized least squares with linear matrix inequality constraints
+        r"""Regularized least squares with linear matrix inequality constraints
 
         Generate a CVXPY representation of a regularized least squares
         optimization problem subject to linear matrix inequality constraints.
@@ -405,18 +436,18 @@ class PositiveDefiniteLeastSquares:
         sparsity = [(i, j) for i in range(m) for j in range(i, m)]
 
         # Unknowns
-        self._X = cvxpy.Parameter((m, m), sparsity=sparsity)    # Design matrix
-        self._f = cvxpy.Parameter(m)    # Given solution for feasibility check
-        self._h = cvxpy.Variable(m)     # Solution to constrained problem
-        self._y = cvxpy.Parameter(m)    # Regressand
+        self._X = cvxpy.Parameter((m, m), sparsity=sparsity)  # Design matrix
+        self._f = cvxpy.Parameter(m)  # Given solution for feasibility check
+        self._h = cvxpy.Variable(m)  # Solution to constrained problem
+        self._y = cvxpy.Parameter(m)  # Regressand
 
         # Error output
         self._zeros = np.zeros(m)
 
         # Objective
-        c = self._X@self._h - self._y
+        c = self._X @ self._h - self._y
         if L is not None:
-            c += L@self._h
+            c += L @ self._h
 
         f_objective = cvxpy.Minimize(0)
         p_objective = cvxpy.Minimize(cvxpy.norm(c))
@@ -447,7 +478,7 @@ class PositiveDefiniteLeastSquares:
         self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
 
     def solve(self, design_matrix, measurements, check=False, **kwargs):
-        r""" Solve CVXPY problem
+        r"""Solve CVXPY problem
 
         Solve a CVXPY problem instance for a given design matrix and a given set
         of observations, and return the optimum.
@@ -477,36 +508,35 @@ class PositiveDefiniteLeastSquares:
         try:
             X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
         except np.linalg.linalg.LinAlgError:
-            msg = 'Cholesky decomposition failed, returning zero array. Verify '
-            msg += 'that the data is sufficient to estimate the model '
-            msg += 'parameters, and that the design matrix has full rank.'
-            warnings.warn(msg)
+            msg = "Cholesky decomposition failed, returning zero array. Verify "
+            msg += "that the data is sufficient to estimate the model "
+            msg += "parameters, and that the design matrix has full rank."
+            warnings.warn(msg, stacklevel=2)
             return self._zeros
         self._X.value = X
-        self._y.value = np.linalg.multi_dot([X, np.linalg.pinv(design_matrix),
-                                             measurements])
+        self._y.value = np.linalg.multi_dot(
+            [X, np.linalg.pinv(design_matrix), measurements]
+        )
 
         try:
-
             # Check unconstrained solution
             if check:
-
                 # Solve unconstrained problem
                 self.unconstrained_problem.solve(**kwargs)
 
                 # Return zeros if optimization failed
                 status = self.unconstrained_problem.status
-                if status != 'optimal':
-                    msg = 'Solver failed to produce an optimum: %s.' % status
-                    warnings.warn(msg)
-                    msg = 'Optimization failed, returning zero array.'
-                    warnings.warn(msg)
+                if status != "optimal":
+                    msg = f"Solver failed to produce an optimum: {status}."
+                    warnings.warn(msg, stacklevel=2)
+                    msg = "Optimization failed, returning zero array."
+                    warnings.warn(msg, stacklevel=2)
                     return self._zeros
 
                 # Return unconstrained solution if satisfactory
                 self._f.value = self._h.value
                 self.feasibility_problem.solve(**kwargs)
-                if self.feasibility_problem.status == 'optimal':
+                if self.feasibility_problem.status == "optimal":
                     return np.asarray(self._h.value).squeeze()
 
             # Solve constrained problem
@@ -514,16 +544,15 @@ class PositiveDefiniteLeastSquares:
 
             # Show warning if solution is not optimal
             status = self.problem.status
-            if status != 'optimal':
-                msg = 'Solver failed to produce an optimum: %s.' % status
-                warnings.warn(msg)
+            if status != "optimal":
+                msg = f"Solver failed to produce an optimum: {status}."
+                warnings.warn(msg, stacklevel=2)
 
             # Return solution
             return np.asarray(self._h.value).squeeze()
 
         except cvxpy.error.SolverError:
-
             # Return zeros
-            msg = 'Optimization failed, returning zero array.'
-            warnings.warn(msg)
+            msg = "Optimization failed, returning zero array."
+            warnings.warn(msg, stacklevel=2)
             return self._zeros

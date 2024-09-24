@@ -52,11 +52,17 @@ bundles = read_five_af_bundles()
 ###############################################################################
 # Let's now visualize our input bundles:
 
-colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
-          [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
+colors = [
+    [0.91, 0.26, 0.35],
+    [0.99, 0.50, 0.38],
+    [0.99, 0.88, 0.57],
+    [0.69, 0.85, 0.64],
+    [0.51, 0.51, 0.63],
+]
 
-show_bundles(bundles, interactive=False, colors=colors,
-             save_as='before_group_registration.png')
+show_bundles(
+    bundles, interactive=False, colors=colors, save_as="before_group_registration.png"
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -74,8 +80,12 @@ bundles_reg, aff, d = groupwise_slr(bundles, verbose=True)
 # Finally, we visualize the registered bundles to confirm that they are now in
 # a common space:
 
-show_bundles(bundles_reg, interactive=False, colors=colors,
-             save_as='after_group_registration.png')
+show_bundles(
+    bundles_reg,
+    interactive=False,
+    colors=colors,
+    save_as="after_group_registration.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

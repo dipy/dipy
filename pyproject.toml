@@ -88,7 +88,7 @@ dipy_convert_tensors = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
-style = ["flake8", "isort", "pre-commit", "ruff"]
+style = ["ruff", "pre-commit"]
 viz = ["fury>=0.10.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow"]
@@ -180,5 +180,10 @@ Metrics = [
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
 filterwarnings = [
-    'ignore:.*You do not have FURY installed.*:UserWarning',
+    # FURY
+    "ignore:.*You do not have FURY installed.*:UserWarning",
+    # pkg_resources (via Ray)
+    "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
+    "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
+    "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
 ]

@@ -14,18 +14,24 @@ def test_exceptions():
         assert_raises(ValueError, CCMetric, invalid_dim)
         assert_raises(ValueError, EMMetric, invalid_dim)
         assert_raises(ValueError, SSDMetric, invalid_dim)
-    assert_raises(ValueError, SSDMetric, 3, step_type='unknown_metric_name')
-    assert_raises(ValueError, EMMetric, 3, step_type='unknown_metric_name')
+    assert_raises(ValueError, SSDMetric, 3, step_type="unknown_metric_name")
+    assert_raises(ValueError, EMMetric, 3, step_type="unknown_metric_name")
 
     def init_metric(shape, radius):
         dim = len(shape)
         metric = CCMetric(dim, radius=radius)
-        metric.set_static_image(np.arange(np.prod(shape),
-                                          dtype=float).reshape(shape),
-                                np.eye(4), np.ones(dim), np.eye(3))
-        metric.set_moving_image(np.arange(np.prod(shape),
-                                dtype=float).reshape(shape),
-                                np.eye(4), np.ones(dim), np.eye(3))
+        metric.set_static_image(
+            np.arange(np.prod(shape), dtype=float).reshape(shape),
+            np.eye(4),
+            np.ones(dim),
+            np.eye(3),
+        )
+        metric.set_moving_image(
+            np.arange(np.prod(shape), dtype=float).reshape(shape),
+            np.eye(4),
+            np.ones(dim),
+            np.eye(3),
+        )
         return metric
 
     # Generate many shape combinations
@@ -49,8 +55,7 @@ def test_EMMetric_image_dynamics(rng):
     target_shape = (10, 10)
     # create a random image
     image = np.ndarray(target_shape, dtype=floating)
-    image[...] = rng.integers(
-        0, 10, np.size(image)).reshape(tuple(target_shape))
+    image[...] = rng.integers(0, 10, np.size(image)).reshape(tuple(target_shape))
     # compute the expected binary mask
     expected = (image > 0).astype(np.int32)
 
@@ -86,9 +91,9 @@ def test_em_demons_step_2d():
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     X = np.ndarray(sh + (2,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None] * O
-    X[..., 1] = x_1[None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None] * _O
+    X[..., 1] = x_1[None, :] * _O
 
     # Compute the gradient fields of F and G
     grad_F = X - c_f
@@ -111,7 +116,7 @@ def test_em_demons_step_2d():
     # Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     # The original Demons algorithm used simply |F(x) - G(x)| as an
     # estimator, so let's use it as well
-    sigma_i_sq = (F - G)**2
+    sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype=floating)
@@ -179,10 +184,10 @@ def test_em_demons_step_3d():
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
     X = np.ndarray(sh + (3,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None, None] * O
-    X[..., 1] = x_1[None, :, None] * O
-    X[..., 2] = x_2[None, None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None, None] * _O
+    X[..., 1] = x_1[None, :, None] * _O
+    X[..., 2] = x_2[None, None, :] * _O
 
     # Compute the gradient fields of F and G
     grad_F = X - c_f
@@ -205,7 +210,7 @@ def test_em_demons_step_3d():
     # Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     # The original Demons algorithm used simply |F(x) - G(x)| as an
     # estimator, so let's use it as well
-    sigma_i_sq = (F - G)**2
+    sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype=floating)

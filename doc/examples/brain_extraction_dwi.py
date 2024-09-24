@@ -8,6 +8,7 @@ We show how to extract brain information and mask from a b0 image using DIPY_'s
 
 First import the necessary modules:
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -22,7 +23,7 @@ from dipy.segment.mask import median_otsu
 # The ``scil_b0`` dataset contains different data from different companies and
 # models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 
-data_fnames = get_fnames('scil_b0')
+data_fnames = get_fnames("scil_b0")
 data, affine = load_nifti(data_fnames[1])
 data = np.squeeze(data)
 
@@ -43,23 +44,21 @@ b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 # coordinates to the world coordinates is also needed. Here, we choose to save
 # both images in ``float32``.
 
-fname = 'se_1.5t'
-save_nifti(fname + '_binary_mask.nii.gz', mask.astype(np.float32), affine)
-save_nifti(fname + '_mask.nii.gz', b0_mask.astype(np.float32), affine)
+fname = "se_1.5t"
+save_nifti(fname + "_binary_mask.nii.gz", mask.astype(np.float32), affine)
+save_nifti(fname + "_mask.nii.gz", b0_mask.astype(np.float32), affine)
 
 ###############################################################################
 # Quick view of the results middle slice using ``matplotlib``.
 
 sli = data.shape[2] // 2
-plt.figure('Brain segmentation')
+plt.figure("Brain segmentation")
 plt.subplot(1, 2, 1).set_axis_off()
-plt.imshow(histeq(data[:, :, sli].astype('float')).T,
-           cmap='gray', origin='lower')
+plt.imshow(histeq(data[:, :, sli].astype("float")).T, cmap="gray", origin="lower")
 
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow(histeq(b0_mask[:, :, sli].astype('float')).T,
-           cmap='gray', origin='lower')
-plt.savefig(f'{fname}_median_otsu.png', bbox_inches='tight')
+plt.imshow(histeq(b0_mask[:, :, sli].astype("float")).T, cmap="gray", origin="lower")
+plt.savefig(f"{fname}_median_otsu.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -72,13 +71,10 @@ plt.savefig(f'{fname}_median_otsu.png', bbox_inches='tight')
 # smaller. Auto-cropping in ``median_otsu`` is activated by setting the
 # ``autocrop`` parameter to ``True``.
 
-b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4,
-                                      autocrop=True)
+b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4, autocrop=True)
 
 ###############################################################################
 # Saving cropped data as demonstrated previously.
 
-save_nifti(fname + '_binary_mask_crop.nii.gz', mask_crop.astype(np.float32),
-           affine)
-save_nifti(fname + '_mask_crop.nii.gz', b0_mask_crop.astype(np.float32),
-           affine)
+save_nifti(fname + "_binary_mask_crop.nii.gz", mask_crop.astype(np.float32), affine)
+save_nifti(fname + "_mask_crop.nii.gz", b0_mask_crop.astype(np.float32), affine)

@@ -55,8 +55,7 @@ interactive = False
 # dataset of a single subject. The size of this dataset is 87 MBytes. You only
 # need to fetch once.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(
-    'stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
@@ -100,9 +99,10 @@ sphere = dpd.default_sphere
 # We visualize the ODFs in the ROI using ``dipy.viz`` module:
 
 scene = window.Scene()
-scene.add(actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1,
-                              sphere=sphere, scale=0.3))
-window.record(scene, out_path='tensor_ellipsoids_wls.png', size=(600, 600))
+scene.add(
+    actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3)
+)
+window.record(scene, out_path="tensor_ellipsoids_wls.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -131,10 +131,10 @@ evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
 scene = window.Scene()
-scene.add(actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2,
-                              sphere=sphere, scale=0.3))
-window.record(scene, out_path='tensor_ellipsoids_wls_noisy.png',
-              size=(600, 600))
+scene.add(
+    actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3)
+)
+window.record(scene, out_path="tensor_ellipsoids_wls_noisy.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -158,7 +158,7 @@ sigma = ne.estimate_sigma(data)
 # algorithm to identify the outliers in each voxel and is given as an input
 # when initializing the TensorModel object:
 
-dti_restore = dti.TensorModel(gtab, fit_method='RESTORE', sigma=sigma)
+dti_restore = dti.TensorModel(gtab, fit_method="RESTORE", sigma=sigma)
 fit_restore_noisy = dti_restore.fit(noisy_data)
 fa3 = fit_restore_noisy.fa
 evals3 = fit_restore_noisy.evals
@@ -166,11 +166,11 @@ evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
 scene = window.Scene()
-scene.add(actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3,
-                              sphere=sphere, scale=0.3))
-print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
-window.record(scene, out_path='tensor_ellipsoids_restore_noisy.png',
-              size=(600, 600))
+scene.add(
+    actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3)
+)
+print("Saving illustration as tensor_ellipsoids_restore_noisy.png")
+window.record(scene, out_path="tensor_ellipsoids_restore_noisy.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -186,13 +186,13 @@ if interactive:
 # baseline, using the RESTORE estimate and the WLS estimate [Chung2006]_.
 
 fig_hist, ax = plt.subplots(1)
-ax.hist(np.ravel(fa2), color='b', histtype='step', label='WLS')
-ax.hist(np.ravel(fa3), color='r', histtype='step', label='RESTORE')
-ax.hist(np.ravel(fa1), color='g', histtype='step', label='Original')
-ax.set_xlabel('Fractional Anisotropy')
-ax.set_ylabel('Count')
+ax.hist(np.ravel(fa2), color="b", histtype="step", label="WLS")
+ax.hist(np.ravel(fa3), color="r", histtype="step", label="RESTORE")
+ax.hist(np.ravel(fa1), color="g", histtype="step", label="Original")
+ax.set_xlabel("Fractional Anisotropy")
+ax.set_ylabel("Count")
 plt.legend()
-fig_hist.savefig('dti_fa_distributions.png')
+fig_hist.savefig("dti_fa_distributions.png")
 
 ###############################################################################
 # This demonstrates that RESTORE can recover a distribution of FA that more

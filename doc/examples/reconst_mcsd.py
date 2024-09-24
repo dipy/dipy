@@ -50,7 +50,7 @@ from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.viz import actor, window
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere("symmetric724")
 
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was
@@ -58,7 +58,7 @@ sphere = get_sphere('symmetric724')
 # provided in their paper [Hansen2016]_). The total size of the downloaded
 # data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
@@ -107,10 +107,14 @@ qball_model = shm.QballModel(gtab, 8)
 ###############################################################################
 # We generate the peaks from the ``qball_model`` as follows:
 
-peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
-                            relative_peak_threshold=.5,
-                            min_separation_angle=25,
-                            sphere=sphere, mask=mask)
+peaks = dp.peaks_from_model(
+    model=qball_model,
+    data=denoised_arr,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    sphere=sphere,
+    mask=mask,
+)
 
 ap = shm.anisotropic_power(peaks.shm_coeff)
 
@@ -176,12 +180,16 @@ wm = np.where(final_segmentation == 3, 1, 0)
 # Note that for ``mask_for_response_msmt``, the gtab and data should be for
 # bvalues under 1200, for optimal tensor fit.
 
-mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data, roi_radii=10,
-                                                    wm_fa_thr=0.7,
-                                                    gm_fa_thr=0.3,
-                                                    csf_fa_thr=0.15,
-                                                    gm_md_thr=0.001,
-                                                    csf_md_thr=0.0032)
+mask_wm, mask_gm, mask_csf = mask_for_response_msmt(
+    gtab,
+    data,
+    roi_radii=10,
+    wm_fa_thr=0.7,
+    gm_fa_thr=0.3,
+    csf_fa_thr=0.15,
+    gm_md_thr=0.001,
+    csf_md_thr=0.0032,
+)
 
 ###############################################################################
 # If one wants to use the previously computed tissue segmentation in addition
@@ -205,10 +213,9 @@ print(nvoxels_wm)
 # Then, the ``response_from_mask`` function will return the msmt response
 # functions using precalculated tissue masks.
 
-response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data,
-                                                                 mask_wm,
-                                                                 mask_gm,
-                                                                 mask_csf)
+response_wm, response_gm, response_csf = response_from_mask_msmt(
+    gtab, data, mask_wm, mask_gm, mask_csf
+)
 
 ###############################################################################
 # Note that we can also get directly the response functions by calling the
@@ -217,8 +224,9 @@ response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data,
 # we don't have access to the masks and we might have problems with high
 # bvalues tensor fit.
 
-auto_response_wm, auto_response_gm, auto_response_csf = \
-    auto_response_msmt(gtab, data, roi_radii=10)
+auto_response_wm, auto_response_gm, auto_response_csf = auto_response_msmt(
+    gtab, data, roi_radii=10
+)
 
 ###############################################################################
 # As we can see below, adding the tissue segmentation can change the results
@@ -243,11 +251,13 @@ print(auto_response_csf)
 # is important to note that the bvalues must be unique for this function.
 
 ubvals = unique_bvals_tolerance(gtab.bvals)
-response_mcsd = multi_shell_fiber_response(sh_order_max=8,
-                                           bvals=ubvals,
-                                           wm_rf=response_wm,
-                                           gm_rf=response_gm,
-                                           csf_rf=response_csf)
+response_mcsd = multi_shell_fiber_response(
+    sh_order_max=8,
+    bvals=ubvals,
+    wm_rf=response_wm,
+    gm_rf=response_gm,
+    csf_rf=response_csf,
+)
 
 ###############################################################################
 # As mentioned, we can also build the model directly and it will call
@@ -258,9 +268,7 @@ response_mcsd = multi_shell_fiber_response(sh_order_max=8,
 # depending on the bvalues given to ``multi_shell_fiber_response`` externally.
 
 response = np.array([response_wm, response_gm, response_csf])
-mcsd_model_simple_response = MultiShellDeconvModel(gtab,
-                                                   response,
-                                                   sh_order_max=8)
+mcsd_model_simple_response = MultiShellDeconvModel(gtab, response, sh_order_max=8)
 
 ###############################################################################
 # Note that this technique only works for a 3 compartments model (wm, gm, csf).
@@ -302,16 +310,17 @@ print("ODF")
 print(mcsd_odf.shape)
 print(mcsd_odf[40, 40, 0])
 
-fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
-                                norm=False, colormap='plasma')
+fodf_spheres = actor.odf_slicer(
+    mcsd_odf, sphere=sphere, scale=1, norm=False, colormap="plasma"
+)
 
 interactive = False
 scene = window.Scene()
 scene.add(fodf_spheres)
 scene.reset_camera_tight()
 
-print('Saving illustration as msdodf.png')
-window.record(scene, out_path='msdodf.png', size=(600, 600))
+print("Saving illustration as msdodf.png")
+window.record(scene, out_path="msdodf.png", size=(600, 600))
 
 if interactive:
     window.show(scene)

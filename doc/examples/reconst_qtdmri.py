@@ -71,7 +71,7 @@ data, cc_masks, gtabs = read_qtdMRI_test_retest_2subjects()
 
 plt.figure()
 qtdmri.visualise_gradient_table_G_Delta_rainbow(gtabs[0])
-plt.savefig('qt-dMRI_acquisition_scheme.png')
+plt.savefig("qt-dMRI_acquisition_scheme.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -86,8 +86,12 @@ plt.savefig('qt-dMRI_acquisition_scheme.png')
 # the data, we calculate DTI's fractional anisotropy (FA) over the whole slice
 # and project the corpus callosum mask on the FA image.:
 
-subplot_titles = ["Subject1 Test", "Subject1 Retest",
-                  "Subject2 Test", "Subject2 Retest"]
+subplot_titles = [
+    "Subject1 Test",
+    "Subject1 Retest",
+    "Subject2 Test",
+    "Subject2 Retest",
+]
 fig = plt.figure()
 plt.subplots(nrows=2, ncols=2)
 for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
@@ -102,16 +106,16 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
 
     # set mask color to green with 0.5 opacity as overlay
     mask_template = np.zeros(np.r_[mask_middle_slice.shape, 4])
-    mask_template[mask_middle_slice == 1] = np.r_[0., 1., 0., .5]
+    mask_template[mask_middle_slice == 1] = np.r_[0.0, 1.0, 0.0, 0.5]
 
     # produce the FA images with corpus callosum masks.
     plt.subplot(2, 2, 1 + i)
     plt.title(subplot_titles[i], fontsize=15)
-    plt.imshow(fa, cmap='Greys_r', origin='lower', interpolation='nearest')
-    plt.imshow(mask_template, origin='lower', interpolation='nearest')
-    plt.axis('off')
+    plt.imshow(fa, cmap="Greys_r", origin="lower", interpolation="nearest")
+    plt.imshow(mask_template, origin="lower", interpolation="nearest")
+    plt.axis("off")
 plt.tight_layout()
-plt.savefig('qt-dMRI_datasets_fa_with_ccmasks.png')
+plt.savefig("qt-dMRI_datasets_fa_with_ccmasks.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -143,7 +147,7 @@ msds = []
 rtops = []
 rtaps = []
 rtpps = []
-for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
+for data_, mask_, gtab_ in zip(data, cc_masks, gtabs):
     # select the corpus callosum voxel for every dataset
     cc_voxels = data_[mask_ == 1]
     # initialize the qt-dMRI model.
@@ -153,9 +157,13 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
     # but can be used separately and with weightings preset to any positive
     # value to optimize for speed.
     qtdmri_mod = qtdmri.QtdmriModel(
-        gtab_, radial_order=6, time_order=2,
-        laplacian_regularization=True, laplacian_weighting='GCV',
-        l1_regularization=True, l1_weighting='CV'
+        gtab_,
+        radial_order=6,
+        time_order=2,
+        laplacian_regularization=True,
+        laplacian_weighting="GCV",
+        l1_regularization=True,
+        l1_weighting="CV",
     )
     # fit the model.
     # Here we take every 5th voxel for speed, but of course all voxels can be
@@ -181,15 +189,17 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
 # the :math:`q\tau`-index trends in a subject.
 
 
-def plot_mean_with_std(ax, time, ind1, plotcolor, ls='-', std_mult=1,
-                       label=''):
+def plot_mean_with_std(ax, time, ind1, plotcolor, ls="-", std_mult=1, label=""):
     means = np.mean(ind1, axis=1)
     stds = np.std(ind1, axis=1)
     ax.plot(time, means, c=plotcolor, lw=3, label=label, ls=ls)
-    ax.fill_between(time,
-                    means + std_mult * stds,
-                    means - std_mult * stds,
-                    alpha=0.15, color=plotcolor)
+    ax.fill_between(
+        time,
+        means + std_mult * stds,
+        means - std_mult * stds,
+        alpha=0.15,
+        color=plotcolor,
+    )
     ax.plot(time, means + std_mult * stds, alpha=0.25, color=plotcolor)
     ax.plot(time, means - std_mult * stds, alpha=0.25, color=plotcolor)
 
@@ -210,38 +220,34 @@ fig = plt.figure(figsize=(10, 3))
 # start with the plot of subject 1.
 ax = plt.subplot(1, 2, 1)
 # first plot the background
-plt.contourf(Delta_ * 1e3, 1e5 * MSD_, D_grid, levels=D_levels, cmap='Greys',
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, 1e5 * MSD_, D_grid, levels=D_levels, cmap="Greys", alpha=0.5)
 
 # plot the test-retest mean MSD and standard deviation of subject 1.
-plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[0], 'r', 'dashdot',
-                   label='MSD Test')
-plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[1], 'g', 'dashdot',
-                   label='MSD Retest')
+plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[0], "r", "dashdot", label="MSD Test")
+plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[1], "g", "dashdot", label="MSD Retest")
 ax.legend(fontsize=13)
 # plot some text markers to clarify the background diffusivity lines.
-ax.text(.0091 * 1e3, 6.33, 'D=14e-4', fontsize=12, rotation=35)
-ax.text(.0091 * 1e3, 4.55, 'D=10e-4', fontsize=12, rotation=25)
+ax.text(0.0091 * 1e3, 6.33, "D=14e-4", fontsize=12, rotation=35)
+ax.text(0.0091 * 1e3, 4.55, "D=10e-4", fontsize=12, rotation=25)
 ax.set_ylim(4, 9.5)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_title(r'Test-Retest MSD($\tau$) Subject 1', fontsize=15)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_ylabel('MSD ($10^{-5}mm^2$)', fontsize=17)
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_title(r"Test-Retest MSD($\tau$) Subject 1", fontsize=15)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_ylabel("MSD ($10^{-5}mm^2$)", fontsize=17)
 
 # then do the same thing for subject 2.
 ax = plt.subplot(1, 2, 2)
-plt.contourf(Delta_ * 1e3, 1e5 * MSD_, D_grid, levels=D_levels, cmap='Greys',
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, 1e5 * MSD_, D_grid, levels=D_levels, cmap="Greys", alpha=0.5)
 cb = plt.colorbar()
-cb.set_label('Free Diffusivity ($mm^2/s$)', fontsize=18)
+cb.set_label("Free Diffusivity ($mm^2/s$)", fontsize=18)
 
-plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[2], 'r', 'dashdot')
-plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[3], 'g', 'dashdot')
+plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[2], "r", "dashdot")
+plot_mean_with_std(ax, taus * 1e3, 1e5 * msds[3], "g", "dashdot")
 ax.set_ylim(4, 9.5)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_title(r'Test-Retest MSD($\tau$) Subject 2', fontsize=15)
-plt.savefig('qt_indices_msd.png')
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_title(r"Test-Retest MSD($\tau$) Subject 2", fontsize=15)
+plt.savefig("qt_indices_msd.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -264,43 +270,43 @@ plt.savefig('qt_indices_msd.png')
 Delta_ = np.linspace(0.005, 0.02, 100)
 RTXP_ = np.linspace(1, 200, 100)
 Delta_grid, RTXP_grid = np.meshgrid(Delta_, RTXP_)
-D_grid = 1 / (4 * RTXP_grid ** 2 * np.pi * Delta_grid)
+D_grid = 1 / (4 * RTXP_grid**2 * np.pi * Delta_grid)
 D_levels = np.r_[1, 2, 3, 4, 6, 9, 15, 30] * 1e-4
-D_colors = np.tile(np.linspace(.8, 0, 7), (3, 1)).T
+D_colors = np.tile(np.linspace(0.8, 0, 7), (3, 1)).T
 
 # We start with estimating the RTOP illustration.
 fig = plt.figure(figsize=(10, 3))
 ax = plt.subplot(1, 2, 1)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 
-plot_mean_with_std(ax, taus * 1e3, rtops[0] ** (1 / 3.), 'r', '--',
-                   label='RTOP$^{1/3}$ Test')
-plot_mean_with_std(ax, taus * 1e3, rtops[1] ** (1 / 3.), 'g', '--',
-                   label='RTOP$^{1/3}$ Retest')
+plot_mean_with_std(
+    ax, taus * 1e3, rtops[0] ** (1 / 3.0), "r", "--", label="RTOP$^{1/3}$ Test"
+)
+plot_mean_with_std(
+    ax, taus * 1e3, rtops[1] ** (1 / 3.0), "g", "--", label="RTOP$^{1/3}$ Retest"
+)
 ax.legend(fontsize=13)
-ax.text(.0091 * 1e3, 162, 'D=3e-4', fontsize=12, rotation=-22)
-ax.text(.0091 * 1e3, 140, 'D=4e-4', fontsize=12, rotation=-20)
-ax.text(.0091 * 1e3, 113, 'D=6e-4', fontsize=12, rotation=-16)
+ax.text(0.0091 * 1e3, 162, "D=3e-4", fontsize=12, rotation=-22)
+ax.text(0.0091 * 1e3, 140, "D=4e-4", fontsize=12, rotation=-20)
+ax.text(0.0091 * 1e3, 113, "D=6e-4", fontsize=12, rotation=-16)
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_title(r'Test-Retest RTOP($\tau$) Subject 1', fontsize=15)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_ylabel('RTOP$^{1/3}$ (1/mm)', fontsize=17)
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_title(r"Test-Retest RTOP($\tau$) Subject 1", fontsize=15)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_ylabel("RTOP$^{1/3}$ (1/mm)", fontsize=17)
 
 ax = plt.subplot(1, 2, 2)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 cb = plt.colorbar()
-cb.set_label('Free Diffusivity ($mm^2/s$)', fontsize=18)
+cb.set_label("Free Diffusivity ($mm^2/s$)", fontsize=18)
 
-plot_mean_with_std(ax, taus * 1e3, rtops[2] ** (1 / 3.), 'r', '--')
-plot_mean_with_std(ax, taus * 1e3, rtops[3] ** (1 / 3.), 'g', '--')
+plot_mean_with_std(ax, taus * 1e3, rtops[2] ** (1 / 3.0), "r", "--")
+plot_mean_with_std(ax, taus * 1e3, rtops[3] ** (1 / 3.0), "g", "--")
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_title(r'Test-Retest RTOP($\tau$) Subject 2', fontsize=15)
-plt.savefig('qt_indices_rtop.png')
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_title(r"Test-Retest RTOP($\tau$) Subject 2", fontsize=15)
+plt.savefig("qt_indices_rtop.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -327,69 +333,67 @@ plt.savefig('qt_indices_rtop.png')
 # First, we estimate the RTAP trends.
 fig = plt.figure(figsize=(10, 3))
 ax = plt.subplot(1, 2, 1)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 
-plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[0]), 'r', '-',
-                   label='RTAP$^{1/2}$ Test')
-plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[1]), 'g', '-',
-                   label='RTAP$^{1/2}$ Retest')
+plot_mean_with_std(
+    ax, taus * 1e3, np.sqrt(rtaps[0]), "r", "-", label="RTAP$^{1/2}$ Test"
+)
+plot_mean_with_std(
+    ax, taus * 1e3, np.sqrt(rtaps[1]), "g", "-", label="RTAP$^{1/2}$ Retest"
+)
 ax.legend(fontsize=13)
-ax.text(.0091 * 1e3, 162, 'D=3e-4', fontsize=12, rotation=-22)
-ax.text(.0091 * 1e3, 140, 'D=4e-4', fontsize=12, rotation=-20)
-ax.text(.0091 * 1e3, 113, 'D=6e-4', fontsize=12, rotation=-16)
+ax.text(0.0091 * 1e3, 162, "D=3e-4", fontsize=12, rotation=-22)
+ax.text(0.0091 * 1e3, 140, "D=4e-4", fontsize=12, rotation=-20)
+ax.text(0.0091 * 1e3, 113, "D=6e-4", fontsize=12, rotation=-16)
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_title(r'Test-Retest RTAP($\tau$) Subject 1', fontsize=15)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_ylabel('RTAP$^{1/2}$ (1/mm)', fontsize=17)
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_title(r"Test-Retest RTAP($\tau$) Subject 1", fontsize=15)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_ylabel("RTAP$^{1/2}$ (1/mm)", fontsize=17)
 
 ax = plt.subplot(1, 2, 2)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 cb = plt.colorbar()
-cb.set_label('Free Diffusivity ($mm^2/s$)', fontsize=18)
+cb.set_label("Free Diffusivity ($mm^2/s$)", fontsize=18)
 
-plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[2]), 'r', '-')
-plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[3]), 'g', '-')
+plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[2]), "r", "-")
+plot_mean_with_std(ax, taus * 1e3, np.sqrt(rtaps[3]), "g", "-")
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_title(r'Test-Retest RTAP($\tau$) Subject 2', fontsize=15)
-plt.savefig('qt_indices_rtap.png')
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_title(r"Test-Retest RTAP($\tau$) Subject 2", fontsize=15)
+plt.savefig("qt_indices_rtap.png")
 
 
 # Finally the last one for RTPP.
 fig = plt.figure(figsize=(10, 3))
 ax = plt.subplot(1, 2, 1)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 
-plot_mean_with_std(ax, taus * 1e3, rtpps[0], 'r', ':', label='RTPP Test')
-plot_mean_with_std(ax, taus * 1e3, rtpps[1], 'g', ':', label='RTPP Retest')
+plot_mean_with_std(ax, taus * 1e3, rtpps[0], "r", ":", label="RTPP Test")
+plot_mean_with_std(ax, taus * 1e3, rtpps[1], "g", ":", label="RTPP Retest")
 ax.legend(fontsize=13)
-ax.text(.0091 * 1e3, 113, 'D=6e-4', fontsize=12, rotation=-16)
-ax.text(.0091 * 1e3, 91, 'D=9e-4', fontsize=12, rotation=-13)
-ax.text(.0091 * 1e3, 69, 'D=15e-4', fontsize=12, rotation=-10)
+ax.text(0.0091 * 1e3, 113, "D=6e-4", fontsize=12, rotation=-16)
+ax.text(0.0091 * 1e3, 91, "D=9e-4", fontsize=12, rotation=-13)
+ax.text(0.0091 * 1e3, 69, "D=15e-4", fontsize=12, rotation=-10)
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_title(r'Test-Retest RTPP($\tau$) Subject 1', fontsize=15)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_ylabel('RTPP (1/mm)', fontsize=17)
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_title(r"Test-Retest RTPP($\tau$) Subject 1", fontsize=15)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_ylabel("RTPP (1/mm)", fontsize=17)
 
 ax = plt.subplot(1, 2, 2)
-plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
-             alpha=.5)
+plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels, alpha=0.5)
 cb = plt.colorbar()
-cb.set_label('Free Diffusivity ($mm^2/s$)', fontsize=18)
+cb.set_label("Free Diffusivity ($mm^2/s$)", fontsize=18)
 
-plot_mean_with_std(ax, taus * 1e3, rtpps[2], 'r', ':')
-plot_mean_with_std(ax, taus * 1e3, rtpps[3], 'g', ':')
+plot_mean_with_std(ax, taus * 1e3, rtpps[2], "r", ":")
+plot_mean_with_std(ax, taus * 1e3, rtpps[3], "g", ":")
 ax.set_ylim(54, 170)
-ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
-ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
-ax.set_title(r'Test-Retest RTPP($\tau$) Subject 2', fontsize=15)
-plt.savefig('qt_indices_rtpp.png')
+ax.set_xlim(0.009 * 1e3, 0.0185 * 1e3)
+ax.set_xlabel("Diffusion Time (ms)", fontsize=17)
+ax.set_title(r"Test-Retest RTPP($\tau$) Subject 2", fontsize=15)
+plt.savefig("qt_indices_rtpp.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

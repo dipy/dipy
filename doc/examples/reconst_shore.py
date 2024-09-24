@@ -29,14 +29,14 @@ from dipy.viz import actor, window
 # the data. They respectively correspond to ``(xmin,xmax,ymin,ymax,zmin,zmax)``
 # with x, y, z and the three axis defining the spatial positions of the voxels.
 
-fraw, fbval, fbvec = get_fnames('isbi2013_2shell')
+fraw, fbval, fbvec = get_fnames("isbi2013_2shell")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 data_small = data[10:40, 22, 10:40]
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+print(f"data.shape {data.shape}")
 
 ###############################################################################
 # ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
@@ -61,8 +61,9 @@ radial_order = 6
 zeta = 700
 lambdaN = 1e-8
 lambdaL = 1e-8
-asm = ShoreModel(gtab, radial_order=radial_order,
-                 zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+asm = ShoreModel(
+    gtab, radial_order=radial_order, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL
+)
 
 ###############################################################################
 # Fit the SHORE model to the data
@@ -72,13 +73,13 @@ asmfit = asm.fit(data_small)
 ###############################################################################
 # Load an odf reconstruction sphere
 
-sphere = get_sphere('repulsion724')
+sphere = get_sphere("repulsion724")
 
 ###############################################################################
 # Compute the ODFs
 
 odf = asmfit.odf(sphere)
-print('odf.shape (%d, %d, %d)' % odf.shape)
+print(f"odf.shape {odf.shape}")
 
 ###############################################################################
 # Display the ODFs
@@ -87,12 +88,11 @@ print('odf.shape (%d, %d, %d)' % odf.shape)
 interactive = False
 
 scene = window.Scene()
-sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap='plasma',
-                       scale=0.5)
+sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap="plasma", scale=0.5)
 sfu.RotateX(-90)
 sfu.display(y=0)
 scene.add(sfu)
-window.record(scene, out_path='odfs.png', size=(600, 600))
+window.record(scene, out_path="odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 

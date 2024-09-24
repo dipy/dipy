@@ -1,11 +1,11 @@
-""" Utilities to manipulate numpy arrays """
+"""Utilities to manipulate numpy arrays"""
 
 from nibabel.volumeutils import endian_codes, native_code
 import numpy as np
 
 
 def as_native_array(arr):
-    """ Return `arr` as native byteordered array
+    """Return `arr` as native byteordered array
 
     If arr is already native byte ordered, return unchanged.  If it is opposite
     endian, then make a native byte ordered copy and return that
@@ -61,8 +61,8 @@ def pinv(a, rcond=1e-15):
     u, s, v = np.linalg.svd(a, full_matrices=False)
     cutoff = np.maximum.reduce(s, axis=-1, keepdims=True) * rcond
     mask = s > cutoff
-    s[mask] = 1. / s[mask]
+    s[mask] = 1.0 / s[mask]
     s[~mask] = 0
-    return np.einsum('...ij,...jk',
-                     np.transpose(v, swap) * s[..., None, :],
-                     np.transpose(u, swap))
+    return np.einsum(
+        "...ij,...jk", np.transpose(v, swap) * s[..., None, :], np.transpose(u, swap)
+    )

@@ -14,23 +14,24 @@ class ROIsTab(HorizonTab):
         super().__init__()
 
         self._actors = contour_actors
-        self._name = 'ROIs'
+        self._name = "ROIs"
 
         self._tab_id = 0
 
         self._actor_toggle = build_checkbox(
-            labels=[''],
-            checked_labels=[''],
-            on_change=self._toggle_actors)
+            labels=[""], checked_labels=[""], on_change=self._toggle_actors
+        )
 
         self._opacity_slider_label, self._opacity_slider = build_slider(
-            initial_value=1, max_value=1., text_template='{ratio:.0%}',
-            on_change=self._change_opacity, label='Opacity'
+            initial_value=1,
+            max_value=1.0,
+            text_template="{ratio:.0%}",
+            on_change=self._change_opacity,
+            label="Opacity",
         )
 
         self._register_elements(
-            self._actor_toggle,
-            self._opacity_slider_label, self._opacity_slider
+            self._actor_toggle, self._opacity_slider_label, self._opacity_slider
         )
 
     def _change_opacity(self, slider):
@@ -56,10 +57,10 @@ class ROIsTab(HorizonTab):
 
         self._tab_id = tab_id
 
-        y_pos = .85
-        self._actor_toggle.position = (.02, y_pos)
-        self._opacity_slider_label.position = (.05, y_pos)
-        self._opacity_slider.position = (.12, y_pos)
+        y_pos = 0.85
+        self._actor_toggle.position = (0.02, y_pos)
+        self._opacity_slider_label.position = (0.05, y_pos)
+        self._opacity_slider.position = (0.12, y_pos)
 
     @property
     def name(self):

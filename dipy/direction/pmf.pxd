@@ -9,8 +9,7 @@ cdef class PmfGen:
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil
     cdef int find_closest(self, double* xyz) noexcept nogil
-    cdef double get_pmf_value_c(self, double* point, double* xyz,
-                                double* out) noexcept nogil
+    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil
     pass
 
 

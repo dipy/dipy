@@ -1,4 +1,5 @@
-""" Classes and functions for fitting ivim model """
+"""Classes and functions for fitting ivim model"""
+
 import warnings
 
 import numpy as np
@@ -11,7 +12,7 @@ from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 # global variable for bounding least_squares in both models
-BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
+BOUNDS = ([0.0, 0.0, 0.0, 0.0], [np.inf, 0.2, 1.0, 1.0])
 
 
 def ivim_prediction(params, gtab):
@@ -128,7 +129,7 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method='trr', **kwargs):
+def ivim_model_selector(gtab, fit_method="trr", **kwargs):
     """
     Selector function to switch between the 2-stage Trust-Region Reflective
     based NLLS fitting method (also containing the linear fit): `trr` and the
@@ -141,26 +142,26 @@ def ivim_model_selector(gtab, fit_method='trr', **kwargs):
         default : trr
 
     """
-    bounds_warning = 'Bounds for this fit have been set from experiments '
-    bounds_warning += 'and literature survey. To change the bounds, please '
-    bounds_warning += 'input your bounds in model definition...'
+    bounds_warning = "Bounds for this fit have been set from experiments "
+    bounds_warning += "and literature survey. To change the bounds, please "
+    bounds_warning += "input your bounds in model definition..."
 
-    if fit_method.lower() == 'trr':
+    if fit_method.lower() == "trr":
         ivimmodel_trr = IvimModelTRR(gtab, **kwargs)
-        if 'bounds' not in kwargs:
-            warnings.warn(bounds_warning, UserWarning)
+        if "bounds" not in kwargs:
+            warnings.warn(bounds_warning, UserWarning, stacklevel=2)
         return ivimmodel_trr
 
-    elif fit_method.lower() == 'varpro':
+    elif fit_method.lower() == "varpro":
         ivimmodel_vp = IvimModelVP(gtab, **kwargs)
-        if 'bounds' not in kwargs:
-            warnings.warn(bounds_warning, UserWarning)
+        if "bounds" not in kwargs:
+            warnings.warn(bounds_warning, UserWarning, stacklevel=2)
         return ivimmodel_vp
 
     else:
-        opt_msg = 'The fit_method option chosen was not correct. '
-        opt_msg += 'Using fit_method: TRR instead...'
-        warnings.warn(opt_msg, UserWarning)
+        opt_msg = "The fit_method option chosen was not correct. "
+        opt_msg += "Using fit_method: TRR instead..."
+        warnings.warn(opt_msg, UserWarning, stacklevel=2)
         return IvimModelTRR(gtab, **kwargs)
 
 
@@ -168,13 +169,22 @@ IvimModel = ivim_model_selector
 
 
 class IvimModelTRR(ReconstModel):
-    """Ivim model
-    """
-    def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 two_stage=True, tol=1e-15,
-                 x_scale=(1000., 0.1, 0.001, 0.0001),
-                 gtol=1e-15, ftol=1e-15, eps=1e-15, maxiter=1000):
+    """Ivim model"""
 
+    def __init__(
+        self,
+        gtab,
+        split_b_D=400.0,
+        split_b_S0=200.0,
+        bounds=None,
+        two_stage=True,
+        tol=1e-15,
+        x_scale=(1000.0, 0.1, 0.001, 0.0001),
+        gtol=1e-15,
+        ftol=1e-15,
+        eps=1e-15,
+        maxiter=1000,
+    ):
         r"""
         Initialize an IVIM model.
 
@@ -281,15 +291,14 @@ class IvimModelTRR(ReconstModel):
         self.bounds = bounds
         self.two_stage = two_stage
         self.tol = tol
-        self.options = {'gtol': gtol, 'ftol': ftol,
-                        'eps': eps, 'maxiter': maxiter}
+        self.options = {"gtol": gtol, "ftol": ftol, "eps": eps, "maxiter": maxiter}
         self.x_scale = x_scale
 
         self.bounds = bounds or BOUNDS
 
     @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the IvimModelTRR class.
+        """Fit method of the IvimModelTRR class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
@@ -318,14 +327,14 @@ class IvimModelTRR(ReconstModel):
         """
         # Get S0_prime and D - parameters assuming a single exponential decay
         # for signals for bvals greater than `split_b_D`
-        S0_prime, D = self.estimate_linear_fit(
-            data, self.split_b_D, less_than=False)
+        S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, less_than=False)
 
         # Get S0 and D_star_prime - parameters assuming a single exponential
         # decay for for signals for bvals greater than `split_b_S0`.
 
-        S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
-                                                    less_than=True)
+        S0, D_star_prime = self.estimate_linear_fit(
+            data, self.split_b_S0, less_than=True
+        )
         # Estimate f
         f_guess = 1 - S0_prime / S0
 
@@ -336,12 +345,14 @@ class IvimModelTRR(ReconstModel):
         # Fit parameters again if two_stage flag is set.
         if self.two_stage:
             params_two_stage = self._leastsq(data, params_linear)
-            bounds_violated = ~(np.all(params_two_stage >= self.bounds[0]) and
-                                (np.all(params_two_stage <= self.bounds[1])))
+            bounds_violated = ~(
+                np.all(params_two_stage >= self.bounds[0])
+                and (np.all(params_two_stage <= self.bounds[1]))
+            )
             if bounds_violated:
                 warningMsg = "Bounds are violated for leastsq fitting. "
                 warningMsg += "Returning parameters from linear fit"
-                warnings.warn(warningMsg, UserWarning)
+                warnings.warn(warningMsg, UserWarning, stacklevel=2)
                 return IvimFit(self, params_linear)
             else:
                 return IvimFit(self, params_two_stage)
@@ -372,14 +383,14 @@ class IvimModelTRR(ReconstModel):
         """
         if less_than:
             bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals <=
-                                                    split_b]), 1)
+            D, neg_log_S0 = np.polyfit(
+                bvals_split, -np.log(data[self.gtab.bvals <= split_b]), 1
+            )
         else:
             bvals_split = self.gtab.bvals[self.gtab.bvals >= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals >=
-                                                    split_b]), 1)
+            D, neg_log_S0 = np.polyfit(
+                bvals_split, -np.log(data[self.gtab.bvals >= split_b]), 1
+            )
 
         S0 = np.exp(-neg_log_S0)
         return S0, D
@@ -415,15 +426,16 @@ class IvimModelTRR(ReconstModel):
         maxfev = self.options["maxiter"]
 
         try:
-            res = least_squares(f_D_star_error,
-                                params_f_D_star,
-                                bounds=((0., 0.), (self.bounds[1][1],
-                                                   self.bounds[1][2])),
-                                args=(self.gtab, data, S0, D),
-                                ftol=ftol,
-                                xtol=xtol,
-                                gtol=gtol,
-                                max_nfev=maxfev)
+            res = least_squares(
+                f_D_star_error,
+                params_f_D_star,
+                bounds=((0.0, 0.0), (self.bounds[1][1], self.bounds[1][2])),
+                args=(self.gtab, data, S0, D),
+                ftol=ftol,
+                xtol=xtol,
+                gtol=gtol,
+                max_nfev=maxfev,
+            )
             f, D_star = res.x
             return f, D_star
         except ValueError:
@@ -431,11 +443,11 @@ class IvimModelTRR(ReconstModel):
             warningMsg += " as initial guess for leastsq while estimating "
             warningMsg += "f and D_star. Using parameters from the "
             warningMsg += "linear fit."
-            warnings.warn(warningMsg, UserWarning)
+            warnings.warn(warningMsg, UserWarning, stacklevel=2)
             f, D_star = params_f_D_star
             return f, D_star
 
-    def predict(self, ivim_params, gtab, S0=1.):
+    def predict(self, ivim_params, gtab, S0=1.0):
         """
         Predict a signal for this IvimModel class instance given parameters.
 
@@ -488,15 +500,17 @@ class IvimModelTRR(ReconstModel):
         bounds = self.bounds
 
         try:
-            res = least_squares(_ivim_error,
-                                x0,
-                                bounds=bounds,
-                                ftol=ftol,
-                                xtol=xtol,
-                                gtol=gtol,
-                                max_nfev=maxfev,
-                                args=(self.gtab, data),
-                                x_scale=self.x_scale)
+            res = least_squares(
+                _ivim_error,
+                x0,
+                bounds=bounds,
+                ftol=ftol,
+                xtol=xtol,
+                gtol=gtol,
+                max_nfev=maxfev,
+                args=(self.gtab, data),
+                x_scale=self.x_scale,
+            )
             ivim_params = res.x
             if np.all(np.isnan(ivim_params)):
                 return np.array([-1, -1, -1, -1])
@@ -504,14 +518,13 @@ class IvimModelTRR(ReconstModel):
         except ValueError:
             warningMsg = "x0 is unfeasible for leastsq fitting."
             warningMsg += " Returning x0 values from the linear fit."
-            warnings.warn(warningMsg, UserWarning)
+            warnings.warn(warningMsg, UserWarning, stacklevel=2)
             return x0
 
 
 class IvimModelVP(ReconstModel):
-
     def __init__(self, gtab, bounds=None, maxiter=10, xtol=1e-8):
-        r""" Initialize an IvimModelVP class.
+        r"""Initialize an IvimModelVP class.
 
         The IVIM model assumes that biological tissue includes a volume
         fraction 'f' of water flowing with a pseudo-diffusion coefficient
@@ -563,7 +576,7 @@ class IvimModelVP(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data, bounds_de=None):
-        r""" Fit method of the IvimModelVP model class
+        r"""Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro)[1]_.
 
@@ -597,9 +610,15 @@ class IvimModelVP(ReconstModel):
         bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         # Optimizer #1: Differential Evolution
-        res_one = differential_evolution(self.stoc_search_cost, bounds_de,
-                                         maxiter=self.maxiter, args=(data,),
-                                         disp=False, polish=True, popsize=28)
+        res_one = differential_evolution(
+            self.stoc_search_cost,
+            bounds_de,
+            maxiter=self.maxiter,
+            args=(data,),
+            disp=False,
+            polish=True,
+            popsize=28,
+        )
         x = res_one.x
         phi = self.phi(x)
 
@@ -611,15 +630,15 @@ class IvimModelVP(ReconstModel):
         bounds = self.bounds
 
         # Optimizer #3: Nonlinear-Least Squares
-        res = least_squares(self.nlls_cost, x_f, bounds=bounds,
-                            xtol=self.xtol, args=(data,))
+        res = least_squares(
+            self.nlls_cost, x_f, bounds=bounds, xtol=self.xtol, args=(data,)
+        )
         result = res.x
         f_est = result[0]
         D_star_est = result[1]
         D_est = result[2]
 
-        S0 = data / (f_est * np.exp(-b * D_star_est) + (1 - f_est) *
-                     np.exp(-b * D_est))
+        S0 = data / (f_est * np.exp(-b * D_star_est) + (1 - f_est) * np.exp(-b * D_est))
         S0_est = S0 * data_max
 
         # final result containing the four fit parameters: S0, f, D* and D
@@ -729,11 +748,13 @@ class IvimModelVP(ReconstModel):
         f = cvxpy.Variable(2)
         # Constraints have been set similar to the MIX paper's
         # Supplementary Note 2: Synthetic Data Experiments, experiment 2
-        constraints = [cvxpy.sum(f) == 1,
-                       f[0] >= 0.011,
-                       f[1] >= 0.011,
-                       f[0] <= self.bounds[1][0],
-                       f[1] <= 0.89]
+        constraints = [
+            cvxpy.sum(f) == 1,
+            f[0] >= 0.011,
+            f[1] >= 0.011,
+            f[0] <= self.bounds[1][0],
+            f[1] <= 0.89,
+        ]
 
         # Form objective.
         obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi @ f - signal)))
@@ -846,9 +867,8 @@ class IvimModelVP(ReconstModel):
 
 
 class IvimFit:
-
     def __init__(self, model, model_params):
-        """ Initialize a IvimFit class instance.
+        """Initialize a IvimFit class instance.
 
         Parameters
         ----------
@@ -896,7 +916,7 @@ class IvimFit:
     def shape(self):
         return self.model_params.shape[:-1]
 
-    def predict(self, gtab, S0=1.):
+    def predict(self, gtab, S0=1.0):
         """Given a model fit, predict the signal.
 
         Parameters
