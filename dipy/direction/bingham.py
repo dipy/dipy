@@ -118,7 +118,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
     return f0, k1, k2, mu0, mu1, mu2
 
 
-def _single_sf_to_bingham(odf, sphere, *, npeaks=5, max_search_angle=45,
+def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
                           min_sep_angle=60, rel_th=0.1):
     """
     Fit a Bingham distribution onto each principal ODF lobe.
@@ -129,12 +129,12 @@ def _single_sf_to_bingham(odf, sphere, *, npeaks=5, max_search_angle=45,
         The ODF function evaluated on the vertices of `sphere`
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions
-    npeak: int, optional
-        Maximum number of peaks found (default 5 peaks).
-    max_search_angle: float, optional.
+    max_search_angle: float.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution. Although they suggest 6 degrees
-        in [1]_, tests show that a value of 45 degrees is more stable.
+        in [1]_, tests show that a value around 45 degrees is more stable.
+    npeak: int, optional
+        Maximum number of peaks found (default 5 peaks).
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
     rel_th: float, optional
@@ -674,8 +674,8 @@ class BinghamMetrics:
         return bingham_to_sf(self.model_params, sphere, mask=mask)
 
 
-def sf_to_bingham(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
-                  min_sep_angle=60, rel_th=0.1):
+def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
+                  npeaks=5, min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from a volume of ODF.
 
@@ -685,13 +685,13 @@ def sf_to_bingham(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
         Orientation Distribution Function sampled on the vertices of a sphere.
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions.
+    max_search_angle: float.
+        Maximum angle between a peak and its neighbour directions
+        for fitting the Bingham distribution.
     mask: ndarray
         Map marking the coordinates in the data that should be analyzed.
     npeak: int
         Maximum number of peaks found (default 5 peaks).
-    max_search_angle: float, optional.
-        Maximum angle between a peak and its neighbour directions
-        for fitting the Bingham distribution.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
     rel_th: float, optional
@@ -717,7 +717,7 @@ def sf_to_bingham(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
             continue
 
         [fits, npeaks_final] = _single_sf_to_bingham(
-            odf[idx], sphere, npeaks=npeaks, max_search_angle=max_search_angle,
+            odf[idx], sphere, max_search_angle, npeaks=npeaks,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
@@ -725,8 +725,8 @@ def sf_to_bingham(odf, sphere, *, mask=None, npeaks=5, max_search_angle=6,
     return BinghamMetrics(bpars)
 
 
-def sh_to_bingham(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
-                  max_search_angle=6, min_sep_angle=60, rel_th=0.1):
+def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *, mask=None,
+                  npeaks=5, min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from an ODF's spherical harmonics (SH)
     representation.
@@ -739,13 +739,13 @@ def sh_to_bingham(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
         The points on which to sample the spherical function.
     sh_order_max: int
         Maximum order used for the SH reconstruction.
+    max_search_angle: float.
+        Maximum angle between a peak and its neighbour directions
+        for fitting the Bingham distribution.
     mask: ndarray
         Map marking the coordinates in the data that should be analyzed.
     npeak: int
         Maximum number of peaks found (default 5 peaks).
-    max_search_angle: float, optional.
-        Maximum angle between a peak and its neighbour directions
-        for fitting the Bingham distribution.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
     rel_th: float, optional
@@ -773,7 +773,7 @@ def sh_to_bingham(sh, sphere, sh_order_max, *, mask=None, npeaks=5,
         odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
 
         [fits, npeaks_final] = _single_sf_to_bingham(
-            odf, sphere, npeaks=npeaks, max_search_angle=max_search_angle,
+            odf, sphere, max_search_angle, npeaks=npeaks,
             min_sep_angle=min_sep_angle, rel_th=rel_th)
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
