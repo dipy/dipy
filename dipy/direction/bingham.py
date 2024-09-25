@@ -213,7 +213,7 @@ def _single_bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     the Bingham distribution.
     """
     fn = f0 * np.exp(-k1 * vertices.dot(major_axis)**2
-                     -k2 * vertices.dot(minor_axis)**2)
+                     - k2 * vertices.dot(minor_axis)**2)
 
     return fn.T
 
