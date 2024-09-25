@@ -28,7 +28,9 @@ A note on citing our work
 
 * If you are using Generalized Q-sampling please also cite :cite:p:`Yeh2010`.
 
-* If you are using Diffusional Kurtosis Imaging, please also cite :cite:t:`NetoHenriques2017`.
+* If you are using Free Water DTI, please also cite :cite:p:`NetoHenriques2017`.
+
+* If you are using Diffusional Kurtosis Imaging, please also cite :cite:t:`NetoHenriques2021a`.
 
 
 Citing other algorithms
