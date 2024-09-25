@@ -158,7 +158,7 @@ if interactive:
 # This function is for such cases. Below we show the lines of code to use the
 # function `sh_to_bingham` (feel free to skip these lines if the function
 # `sf_to_bingham` worked fine for you). Note, to use `sh_to_bingham` you
-# need to specify the maximum order of spherical harmonics that you defined 
+# need to specify the maximum order of spherical harmonics that you defined
 # when reconstructing the ODF. In this example this was set to 8 for
 # the function `csd_model`:
 
@@ -229,7 +229,7 @@ image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # The figure shows from left to right: 1) ODI of the largest ODF lobe along
-# the axis with greater dispersion, a.k.a. ODI_1 (direction in which fibers 
+# the axis with greater dispersion, a.k.a. ODI_1 (direction in which fibers
 # exhibit the most variability in orientation); 2) ODI of the largest ODF lobe
 # along the axis with lesser dispersion, a.k.a ODI_2 (directions in which
 # fiber orientations are more uniform); and 3) total ODI of the largest lobe
@@ -264,12 +264,12 @@ image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # The figure shows from left to right: 1) ODI for the second-largest ODF lobe
-# along the axis with greater dispersion a.k.a. ODI_1 (direction in which 
+# along the axis with greater dispersion a.k.a. ODI_1 (direction in which
 # fibers exhibit the most variability in orientation); 2) ODI for the
 # second-largest ODF lobe along the axis with lesser dispersion a.k.a. ODI_2
 # (directions in which fiber orientations are more uniform); and 3) total ODI
 # for the second-largest ODF lobe across both axes. In this figure, regions of
-# the white matter that contain only a single fiber population (one ODF lobe) 
+# the white matter that contain only a single fiber population (one ODF lobe)
 # display ODI estimates of zero, corresponding to ODF profiles lacking a
 # second ODF lobe.
 #

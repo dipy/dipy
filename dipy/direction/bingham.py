@@ -71,7 +71,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
     # Test that the surface along peak direction contains
     # at least 3 non-zero directions
     if np.count_nonzero(v) < 3:
-        return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
+        return 0, 0.0, 0.0, np.zeros(3), np.zeros(3)
 
     x, y, z = (p[:, 0], p[:, 1], p[:, 2])
 
@@ -93,7 +93,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
 
     # If no real fit is possible, return null
     if np.iscomplex(mu1).any() or np.iscomplex(mu2).any():
-        return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
+        return 0, 0.0, 0.0, np.zeros(3), np.zeros(3)
 
     # Calculating the A matrix
     A = np.zeros((len(v), 2), dtype=float)  # (N, 2)
@@ -103,7 +103,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
     # Test that AT.A is invertible for pseudo-inverse
     ATA = A.T.dot(A)
     if np.linalg.matrix_rank(ATA) != ATA.shape[0]:
-        return 0, 0.0, 0.0,  np.zeros(3), np.zeros(3)
+        return 0, 0.0, 0.0, np.zeros(3), np.zeros(3)
 
     # Calculating the Beta matrix
     B = np.zeros_like(v)
@@ -212,8 +212,8 @@ def _single_bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     Refer to method `bingham_to_odf` for the definition of
     the Bingham distribution.
     """
-    fn = f0*np.exp(-k1*vertices.dot(major_axis)**2
-                   - k2*vertices.dot(minor_axis)**2)
+    fn = f0 * np.exp(-k1 * vertices.dot(major_axis)**2
+                     -k2 * vertices.dot(minor_axis)**2)
 
     return fn.T
 
@@ -317,7 +317,7 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     u = sphere.vertices
 
     # area of a single surface element
-    dA = 4.0*np.pi / len(u)
+    dA = 4.0 * np.pi / len(u)
 
     shape = bingham_params.shape[0:-2]
     if mask is None:
@@ -416,7 +416,7 @@ def k2odi(k):
             density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
     """
     odi = np.zeros(k.shape)
-    odi[k > 0] = 2/np.pi * np.arctan(1 / k[k > 0])
+    odi[k > 0] = 2 / np.pi * np.arctan(1 / k[k > 0])
     return odi
 
 
@@ -456,7 +456,7 @@ def odi2k(odi):
             density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
     """
     k = np.zeros(odi.shape)
-    k[odi > 0] = 1/np.tan(np.pi/2 * odi[odi > 0])
+    k[odi > 0] = 1 / np.tan(np.pi / 2 * odi[odi > 0])
     return k
 
 

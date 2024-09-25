@@ -86,7 +86,7 @@ def test_bingham_metrics():
     # the second, its surface integral have to be also 3 times larger.
     fd = bingham_fiber_density(bpars)
 
-    assert_almost_equal(fd[0]/fd[1], 3)
+    assert_almost_equal(fd[0] / fd[1], 3)
 
     # Fiber density using the default sphere should be close to the fd obtained
     # using a high-resolution sphere (2621442 vertices)
@@ -114,7 +114,7 @@ def test_bingham_metrics():
 
     fd_sphere = bingham_fiber_density(sphere_pars)
 
-    assert_almost_equal(fd_sphere[0], 4.0*np.pi)
+    assert_almost_equal(fd_sphere[0], 4.0 * np.pi)
 
     # TEST: k2odi and odi2k conversions
     assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
@@ -124,7 +124,7 @@ def test_bingham_metrics():
     f0s = np.array([f0_lobe1, f0_lobe2])
     fs = bingham_fiber_spread(f0s, fd)
 
-    assert_array_almost_equal(fs, fd/f0s)
+    assert_array_almost_equal(fs, fd / f0s)
 
 
 def test_bingham_from_odf():
@@ -153,7 +153,7 @@ def test_bingham_from_odf():
     # check if we have estimates in the right lobe for all voxels
     peak_v = bim.model_params[0, 0, 0, 0, 0]
     assert_array_almost_equal(bim.amplitude_lobe[..., 0],
-                              peak_v*np.ones((2, 2, 1)))
+                              peak_v * np.ones((2, 2, 1)))
     assert_array_almost_equal(bim.amplitude_lobe[..., 1],
                               np.zeros((2, 2, 1)))
 
@@ -161,7 +161,7 @@ def test_bingham_from_odf():
     assert_almost_equal(bim.kappa1_lobe[0, 0, 0, 0], k1, decimal=3)
     assert_almost_equal(bim.kappa2_lobe[0, 0, 0, 0], k2, decimal=3)
     assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0],
-                        np.sqrt(k1*k2), decimal=3)
+                        np.sqrt(k1 * k2), decimal=3)
 
     # check ODI
     assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0],
@@ -185,7 +185,7 @@ def test_bingham_from_odf():
     assert_almost_equal(bim.fd_voxel, bim.fd_lobe[..., 0])
 
     # check fiber spread
-    fs_v = bim.fd_lobe[0, 0, 0, 0]/peak_v
+    fs_v = bim.fd_lobe[0, 0, 0, 0] / peak_v
     assert_almost_equal(bim.fs_lobe[..., 0], fs_v)
 
     # check reconstructed odf
