@@ -465,7 +465,7 @@ def test_rwls_rnlls_irls_fit():
 
     # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
     b0 = 1000.
-    bval, bvec = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    bval, bvec = read_bvals_bvecs(*get_fnames(name='55dir_grad'))
     B = bval[1]
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
@@ -473,7 +473,7 @@ def test_rwls_rnlls_irls_fit():
     md = evals.mean()
     tensor = from_lower_triangular(D)
     # Design Matrix
-    gtab = grad.gradient_table(bval, bvec)
+    gtab = grad.gradient_table(bval, bvecs=bvec)
     X = dti.design_matrix(gtab)
     # Signals
     Y = np.exp(np.dot(X, D))
@@ -1070,8 +1070,8 @@ def test_extra_return():
     """
 
     b0 = 1000.
-    bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
-    gtab = grad.gradient_table(bval, bvecs)
+    bval, bvecs = read_bvals_bvecs(*get_fnames(name='55dir_grad'))
+    gtab = grad.gradient_table(bval, bvecs=bvecs)
     B = bval[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
