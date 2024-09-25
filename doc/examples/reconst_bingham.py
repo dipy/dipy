@@ -95,7 +95,10 @@ if interactive:
 # Now that we have some ODFs, let us fit the Bingham functions to them by using
 # the function `sf_to_bingham`:
 
-BinghamMetrics = sf_to_bingham(csd_odf, sphere)
+# A maximum search angle of 45 degrees is chosen arbitrarily for fitting
+# each ODF lobe.
+max_search_angle = 45
+BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 
 ###############################################################################
 # The above function outputs a `BinghamMetrics` class instance, containing the
@@ -160,7 +163,7 @@ if interactive:
 # the function `csd_model`:
 
 sh_coeff = csd_fit.shm_coeff
-BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8)
+BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8, max_search_angle)
 
 ###############################################################################
 # Step 3. Bingham Metrics
