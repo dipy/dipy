@@ -27,7 +27,11 @@ def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     """
     vox_weights = kwargs.pop("weights")
     if type(vox_weights) is np.ndarray:
-        return [single_voxel_fit(data, **(dict({"weights": weights}, **kwargs))) for data, weights in zip(vox_data, vox_weights)]
+        return [
+                 single_voxel_fit(
+                   data, **(dict({"weights": weights}, **kwargs))
+                 ) for data, weights in zip(vox_data, vox_weights)
+               ]
     else:
         return [single_voxel_fit(data, **kwargs) for data in vox_data]
 
@@ -38,7 +42,7 @@ def multi_voxel_fit(single_voxel_fit):
     """
 
     def new_fit(self, data, *, mask=None, **kwargs):
-        """Fit method for every voxel in data""" # FIXME: is this comment accurate?
+        """Fit method for every voxel in data"""
 
         # If only one voxel just return a standard fit, passing through
         # the functions key-word arguments (no mask needed).
@@ -68,9 +72,9 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
-        #if engine == "serial":
+        # if engine == "serial":  # FIXME put this back
         if False:  # FIXME: forcing to use 'parallel' while I am testing
-            print("serial") # FIXME: remove
+            print("serial")  # FIXME: remove this print
             extra_list = []
             bar = tqdm(
                 total=np.sum(mask), position=0,
@@ -96,11 +100,7 @@ def multi_voxel_fit(single_voxel_fit):
                 bar.update()
             bar.close()
         else:
-            print("parallel") # FIXME
-            print("weights_is_array:", weights_is_array)
-            print(data.shape, mask.shape)
-            if weights_is_array:
-                print(weights.shape)
+            print("parallel")  # FIXME: remove this print
             data_to_fit = data[np.where(mask)]
             if weights_is_array:
                 weights_to_fit = weights[np.where(mask)]
@@ -118,12 +118,10 @@ def multi_voxel_fit(single_voxel_fit):
             # Keyword arguments to `func` or sequence of keyword arguments
             # to `func`: one item for each item in the input list.
             kwargs_chunks = []
-            for iii, ii in enumerate(range(0, data_to_fit.shape[0], vox_per_chunk)):
+            for ii in range(0, data_to_fit.shape[0], vox_per_chunk):
                 kw = kwargs.copy()
                 if weights_is_array:
                     kw["weights"] = weights_to_fit[ii : ii + vox_per_chunk]
-                    print("kw[weights]:", kw["weights"].shape)
-                    print("current chunk shape:", chunks[iii].shape)
                 kwargs_chunks.append(kw)
 
             parallel_kwargs = {}
@@ -136,7 +134,6 @@ def multi_voxel_fit(single_voxel_fit):
                     chunks,
                     func_args=[single_voxel_with_self],
                     func_kwargs=kwargs_chunks,
-                    #func_kwargs=kwargs, # NOTE: this was in master, but needs generalizing to list of dictionaries
                     **parallel_kwargs,
                   )
 
@@ -147,7 +144,8 @@ def multi_voxel_fit(single_voxel_fit):
                 tmp_extra = np.concatenate(
                     [[svf[1] for svf in mvf_ch] for mvf_ch in mvf]
                 ).tolist()
-                fit_array[np.where(mask)], extra_list = tmp_fit_array, tmp_extra
+                fit_array[np.where(mask)], extra_list =\
+                    tmp_fit_array, tmp_extra
                 return_extra = True
             else:
                 tmp_fit_array = np.concatenate(mvf)

@@ -1722,7 +1722,8 @@ class DiffusionKurtosisModel(ReconstModel):
     """Class for the Diffusion Kurtosis Model"""
 
     @warning_for_keywords()
-    def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
+    def __init__(self, gtab, *args,
+                 fit_method="WLS", return_S0_hat=False, **kwargs):
         """Diffusion Kurtosis Tensor Model.
 
         See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
@@ -1857,10 +1858,11 @@ class DiffusionKurtosisModel(ReconstModel):
             return fit_result
 
         if self.is_multi_method and self.is_iter_method:
-            fit_result, extra =\
-              self.iterative_fit(data_thres, mask=mask,
-                                 num_iter=self.kwargs["num_iter"],
-                                 weights_method=self.kwargs["weights_method"])
+            fit_result, extra = self.iterative_fit(
+                data_thres, mask=mask,
+                num_iter=self.kwargs["num_iter"],
+                weights_method=self.kwargs["weights_method"]
+            )
             if extra is not None:
                 self.extra = extra
             return fit_result
@@ -1926,8 +1928,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
     @multi_voxel_fit
     @warning_for_keywords()
-#    def multi_fit(self, data, *, mask=None):  # FIXME: this was current master
-    def multi_fit(self, data, *, mask=None, **kwargs):  # FIXME: I think I need 'kwargs'... else how to pass to fit_method below? 
+    def multi_fit(self, data, *, mask=None, **kwargs):
         """ Convenience function for fitting multiple voxels.
         """
         extra_args = (
@@ -2018,7 +2019,6 @@ class DiffusionKurtosisModel(ReconstModel):
                                      self.design_matrix, leverages,
                                      rdx, TDX, robust)
 
-            #print(rdx, TDX + 1)  # FIXME: leverages is not getting returned
             tmp, extra = self.multi_fit(data_thres, mask=mask,
                                         weights=w, return_leverages=True)
             leverages = extra["leverages"]
@@ -2797,8 +2797,6 @@ def cls_fit_dki(
     ----------
     .. footbibliography::
     """
-    #print("running cls")
-    #return_leverages = True  # NOTE: forcing this, because multi-voxel not passing it # FIXME: needs removing
     # Set up least squares problem
     A = design_matrix
     y = np.log(data)
@@ -2808,7 +2806,6 @@ def cls_fit_dki(
     # e.g. weights for WLS are diag(fn**2), so W are diag(fn)
     if weights is not False:
         if type(weights) is np.ndarray:  # use supplied weights
-            #print(A.shape, y.shape, weights.shape) # FIXME: remove...
             W = np.diag(np.sqrt(weights))
         else:  # Define weights as diag(fn**2) (fn = fitted signal from OLS)
             result = np.dot(inverse_design_matrix, y)
@@ -2824,7 +2821,6 @@ def cls_fit_dki(
     # Solve sdp
     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
 
-    print("return_leverages:", return_leverages) # FIXME: multi_voxel parallel should be passing this
     if return_leverages:
         leverages = {"leverages": leverages}
     else:
