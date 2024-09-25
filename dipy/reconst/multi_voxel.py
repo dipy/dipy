@@ -25,7 +25,7 @@ def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     single_voxel_fit : callable
         The fit function to use on each voxel.
     """
-    vox_weights = kwargs.pop("weights")
+    vox_weights = kwargs.pop("weights", None)
     if type(vox_weights) is np.ndarray:
         return [
                  single_voxel_fit(
@@ -72,9 +72,7 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
-        # if engine == "serial":  # FIXME put this back
-        if False:  # FIXME: forcing to use 'parallel' while I am testing
-            print("serial")  # FIXME: remove this print
+        if engine == "serial":
             extra_list = []
             bar = tqdm(
                 total=np.sum(mask), position=0,
@@ -100,7 +98,6 @@ def multi_voxel_fit(single_voxel_fit):
                 bar.update()
             bar.close()
         else:
-            print("parallel")  # FIXME: remove this print
             data_to_fit = data[np.where(mask)]
             if weights_is_array:
                 weights_to_fit = weights[np.where(mask)]
