@@ -831,7 +831,7 @@ class TensorModel(ReconstModel):
                 S0_params = np.zeros(data.shape[:-1])
                 try:
                     S0_params[mask] = model_S0.squeeze(axis=-1)
-                except:
+                except ValueError as e:
                     S0_params[mask] = model_S0
             if extra is not None:
                 for key in extra:
@@ -1321,7 +1321,8 @@ def iter_fit_tensor(*, step=1e4):
 
             if step >= size:
                 return fit_tensor(
-                    design_matrix, data, *args, return_S0_hat=return_S0_hat, **kwargs
+                    design_matrix, data, *args,
+                    return_S0_hat=return_S0_hat, **kwargs
                 )
             data = data.reshape(-1, data.shape[-1])
             if weights is not None:
@@ -1480,13 +1481,16 @@ def wls_fit_tensor(design_matrix, data, *, weights=None, return_S0_hat=False,
         return fit_result, leverages
 
     if return_S0_hat:
-        return (eig_from_lo_tri(fit_result,
-                                min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1])), leverages
+        return (
+                 eig_from_lo_tri(
+                   fit_result, min_diffusivity=tol / -design_matrix.min()
+                 ),
+                 np.exp(-fit_result[:, -1])
+               ), leverages
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min()),\
-               leverages
+        return eig_from_lo_tri(
+                 fit_result, min_diffusivity=tol / -design_matrix.min()
+               ), leverages
 
 
 @iter_fit_tensor()
@@ -1710,7 +1714,9 @@ def _decompose_tensor_nan(tensor, tensor_alternative, *, min_diffusivity=0):
 
     """
     try:
-        evals, evecs = decompose_tensor(tensor[:6], min_diffusivity=min_diffusivity)
+        evals, evecs = decompose_tensor(
+            tensor[:6], min_diffusivity=min_diffusivity
+        )
 
     except np.linalg.LinAlgError:
         evals, evecs = decompose_tensor(
@@ -1889,7 +1895,13 @@ def nlls_fit_tensor(
 
 @warning_for_keywords()
 def restore_fit_tensor(
-    design_matrix, data, *, sigma=None, jac=True, return_S0_hat=False, fail_is_nan=False
+    design_matrix,
+    data,
+    *,
+    sigma=None,
+    jac=True,
+    return_S0_hat=False,
+    fail_is_nan=False
 ):
     """
     Use the RESTORE algorithm [1]_ to calculate a robust tensor fit.
@@ -1952,7 +1964,9 @@ def restore_fit_tensor(
     flat_data = data.reshape((-1, data.shape[-1]))
 
     # calculate OLS solution
-    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
+    D, _ = ols_fit_tensor(
+        design_matrix, flat_data, return_lower_triangular=True
+    )
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -2054,7 +2068,9 @@ def restore_fit_tensor(
                                                      Dfun=jac_func)
 
             # Convert diffusion tensor parameters to the evals and the evecs:
-            evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
+            evals, evecs = decompose_tensor(
+                from_lower_triangular(this_param[:6])
+            )
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
 
@@ -2066,7 +2082,9 @@ def restore_fit_tensor(
 
             if not fail_is_nan:
                 # Convert diffusion tensor parameters to evals and evecs:
-                evals, evecs = decompose_tensor(from_lower_triangular(this_param[:6]))
+                evals, evecs = decompose_tensor(
+                    from_lower_triangular(this_param[:6])
+                )
                 params[vox, :3] = evals
                 params[vox, 3:12] = evecs.ravel()
             else:

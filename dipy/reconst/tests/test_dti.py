@@ -496,10 +496,14 @@ def test_rwls_rnlls_irls_fit():
         npt.assert_array_less(np.linalg.norm(tensor_est_R.evals[0] - evals),
                               np.linalg.norm(tensor_est.evals[0] - evals))
 
-        npt.assert_array_less(np.linalg.norm(tensor_est_R.quadratic_form[0] -
-                                             tensor),
-                              np.linalg.norm(tensor_est.quadratic_form[0] -
-                              tensor))
+        npt.assert_array_less(
+                               np.linalg.norm(
+                                 tensor_est_R.quadratic_form[0] - tensor
+                               ),
+                               np.linalg.norm(
+                                 tensor_est.quadratic_form[0] - tensor
+                               )
+                             )
 
         npt.assert_array_less(np.linalg.norm(tensor_est_R.md[0] - md),
                               np.linalg.norm(tensor_est.md[0] - md))
@@ -562,7 +566,7 @@ def test_rwls_rnlls_irls_fit():
     # force use of iter_fit_tensor without making a large test
     model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True,
                         num_iter=10)
-    tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4+1, axis=0))
+    tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
 
 
 def test_masked_array_with_tensor():
@@ -782,7 +786,7 @@ def test_nlls_fit_tensor():
     npt.assert_almost_equal(tensor_est.md[0], md)
 
     # Using weights:
-    weights = 2*np.ones_like(Y, dtype=np.float32)
+    weights = 2 * np.ones_like(Y, dtype=np.float32)
     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weights=weights)
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
