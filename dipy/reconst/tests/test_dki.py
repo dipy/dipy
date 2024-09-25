@@ -192,7 +192,7 @@ def test_dki_fits():
     # Test wls given S^2 weights argument, matches default wls
     design_matrix = dki_design_matrix(gtab_2s)
     inverse_design_matrix = np.linalg.pinv(design_matrix)
-    YN = signal_cross + 10*np.random.normal(size=signal_cross.shape)  # error
+    YN = signal_cross + 10 * np.random.normal(size=signal_cross.shape)  # error
     YN[YN < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     # wls calculation
     D_w, _ = ls_fit_dki(design_matrix, YN, inverse_design_matrix,
