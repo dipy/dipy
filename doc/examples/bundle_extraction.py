@@ -3,8 +3,8 @@
 Automatic Fiber Bundle Extraction with RecoBundles
 ==================================================
 
-This example explains how we can use RecoBundles [Garyfallidis17]_ to extract
-bundles from tractograms.
+This example explains how we can use RecoBundles :footcite:p:`Garyfallidis2018`
+to extract bundles from tractograms.
 
 First import the necessary modules.
 """
@@ -51,7 +51,7 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(target, colors=(1, 1, 0)))
-window.record(scene, out_path="tractograms_initial.png", size=(600, 600))
+window.record(scene=scene, out_path="tractograms_initial.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -62,7 +62,7 @@ if interactive:
 #
 #
 # We will register target tractogram to model atlas' space using streamlinear
-# registration (SLR) [Garyfallidis15]_
+# registration (SLR) :footcite:p:`Garyfallidis2015`.
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
     atlas,
@@ -89,7 +89,9 @@ scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(atlas, colors=(1, 0, 1)))
 scene.add(actor.line(moved, colors=(1, 1, 0)))
-window.record(scene, out_path="tractograms_after_registration.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="tractograms_after_registration.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -100,7 +102,7 @@ if interactive:
 #
 #
 #
-# Extracting bundles using RecoBundles [Garyfallidis17]_
+# Extracting bundles using RecoBundles :footcite:p:`Garyfallidis2018`
 #
 # RecoBundles requires a model (reference) bundle and tries to extract similar
 # looking bundle from the input tractogram. There are some key parameters that
@@ -142,7 +144,7 @@ if interactive:
 # Arcuate Fasciculus Left model bundle.
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
-sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
+sft_af_l = load_trk(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
 interactive = False
@@ -155,7 +157,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_model_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -189,7 +191,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -239,7 +241,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -288,7 +290,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
+window.record(scene=scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -343,7 +345,9 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -383,7 +387,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_model_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_model_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -415,7 +419,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -465,7 +469,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -514,7 +518,7 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
+window.record(scene=scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -570,7 +574,9 @@ scene.set_camera(
     position=(-360.11, -30.46, -40.44),
     view_up=(-0.03, 0.028, 0.89),
 )
-window.record(scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600))
+window.record(
+    scene=scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -601,12 +607,5 @@ save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
 # References
 # ----------
 #
-# .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-#         bundles using local and global streamline-based registration
-#         and clustering, Neuroimage, 2017.
+# .. footbibliography::
 #
-# .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-#         Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-#         Garyfallidis, E. Bundle analytics, a computational framework for
-#         investigating the shapes and profiles of brain pathways across
-#         populations. Sci Rep 10, 17149 (2020)

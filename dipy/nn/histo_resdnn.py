@@ -12,7 +12,7 @@ from dipy.core.sphere import HemiSphere
 from dipy.data import get_fnames, get_sphere
 from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
@@ -37,18 +37,30 @@ logger = logging.getLogger("histo_resdnn")
 class HistoResDNN:
     """
     This class is intended for the ResDNN Histology Network model.
+
+    ResDNN :footcite:p:`Nath2019` is a deep neural network that employs residual
+    blocks deep neural network to predict ground truth SH coefficients from SH
+    coefficients computed using DWI data. To this end, authors considered
+    histology FOD-computed SH coefficients (obtained from ex vivo non-human
+    primate acquisitions) as their ground truth, and the DWI-computed SH
+    coefficients as their target.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     @doctest_skip_parser
-    def __init__(self, sh_order_max=8, basis_type="tournier07", verbose=False):
+    def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
-        ('tournier07') like the proposed model in [1, 2].
+        ('tournier07') like the proposed model in :footcite:p:`Nath2019`.
 
         To obtain the pre-trained model, use::
         >>> resdnn_model = HistoResDNN() # skip if not have_tf
-        >>> fetch_model_weights_path = get_fnames('histo_resdnn_weights') # skip if not have_tf
+        >>> fetch_model_weights_path = get_fnames(name='histo_resdnn_weights') # skip if not have_tf
         >>> resdnn_model.load_model_weights(fetch_model_weights_path) # skip if not have_tf
 
         This model is designed to take as input raw DWI signal on a sphere
@@ -62,25 +74,15 @@ class HistoResDNN:
             Maximum SH order (l) in the SH fit.  For ``sh_order_max``, there
             will be
             ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` SH coefficients
-            for a symmetric basis. Default: 8
+            for a symmetric basis.
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
 
         References
         ----------
-        ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-            C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-            Deep learning reveals untapped information for local white-matter
-            fiber reconstruction in diffusion-weighted MRI.
-            Magnetic resonance imaging, 62, 220-227.
-        ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-            P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-            Deep learning captures more accurate diffusion fiber orientations
-            distributions than constrained spherical deconvolution.
-            arXiv preprint arXiv:1911.07927.
+        .. footbibliography::
         """  # noqa: E501
 
         if not have_tf:
@@ -119,7 +121,7 @@ class HistoResDNN:
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
-        fetch_model_weights_path = get_fnames("histo_resdnn_weights")
+        fetch_model_weights_path = get_fnames(name="histo_resdnn_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -169,7 +171,8 @@ class HistoResDNN:
 
         return self.model.predict(x_test)
 
-    def predict(self, data, gtab, mask=None, chunk_size=1000):
+    @warning_for_keywords()
+    def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -181,7 +184,7 @@ class HistoResDNN:
         gtab : GradientTable class instance
             The acquisition scheme matching the data (must contain at least
             one b0)
-        mask : np.ndarray (optional)
+        mask : np.ndarray, optional
             Binary mask of the brain to avoid unnecessary computation and
             unreliable prediction outside the brain.
             Default: Compute prediction only for nonzero voxels (with at least
@@ -253,7 +256,7 @@ class HistoResDNN:
             )
 
             # Removing negative values from the SF
-            sphere = get_sphere("repulsion724")
+            sphere = get_sphere(name="repulsion724")
             tmp_sf = sh_to_sf(
                 sh=tmp_sh,
                 sphere=sphere,

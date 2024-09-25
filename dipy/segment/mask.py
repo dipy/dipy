@@ -12,6 +12,8 @@ except Exception:
 
 from scipy.ndimage import binary_dilation, generate_binary_structure
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def multi_median(data, median_radius, numpass):
     """Applies median filter multiple times on input data.
@@ -126,8 +128,15 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
+@warning_for_keywords()
 def median_otsu(
-    input_volume, vol_idx=None, median_radius=4, numpass=4, autocrop=False, dilate=None
+    input_volume,
+    *,
+    vol_idx=None,
+    median_radius=4,
+    numpass=4,
+    autocrop=False,
+    dilate=None,
 ):
     """Simple brain extraction tool method for images from DWI data.
 
@@ -144,17 +153,17 @@ def median_otsu(
     ----------
     input_volume : ndarray
         3D or 4D array of the brain volume.
-    vol_idx : None or array, optional.
+    vol_idx : None or array, optional
         1D array representing indices of ``axis=3`` of a 4D `input_volume`.
         None is only an acceptable input if ``input_volume`` is 3D.
-    median_radius : int
-        Radius (in voxels) of the applied median filter (default: 4).
-    numpass: int
-        Number of pass of the median filter (default: 4).
+    median_radius : int, optional
+        Radius (in voxels) of the applied median filter.
+    numpass: int, optional
+        Number of pass of the median filter.
     autocrop: bool, optional
         if True, the masked input_volume will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
-        upsampled to 1x1x1 resolution. (default: False).
+        upsampled to 1x1x1 resolution.
 
     dilate : None or int, optional
         number of iterations for binary dilation
@@ -185,7 +194,7 @@ def median_otsu(
         used to endorse or promote products derived from this software without
         specific prior written permission.
 
-    THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR
     IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
     DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
@@ -226,7 +235,8 @@ def median_otsu(
     return maskedvolume, mask
 
 
-def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
+@warning_for_keywords()
+def segment_from_cfa(tensor_fit, roi, threshold, *, return_cfa=False):
     """
     Segment the cfa inside roi using the values from threshold as bounds.
 

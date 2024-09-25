@@ -9,7 +9,7 @@ applying non-rigid deformations.
 At times we will be interested in bringing a set of streamlines into some
 common, reference space to compute statistics out of the registered
 streamlines. For a discussion on the effects of spatial normalization
-approaches on tractography the work by Green et al. [Greene17]_ can be read.
+approaches on tractography the work by :footcite:t:`Greene2018` can be read.
 
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
@@ -42,12 +42,12 @@ from dipy.viz import has_fury, horizon, regtools
 # moving and static images are assumed to be in RAS. The first one will be the
 # b0 from the Stanford HARDI dataset:
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 dwi_data, dwi_affine, dwi_img = load_nifti(hardi_fname, return_img=True)
 dwi_vox_size = dwi_img.header.get_zooms()[0]
 dwi_bvals, dwi_bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(dwi_bvals, dwi_bvecs)
+gtab = gradient_table(dwi_bvals, bvecs=dwi_bvecs)
 
 ###############################################################################
 # The second one will be the T2-contrast MNI template image. The resolution of
@@ -122,8 +122,8 @@ warped_b0, warped_b0_affine = affine_registration(
 
 ###############################################################################
 # We now perform the non-rigid deformation using the Symmetric Diffeomorphic
-# Registration (SyN) Algorithm proposed by Avants et al. [Avants09]_ (also
-# implemented in the ANTs software [Avants11]_):
+# Registration (SyN) Algorithm proposed by :footcite:t:`Avants2008` (also
+# implemented in the ANTs software :footcite:p:`Avants2009`):
 
 level_iters = [10, 10, 5]
 
@@ -142,29 +142,29 @@ final_warped_b0, mapping = syn_registration(
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    0,
-    "Static",
-    "Moving",
-    "transformed_sagittal.png",
+    slice_index=None,
+    slice_type=0,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_sagittal.png",
 )
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    1,
-    "Static",
-    "Moving",
-    "transformed_coronal.png",
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_coronal.png",
 )
 regtools.overlay_slices(
     t2_resliced_data,
     final_warped_b0,
-    None,
-    2,
-    "Static",
-    "Moving",
-    "transformed_axial.png",
+    slice_index=None,
+    slice_type=2,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="transformed_axial.png",
 )
 
 ###############################################################################
@@ -261,14 +261,5 @@ save_tractogram(
 # References
 # ----------
 #
-# .. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-#    (2009). Symmetric Diffeomorphic Image Registration with
-#    Cross-Correlation: Evaluating Automated Labeling of Elderly and
-#    Neurodegenerative Brain, 12(1), 26-41.
+# .. footbibliography::
 #
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#    Normalization Tools (ANTS), 1-35.
-#
-# .. [Greene17] Greene, C., Cieslak, M., & Grafton, S. T. (2017). Effect of
-#    different spatial normalization approaches on tractography and
-#    structural brain networks. Network Neuroscience, 1-19.

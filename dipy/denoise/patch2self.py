@@ -4,6 +4,7 @@ from warnings import warn
 import numpy as np
 
 import dipy.core.optimize as opt
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 sklearn, has_sklearn, _ = optional_package("sklearn")
@@ -157,9 +158,11 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
+@warning_for_keywords()
 def patch2self(
     data,
     bvals,
+    *,
     patch_radius=(0, 0, 0),
     model="ols",
     b0_threshold=50,
@@ -171,6 +174,8 @@ def patch2self(
     shift_intensity=True,
 ):
     """Patch2Self Denoiser.
+
+    See :footcite:p:`Fadnavis2020` for further details about the method.
 
     Parameters
     ----------
@@ -228,9 +233,7 @@ def patch2self(
 
     References
     ----------
-    [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-                    Denoising Diffusion MRI with Self-supervised Learning,
-                    Advances in Neural Information Processing Systems 33 (2020)
+    .. footbibliography::
 
     """
     if isinstance(patch_radius, int):

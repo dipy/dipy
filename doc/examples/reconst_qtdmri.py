@@ -6,21 +6,21 @@ Effective representation of the four-dimensional diffusion MRI signal --
 varying over three-dimensional q-space and diffusion time -- is a sought-after
 and still unsolved challenge in diffusion MRI (dMRI). We propose a functional
 basis approach that is specifically designed to represent the dMRI signal in
-this qtau-space [Fick2017]_. Following recent terminology, we refer to our
-qtau-functional basis as :math:`q\tau`-dMRI. We use GraphNet regularization --
-imposing both signal smoothness and sparsity -- to drastically reduce the
-number of diffusion-weighted images (DWIs) that is needed to represent the dMRI
-signal in the qtau-space. As the main contribution, :math:`q\tau`-dMRI provides
-the framework to -- without making biophysical assumptions -- represent the
-:math:`q\tau`-space signal and estimate time-dependent q-space indices
-(:math:`q\tau`-indices), providing a new means for studying diffusion in
-nervous tissue. :math:`q\tau`-dMRI is the first of its kind in being
-specifically designed to provide open interpretation of the
+this qtau-space :footcite:p:`Fick2018`. Following recent terminology, we refer
+to our qtau-functional basis as :math:`q\tau`-dMRI. We use GraphNet
+regularization --imposing both signal smoothness and sparsity -- to drastically
+reduce the number of diffusion-weighted images (DWIs) that is needed to
+represent the dMRI signal in the qtau-space. As the main contribution,
+:math:`q\tau`-dMRI provides the framework to -- without making biophysical
+assumptions -- represent the :math:`q\tau`-space signal and estimate
+time-dependent q-space indices (:math:`q\tau`-indices), providing a new means
+for studying diffusion in nervous tissue. :math:`q\tau`-dMRI is the first of its
+kind in being specifically designed to provide open interpretation of the
 :math:`q\tau`-diffusion signal.
 
 :math:`q\tau`-dMRI can be seen as a time-dependent extension of the MAP-MRI
-functional basis [Ozarslan2013]_, and all the previously proposed q-space
-can be estimated for any diffusion time. These include rotationally
+functional basis :footcite:p:`Ozarslan2013`, and all the previously proposed
+q-space can be estimated for any diffusion time. These include rotationally
 invariant quantities such as the Mean Squared Displacement (MSD), Q-space
 Inverse Variance (QIV) and Return-To-Origin Probability (RTOP). Also
 directional indices such as the Return To the Axis Probability (RTAP) and
@@ -47,8 +47,8 @@ from dipy.reconst import dti, qtdmri
 #
 # :math:`q\tau`-dMRI requires data with multiple gradient directions, gradient
 # strength and diffusion times. We will use the test-retest acquisitions of two
-# mice that were used in the test-retest study by [Fick2017]_. The data itself
-# is freely available and citeable at [Wassermann2017]_.
+# mice that were used in the test-retest study by :footcite:p:`Fick2018`. The
+# data itself is freely available and citeable at :footcite:p:`Wassermann2017`.
 
 fetch_qtdMRI_test_retest_2subjects()
 data, cc_masks, gtabs = read_qtdMRI_test_retest_2subjects()
@@ -101,7 +101,7 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
 
     # estimate fractional anisotropy (FA) for this slice
     tenmod = dti.TensorModel(gtab_)
-    tenfit = tenmod.fit(data_middle_slice, data_middle_slice[..., 0] > 0)
+    tenfit = tenmod.fit(data_middle_slice, mask=data_middle_slice[..., 0] > 0)
     fa = tenfit.fa
 
     # set mask color to green with 0.5 opacity as overlay
@@ -183,7 +183,7 @@ for data_, mask_, gtab_ in zip(data, cc_masks, gtabs):
 # diffusing particles over time, which is currently a hot topic in the dMRI
 # community. We evaluate the test-retest reproducibility for the two subjects
 # by plotting the :math:`q\tau`-indices for each subject together. This
-# example will produce similar results as Fig. 10 in [Fick2017]_.
+# example will produce similar results as Fig. 10 in :footcite:p:`Fick2018`.
 #
 # We first define a small function to plot the mean and standard deviation of
 # the :math:`q\tau`-index trends in a subject.
@@ -420,10 +420,6 @@ plt.savefig("qt_indices_rtpp.png")
 #
 # References
 # ----------
-# .. [Fick2017] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-#               Representation of dMRI in Space and Time", Medical Image
-#               Analysis, 2017.
-# .. [Wassermann2017] Wassermann, Demian, et al. "Test-Retest qt-dMRI datasets
-#                     for 'Non-Parametric GraphNet-Regularized Representation
-#                     of dMRI in Space and Time' [Data set]". Zenodo.
-#                     https://doi.org/10.5281/zenodo.996889, 2017.
+#
+# .. footbibliography::
+#

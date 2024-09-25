@@ -34,7 +34,7 @@ on:
         description: ""
         type: string
         required: false
-        default: cython!=0.29.29 numpy matplotlib h5py nibabel cvxpy tqdm
+        default: cython!=0.29.29 numpy matplotlib h5py nibabel cvxpy<=1.4.4 tqdm
       extra-depends:
         description: ""
         type: string
@@ -96,6 +96,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: defaults, conda-forge
         use-only-tar-bz2: true
+    - name: Install HDF5 and pytables on macOS
+      if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
+      run: |
+        pip install cython
+        brew install hdf5
+        brew install c-blosc
+        export HDF5_DIR=/opt/homebrew/opt/hdf5
+        export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+        pip install tables
+
     - name: Install Dependencies
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then

@@ -14,7 +14,7 @@ def test_adjacency_calc():
     cutoff = 1.99
     for img_shape in [(50, 50), (50, 50, 5)]:
         mask = None
-        adj = adjacency_calc(img_shape, mask, cutoff=cutoff)
+        adj = adjacency_calc(img_shape, mask=mask, cutoff=cutoff)
         # check that adj in the first voxel is correct
         adj[0].sort()
         if len(img_shape) == 2:
@@ -27,7 +27,7 @@ def test_adjacency_calc():
             mask[10:40, 20:30] = 1
         if len(img_shape) == 3:
             mask[10:40, 20:30, :] = 1
-        adj = adjacency_calc(img_shape, mask, cutoff=cutoff)
+        adj = adjacency_calc(img_shape, mask=mask, cutoff=cutoff)
         # check that adj in the first voxel is correct
         if len(img_shape) == 2:
             npt.assert_equal(adj[0], [0, 1, 10, 11])

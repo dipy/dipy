@@ -67,7 +67,7 @@ No alias should be used for ``h5py``::
 Cython coding style
 -------------------
 DIPY recommends the use of the standard Python
-PEP8_ style when writing `Cython <https://cython.org/>`_ code.
+PEP8_ style when writing cython_ code.
 
 Cython-specific syntax should follow these additional rules:
 

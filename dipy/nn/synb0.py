@@ -9,7 +9,7 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, set_logger_level, unnormalize
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -129,13 +129,22 @@ def UNet3D(input_shape):
 class Synb0:
     """
     This class is intended for the Synb0 model.
+
+    Synb0 :footcite:p:`Schilling2019`, :footcite:p:`Schilling2020` uses a neural
+    network to synthesize a b0 volume for distortion correction in DWI images.
+
     The model is the deep learning part of the Synb0-Disco
     pipeline, thus stand-alone usage is not
     recommended.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @doctest_skip_parser
-    def __init__(self, verbose=False):
+    @warning_for_keywords()
+    def __init__(self, *, verbose=False):
         r"""
         The model was pre-trained for usage on pre-processed images
         following the synb0-disco pipeline.
@@ -148,21 +157,8 @@ class Synb0:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
-
-        References
-        ----------
-        ..  [1] Schilling, K. G., Blaber, J., Huo, Y., Newton, A.,
-            Hansen, C., Nath, V., ... & Landman, B. A. (2019).
-            Synthesized b0 for diffusion distortion correction (Synb0-DisCo).
-            Magnetic resonance imaging, 64, 62-70.
-        ..  [2] Schilling, K. G., Blaber, J., Hansen, C., Cai, L.,
-            Rogers, B., Anderson, A. W., ... & Landman, B. A. (2020).
-            Distortion correction of diffusion weighted MRI without reverse
-            phase-encoding scans or field-maps.
-            PloS one, 15(7), e0236418.
         """
 
         if not have_tf:
@@ -186,7 +182,7 @@ class Synb0:
         idx : int
             The idx of the default weights. It can be from 0~4.
         """
-        fetch_model_weights_path = get_fnames("synb0_default_weights")
+        fetch_model_weights_path = get_fnames(name="synb0_default_weights")
         print(f"fetched {fetch_model_weights_path[idx]}")
         self.load_model_weights(fetch_model_weights_path[idx])
 
@@ -224,7 +220,8 @@ class Synb0:
 
         return self.model.predict(x_test)
 
-    def predict(self, b0, T1, batch_size=None, average=True):
+    @warning_for_keywords()
+    def predict(self, b0, T1, *, batch_size=None, average=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
         The function will pad the data to meet the required shape of image.
@@ -285,8 +282,8 @@ class Synb0:
         # Normalize the data.
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = normalize(T1[i], 0, 150, -1, 1)
-            b0[i] = normalize(b0[i], 0, p99[i], -1, 1)
+            T1[i] = normalize(T1[i], min_v=0, max_v=150, new_min=-1, new_max=1)
+            b0[i] = normalize(b0[i], min_v=0, max_v=p99[i], new_min=-1, new_max=1)
 
         if dim == 3:
             if batch_size is not None:

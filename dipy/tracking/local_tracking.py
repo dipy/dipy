@@ -4,6 +4,7 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import utils
 from dipy.tracking.localtrack import local_tracker, pft_tracker
 from dipy.tracking.stopping_criterion import (
@@ -34,6 +35,7 @@ class LocalTracking:
             raise ValueError(msg)
         return np.sqrt(dotlin.diagonal())
 
+    @warning_for_keywords()
     def __init__(
         self,
         direction_getter,
@@ -41,6 +43,7 @@ class LocalTracking:
         seeds,
         affine,
         step_size,
+        *,
         max_cross=None,
         maxlen=500,
         minlen=2,
@@ -268,6 +271,7 @@ class LocalTracking:
 
 
 class ParticleFilteringTracking(LocalTracking):
+    @warning_for_keywords()
     def __init__(
         self,
         direction_getter,
@@ -275,6 +279,7 @@ class ParticleFilteringTracking(LocalTracking):
         seeds,
         affine,
         step_size,
+        *,
         max_cross=None,
         maxlen=500,
         minlen=2,
@@ -290,8 +295,10 @@ class ParticleFilteringTracking(LocalTracking):
         randomize_forward_direction=False,
         initial_directions=None,
     ):
-        r"""A streamline generator using the particle filtering tractography
-        method [1]_.
+        """A streamline generator using the particle filtering tractography
+        method.
+
+        See :footcite:p:`Girard2014` for further details about the method.
 
         Parameters
         ----------
@@ -361,9 +368,7 @@ class ParticleFilteringTracking(LocalTracking):
 
         References
         ----------
-        .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-               Towards quantitative connectivity analysis: reducing
-               tractography biases. NeuroImage, 98, 266-278, 2014.
+        .. footbibliography::
         """
 
         if not isinstance(stopping_criterion, AnatomicalStoppingCriterion):

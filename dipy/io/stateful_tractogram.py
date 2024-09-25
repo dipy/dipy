@@ -19,6 +19,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 logger = logging.getLogger("StatefulTractogram")
 logger.setLevel(level=logging.INFO)
@@ -58,11 +59,13 @@ class StatefulTractogram:
     data manipulation for each streamline / point.
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         streamlines,
         reference,
         space,
+        *,
         origin=Origin.NIFTI,
         data_per_point=None,
         data_per_streamline=None,
@@ -192,7 +195,8 @@ class StatefulTractogram:
         return are_sft_compatible
 
     @staticmethod
-    def from_sft(streamlines, sft, data_per_point=None, data_per_streamline=None):
+    @warning_for_keywords()
+    def from_sft(streamlines, sft, *, data_per_point=None, data_per_streamline=None):
         """Create an instance of `StatefulTractogram` from another instance
         of `StatefulTractogram`.
 
@@ -606,7 +610,8 @@ class StatefulTractogram:
 
         return is_valid
 
-    def remove_invalid_streamlines(self, epsilon=1e-3):
+    @warning_for_keywords()
+    def remove_invalid_streamlines(self, *, epsilon=1e-3):
         """Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
@@ -614,7 +619,7 @@ class StatefulTractogram:
 
         Parameters
         ----------
-        epsilon : float (optional)
+        epsilon : float, optional
             Epsilon value for the bounding box verification.
             Default is 1e-6.
 

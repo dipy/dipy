@@ -37,7 +37,7 @@ def setup_module():
     data.sh_order_max = 6
     data.lambda_lb = 1e-8
     data.lambda_csd = 1.0
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     data.sphere = sphere.vertices[0 : int(sphere.vertices.shape[0] / 2), :]
 
 
@@ -58,7 +58,7 @@ def test_forecast_positive_constrain():
         )
     f_fit = fm.fit(data.S)
 
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -74,7 +74,7 @@ def test_forecast_positive_constrain():
 
 
 def test_forecast_csd():
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -136,7 +136,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -155,7 +157,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -174,7 +178,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -196,7 +202,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -217,7 +225,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 

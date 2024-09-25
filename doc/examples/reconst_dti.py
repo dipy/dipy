@@ -7,11 +7,11 @@ Reconstruction of the diffusion signal with the Tensor model
 ============================================================
 
 The diffusion tensor model is a model that describes the diffusion within a
-voxel. First proposed by Basser and colleagues [Basser1994]_, it has been very
-influential in demonstrating the utility of diffusion MRI in characterizing the
-micro-structure of white matter tissue and of the biophysical properties of
-tissue, inferred from local diffusion properties and it is still very commonly
-used.
+voxel. First proposed by Basser and colleagues :footcite:p:`Basser1994a`, it has
+been very influential in demonstrating the utility of diffusion MRI in
+characterizing the micro-structure of white matter tissue and of the biophysical
+properties of tissue, inferred from local diffusion properties and it is still
+very commonly used.
 
 The diffusion tensor models the diffusion signal as:
 
@@ -78,7 +78,7 @@ The size of the dataset is 87 MBytes. You only need to fetch once. It
 will return the file names of our data.
 """
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 """
 Next, we read the saved dataset. gtab contains a ``GradientTable``
@@ -88,7 +88,7 @@ object (information about the gradients e.g. b-values and b-vectors).
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 print(f"data.shape {data.shape}")
 
@@ -207,8 +207,9 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make
-sure that the FA is scaled between 0 and 1, we compute the RGB map and save it.
+We can also compute the colored FA or RGB-map :footcite:p:`Pajevic1999`. First,
+we make sure that the FA is scaled between 0 and 1, we compute the RGB map and
+save it.
 """
 
 FA = np.clip(FA, 0, 1)
@@ -224,7 +225,7 @@ print("Computing tensor ellipsoids in a part of the splenium of the CC")
 
 from dipy.data import get_sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 from dipy.viz import actor, window
 
@@ -250,7 +251,9 @@ scene.add(
 )
 
 print("Saving illustration as tensor_ellipsoids.png")
-window.record(scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600))
+window.record(
+    scene=scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -272,7 +275,7 @@ tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
 scene.add(odf_actor)
 print("Saving illustration as tensor_odfs.png")
-window.record(scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
+window.record(scene=scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -295,14 +298,6 @@ other examples.
 
 References
 ----------
-
-.. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
-   spectroscopy and imaging.
-
-.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
-   orientation of anisotropic tissues from diffusion tensor data: application
-   to white matter fiber tract mapping in the human brain.
-
-.. include:: ../links_names.inc
+.. footbibliography::
 
 """

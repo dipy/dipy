@@ -17,6 +17,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivit
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
@@ -25,7 +26,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 SH_CONST = 0.5 / np.sqrt(np.pi)
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     """
     Builds a basis for multi-shell multi-tissue CSD model.
@@ -33,6 +34,7 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     sh_order_max : int
         Maximal spherical harmonics order (l).
     iso_comp: int
@@ -44,9 +46,9 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
     B : ndarray
         Matrix of the spherical harmonics model used to fit the data
     m_values : int ``|m_value| <= l_value``
-        The phase factor (m) of the harmonic.
+        The phase factor ($m$) of the harmonic.
     l_values : int ``l_value >= 0``
-        The order (l) of the harmonic.
+        The order ($l$) of the harmonic.
     """
     if iso_comp < 2:
         msg = "Multi-tissue CSD requires at least 2 tissue compartments"
@@ -66,8 +68,9 @@ def multi_tissue_basis(gtab, sh_order_max, iso_comp):
 
 
 class MultiShellResponse:
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
-    def __init__(self, response, sh_order_max, shells, S0=None):
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
+    def __init__(self, response, sh_order_max, shells, *, S0=None):
         """Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
@@ -103,16 +106,19 @@ class MultiShellResponse:
         return self.response.shape[1] - (self.sh_order_max // 2) - 1
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def _inflate_response(response, gtab, sh_order_max, delta):
     """Used to inflate the response for the `multiplier_matrix` in the
     `MultiShellDeconvModel`.
+
     Parameters
     ----------
     response : MultiShellResponse object
+        Response function.
     gtab : GradientTable
+        Gradient table.
     sh_order_max : int ``>= 0``
-        The maximal order (l) of the harmonic.
+        The maximal order ($l$) of the harmonic.
     delta : Delta generated from `_basic_delta`
     """
     if (
@@ -141,9 +147,9 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
         number of compartments required is 2.
         Default: 2
     m_value : int ``|m| <= l``
-        The phase factor (m) of the harmonic.
+        The phase factor ($m$) of the harmonic.
     l_value : int ``>= 0``
-        The order (l) of the harmonic.
+        The order ($l$) of the harmonic.
     theta : array_like
        inclination or polar angle
     phi : array_like
@@ -155,28 +161,39 @@ def _basic_delta(iso, m_value, l_value, theta, phi):
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, response, reg_sphere=default_sphere, sh_order_max=8, iso=2, tol=20
+        self,
+        gtab,
+        response,
+        reg_sphere=default_sphere,
+        *,
+        sh_order_max=8,
+        iso=2,
+        tol=20,
     ):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
-        (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
-        the estimation of multiple response functions as a function of multiple
-        b-values and multiple tissue types.
+        (MSMT-CSD) :footcite:p:`Jeurissen2014`. This method extends the CSD
+        model proposed in :footcite:p:`Tournier2007`. by the estimation of
+        multiple response functions as a function of multiple b-values and
+        multiple tissue types.
 
         Spherical deconvolution computes a fiber orientation distribution
-        (FOD), also called fiber ODF (fODF) [2]_. The fODF is derived from
-        different tissue types and thus overcomes the overestimation of WM in
-        GM and CSF areas.
+        (FOD), also called fiber ODF (fODF) :footcite:p:`Tournier2007`. The fODF
+        is derived from different tissue types and thus overcomes the
+        overestimation of WM in GM and CSF areas.
 
         The response function is based on the different tissue types
         and is provided as input to the MultiShellDeconvModel.
-        It will be used as deconvolution kernel, as described in [2]_.
+        It will be used as deconvolution kernel, as described in
+        :footcite:p:`Tournier2007`.
 
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         response : ndarray or MultiShellResponse object
             Pre-computed multi-shell fiber response function in the form of a
             MultiShellResponse object, or simple response function as a ndarray.
@@ -189,29 +206,19 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             for the response function without diffusion weighting (S0). Note
             that in order to use more than three compartments, one must create
             a MultiShellResponse object on the side.
-        reg_sphere : Sphere (optional)
+        reg_sphere : Sphere, optional
             sphere used to build the regularization B matrix.
-            Default: 'symmetric362'.
-        sh_order_max : int (optional)
-            Maximal spherical harmonics order (l). Default: 8
-        iso: int (optional)
+        sh_order_max : int, optional
+            Maximal spherical harmonics order (l).
+        iso: int, optional
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
-            Default: 2
         tol : int, optional
             Tolerance gap for b-values clustering.
 
         References
         ----------
-        .. [1] Jeurissen, B., et al. NeuroImage 2014. Multi-tissue constrained
-               spherical deconvolution for improved analysis of multi-shell
-               diffusion MRI data
-        .. [2] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-               the fibre orientation distribution in diffusion MRI:
-               Non-negativity constrained super-resolved spherical
-               deconvolution
-        .. [3] Tournier, J.D, et al. Imaging Systems and Technology
-               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
+        .. footbibliography::
         """
         if not iso >= 2:
             msg = "Multi-tissue CSD requires at least 2 tissue compartments"
@@ -263,7 +270,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.l_values = l_values
         self.response = response
 
-    def predict(self, params, gtab=None, S0=None):
+    @warning_for_keywords()
+    def predict(self, params, *, gtab=None, S0=None):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -307,7 +315,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data, verbose=True):
+    def fit(self, data, verbose=True, **kwargs):
         """Fits the model to diffusion data and returns the model fit.
 
         Sometimes the solving process of some voxels can end in a SolverError
@@ -322,9 +330,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         ----------
         data : ndarray
             The diffusion data to fit the model on.
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show warnings when a SolverError appears or not.
-            Default: True
         """
         coeff = self.fitter(data)
         if verbose:
@@ -408,7 +415,7 @@ def solve_qp(P, Q, G, H):
         opt = np.array(x.value).reshape((Q.shape[0],))
     except cvxpy.error.SolverError:
         opt = np.empty((Q.shape[0],))
-        opt[:] = np.NaN
+        opt[:] = np.nan
 
     return opt
 
@@ -443,9 +450,10 @@ class QpFitter:
         return fodf_sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def multi_shell_fiber_response(
-    sh_order_max, bvals, wm_rf, gm_rf, csf_rf, sphere=None, tol=20, btens=None
+    sh_order_max, bvals, wm_rf, gm_rf, csf_rf, *, sphere=None, tol=20, btens=None
 ):
     """Fiber response function estimation for multi-shell data.
 
@@ -514,7 +522,9 @@ def multi_shell_fiber_response(
 
     if bvals[0] < tol:
         gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
-        wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
+        wm_response = single_tensor(
+            gtab, wm_rf[0, 3], evals=wm_rf[0, :3], evecs=evecs, snr=None
+        )
         response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         response[0, 1] = gm_rf[0, 3] / A
@@ -523,7 +533,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals[1:]):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i + 1])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i + 1, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -539,7 +549,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None
+                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -551,9 +561,11 @@ def multi_shell_fiber_response(
     return MultiShellResponse(response, sh_order_max, bvals, S0=S0)
 
 
+@warning_for_keywords()
 def mask_for_response_msmt(
     gtab,
     data,
+    *,
     roi_center=None,
     roi_radii=10,
     wm_fa_thr=0.7,
@@ -568,6 +580,7 @@ def mask_for_response_msmt(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data (4D)
     roi_center : array-like, (3,)
@@ -684,13 +697,15 @@ def mask_for_response_msmt(
     return mask_wm, mask_gm, mask_csf
 
 
-def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
+@warning_for_keywords()
+def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, *, tol=20):
     """Computation of multi-shell multi-tissue (msmt) response
         functions from given tissues masks.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask_wm : ndarray
@@ -732,9 +747,9 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
     btens = gtab.btens
 
-    list_bvals = unique_bvals_tolerance(bvals, tol)
+    list_bvals = unique_bvals_tolerance(bvals, tol=tol)
 
-    b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
+    b0_indices = get_bval_indices(bvals, list_bvals[0], tol=tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
 
     masks = [mask_wm, mask_gm, mask_csf]
@@ -742,7 +757,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     for mask in masks:
         responses = []
         for bval in list_bvals[1:]:
-            indices = get_bval_indices(bvals, bval, tol)
+            indices = get_bval_indices(bvals, bval, tol=tol)
 
             bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
@@ -754,7 +769,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
             data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
 
-            gtab = gradient_table(bvals_sub, bvecs_sub, btens=btens_sub)
+            gtab = gradient_table(bvals_sub, bvecs=bvecs_sub, btens=btens_sub)
             response, _ = response_from_mask_ssst(gtab, data_conc, mask)
 
             responses.append(list(np.concatenate([response[0], [response[1]]])))
@@ -767,9 +782,11 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     return wm_response, gm_response, csf_response
 
 
+@warning_for_keywords()
 def auto_response_msmt(
     gtab,
     data,
+    *,
     tol=20,
     roi_center=None,
     roi_radii=10,
@@ -785,6 +802,7 @@ def auto_response_msmt(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     tol : int, optional
@@ -837,16 +855,16 @@ def auto_response_msmt(
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(
         gtab,
         data,
-        roi_center,
-        roi_radii,
-        wm_fa_thr,
-        gm_fa_thr,
-        csf_fa_thr,
-        gm_md_thr,
-        csf_md_thr,
+        roi_center=roi_center,
+        roi_radii=roi_radii,
+        wm_fa_thr=wm_fa_thr,
+        gm_fa_thr=gm_fa_thr,
+        csf_fa_thr=csf_fa_thr,
+        gm_md_thr=gm_md_thr,
+        csf_md_thr=csf_md_thr,
     )
     response_wm, response_gm, response_csf = response_from_mask_msmt(
-        gtab, data, mask_wm, mask_gm, mask_csf, tol
+        gtab, data, mask_wm, mask_gm, mask_csf, tol=tol
     )
 
     return response_wm, response_gm, response_csf

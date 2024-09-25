@@ -44,13 +44,13 @@ from dipy.viz import actor, colormap, has_fury, window
 interactive = False
 
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
@@ -86,8 +86,10 @@ save_trk(sft, "tractogram_deterministic_dg.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path="tractogram_deterministic_dg.png", size=(800, 800))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
+    window.record(
+        scene=scene, out_path="tractogram_deterministic_dg.png", size=(800, 800)
+    )
     if interactive:
         window.show(scene)
 

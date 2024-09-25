@@ -36,6 +36,7 @@ import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 
@@ -64,8 +65,9 @@ syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
 affine_metric_dict = {"MI": MutualInformationMetric}
 
 
+@warning_for_keywords()
 def _handle_pipeline_inputs(
-    moving, static, static_affine=None, moving_affine=None, starting_affine=None
+    moving, static, *, static_affine=None, moving_affine=None, starting_affine=None
 ):
     """
     Helper function to prepare inputs for pipeline functions
@@ -90,9 +92,11 @@ def _handle_pipeline_inputs(
     return static, static_affine, moving, moving_affine, starting_affine
 
 
+@warning_for_keywords()
 def syn_registration(
     moving,
     static,
+    *,
     moving_affine=None,
     static_affine=None,
     step_length=0.25,
@@ -152,7 +156,7 @@ def syn_registration(
     use_metric = syn_metric_dict[metric.upper()](dim, **metric_kwargs)
 
     sdr = SymmetricDiffeomorphicRegistration(
-        use_metric, level_iters, step_length=step_length
+        use_metric, level_iters=level_iters, step_length=step_length
     )
 
     mapping = sdr.optimize(
@@ -167,9 +171,11 @@ def syn_registration(
     return warped_moving, mapping
 
 
+@warning_for_keywords()
 def register_dwi_to_template(
     dwi,
     gtab,
+    *,
     dwi_affine=None,
     template=None,
     template_affine=None,
@@ -206,10 +212,13 @@ def register_dwi_to_template(
 
     Returns
     -------
-    warped_b0, mapping: The fist is an array with the b0 volume warped to the
-    template. If reg_method is "syn", the second is a DiffeomorphicMap class
-    instance that can be used to transform between the two spaces. Otherwise,
-    if reg_method is "aff", this is a 4x4 matrix encoding the affine transform.
+    warped_b0 : ndarray
+        b0 volume warped to the template.
+    mapping : DiffeomorphicMap or ndarray
+        If reg_method is "syn", a DiffeomorphicMap class instance that can be
+        used to transform between the two spaces. Otherwise, if reg_method is
+        "aff", a 4x4 matrix encoding the affine transform.
+
 
     Notes
     -----
@@ -227,7 +236,13 @@ def register_dwi_to_template(
     )
 
     if not isinstance(gtab, dpg.GradientTable):
-        gtab = dpg.gradient_table(*gtab)
+        if isinstance(gtab, (list, tuple)) and len(gtab) == 2:
+            bvals, bvecs = gtab
+            gtab = dpg.gradient_table(bvals, bvecs=bvecs)
+        else:
+            raise ValueError(
+                "gtab should be a GradientTable object or a tuple of (bvals, bvecs)"
+            )
 
     mean_b0 = np.mean(dwi_data[..., gtab.b0s_mask], -1)
     if reg_method.lower() == "syn":
@@ -259,7 +274,8 @@ def write_mapping(mapping, fname):
 
     Parameters
     ----------
-    mapping : a DiffeomorphicMap object derived from :func:`syn_registration`
+    mapping : DiffeomorphicMap
+        Registration mapping derived from :func:`syn_registration`
     fname : str
         Full path to the nifti file storing the mapping
 
@@ -274,7 +290,8 @@ def write_mapping(mapping, fname):
     save_nifti(fname, mapping_data, mapping.codomain_world2grid)
 
 
-def read_mapping(disp, domain_img, codomain_img, prealign=None):
+@warning_for_keywords()
+def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
     """Read a syn registration mapping from a nifti file.
 
     Parameters
@@ -306,8 +323,8 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
         codomain_img = nib.load(codomain_img)
 
     mapping = DiffeomorphicMap(
-        3,
-        disp_data.shape[:3],
+        dim=3,
+        disp_shape=disp_data.shape[:3],
         disp_grid2world=np.linalg.inv(disp_affine),
         domain_shape=domain_img.shape[:3],
         domain_grid2world=domain_img.affine,
@@ -323,8 +340,9 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
     return mapping
 
 
+@warning_for_keywords()
 def resample(
-    moving, static, moving_affine=None, static_affine=None, between_affine=None
+    moving, static, *, moving_affine=None, static_affine=None, between_affine=None
 ):
     """Resample an image (moving) from one space to another (static).
 
@@ -334,14 +352,14 @@ def resample(
         Containing the data for the moving object, or full path to a nifti file
         with the moving data.
 
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
     moving_affine : 4x4 array, optional
         An affine transformation associated with the moving object. Required if
         data is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
 
     static_affine : 4x4 array, optional
         An affine transformation associated with the static object. Required if
@@ -369,15 +387,21 @@ def resample(
         )
     )
     affine_map = AffineMap(
-        between_affine, static.shape, static_affine, moving.shape, moving_affine
+        between_affine,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_affine,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_affine,
     )
     resampled = affine_map.transform(moving)
     return nib.Nifti1Image(resampled, static_affine)
 
 
+@warning_for_keywords()
 def affine_registration(
     moving,
     static,
+    *,
     moving_affine=None,
     static_affine=None,
     pipeline=None,
@@ -557,8 +581,8 @@ def affine_registration(
                 moving,
                 transform,
                 None,
-                static_affine,
-                moving_affine,
+                static_grid2world=static_affine,
+                moving_grid2world=moving_affine,
                 starting_affine=starting_affine,
                 ret_metric=True,
                 static_mask=static_mask,
@@ -571,7 +595,11 @@ def affine_registration(
 
     # After doing all that, resample once at the end:
     affine_map = AffineMap(
-        final_affine, static.shape, static_affine, moving.shape, moving_affine
+        final_affine,
+        domain_grid_shape=static.shape,
+        domain_grid2world=static_affine,
+        codomain_grid_shape=moving.shape,
+        codomain_grid2world=moving_affine,
     )
 
     resampled = affine_map.transform(moving)
@@ -619,8 +647,9 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 }
 
 
+@warning_for_keywords()
 def register_series(
-    series, ref, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
+    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
 ):
     """Register a series to a reference image.
 
@@ -696,8 +725,9 @@ def register_series(
     return xformed, affines
 
 
+@warning_for_keywords()
 def register_dwi_series(
-    data, gtab, affine=None, b0_ref=0, pipeline=None, static_mask=None
+    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -790,7 +820,8 @@ motion_correction.__doc__ = re.sub(
 )
 
 
-def streamline_registration(moving, static, n_points=100, native_resampled=False):
+@warning_for_keywords()
+def streamline_registration(moving, static, *, n_points=100, native_resampled=False):
     """Register two collections of streamlines ('bundles') to each other.
 
     Parameters
@@ -824,13 +855,13 @@ def streamline_registration(moving, static, n_points=100, native_resampled=False
 
     srr = StreamlineLinearRegistration()
     srm = srr.optimize(
-        static=set_number_of_points(static, n_points),
-        moving=set_number_of_points(moving, n_points),
+        static=set_number_of_points(static, nb_points=n_points),
+        moving=set_number_of_points(moving, nb_points=n_points),
     )
 
     aligned = srm.transform(moving)
     if native_resampled:
-        aligned = set_number_of_points(aligned, n_points)
+        aligned = set_number_of_points(aligned, nb_points=n_points)
         aligned = transform_tracking_output(aligned, np.linalg.inv(srm.matrix))
 
     return aligned, srm.matrix

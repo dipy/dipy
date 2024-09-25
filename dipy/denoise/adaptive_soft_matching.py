@@ -13,7 +13,8 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
 
     Parameters
     ----------
-    ima : the original (not filtered) image
+    ima : ndarray
+        Original (unfiltered) image
     fimau : 3D double array,
         filtered image with optimized non-local means using a small block
         (suggested:3x3), which corresponds to a "high resolution" filter.
@@ -21,7 +22,7 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
         filtered image with optimized non-local means using a small block
         (suggested:5x5), which corresponds to a "low resolution" filter.
     sigma : the estimated standard deviation of the Gaussian random variables
-        that explain the rician noise. Note: In P. Coupe et al. the
+        that explain the rician noise. Note: In :footcite:p:`Coupe2012` the
         rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
         the pixel value and x and y are independent realizations of a
         random variable with Normal distribution, with mean=0 and
@@ -35,11 +36,7 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
 
     References
     ----------
-    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-                 "Multiresolution Non-Local Means Filter for 3D MR Image
-                 Denoising" IET Image Processing, Institution of Engineering
-                 and Technology,
-                 2011
+    .. footbibliography::
 
     """
 

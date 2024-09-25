@@ -25,12 +25,12 @@ from dipy.sims.voxel import multi_tensor, single_tensor, sticks_and_ball
 def test_rumba():
     # Test fODF results from ideal examples.
     sphere = default_sphere  # repulsion 724
-    sphere2 = get_sphere("symmetric362")
+    sphere2 = get_sphere(name="symmetric362")
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -39,7 +39,7 @@ def test_rumba():
     msg = "b0_threshold .*"
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        gtab_broken = gradient_table(bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+        gtab_broken = gradient_table(bvals[~gtab.b0s_mask], bvecs=bvecs[~gtab.b0s_mask])
 
     assert_raises(ValueError, RumbaSDModel, gtab_broken)
 
@@ -67,10 +67,12 @@ def test_rumba():
         model_fit = model.fit(data)
 
         # Verify only works on original sphere
-        assert_raises(ValueError, model_fit.odf, sphere2)
-        odf = model_fit.odf(sphere)
+        assert_raises(ValueError, model_fit.odf, sphere=sphere2)
+        odf = model_fit.odf(sphere=sphere)
 
-        directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -80,8 +82,10 @@ def test_rumba():
         for sbd in sb_dummies:
             data, golden_directions = sb_dummies[sbd]
             model_fit = model.fit(data)
-            odf = model_fit.odf(sphere)
-            directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+            odf = model_fit.odf(sphere=sphere)
+            directions, _, _ = peak_directions(
+                odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+            )
             if len(directions) <= 3:
                 # Verify small isotropic fraction in anisotropic case
                 assert_equal(model_fit.f_iso < 0.1, True)
@@ -96,10 +100,10 @@ def test_predict():
 
     sphere = default_sphere
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     rumba = RumbaSDModel(gtab, n_iter=600, sphere=sphere)
 
@@ -116,10 +120,10 @@ def test_recursive_rumba():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -128,7 +132,7 @@ def test_recursive_rumba():
         480,
         np.array([570.35065982, -262.81741086, 80.23104069, -16.93940972, 2.57628738]),
     )
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSDModel(gtab, wm_response=wm_response, n_iter=20, sphere=sphere)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -138,8 +142,10 @@ def test_recursive_rumba():
         model_fit = model.fit(data)
 
     # Test peaks
-    odf = model_fit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    odf = model_fit.odf(sphere=sphere)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -149,22 +155,24 @@ def test_multishell_rumba():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
 
     ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
     wm_response = np.tile(np.array([1.7e-3, 0.2e-3, 0.2e-3]), (ms_eigenval_count, 1))
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSDModel(gtab, wm_response=wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
     # Test peaks
-    odf = model_fit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, 0.35, 25)
+    odf = model_fit.odf(sphere=sphere)
+    directions, _, _ = peak_directions(
+        odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -188,7 +196,7 @@ def test_mvoxel_rumba():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             model_fit = model.fit(data)
 
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
         f_gm = model_fit.f_gm
@@ -233,10 +241,10 @@ def test_global_fit():
 
     sphere = default_sphere  # repulsion 724
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     data, golden_directions = sticks_and_ball(
         gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None
     )
@@ -284,9 +292,11 @@ def test_global_fit():
         else:
             model_fit = model.fit(data)
 
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
 
-        directions, _, _ = peak_directions(odf[0, 0, 0], sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -297,10 +307,12 @@ def test_global_fit():
         data = data[None, None, None, :]  # make 4D
 
         rumba_fit = rumba.fit(data)
-        odf = rumba_fit.odf(sphere)
+        odf = rumba_fit.odf(sphere=sphere)
         f_iso = rumba_fit.f_iso
 
-        directions, _, _ = peak_directions(odf[0, 0, 0], sphere, 0.35, 25)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
+        )
         if len(directions) <= 3:
             # Verify small isotropic fraction in anisotropic case
             assert_equal(f_iso[0, 0, 0] < 0.1, True)
@@ -358,7 +370,7 @@ def test_mvoxel_global_fit():
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             model_fit = model.fit(data)
-        odf = model_fit.odf(sphere)
+        odf = model_fit.odf(sphere=sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
         f_gm = model_fit.f_gm
@@ -388,10 +400,10 @@ def test_generate_kernel():
     # load repulsion 724 sphere
     sphere = default_sphere
 
-    btable = np.loadtxt(get_fnames("dsi515btable"))
+    btable = np.loadtxt(get_fnames(name="dsi515btable"))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # Kernel parameters
     wm_response = np.array([1.7e-3, 0.2e-3, 0.2e-3])
@@ -410,10 +422,10 @@ def test_generate_kernel():
     S, _ = multi_tensor(
         gtab,
         np.array([wm_response]),
-        S0,
-        [[theta[0] * 180 / np.pi, phi[0] * 180 / np.pi]],
-        [fi],
-        None,
+        S0=S0,
+        angles=[[theta[0] * 180 / np.pi, phi[0] * 180 / np.pi]],
+        fractions=[fi],
+        snr=None,
     )
     assert_almost_equal(kernel[:, 0], S)
 

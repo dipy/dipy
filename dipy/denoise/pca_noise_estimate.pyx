@@ -12,6 +12,7 @@ cimport cython
 cimport numpy as cnp
 from warnings import warn
 
+
 # Try to get the SVD through direct API to lapack:
 try:
     from scipy.linalg.lapack import sgesvd as svd
@@ -59,19 +60,18 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
     Notes
     -----
-        In [1]_, images are used as samples, so voxels are features, therefore
-        eigenvectors are image-shaped. However, [1]_ is not clear on how to use
-        these eigenvectors to determine the noise level, so here eigenvalues
-        (variance over samples explained by eigenvectors) are used to scale
-        the eigenvectors. Use images_as_samples=True to use this algorithm.
-        Alternatively, voxels can be used as samples using
-        images_as_samples=False. This is not the canonical algorithm of [1]_.
+        In :footcite:p:`Manjon2013`, images are used as samples, so voxels are
+        features, therefore eigenvectors are image-shaped. However,
+        :footcite:t:`Manjon2013` is not clear on how to use these eigenvectors
+        to determine the noise level, so here eigenvalues (variance over samples
+        explained by eigenvectors) are used to scale the eigenvectors. Use
+        images_as_samples=True to use this algorithm. Alternatively, voxels can
+        be used as samples using images_as_samples=False. This is not the
+        canonical algorithm of :footcite:t:`Manjon2013`.
 
     References
     ----------
-    .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-           Weighted Image Denoising Using Overcomplete Local PCA". PLoS ONE
-           8(9): e73021. doi:10.1371/journal.pone.0073021.
+    .. footbibliography::
     """
     # first identify the number of the b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size

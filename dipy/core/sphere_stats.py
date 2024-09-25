@@ -5,9 +5,11 @@ from itertools import permutations
 import numpy as np
 
 import dipy.core.geometry as geometry
+from dipy.testing.decorators import warning_for_keywords
 
 
-def random_uniform_on_sphere(n=1, coords="xyz"):
+@warning_for_keywords()
+def random_uniform_on_sphere(*, n=1, coords="xyz"):
     r"""Random unit vectors from a uniform distribution on the sphere.
 
     Parameters
@@ -37,10 +39,10 @@ def random_uniform_on_sphere(n=1, coords="xyz"):
     Examples
     --------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
-    >>> X = random_uniform_on_sphere(4, 'radians')
+    >>> X = random_uniform_on_sphere(n=4, coords='radians')
     >>> X.shape == (4, 2)
     True
-    >>> X = random_uniform_on_sphere(4, 'xyz')
+    >>> X = random_uniform_on_sphere(n=4, coords='xyz')
     >>> X.shape == (4, 3)
     True
     """
@@ -58,7 +60,8 @@ def random_uniform_on_sphere(n=1, coords="xyz"):
         return np.rad2deg(angles)
 
 
-def eigenstats(points, alpha=0.05):
+@warning_for_keywords()
+def eigenstats(points, *, alpha=0.05):
     r"""Principal direction and confidence ellipse
 
     Implements equations in section 6.3.1(ii) of Fisher, Lewis and

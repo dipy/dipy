@@ -124,7 +124,7 @@ def test_quickbundles_2D(rng):
 
 
 def test_quickbundles_streamlines():
-    rdata = streamline_utils.set_number_of_points(data, 10)
+    rdata = streamline_utils.set_number_of_points(data, nb_points=10)
     qb = QuickBundles(threshold=2 * threshold)
 
     clusters = qb.cluster(rdata)
@@ -157,7 +157,7 @@ def test_quickbundles_with_python_metric():
             dist = np.sum(dist / len(features1))
             return dist
 
-    rdata = streamline_utils.set_number_of_points(data, 10)
+    rdata = streamline_utils.set_number_of_points(data, nb_points=10)
     qb = QuickBundles(threshold=2 * threshold, metric=MDFpy())
 
     clusters = qb.cluster(rdata)

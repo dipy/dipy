@@ -3,9 +3,10 @@
 Enhancing QuickBundles with different metrics and features
 ==========================================================
 
-QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
-distance metric and an adjacency threshold to perform clustering. There is a
-wide variety of metrics that could be used to cluster streamlines.
+QuickBundles :footcite:p:`Garyfallidis2012a` is a flexible algorithm that
+requires only a distance metric and an adjacency threshold to perform
+clustering. There is a wide variety of metrics that could be used to cluster
+streamlines.
 
 The purpose of this tutorial is to show how to easily create new ``Feature``
 and new ``Metric`` classes that can be used by QuickBundles.
@@ -106,7 +107,7 @@ class ArcLengthFeature(Feature):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames("fornix")
+fname = get_fnames(name="fornix")
 fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
 streamlines = Streamlines(fornix)
@@ -130,8 +131,8 @@ for cluster, color in zip(clusters, cmap):
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
 
 # Enables/disables interactive visualization
 interactive = False
@@ -202,7 +203,7 @@ class CosineMetric(Metric):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames("fornix")
+fname = get_fnames(name="fornix")
 fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 streamlines = fornix.streamlines
 
@@ -224,8 +225,8 @@ for cluster, color in zip(clusters, cmap):
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -239,6 +240,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+# .. footbibliography::
+#

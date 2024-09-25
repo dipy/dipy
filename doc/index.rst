@@ -96,7 +96,7 @@ Highlights
 - DeepN4 novel DL-based N4 Bias Correction method added.
 - Multiple Workflows added.
 - Large update of DIPY Horizon features.
-- Pytest for Cython files(*.pyx) added.
+- Pytest for Cython files (``*.pyx``) added.
 - Large documentation update.
 - Support of Python 3.8 removed.
 - Closed 142 issues and merged 60 pull requests.
@@ -127,13 +127,17 @@ See some of our :ref:`Past Announcements <old_news>`
    theory/index
    reference/index
    reference_cmd/index
+   recipes
    api_changes
    stateoftheart
    old_highlights
    old_news
    glossary
+   developers
+   gimbal_lock
    faq
    cite
+   subscribe
 
 .. Main content will be displayed using the jinja template
 

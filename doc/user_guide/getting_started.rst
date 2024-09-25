@@ -20,7 +20,7 @@ text files. Finally, we save our result as a Nifti file ::
 
     data, affine = load_nifti(fdwi)
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     tenmodel = TensorModel(gtab)
     tenfit = tenmodel.fit(data)

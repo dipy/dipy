@@ -4,12 +4,12 @@ Nonrigid Bundle Registration with BundleWarp
 ============================================
 
 This example explains how you can nonlinearly register two bundles from two
-different subjects directly in the space of streamlines [Chandio23]_,
-[Chandio20]_.
+different subjects directly in the space of streamlines
+:footcite:p:`Chandio2023`, :footcite:p:`Chandio2020b`.
 
 To show the concept, we will use two pre-saved uncinate fasciculus bundles. The
 algorithm used here is called BundleWarp, streamline-based nonlinear
-registration of white matter tracts [Chandio23]_.
+registration of white matter tracts :footcite:p:`Chandio2023`.
 
 """
 
@@ -47,8 +47,8 @@ uf_subj2 = load_trk(m_UF_L_path, reference="same", bbox_valid_check=False).strea
 # Let's resample the streamlines so that they both have the same number of
 # points per streamline. Here we will use 20 points.
 
-static = Streamlines(set_number_of_points(uf_subj1, 20))
-moving = Streamlines(set_number_of_points(uf_subj2, 20))
+static = Streamlines(set_number_of_points(uf_subj1, nb_points=20))
+moving = Streamlines(set_number_of_points(uf_subj2, nb_points=20))
 
 ###############################################################################
 # We call ``uf_subj2`` a moving bundle as it will be nonlinearly aligned with
@@ -116,7 +116,9 @@ viz_vector_field(points_aligned, directions, colors, offsets, fname)
 # much deformations were introduced after linear registration.
 
 fname = "partially_vectorfield_over_linearly_moved.png"
-viz_vector_field(points_aligned, directions, colors, offsets, fname, moving_aligned)
+viz_vector_field(
+    points_aligned, directions, colors, offsets, fname, bundle=moving_aligned
+)
 
 ###############################################################################
 # We can also visualize the magnitude of deformations in mm mapped over
@@ -173,7 +175,9 @@ viz_vector_field(points_aligned, directions, colors, offsets, fname)
 # deforming the moving bundle.
 
 fname = "fully_vectorfield_over_linearly_moved.png"
-viz_vector_field(points_aligned, directions, colors, offsets, fname, moving_aligned)
+viz_vector_field(
+    points_aligned, directions, colors, offsets, fname, bundle=moving_aligned
+)
 
 ###############################################################################
 # Let's visualize the magnitude of deformations in mm mapped over affinely
@@ -205,9 +209,4 @@ save_tractogram(new_tractogram, "fully_deformed_bundle.trk", bbox_valid_check=Fa
 # References
 # ----------
 #
-# .. [Chandio23] Chandio et al., "BundleWarp, streamline-based nonlinear
-#                     registration of white matter tracts."
-#                     bioRxiv (2023): 2023-01.
-# .. [Chandio20] Chandio and Garyfallidis., "StND: Streamline-based non-rigid
-#                     partial-deformation tractography registration." Medical
-#                     Imaging Meets NeurIPS (2020).
+# .. footbibliography::

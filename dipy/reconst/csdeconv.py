@@ -26,6 +26,7 @@ from dipy.reconst.shm import (
 )
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 
@@ -36,9 +37,11 @@ from dipy.utils.deprecator import deprecate_with_version, deprecated_params
     since="1.2",
     until="1.4",
 )
+@warning_for_keywords()
 def auto_response(
     gtab,
     data,
+    *,
     roi_center=None,
     roi_radius=10,
     fa_thr=0.7,
@@ -50,6 +53,7 @@ def auto_response(
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -101,12 +105,13 @@ def auto_response(
     until="1.4",
 )
 def response_from_mask(gtab, data, mask):
-    """Computation of single-shell single-tissue (ssst) response
-        function from a given mask.
+    """Computation of single-shell single-tissue (ssst) response function from a
+    given mask.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -125,8 +130,8 @@ def response_from_mask(gtab, data, mask):
     fiber response function. In order to do this, we look for voxels with very
     anisotropic configurations. This information can be obtained by using
     csdeconv.mask_for_response_ssst() through a mask of selected voxels
-    (see[1]_). The present function uses such a mask to compute the ssst
-    response function.
+    (see :footcite:p:`Tournier2004`). The present function uses such a mask to
+    compute the ssst response function.
 
     For the response we also need to find the average S0 in the ROI. This is
     possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
@@ -140,9 +145,7 @@ def response_from_mask(gtab, data, mask):
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+    .. footbibliography::
     """
     return response_from_mask_ssst(gtab, data, mask)
 
@@ -161,7 +164,8 @@ class AxSymShResponse:
 
     """
 
-    def __init__(self, S0, dwi_response, bvalue=None):
+    @warning_for_keywords()
+    def __init__(self, S0, dwi_response, *, bvalue=None):
         self.S0 = S0
         self.dwi_response = dwi_response
         self.bvalue = bvalue
@@ -182,71 +186,68 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
         response,
+        *,
         reg_sphere=None,
         sh_order_max=8,
         lambda_=1,
         tau=0.1,
         convergence=50,
     ):
-        r"""Constrained Spherical Deconvolution (CSD) [1]_.
+        r"""Constrained Spherical Deconvolution (CSD).
+
+        See :footcite:p:`Tournier2007` for further details about the model.
 
         Spherical deconvolution computes a fiber orientation distribution
-        (FOD), also called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF
-        as the QballModel or the CsaOdfModel. This results in a sharper angular
-        profile with better angular resolution that is the best object to be
-        used for later deterministic and probabilistic tractography [3]_.
+        (FOD), also called fiber ODF (fODF) :footcite:p:`Descoteaux2009`, as
+        opposed to a diffusion ODF as the QballModel or the CsaOdfModel. This
+        results in a sharper angular profile with better angular resolution that
+        is the best object to be used for later deterministic and probabilistic
+        tractography :footcite:p:`Cote2013`.
 
         A sharp fODF is obtained because a single fiber *response* function is
         injected as *a priori* knowledge. The response function is often
         data-driven and is thus provided as input to the
         ConstrainedSphericalDeconvModel. It will be used as deconvolution
-        kernel, as described in [1]_.
+        kernel, as described in :footcite:p:`Tournier2007`.
+
+        See also :footcite:p:`Tournier2012`.
 
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
             function without diffusion weighting (i.e. S0).  This is to be able
             to generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_).
-        reg_sphere : Sphere (optional)
+            will be used as deconvolution kernel :footcite:p:`Tournier2007`.
+        reg_sphere : Sphere, optional
             sphere used to build the regularization B matrix.
-            Default: 'symmetric362'.
-        sh_order_max : int (optional)
-            maximal spherical harmonics order (l). Default: 8
-        lambda_ : float (optional)
+        sh_order_max : int, optional
+            maximal spherical harmonics order (l).
+        lambda_ : float, optional
             weight given to the constrained-positivity regularization part of
-            the deconvolution equation (see [1]_). Default: 1
-        tau : float (optional)
+            the deconvolution equation (see :footcite:p:`Tournier2007`).
+        tau : float, optional
             threshold controlling the amplitude below which the corresponding
             fODF is assumed to be zero.  Ideally, tau should be set to
             zero. However, to improve the stability of the algorithm, tau is
             set to tau*100 % of the mean fODF amplitude (here, 10% by default)
-            (see [1]_). Default: 0.1
-        convergence : int
+            (see :footcite:p:`Tournier2007`).
+        convergence : int, optional
             Maximum number of iterations to allow the deconvolution to
             converge.
 
         References
         ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-               the fibre orientation distribution in diffusion MRI:
-               Non-negativity constrained super-resolved spherical
-               deconvolution
-        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-               Probabilistic Tractography Based on Complex Fibre Orientation
-               Distributions
-        .. [3] Côté, M-A., et al. Medical Image Analysis 2013. Tractometer:
-               Towards validation of tractography pipelines
-        .. [4] Tournier, J.D, et al. Imaging Systems and Technology
-               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
+        .. footbibliography::
         """
         # Initialize the parent class:
         SphHarmModel.__init__(self, gtab)
@@ -294,7 +295,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        # This is exactly what is done in [4]_
+        # This is exactly what is done in :footcite:p:`Tournier2012`
         lambda_ = (
             lambda_
             * self.R.shape[0]
@@ -309,19 +310,20 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self._P = np.dot(X.T, X)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         dwi_data = data[self._where_dwi]
         shm_coeff, _ = csdeconv(
             dwi_data,
             self._X,
             self.B_reg,
-            self.tau,
+            tau=self.tau,
             convergence=self.convergence,
             P=self._P,
         )
         return SphHarmFit(self, shm_coeff, None)
 
-    def predict(self, sh_coeff, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, sh_coeff, *, gtab=None, S0=1.0):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -366,18 +368,21 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, ratio, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
+        self, gtab, ratio, *, reg_sphere=None, sh_order_max=8, lambda_=1.0, tau=0.1
     ):
-        r"""Spherical Deconvolution Transform (SDT) [1]_.
+        r"""Spherical Deconvolution Transform (SDT)
+        :footcite:p:`Descoteaux2009`.
 
         The SDT computes a fiber orientation distribution (FOD) as opposed to a
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
         sharper angular profile with better angular resolution. The Constrained
         SDTModel is similar to the Constrained CSDModel but mathematically it
-        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
-        for a comparison and a through discussion).
+        deconvolves the q-ball ODF as opposed to the HARDI signal (see
+        :footcite:p:`Descoteaux2009` for a comparison and a thorough
+        discussion).
 
         A sharp fODF is obtained because a single fiber *response* function is
         injected as *a priori* knowledge. In the SDTModel, this response is a
@@ -388,6 +393,7 @@ class ConstrainedSDTModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+            Gradient table.
         ratio : float
             ratio of the smallest vs the largest eigenvalue of the single
             prolate tensor response function
@@ -399,14 +405,12 @@ class ConstrainedSDTModel(SphHarmModel):
             weight given to the constrained-positivity regularization part of
             the deconvolution equation
         tau : float
-            threshold (tau *mean(fODF)) controlling the amplitude below
+            threshold (``tau *mean(fODF)``) controlling the amplitude below
             which the corresponding fODF is assumed to be zero.
 
         References
         ----------
-        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-               Probabilistic Tractography Based on Complex Fibre Orientation
-               Distributions.
+        .. footbibliography::
 
         """
         SphHarmModel.__init__(self, gtab)
@@ -431,7 +435,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         # for the odf sphere
         if reg_sphere is None:
-            self.sphere = get_sphere("symmetric362")
+            self.sphere = get_sphere(name="symmetric362")
         else:
             self.sphere = reg_sphere
 
@@ -449,7 +453,7 @@ class ConstrainedSDTModel(SphHarmModel):
         self.sh_order_max = sh_order_max
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi], rcond=-1)[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
@@ -461,7 +465,7 @@ class ConstrainedSDTModel(SphHarmModel):
             # normalize ODF
             odf_sh /= Z
             shm_coeff, num_it = odf_deconv(
-                odf_sh, self.R, self.B_reg, self.lambda_, self.tau
+                odf_sh, self.R, self.B_reg, lambda_=self.lambda_, tau=self.tau
             )
             # print 'SDT CSD converged after %d iterations' % num_it
 
@@ -474,7 +478,9 @@ def estimate_response(gtab, evals, S0):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     evals : ndarray
+        Eigenvalues.
     S0 : float
         non diffusion weighted
 
@@ -485,11 +491,12 @@ def estimate_response(gtab, evals, S0):
     """
     evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-    return single_tensor(gtab, S0, evals, evecs, snr=None)
+    return single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
 
 
-@deprecated_params("n", "l_values", since="1.9", until="2.0")
-def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
+@deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
+@warning_for_keywords()
+def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
     r"""Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
@@ -498,14 +505,15 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response
         function
     l_values : ndarray (N,)
-        The order (l) of spherical harmonic function associated with each row
+        The order ($l$) of spherical harmonic function associated with each row
         of the deconvolution matrix. Only even orders are allowed.
     r2_term : bool
         True if ODF comes from an ODF computed from a model using the $r^2$
         term in the integral. For example, DSI, GQI, SHORE, CSA, Tensor,
         Multi-tensor ODFs. This results in using the proper analytical response
         function solution solving from the single-fiber ODF with the r^2 term.
-        This derivation is not published anywhere but is very similar to [1]_.
+        This derivation is not published anywhere but is very similar to
+        :footcite:p:`Descoteaux2008b`.
 
     Returns
     -------
@@ -516,7 +524,7 @@ def forward_sdt_deconv_mat(ratio, l_values, r2_term=False):
 
     References
     ----------
-    .. [1] Descoteaux, M. PhD Thesis. INRIA Sophia-Antipolis. 2008.
+    .. footbibliography::
 
     """
     if np.any(l_values % 2):
@@ -570,12 +578,13 @@ def _solve_cholesky(Q, z):
     return f
 
 
-def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
-    r"""Constrained-regularized spherical deconvolution (CSD) [1]_
+@warning_for_keywords()
+def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
+    r"""Constrained-regularized spherical deconvolution (CSD).
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
     rotational harmonics coefficients from the diffusion weighted signal in
-    `dwsignal`.
+    `dwsignal` :footcite:p:`Tournier2007`.
 
     Parameters
     ----------
@@ -673,14 +682,12 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
                 solve $Qf_n = z$ using Cholesky decomposition
 
-    We'd like to thanks Donald Tournier for his help with describing and
+    We would like to thank Donald Tournier for his help with describing and
     implementing this algorithm.
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
-           fibre orientation distribution in diffusion MRI: Non-negativity
-           constrained super-resolved spherical deconvolution.
+    .. footbibliography::
 
     """
     mu = 1e-5
@@ -740,37 +747,42 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     return fodf_sh, _num_it
 
 
-def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
+@warning_for_keywords()
+def odf_deconv(odf_sh, R, B_reg, *, lambda_=1.0, tau=0.1, r2_term=False):
     r"""ODF constrained-regularized spherical deconvolution using
-    the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
+    the Sharpening Deconvolution Transform (SDT).
+
+    See :footcite:p:`Tuch2004` and :footcite:p:`Descoteaux2009` for further
+    details about the method.
 
     Parameters
     ----------
     odf_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``,)
-         ndarray of SH coefficients for the ODF spherical function to be
-         deconvolved
+        ndarray of SH coefficients for the ODF spherical function to be
+        deconvolved
     R : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SDT matrix in SH basis
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SDT matrix in SH basis
     B_reg : ndarray (``(sh_order_max + 1)(sh_order_max + 2)/2``,
-         ``(sh_order_max + 1)(sh_order_max + 2)/2``)
-         SH basis matrix used for deconvolution
-    lambda_ : float
-         lambda parameter in minimization equation (default 1.0)
-    tau : float
-         threshold (tau *max(fODF)) controlling the amplitude below
+        ``(sh_order_max + 1)(sh_order_max + 2)/2``)
+        SH basis matrix used for deconvolution
+    lambda_ : float, optional
+         lambda parameter in minimization equation
+    tau : float, optional
+         threshold (``tau *max(fODF)``) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
-    r2_term : bool
-         True if ODF is computed from model that uses the $r^2$ term in the
-         integral.  Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and
-         the true normalized ODF definition differ from a $r^2$ term in the ODF
-         integral. The original Sharpening Deconvolution Transform (SDT)
-         technique [2]_ is expecting Tuch's ODF without the $r^2$ (see [3]_ for
-         the mathematical details).  Now, this function supports ODF that have
-         been computed using the $r^2$ term because the proper analytical
-         response function has be derived.  For example, models such as DSI,
-         GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now be deconvolved
-         with the r2_term=True.
+    r2_term : bool, optional
+        True if ODF is computed from model that uses the $r^2$ term in the
+        integral.  Recall that Tuch's ODF (used in Q-ball Imaging
+        :footcite:p:`Tuch2004`) and the true normalized ODF definition differ
+        from a $r^2$ term in the ODF integral. The original Sharpening
+        Deconvolution Transform (SDT) technique :footcite:p:`Descoteaux2009`
+        is expecting Tuch's ODF without the $r^2$ (see
+        :footcite:p:`Descoteaux2008b` for the mathematical details). Now, this
+        function supports ODF that have been computed using the $r^2$ term
+        because the proper analytical response function has be derived. For
+        example, models such as DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs,
+        should now be deconvolved with the r2_term=True.
 
     Returns
     -------
@@ -783,11 +795,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
 
     References
     ----------
-    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
-    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-           Probabilistic Tractography Based on Complex Fibre Orientation
-           Distributions
-    .. [3] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
+    .. footbibliography::
     """
     # In ConstrainedSDTModel.fit, odf_sh is divided by its norm (Z) and
     # sometimes the norm is 0 which creates NaNs.
@@ -842,10 +850,12 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1.0, tau=0.1, r2_term=False):
     return fodf_sh, num_it
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def odf_sh_to_sharp(
     odfs_sh,
     sphere,
+    *,
     basis=None,
     ratio=3 / 15.0,
     sh_order_max=8,
@@ -853,7 +863,7 @@ def odf_sh_to_sharp(
     tau=0.1,
     r2_term=False,
 ):
-    r"""Sharpen odfs using the sharpening deconvolution transform [2]_
+    r"""Sharpen odfs using the sharpening deconvolution transform.
 
     This function can be used to sharpen any smooth ODF spherical function. In
     theory, this should only be used to sharpen QballModel ODFs, but in
@@ -861,39 +871,42 @@ def odf_sh_to_sharp(
     ODF-like spherical function. The constrained-regularization is stable and
     will not only sharpen the ODF peaks but also regularize the noisy peaks.
 
+    See :footcite:p:`Descoteaux2009` for further details about the method.
+
     Parameters
     ----------
     odfs_sh : ndarray (``(sh_order_max + 1)*(sh_order_max + 2)/2``, )
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix
-    basis : {None, 'tournier07', 'descoteaux07'}
+    basis : {None, 'tournier07', 'descoteaux07'}, optional
         different spherical harmonic basis:
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [4]_ basis, and
-        ``descoteaux07`` for the Descoteaux 2007 [3]_ basis
-        (``None`` defaults to ``descoteaux07``).
-    ratio : float,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007` basis,
+        and ``descoteaux07`` for the Descoteaux 2007
+        :footcite:p:`Descoteaux2007` basis (``None`` defaults to
+        ``descoteaux07``).
+    ratio : float, optional
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
-    sh_order_max : int
-        maximal SH order (l) of the SH representation
-    lambda_ : float
-        lambda parameter (see odfdeconv) (default 1.0)
-    tau : float
+    sh_order_max : int, optional
+        maximal SH order ($l$) of the SH representation
+    lambda_ : float, optional
+        lambda parameter (see odfdeconv)
+    tau : float, optional
         tau parameter in the L matrix construction (see odfdeconv)
-        (default 0.1)
-    r2_term : bool
-         True if ODF is computed from model that uses the $r^2$ term in the
-         integral.  Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and
-         the true normalized ODF definition differ from a $r^2$ term in the ODF
-         integral. The original Sharpening Deconvolution Transform (SDT)
-         technique [2]_ is expecting Tuch's ODF without the $r^2$ (see [3]_ for
-         the mathematical details).  Now, this function supports ODF that have
-         been computed using the $r^2$ term because the proper analytical
-         response function has be derived.  For example, models such as DSI,
-         GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now be deconvolved
-         with the r2_term=True.
+    r2_term : bool, optional
+        True if ODF is computed from model that uses the $r^2$ term in the
+        integral.  Recall that Tuch's ODF (used in Q-ball Imaging
+        :footcite:p:`Tuch2004`) and the true normalized ODF definition differ
+        from a $r^2$ term in the ODF integral. The original Sharpening
+        Deconvolution Transform (SDT) technique :footcite:p:`Descoteaux2009` is
+        expecting Tuch's ODF without the $r^2$ (see :footcite:p:`Descoteaux2007`
+        for the mathematical details).  Now, this function supports ODF that
+        have been computed using the $r^2$ term because the proper analytical
+        response function has be derived.  For example, models such as DSI,
+        GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now be deconvolved
+        with the r2_term=True.
 
     Returns
     -------
@@ -902,17 +915,7 @@ def odf_sh_to_sharp(
 
     References
     ----------
-    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
-    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-           Probabilistic Tractography Based on Complex Fibre Orientation
-           Distributions
-    .. [3] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [4] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
+    .. footbibliography::
 
     """
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
@@ -935,13 +938,15 @@ def odf_sh_to_sharp(
     return fodf_sh
 
 
-def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+@warning_for_keywords()
+def mask_for_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=0.7):
     """Computation of mask for single-shell single-tissue (ssst) response
         function using FA.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data (4D)
     roi_center : array-like, (3,)
@@ -965,13 +970,11 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7
     returning a mask of voxels within a ROI, that have a FA value above a
     given threshold. For example we can use a ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
-    FA values higher than 0.7 (see [1]_).
+    FA values higher than 0.7 (see :footcite:p:`Tournier2004`).
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+    .. footbibliography::
 
     """
     if len(data.shape) < 4:
@@ -1014,6 +1017,7 @@ def response_from_mask_ssst(gtab, data, mask):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray
@@ -1032,8 +1036,8 @@ def response_from_mask_ssst(gtab, data, mask):
     fiber response function. In order to do this, we look for voxels with very
     anisotropic configurations. This information can be obtained by using
     csdeconv.mask_for_response_ssst() through a mask of selected voxels
-    (see[1]_). The present function uses such a mask to compute the ssst
-    response function.
+    (see :footcite:p:`Tournier2004`). The present function uses such a mask to
+    compute the ssst response function.
 
     For the response we also need to find the average S0 in the ROI. This is
     possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
@@ -1047,9 +1051,7 @@ def response_from_mask_ssst(gtab, data, mask):
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+    .. footbibliography::
     """
 
     ten = TensorModel(gtab)
@@ -1067,13 +1069,15 @@ def response_from_mask_ssst(gtab, data, mask):
     return _get_response(S0s, lambdas)
 
 
-def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+@warning_for_keywords()
+def auto_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=0.7):
     """Automatic estimation of single-shell single-tissue (ssst) response
         function using FA.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     roi_center : array-like, (3,)
@@ -1104,7 +1108,9 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     `ratio` (more details are available in the description of the function).
     """
 
-    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
+    mask = mask_for_response_ssst(
+        gtab, data, roi_center=roi_center, roi_radii=roi_radii, fa_thr=fa_thr
+    )
     response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio
@@ -1124,10 +1130,12 @@ def _get_response(S0s, lambdas):
     return response, ratio
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def recursive_response(
     gtab,
     data,
+    *,
     mask=None,
     sh_order_max=8,
     peak_thr=0.01,
@@ -1139,11 +1147,14 @@ def recursive_response(
     num_processes=None,
     sphere=default_sphere,
 ):
-    """Recursive calibration of response function using peak threshold
+    """Recursive calibration of response function using peak threshold.
+
+    See :footcite:p:`Tax2014` for further details about the method.
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     data : ndarray
         diffusion data
     mask : ndarray, optional
@@ -1151,29 +1162,30 @@ def recursive_response(
         shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
         array.
     sh_order_max : int, optional
-        maximal spherical harmonics order (l). Default: 8
+        maximal spherical harmonics order (l).
     peak_thr : float, optional
         peak threshold, how large the second peak can be relative to the first
-        peak in order to call it a single fiber population [1]. Default: 0.01
+        peak in order to call it a single fiber population
+        :footcite:p:`Tax2014`.
     init_fa : float, optional
-        FA of the initial 'fat' response function (tensor). Default: 0.08
+        FA of the initial 'fat' response function (tensor).
     init_trace : float, optional
-        trace of the initial 'fat' response function (tensor). Default: 0.0021
+        trace of the initial 'fat' response function (tensor).
     iter : int, optional
-        maximum number of iterations for calibration. Default: 8.
+        maximum number of iterations for calibration.
     convergence : float, optional
         convergence criterion, maximum relative change of SH
-        coefficients. Default: 0.001.
+        coefficients.
     parallel : bool, optional
         Whether to use parallelization in peak-finding during the calibration
-        procedure. Default: True
+        procedure.
     num_processes : int, optional
         If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()). If < 0 the maximal number of
         cores minus ``num_processes + 1`` is used (enter -1 to use as many
         cores as possible). 0 raises an error.
     sphere : Sphere, optional.
-        The sphere used for peak finding. Default: default_sphere.
+        The sphere used for peak finding.
 
     Returns
     -------
@@ -1187,13 +1199,12 @@ def recursive_response(
     It is dependent on the dataset (non-informed used subjectivity), and still
     depends on the diffusion tensor (FA and first eigenvector),
     which has low accuracy at high b-value. This function recursively
-    calibrates the response function, for more information see [1].
+    calibrates the response function, for more information see
+    :footcite:p:`Tax2014`.
 
     References
     ----------
-    .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
-           the fiber response function for spherical deconvolution of
-           diffusion MRI data.
+    .. footbibliography::
     """
     S0 = 1.0
     evals = fa_trace_to_lambdas(init_fa, init_trace)

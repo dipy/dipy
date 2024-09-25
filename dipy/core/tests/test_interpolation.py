@@ -17,6 +17,7 @@ from dipy.core.interpolation import (
     interpolate_vector_2d,
     interpolate_vector_3d,
     map_coordinates_trilinear_iso,
+    rbf_interpolation,
     trilinear_interpolate4d,
 )
 from dipy.core.subdivide_octahedron import create_unit_sphere
@@ -45,7 +46,7 @@ def test_trilinear_interpolate(rng):
 
     # Pass in out ourselves
     out[:] = -1
-    trilinear_interpolate4d(data.astype(float), point.astype(float), out)
+    trilinear_interpolate4d(data.astype(float), point.astype(float), out=out)
     npt.assert_array_almost_equal(out, expected)
 
     # use a point close to an edge
@@ -399,13 +400,20 @@ def test_interp_rbf():
     def data_func(s, a, b):
         return a * np.cos(s.theta) + b * np.sin(s.phi)
 
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
+    s0 = create_unit_sphere(recursion_level=3)
+    s1 = create_unit_sphere(recursion_level=4)
+
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = data_func(s0, a, b)
         expected = data_func(s1, a, b)
-        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-        npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            interp_data_a = interp_rbf(data, s0, s1, norm="angle")
+            npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+            npt.assert_(len(w) == 1)
+            npt.assert_(issubclass(w[0].category, DeprecationWarning))
+            npt.assert_("deprecated" in str(w[0].message))
 
     # Test that using the euclidean norm raises a warning
     # (following
@@ -413,6 +421,75 @@ def test_interp_rbf():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         interp_rbf(data, s0, s1, norm="euclidean_norm")
-        npt.assert_(len(w) == 1)
-        npt.assert_(issubclass(w[-1].category, PendingDeprecationWarning))
-        npt.assert_("deprecated" in str(w[-1].message))
+        npt.assert_(len(w) == 2)
+        npt.assert_(issubclass(w[0].category, DeprecationWarning))
+        npt.assert_("deprecated" in str(w[0].message))
+        npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
+        npt.assert_("deprecated" in str(w[1].message))
+
+
+def test_rbf_interpolation():
+    s0 = create_unit_sphere(recursion_level=3)
+    s1 = create_unit_sphere(recursion_level=4)
+
+    def data_func(s, a, b):
+        return a * np.cos(s.theta) + b * np.sin(s.phi)
+
+    # Test 1D case
+    def data_func_1d(s, a, b, i):
+        return data_func(s, a, b) + i
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, len(s0.vertices)])
+        for i in range(3):
+            data[i] = data_func_1d(s0, a, b, i)
+
+        expected = np.empty([3, len(s1.vertices)])
+        for i in range(3):
+            expected[i] = data_func_1d(s1, a, b, i)
+
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test 2D case
+    def data_func_2d(s, a, b, i, j):
+        return data_func(s, a, b) + i + j
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, 4, len(s0.vertices)])
+        for i in range(3):
+            for j in range(4):
+                data[i, j] = data_func_2d(s0, a, b, i, j)
+
+        expected = np.empty([3, 4, len(s1.vertices)])
+        for i in range(3):
+            for j in range(4):
+                expected[i, j] = data_func_2d(s1, a, b, i, j)
+
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test 3D case
+    def data_func_3d(s, a, b, i, j, k):
+        return data_func(s, a, b) + i + j + k
+
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = np.empty([3, 4, 5, len(s0.vertices)])
+        for i in range(3):
+            for j in range(4):
+                for k in range(5):
+                    data[i, j, k] = data_func_3d(s0, a, b, i, j, k)
+
+        expected = np.empty([3, 4, 5, len(s1.vertices)])
+        for i in range(3):
+            for j in range(4):
+                for k in range(5):
+                    expected[i, j, k] = data_func_3d(s1, a, b, i, j, k)
+
+        interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
+        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+    # Test that shape mismatch raises an error
+    with npt.assert_raises(ValueError):
+        data = data[:, :, :, :-1]  # Remove one vertex
+        rbf_interpolation(data, s0, s1, epsilon=10)

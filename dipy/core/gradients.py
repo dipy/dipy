@@ -8,6 +8,7 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.io import gradients as io
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -38,14 +39,13 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 
@@ -164,8 +164,15 @@ class GradientTable:
 
     """
 
+    @warning_for_keywords()
     def __init__(
-        self, gradients, big_delta=None, small_delta=None, b0_threshold=50, btens=None
+        self,
+        gradients,
+        *,
+        big_delta=None,
+        small_delta=None,
+        b0_threshold=50,
+        btens=None,
     ):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
@@ -341,9 +348,23 @@ class GradientTable:
         msg += f"          max {self.bvecs.max():f}\n"
         return msg
 
+    def __len__(self):
+        """Get the number of gradients. Includes the b0s.
 
+        Examples
+        --------
+        >>> bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+        >>> bvecs = generate_bvecs(bvals.shape[-1])
+        >>> gtab = gradient_table(bvals, bvecs=bvecs)
+        >>> len(gtab)
+        9
+        """
+        return len(self.bvals)
+
+
+@warning_for_keywords()
 def gradient_table_from_bvals_bvecs(
-    bvals, bvecs, b0_threshold=50, atol=1e-2, btens=None, **kwargs
+    bvals, bvecs, *, b0_threshold=50, atol=1e-2, btens=None, **kwargs
 ):
     """Creates a GradientTable from a bvals array and a bvecs array
 
@@ -452,8 +473,9 @@ def gradient_table_from_bvals_bvecs(
     return grad_table
 
 
+@warning_for_keywords()
 def gradient_table_from_qvals_bvecs(
-    qvals, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+    qvals, bvecs, big_delta, small_delta, *, b0_threshold=50, atol=1e-2
 ):
     """A general function for creating diffusion MR gradients.
 
@@ -533,8 +555,9 @@ def gradient_table_from_qvals_bvecs(
     )
 
 
+@warning_for_keywords()
 def gradient_table_from_gradient_strength_bvecs(
-    gradient_strength, bvecs, big_delta, small_delta, b0_threshold=50, atol=1e-2
+    gradient_strength, bvecs, big_delta, small_delta, *, b0_threshold=50, atol=1e-2
 ):
     """A general function for creating diffusion MR gradients.
 
@@ -615,8 +638,10 @@ def gradient_table_from_gradient_strength_bvecs(
     )
 
 
+@warning_for_keywords()
 def gradient_table(
     bvals,
+    *,
     bvecs=None,
     big_delta=None,
     small_delta=None,
@@ -699,10 +724,10 @@ def gradient_table(
     ...                   [sq2, sq2, 0],
     ...                   [sq2, 0, sq2],
     ...                   [0, sq2, sq2]])
-    >>> gt = gradient_table(bvals, bvecs)
+    >>> gt = gradient_table(bvals, bvecs=bvecs)
     >>> gt.bvecs.shape == bvecs.shape
     True
-    >>> gt = gradient_table(bvals, bvecs.T)
+    >>> gt = gradient_table(bvals, bvecs=bvecs.T)
     >>> gt.bvecs.shape == bvecs.T.shape
     False
 
@@ -754,14 +779,15 @@ def gradient_table(
     )
 
 
-def reorient_bvecs(gtab, affines, atol=1e-2):
+@warning_for_keywords()
+def reorient_bvecs(gtab, affines, *, atol=1e-2):
     """Reorient the directions in a GradientTable.
 
     When correcting for motion, rotation of the diffusion-weighted volumes
     might cause systematic bias in rotationally invariant measures, such as FA
     and MD, and also cause characteristic biases in tractography, unless the
     gradient directions are appropriately reoriented to compensate for this
-    effect [Leemans2009]_.
+    effect :footcite:p:`Leemans2009`.
 
     Parameters
     ----------
@@ -781,9 +807,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
 
     References
     ----------
-    .. [Leemans2009] The B-Matrix Must Be Rotated When Correcting for
-       Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
-       MRM, 61: 1336-1349
+    .. footbibliography::
     """
     if isinstance(affines, list):
         affines = np.stack(affines, axis=-1)
@@ -821,7 +845,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     return_bvecs[~gtab.b0s_mask] = new_bvecs
     return gradient_table(
         gtab.bvals,
-        return_bvecs,
+        bvecs=return_bvecs,
         big_delta=gtab.big_delta,
         small_delta=gtab.small_delta,
         b0_threshold=gtab.b0_threshold,
@@ -829,7 +853,8 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
     )
 
 
-def generate_bvecs(N, iters=5000, rng=None):
+@warning_for_keywords()
+def generate_bvecs(N, *, iters=5000, rng=None):
     """Generates N bvectors.
 
     Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
@@ -862,7 +887,8 @@ def generate_bvecs(N, iters=5000, rng=None):
     return bvecs
 
 
-def round_bvals(bvals, bmag=None):
+@warning_for_keywords()
+def round_bvals(bvals, *, bmag=None):
     """ "This function rounds the b-values
 
     Parameters
@@ -888,7 +914,8 @@ def round_bvals(bvals, bmag=None):
     return b.round() * (10**bmag)
 
 
-def unique_bvals_tolerance(bvals, tol=20):
+@warning_for_keywords()
+def unique_bvals_tolerance(bvals, *, tol=20):
     """Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a
@@ -936,8 +963,8 @@ def unique_bvals_tolerance(bvals, tol=20):
 
     # Checking for overlap with get_bval_indices
     for i, ubval in enumerate(ubvals[:-1]):
-        indices_1 = get_bval_indices(bvals, ubval, tol)
-        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol)
+        indices_1 = get_bval_indices(bvals, ubval, tol=tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i + 1], tol=tol)
         if len(np.intersect1d(indices_1, indices_2)) != 0:
             msg = """There is overlap in clustering of b-values.
             The tolerance factor might be too high."""
@@ -946,7 +973,8 @@ def unique_bvals_tolerance(bvals, tol=20):
     return np.asarray(ubvals)
 
 
-def get_bval_indices(bvals, bval, tol=20):
+@warning_for_keywords()
+def get_bval_indices(bvals, bval, *, tol=20):
     """
     Get indices where the b-value is `bval`
 
@@ -969,7 +997,8 @@ def get_bval_indices(bvals, bval, tol=20):
     return np.where(np.logical_and(bvals <= bval + tol, bvals >= bval - tol))[0]
 
 
-def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
+@warning_for_keywords()
+def unique_bvals_magnitude(bvals, *, bmag=None, rbvals=False):
     """This function gives the unique rounded b-values of the data
 
     Parameters
@@ -985,28 +1014,28 @@ def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
 
     rbvals : bool, optional
         If True function also returns all individual rounded b-values.
-        Default: False
 
     Returns
     -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
-    b = round_bvals(bvals, bmag)
+    b = round_bvals(bvals, bmag=bmag)
     if rbvals:
         return np.unique(b), b
 
     return np.unique(b)
 
 
-def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
+@warning_for_keywords()
+def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
     """
     Check if you have enough different b-values in your gradient table
 
     Parameters
     ----------
     gtab : GradientTable class instance.
-
+        Gradient table.
     n_bvals : int
         The number of different b-values you are checking for.
     non_zero : bool
@@ -1061,14 +1090,11 @@ def _btens_to_params_2d(btens_2d, ztol):
 
     Notes
     -----
-    Implementation following [1].
+    Implementation following :footcite:t:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
     btens_2d[abs(btens_2d) <= ztol] = 0
@@ -1108,7 +1134,8 @@ def _btens_to_params_2d(btens_2d, ztol):
     return float(bval), float(bdelta), float(b_eta)
 
 
-def btens_to_params(btens, ztol=1e-10):
+@warning_for_keywords()
+def btens_to_params(btens, *, ztol=1e-10):
     r"""Compute trace, anisotropy and asymmetry parameters from b-tensors.
 
     Parameters
@@ -1200,14 +1227,11 @@ def params_to_btens(bval, bdelta, b_eta):
 
     Notes
     -----
-    Implements eq. 7.11. p. 231 in [1].
+    Implements eq. 7.11. p. 231 in :footcite:p:`Topgaard2016`.
 
     References
     ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    .. footbibliography::
 
     """
 
@@ -1255,7 +1279,8 @@ def ornt_mapping(ornt1, ornt2):
     return mapping
 
 
-def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
+@warning_for_keywords()
+def reorient_vectors(bvecs, current_ornt, new_ornt, *, axis=0):
     """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
@@ -1286,7 +1311,8 @@ def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
     return output
 
 
-def reorient_on_axis(bvecs, current_ornt, new_ornt, axis=0):
+@warning_for_keywords()
+def reorient_on_axis(bvecs, current_ornt, new_ornt, *, axis=0):
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
     if isinstance(new_ornt, str):

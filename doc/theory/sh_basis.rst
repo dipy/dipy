@@ -17,7 +17,7 @@ Spherical harmonics are orthonormal functions defined by:
 where $l$ is the order, $m$ is the phase factor, $P_l^m$ is an associated
 $l$-th order, $m$-th phase factor Legendre polynomial, and $(\theta, \phi)$ is the
 representation of the direction vector in spherical coordinates. The relation
-between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
+between $Y_l^m$ and $Y_l^{-m}$ is given by:
 
 ..  math::
 
@@ -43,35 +43,35 @@ computed as:
 
 In HARDI, the Orientation Distribution Function (ODF) is a function on the
 sphere. Therefore, SH functions offer the ideal framework for reconstructing
-the ODF. Descoteaux *et al.* [1]_ use the Q-Ball Imaging (QBI) formalization
-to recover the ODF, while Tournier *et al.* [2]_ use the Spherical Deconvolution
-(SD) framework.
+the ODF. :footcite:t:`Descoteaux2007` use the Q-Ball Imaging (QBI)
+formalization to recover the ODF, while :footcite:t:`Tournier2007` use the
+Spherical Deconvolution (SD) framework.
 
 Several modified SH bases have been proposed in the diffusion imaging literature
 for the computation of the ODF. DIPY implements two of these in the
 :mod:`~dipy.reconst.shm` module. Below are the formal definitions taken
 directly from the literature.
 
-- The basis proposed by Descoteaux *et al.* [1]_:
+- The basis proposed by :footcite:t:`Descoteaux2007`:
 
 ..  math::
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
-- The basis proposed by Tournier *et al.* [2]_:
+- The basis proposed by :footcite:t:`Tournier2007`:
 
 ..  math::
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \Im(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \Im(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
@@ -86,20 +86,20 @@ the basis proposed by Descoteaux *et al.* is orthonormal.
 The SH bases implemented in DIPY for versions 1.2 and below differ slightly
 from the literature. Their implementation is given below.
 
-- The ``descoteaux07`` basis is based on the one proposed by Descoteaux *et al.*
-  [1]_ and is given by:
+- The ``descoteaux07`` basis is based on the one proposed by
+  :footcite:t:`Descoteaux2007` and is given by:
 
 ..  math::
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
-- The ``tournier07`` basis is based on the one proposed by Tournier *et al.*
-  [2]_ and is given by:
+- The ``tournier07`` basis is based on the one proposed by
+  :footcite:t:`Tournier2007` and is given by:
 
 ..  math::
 
@@ -107,7 +107,7 @@ from the literature. Their implementation is given below.
      \begin{cases}
      \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 These bases differ from the literature by the presence of an absolute value around
@@ -116,10 +116,11 @@ $Y_l^{-m}(\theta, \phi) = (-1)^m \overline{Y_l^m}$, the effect of this change is
 sign flip for the SH functions of even degree $m < 0$. This has no effect on the
 mathematical properties of each basis.
 
-The ``tournier07`` SH basis defined above is the basis used in MRtrix 0.2 [3]_.
-However, the omission of the $\sqrt{2}$ factor seen in the basis from Descoteaux
-*et al.* [1]_ makes it non-orthonormal. For this reason, the MRtrix3 [4]_ SH
-basis uses a new basis including the normalization factor.
+The ``tournier07`` SH basis defined above is the basis used in MRtrix 0.2
+:footcite:t:`Tournier2012`. However, the omission of the $\sqrt{2}$ factor seen
+in the basis from :footcite:t:`Descoteaux2007` makes it non-orthonormal. For
+this reason, the MRtrix3 :footcite:t:`Tournier2019` SH basis uses a new basis
+including the normalization factor.
 
 Since DIPY 1.3, the ``descoteaux07`` and ``tournier07`` SH bases have been
 updated in order to agree with the literature and the latest MRtrix3
@@ -130,9 +131,9 @@ the ``descoteaux07`` and ``tournier07`` bases now default to:
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^{m}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 for the ``descoteaux07`` basis and
@@ -141,9 +142,9 @@ for the ``descoteaux07`` basis and
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} * \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
-     \sqrt{2} \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
+     \sqrt{2} * \Re(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 for the ``tournier07`` basis. Both bases are very similar, with their only
@@ -171,18 +172,5 @@ These decisions were made as a result of the PR in https://github.com/dipy/dipy/
 
 References
 ----------
-.. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-       Regularized, Fast, and Robust Analytical Q‐ball Imaging.
-       Magn. Reson. Med. 2007;58:497-510.
-.. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-       of the fibre orientation distribution in diffusion MRI:
-       Non-negativity constrained super-resolved spherical deconvolution.
-       NeuroImage. 2007;35(4):1459–1472.
-.. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-       Pietsch M, et al. MRtrix3: A fast, flexible and open software
-       framework for medical image processing and visualisation.
-       NeuroImage. 2019 Nov 15;202:116-137.
-.. [4] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-       Pietsch M, et al. MRtrix3: A fast, flexible and open software
-       framework for medical image processing and visualisation.
-       NeuroImage. 2019 Nov 15;202:116-137.
+
+.. footbibliography::

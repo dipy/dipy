@@ -89,9 +89,9 @@ def test_sharpness(rng):
 
 
 def test_ascm_accuracy():
-    f_name = dpd.get_fnames("ascm_test")
+    f_name = dpd.get_fnames(name="ascm_test")
     test_ascm_data_ref = np.asanyarray(nib.load(f_name).dataobj)
-    test_data = np.asanyarray(nib.load(dpd.get_fnames("aniso_vox")).dataobj)
+    test_data = np.asanyarray(nib.load(dpd.get_fnames(name="aniso_vox")).dataobj)
 
     # the test data was constructed in this manner
     mask = test_data > 50

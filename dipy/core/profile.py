@@ -3,6 +3,7 @@
 import os
 import subprocess
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cProfile, _, _ = optional_package("cProfile")
@@ -52,7 +53,7 @@ class Profiler:
 
     """
 
-    def __init__(self, call=None, *args):
+    def __init__(self, *args, call=None):
         # Delay import until use of class instance.  We were getting some very
         # odd build-as-we-go errors running tests and documentation otherwise
         import pyximport
@@ -86,7 +87,8 @@ class Profiler:
     def _profile_function(self):
         self.call(*self.args)
 
-    def print_stats(self, N=10):
+    @warning_for_keywords()
+    def print_stats(self, *, N=10):
         """Print stats for profiling
 
         You can use it in all different ways developed in pstats

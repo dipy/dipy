@@ -19,7 +19,7 @@ from dipy.testing import (
 
 def setup_module():
     global f1, f2
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 
     # Should work with both StatefulTractogram and streamlines (list of array)
@@ -93,8 +93,8 @@ def test_fss_radius_search():
 
     # Single direction should be a subset of bidirectional
     assert_greater_equal(rs_f1_in_f2.nnz, rs_f1_sd.nnz)
-    assert_true(np.all(np.in1d(rs_f1_sd.row, rs_f2_in_f1.row)))
-    assert_true(np.all(np.in1d(rs_f1_sd.col, rs_f2_in_f1.col)))
+    assert_true(np.all(np.isin(rs_f1_sd.row, rs_f2_in_f1.row)))
+    assert_true(np.all(np.isin(rs_f1_sd.col, rs_f2_in_f1.col)))
 
 
 def test_fss_varying_radius():
@@ -108,12 +108,12 @@ def test_fss_varying_radius():
 
     # smaller radius should be a subset or equal of a bigger radius
     assert_greater_equal(rs_6.nnz, rs_4.nnz)
-    assert_true(np.all(np.in1d(rs_4.row, rs_6.row)))
-    assert_true(np.all(np.in1d(rs_4.col, rs_6.col)))
+    assert_true(np.all(np.isin(rs_4.row, rs_6.row)))
+    assert_true(np.all(np.isin(rs_4.col, rs_6.col)))
 
     assert_greater_equal(rs_4.nnz, rs_2.nnz)
-    assert_true(np.all(np.in1d(rs_2.row, rs_4.row)))
-    assert_true(np.all(np.in1d(rs_2.col, rs_4.col)))
+    assert_true(np.all(np.isin(rs_2.row, rs_4.row)))
+    assert_true(np.all(np.isin(rs_2.col, rs_4.col)))
 
 
 def test_fss_single_point_slines():
@@ -129,7 +129,7 @@ def test_fss_single_point_slines():
     res = fss.radius_search(slines, radius=4.0)
     # 2x2 matrix with 4 element
     assert_true(res.nnz == 4)
-    mat = res.A
+    mat = res.toarray()
     dist = mean_euclidean_distance(slines[0], slines[1])
     assert_almost_equal(mat[0, 0], 0.0)
     assert_almost_equal(mat[1, 1], 0.0)

@@ -9,7 +9,7 @@ from dipy.io.image import load_nifti
 
 
 def test_resample():
-    fimg, _, _ = get_fnames("small_25")
+    fimg, _, _ = get_fnames(name="small_25")
     data, affine, zooms = load_nifti(fimg, return_voxsize=True)
 
     # test that new zooms are correctly from the affine (check with 3D volume)

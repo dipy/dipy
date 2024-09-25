@@ -13,6 +13,7 @@ from dipy.align import (
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 
 class SimilarityMetric:
@@ -200,7 +201,8 @@ class SimilarityMetric:
 
 
 class CCMetric(SimilarityMetric):
-    def __init__(self, dim, sigma_diff=2.0, radius=4):
+    @warning_for_keywords()
+    def __init__(self, dim, *, sigma_diff=2.0, radius=4):
         r"""Normalized Cross-Correlation Similarity metric.
 
         Parameters
@@ -346,9 +348,11 @@ class CCMetric(SimilarityMetric):
 
 
 class EMMetric(SimilarityMetric):
+    @warning_for_keywords()
     def __init__(
         self,
         dim,
+        *,
         smooth=1.0,
         inner_iter=5,
         q_levels=256,
@@ -518,7 +522,7 @@ class EMMetric(SimilarityMetric):
         Computes the forward update field to register the moving image towards
         the static image in a gradient-based optimization algorithm
         """
-        return self.compute_step(True)
+        return self.compute_step(forward_step=True)
 
     def compute_backward(self):
         r"""Computes one step bringing the static image towards the moving.
@@ -526,9 +530,10 @@ class EMMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        return self.compute_step(False)
+        return self.compute_step(forward_step=False)
 
-    def compute_gauss_newton_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_gauss_newton_step(self, *, forward_step=True):
         r"""Computes the Gauss-Newton energy minimization step
 
         Computes the Newton step to minimize this energy, i.e., minimizes the
@@ -536,7 +541,7 @@ class EMMetric(SimilarityMetric):
         regularized displacement field (this step does not require
         post-smoothing, as opposed to the demons step, which does not include
         regularization). To accelerate convergence we use the multi-grid
-        Gauss-Seidel algorithm proposed by Bruhn and Weickert et al [Bruhn05]
+        Gauss-Seidel algorithm proposed by :footcite:t:`Bruhn2005`.
 
         Parameters
         ----------
@@ -553,10 +558,7 @@ class EMMetric(SimilarityMetric):
 
         References
         ----------
-        [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-                  estimation: combining highest accuracy with real-time
-                  performance", 10th IEEE International Conference on Computer
-                  Vision, 2005. ICCV 2005.
+        .. footbibliography::
         """
         reference_shape = self.static_image.shape
 
@@ -595,7 +597,8 @@ class EMMetric(SimilarityMetric):
             )
         return displacement
 
-    def compute_demons_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_demons_step(self, *, forward_step=True):
         r"""Demons step for EM metric
 
         Parameters
@@ -668,7 +671,11 @@ class EMMetric(SimilarityMetric):
         shape = np.array(self.static_image.shape, dtype=np.int32)
         affine = self.static_affine
         self.static_image_mask = transformation.transform(
-            self.static_image_mask, "nearest", None, shape, affine
+            self.static_image_mask,
+            interpolation="nearest",
+            image_world2grid=None,
+            out_shape=shape,
+            out_grid2world=affine,
         )
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
@@ -695,12 +702,17 @@ class EMMetric(SimilarityMetric):
         shape = np.array(self.moving_image.shape, dtype=np.int32)
         affine = self.moving_affine
         self.moving_image_mask = transformation.transform(
-            self.moving_image_mask, "nearest", None, shape, affine
+            self.moving_image_mask,
+            interpolation="nearest",
+            image_world2grid=None,
+            out_shape=shape,
+            out_grid2world=affine,
         )
 
 
 class SSDMetric(SimilarityMetric):
-    def __init__(self, dim, smooth=4, inner_iter=10, step_type="demons"):
+    @warning_for_keywords()
+    def __init__(self, dim, *, smooth=4, inner_iter=10, step_type="demons"):
         r"""Sum of Squared Differences (SSD) Metric
 
         Similarity metric for (mono-modal) nonlinear image registration defined
@@ -788,7 +800,7 @@ class SSDMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
-        return self.compute_step(True)
+        return self.compute_step(forward_step=True)
 
     def compute_backward(self):
         r"""Computes one step bringing the static image towards the moving.
@@ -796,9 +808,10 @@ class SSDMetric(SimilarityMetric):
         Computes the updated displacement field to be used for registration of
         the static image towards the moving image
         """
-        return self.compute_step(False)
+        return self.compute_step(forward_step=False)
 
-    def compute_gauss_newton_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_gauss_newton_step(self, *, forward_step=True):
         r"""Computes the Gauss-Newton energy minimization step
 
         Minimizes the linearized energy function (Newton step) defined by the
@@ -854,11 +867,12 @@ class SSDMetric(SimilarityMetric):
             )
         return displacement
 
-    def compute_demons_step(self, forward_step=True):
+    @warning_for_keywords()
+    def compute_demons_step(self, *, forward_step=True):
         r"""Demons step for SSD metric
 
-        Computes the demons step proposed by Vercauteren et al.[Vercauteren09]
-        for the SSD metric.
+        Computes the demons step proposed by :footcite:t:`Vercauteren2009` for
+        the SSD metric.
 
         Parameters
         ----------
@@ -875,9 +889,7 @@ class SSDMetric(SimilarityMetric):
 
         References
         ----------
-        [Vercauteren09] Tom Vercauteren, Xavier Pennec, Aymeric Perchant,
-                        Nicholas Ayache, "Diffeomorphic Demons: Efficient
-                        Non-parametric Image Registration", Neuroimage 2009
+        .. footbibliography::
         """
         sigma_reg_2 = np.sum(self.static_spacing**2) / self.dim
 
@@ -915,6 +927,7 @@ class SSDMetric(SimilarityMetric):
         pass
 
 
+@warning_for_keywords()
 def v_cycle_2d(
     n,
     k,
@@ -924,6 +937,7 @@ def v_cycle_2d(
     target,
     lambda_param,
     displacement,
+    *,
     depth=0,
 ):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles
@@ -932,7 +946,7 @@ def v_cycle_2d(
     by first filtering (GS-iterate) the current level, then solves for the
     residual at a coarser resolution and finally refines the solution at the
     current resolution. This scheme corresponds to the V-cycle proposed by
-    Bruhn and Weickert[Bruhn05].
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -966,10 +980,7 @@ def v_cycle_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining the highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     # pre-smoothing
     for _ in range(k):
@@ -1018,7 +1029,7 @@ def v_cycle_2d(
         sub_residual,
         sublambda_param,
         sub_displacement,
-        depth + 1,
+        depth=depth + 1,
     )
     # displacement += np.array(
     #    vfu.upsample_displacement_field(sub_displacement, shape))
@@ -1040,6 +1051,7 @@ def v_cycle_2d(
     return energy
 
 
+@warning_for_keywords()
 def v_cycle_3d(
     n,
     k,
@@ -1049,6 +1061,7 @@ def v_cycle_3d(
     target,
     lambda_param,
     displacement,
+    *,
     depth=0,
 ):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles
@@ -1056,12 +1069,8 @@ def v_cycle_3d(
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarser resolution and finally refines the solution at the current
-    resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
-    Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005.
-        ICCV 2005.
+    resolution. This scheme corresponds to the V-cycle proposed by
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -1092,6 +1101,10 @@ def v_cycle_3d(
     -------
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this
         iteration
+
+    References
+    ----------
+    .. footbibliography::
     """
     # pre-smoothing
     for _ in range(k):
@@ -1138,7 +1151,7 @@ def v_cycle_3d(
         sub_residual,
         sublambda_param,
         sub_displacement,
-        depth + 1,
+        depth=depth + 1,
     )
     del subdelta_field
     del subsigma_sq_field

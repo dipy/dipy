@@ -1,5 +1,6 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
@@ -51,8 +52,9 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     plt.clf()
 
 
+@warning_for_keywords()
 def overlay_images(
-    img0, img1, title0="", title_mid="", title1="", fname=None, **fig_kwargs
+    img0, img1, *, title0="", title_mid="", title1="", fname=None, **fig_kwargs
 ):
     r"""Plot two images one on top of the other using red and green channels.
 
@@ -71,19 +73,20 @@ def overlay_images(
     img1 : array, shape(R, C)
         the image to be plotted on the green channel, to the right of the
         figure
-    title0 : string (optional)
+    title0 : string, optional
         the title to be written on top of the image to the left. By default, no
         title is displayed.
-    title_mid : string (optional)
+    title_mid : string, optional
         the title to be written on top of the middle image. By default, no
         title is displayed.
-    title1 : string (optional)
+    title1 : string, optional
         the title to be written on top of the image to the right. By default,
         no title is displayed.
-    fname : string (optional)
+    fname : string, optional
         the file name to write the resulting figure. If None (default), the
         image is not saved.
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
     """
     # Normalize the input images to [0,255]
     img0 = 255 * ((img0 - img0.min()) / (img0.max() - img0.min()))
@@ -153,8 +156,10 @@ def draw_lattice_2d(nrows, ncols, delta):
     return lattice
 
 
+@warning_for_keywords()
 def plot_2d_diffeomorphic_map(
     mapping,
+    *,
     delta=10,
     fname=None,
     direct_grid_shape=None,
@@ -211,7 +216,8 @@ def plot_2d_diffeomorphic_map(
     show_figure : bool, optional
         if True (default), the deformed grids will be plotted using matplotlib,
         else the grids are just returned
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
 
     Returns
     -------
@@ -273,7 +279,11 @@ def plot_2d_diffeomorphic_map(
 
     # Warp in the forward direction (sampling it on the input grid)
     warped_forward = mapping.transform(
-        lattice_out, "linear", world_to_image, direct_grid_shape, direct_grid2world
+        lattice_out,
+        interpolation="linear",
+        image_world2grid=world_to_image,
+        out_shape=direct_grid_shape,
+        out_grid2world=direct_grid2world,
     )
 
     # Now, the world-to-image (image = drawn lattice on the input grid)
@@ -292,7 +302,11 @@ def plot_2d_diffeomorphic_map(
 
     # Warp in the backward direction (sampling it on the output grid)
     warped_backward = mapping.transform_inverse(
-        lattice_in, "linear", world_to_image, inverse_grid_shape, inverse_grid2world
+        lattice_in,
+        interpolation="linear",
+        image_world2grid=world_to_image,
+        out_shape=inverse_grid_shape,
+        out_grid2world=inverse_grid2world,
     )
 
     # Now plot the grids
@@ -315,7 +329,8 @@ def plot_2d_diffeomorphic_map(
     return warped_forward, warped_backward
 
 
-def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
+@warning_for_keywords()
+def plot_slices(V, *, slice_indices=None, fname=None, **fig_kwargs):
     r"""Plot 3 slices from the given volume: 1 sagittal, 1 coronal and 1 axial
 
     Creates a figure showing the axial, coronal and sagittal slices at the
@@ -326,15 +341,16 @@ def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     ----------
     V : array, shape (S, R, C)
         the 3D volume to extract the slices from
-    slice_indices : array, shape (3,) (optional)
+    slice_indices : array, shape (3,), optional
         the indices of the sagittal (slice_indices[0]), coronal
         (slice_indices[1])
         and axial (slice_indices[2]) slices to be displayed. If None, the
         middle slices along each direction are displayed.
-    fname : string (optional)
+    fname : string, optional
         the name of the file to save the figure to. If None (default), the
         figure is not saved to disk.
-    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
+    fig_kwargs : dict
+        Extra parameters for saving figure, e.g. `dpi=300`.
     """
     if slice_indices is None:
         slice_indices = np.array(V.shape) // 2
@@ -362,9 +378,11 @@ def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     return fig
 
 
+@warning_for_keywords()
 def overlay_slices(
     L,
     R,
+    *,
     slice_index=None,
     slice_type=1,
     ltitle="Left",
@@ -388,19 +406,19 @@ def overlay_slices(
         the first volume to extract the slice from plotted to the left
     R : array, shape (S, R, C)
         the second volume to extract the slice from, plotted to the right
-    slice_index : int (optional)
+    slice_index : int, optional
         the index of the slices (along the axis given by slice_type) to be
         overlaid. If None, the slice along the specified axis is used
-    slice_type : int (optional)
+    slice_type : int, optional
         the type of slice to be extracted:
         0=sagittal, 1=coronal (default), 2=axial.
-    ltitle : string (optional)
+    ltitle : string, optional
         the string to be written as the title of the left image. By default,
         no title is displayed.
-    rtitle : string (optional)
+    rtitle : string, optional
         the string to be written as the title of the right image. By default,
         no title is displayed.
-    fname : string (optional)
+    fname : string, optional
         the name of the file to write the image to. If None (default), the
         figure is not saved to disk.
     fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.

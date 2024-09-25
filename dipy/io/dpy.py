@@ -12,21 +12,26 @@ import h5py
 from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 # Make sure not to carry across setup module from * import
 __all__ = ["Dpy"]
 
 
 class Dpy:
-    def __init__(self, fname, mode="r", compression=0):
+    @warning_for_keywords()
+    def __init__(self, fname, *, mode="r", compression=0):
         """Advanced storage system for tractography based on HDF5
 
         Parameters
         ----------
-        fname : str, full filename
-        mode : 'r' read
-         'w' write
-         'r+' read and write only if file already exists
-        compression : 0 no compression to 9 maximum compression
+        fname : str
+            Full filename
+        mode : str, optional
+            Use 'r' to read, 'w' to write, and 'r+' to read and write (only if
+            file already exists).
+        compression : int, optional
+            0 no compression to 9 maximum compression.
 
         Examples
         --------
@@ -36,7 +41,7 @@ class Dpy:
         >>> def dpy_example():
         ...     fd,fname = mkstemp()
         ...     fname += '.dpy'#add correct extension
-        ...     dpw = Dpy(fname,'w')
+        ...     dpw = Dpy(fname, mode='w')
         ...     A=np.ones((5,3))
         ...     B=2*A.copy()
         ...     C=3*A.copy()
@@ -44,7 +49,7 @@ class Dpy:
         ...     dpw.write_track(B)
         ...     dpw.write_track(C)
         ...     dpw.close()
-        ...     dpr = Dpy(fname,'r')
+        ...     dpr = Dpy(fname, mode='r')
         ...     dpr.read_track()
         ...     dpr.read_track()
         ...     dpr.read_tracksi([0, 1, 2, 0, 0, 2])

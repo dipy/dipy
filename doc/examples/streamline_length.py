@@ -93,7 +93,7 @@ n_pts = [len(streamline) for streamline in bundle]
 # points of a streamline at a specific number and at the same time enforce
 # that all the segments of the streamline will have equal length.
 
-bundle_downsampled = set_number_of_points(bundle, 12)
+bundle_downsampled = set_number_of_points(bundle, nb_points=12)
 n_pts_ds = [len(s) for s in bundle_downsampled]
 
 ###############################################################################
@@ -114,21 +114,25 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(*window.colors.white)
-bundle_actor = actor.streamtube(bundle, window.colors.red, linewidth=0.3)
+bundle_actor = actor.streamtube(bundle, colors=window.colors.red, linewidth=0.3)
 
 scene.add(bundle_actor)
 
-bundle_actor2 = actor.streamtube(bundle_downsampled, window.colors.red, linewidth=0.3)
+bundle_actor2 = actor.streamtube(
+    bundle_downsampled, colors=window.colors.red, linewidth=0.3
+)
 bundle_actor2.SetPosition(0, 40, 0)
 
-bundle_actor3 = actor.streamtube(bundle_downsampled2, window.colors.red, linewidth=0.3)
+bundle_actor3 = actor.streamtube(
+    bundle_downsampled2, colors=window.colors.red, linewidth=0.3
+)
 bundle_actor3.SetPosition(0, 80, 0)
 
 scene.add(bundle_actor2)
 scene.add(bundle_actor3)
 
 scene.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
-window.record(scene, out_path="simulated_cosine_bundle.png", size=(900, 900))
+window.record(scene=scene, out_path="simulated_cosine_bundle.png", size=(900, 900))
 if interactive:
     window.show(scene)
 

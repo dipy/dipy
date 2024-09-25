@@ -22,7 +22,7 @@ from dipy.io.image import load_nifti, save_nifti
 # We use here a very small dataset to show the basic principles but you can
 # replace the following line with the path of your image.
 
-fimg = get_fnames("aniso_vox")
+fimg = get_fnames(name="aniso_vox")
 
 ###############################################################################
 # We load the image, the affine of the image and the voxel size. The affine is

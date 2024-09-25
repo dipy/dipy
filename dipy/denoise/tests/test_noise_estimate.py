@@ -39,7 +39,7 @@ def test_inv_nchi():
 def test_piesno(rng):
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
-    test_piesno_data = load_nifti_data(dpd.get_fnames("test_piesno"))
+    test_piesno_data = load_nifti_data(dpd.get_fnames(name="test_piesno"))
     sigma = piesno(
         test_piesno_data, N=8, alpha=0.01, step=1, eps=1e-10, return_mask=False
     )
@@ -193,11 +193,11 @@ def test_pca_noise_estimate(rng):
     # MUBE:
     bvals1 = np.concatenate([np.zeros(17), np.ones(3) * 1000])
     bvecs1 = np.concatenate([np.zeros((17, 3)), np.eye(3)])
-    gtab1 = dpg.gradient_table(bvals1, bvecs1)
+    gtab1 = dpg.gradient_table(bvals1, bvecs=bvecs1)
     # SIBE:
     bvals2 = np.concatenate([np.zeros(1), np.ones(3) * 1000])
     bvecs2 = np.concatenate([np.zeros((1, 3)), np.eye(3)])
-    gtab2 = dpg.gradient_table(bvals2, bvecs2)
+    gtab2 = dpg.gradient_table(bvals2, bvecs=bvecs2)
 
     for images_as_samples in [True, False]:
         for patch_radius in [1, 2]:

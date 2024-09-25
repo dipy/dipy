@@ -33,8 +33,8 @@ def test_slicer(rng):
     affine = np.diag([1, 3, 2, 1])
     data2, affine2 = reslice(data, affine, zooms=(1, 3, 2), new_zooms=(1, 1, 1))
 
-    slicer = actor.slicer(data2, affine2, interpolation="linear")
-    slicer.display(None, None, 25)
+    slicer = actor.slicer(data2, affine=affine2, interpolation="linear")
+    slicer.display(x=None, y=None, z=25)
 
     scene.add(slicer)
     scene.reset_camera()
@@ -86,18 +86,22 @@ def test_contour_from_roi():
     streamlines = list(streamlines)
 
     # Prepare the display objects.
-    streamlines_actor = actor.line(streamlines, colormap.line_colors(streamlines))
-    seedroi_actor = actor.contour_from_roi(seed_mask, affine, [0, 1, 1], 0.5)
+    streamlines_actor = actor.line(
+        streamlines, colors=colormap.line_colors(streamlines)
+    )
+    seedroi_actor = actor.contour_from_roi(
+        seed_mask, affine=affine, color=[0, 1, 1], opacity=0.5
+    )
 
     # Create the 3d display.
     sc = window.Scene()
     sc2 = window.Scene()
     sc.add(streamlines_actor)
-    arr3 = window.snapshot(sc, "test_surface3.png", offscreen=True)
+    arr3 = window.snapshot(sc, fname="test_surface3.png", offscreen=True)
     report3 = window.analyze_snapshot(arr3, find_objects=True)
     sc2.add(streamlines_actor)
     sc2.add(seedroi_actor)
-    arr4 = window.snapshot(sc2, "test_surface4.png", offscreen=True)
+    arr4 = window.snapshot(sc2, fname="test_surface4.png", offscreen=True)
     report4 = window.analyze_snapshot(arr4, find_objects=True)
 
     # assert that the seed ROI rendering is not far
@@ -132,9 +136,9 @@ def test_bundle_maps(rng):
         value_range=(1.0, 1),
     )
 
-    line = actor.line(bundle, metric, linewidth=0.1, lookup_colormap=lut)
+    line = actor.line(bundle, colors=metric, linewidth=0.1, lookup_colormap=lut)
     scene.add(line)
-    scene.add(actor.scalar_bar(lut, " "))
+    scene.add(actor.scalar_bar(lookup_table=lut))
 
     report = window.analyze_scene(scene)
 
@@ -147,7 +151,7 @@ def test_bundle_maps(rng):
     values = 100 * rng.random((nb_points))
     # values[:nb_points/2] = 0
 
-    line = actor.streamtube(bundle, values, linewidth=0.1, lookup_colormap=lut)
+    line = actor.streamtube(bundle, colors=values, linewidth=0.1, lookup_colormap=lut)
     scene.add(line)
     # window.show(scene)
 
@@ -159,7 +163,7 @@ def test_bundle_maps(rng):
     colors = rng.random((nb_points, 3))
     # values[:nb_points/2] = 0
 
-    line = actor.line(bundle, colors, linewidth=2)
+    line = actor.line(bundle, colors=colors, linewidth=2)
     scene.add(line)
     # window.show(scene)
 
@@ -173,8 +177,8 @@ def test_bundle_maps(rng):
 
     # try other input options for colors
     scene.clear()
-    actor.line(bundle, (1.0, 0.5, 0))
-    actor.line(bundle, np.arange(len(bundle)))
+    actor.line(bundle, colors=(1.0, 0.5, 0))
+    actor.line(bundle, colors=np.arange(len(bundle)))
     actor.line(bundle)
     colors = [rng.random(b.shape) for b in bundle]
     actor.line(bundle, colors=colors)
@@ -183,7 +187,7 @@ def test_bundle_maps(rng):
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_odf_slicer(interactive=False):
     # Prepare our data
-    sphere = get_sphere("repulsion100")
+    sphere = get_sphere(name="repulsion100")
     shape = (11, 11, 11, sphere.vertices.shape[0])
     odfs = np.ones(shape)
 
@@ -248,13 +252,13 @@ def test_odf_slicer(interactive=False):
     # Test that odf_slicer.display works properly
     scene.clear()
     scene.add(odf_actor)
-    scene.add(actor.axes((11, 11, 11)))
+    scene.add(actor.axes(scale=(11, 11, 11)))
     for i in range(11):
-        odf_actor.display(i, None, None)
+        odf_actor.display(x=i, y=None, z=None)
         if interactive:
             window.show(scene)
     for j in range(11):
-        odf_actor.display(None, j, None)
+        odf_actor.display(x=None, y=j, z=None)
         if interactive:
             window.show(scene)
 
@@ -296,7 +300,7 @@ def test_odf_slicer(interactive=False):
         actor.odf_slicer,
         odfs,
         mask=None,
-        sphere=get_sphere("repulsion200"),
+        sphere=get_sphere(name="repulsion200"),
         scale=0.25,
     )
 
@@ -339,7 +343,11 @@ def test_odf_slicer(interactive=False):
     # Dimension mismatch between sphere vertices and dimension of
     # B matrix will raise an error.
     npt.assert_raises(
-        ValueError, actor.odf_slicer, odfs, mask=None, sphere=get_sphere("repulsion200")
+        ValueError,
+        actor.odf_slicer,
+        odfs,
+        mask=None,
+        sphere=get_sphere(name="repulsion200"),
     )
 
     # Test that constant colormap color works. Also test that sphere
@@ -363,7 +371,7 @@ def test_odf_slicer(interactive=False):
         window.show(scene)
 
     # Test that we can change the sphere on an active actor
-    new_sphere = get_sphere("symmetric362")
+    new_sphere = get_sphere(name="symmetric362")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -390,7 +398,7 @@ def test_tensor_slicer(interactive=False):
     mevals[..., :] = evals
     mevecs[..., :, :] = evecs
 
-    sphere = get_sphere("symmetric724")
+    sphere = get_sphere(name="symmetric724")
 
     affine = np.eye(4)
     scene = window.Scene()

@@ -347,7 +347,10 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.wraparound(False)
 @cython.cdivision(True)
 def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
-    """Non-Local Means Denoising Using Blockwise Averaging
+    """Non-Local Means Denoising Using Blockwise Averaging.
+
+    See :footcite:p:`Coupe2008` and :footcite:p:`Coupe2012` for further details
+    about the method.
 
     Parameters
     ----------
@@ -378,14 +381,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
 
     References
     ----------
-    [1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-        Resonance Images"
-        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-
-    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
+    .. footbibliography::
 
     """
 

@@ -18,7 +18,7 @@ from dipy.workflows.tracking import LocalFiberTrackingPAMFlow, PFTrackingPAMFlow
 
 def test_particle_filtering_tracking_workflows():
     with TemporaryDirectory() as out_dir:
-        dwi_path, bval_path, bvec_path = get_fnames("small_64D")
+        dwi_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(dwi_path)
 
         # Create some mask
@@ -151,7 +151,7 @@ def test_particle_filtering_tracking_workflows():
 
 def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_64D")
+        data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, "tmp_mask.nii.gz")

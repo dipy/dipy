@@ -17,6 +17,7 @@ from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.mask import bounding_box, segment_from_cfa
 from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
@@ -175,6 +176,7 @@ class SNRinCCFlow(Workflow):
                 json.dump(data, myfile)
 
 
+@warning_for_keywords()
 def buan_bundle_profiles(
     model_bundle_folder,
     bundle_folder,
@@ -182,12 +184,15 @@ def buan_bundle_profiles(
     metric_folder,
     group_id,
     subject,
+    *,
     no_disks=100,
     out_dir="",
 ):
     """
     Applies statistical analysis on bundles and saves the results
     in a directory specified by ``out_dir``.
+
+    See :footcite:p:`Chandio2020a` for further details about the method.
 
     Parameters
     ----------
@@ -214,11 +219,7 @@ def buan_bundle_profiles(
 
     References
     ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
+    .. footbibliography::
 
     """
 
@@ -321,11 +322,14 @@ class BundleAnalysisTractometryFlow(Workflow):
     def get_short_name(cls):
         return "ba"
 
-    def run(self, model_bundle_folder, subject_folder, no_disks=100, out_dir=""):
+    @warning_for_keywords()
+    def run(self, model_bundle_folder, subject_folder, *, no_disks=100, out_dir=""):
         """Workflow of bundle analytics.
 
         Applies statistical analysis on bundles of subjects and saves the
         results in a directory specified by ``out_dir``.
+
+        See :footcite:p:`Chandio2020a` for further details about the method.
 
         Parameters
         ----------
@@ -346,11 +350,7 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
 
@@ -381,7 +381,14 @@ class BundleAnalysisTractometryFlow(Workflow):
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
                 buan_bundle_profiles(
-                    model_bundle_folder, b, c, d, group_id, sub, no_disks, out_dir
+                    model_bundle_folder,
+                    b,
+                    c,
+                    d,
+                    group_id,
+                    sub,
+                    no_disks=no_disks,
+                    out_dir=out_dir,
                 )
 
 
@@ -431,6 +438,7 @@ class LinearMixedModelsFlow(Workflow):
         title : string
             Title for the plot.
         bundle_name : string
+            Bundle name.
         x : list
             list containing segment/disk number for x-axis.
         y : list
@@ -481,7 +489,8 @@ class LinearMixedModelsFlow(Workflow):
         plt.savefig(plot_file)
         plt.clf()
 
-    def run(self, h5_files, no_disks=100, out_dir=""):
+    @warning_for_keywords()
+    def run(self, h5_files, *, no_disks=100, out_dir=""):
         """Workflow of linear Mixed Models.
 
         Applies linear Mixed Models on bundles of subjects and saves the
@@ -548,11 +557,14 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return "BS"
 
-    def run(self, subject_folder, clust_thr=(5, 3, 1.5), threshold=6, out_dir=""):
+    @warning_for_keywords()
+    def run(self, subject_folder, *, clust_thr=(5, 3, 1.5), threshold=6, out_dir=""):
         """Workflow of bundle analytics.
 
         Applies bundle shape similarity analysis on bundles of subjects and
         saves the results in a directory specified by ``out_dir``.
+
+        See :footcite:p:`Chandio2020a` for further details about the method.
 
         Parameters
         ----------
@@ -572,11 +584,7 @@ class BundleShapeAnalysis(Workflow):
 
         References
         ----------
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-        Garyfallidis, E. Bundle analytics, a computational framework for
-        investigating the shapes and profiles of brain pathways across
-        populations. Sci Rep 10, 17149 (2020)
+        .. footbibliography::
 
         """
         rng = np.random.default_rng()
@@ -631,7 +639,7 @@ class BundleShapeAnalysis(Workflow):
                     ).streamlines
 
                     ba_value = bundle_shape_similarity(
-                        bundle1, bundle2, rng, clust_thr, threshold
+                        bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
                     )
 
                     ba_matrix[i][j] = ba_value

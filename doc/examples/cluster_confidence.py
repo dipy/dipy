@@ -5,7 +5,7 @@ Calculation of Outliers with Cluster Confidence Index
 
 This is an outlier scoring method that compares the pathways of each streamline
 in a bundle (pairwise) and scores each streamline by how many other streamlines
-have similar pathways. The details can be found in [Jordan_2018_plm]_.
+have similar pathways. The details can be found in :footcite:p:`Jordan2018`.
 
 """
 
@@ -29,13 +29,13 @@ from dipy.viz import actor, window
 # description of these steps, please refer to the CSA Probabilistic Tracking
 # and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine = load_nifti(hardi_fname)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 csa_model = CsaOdfModel(gtab, sh_order_max=6)
@@ -87,11 +87,11 @@ lut_cmap = actor.colormap_lookup_table(
     scale_range=(cci.min(), cci.max() / 4), hue_range=hue, saturation_range=saturation
 )
 
-bar3 = actor.scalar_bar(lut_cmap)
+bar3 = actor.scalar_bar(lookup_table=lut_cmap)
 scene.add(bar3)
 
 stream_actor = actor.line(
-    long_streamlines, cci, linewidth=0.1, lookup_colormap=lut_cmap
+    long_streamlines, colors=cci, linewidth=0.1, lookup_colormap=lut_cmap
 )
 scene.add(stream_actor)
 
@@ -102,7 +102,7 @@ scene.add(stream_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -153,7 +153,7 @@ scene.add(keep_streamlines_actor)
 interactive = False
 if interactive:
     window.show(scene)
-window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
+window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -164,6 +164,5 @@ window.record(scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
 # References
 # ----------
 #
-# .. [Jordan_2018_plm] Jordan, K., Amirbekian, B., Keshavan, A., Henry, R.G.
-# "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
-# for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.
+# .. footbibliography::
+#

@@ -6,6 +6,8 @@ import math
 import numpy as np
 import numpy.linalg as npl
 
+from dipy.testing.decorators import warning_for_keywords
+
 # epsilon for testing whether a number is close to zero
 _EPS = np.finfo(float).eps * 4.0
 
@@ -165,7 +167,8 @@ def sph2latlon(theta, phi):
     return np.rad2deg(theta - np.pi / 2), np.rad2deg(phi - np.pi)
 
 
-def normalized_vector(vec, axis=-1):
+@warning_for_keywords()
+def normalized_vector(vec, *, axis=-1):
     """Return vector divided by its Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -193,10 +196,11 @@ def normalized_vector(vec, axis=-1):
     True
 
     """
-    return vec / vector_norm(vec, axis, keepdims=True)
+    return vec / vector_norm(vec, axis=axis, keepdims=True)
 
 
-def vector_norm(vec, axis=-1, keepdims=False):
+@warning_for_keywords()
+def vector_norm(vec, *, axis=-1, keepdims=False):
     """Return vector Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -243,40 +247,60 @@ def vector_norm(vec, axis=-1, keepdims=False):
 
 
 def rodrigues_axis_rotation(r, theta):
-    """Rodrigues formula
+    r"""Rodrigues formula
 
-    Rotation matrix for rotation around axis r for angle theta.
+    Rotation matrix for rotation around axis `r` for angle `theta`.
 
     The rotation matrix is given by the Rodrigues formula:
 
-    R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
+    .. math::
+        :nowrap:
 
-    with::
+        \mathbf{R} = \mathbf{I} + \sin(\theta)*\mathbf{S}_n +
+        (1-\cos(\theta))*\mathbf{S}_n^2
 
-             0  -nz  ny
-      Sn =   nz   0 -nx
-            -ny  nx   0
+    with:
 
-    where n = r / ||r||
+    .. math::
 
-    In case the angle ||r|| is very small, the above formula may lead
+        Sn =
+        \begin{pmatrix}
+            0 & -n{z} & n{y} \\
+            n{z} & 0 & -n{x} \\
+            -n{y} & n{x} & 0
+        \end{pmatrix}
+
+    where :math:`n = r / ||r||`
+
+    In case the angle :math:`||r||` is very small, the above formula may lead
     to numerical instabilities. We instead use a Taylor expansion
-    around theta=0:
+    around :math:`theta=0`:
 
-    R = I + sin(theta)/tetha Sr + (1-cos(theta))/teta2 Sr^2
+    .. math::
+        :nowrap:
+
+        R = I + \sin(\theta)/\theta \mathbf{S}_r +
+        (1-\cos(\theta))/\theta^2 \mathbf{S}_r^2
 
     leading to:
 
-    R = I + (1-theta2/6)*Sr + (1/2-theta2/24)*Sr^2
+    .. math::
+        :nowrap:
+
+        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_r +
+        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_r^2
 
     Parameters
     ----------
-    r :  array_like shape (3,), axis
-    theta : float, angle in degrees
+    r :  array_like shape (3,)
+        Axis.
+    theta : float
+        Angle in degrees.
 
     Returns
     -------
-    R : array, shape (3,3), rotation matrix
+    R : array, shape (3,3)
+        Rotation matrix.
 
     Examples
     --------
@@ -303,7 +327,9 @@ def rodrigues_axis_rotation(r, theta):
 
 
 def nearest_pos_semi_def(B):
-    """Least squares positive semi-definite tensor estimation
+    """Least squares positive semi-definite tensor estimation.
+
+    See :footcite:p:`Niethammer2006` for further details about the method.
 
     Parameters
     ----------
@@ -325,10 +351,7 @@ def nearest_pos_semi_def(B):
 
     References
     ----------
-    .. [1] Niethammer M, San Jose Estepar R, Bouix S, Shenton M, Westin CF.
-           On diffusion tensor estimation. Conf Proc IEEE Eng Med Biol Soc.
-           2006;1:2622-5. PubMed PMID: 17946125; PubMed Central PMCID:
-           PMC2791793.
+    .. footbibliography::
 
     """
     B = np.asarray(B)
@@ -363,7 +386,8 @@ def nearest_pos_semi_def(B):
     return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))
 
 
-def sphere_distance(pts1, pts2, radius=None, check_radius=True):
+@warning_for_keywords()
+def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
     """Distance across sphere surface between `pts1` and `pts2`
 
     Parameters
@@ -564,7 +588,8 @@ def lambert_equal_area_projection_cart(x, y, z):
     return lambert_equal_area_projection_polar(theta, phi)
 
 
-def euler_matrix(ai, aj, ak, axes="sxyz"):
+@warning_for_keywords()
+def euler_matrix(ai, aj, ak, *, axes="sxyz"):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
 
     Code modified from the work of Christoph Gohlke, link provided here
@@ -585,17 +610,17 @@ def euler_matrix(ai, aj, ak, axes="sxyz"):
     Examples
     --------
     >>> import numpy
-    >>> R = euler_matrix(1, 2, 3, 'syxz')
+    >>> R = euler_matrix(1, 2, 3, axes='syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
     True
-    >>> R = euler_matrix(1, 2, 3, (0, 1, 0, 1))
+    >>> R = euler_matrix(1, 2, 3, axes=(0, 1, 0, 1))
     >>> numpy.allclose(numpy.sum(R[0]), -0.383436184)
     True
     >>> ai, aj, ak = (4.0*math.pi) * (numpy.random.random(3) - 0.5)
     >>> for axes in _AXES2TUPLE.keys():
-    ...    _ = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes=axes)
     >>> for axes in _TUPLE2AXES.keys():
-    ...    _ = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes=axes)
 
     """
     try:
@@ -641,8 +666,9 @@ def euler_matrix(ai, aj, ak, axes="sxyz"):
     return M
 
 
+@warning_for_keywords()
 def compose_matrix(
-    scale=None, shear=None, angles=None, translate=None, perspective=None
+    *, scale=None, shear=None, angles=None, translate=None, perspective=None
 ):
     """Return 4x4 transformation matrix from sequence of
     transformations.
@@ -680,7 +706,9 @@ def compose_matrix(
     >>> angles = (np.random.random(3) - 0.5) * (2*math.pi)
     >>> trans = np.random.random(3) - 0.5
     >>> persp = np.random.random(4) - 0.5
-    >>> M0 = gm.compose_matrix(scale, shear, angles, trans, persp)
+    >>> M0 = gm.compose_matrix(
+    ...     scale=scale, shear=shear, angles=angles, translate=trans, perspective=persp
+    ... )
 
     """
     M = np.identity(4)
@@ -693,7 +721,7 @@ def compose_matrix(
         T[:3, 3] = translate[:3]
         M = np.dot(M, T)
     if angles is not None:
-        R = euler_matrix(angles[0], angles[1], angles[2], "sxyz")
+        R = euler_matrix(angles[0], angles[1], angles[2], axes="sxyz")
         M = np.dot(M, R)
     if shear is not None:
         Z = np.identity(4)
@@ -933,7 +961,8 @@ def compose_transformations(*mats):
     return prev
 
 
-def perpendicular_directions(v, num=30, half=False):
+@warning_for_keywords()
+def perpendicular_directions(v, *, num=30, half=False):
     r"""Computes n evenly spaced perpendicular directions relative to a given
     vector v
 
@@ -959,18 +988,19 @@ def perpendicular_directions(v, num=30, half=False):
     Perpendicular directions are estimated using the following two step
     procedure:
 
-        1) the perpendicular directions are first sampled in a unit
-        circumference parallel to the plane normal to the x-axis.
+    1) the perpendicular directions are first sampled in a unit
+       circumference parallel to the plane normal to the x-axis.
 
-        2) Samples are then rotated and aligned to the plane normal to vector
-        v. The rotational matrix for this rotation is constructed as reference
-        frame basis which axis are the following:
-            - The first axis is vector v
-            - The second axis is defined as the normalized vector given by the
-            cross product between vector v and the unit vector aligned to the
-            x-axis
-            - The third axis is defined as the cross product between the
-            previous computed vector and vector v.
+    2) Samples are then rotated and aligned to the plane normal to vector
+       v. The rotational matrix for this rotation is constructed as reference
+       frame basis which axis are the following:
+
+       - The first axis is vector v
+       - The second axis is defined as the normalized vector given by the
+         cross product between vector v and the unit vector aligned to the
+         x-axis
+       - The third axis is defined as the cross product between the
+         previous computed vector and vector v.
 
     Following this two steps, coordinates of the final perpendicular directions
     are given as:

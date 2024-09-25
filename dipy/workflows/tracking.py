@@ -152,6 +152,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         This workflow use a saved peaks and metrics (PAM) file as input.
 
+        See :footcite:p:`Garyfallidis2012b` and :footcite:p:`Amirbekian2016`
+        for further details about the method.
+
         Parameters
         ----------
         pam_files : string
@@ -199,8 +202,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Garyfallidis, University of Cambridge, PhD thesis 2012.
-        Amirbekian, University of California San Francisco, PhD thesis 2017.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -252,7 +254,9 @@ class PFTrackingPAMFlow(Workflow):
     ):
         """Workflow for Particle Filtering Tracking.
 
-        This workflow use a saved peaks and metrics (PAM) file as input.
+        This workflow uses a saved peaks and metrics (PAM) file as input.
+
+        See :footcite:p:`Girard2014` for further details about the method.
 
         Parameters
         ----------
@@ -306,9 +310,7 @@ class PFTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M. Towards
-        quantitative connectivity analysis: reducing tractography biases.
-        NeuroImage, 98, 266-278, 2014.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()

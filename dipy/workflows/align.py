@@ -22,9 +22,6 @@ from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
 
-if have_pd:
-    import pandas as pd
-
 
 def check_dimensions(static, moving):
     """Check the dimensions of the input images.
@@ -111,7 +108,7 @@ class ResliceFlow(Workflow):
                 affine,
                 vox_sz,
                 new_vox_size,
-                order,
+                order=order,
                 mode=mode,
                 cval=cval,
                 num_processes=num_processes,
@@ -149,10 +146,16 @@ class SlrWithQbxFlow(Workflow):
         For efficiency we apply the registration on cluster centroids and
         remove small clusters.
 
+        See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015`,
+        :footcite:p:`Garyfallidis2018` for further details.
+
         Parameters
         ----------
         static_files : string
+            List of reference/fixed bundle tractograms.
         moving_files : string
+            List of target bundle tractograms that will be moved/registered to
+            match the static bundles.
         x0 : string, optional
             rigid, similarity or affine transformation model.
         rm_small_clusters : int, optional
@@ -163,7 +166,7 @@ class SlrWithQbxFlow(Workflow):
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is
             used if it is set, otherwise all available threads are used. If
-            < 0 the maximal number of threads minus |num_threads + 1| is used
+            < 0 the maximal number of threads minus $|num_threads + 1|$ is used
             (enter -1 to use as many threads as possible). 0 raises an error.
             Only metrics using OpenMP will use this variable.
         greater_than : int, optional
@@ -174,6 +177,7 @@ class SlrWithQbxFlow(Workflow):
         nb_pts : int, optional
             Number of points for discretizing each streamline.
         progressive : boolean, optional
+            True to enable progressive registration.
         out_dir : string, optional
             Output directory. (default current directory)
         out_moved : string, optional
@@ -192,20 +196,11 @@ class SlrWithQbxFlow(Workflow):
         The order of operations is the following. First short or long
         streamlines are removed. Second the tractogram or a random selection
         of the tractogram is clustered with QuickBundlesX. Then SLR
-        [Garyfallidis15]_ is applied.
+        :footcite:p:`Garyfallidis2015` is applied.
 
         References
         ----------
-        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-        registration of white-matter fascicles in the space of
-        streamlines", NeuroImage, 117, 124--140, 2015
-
-        .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-        bundle alignment for group comparisons", ISMRM, 2014.
-
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-        bundles using local and global streamline-based registration
-        and clustering, NeuroImage, 2017.
+        .. footbibliography::
         """
 
         io_it = self.get_io_iterator()
@@ -234,7 +229,7 @@ class SlrWithQbxFlow(Workflow):
             moved, affine, centroids_static, centroids_moving = slr_with_qbx(
                 static,
                 moving,
-                x0,
+                x0=x0,
                 rm_small_clusters=rm_small_clusters,
                 greater_than=greater_than,
                 less_than=less_than,
@@ -323,26 +318,26 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            com: center of mass, trans: translation, rigid: rigid body,
-            rigid_isoscaling: rigid body + isotropic scaling, rigid_scaling:
-            rigid body + scaling, affine: full affine including translation,
-            rotation, shearing and scaling.
+            ``'com'``: center of mass; ``'trans'``: translation; ``'rigid'``:
+            rigid body; ``'rigid_isoscaling'``: rigid body + isotropic scaling,
+            ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
+            including translation, rotation, shearing and scaling.
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF.
 
         sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF.
-             'None' implies all voxels.
+            Number ([0-100]) of voxels for calculating the PDF. None implies all
+            voxels.
 
         metric : string, optional
-            Similarity metric for gathering mutual information).
+            Similarity metric for gathering mutual information.
 
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
-             `level_iters[0]` corresponds to the coarsest scale,
-             `level_iters[-1]` the finest, where n is the length of the
-              sequence.
+            `level_iters[0]` corresponds to the coarsest scale,
+            `level_iters[-1]` the finest, where n is the length of the
+            sequence.
 
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
@@ -382,8 +377,7 @@ class ImageRegistrationFlow(Workflow):
             Name for the saved affine matrix.
 
         out_quality : string, optional
-            Name of the file containing the saved quality
-             metric.
+            Name of the file containing the saved quality metric.
         """
 
         io_it = self.get_io_iterator()
@@ -450,14 +444,14 @@ class ImageRegistrationFlow(Workflow):
                 moved_image, affine_matrix = affine_registration(
                     moving,
                     static,
-                    moving_grid2world,
-                    static_grid2world,
-                    pipeline,
-                    starting_affine,
-                    metric,
-                    level_iters,
-                    sigmas,
-                    factors,
+                    moving_affine=moving_grid2world,
+                    static_affine=static_grid2world,
+                    pipeline=pipeline,
+                    starting_affine=starting_affine,
+                    metric=metric,
+                    level_iters=level_iters,
+                    sigmas=sigmas,
+                    factors=factors,
                     nbins=nbins,
                     sampling_proportion=sampling_prop,
                 )
@@ -465,14 +459,14 @@ class ImageRegistrationFlow(Workflow):
                 moved_image, affine_matrix, xopt, fopt = affine_registration(
                     moving,
                     static,
-                    moving_grid2world,
-                    static_grid2world,
-                    pipeline,
-                    starting_affine,
-                    metric,
-                    level_iters,
-                    sigmas,
-                    factors,
+                    moving_affine=moving_grid2world,
+                    static_affine=static_grid2world,
+                    pipeline=pipeline,
+                    starting_affine=starting_affine,
+                    metric=metric,
+                    level_iters=level_iters,
+                    sigmas=sigmas,
+                    factors=factors,
                     ret_metric=True,
                     nbins=nbins,
                     sampling_proportion=sampling_prop,
@@ -512,7 +506,7 @@ class ApplyTransformFlow(Workflow):
             folder containing multiple images.
 
         transform_map_file : string
-            For the affine case, it should be a text(*.txt) file containing
+            For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
             field in each voxel with this shape (x, y, z, 3, 2).
@@ -834,9 +828,9 @@ class SynRegistrationFlow(Workflow):
             mapping = sdr.optimize(
                 static_image,
                 moving_image,
-                static_grid2world,
-                moving_grid2world,
-                prealign,
+                static_grid2world=static_grid2world,
+                moving_grid2world=moving_grid2world,
+                prealign=prealign,
             )
 
             mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
@@ -915,7 +909,7 @@ class MotionCorrectionFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
 
             reg_img, reg_affines = motion_correction(
@@ -956,8 +950,8 @@ class BundleWarpFlow(Workflow):
     ):
         """BundleWarp: streamline-based nonlinear registration.
 
-        BundleWarp is nonrigid registration method for deformable registration
-        of white matter tracts.
+        BundleWarp :footcite:p:`Chandio2023` is a nonrigid registration method
+        for deformable registration of white matter tracts.
 
         Parameters
         ----------
@@ -973,13 +967,13 @@ class BundleWarpFlow(Workflow):
             deformations. It is represented with λ in BundleWarp paper. NOTE:
             setting alpha<=0.01 will result in highly deformable registration
             that could extremely modify the original anatomy of the moving
-            bundle. (default 0.3)
+            bundle.
         beta : int, optional
             Represents the strength of the interaction between points
-            Gaussian kernel size. (default 20)
+            Gaussian kernel size.
         max_iter : int, optional
             Maximum number of iterations for deformation process in ml-CPD
-            method. (default 15)
+            method.
         affine : boolean, optional
             If False, use rigid registration as starting point. (default True)
         out_dir : string, optional
@@ -995,13 +989,12 @@ class BundleWarpFlow(Workflow):
         out_dist : string, optional
             Filename of MDF distance matrix.
         out_matched_pairs : string, optional
-            Filename of matched pairs; treamline correspondences between two
+            Filename of matched pairs; streamline correspondences between two
             bundles.
 
         References
         ----------
-         .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01.
+        .. footbibliography::
         """
 
         logging.info(f"Loading static file {static_file}")
@@ -1013,8 +1006,8 @@ class BundleWarpFlow(Workflow):
         static, _ = static_obj.streamlines, static_obj.header
         moving, moving_header = moving_obj.streamlines, moving_obj.header
 
-        static = set_number_of_points(static, 20)
-        moving = set_number_of_points(moving, 20)
+        static = set_number_of_points(static, nb_points=20)
+        moving = set_number_of_points(moving, nb_points=20)
 
         deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
             static,
@@ -1042,13 +1035,11 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        df = pd.DataFrame(warp, columns=["transforms", "gaussian_kernel"])
-
         logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
         logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
         logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)

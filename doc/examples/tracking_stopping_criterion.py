@@ -14,8 +14,8 @@ the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
 'LocalTracking' generator can be set to output all generated streamlines
-or only the 'valid' ones. See Girard et al. (2004) [Girard2014]_ and Smith et
-al.(2012) [Smith2012]_ for more details on these methods.
+or only the 'valid' ones. See :footcite:t:`Girard2014` and
+:footcite:p:`Smith2012` for more details on these methods.
 
 This example is an extension of the
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_deterministic.py`
@@ -50,14 +50,14 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-_, _, f_pve_wm = get_fnames("stanford_pve_maps")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+_, _, f_pve_wm = get_fnames(name="stanford_pve_maps")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = load_nifti_data(f_pve_wm)
 
@@ -91,13 +91,14 @@ dg = DeterministicMaximumDirectionGetter.from_shcoeff(
 # **Stopping States**
 #
 # - 'ENDPOINT': stops at a position where metric_map < threshold; the
-# streamline reached the target stopping area.
+#   streamline reached the target stopping area.
 # - 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
-# reached an area outside the image where no direction data is available.
+#   reached an area outside the image where no direction data is available.
 # - 'TRACKPOINT': stops at a position because no direction is available; the
-# streamline is stopping where metric_map >= threshold, but there is no valid
-# direction to follow.
+#   streamline is stopping where metric_map >= threshold, but there is no valid
+#   direction to follow.
 # - 'INVALIDPOINT': N/A.
+#
 
 tensor_model = TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
@@ -133,9 +134,9 @@ save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -163,13 +164,14 @@ if has_fury:
 # **Stopping States**
 #
 # - 'ENDPOINT': stops at a position where mask = 0; the streamline
-# reached the target stopping area.
+#   reached the target stopping area.
 # - 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
-# reached an area outside the image where no direction data is available.
+#   reached an area outside the image where no direction data is available.
 # - 'TRACKPOINT': stops at a position because no direction is available; the
-# streamline is stopping where mask > 0, but there is no valid direction to
-# follow.
+#   streamline is stopping where mask > 0, but there is no valid direction to
+#   follow.
 # - 'INVALIDPOINT': N/A.
+#
 
 binary_criterion = BinaryStoppingCriterion(white_matter == 1)
 
@@ -200,9 +202,9 @@ save_trk(sft, "tractogram_deterministic_binary_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -217,9 +219,9 @@ if has_fury:
 #
 # ACT Stopping Criterion
 # ======================
-# Anatomically-constrained tractography (ACT) [Smith2012]_ uses information
-# from anatomical images to determine when the tractography stops. The
-# ``include_map`` defines when the streamline reached a 'valid' stopping
+# Anatomically-constrained tractography (ACT) :footcite:p:`Smith2012` uses
+# information from anatomical images to determine when the tractography stops.
+# The ``include_map`` defines when the streamline reached a 'valid' stopping
 # region (e.g. gray matter partial volume estimation (PVE) map) and the
 # ``exclude_map`` defines when the streamline reached an 'invalid' stopping
 # region (e.g. corticospinal fluid PVE map). The background of the anatomical
@@ -235,17 +237,18 @@ if has_fury:
 # **Stopping States**
 #
 # - 'ENDPOINT': stops at a position where ``include_map`` > 0.5; the streamline
-# reached the target stopping area.
+#   reached the target stopping area.
 # - 'OUTSIDEIMAGE': stops at a position outside of ``include_map`` or
-# ``exclude_map``; the streamline reached an area outside the image where no
-# direction data is available.
+#   ``exclude_map``; the streamline reached an area outside the image where no
+#   direction data is available.
 # - 'TRACKPOINT': stops at a position because no direction is available; the
-# streamline is stopping where ``include_map`` < 0.5 and ``exclude_map`` < 0.5,
-# but there is no valid direction to follow.
+#   streamline is stopping where ``include_map`` < 0.5 and
+#   ``exclude_map`` < 0.5, but there is no valid direction to follow.
 # - 'INVALIDPOINT': ``exclude_map`` > 0.5; the streamline reach a position
-# which is anatomically not plausible.
+#   which is anatomically not plausible.
+#
 
-f_pve_csf, f_pve_gm, f_pve_wm = get_fnames("stanford_pve_maps")
+f_pve_csf, f_pve_gm, f_pve_wm = get_fnames(name="stanford_pve_maps")
 pve_csf_data = load_nifti_data(f_pve_csf)
 pve_gm_data = load_nifti_data(f_pve_gm)
 pve_wm_data = load_nifti_data(f_pve_wm)
@@ -297,9 +300,9 @@ save_trk(sft, "tractogram_deterministic_act_all.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -319,9 +322,9 @@ save_trk(sft, "tractogram_deterministic_act_valid.trk")
 
 if has_fury:
     scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
     window.record(
-        scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
+        scene=scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -346,17 +349,11 @@ if has_fury:
 # Currently,the proposed method that cuts streamlines going through
 # subcortical gray matter regions is not implemented. The
 # backtracking technique for streamlines reaching INVALIDPOINT is not
-# implemented either [Smith2012]_.
+# implemented either :footcite:p:`Smith2012`.
 #
 #
 # References
 # ----------
 #
-# .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-#     Anatomically-constrained tractography: Improved diffusion MRI
-#     streamlines tractography through effective use of anatomical
-#     information. NeuroImage, 63(3), 1924-1938, 2012.
+# .. footbibliography::
 #
-# .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-#     Towards quantitative connectivity analysis: reducing tractography biases.
-#     NeuroImage, 98, 266-278, 2014.

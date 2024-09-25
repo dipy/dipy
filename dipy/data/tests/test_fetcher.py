@@ -16,11 +16,11 @@ def test_check_md5():
     fd, fname = tempfile.mkstemp()
     stored_md5 = fetcher._get_file_md5(fname)
     # If all is well, this shouldn't return anything:
-    npt.assert_equal(fetcher.check_md5(fname, stored_md5), None)
+    npt.assert_equal(fetcher.check_md5(fname, stored_md5=stored_md5), None)
     # If None is provided as input, it should silently not check either:
-    npt.assert_equal(fetcher.check_md5(fname, None), None)
+    npt.assert_equal(fetcher.check_md5(fname, stored_md5=None), None)
     # Otherwise, it will raise its exception class:
-    npt.assert_raises(fetcher.FetcherError, fetcher.check_md5, fname, "foo")
+    npt.assert_raises(fetcher.FetcherError, fetcher.check_md5, fname, stored_md5="foo")
 
 
 def test_make_fetcher():

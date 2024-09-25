@@ -13,7 +13,7 @@ can integrate along those directions to build a complete representation of that
 structure. Local fiber tracking is widely used in the field of diffusion MRI
 because it is simple and robust.
 
-In order to perform local fiber tracking, three things are needed::
+In order to perform local fiber tracking, three things are needed:
 
 1. A method for getting directions from a diffusion dataset.
 2. A method for identifying when the tracking must stop.
@@ -50,13 +50,13 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # This dataset provides a label map in which all white matter tissues are
@@ -96,10 +96,12 @@ csa_peaks = peaks_from_model(
 if has_fury:
     scene = window.Scene()
     scene.add(
-        actor.peak_slicer(csa_peaks.peak_dirs, csa_peaks.peak_values, colors=None)
+        actor.peak_slicer(
+            csa_peaks.peak_dirs, peaks_values=csa_peaks.peak_values, colors=None
+        )
     )
 
-    window.record(scene, out_path="csa_direction_field.png", size=(900, 900))
+    window.record(scene=scene, out_path="csa_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
@@ -156,7 +158,7 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 ###############################################################################
 # Finally, we can bring it all together using ``LocalTracking``, using
-# the EuDX algorithm [Garyfallidis12]_. ``EuDX`` [Garyfallidis12]_ is a fast
+# the EuDX algorithm :footcite:p:`Garyfallidis2012b`. ``EuDX`` is a fast
 # algorithm that we use here to generate streamlines. This algorithm is what is
 # used here and the default option when providing the output of peaks directly
 # in LocalTracking.
@@ -176,14 +178,16 @@ if has_fury:
     # Prepare the display objects.
     color = colormap.line_colors(streamlines)
 
-    streamlines_actor = actor.line(streamlines, colormap.line_colors(streamlines))
+    streamlines_actor = actor.line(
+        streamlines, colors=colormap.line_colors(streamlines)
+    )
 
     # Create the 3D display.
     scene = window.Scene()
     scene.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(scene, out_path="tractogram_EuDX.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_EuDX.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -205,5 +209,6 @@ save_trk(sft, "tractogram_EuDX.trk", streamlines)
 ###############################################################################
 # References
 # ----------
-# .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography"
-# PhD thesis, University of Cambridge, 2012.
+#
+# .. footbibliography::
+#

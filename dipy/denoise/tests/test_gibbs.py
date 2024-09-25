@@ -110,7 +110,7 @@ def test_gibbs_3d():
     image3d[:, :, 0] = image_gibbs
     image3d[:, :, 1] = image_gibbs
 
-    image3d_cor = gibbs_removal(image3d, 2)
+    image3d_cor = gibbs_removal(image3d, slice_axis=2)
     assert_array_almost_equal(image3d_cor[:, :, 0], image_cor)
     assert_array_almost_equal(image3d_cor[:, :, 1], image_cor)
 
@@ -177,7 +177,7 @@ def test_swapped_gibbs_4d():
 def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))
     assert_raises(ValueError, gibbs_removal, np.ones(2))
-    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), slice_axis=3)
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
     # Test for valid num_processes
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), num_processes="1")

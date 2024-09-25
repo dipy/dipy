@@ -1,5 +1,6 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 
@@ -27,7 +28,8 @@ def load_polydata(file_name):
     return fury.io.load_polydata(file_name)
 
 
-def save_polydata(polydata, file_name, binary=False, color_array_name=None):
+@warning_for_keywords()
+def save_polydata(polydata, file_name, *, binary=False, color_array_name=None):
     """Save a vtk polydata to a supported format file.
 
     Save formats can be VTK, VTP, FIB, PLY, STL and XML.
@@ -46,7 +48,8 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     )
 
 
-def save_vtk_streamlines(streamlines, filename, to_lps=True, binary=False):
+@warning_for_keywords()
+def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
     """Save streamlines as vtk polydata to a supported format file.
 
     File formats can be OBJ, VTK, VTP, FIB, PLY, STL and XML
@@ -75,7 +78,8 @@ def save_vtk_streamlines(streamlines, filename, to_lps=True, binary=False):
     save_polydata(polydata, file_name=filename, binary=binary)
 
 
-def load_vtk_streamlines(filename, to_lps=True):
+@warning_for_keywords()
+def load_vtk_streamlines(filename, *, to_lps=True):
     """Load streamlines from vtk polydata.
 
     Load formats can be VTK, FIB

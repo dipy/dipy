@@ -37,11 +37,11 @@ def test_track_volumes():
     tracks = ([[0, 0, 0], [0, 1, 1]],)
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
-    tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])
+    tcs, tes = tvo.track_counts(tracks, vol_dims, vox_sizes=[1, 1, 1])
     assert_array_equal(tcs, ex_counts)
     assert_array_equal(tes, ex_els)
     # check only counts returned for return_elements=False
-    tcs = tvo.track_counts(tracks, vol_dims, [1, 1, 1], False)
+    tcs = tvo.track_counts(tracks, vol_dims, vox_sizes=[1, 1, 1], return_elements=False)
     assert_array_equal(tcs, ex_counts)
 
     # non-unique points, non-integer points, points outside
@@ -52,7 +52,7 @@ def test_track_volumes():
     )
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
-    tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])
+    tcs, tes = tvo.track_counts(tracks, vol_dims, vox_sizes=[1, 1, 1])
     assert_array_equal(tcs, ex_counts)
     assert_array_equal(tes, ex_els)
     # points with non-unit voxel sizes
@@ -60,6 +60,6 @@ def test_track_volumes():
     float_tracks = []
     for t in tracks:
         float_tracks.append(t * vox_sizes)
-    tcs, tes = tvo.track_counts(float_tracks, vol_dims, vox_sizes)
+    tcs, tes = tvo.track_counts(float_tracks, vol_dims, vox_sizes=vox_sizes)
     assert_array_equal(tcs, ex_counts)
     assert_array_equal(tes, ex_els)

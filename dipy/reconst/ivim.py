@@ -7,6 +7,7 @@ from scipy.optimize import differential_evolution, least_squares
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -129,7 +130,8 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method="trr", **kwargs):
+@warning_for_keywords()
+def ivim_model_selector(gtab, *, fit_method="trr", **kwargs):
     """
     Selector function to switch between the 2-stage Trust-Region Reflective
     based NLLS fitting method (also containing the linear fit): `trr` and the
@@ -171,9 +173,11 @@ IvimModel = ivim_model_selector
 class IvimModelTRR(ReconstModel):
     """Ivim model"""
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         split_b_D=400.0,
         split_b_S0=200.0,
         bounds=None,
@@ -188,20 +192,18 @@ class IvimModelTRR(ReconstModel):
         r"""
         Initialize an IVIM model.
 
-        The IVIM model assumes that biological tissue includes a volume
-        fraction 'f' of water flowing with a pseudo-diffusion coefficient
-        D* and a fraction (1-f) of static (diffusion only), intra and
-        extracellular water, with a diffusion coefficient D. In this model
-        the echo attenuation of a signal in a single voxel can be written as
+        The IVIM model footcite:p:`LeBihan1988`, :footcite:p:`Federau2012`
+        assumes that biological tissue includes a volume fraction 'f' of water
+        flowing with a pseudo-diffusion coefficient D* and a fraction (1-f) of
+        static (diffusion only), intra and extracellular water, with a diffusion
+        coefficient D. In this model the echo attenuation of a signal in a
+        single voxel can be written as
 
-            .. math::
+        .. math::
 
             S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
 
-            Where:
-            .. math::
-
-            S_0, f, D\* and D are the IVIM parameters.
+        where $S_0$, $f$, $D\*$ and $D$ are the IVIM parameters.
 
         Parameters
         ----------
@@ -213,13 +215,11 @@ class IvimModelTRR(ReconstModel):
             used while estimating the value of D. The assumption is that at
             higher b values the effects of perfusion is less and hence the
             signal can be approximated as a mono-exponential decay.
-            default : 400.
 
         split_b_S0 : float, optional
             The b-value to split the data on for two-stage fit for estimation
             of S0 and initial guess for D_star. The assumption here is that
             at low bvalues the effects of perfusion are more.
-            default : 200.
 
         bounds : tuple of arrays with 4 elements, optional
             Bounds to constrain the fitted model parameters. This is only
@@ -234,41 +234,30 @@ class IvimModelTRR(ReconstModel):
             parameters after the linear fitting by splitting the data based on
             bvalues. This gives more accurate parameters but takes more time.
             The linear fit can be used to get a quick estimation of the
-            parameters. default : False
+            parameters.
 
         tol : float, optional
             Tolerance for convergence of minimization.
-            default : 1e-15
 
         x_scale : array-like, optional
             Scaling for the parameters. This is passed to `least_squares` which
             is only available for Scipy version > 0.17.
-            default: [1000, 0.01, 0.001, 0.0001]
 
         gtol : float, optional
             Tolerance for termination by the norm of the gradient.
-            default : 1e-15
 
         ftol : float, optional
             Tolerance for termination by the change of the cost function.
-            default : 1e-15
 
         eps : float, optional
             Step size used for numerical approximation of the jacobian.
-            default : 1e-15
 
         maxiter : int, optional
             Maximum number of iterations to perform.
-            default : 1000
 
         References
         ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
-               in intravoxel incoherent motion MR imaging." Radiology 168.2
-               (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
-               perfusion with intravoxel incoherent motion MR imaging."
-               Radiology 265.3 (2012): 874-881.
+        .. footbibliography::
         """
         if not np.any(gtab.b0s_mask):
             e_s = "No measured signal at bvalue == 0."
@@ -297,7 +286,7 @@ class IvimModelTRR(ReconstModel):
         self.bounds = bounds or BOUNDS
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         """Fit method of the IvimModelTRR class.
 
         The fitting takes place in the following steps: Linear fitting for D
@@ -359,7 +348,8 @@ class IvimModelTRR(ReconstModel):
         else:
             return IvimFit(self, params_linear)
 
-    def estimate_linear_fit(self, data, split_b, less_than=True):
+    @warning_for_keywords()
+    def estimate_linear_fit(self, data, split_b, *, less_than=True):
         """Estimate a linear fit by taking log of data.
 
         Parameters
@@ -447,7 +437,8 @@ class IvimModelTRR(ReconstModel):
             f, D_star = params_f_D_star
             return f, D_star
 
-    def predict(self, ivim_params, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, ivim_params, gtab, *, S0=1.0):
         """
         Predict a signal for this IvimModel class instance given parameters.
 
@@ -523,8 +514,12 @@ class IvimModelTRR(ReconstModel):
 
 
 class IvimModelVP(ReconstModel):
-    def __init__(self, gtab, bounds=None, maxiter=10, xtol=1e-8):
+    @warning_for_keywords()
+    def __init__(self, gtab, *, bounds=None, maxiter=10, xtol=1e-8):
         r"""Initialize an IvimModelVP class.
+
+        See :footcite:p:`LeBihan1988`, :footcite:p:`Federau2012` and
+        :footcite:p:`Fadnavis2019` for further details about the model.
 
         The IVIM model assumes that biological tissue includes a volume
         fraction 'f' of water flowing with a pseudo-diffusion coefficient
@@ -533,37 +528,22 @@ class IvimModelVP(ReconstModel):
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
 
-            .. math::
+        .. math::
 
             S(b) = S_0*[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
 
-            Where:
-            .. math::
-
-            S_0, f, D\* and D are the IVIM parameters.
-
+        where $S_0$, $f$, $D\*$ and $D$ are the IVIM parameters.
 
         maxiter: int, optional
             Maximum number of iterations for the Differential Evolution in
             SciPy.
-            default : 10
 
         xtol : float, optional
             Tolerance for convergence of minimization.
-            default : 1e-8
 
         References
         ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
-               in intravoxel incoherent motion MR imaging." Radiology 168.2
-               (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
-               perfusion with intravoxel incoherent motion MR imaging."
-               Radiology 265.3 (2012): 874-881.
-        .. [3] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
 
         self.maxiter = maxiter
@@ -575,10 +555,10 @@ class IvimModelVP(ReconstModel):
         self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
-    def fit(self, data, bounds_de=None):
+    def fit(self, data, bounds_de=None, **kwargs):
         r"""Fit method of the IvimModelVP model class
 
-        MicroLearn framework (VarPro)[1]_.
+        MicroLearn framework (VarPro) :footcite:p:`Fadnavis2019`.
 
         The VarPro computes the IVIM parameters using the MIX approach.
         This algorithm uses three different optimizers. It starts with a
@@ -588,18 +568,12 @@ class IvimModelVP(ReconstModel):
         the volume fractions are determined. Then the last step is non linear
         least square fitting on all the parameters. The results of the first
         and second step are utilized as the initial values for the last step
-        of the algorithm. (see [1]_ and [2]_ for a comparison and a through
-        discussion).
+        of the algorithm. (see :footcite:p:`Fadnavis2019` and
+        :footcite:p:`Farooq2016` for a comparison and a thorough discussion).
 
         References
         ----------
-        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
+        .. footbibliography::
 
         """
         data_max = data.max()
@@ -675,8 +649,9 @@ class IvimModelVP(ReconstModel):
         First calculates the Moore-Penrose inverse of the input `phi` and takes
         a dot product with the measured signal. The result obtained is again
         multiplied with `phi` to complete the projection of the variable into
-        a transformed space. (see [1]_ and [2]_ for thorough discussion on
-        Variable Projections and relevant cost functions).
+        a transformed space. (see :footcite:p:`Fadnavis2019` and
+        :footcite:p:`Farooq2016` for thorough discussion on Variable Projections
+        and relevant cost functions).
 
         Parameters
         ----------
@@ -699,13 +674,7 @@ class IvimModelVP(ReconstModel):
 
         References
         ----------
-        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
-               learning, reconstruction, optimization and microstructure
-               modeling, Proceedings of: International Society of Magnetic
-               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
+        .. footbibliography::
 
         """
         # Moore-Penrose
@@ -769,7 +738,7 @@ class IvimModelVP(ReconstModel):
         Cost function for the least square problem. The cost function is used
         in the Least Squares function of SciPy in :func: `fit`. It guarantees
         that stopping point of the algorithm is at least a stationary point
-        with reduction in the the number of iterations required by the
+        with reduction in the number of iterations required by the
         differential evolution optimizer.
 
         Parameters
@@ -916,7 +885,8 @@ class IvimFit:
     def shape(self):
         return self.model_params.shape[:-1]
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         """Given a model fit, predict the signal.
 
         Parameters

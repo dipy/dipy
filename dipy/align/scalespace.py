@@ -5,15 +5,18 @@ import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
 
 from dipy.align import floating
+from dipy.testing.decorators import warning_for_keywords
 
 logger = logging.getLogger(__name__)
 
 
 class ScaleSpace:
+    @warning_for_keywords()
     def __init__(
         self,
         image,
         num_levels,
+        *,
         image_grid2world=None,
         input_spacing=None,
         sigma_factor=0.2,
@@ -327,11 +330,13 @@ class ScaleSpace:
 
 
 class IsotropicScaleSpace(ScaleSpace):
+    @warning_for_keywords()
     def __init__(
         self,
         image,
         factors,
         sigmas,
+        *,
         image_grid2world=None,
         input_spacing=None,
         mask0=False,

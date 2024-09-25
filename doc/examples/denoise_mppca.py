@@ -4,23 +4,25 @@ Denoise images using the Marcenko-Pastur PCA algorithm
 ======================================================
 
 The PCA-based denoising algorithm exploits the redundancy across the
-diffusion-weighted images [Manjon2013]_, [Veraart2016a]_. This algorithm has
-been shown to provide an optimal compromise between noise suppression and loss
-of anatomical information for different techniques such as DTI [Manjon2013]_,
-spherical deconvolution [Veraart2016a] and DKI [Henri2018]_.
+diffusion-weighted images :footcite:p:`Manjon2013`, :footcite:p:`Veraart2016b`.
+This algorithm has been shown to provide an optimal compromise between noise
+suppression and loss of anatomical information for different techniques such as
+DTI :footcite:p:`Manjon2013`, spherical deconvolution :footcite:p:`Veraart2016b`
+and DKI :footcite:p:`NetoHenriques2018`.
 
 The basic idea behind the PCA-based denoising algorithms is to remove the
 components of the data that are classified as noise. The Principal Components
 classification can be performed based on prior noise variance estimates
-[Manjon2013]_
+:footcite:p:`Manjon2013`
 (see :ref:`denoise_localpca<sphx_glr_examples_built_preprocessing_denoise_localpca.py>`)
-or automatically based on the Marchenko-Pastur distribution [Veraa2016a]_.
-In addition to noise suppression, the PCA algorithm can be used to get the
-standard deviation of the noise [Veraa2016b]_.
+or automatically based on the Marchenko-Pastur distribution
+:footcite:p:`Veraart2016b`. In addition to noise suppression, the PCA algorithm
+can be used to get the standard deviation of the noise
+:footcite:p:`Veraart2016b`.
 
 In the following example, we show how to denoise diffusion MRI images and
 estimate the noise standard deviation using the PCA algorithm based
-on the Marcenko-Pastur distribution [Veraa2016a]
+on the Marcenko-Pastur distribution :footcite:p:`Veraart2016b`
 
 Let's load the necessary modules
 """  # noqa: E501
@@ -47,13 +49,13 @@ from dipy.segment.mask import median_otsu
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was
 # kindly provided by Hansen and Jespersen (more details about the data are
-# provided in their paper [Hansen2016]_). The total size of the downloaded data
-# is 192 MBytes, however you only need to fetch it once.
+# provided in their paper :footcite:p:`Hansen2016a`). The total size of the
+# downloaded data is 192 MBytes, however you only need to fetch it once.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames("cfin_multib")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames(name="cfin_multib")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # For the sake of simplicity, we only select two non-zero b-values for this
@@ -67,7 +69,7 @@ sel_b = np.logical_or(np.logical_or(bvals == 0, bvals == 1000), bvals == 2000)
 
 data = data[..., sel_b]
 
-gtab = gradient_table(bvals[sel_b], bvecs[sel_b])
+gtab = gradient_table(bvals[sel_b], bvecs=bvecs[sel_b])
 
 print(data.shape)
 
@@ -152,8 +154,8 @@ FA_orig = dki_orig.fa
 FA_den = dki_den.fa
 MD_orig = dki_orig.md
 MD_den = dki_den.md
-MK_orig = dki_orig.mk(0, 3)
-MK_den = dki_den.mk(0, 3)
+MK_orig = dki_orig.mk(min_kurtosis=0, max_kurtosis=3)
+MK_den = dki_den.mk(min_kurtosis=0, max_kurtosis=3)
 
 
 fig2, ax = plt.subplots(2, 3, figsize=(10, 6), subplot_kw={"xticks": [], "yticks": []})
@@ -187,7 +189,7 @@ fig2.savefig("denoised_dki.png")
 #
 #
 # Noise standard deviation estimation using the Marchenko-Pastur PCA algorithm
-# ===========================================================================
+# ============================================================================
 #
 # As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
 # estimate the image's noise standard deviation (std). The noise std
@@ -232,19 +234,5 @@ print(snr)
 # References
 # ----------
 #
-# .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-#                 Weighted Image Denoising Using Overcomplete Local PCA" (2013)
-#                 PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
+# .. footbibliography::
 #
-# .. [Veraa2016a] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-#                 mapping using random matrix theory. Magnetic Resonance in
-#                 Medicine. doi: 10.1002/mrm.26059.
-#
-# .. [Henri2018] Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-#                Analysis and their Application to the Healthy Ageing Brain
-#                (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-#
-# .. [Veraa2016b] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-#                 Fieremans E, 2016. Denoising of Diffusion MRI using random
-#                 matrix theory. Neuroimage 142:394-406.
-#                 doi: 10.1016/j.neuroimage.2016.08.016

@@ -31,18 +31,18 @@ class BenchStreamlines:
         )
         self.data["streamlines_arrseq"] = Streamlines(self.data["streamlines"])
 
-        fname = get_fnames("fornix")
+        fname = get_fnames(name="fornix")
         fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
         self.fornix_streamlines = Streamlines(fornix)
 
     def time_set_number_of_points(self):
         streamlines = self.data["streamlines"]
-        set_number_of_points(streamlines, 50)
+        set_number_of_points(streamlines, nb_points=50)
 
     def time_set_number_of_points_arrseq(self):
         streamlines = self.data["streamlines_arrseq"]
-        set_number_of_points(streamlines, 50)
+        set_number_of_points(streamlines, nb_points=50)
 
     def time_length(self):
         streamlines = self.data["streamlines"]

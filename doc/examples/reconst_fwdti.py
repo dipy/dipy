@@ -15,8 +15,8 @@ with brain tissue atrophy that occurs in several brain pathologies and aging).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
-diffusion [Pasternak2009]_. The expression of the expanded DTI model is shown
-below:
+diffusion :footcite:p:`Pasternak2009`. The expression of the expanded DTI model
+is shown below:
 
 .. math::
 
@@ -32,10 +32,11 @@ $D_{iso}$ is the isotropic value of the free water diffusion (normally set to
 $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
 In this example, we show how to process a diffusion weighting dataset using an
-adapted version of the free water elimination proposed by [Hoy2014]_.
+adapted version of the free water elimination proposed by :footcite:p:`Hoy2014`.
 
 The full details of Dipy's free water DTI implementation was published in
-[Henriques2017]_. Please cite this work if you use this algorithm.
+:footcite:p:`NetoHenriques2017`. Please cite this work if you use this
+algorithm.
 
 Let's start by importing the relevant modules:
 """
@@ -53,8 +54,8 @@ import dipy.reconst.fwdti as fwdti
 
 ###############################################################################
 # Without spatial constrains the free water elimination model cannot be solved
-# in data acquired from one non-zero b-value [Hoy2014]_. Therefore, here we
-# download a dataset that was acquired with multiple b-values.
+# in data acquired from one non-zero b-value :footcite:p:`Hoy2014`. Therefore,
+# here we download a dataset that was acquired with multiple b-values.
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
 dwi_path = op.join(
@@ -73,7 +74,7 @@ gtab = gradient_table(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     ),
-    op.join(
+    bvecs=op.join(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),
@@ -228,16 +229,6 @@ fig1.savefig("In_vivo_free_water_DTI_and_standard_DTI_corrected.png")
 #
 # References
 # ----------
-# .. [Pasternak2009] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf,
-#    Y., 2009. Free water elimination and mapping from diffusion MRI. Magn.
-#    Reson. Med. 62(3): 717-30. doi: 10.1002/mrm.22055.
 #
-# .. [Hoy2014] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-#    Optimization of a free water elimination two-compartmental model for
-#    diffusion tensor imaging. NeuroImage 103, 323-333. doi:
-#    10.1016/j.neuroimage.2014.09.053
+# .. footbibliography::
 #
-# .. [Henriques2017] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
-#    Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free water
-#    elimination two-compartment model for diffusion tensor imaging.
-#    ReScience volume 3, issue 1, article number 2

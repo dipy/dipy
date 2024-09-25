@@ -16,9 +16,9 @@ scanner:
 
 pycodestyle:
     max-line-length: 88  # Default is 79 in PEP8
-    # ignore:  # Errors and warnings to ignore
-    #    - W391
-    #    - E203
+    ignore:  # Errors and warnings to ignore
+       - W391
+       - E203
     exclude:
         - doc/examples
         - dipy/info.py

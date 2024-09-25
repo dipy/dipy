@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Classes and functions for fitting the diffusion kurtosis model"""
+"""
+Classes and functions for fitting the diffusion kurtosis model.
+"""
 
 import warnings
 
@@ -28,10 +30,12 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.testing.decorators import warning_for_keywords
 
 
-def _positive_evals(L1, L2, L3, er=2e-7):
-    """Helper function that identifies which voxels in a array have all
+@warning_for_keywords()
+def _positive_evals(L1, L2, L3, *, er=2e-7):
+    """Helper function that identifies which voxels in an array have all
     eigenvalues significantly larger than zero
 
     Parameters
@@ -57,10 +61,12 @@ def _positive_evals(L1, L2, L3, er=2e-7):
     return ind
 
 
-def carlson_rf(x, y, z, errtol=3e-4):
-    r"""Compute the Carlson's incomplete elliptic integral of the first kind
+@warning_for_keywords()
+def carlson_rf(x, y, z, *, errtol=3e-4):
+    r"""Compute the Carlson's incomplete elliptic integral of the first kind.
 
-    Carlson's incomplete elliptic integral of the first kind is defined as:
+    Carlson's incomplete elliptic integral of the first kind is defined as
+    :footcite:p:`Carlson1995`:
 
     .. math::
 
@@ -90,8 +96,7 @@ def carlson_rf(x, y, z, errtol=3e-4):
 
     References
     ----------
-    .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
-           elliptic integrals. arXiv:math/9409227 [math.CA]
+    .. footbibliography::
 
     """
     xn = x.copy()
@@ -130,10 +135,12 @@ def carlson_rf(x, y, z, errtol=3e-4):
     return RF
 
 
-def carlson_rd(x, y, z, errtol=1e-4):
-    r"""Compute the Carlson's incomplete elliptic integral of the second kind
+@warning_for_keywords()
+def carlson_rd(x, y, z, *, errtol=1e-4):
+    r"""Compute the Carlson's incomplete elliptic integral of the second kind.
 
-    Carlson's incomplete elliptic integral of the second kind is defined as:
+    Carlson's incomplete elliptic integral of the second kind is defined as
+    :footcite:p:`Carlson1995`:
 
     .. math::
 
@@ -163,8 +170,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
 
     References
     ----------
-    .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
-           elliptic integrals. arXiv:math/9409227 [math.CA]
+    .. footbibliography::
 
     """
     xn = x.copy()
@@ -240,7 +246,7 @@ def _F1m(a, b, c):
 
     Notes
     -----
-    Function $F_1$ is defined as [1]_:
+    Function $F_1$ is defined as :footcite:p:`Tabesh2011`:
 
     .. math::
 
@@ -256,9 +262,7 @@ def _F1m(a, b, c):
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. footbibliography::
 
     """
     # Eigenvalues are considered equal if they are not 2.5% different to each
@@ -342,7 +346,7 @@ def _F2m(a, b, c):
 
     Notes
     -----
-    Function $F_2$ is defined as [1]_:
+    Function $F_2$ is defined as :footcite:p:`Tabesh2011`:
 
     .. math::
 
@@ -356,9 +360,7 @@ def _F2m(a, b, c):
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. footbibliography::
 
     """
     # Eigenvalues are considered equal if they are not 2.5% different to each
@@ -394,7 +396,7 @@ def _F2m(a, b, c):
         L1 = a[cond2]
         L3 = (c[cond2] + b[cond2]) / 2.0
 
-        # Compute alfa [1]_
+        # Compute alfa :footcite:p:`Tabesh2011`
         x = 1.0 - (L1 / L3)
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
@@ -420,9 +422,12 @@ def _F2m(a, b, c):
     return F2
 
 
-def directional_diffusion(dt, V, min_diffusivity=0):
-    r"""Calculate the apparent diffusion coefficient (adc) in each direction
-    of a sphere for a single voxel [1]_
+@warning_for_keywords()
+def directional_diffusion(dt, V, *, min_diffusivity=0):
+    r"""Compute apparent diffusion coefficient (adc).
+
+    Calculate the apparent diffusion coefficient (adc) in each direction of
+    a sphere for a single voxel :footcite:t:`NetoHenriques2015`.
 
     Parameters
     ----------
@@ -430,7 +435,7 @@ def directional_diffusion(dt, V, min_diffusivity=0):
         elements of the diffusion tensor of the voxel.
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
@@ -439,23 +444,13 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     Returns
     -------
     adc : ndarray (g,)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
 
     References
     ----------
-    .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
-    .. [2] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
+    .. footbibliography::
+
     """
     adc = (
         V[:, 0] * V[:, 0] * dt[0]
@@ -471,31 +466,19 @@ def directional_diffusion(dt, V, min_diffusivity=0):
     return adc
 
 
-def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
+def directional_diffusion_variance(kt, V):
     r"""Calculate the apparent diffusion variance (adv) in each direction of a
     sphere for a single voxel
 
+    See :footcite:p:`Jensen2005`, :footcite:p:`NetoHenriques2015`, and
+    :footcite:p:`NetoHenriques2021a` for further details about the method.
+
     Parameters
     ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
     V : array (g, 3)
-        g directions of a Sphere in Cartesian coordinates
-    min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physically
-        and biologicaly pluasible, and these cause artefacts in
-        kurtosis-based measures, directional kurtosis values smaller than
-        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
-        (theoretical kurtosis limit for regions that consist of water confined
-        to spherical pores [1]_)
-    adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
-        for a single voxel.
-    adv : ndarray(g,) (optional)
-        Apparent diffusion variance coefficient (advc) in all g directions of
-        a sphere for a single voxel.
+        g directions of a Sphere in Cartesian coordinates.
 
     Returns
     -------
@@ -505,18 +488,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
 
     References
     ----------
-    .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
+    .. footbibliography::
     """
     adv = (
         V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0]
@@ -539,11 +511,15 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3 / 7):
     return adv
 
 
+@warning_for_keywords()
 def directional_kurtosis(
-    dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3 / 7, adc=None, adv=None
+    dt, md, kt, V, *, min_diffusivity=0, min_kurtosis=-3 / 7, adc=None, adv=None
 ):
     r"""Calculate the apparent kurtosis coefficient (akc) in each direction of
-    a sphere for a single voxel [1]_,[2]_
+    a sphere for a single voxel.
+
+    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
@@ -555,22 +531,22 @@ def directional_kurtosis(
         elements of the kurtosis tensor of the voxel.
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
-    min_kurtosis : float (optional)
+    min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
-        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        `min_kurtosis` are replaced with `min_kurtosis`.
         (theoretical kurtosis limit for regions that consist of water confined
-        to spherical pores [3]_)
-    adc : ndarray(g,) (optional)
-        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        to spherical pores :footcite:p:`Jensen2005`).
+    adc : ndarray(g,), optional
+        Apparent diffusion coefficient (ADC) in all g directions of a sphere
         for a single voxel.
-    adv : ndarray(g,) (optional)
+    adv : ndarray(g,), optional
         Apparent diffusion variance (advc) in all g directions of a sphere for
         a single voxel.
 
@@ -582,18 +558,7 @@ def directional_kurtosis(
 
     References
     ----------
-    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
+    .. footbibliography::
 
     """
     if adc is None:
@@ -609,35 +574,40 @@ def directional_kurtosis(
     return akc
 
 
+@warning_for_keywords()
 def apparent_kurtosis_coef(
-    dki_params, sphere, min_diffusivity=0, min_kurtosis=-3.0 / 7
+    dki_params, sphere, *, min_diffusivity=0, min_kurtosis=-3.0 / 7
 ):
     r"""Calculate the apparent kurtosis coefficient (AKC) in each direction
-    of a sphere [1]_,[2]_
+    of a sphere.
+
+    See :footcite:p:`NetoHenriques2015` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvectors respectively
-        3) Fifteen elements of the kurtosis tensor
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvectors respectively
+            3) Fifteen elements of the kurtosis tensor
     sphere : a Sphere class instance
         The AKC will be calculated for each of the vertices in the sphere
-    min_diffusivity : float (optional)
+    min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
-        `min_diffusivity`. Default = 0
-    min_kurtosis : float (optional)
+        `min_diffusivity`.
+    min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
         (theoretical kurtosis limit for regions that consist of water confined
-        to spherical pores [3]_)
+        to spherical pores :footcite:p:`Jensen2005`).
 
     Returns
     -------
@@ -647,9 +617,9 @@ def apparent_kurtosis_coef(
     Notes
     -----
     For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
-    calculation of AKC is done using formula [1]_:
+    calculation of AKC is done using formula :footcite:p:`NetoHenriques2015`:
 
-    .. math ::
+    .. math::
 
         AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
         \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -657,7 +627,7 @@ def apparent_kurtosis_coef(
     where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
     diffusivity and ADC the apparent diffusion coefficient computed as:
 
-    .. math ::
+    .. math::
 
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
@@ -665,18 +635,7 @@ def apparent_kurtosis_coef(
 
     References
     ----------
-    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
+    .. footbibliography::
 
     """
     # Flat parameters
@@ -718,30 +677,38 @@ def apparent_kurtosis_coef(
     return akc.reshape((outshape + (len(V),)))
 
 
-def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True):
-    r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_,[2]_
+@warning_for_keywords()
+def mean_kurtosis(
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=True
+):
+    r""" Compute mean kurtosis (MK) from the kurtosis tensor.
+
+    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [3]_)
-    max_kurtosis : float (optional)
+        that consist of water confined to spherical pores
+        :footcite:p:`Jensen2005`).
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
-    analytical : bool (optional)
+        `max_kurtosis`.
+    analytical : bool, optional
         If True, MK is calculated using its analytical solution, otherwise an
-        exact numerical estimator is used (see Notes). Default is set to True
+        exact numerical estimator is used (see Notes).
 
     Returns
     -------
@@ -752,17 +719,19 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
     -----
     The MK is defined as the average of directional kurtosis coefficients
     across all spatial directions, which can be formulated by the following
-    surface integral [1]_,[2]_:
+    surface integral :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`:
 
     .. math::
 
          MK \equiv \frac{1}{4\pi} \int d\Omega_\mathbf{n} K(\mathbf{n})
 
     This integral can be numerically solved by averaging directional
-    kurtosis values sampled for directions of a spherical t-design [4]_.
+    kurtosis values sampled for directions of a spherical t-design
+    :footcite:p:`Hardin1996`.
 
     Alternatively, MK can be solved from the analytical solution derived by
-    Tabesh et al. [1]_,[2]_. This solution is given by:
+    :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`. This solution is
+    given by:
 
     .. math::
 
@@ -801,20 +770,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
-    .. [4] Hardin, R.H., Sloane, N.J.A., 1996. McLaren's Improved Snub Cube and
-           Other New Spherical Designs in Three Dimensions. Discrete and
-           Computational Geometry 15, 429-441.
+    .. footbibliography::
 
     """
     # Flat parameters. For numpy versions more recent than 1.6.0, this step
@@ -849,7 +805,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=3, analytical=
 
     else:
         # Numerical Solution using t-design of 45 directions
-        V = np.loadtxt(get_fnames("t-design"))
+        V = np.loadtxt(get_fnames(name="t-design"))
         sph = dps.Sphere(xyz=V)
         KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
         MK = np.mean(KV, axis=-1)
@@ -883,7 +839,7 @@ def _G1m(a, b, c):
 
     Notes
     -----
-    Function $G_1$ is defined as [1]_:
+    Function $G_1$ is defined as :footcite:p:`Tabesh2011`:
 
     .. math::
 
@@ -895,9 +851,7 @@ def _G1m(a, b, c):
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. footbibliography::
 
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
@@ -952,7 +906,7 @@ def _G2m(a, b, c):
 
     Notes
     -----
-    Function $G_2$ is defined as [1]_:
+    Function $G_2$ is defined as :footcite:p:`Tabesh2011`:
 
     .. math::
 
@@ -962,9 +916,7 @@ def _G2m(a, b, c):
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. footbibliography::
 
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
@@ -999,30 +951,37 @@ def _G2m(a, b, c):
     return G2
 
 
+@warning_for_keywords()
 def radial_kurtosis(
-    dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
 ):
-    r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_,[2]_
+    r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor.
+
+    See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [3]_)
-    max_kurtosis : float (optional)
+        that consist of water confined to spherical pores
+        :footcite:p:`Jensen2005`).
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
-    analytical : bool (optional)
+        `max_kurtosis`.
+    analytical : bool, optional
         If True, RK is calculated using its analytical solution, otherwise an
         exact numerical estimator is used (see Notes). Default is set to True.
 
@@ -1034,17 +993,20 @@ def radial_kurtosis(
     Notes
     -----
     RK is defined as the average of the directional kurtosis perpendicular
-    to the fiber's main direction e1 [1]_, [2]_:
+    to the fiber's main direction e1 :footcite:p:`Tabesh2011`,
+    :footcite:p:`NetoHenriques2021a`:
 
     .. math::
 
-    RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
-              \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
+                  \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
     This equation can be numerically computed by averaging apparent
-    directional kurtosis samples for directions perpendicular to e1. [2]_
+    directional kurtosis samples for directions perpendicular to e1
+    :footcite:p:`NetoHenriques2021a`.
 
-    Otherwise, RK can be calculated from its analytical solution [1]_:
+    Otherwise, RK can be calculated from its analytical solution
+    :footcite:p:`Tabesh2011`:
 
     .. math::
 
@@ -1072,17 +1034,7 @@ def radial_kurtosis(
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
+    .. footbibliography::
 
     """
     outshape = dki_params.shape[:-1]
@@ -1141,32 +1093,40 @@ def radial_kurtosis(
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
-    r"""Compute axial kurtosis (AK) from the kurtosis tensor [1]_, [2]_
+@warning_for_keywords()
+def axial_kurtosis(
+    dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True
+):
+    r"""Compute axial kurtosis (AK) from the kurtosis tensor.
+
+    See :footcite:p:`Tabesh2011` and :footcite:`NetoHenriques2021a` for further
+    details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [3]_)
-    max_kurtosis : float (optional)
+        that consist of water confined to spherical pores
+        :footcite:p:`Jensen2005`).
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
-    analytical : bool (optional)
+        `max_kurtosis`.
+    analytical : bool, optional
         If True, AK is calculated from rotated diffusion kurtosis tensor,
         otherwise it will be computed from the apparent diffusion kurtosis
         values along the principal axis of the diffusion tensor (see notes).
-        Default is set to True.
 
     Returns
     -------
@@ -1176,18 +1136,21 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
     Notes
     -----
     AK is defined as the directional kurtosis parallel to the fiber's main
-    direction e1 [1]_, [2]_. You can compute AK using to approaches:
+    direction e1 :footcite:p:`Tabesh2011`, :footcite:`NetoHenriques2021a`. You
+    can compute AK using to approaches:
 
-    1) AK is calculated from rotated diffusion kurtosis tensor [1]_, i.e.:
+    1) AK is calculated from rotated diffusion kurtosis tensor
+       :footcite:p:`Tabesh2011`, i.e.:
 
     .. math::
         AK = \hat{W}_{1111}
             \frac{(\lambda_{1}+\lambda_{2}+\lambda_{3})^2}{(9 \lambda_{1}^2)}
 
-    2) AK can be sampled from the principal axis of the diffusion tensor [2]_:
+    2) AK can be sampled from the principal axis of the diffusion tensor
+       :footcite:`NetoHenriques2021a`:
 
     .. math::
-        AK = K(\mathbf{\mathbf{e}_1)
+        AK = K(\mathbf{e}_1)
 
     Although both approaches leads to an exact calculation of AK, the first
     approach will be referred to as the analytical method while the second
@@ -1196,17 +1159,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytica
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
-    .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
+    .. footbibliography::
 
     """
     # Flat parameters
@@ -1289,7 +1242,8 @@ def _kt_maximum_converge(ang, dt, md, kt):
     return -1.0 * directional_kurtosis(dt, md, kt, n)
 
 
-def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
+@warning_for_keywords()
+def _voxel_kurtosis_maximum(dt, md, kt, sphere, *, gtol=1e-2):
     """Compute the maximum value of a single voxel kurtosis tensor
 
     Parameters
@@ -1355,18 +1309,23 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     return max_value.item(), max_direction
 
 
-def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
-    """Compute kurtosis maximum value [1]_
+@warning_for_keywords()
+def kurtosis_maximum(dki_params, *, sphere="repulsion100", gtol=1e-2, mask=None):
+    """Compute kurtosis maximum value.
+
+    See :footcite:`NetoHenriques2021a` for further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eingenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
     sphere : Sphere class instance, optional
         The sphere providing sample directions for the initial search of the
         maximal value of kurtosis.
@@ -1389,17 +1348,14 @@ def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
 
     References
     ----------
-    .. [1] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
+    .. footbibliography::
 
     """
     shape = dki_params.shape[:-1]
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere("repulsion100")
+        sphere = get_sphere(name="repulsion100")
 
     # select voxels where to find fiber directions
     if mask is None:
@@ -1428,27 +1384,34 @@ def kurtosis_maximum(dki_params, sphere="repulsion100", gtol=1e-2, mask=None):
     return kt_max
 
 
-def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
-    r"""Compute mean of the kurtosis tensor (MKT) [1]_
+@warning_for_keywords()
+def mean_kurtosis_tensor(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+    r"""Compute mean of the kurtosis tensor (MKT).
+
+    See :footcite:p:`Hansen2013` for further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_)
-    max_kurtosis : float (optional)
+        that consist of water confined to spherical pores
+        :footcite:p:`Jensen2005`).
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 10
+        `max_kurtosis`.
+
     Returns
     -------
     mkt : array
@@ -1456,7 +1419,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
 
     Notes
     -----
-    The MKT is defined as [1]_:
+    The MKT is defined as :footcite:p:`Hansen2013`:
 
     .. math::
 
@@ -1473,14 +1436,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
 
     References
     ----------
-    .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. (2013).
-           Experimentally and computationally fast method for estimation of
-           a mean kurtosis.Magnetic Resonance in Medicine69,  1754–1760.388
-           doi:10.1002/mrm.24743
-    .. [2] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
+    .. footbibliography::
 
     """
     MKT = (
@@ -1506,22 +1462,26 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3.0 / 7, max_kurtosis=10):
 
 
 def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
-    r"""Compute the rescaled radial tensor kurtosis (RTK) [1]_
+    r"""Compute the rescaled radial tensor kurtosis (RTK).
+
+    See :footcite:p:`Hansen2013` for further details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
+
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-    min_kurtosis : float (optional)
+
+    min_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`.
-    max_kurtosis : float (optional)
+    max_kurtosis : float, optional
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`.
@@ -1533,7 +1493,8 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
 
     Notes
     -----
-    Rescaled radial tensor kurtosis (RTK) is defined as ([1]_):
+    Rescaled radial tensor kurtosis (RTK) is defined as
+    :footcite:p:`Hansen2013`:
 
     .. math::
 
@@ -1545,9 +1506,7 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
 
     References
     ----------
-    .. [1] Hansen, B., Shemesh, N., and Jespersen, S. N. (2017).
-           Fast imaging of mean, axial and radial diffusion kurtosis.
-           Neuroimage 142,  381–393. doi:10.1016/j.neuroimage.2016.08.022
+    .. footbibliography::
     """
     outshape = dki_params.shape[:-1]
     dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
@@ -1590,17 +1549,22 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
 
 
 def kurtosis_fractional_anisotropy(dki_params):
-    r"""Compute the anisotropy of the kurtosis tensor (KFA) [1]_,[2]_
+    r"""Compute the anisotropy of the kurtosis tensor (KFA).
+
+    See :footcite:p:`Glenn2015` and :footcite:p:`NetoHenriques2021a` for further
+    details about the method.
 
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
     Returns
     -------
     kfa : array
@@ -1608,26 +1572,20 @@ def kurtosis_fractional_anisotropy(dki_params):
 
     Notes
     -----
-    The KFA is defined as [1]_:
+    The KFA is defined as :footcite:p:`Glenn2015`:
 
     .. math::
 
          KFA \equiv
          \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$ is
+    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$ is
     the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the tensor's
-    Frobenius norm [1]_.
+    Frobenius norm :footcite:p:`Glenn2015`.
 
     References
     ----------
-    .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H. (2015).
-           Quantitative assessment of diffusional kurtosis anisotropy.
-           NMR in Biomedicine 28, 448–459. doi:10.1002/nbm.3271
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
+    .. footbibliography::
 
     """
     Wxxxx = dki_params[..., 12]
@@ -1679,43 +1637,43 @@ def kurtosis_fractional_anisotropy(dki_params):
     return KFA
 
 
-def dki_prediction(dki_params, gtab, S0=1.0):
-    """Predict a signal given diffusion kurtosis imaging parameters
+@warning_for_keywords()
+def dki_prediction(dki_params, gtab, *, S0=1.0):
+    r"""Predict a signal given diffusion kurtosis imaging parameters
 
-    Parameters
-    ----------
-    dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
-    gtab : a GradientTable class instance
-        The gradient table for this prediction
-    S0 : float or ndarray (optional)
-        The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
-
-    Returns
-    -------
-    S : (..., N) ndarray
-        Simulated signal based on the DKI model:
+    The predicted signal is given by:
 
     .. math::
 
         S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
 
+    See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
+    further details about the method.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+    S0 : float or ndarray, optional
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
+
+    Returns
+    -------
+    pred_sig : (..., N) ndarray
+        Simulated signal based on the DKI model.
+
     References
     ----------
-    .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-           Diffusional kurtosis imaging: The quantification of non-gaussian
-           water diffusion by means of magnetic resonance imaging. Magnetic
-           Resonance in Medicine 53(6): 1432-1440
-    .. [2] Henriques R, Correia MM, Marrale M, Huber E, Kruper J, Koudoro S,
-           Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-           Imaging in the Diffusion Imaging in Python Project. Frontiers in
-           Human Neuroscience 15: 675433.
+    .. footbibliography::
 
     """
     evals, evecs, kt = split_dki_param(dki_params)
@@ -1753,8 +1711,12 @@ def dki_prediction(dki_params, gtab, S0=1.0):
 class DiffusionKurtosisModel(ReconstModel):
     """Class for the Diffusion Kurtosis Model"""
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
-        """Diffusion Kurtosis Tensor Model _[1], _[2]
+    @warning_for_keywords()
+    def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
+        """Diffusion Kurtosis Tensor Model.
+
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
+        further details about the model.
 
         Parameters
         ----------
@@ -1762,33 +1724,28 @@ class DiffusionKurtosisModel(ReconstModel):
             The gradient table for the data set.
         fit_method : str or callable, optional
             str be one of the following:
-                'OLS' or 'ULLS' for ordinary least squares.
-                'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
-                    See dki.ls_fit_dki.
-                'CLS' for LMI constrained ordinary least squares [3].
-                'CWLS' for LMI constrained weighted least squares [3].
-                    See dki.cls_fit_dki.
+
+            - 'OLS' or 'ULLS' for ordinary least squares.
+            - 'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares.
+              See func:`dki.ls_fit_dki`.
+            - 'CLS' for LMI constrained ordinary least squares
+              :footcite:p:`DelaHaije2020`.
+            - 'CWLS' for LMI constrained weighted least squares
+              :footcite:p:`DelaHaije2020`. See func:`dki.cls_fit_dki`.
+
             callable has to have the signature:
-                fit_method(design_matrix, data, *args, **kwargs).
-            Default: "WLS"
+                ``fit_method(design_matrix, data, *args, **kwargs)``
+
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
-        args, kwargs :
-            arguments and key-word arguments passed to the fit_method.
+        *args
+            Variable length argument list passed to the :func:`fit` method.
+        **kwargs
+            Arbitrary keyword arguments passed to the :func:`fit` method.
 
         References
         ----------
-        .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
-        .. [3] Dela Haije et al. (2020). Enforcing necessary non-negativity
-               constraints for common diffusion MRI models using sum of squares
-               programming. NeuroImage 209: 116405.
+        .. footbibliography::
 
         """
         ReconstModel.__init__(self, gtab)
@@ -1845,7 +1802,9 @@ class DiffusionKurtosisModel(ReconstModel):
                     msg = "Maximum convexity_level supported is 4."
                     warnings.warn(msg, stacklevel=2)
                     self.convexity_level = 4
-                self.sdp_constraints = load_sdp_constraints("dki", self.convexity_level)
+                self.sdp_constraints = load_sdp_constraints(
+                    "dki", order=self.convexity_level
+                )
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
         self.weights = fit_method in {"WLS", "WLLS", "UWLLS", "CWLS"}
@@ -1860,7 +1819,8 @@ class DiffusionKurtosisModel(ReconstModel):
             "CWLS",
         ]
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the DKI model.
 
         Parameters
@@ -1893,7 +1853,7 @@ class DiffusionKurtosisModel(ReconstModel):
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
+            mask = np.asarray(mask, dtype=bool)
 
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
         data_in_mask = np.maximum(data_in_mask, self.min_signal)
@@ -1925,7 +1885,8 @@ class DiffusionKurtosisModel(ReconstModel):
         return DiffusionKurtosisFit(self, dki_params, model_S0=S0_params)
 
     @multi_voxel_fit
-    def multi_fit(self, data_thres, mask=None):
+    @warning_for_keywords()
+    def multi_fit(self, data, *, mask=None):
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1936,7 +1897,7 @@ class DiffusionKurtosisModel(ReconstModel):
         )
         params, extra = self.fit_method(
             self.design_matrix,
-            data_thres,
+            data,
             self.inverse_design_matrix,
             return_S0_hat=self.return_S0_hat,
             weights=self.weights,
@@ -1950,44 +1911,41 @@ class DiffusionKurtosisModel(ReconstModel):
 
         return DiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, dki_params, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, dki_params, *, S0=1.0):
         """Predict a signal for this DKI model class instance given parameters
+
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
+        further details about the method.
 
         Parameters
         ----------
         dki_params : ndarray (x, y, z, 27) or (n, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows::
+            All parameters estimated from the diffusion kurtosis model.
+            Parameters are ordered as follows:
 
-        1. Three diffusion tensor's eigenvalues
-        2. Three lines of the eigenvector matrix each containing the
-        first, second and third coordinates of the eigenvector
-        3. Fifteen elements of the kurtosis tensor
+                1. Three diffusion tensor's eigenvalues
+                2. Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3. Fifteen elements of the kurtosis tensor
 
-
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         References
         ----------
-        .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
+        .. footbibliography::
 
         """
-        return dki_prediction(dki_params, self.gtab, S0)
+        return dki_prediction(dki_params, self.gtab, S0=S0)
 
 
 class DiffusionKurtosisFit(TensorFit):
     """Class for fitting the Diffusion Kurtosis Model"""
 
-    def __init__(self, model, model_params, model_S0=None):
+    @warning_for_keywords()
+    def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a DiffusionKurtosisFit class instance
 
         Since DKI is an extension of DTI, class instance is defined as subclass
@@ -2001,10 +1959,11 @@ class DiffusionKurtosisFit(TensorFit):
             All parameters estimated from the diffusion kurtosis model,
             not including S0.
             Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the
-                first, second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
+
+                1) Three diffusion tensor's eigenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
         model_S0 : ndarray (x, y, z, 1) or (n, 1), optional
             S0 estimated from the diffusion kurtosis model.
 
@@ -2026,6 +1985,8 @@ class DiffusionKurtosisFit(TensorFit):
         Parameters
         ----------
         sphere : Sphere class instance
+            Sphere providing sample directions to compute the apparent kurtosis
+            coefficient.
 
         Returns
         -------
@@ -2038,7 +1999,7 @@ class DiffusionKurtosisFit(TensorFit):
         For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
         calculation of AKC is done using formula:
 
-        .. math ::
+        .. math::
 
             AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
             \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
@@ -2046,7 +2007,7 @@ class DiffusionKurtosisFit(TensorFit):
         where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
         diffusivity and ADC the apparent diffusion coefficient computed as:
 
-        .. math ::
+        .. math::
 
             ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
@@ -2055,24 +2016,28 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
-        r""" Compute mean kurtosis (MK) from the kurtosis tensor [1]_, [2]_
+    @warning_for_keywords()
+    def mk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+        r""" Compute mean kurtosis (MK) from the kurtosis tensor.
+
+        See :footcite:t:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+        further details about the method.
 
         Parameters
         ----------
-        min_kurtosis : float (optional)
+        min_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are smaller than `min_kurtosis` are replaced
             with `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores [3]_)
-        max_kurtosis : float (optional)
+            for regions that consist of water confined to spherical pores
+            :footcite:p:`Jensen2005`).
+        max_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 10
-        analytical : bool (optional)
+            with `max_kurtosis`.
+        analytical : bool, optional
             If True, MK is calculated using its analytical solution, otherwise
-            an exact numerical estimator is used (see Notes). Default is set to
-            True.
+            an exact numerical estimator is used (see Notes).
 
         Returns
         -------
@@ -2083,17 +2048,19 @@ class DiffusionKurtosisFit(TensorFit):
         -----
         The MK is defined as the average of directional kurtosis coefficients
         across all spatial directions, which can be formulated by the following
-        surface integral [1]_, [2]_:
+        surface integral :footcite:p:`Tabesh2011`,
+        :footcite:p:`NetoHenriques2021a`:
 
         .. math::
 
              MK \equiv \frac{1}{4\pi} \int d\Omega_\mathbf{n} K(\mathbf{n})
 
         This integral can be numerically solved by averaging directional
-        kurtosis values sampled for directions of a spherical t-design [4]_.
+        kurtosis values sampled for directions of a spherical t-design
+        :footcite:p:`Hardin1996`.
 
         Alternatively, MK can be solved from the analytical solution derived by
-        Tabesh et al. [1]_. This solution is given by:
+        :footcite:t:`Tabesh2011`. This solution is given by:
 
         .. math::
 
@@ -2132,44 +2099,41 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-               Estimation of tensors and tensor-derived measures in diffusional
-               kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
-        .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
-        .. [4] Hardin, R.H., Sloane, N.J.A., 1996. McLaren's Improved Snub Cube
-               and Other New Spherical Designs in Three Dimensions. Discrete
-               and Computational Geometry 15, 429-441.
+        .. footbibliography::
 
         """
-        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
+        return mean_kurtosis(
+            self.model_params,
+            min_kurtosis=min_kurtosis,
+            max_kurtosis=max_kurtosis,
+            analytical=analytical,
+        )
 
-    def ak(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+    @warning_for_keywords()
+    def ak(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
         r"""
-        Compute axial kurtosis (AK) of a diffusion kurtosis tensor [1]_, [2]_
+        Compute axial kurtosis (AK) of a diffusion kurtosis tensor.
+
+        See :footcite:p:`Tabesh2011` and :footcite:p:`NetoHenriques2021a` for
+        further details about the method.
 
         Parameters
         ----------
-        min_kurtosis : float (optional)
+        min_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are smaller than `min_kurtosis` are replaced
             with -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores [3]_)
-        max_kurtosis : float (optional)
+            for regions that consist of water confined to spherical pores
+            :footcite:p:`Jensen2005`).
+        max_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 10
-        analytical : bool (optional)
+            with `max_kurtosis`.
+        analytical : bool, optional
             If True, AK is calculated from rotated diffusion kurtosis tensor,
             otherwise it will be computed from the apparent diffusion kurtosis
             values along the principal axis of the diffusion tensor
-            (see notes). Default is set to True.
+            (see notes).
 
         Returns
         -------
@@ -2179,7 +2143,8 @@ class DiffusionKurtosisFit(TensorFit):
         Notes
         -----
         AK is defined as the directional kurtosis parallel to the fiber's main
-        direction e1 [1]_, [2]_. You can compute AK using to approaches:
+        direction e1 :footcite:p:`Tabesh2011`, :footcite:p:`NetoHenriques2021a`.
+        You can compute AK using to approaches:
 
         1) AK is calculated from rotated diffusion kurtosis tensor, i.e.:
 
@@ -2190,7 +2155,7 @@ class DiffusionKurtosisFit(TensorFit):
         2) AK can be sampled from the principal axis of the diffusion tensor:
 
         .. math::
-            AK = K(\mathbf{\mathbf{e}_1)
+            AK = K(\mathbf{e}_1)
 
         Although both approaches leads to an exact calculation of AK, the
         first approach will be referred to as the analytical method while the
@@ -2199,40 +2164,37 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-               Estimation of tensors and tensor-derived measures in diffusional
-               kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
-        .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
+        .. footbibliography::
 
         """
-        return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis, analytical)
+        return axial_kurtosis(
+            self.model_params,
+            min_kurtosis=min_kurtosis,
+            max_kurtosis=max_kurtosis,
+            analytical=analytical,
+        )
 
-    def rk(self, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
-        r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor [1]_
+    @warning_for_keywords()
+    def rk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True):
+        r"""Compute radial kurtosis (RK) of a diffusion kurtosis tensor.
+
+        See :footcite:p:`Tabesh2011` for further details about the method.
 
         Parameters
         ----------
-        min_kurtosis : float (optional)
+        min_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are smaller than `min_kurtosis` are
             replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
             limit for regions that consist of water confined to spherical pores
-            [3]_)
-        max_kurtosis : float (optional)
+            :footcite:p:`Jensen2005`).
+        max_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are larger than `max_kurtosis` are
-            replaced with `max_kurtosis`. Default = 10
-        analytical : bool (optional)
+            replaced with `max_kurtosis`.
+        analytical : bool, optional
             If True, RK is calculated using its analytical solution, otherwise
-            an exact numerical estimator is used (see Notes). Default is set to
-            True
+            an exact numerical estimator is used (see Notes).
 
         Returns
         -------
@@ -2242,17 +2204,20 @@ class DiffusionKurtosisFit(TensorFit):
         Notes
         -----
         RK is defined as the average of the directional kurtosis perpendicular
-        to the fiber's main direction e1 [1]_, [2]_:
+        to the fiber's main direction e1 :footcite:p:`Tabesh2011`,
+        :footcite:p:`NetoHenriques2021a`:
 
         .. math::
 
-        RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
-            K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+            RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
+                K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
         This equation can be numerically computed by averaging apparent
-        directional kurtosis samples for directions perpendicular to e1 [2]_.
+        directional kurtosis samples for directions perpendicular to e1
+        :footcite:p:`NetoHenriques2021a`.
 
-        Otherwise, RK can be calculated from its analytical solution [1]_:
+        Otherwise, RK can be calculated from its analytical solution
+        :footcite:p:`Tabesh2011`:
 
         .. math::
 
@@ -2281,25 +2246,22 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-               Estimation of tensors and tensor-derived measures in diffusional
-               kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
-        .. [3] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
+        .. footbibliography::
 
         """
         return radial_kurtosis(
-            self.model_params, min_kurtosis, max_kurtosis, analytical
+            self.model_params,
+            min_kurtosis=min_kurtosis,
+            max_kurtosis=max_kurtosis,
+            analytical=analytical,
         )
 
-    def kmax(self, sphere="repulsion100", gtol=1e-5, mask=None):
-        r"""Compute the maximum value of a single voxel kurtosis tensor
+    @warning_for_keywords()
+    def kmax(self, *, sphere="repulsion100", gtol=1e-5, mask=None):
+        """Compute the maximum value of a single voxel kurtosis tensor
+
+        See :footcite:p:`NetoHenriques2021a` for further details about the
+        method.
 
         Parameters
         ----------
@@ -2320,28 +2282,29 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
+        .. footbibliography::
 
         """
-        return kurtosis_maximum(self.model_params, sphere, gtol, mask)
+        return kurtosis_maximum(self.model_params, sphere=sphere, gtol=gtol, mask=mask)
 
-    def mkt(self, min_kurtosis=-3.0 / 7, max_kurtosis=10):
-        r"""Compute mean of the kurtosis tensor (MKT) [1]_
+    @warning_for_keywords()
+    def mkt(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
+        r"""Compute mean of the kurtosis tensor (MKT).
+
+        See :footcite:p:`Hansen2013` for further details about the method.
 
         Parameters
         ----------
-        min_kurtosis : float (optional)
+        min_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are smaller than `min_kurtosis` are replaced
             with `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores [2]_)
-        max_kurtosis : float (optional)
+            for regions that consist of water confined to spherical pores
+            :footcite:p:`Jensen2005`).
+        max_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 10
+            with `max_kurtosis`.
 
         Returns
         -------
@@ -2350,7 +2313,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         -----
-        The MKT is defined as [1]_:
+        The MKT is defined as :footcite:p:`Hansen2013`:
 
         .. math::
 
@@ -2362,32 +2325,29 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. math::
 
-        MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
-        (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
+            MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
+            (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
 
         References
         ----------
-        .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. 2013.
-               Experimentally and computationally fast method for estimation
-               of a mean kurtosis. Magnetic Resonance in Medicine69, 1754–1760.
-               388. doi:10.1002/mrm.24743
-        .. [2] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
+        .. footbibliography::
         """
-        return mean_kurtosis_tensor(self.model_params, min_kurtosis, max_kurtosis)
+        return mean_kurtosis_tensor(
+            self.model_params, min_kurtosis=min_kurtosis, max_kurtosis=max_kurtosis
+        )
 
     def rtk(self, *, min_kurtosis=-3.0 / 7, max_kurtosis=10):
-        r"""Compute the rescaled radial tensor kurtosis (RTK) [1]_
+        r"""Compute the rescaled radial tensor kurtosis (RTK).
+
+        See :footcite:p:`Hansen2016b` for further details about the method.
 
         Parameters
         ----------
-        min_kurtosis : float (optional)
+        min_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are smaller than `min_kurtosis` are
             replaced with `min_kurtosis`.
-        max_kurtosis : float (optional)
+        max_kurtosis : float, optional
             To keep kurtosis values within a plausible biophysical range,
             radial kurtosis values that are larger than `max_kurtosis` are
             replaced with `max_kurtosis`.
@@ -2399,7 +2359,8 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         -----
-        Rescaled radial tensor kurtosis (RTK) is defined as ([1]_):
+        Rescaled radial tensor kurtosis (RTK) is defined as
+        :footcite:p:`Hansen2016b`:
 
         .. math::
 
@@ -2411,10 +2372,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Hansen, B., Shemesh, N., and Jespersen, S. N. (2017).
-               Fast imaging of mean, axial and radial diffusion kurtosis.
-               Neuroimage 142,  381–393.
-               doi:10.1016/j.neuroimage.2016.08.022
+        .. footbibliography::
         """
         return radial_tensor_kurtosis(
             self.model_params, min_kurtosis=min_kurtosis, max_kurtosis=max_kurtosis
@@ -2422,42 +2380,46 @@ class DiffusionKurtosisFit(TensorFit):
 
     @property
     def kfa(self):
-        r"""Return the kurtosis tensor (KFA) [1]_
+        r"""Return the kurtosis tensor (KFA).
+
+        See :footcite:p:`Glenn2015` for further details about the method.
 
         Notes
         -----
-        The KFA is defined as [1]_:
+        The KFA is defined as :footcite:p:`Glenn2015`:
 
         .. math::
 
              KFA \equiv
              \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
 
-        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$
+        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^{(4)}$
         is the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the
-        tensor's Frobenius norm [1]_.
+        tensor's Frobenius norm :footcite:p:`Glenn2015`.
 
         References
         ----------
-        .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H.
-               (2015). Quantitative assessment of diffusional kurtosis
-               anisotropy. NMR in Biomedicine 28, 448–459. doi:10.1002/nbm.3271
+        .. footbibliography:
 
         """
         return kurtosis_fractional_anisotropy(self.model_params)
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         r"""Given a DKI model fit, predict the signal on the vertices of a
         gradient table
+
+        See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
+        further details about the method.
 
         Parameters
         ----------
         gtab : a GradientTable class instance
             The gradient table for this prediction
 
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Notes
         -----
@@ -2487,20 +2449,14 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K, (2005).
-               Diffusional kurtosis imaging: The quantification of non-gaussian
-               water diffusion by means of magnetic resonance imaging. Magnetic
-               Resonance in Medicine 53(6): 1432-1440
-        .. [2] Henriques R, Correia M, Marrale M, Huber E, Kruper J, Koudoro S,
-               Yeatman JD, Garyfallidis E, Rokem A (2021). Diffusional Kurtosis
-               Imaging in the Diffusion Imaging in Python Project. Frontiers in
-               Human Neuroscience 15: 675433.
+        .. footbibliography::
 
         """
-        return dki_prediction(self.model_params, gtab, S0)
+        return dki_prediction(self.model_params, gtab, S0=S0)
 
 
-def params_to_dki_params(result, min_diffusivity=0):
+@warning_for_keywords()
+def params_to_dki_params(result, *, min_diffusivity=0):
     r"""Convert the 21 unique elements of the diffusion and kurtosis tensors
     to the parameter format adopted in DIPY
 
@@ -2519,12 +2475,13 @@ def params_to_dki_params(result, min_diffusivity=0):
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     """
 
@@ -2547,16 +2504,20 @@ def params_to_dki_params(result, min_diffusivity=0):
     return dki_params
 
 
+@warning_for_keywords()
 def ls_fit_dki(
     design_matrix,
     data,
     inverse_design_matrix,
+    *,
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,
 ):
     r"""Compute the diffusion and kurtosis tensors using an ordinary or
-    weighted linear least squares approach [1]_
+    weighted linear least squares approach.
+
+    See :footcite:p:`Veraart2013` for further details about the method.
 
     Parameters
     ----------
@@ -2570,7 +2531,7 @@ def ls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -2580,19 +2541,17 @@ def ls_fit_dki(
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
-    [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
-        (2013). Weighted linear least squares estimation of diffusion MRI
-        parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
-        335-346.
+    .. footbibliography::
 
     """
     # Set up least squares problem
@@ -2619,18 +2578,22 @@ def ls_fit_dki(
         return dki_params[..., 0:-1], None
 
 
+@warning_for_keywords()
 def cls_fit_dki(
     design_matrix,
     data,
     inverse_design_matrix,
     sdp,
+    *,
     return_S0_hat=False,
     weights=True,
     min_diffusivity=0,
     cvxpy_solver=None,
 ):
     r"""Compute the diffusion and kurtosis tensors using a constrained
-    ordinary or weighted linear least squares approach [1]_
+    ordinary or weighted linear least squares approach.
+
+    See :footcite:p:`DelaHaije2020` for further details about the method.
 
     Parameters
     ----------
@@ -2647,7 +2610,7 @@ def cls_fit_dki(
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -2661,18 +2624,17 @@ def cls_fit_dki(
     Returns
     -------
     dki_params : array (27)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
-    .. [1] Dela Haije et al. (2020). Enforcing necessary non-negativity
-           constraints for common diffusion MRI models using sum of squares
-           programming. NeuroImage 209: 116405.
+    .. footbibliography::
     """
     # Set up least squares problem
     A = design_matrix
@@ -2701,13 +2663,15 @@ def Wrotate(kt, Basis):
     r""" Rotate a kurtosis tensor from the standard Cartesian coordinate system
     to another coordinate system basis
 
+    See :footcite:p:`Hui2008` for further details about the method.
+
     Parameters
     ----------
     kt : (15,)
         Vector with the 15 independent elements of the kurtosis tensor
     Basis : array (3, 3)
         Vectors of the basis column-wise oriented
-    inds : array(m, 4) (optional)
+    inds : array(m, 4), optional
         Array of vectors containing the four indexes of m specific elements of
         the rotated kurtosis tensor. If not specified all 15 elements of the
         rotated kurtosis tensor are computed.
@@ -2721,22 +2685,20 @@ def Wrotate(kt, Basis):
 
     Notes
     -----
-    KT elements are assumed to be ordered as follows:
+    The kurtosis tensor elements are assumed to be ordered as follows:
 
     .. math::
 
-    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                     & ... \\
-                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                     & ... \\
-                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-                     & & )\end{matrix}
+        KT =
+        \begin{pmatrix}
+            W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
+            W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
+            W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+        \end{pmatrix}
 
     References
     ----------
-    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-        characterization of neural tissues using directional diffusion kurtosis
-        analysis. Neuroimage 42(1): 122-34
+    .. footbibliography::
 
     """
     inds = np.array(
@@ -2797,8 +2759,10 @@ ind_ele = {
 
 
 def Wrotate_element(kt, indi, indj, indk, indl, B):
-    r"""Compute the the specified index element of a kurtosis tensor rotated
+    r"""Compute the specified index element of a kurtosis tensor rotated
     to the coordinate system basis B
+
+    See :footcite:p:`Hui2008` for further details about the method.
 
     Parameters
     ----------
@@ -2822,14 +2786,12 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
 
     Notes
     -----
-    It is assumed that initial kurtosis tensor elementes are defined on the
+    It is assumed that initial kurtosis tensor elements are defined on the
     Cartesian coordinate system.
 
     References
     ----------
-    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-        characterization of neural tissues using directional diffusion kurtosis
-        analysis. Neuroimage 42(1): 122-34
+    .. footbibliography::
 
     """
     Wre = 0
@@ -2861,12 +2823,12 @@ def Wcons(k_elements):
 
     .. math::
 
-    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                     & ... \\
-                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                     & ... \\
-                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-                     & & )\end{matrix}
+    KT =
+    \begin{pmatrix}
+        W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz} \\
+        W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy} \\
+        W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+    \end{pmatrix}
 
     Returns
     -------
@@ -2895,12 +2857,13 @@ def split_dki_param(dki_params):
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
-    All parameters estimated from the diffusion kurtosis model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-            second and third coordinates of the eigenvector
-        3) Fifteen elements of the kurtosis tensor
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
 
     Returns
     -------

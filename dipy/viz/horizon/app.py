@@ -6,6 +6,7 @@ from packaging.version import Version
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
@@ -55,8 +56,10 @@ HELP_MESSAGE = """
 
 
 class Horizon:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         tractograms=None,
         images=None,
         pams=None,
@@ -83,7 +86,7 @@ class Horizon:
         surface_colors=((1, 0, 0),),
     ):
         """Interactive medical visualization - Invert the Horizon!
-
+        :footcite:p:`Garyfallidis2019`.
 
         Parameters
         ----------
@@ -135,7 +138,7 @@ class Horizon:
             File path to replay recorded events
         return_showm : bool
             Return ShowManager object. Used only at Python level. Can be used
-            for extending Horizon's cababilities externally and for testing
+            for extending Horizon's capabilities externally and for testing
             purposes.
         bg_color : ndarray or list or tuple
             Define the background color of the scene.
@@ -155,11 +158,7 @@ class Horizon:
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-            adaptive visualization, Proceedings of: International Society of
-            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
         if not has_fury:
             raise ImportError(
@@ -330,8 +329,8 @@ class Horizon:
             active_streamlines, self.tractograms[0], Space.RASMM
         )
         hz2 = Horizon(
-            [active_sft],
-            self.images,
+            tractograms=[active_sft],
+            images=self.images,
             cluster=True,
             cluster_thr=self.cluster_thr / 2.0,
             random_colors=self.random_colors,
@@ -451,7 +450,7 @@ class Horizon:
 
         title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
-            scene,
+            scene=scene,
             title=title,
             size=(1920, 1080),
             reset_camera=False,
@@ -502,7 +501,7 @@ class Horizon:
                 # Information panel
                 # It will be changed once all the elements wrapped in horizon
                 # elements.
-                text_block = build_label(HELP_MESSAGE, 18)
+                text_block = build_label(HELP_MESSAGE, font_size=18)
 
                 self.help_panel = ui.Panel2D(
                     size=(300, 200),
@@ -550,7 +549,12 @@ class Horizon:
                         is_binary=binary_image,
                     )
                     self.__tabs.append(
-                        SlicesTab(slices_viz, title, fname, self._show_force_render)
+                        SlicesTab(
+                            slices_viz,
+                            title,
+                            fname,
+                            force_render=self._show_force_render,
+                        )
                     )
                     img_count += 1
 
@@ -561,7 +565,9 @@ class Horizon:
         if len(self.pams) > 0:
             if self.images:
                 sync_peaks = check_peak_size(
-                    self.pams, self.images[0][0].shape[:3], sync_slices
+                    self.pams,
+                    ref_img_shape=self.images[0][0].shape[:3],
+                    sync_imgs=sync_slices,
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
@@ -719,11 +725,13 @@ class Horizon:
 
         else:
             window.record(
-                scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
+                scene=scene, out_path=self.out_png, size=(1200, 900), reset_camera=False
             )
 
 
+@warning_for_keywords()
 def horizon(
+    *,
     tractograms=None,
     images=None,
     pams=None,
@@ -750,12 +758,13 @@ def horizon(
 ):
     """Interactive medical visualization - Invert the Horizon!
 
+    See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
     Parameters
     ----------
     tractograms : sequence of StatefulTractograms
-            StatefulTractograms are used for making sure that the coordinate
-            systems are correct
+        StatefulTractograms are used for making sure that the coordinate
+        systems are correct
     images : sequence of tuples
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
@@ -813,36 +822,32 @@ def horizon(
         File path to replay recorded events
     return_showm : bool
         Return ShowManager object. Used only at Python level. Can be used
-        for extending Horizon's cababilities externally and for testing
+        for extending Horizon's capabilities externally and for testing
         purposes.
 
     References
     ----------
-    .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-        S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-        S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-        adaptive visualization, Proceedings of: International Society of
-        Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+    .. footbibliography::
     """
 
     hz = Horizon(
-        tractograms,
-        images,
-        pams,
-        surfaces,
-        cluster,
-        rgb,
-        cluster_thr,
-        random_colors,
-        length_gt,
-        length_lt,
-        clusters_gt,
-        clusters_lt,
-        world_coords,
-        interactive,
-        out_png,
-        recorded_events,
-        return_showm,
+        tractograms=tractograms,
+        images=images,
+        pams=pams,
+        surfaces=surfaces,
+        cluster=cluster,
+        rgb=rgb,
+        cluster_thr=cluster_thr,
+        random_colors=random_colors,
+        length_gt=length_gt,
+        length_lt=length_lt,
+        clusters_gt=clusters_gt,
+        clusters_lt=clusters_lt,
+        world_coords=world_coords,
+        interactive=interactive,
+        out_png=out_png,
+        recorded_events=recorded_events,
+        return_showm=return_showm,
         bg_color=bg_color,
         order_transparent=order_transparent,
         buan=buan,

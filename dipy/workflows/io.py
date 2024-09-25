@@ -292,6 +292,7 @@ class SplitFlow(Workflow):
         input_files : variable string
             Any number of Nifti1 files
         vol_idx : int, optional
+            Index of the 3D volume to extract.
         out_dir : string, optional
             Output directory. (default current directory)
         out_split : string, optional
@@ -307,7 +308,7 @@ class SplitFlow(Workflow):
                 logging.info("Splitting and extracting 1st b0")
 
             split_vol = data[..., vol_idx]
-            save_nifti(osplit, split_vol, affine, image.header)
+            save_nifti(osplit, split_vol, affine, hdr=image.header)
 
             logging.info(f"Split volume saved as {osplit}")
 
@@ -435,7 +436,7 @@ class ConvertSHFlow(Workflow):
         for in_file, out_file in io_it:
             data, affine, image = load_nifti(in_file, return_img=True)
             data = convert_sh_descoteaux_tournier(data)
-            save_nifti(out_file, data, affine, image.header)
+            save_nifti(out_file, data, affine, hdr=image.header)
 
 
 class ConvertTensorsFlow(Workflow):
@@ -474,7 +475,7 @@ class ConvertTensorsFlow(Workflow):
             logging.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
-            save_nifti(otensor, data, affine, image.header)
+            save_nifti(otensor, data, affine, hdr=image.header)
 
 
 class ConvertTractogramFlow(Workflow):

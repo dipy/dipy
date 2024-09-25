@@ -3,6 +3,8 @@
 import numpy as np
 import scipy as sp
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def bs_se(bs_pdf):
     """Calculate the bootstrap standard error estimate of a statistic."""
@@ -11,24 +13,24 @@ def bs_se(bs_pdf):
 
 
 def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
-    """
-
-    Bootstrap resampling [1]_ to accurately estimate the standard error and
+    """Bootstrap resampling to accurately estimate the standard error and
     confidence interval of a desired statistic of a probability distribution
     function (pdf).
+
+    See :footcite:p`Efron1979` for further details about the method.
 
     Parameters
     ----------
     x : ndarray (N, 1)
         Observable sample to resample. N should be reasonably large.
-    statistic : method (optional)
+    statistic : method, optional
         Method to calculate the desired statistic. (Default: calculate
         bootstrap standard error)
-    B : integer (optional)
+    B : integer, optional
         Total number of bootstrap resamples in bootstrap pdf. (Default: 1000)
-    alpha : float (optional)
+    alpha : float, optional
         Percentile for confidence interval of the statistic. (Default: 0.05)
-    rng : numpy.random.Generator
+    rng : numpy.random.Generator, optional
         Random number generator to use for sampling. If None, the generator
         is initialized using the default BitGenerator.
 
@@ -60,8 +62,7 @@ def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
 
     References
     ----------
-    ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
-        look at the jackknife. Ann. Stat. 7, 1-26.
+    .. footbibliography::
 
     """
     N = len(x)
@@ -80,6 +81,8 @@ def bootstrap(x, *, statistic=bs_se, B=1000, alpha=0.95, rng=None):
 def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     """Calculate the bootstrap confidence interval by approximating the BCa.
 
+    See :footcite:p`DiCiccio1996` for further details about the method.
+
     Parameters
     ----------
     x : np.ndarray
@@ -89,7 +92,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
         proportions (flat probability densities vector)
     alpha : float (0, 1)
         Desired confidence interval initial endpoint (Default: 0.05)
-    eps : float (optional)
+    eps : float, optional
         Specifies step size in calculating numerical derivative T' and
         T''. Default: 1e-5
 
@@ -109,8 +112,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
 
     References
     ----------
-    ..  [2] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals.
-        Statistical Science. 11, 3, 189-228.
+    .. footbibliography::
 
     """
     # define base variables -- n, p_0, sigma_hat, delta_hat
@@ -133,7 +135,7 @@ def abc(x, *, statistic=bs_se, alpha=0.05, eps=1e-5):
     # define helper variables -- w and l
     w = z_0 + __calc_z_alpha(1 - alpha)
     ell = w / (1 - a_hat * w) ** 2
-    return __tt(x, p_0 + ell * delta_hat / sigma_hat, statistic)
+    return __tt(x, p_0 + ell * delta_hat / sigma_hat, statistic=statistic)
 
 
 def __calc_z_alpha(alpha):
@@ -157,14 +159,23 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
         tt_dot[i] = __tt_dot(i, x, p_0, statistic, eps)
     b_hat = b_hat / (2 * n**2)
     c_q_hat = (
-        __tt(x, ((1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)), statistic)
-        + __tt(x, ((1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)), statistic)
-        - 2 * __tt(x, p_0, statistic)
+        __tt(
+            x,
+            ((1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)),
+            statistic=statistic,
+        )
+        + __tt(
+            x,
+            ((1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)),
+            statistic=statistic,
+        )
+        - 2 * __tt(x, p_0, statistic=statistic)
     ) / eps**2
     return a_hat - (b_hat / sigma_hat - c_q_hat)
 
 
-def __tt(x, p_0, statistic=bs_se):
+@warning_for_keywords()
+def __tt(x, p_0, *, statistic=bs_se):
     """Calculate desired statistic from observable data and a
     given proportional weighting.
 
@@ -192,7 +203,8 @@ def __tt_dot(i, x, p_0, statistic, eps):
     e = np.zeros(x.shape)
     e[i] = 1
     return (
-        __tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) - __tt(x, p_0, statistic)
+        __tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic=statistic)
+        - __tt(x, p_0, statistic=statistic)
     ) / eps
 
 
@@ -202,22 +214,26 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
     e[i] = 1
     return (
         __tt_dot(i, x, p_0, statistic, eps) / eps
-        + (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) - __tt(x, p_0, statistic))
+        + (
+            __tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic=statistic)
+            - __tt(x, p_0, statistic=statistic)
+        )
         / eps**2
     )
 
 
 def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
-    """
-    Jackknife resampling [3]_ to quickly estimate the bias and standard
-    error of a desired statistic in a probability distribution function (pdf).
+    """Jackknife resampling to quickly estimate the bias and standard error of a
+    desired statistic in a probability distribution function (pdf).
+
+    See :footcite:p`Efron1979` for further details about the method.
 
     Parameters
     ----------
     pdf : ndarray (N, 1)
         Probability distribution function to resample. N should be reasonably
         large.
-    statistic : method (optional)
+    statistic : method, optional
         Method to calculate the desired statistic. (Default: calculate
         standard deviation)
     M : integer (M < N)
@@ -260,8 +276,7 @@ def jackknife(pdf, *, statistic=np.std, M=None, rng=None):
 
     References
     ----------
-    .. [3] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
-           look at the jackknife. Ann. Stat. 7, 1-26.
+    .. footbibliography::
 
     """
     N = len(pdf)

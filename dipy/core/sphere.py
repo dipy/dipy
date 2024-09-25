@@ -6,6 +6,7 @@ from scipy import optimize
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
+from dipy.testing.decorators import warning_for_keywords
 
 __all__ = ["Sphere", "HemiSphere", "faces_from_sphere_vertices", "unique_edges"]
 
@@ -48,7 +49,8 @@ def faces_from_sphere_vertices(vertices):
         return faces
 
 
-def unique_edges(faces, return_mapping=False):
+@warning_for_keywords()
+def unique_edges(faces, *, return_mapping=False):
     """Extract all unique edges from given triangular faces.
 
     Parameters
@@ -63,8 +65,9 @@ def unique_edges(faces, return_mapping=False):
     edges : (N, 2) ndarray
         Unique edges.
     mapping : (N, 3)
-        For each face, [x, y, z], a mapping to it's edges [a, b, c].
-        ::
+        For each face, [x, y, z], a mapping to its edges [a, b, c].
+
+        .. code-block:: text
 
                 y
                 /\
@@ -85,7 +88,8 @@ def unique_edges(faces, return_mapping=False):
         return unique_sets(edges)
 
 
-def unique_sets(sets, return_inverse=False):
+@warning_for_keywords()
+def unique_sets(sets, *, return_inverse=False):
     """Remove duplicate sets.
 
     Parameters
@@ -147,8 +151,10 @@ class Sphere:
 
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         x=None,
         y=None,
         z=None,
@@ -184,8 +190,12 @@ class Sphere:
             self.faces = np.asarray(faces)
 
         if theta is not None:
-            self.theta = np.array(theta, copy=False, ndmin=1)
-            self.phi = np.array(phi, copy=False, ndmin=1)
+            self.theta = np.asarray(theta)
+            if self.theta.ndim < 1:
+                self.theta = np.reshape(self.theta, (1,))
+            self.phi = np.asarray(phi)
+            if self.phi.ndim < 1:
+                self.phi = np.reshape(self.phi, (1,))
             return
 
         if xyz is not None:
@@ -223,13 +233,14 @@ class Sphere:
     def edges(self):
         return unique_edges(self.faces)
 
-    def subdivide(self, n=1):
+    @warning_for_keywords()
+    def subdivide(self, *, n=1):
         r"""Subdivides each face of the sphere into four new faces.
 
         New vertices are created at a, b, and c. Then each face [x, y, z] is
         divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
 
-        ::
+        .. code-block:: text
 
                 y
                 /\
@@ -331,8 +342,10 @@ class HemiSphere(Sphere):
 
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         x=None,
         y=None,
         z=None,
@@ -359,7 +372,8 @@ class HemiSphere(Sphere):
         Sphere.__init__(self, xyz=uniq_vertices, edges=edges, faces=faces)
 
     @classmethod
-    def from_sphere(cls, sphere, tol=1e-5):
+    @warning_for_keywords()
+    def from_sphere(cls, sphere, *, tol=1e-5):
         """Create instance from a Sphere"""
         return cls(
             theta=sphere.theta,
@@ -388,14 +402,15 @@ class HemiSphere(Sphere):
         faces = faces_from_sphere_vertices(vertices)
         return unique_sets(faces % len(self.vertices))
 
-    def subdivide(self, n=1):
+    @warning_for_keywords()
+    def subdivide(self, *, n=1):
         """Create a more subdivided HemiSphere
 
         See Sphere.subdivide for full documentation.
 
         """
         sphere = self.mirror()
-        sphere = sphere.subdivide(n)
+        sphere = sphere.subdivide(n=n)
         return HemiSphere.from_sphere(sphere)
 
     def find_closest(self, xyz):
@@ -465,7 +480,8 @@ def _get_forces(charges):
     return f_theta, potential
 
 
-def disperse_charges(hemi, iters, const=0.2):
+@warning_for_keywords()
+def disperse_charges(hemi, iters, *, const=0.2):
     """Models electrostatic repulsion on the unit sphere
 
     Places charges on a sphere and simulates the repulsive forces felt by each
@@ -524,7 +540,8 @@ def disperse_charges(hemi, iters, const=0.2):
     return HemiSphere(xyz=charges), potential
 
 
-def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
+@warning_for_keywords()
+def fibonacci_sphere(n_points, *, hemisphere=False, randomize=True, rng=None):
     """
     Generate points on the surface of a sphere using Fibonacci Spiral.
 
@@ -536,7 +553,7 @@ def fibonacci_sphere(n_points, hemisphere=False, randomize=True, rng=None):
         If True, generate points only on the upper hemisphere.
         Default is False.
     randomize : bool, optional
-        If True, randomize the starting point on the sphere. Default is True.
+        If True, randomize the starting point on the sphere.
     rng : np.random.Generator, optional
         If None creates random generator in function.
 
@@ -622,12 +639,15 @@ def _grad_equality_constraints(vects):
     return grad
 
 
-def _get_forces_alt(vects, alpha=2.0, **kwargs):
-    """Electrostatic-repulsion objective function. The alpha parameter
-    controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
-    $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
-    The weights ensure equal importance of each shell to the objective
-    function [2]_ [3]_.
+@warning_for_keywords()
+def _get_forces_alt(vects, *, alpha=2.0, **kwargs):
+    r"""Electrostatic-repulsion objective function.
+
+    The alpha parameter controls the power repulsion (energy varies as
+    $1 / r^\alpha$) :footcite:p:`Papadakis2000`. For $\alpha = 1.0$, this
+    corresponds to  electrostatic interaction energy. The weights ensure equal
+    importance of each shell to the objective function :footcite:p:`Cook2007`,
+    :footcite:p:`Caruyer2013`.
 
     Parameters
     ----------
@@ -645,15 +665,7 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
 
     References
     ----------
-    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
-           estimation of diffusion anisotropy." Magnetic Resonance Imaging
-           2000 Jul; 18(6): 671-679.
-    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
-           acquisition orders of diffusion‐weighted MRI measurements." Journal
-           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
-    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
-           multishell sampling schemes with uniform coverage in diffusion
-           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
+    .. footbibliography::
 
     """
 
@@ -676,10 +688,14 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
     return potential
 
 
-def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
-    """1st-order derivative of electrostatic-like repulsion energy [1]_.
-    The weights ensure equal importance of each shell to the objective
-    function [2]_ [3]_.
+@warning_for_keywords()
+def _get_grad_forces_alt(vects, *, alpha=2.0, **kwargs):
+    """1st-order derivative of electrostatic-like repulsion energy.
+
+    The weights ensure equal importance of each  shell to the objective function
+    :footcite:p:`Cook2007`, :footcite:p:`Caruyer2013`.
+
+    See :footcite:p:`Papadakis2000` for more details about the definition.
 
     Parameters
     ----------
@@ -697,15 +713,7 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
 
     References
     ----------
-    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
-           estimation of diffusion anisotropy." Magnetic Resonance Imaging
-           2000 Jul; 18(6): 671-679.
-    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
-           acquisition orders of diffusion‐weighted MRI measurements." Journal
-           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
-    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
-           multishell sampling schemes with uniform coverage in diffusion
-           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
+    .. footbibliography::
 
     """
 
@@ -728,7 +736,8 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
     return forces.reshape((nb_points * 3))
 
 
-def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
+@warning_for_keywords()
+def disperse_charges_alt(init_pointset, iters, *, tol=1.0e-3):
     """Reimplementation of disperse_charges making use of
     `scipy.optimize.fmin_slsqp`.
 
@@ -762,7 +771,8 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
     return vects.reshape((K, 3))
 
 
-def euler_characteristic_check(sphere, chi=2):
+@warning_for_keywords()
+def euler_characteristic_check(sphere, *, chi=2):
     r"""Checks the euler characteristic of a sphere
 
     If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of
@@ -841,9 +851,9 @@ icosahedron_vertices = np.array(
         [0, t, 1],  # 8
         [0, -t, 1],  # 9
         [0, t, -1],  # 10
-        [0, -t, -1],
+        [0, -t, -1],  # 11
     ]
-)  # 11
+)
 
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(

@@ -13,9 +13,9 @@ from dipy.testing import assert_true
 
 
 def test_read_bvals_bvecs():
-    fimg, fbvals, fbvecs = get_fnames("small_101D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gt = gradient_table(bvals, bvecs)
+    gt = gradient_table(bvals, bvecs=bvecs)
     npt.assert_array_equal(bvals, gt.bvals)
     npt.assert_array_equal(bvecs, gt.bvecs)
 

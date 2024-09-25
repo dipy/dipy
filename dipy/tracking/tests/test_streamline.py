@@ -223,13 +223,13 @@ def set_number_of_points_python(xyz, n_pols=3):
 def test_set_number_of_points():
     # Test resampling of only one streamline
     nb_points = 12
-    new_streamline_cython = set_number_of_points(streamline, nb_points)
+    new_streamline_cython = set_number_of_points(streamline, nb_points=nb_points)
     new_streamline_python = set_number_of_points_python(streamline, nb_points)
     assert_equal(len(new_streamline_cython), nb_points)
     # Using a 5 digits precision because of streamline is in float32.
     assert_array_almost_equal(new_streamline_cython, new_streamline_python, 5)
 
-    new_streamline_cython = set_number_of_points(streamline_64bit, nb_points)
+    new_streamline_cython = set_number_of_points(streamline_64bit, nb_points=nb_points)
     new_streamline_python = set_number_of_points_python(streamline_64bit, nb_points)
     assert_equal(len(new_streamline_cython), nb_points)
     assert_array_almost_equal(new_streamline_cython, new_streamline_python)
@@ -237,13 +237,15 @@ def test_set_number_of_points():
     res = []
     simple_streamline = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], "f4")
     for nb_points in range(2, 200):
-        new_streamline_cython = set_number_of_points(simple_streamline, nb_points)
+        new_streamline_cython = set_number_of_points(
+            simple_streamline, nb_points=nb_points
+        )
         res.append(nb_points - len(new_streamline_cython))
     assert_equal(np.sum(res), 0)
 
     # Test resampling of multiple streamlines of different nb_points
     nb_points = 12
-    new_streamlines_cython = set_number_of_points(streamlines, nb_points)
+    new_streamlines_cython = set_number_of_points(streamlines, nb_points=nb_points)
 
     for i, s in enumerate(streamlines):
         new_streamline_python = set_number_of_points_python(s, nb_points)
@@ -252,10 +254,12 @@ def test_set_number_of_points():
 
     # ArraySequence
     arrseq = Streamlines(streamlines)
-    new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points)
+    new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points=nb_points)
     assert_array_almost_equal(new_streamlines_as_seq_cython, new_streamlines_cython)
 
-    new_streamlines_cython = set_number_of_points(streamlines_64bit, nb_points)
+    new_streamlines_cython = set_number_of_points(
+        streamlines_64bit, nb_points=nb_points
+    )
 
     for i, s in enumerate(streamlines_64bit):
         new_streamline_python = set_number_of_points_python(s, nb_points)
@@ -263,7 +267,7 @@ def test_set_number_of_points():
 
     # ArraySequence
     arrseq = Streamlines(streamlines_64bit)
-    new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points)
+    new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points=nb_points)
     assert_array_almost_equal(new_streamlines_as_seq_cython, new_streamlines_cython)
 
     # Test streamlines with mixed dtype
@@ -274,14 +278,17 @@ def test_set_number_of_points():
         streamline.astype(np.int64),
     ]
     nb_points_mixed_dtype = [
-        len(s) for s in set_number_of_points(streamlines_mixed_dtype, nb_points)
+        len(s)
+        for s in set_number_of_points(streamlines_mixed_dtype, nb_points=nb_points)
     ]
     assert_array_equal(
         nb_points_mixed_dtype, [nb_points] * len(streamlines_mixed_dtype)
     )
 
     # Test streamlines with different shape
-    new_streamlines_cython = set_number_of_points(heterogeneous_streamlines, nb_points)
+    new_streamlines_cython = set_number_of_points(
+        heterogeneous_streamlines, nb_points=nb_points
+    )
 
     for i, s in enumerate(heterogeneous_streamlines):
         new_streamline_python = set_number_of_points_python(s, nb_points)

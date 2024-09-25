@@ -112,7 +112,7 @@ def test_register_dwi_to_template():
 
     # Use affine registration (+ don't provide a template and inputs as
     # strings):
-    fdata, fbval, fbvec = dpd.get_fnames("small_64D")
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
     warped_data, affine_mat = register_dwi_to_template(
         fdata,
         (fbval, fbvec),
@@ -129,9 +129,11 @@ def test_affine_registration():
     moving = subset_b0
     static = subset_b0
     moving_affine = static_affine = np.eye(4)
+
+    # Test without returning metric
     xformed, affine_mat = affine_registration(
-        moving,
-        static,
+        moving=moving,
+        static=static,
         moving_affine=moving_affine,
         static_affine=static_affine,
         level_iters=[5, 5],
@@ -144,10 +146,9 @@ def test_affine_registration():
 
     # [center_of_mass] + ret_metric=True should raise an error
     with pytest.raises(ValueError):
-        # For array input, must provide affines:
         xformed, affine_mat = affine_registration(
-            moving,
-            static,
+            moving=moving,
+            static=static,
             moving_affine=moving_affine,
             static_affine=static_affine,
             pipeline=["center_of_mass"],
@@ -173,8 +174,8 @@ def test_affine_registration():
     # Test methods individually (without returning any metric)
     for func in reg_methods:
         xformed, affine_mat = affine_registration(
-            moving,
-            static,
+            moving=moving,
+            static=static,
             moving_affine=moving_affine,
             static_affine=static_affine,
             level_iters=[5, 5],
@@ -182,13 +183,16 @@ def test_affine_registration():
             factors=[2, 1],
             pipeline=[func],
         )
-        # We don't ask for much:
         npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
     # Bad method
     with pytest.raises(ValueError, match=r"^pipeline\[0\] must be one.*foo.*"):
         affine_registration(
-            moving, static, moving_affine, static_affine, pipeline=["foo"]
+            moving=moving,
+            static=static,
+            moving_affine=moving_affine,
+            static_affine=static_affine,
+            pipeline=["foo"],
         )
 
     # Test methods individually (returning quality metric)
@@ -199,18 +203,18 @@ def test_affine_registration():
             # can't return metric
             with pytest.raises(ValueError, match="cannot return any quality"):
                 affine_registration(
-                    moving,
-                    static,
-                    moving_affine,
-                    static_affine,
+                    moving=moving,
+                    static=static,
+                    moving_affine=moving_affine,
+                    static_affine=static_affine,
                     pipeline=[func],
                     ret_metric=True,
                 )
             continue
 
         xformed, affine_mat, xopt, fopt = affine_registration(
-            moving,
-            static,
+            moving=moving,
+            static=static,
             moving_affine=moving_affine,
             static_affine=static_affine,
             level_iters=[5, 5],
@@ -219,13 +223,10 @@ def test_affine_registration():
             pipeline=[func],
             ret_metric=True,
         )
-        # Expected number of optimization parameters
         npt.assert_equal(len(xopt), expected_nparams[i])
-        # Optimization metric must be a single numeric value
         npt.assert_equal(isinstance(fopt, (int, float)), True)
 
     with pytest.raises(ValueError):
-        # For array input, must provide affines:
         xformed, affine_mat = affine_registration(moving, static)
 
     # Not supported transform names should raise an error
@@ -234,8 +235,8 @@ def test_affine_registration():
         affine_registration,
         moving,
         static,
-        moving_affine,
-        static_affine,
+        moving_affine=moving_affine,
+        static_affine=static_affine,
         pipeline=["wrong_transform"],
     )
 
@@ -246,7 +247,7 @@ def test_affine_registration():
     npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
     # Using strings with full paths as inputs also works:
-    t1_name, b0_name = dpd.get_fnames("syn_data")
+    t1_name, b0_name = dpd.get_fnames(name="syn_data")
     moving = b0_name
     static = t1_name
     xformed, affine_mat = affine_registration(
@@ -273,8 +274,8 @@ def test_single_transforms():
         xformed, affine_mat = func(
             moving,
             static,
-            moving_affine,
-            static_affine,
+            moving_affine=moving_affine,
+            static_affine=static_affine,
             level_iters=[5, 5],
             sigmas=[3, 1],
             factors=[2, 1],
@@ -284,9 +285,9 @@ def test_single_transforms():
 
 
 def test_register_series():
-    fdata, fbval, fbvec = dpd.get_fnames("small_64D")
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
     img = nib.load(fdata)
-    gtab = dpg.gradient_table(fbval, fbvec)
+    gtab = dpg.gradient_table(fbval, bvecs=fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
     xformed, affines = register_series(img, ref_idx)
     npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
@@ -294,7 +295,7 @@ def test_register_series():
 
 
 def test_register_dwi_series_and_motion_correction():
-    fdata, fbval, fbvec = dpd.get_fnames("small_64D")
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
     with TemporaryDirectory() as tmpdir:
         # Use an abbreviated data-set:
         img = nib.load(fdata)
@@ -306,10 +307,10 @@ def test_register_dwi_series_and_motion_correction():
         np.savetxt(op.join(tmpdir, "bvals.txt"), bvals[:10])
         np.savetxt(op.join(tmpdir, "bvecs.txt"), bvecs[:10])
         gtab = dpg.gradient_table(
-            op.join(tmpdir, "bvals.txt"), op.join(tmpdir, "bvecs.txt")
+            op.join(tmpdir, "bvals.txt"), bvecs=op.join(tmpdir, "bvecs.txt")
         )
-        reg_img, reg_affines = register_dwi_series(data, gtab, img.affine)
-        reg_img_2, reg_affines_2 = motion_correction(data, gtab, img.affine)
+        reg_img, reg_affines = register_dwi_series(data, gtab, affine=img.affine)
+        reg_img_2, reg_affines_2 = motion_correction(data, gtab, affine=img.affine)
         npt.assert_(isinstance(reg_img, nib.Nifti1Image))
 
         npt.assert_array_equal(reg_img.get_fdata(), reg_img_2.get_fdata())
@@ -373,7 +374,7 @@ def test_streamline_registration(rng):
 
 def test_register_dwi_series_multi_b0():
     # Test if register_dwi_series works with multiple b0 images
-    dwi_fname, dwi_bval_fname, dwi_bvec_fname = dpd.get_fnames("sherbrooke_3shell")
+    dwi_fname, dwi_bval_fname, dwi_bvec_fname = dpd.get_fnames(name="sherbrooke_3shell")
     data, affine = load_nifti(dwi_fname)
     bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 
@@ -381,5 +382,5 @@ def test_register_dwi_series_multi_b0():
     data_small = np.concatenate([data[..., :1], data_small], axis=-1)
     bvals_small = np.concatenate([bvals[:1], bvals[:3]], axis=0)
     bvecs_small = np.concatenate([bvecs[:1], bvecs[:3]], axis=0)
-    gtab = dpg.gradient_table(bvals_small, bvecs_small)
-    _ = motion_correction(data_small, gtab, affine)
+    gtab = dpg.gradient_table(bvals_small, bvecs=bvecs_small)
+    _ = motion_correction(data_small, gtab, affine=affine)

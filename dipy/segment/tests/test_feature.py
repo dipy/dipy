@@ -71,7 +71,7 @@ def test_feature_resample():
             return self.nb_points, streamline.shape[1]
 
         def extract(self, streamline):
-            return set_number_of_points(streamline, self.nb_points)
+            return set_number_of_points(streamline, nb_points=self.nb_points)
 
     assert_raises(ValueError, dipysfeature.ResampleFeature, nb_points=0)
     assert_raises(ValueError, ResampleFeature, nb_points=0)
@@ -89,7 +89,9 @@ def test_feature_resample():
                 # Test method extract
                 features = feature.extract(s)
                 assert_equal(features.shape, (nb_points, s.shape[1]))
-                assert_array_almost_equal(features, set_number_of_points(s, nb_points))
+                assert_array_almost_equal(
+                    features, set_number_of_points(s, nb_points=nb_points)
+                )
 
             # This feature type is not order invariant
             assert_false(feature.is_order_invariant)
@@ -97,7 +99,7 @@ def test_feature_resample():
                 features = feature.extract(s)
                 features_flip = feature.extract(s[::-1])
                 assert_array_equal(
-                    features_flip, set_number_of_points(s[::-1], nb_points)
+                    features_flip, set_number_of_points(s[::-1], nb_points=nb_points)
                 )
                 assert_true(np.any(np.not_equal(features, features_flip)))
 

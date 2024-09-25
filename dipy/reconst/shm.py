@@ -1,17 +1,11 @@
 """Tools for using spherical harmonic models to fit diffusion data.
 
+See :footcite:p:`Aganj2009`, :footcite:p:`Descoteaux2007`,
+:footcite:p:`TristanVega2009`, and :footcite:p:`TristanVega2010`.
+
 References
 ----------
-.. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-       Angle Consideration.
-.. [2] Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
-       Q-ball imaging.
-.. [3] Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
-       populations in white matter of the brain with Funk-Radon transform.
-.. [4] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
-       probability density functions in high angular resolution diffusion
-       imaging.
-
+.. footbibliography::
 
 Note about the Transpose:
 In the literature the matrix representation of these methods is often written
@@ -35,6 +29,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 descoteaux07_legacy_msg = (
@@ -58,7 +53,7 @@ def _copydoc(obj):
     return bandit
 
 
-@deprecated_params("n", "l_values", since="1.9", until="2.0")
+@deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
 def forward_sdeconv_mat(r_rh, l_values):
     """Build forward spherical deconvolution matrix
 
@@ -69,7 +64,7 @@ def forward_sdeconv_mat(r_rh, l_values):
         function. Each element ``rh[i]`` is associated with spherical harmonics
         of order ``2*i``.
     l_values : ndarray
-        The orders (l) of spherical harmonic function associated with each row
+        The orders ($l$) of spherical harmonic function associated with each row
         of the deconvolution matrix. Only even orders are allowed
 
     Returns
@@ -89,7 +84,7 @@ def forward_sdeconv_mat(r_rh, l_values):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
@@ -102,6 +97,8 @@ def sh_to_rh(r_sh, m_values, l_values):
     will be ignored as axial symmetry is assumed. Hence, there
     will be ``(sh_order/2 + 1)`` non-zero coefficients.
 
+    See :footcite:p:`Tournier2007` for further details about the method.
+
     Parameters
     ----------
     r_sh : ndarray (N,)
@@ -109,10 +106,10 @@ def sh_to_rh(r_sh, m_values, l_values):
         These coefficients must correspond to the real spherical harmonic
         functions produced by `shm.real_sh_descoteaux_from_index`.
     m_values : ndarray (N,)
-        The phase factors (m) of the spherical harmonic function associated with
+        The phase factors ($m$) of the spherical harmonic function associated with
         each coefficient.
     l_values : ndarray (N,)
-        The orders (l) of the spherical harmonic function associated with each
+        The orders ($l$) of the spherical harmonic function associated with each
         coefficient.
 
     Returns
@@ -126,9 +123,7 @@ def sh_to_rh(r_sh, m_values, l_values):
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
-        fibre orientation distribution in diffusion MRI: Non-negativity
-        constrained super-resolved spherical deconvolution
+    .. footbibliography::
 
     """
     mask = m_values == 0
@@ -144,11 +139,12 @@ def sh_to_rh(r_sh, m_values, l_values):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
-def gen_dirac(m_values, l_values, theta, phi, legacy=True):
+@warning_for_keywords()
+def gen_dirac(m_values, l_values, theta, phi, *, legacy=True):
     """Generate Dirac delta function orientated in (theta, phi) on the sphere
 
     The spherical harmonics (SH) representation of this Dirac is returned as
@@ -161,14 +157,14 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
         The phase factors of the spherical harmonic function associated with
         each coefficient.
     l_values : ndarray (N,)
-        The order (l) of the spherical harmonic function associated with each
+        The order ($l$) of the spherical harmonic function associated with each
         coefficient.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         is used for m < 0). Else, implements the basis as defined in
         Descoteaux et al. 2007 (without the absolute value).
 
@@ -191,11 +187,12 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
-def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
+@warning_for_keywords()
+def spherical_harmonics(m_values, l_values, theta, phi, *, use_scipy=True):
     """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -204,9 +201,9 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     Parameters
     ----------
     m_values : array of int ``|m| <= l``
-        The phase factors (m) of the harmonics.
+        The phase factors ($m$) of the harmonics.
     l_values : array of int ``l >= 0``
-        The orders (l) of the harmonics.
+        The orders ($l$) of the harmonics.
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -217,7 +214,7 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
     Returns
     -------
     y_mn : complex float
-        The harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     Notes
     -----
@@ -261,18 +258,24 @@ def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
 def real_sph_harm(m_values, l_values, theta, phi):
-    """Compute real spherical harmonics.
+    r"""Compute real spherical harmonics.
 
-    Where the real harmonic $Y^m_l$ is defined to be:
+    Where the real harmonic $Y_l^m$ is defined to be:
 
-        Imag($Y^m_l$) * sqrt(2)     if m > 0
-        $Y^0_l$                     if m = 0
-        Real($Y^|m|_l$) * sqrt(2)   if m < 0
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -280,9 +283,9 @@ def real_sph_harm(m_values, l_values, theta, phi):
     Parameters
     ----------
     m_values : array of int ``|m| <= l``
-        The phase factors (m) of the harmonics.
+        The phase factors ($m$) of the harmonics.
     l_values : array of int ``l >= 0``
-        The orders (l) of the harmonics.
+        The orders ($l$) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -291,7 +294,7 @@ def real_sph_harm(m_values, l_values, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at `theta` and `phi`.
+        The real harmonic $Y_l^m$ sampled at `theta` and `phi`.
 
     See Also
     --------
@@ -305,18 +308,27 @@ def real_sph_harm(m_values, l_values, theta, phi):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
-def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
-    """Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
-    is defined to be:
+@warning_for_keywords()
+def real_sh_tournier_from_index(m_values, l_values, theta, phi, *, legacy=True):
+    r"""Compute real spherical harmonics.
 
-        Real($Y^m_l$) * sqrt(2)      if m > 0
-        $Y^0_l$                      if m = 0
-        Imag($Y^|m|_l$) * sqrt(2)    if m < 0
+    The SH are computed as initially defined in :footcite:p:`Tournier2007` then
+    updated in MRtrix3 :footcite:p:`Tournier2019`, where the real harmonic
+    $Y_l^m$ is defined to be:
+
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -324,9 +336,9 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     Parameters
     ----------
     m_values : array of int ``|m| <= l``
-        The phase factors (m) of the harmonics.
+        The phase factors ($m$) of the harmonics.
     l_values : array of int ``l >= 0``
-        The orders (l) of the harmonics.
+        The orders ($l$) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -338,18 +350,11 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonics $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonics $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [2] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     # In the m < 0 case, Tournier basis considers |m|
     sh = spherical_harmonics(np.abs(m_values), l_values, phi, theta)
@@ -369,17 +374,26 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
         "m",
         "n",
     ],
-    ["m_values", "l_values"],
+    new_name=["m_values", "l_values"],
     since="1.9",
     until="2.0",
 )
-def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
-    """Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_l$ is defined to be:
+@warning_for_keywords()
+def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, *, legacy=True):
+    r"""Compute real spherical harmonics.
 
-        Imag($Y^m_l$) * sqrt(2)      if m > 0
-        $Y^0_l$                      if m = 0
-        Real($Y^m_l$) * sqrt(2)      if m < 0
+    The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
+    real harmonic $Y_l^m$ is defined to be:
+
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -387,28 +401,26 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     Parameters
     ----------
     m_values : array of int ``|m| <= l``
-        The phase factors (m) of the harmonics.
+        The phase factors ($m$) of the harmonics.
     l_values : array of int ``l >= 0``
-        The orders (l) of the harmonics.
+        The orders ($l$) of the harmonics.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         is used for m < 0). Else, implements the basis as defined in
         Descoteaux et al. 2007 (without the absolute value).
 
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
 
     References
     ----------
-     .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
@@ -424,15 +436,24 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
     return real_sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
-def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
-    """Compute real spherical harmonics as initially defined in Tournier
-    2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_l$
-    is defined to be:
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
+def real_sh_tournier(sh_order_max, theta, phi, *, full_basis=False, legacy=True):
+    r"""Compute real spherical harmonics.
 
-        Real($Y^m_l$) * sqrt(2)      if m > 0
-        $Y^0_l$                      if m = 0
-        Imag($Y^|m|_l$) * sqrt(2)    if m < 0
+    The SH are computed as initially defined in :footcite:p:`Tournier2007` then
+    updated in MRtrix3 :footcite:p:`Tournier2019`, where the real harmonic
+    $Y_l^m$ is defined to be:
+
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Re(Y_l^m)  \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -440,7 +461,7 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     Parameters
     ----------
     sh_order_max : int
-        The maximum order (l) of the spherical harmonic basis.
+        The maximum order ($l$) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -455,41 +476,43 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
     m_values : array of int
-        The phase factor (m) of the harmonics.
+        The phase factor ($m$) of the harmonics.
     l_values : array of int
-        The order (l) of the harmonics.
+        The order ($l$) of the harmonics.
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [2] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
-    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy)
+    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=legacy)
 
     return real_sh, m_values, l_values
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
-def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
-    """Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
-    where the real harmonic $Y^m_l$ is defined to be:
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
+def real_sh_descoteaux(sh_order_max, theta, phi, *, full_basis=False, legacy=True):
+    r"""Compute real spherical harmonics.
 
-        Imag($Y^m_l$) * sqrt(2)      if m > 0
-        $Y^0_l$                      if m = 0
-        Real($Y^m_l$) * sqrt(2)      if m < 0
+    The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
+    real harmonic $Y_l^m$ is defined to be:
+
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Re(Y_l^m)  \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -497,7 +520,7 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     Parameters
     ----------
     sh_order_max : int
-        The maximum order (l) of the spherical harmonic basis.
+        The maximum order ($l$) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -507,31 +530,29 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
         even order SH functions. Otherwise returns only even order SH
         functions.
     legacy: bool, optional
-        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        If true, uses DIPY's legacy descoteaux07 implementation (where $|m|$
         for m < 0). Else, implements the basis as defined in Descoteaux et al.
         2007.
 
     Returns
     -------
     real_sh : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``.
     m_values : array of int
-        The phase factor (m) of the harmonics.
+        The phase factor ($m$) of the harmonics.
     l_values : array of int
-        The order (l) of the harmonics.
+        The order ($l$) of the harmonics.
 
     References
     ----------
-     .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
     """
-    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis)
+    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy)
+    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=legacy)
 
     return real_sh, m_value, l_value
 
@@ -542,15 +563,23 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     since="1.3",
     until="2.0",
 )
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_mrtrix(sh_order_max, theta, phi):
-    """
-    Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
-    the real harmonic $Y^m_l$ is defined to be::
+    r"""
+    Compute real symmetric spherical harmonics.
 
-        Real($Y^m_l$)       if m > 0
-        $Y^0_l$             if m = 0
-        Imag($Y^|m|_l$)     if m < 0
+    The SH are computed as initially defined in :footcite:t:`Tournier2007`,
+    where the real harmonic $Y_l^m$ is defined to be:
+
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \Re(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -558,7 +587,7 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     Parameters
     ----------
     sh_order_max : int
-        The maximum order (l) of the spherical harmonic basis.
+        The maximum order ($l$) of the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -567,24 +596,17 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi`` as
-        implemented in mrtrix. Warning: the basis is Tournier et al.
-        2007 [2]_; 2004 [1]_ is slightly different.
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi`` as
+        implemented in mrtrix. Warning: the basis is :footcite:t:`Tournier2007`;
+        :footcite:p:`Tournier2004` is slightly different.
     m_values : array
-        The phase factor (m) of the harmonics.
+        The phase factor ($m$) of the harmonics.
     l_values : array
-        The order (l) of the harmonics.
+        The order ($l$) of the harmonics.
 
     References
     ----------
-    .. [1] Tournier J.D., Calamante F., Gadian D.G. and Connelly A.
-           Direct estimation of the fibre orientation density function from
-           diffusion-weighted MRI data using spherical deconvolution.
-           NeuroImage. 2004;23:1176-1185.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
+    .. footbibliography::
 
     """
     return real_sh_tournier(sh_order_max, theta, phi, legacy=True)
@@ -597,18 +619,24 @@ def real_sym_sh_mrtrix(sh_order_max, theta, phi):
     since="1.3",
     until="2.0",
 )
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def real_sym_sh_basis(sh_order_max, theta, phi):
-    """Samples a real symmetric spherical harmonic basis at point on the sphere
+    r"""Samples a real symmetric spherical harmonic basis at point on the sphere
 
     Samples the basis functions up to order `sh_order_max` at points on the
     sphere given by `theta` and `phi`. The basis functions are defined here the
-    same way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y^m_l$
+    same way as in :footcite:p:`Descoteaux2007` where the real harmonic $Y_l^m$
     is defined to be:
 
-        Imag($Y^m_l$) * sqrt(2)     if m > 0
-        $Y^0_l$                     if m = 0
-        Real($Y^|m|_l$) * sqrt(2)   if m < 0
+    .. math::
+       :nowrap:
+
+        Y_l^m =
+        \begin{cases}
+            \sqrt{2} * \Im(Y_l^m) \; if m > 0 \\
+            Y^0_l \; if m = 0 \\
+            \sqrt{2} * \Im(Y_l^{|m|}) \; if m < 0 \\
+        \end{cases}
 
     This may take scalar or array arguments. The inputs will be broadcast
     against each other.
@@ -616,7 +644,7 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     Parameters
     ----------
     sh_order_max : int
-        The maximum order (l) of the spherical harmonic basis. Even int > 0,
+        The maximum order ($l$) of the spherical harmonic basis. Even int > 0,
         max spherical harmonic order
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
@@ -626,17 +654,15 @@ def real_sym_sh_basis(sh_order_max, theta, phi):
     Returns
     -------
     y_mn : real float
-        The real harmonic $Y^m_l$ sampled at ``theta`` and ``phi``
+        The real harmonic $Y_l^m$ sampled at ``theta`` and ``phi``
     m_values : array of int
-        The phase factor (m) of the harmonics.
+        The phase factor ($m$) of the harmonics.
     l_values : array of int
-        The order (l) of the harmonics.
+        The order ($l$) of the harmonics.
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
+    .. footbibliography::
 
     """
     return real_sh_descoteaux(sh_order_max, theta, phi, legacy=True)
@@ -649,8 +675,9 @@ sph_harm_lookup = {
 }
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
-def sph_harm_ind_list(sh_order_max, full_basis=False):
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
+def sph_harm_ind_list(sh_order_max, *, full_basis=False):
     """
     Returns the order (``l``) and phase_factor (``m``) of all the symmetric
     spherical harmonics of order less then or equal to ``sh_order_max``.
@@ -662,7 +689,7 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
     Parameters
     ----------
     sh_order_max : int
-        The maximum order (l) of the spherical harmonic basis.
+        The maximum order ($l$) of the spherical harmonic basis.
         Even int > 0, max order to return
     full_basis: bool, optional
         True for SH basis with even and odd order terms
@@ -670,9 +697,9 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
     Returns
     -------
     m_list : array of int
-        phase factors (m) of even spherical harmonics
+        phase factors ($m$) of even spherical harmonics
     l_list : array of int
-        orders (l) of even spherical harmonics
+        orders ($l$) of even spherical harmonics
 
     See Also
     --------
@@ -699,7 +726,8 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
     return m_list, l_list
 
 
-def order_from_ncoef(ncoef, full_basis=False):
+@warning_for_keywords()
+def order_from_ncoef(ncoef, *, full_basis=False):
     """
     Given a number ``n`` of coefficients, calculate back the ``sh_order_max``
 
@@ -713,7 +741,7 @@ def order_from_ncoef(ncoef, full_basis=False):
     Returns
     -------
     sh_order_max: int
-        maximum order (l) of SH basis
+        maximum order ($l$) of SH basis
     """
     if full_basis:
         # Solve the equation :
@@ -773,7 +801,8 @@ def lazy_index(index):
         return slice(index[0], index[-1] + 1, step[0])
 
 
-def _gfa_sh(coef, sh0_index=0):
+@warning_for_keywords()
+def _gfa_sh(coef, *, sh0_index=0):
     """The gfa of the odf, computed from the spherical harmonic coefficients
 
     This is a private function because it only works for coefficients of
@@ -837,9 +866,10 @@ class SphHarmModel(OdfModel, Cache):
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5, assume_normed=False
+        self, gtab, sh_order_max, *, smooth=0.006, min_signal=1e-5, assume_normed=False
     ):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -848,7 +878,7 @@ class QballBaseModel(SphHarmModel):
         gtab : GradientTable
             Diffusion gradients used to acquire data
         sh_order_max : even int >= 0
-            the maximal spherical harmonic order (l) of the model
+            the maximal spherical harmonic order ($l$) of the model
         smooth : float between 0 and 1, optional
             The regularization parameter of the model
         min_signal : float, > 0, optional
@@ -889,11 +919,12 @@ class QballBaseModel(SphHarmModel):
         msg = "User must implement this method in a subclass"
         raise NotImplementedError(msg)
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fits the model to diffusion data and returns the model fit"""
         # Normalize the data and fit coefficients
         if not self.assume_normed:
-            data = normalize_data(data, self._where_b0s, self.min_signal)
+            data = normalize_data(data, self._where_b0s, min_signal=self.min_signal)
 
         # Compute coefficients using abstract method
         coef = self._get_shm_coef(data)
@@ -954,7 +985,7 @@ class SphHarmFit(OdfFit):
 
     @auto_attr
     def gfa(self):
-        return _gfa_sh(self.shm_coeff, 0)
+        return _gfa_sh(self.shm_coeff, sh0_index=0)
 
     @property
     def shm_coeff(self):
@@ -966,7 +997,8 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
-    def predict(self, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
 
@@ -981,16 +1013,17 @@ class SphHarmFit(OdfFit):
         if not hasattr(self.model, "predict"):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
-        return self.model.predict(self._shm_coef, gtab, S0)
+        return self.model.predict(self._shm_coef, gtab=gtab, S0=S0)
 
 
 class CsaOdfModel(QballBaseModel):
     """Implementation of Constant Solid Angle reconstruction method.
 
+    See :footcite:p:`Aganj2009` for further details about the method.
+
     References
     ----------
-    .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With
-           Solid Angle Consideration.
+    .. footbibliography::
     """
 
     min = 0.001
@@ -1005,7 +1038,8 @@ class CsaOdfModel(QballBaseModel):
         F = F[:, None]
         self._fit_matrix = (F * L) / (8 * np.pi) * invB
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
@@ -1019,14 +1053,12 @@ class OpdtModel(QballBaseModel):
     """Implementation of Orientation Probability Density Transform
     reconstruction method.
 
+    See :footcite:p:`TristanVega2009` and :footcite:p:`TristanVega2010` for
+    further details about the method.
+
     References
     ----------
-    .. [1] Tristan-Vega, A., et al. 2010. A new methodology for estimation of
-           fiber populations in white matter of the brain with Funk-Radon
-           transform.
-    .. [2] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
-           probability density functions in high angular resolution diffusion
-           imaging.
+    .. footbibliography::
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -1037,7 +1069,8 @@ class OpdtModel(QballBaseModel):
         delta_q = 4 * F * invB
         self._fit_matrix = delta_b, delta_q
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         delta_b, delta_q = self._fit_matrix
         return _slowadc_formula(data[..., self._where_dwi], delta_b, delta_q)
@@ -1052,10 +1085,11 @@ def _slowadc_formula(data, delta_b, delta_q):
 class QballModel(QballBaseModel):
     """Implementation of regularized Qball reconstruction method.
 
+    See :footcite:p:`Descoteaux2007` for further details about the method.
+
     References
     ----------
-    .. [1] Descoteaux, M., et al. 2007. Regularized, fast, and robust
-           analytical Q-ball imaging.
+    .. footbibliography::
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -1063,12 +1097,14 @@ class QballModel(QballBaseModel):
         F = F[:, None]
         self._fit_matrix = F * invB
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         return np.dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
-def normalize_data(data, where_b0, min_signal=1e-5, out=None):
+@warning_for_keywords()
+def normalize_data(data, where_b0, *, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0"""
     if out is None:
         out = np.array(data, dtype="float32", copy=True)
@@ -1107,7 +1143,8 @@ def lcr_matrix(H):
     return R - R.mean(0)
 
 
-def bootstrap_data_array(data, H, R, permute=None):
+@warning_for_keywords()
+def bootstrap_data_array(data, H, R, *, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
 
     data must be normalized, ie 0 < data <= 1
@@ -1115,17 +1152,14 @@ def bootstrap_data_array(data, H, R, permute=None):
     This function, and the bootstrap_data_voxel function, calculate
     residual-bootstrap samples given a Hat matrix and a Residual matrix. These
     samples can be used for non-parametric statistics or for bootstrap
-    probabilistic tractography:
+    probabilistic tractography,
+
+    See :footcite:p:`Berman2008`, :footcite:p:`Haroon2009`, and
+    :footcite:p:`Jeurissen2011`.
 
     References
     ----------
-    .. [1] J. I. Berman, et al., "Probabilistic streamline q-ball tractography
-           using the residual bootstrap" 2008.
-    .. [2] HA Haroon, et al., "Using the model-based residual bootstrap to
-           quantify uncertainty in fiber orientations from Q-ball analysis"
-           2009.
-    .. [3] B. Jeurissen, et al., "Probabilistic Fiber Tracking Using the
-           Residual Bootstrap with Constrained Spherical Deconvolution" 2011.
+    .. footbibliography::
     """
 
     if permute is None:
@@ -1137,7 +1171,8 @@ def bootstrap_data_array(data, H, R, permute=None):
     return data
 
 
-def bootstrap_data_voxel(data, H, R, permute=None):
+@warning_for_keywords()
+def bootstrap_data_voxel(data, H, R, *, permute=None):
     """Like bootstrap_data_array but faster when for a single voxel
 
     data must be 1d and normalized
@@ -1154,12 +1189,13 @@ class ResidualBootstrapWrapper:
     """Returns a residual bootstrap sample of the signal_object when indexed
 
     Wraps a signal_object, this signal object can be an interpolator. When
-    indexed, the the wrapper indexes the signal_object to get the signal.
+    indexed, the wrapper indexes the signal_object to get the signal.
     There wrapper than samples the residual bootstrap distribution of signal and
     returns that sample.
     """
 
-    def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):
+    @warning_for_keywords()
+    def __init__(self, signal_object, B, where_dwi, *, min_signal=1e-5):
         """Builds a ResidualBootstrapWapper
 
         Given some linear model described by B, the design matrix, and a
@@ -1199,10 +1235,12 @@ class ResidualBootstrapWrapper:
         return signal
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sf_to_sh(
     sf,
     sphere,
+    *,
     sh_order_max=4,
     basis_type=None,
     full_basis=False,
@@ -1224,8 +1262,10 @@ def sf_to_sh(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         True for using a SH basis containing even and odd order SH functions.
@@ -1243,17 +1283,7 @@ def sf_to_sh(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
@@ -1271,9 +1301,10 @@ def sf_to_sh(
     return sh
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sh_to_sf(
-    sh, sphere, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
+    sh, sphere, *, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
 ):
     """Spherical harmonics (SH) to spherical function (SF).
 
@@ -1290,8 +1321,10 @@ def sh_to_sf(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         True to use a SH basis containing even and odd order SH functions.
@@ -1307,17 +1340,7 @@ def sh_to_sf(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
@@ -1333,9 +1356,11 @@ def sh_to_sf(
     return sf
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sh_to_sf_matrix(
     sphere,
+    *,
     sh_order_max=4,
     basis_type=None,
     full_basis=False,
@@ -1357,8 +1382,10 @@ def sh_to_sf_matrix(
         coefficients for a full SH basis.
     basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis,
         (``None`` defaults to ``descoteaux07``).
     full_basis: bool, optional
         If True, uses a SH basis containing even and odd order SH functions.
@@ -1381,17 +1408,7 @@ def sh_to_sf_matrix(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
 
     """
 
@@ -1411,7 +1428,8 @@ def sh_to_sf_matrix(
     return B.T
 
 
-def calculate_max_order(n_coeffs, full_basis=False):
+@warning_for_keywords()
+def calculate_max_order(n_coeffs, *, full_basis=False):
     r"""Calculate the maximal harmonic order (l), given that you know the
     number of parameters that were estimated.
 
@@ -1432,7 +1450,9 @@ def calculate_max_order(n_coeffs, full_basis=False):
     -----
     The calculation in this function for the symmetric SH basis
     proceeds according to the following logic:
+
     .. math::
+
         n = \frac{1}{2} (L+1) (L+2)
         \rarrow 2n = L^2 + 3L + 2
         \rarrow L^2 + 3L + 2 - 2n = 0
@@ -1469,8 +1489,11 @@ def calculate_max_order(n_coeffs, full_basis=False):
     )
 
 
-def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True):
+@warning_for_keywords()
+def anisotropic_power(sh_coeffs, *, norm_factor=0.00001, power=2, non_negative=True):
     r"""Calculate anisotropic power map with a given SH coefficient matrix.
+
+    See :footcite:p:`DellAcqua2014` for further details about the method.
 
     Parameters
     ----------
@@ -1493,7 +1516,9 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True
     -----
     Calculate AP image based on a IxJxKxC SH coefficient matrix based on the
     equation:
+
     .. math::
+
         AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
 
     Where the last dimension, C, is made of a flattened array of $l$x$m$
@@ -1508,11 +1533,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True
 
     References
     ----------
-    .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
-            Anisotropic Power Maps: A diffusion contrast to reveal low
-            anisotropy tissues from HARDI data,
-            in: Proceedings of International Society for Magnetic Resonance in
-            Medicine. Milan, Italy.
+    .. footbibliography::
 
     """
     dim = sh_coeffs.shape[:-1]
@@ -1578,10 +1599,14 @@ def convert_sh_to_full_basis(sh_coeffs):
     return full_sh_coeffs
 
 
-def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
+@warning_for_keywords()
+def convert_sh_from_legacy(sh_coeffs, sh_basis, *, full_basis=False):
     """Convert SH coefficients in legacy SH basis to SH coefficients
-    of the new SH basis for ``descoteaux07`` [1]_ or ``tournier07`` [2]_[3]_
-    bases.
+    of the new SH basis for ``descoteaux07`` or ``tournier07`` bases.
+
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2007`,
+    :footcite:p:`Tournier2019` for the ``descoteaux07`` and ``tournier07``
+    bases, respectively.
 
     Parameters
     ----------
@@ -1589,8 +1614,10 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
     sh_basis: {'descoteaux07', 'tournier07'}
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis.
     full_basis: bool, optional
         True if the input SH basis includes both even and odd
         order SH functions, else False.
@@ -1602,17 +1629,7 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
@@ -1628,10 +1645,14 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
     return out_sh_coeffs
 
 
-def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
+@warning_for_keywords()
+def convert_sh_to_legacy(sh_coeffs, sh_basis, *, full_basis=False):
     """Convert SH coefficients in new SH basis to SH coefficients for
-    the legacy SH basis for ``descoteaux07`` [1]_ or ``tournier07`` [2]_[3]_
-    bases.
+    the legacy SH basis for ``descoteaux07`` or ``tournier07`` bases.
+
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2007`,
+    :footcite:p:`Tournier2019` for the ``descoteaux07`` and ``tournier07``
+    bases, respectively.
 
     Parameters
     ----------
@@ -1639,8 +1660,10 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
     sh_basis: {'descoteaux07', 'tournier07'}
-        ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007`,
+        :footcite:p:`Tournier2019` basis,
+        ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
+        basis.
     full_basis: bool, optional
         True if the input SH basis includes both even and odd
         order SH functions.
@@ -1652,17 +1675,7 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
-    .. [3] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     """
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
 
@@ -1689,7 +1702,9 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
 
     This can be used to convert SH representations between DIPY and MRtrix3.
 
-    See [descoteaux07]_ and [tournier19]_ for the origin of these SH bases.
+    See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2019` for the
+    origin of these SH bases.
+
     See [mrtrixbasis]_ for a description of the basis used in MRtrix3.
     See [mrtrixdipybases]_ for more details on the conversion.
 
@@ -1708,13 +1723,7 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
 
     References
     ----------
-    .. [descoteaux07] Descoteaux, M., Angelino, E., Fitzgibbons, S. and
-           Deriche, R. Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [tournier19] Tournier J-D, Smith R, Raffelt D, Tabbara R, Dhollander T,
-           Pietsch M, et al. MRtrix3: A fast, flexible and open software
-           framework for medical image processing and visualisation.
-           NeuroImage. 2019 Nov 15;202:116-137.
+    .. footbibliography::
     .. [mrtrixbasis] https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html
     .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
     """  # noqa: E501

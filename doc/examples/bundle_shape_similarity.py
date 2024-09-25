@@ -3,9 +3,9 @@
 BUAN Bundle Shape Similarity Score
 ==================================
 
-This example explains how we can use BUAN [Chandio2020]_ to calculate shape
-similarity between two given bundles. Where, shape similarity score of 1 means
-two bundles are extremely close in shape and 0 implies no shape similarity
+This example explains how we can use BUAN :footcite:p:`Chandio2020a` to calculate
+shape similarity between two given bundles. Where, shape similarity score of 1
+means two bundles are extremely close in shape and 0 implies no shape similarity
 whatsoever.
 
 Shape similarity score can be used to compare populations or individuals.
@@ -49,14 +49,14 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
     scene.SetBackground(1.0, 1, 1)
     for i, bundle in enumerate(bundles):
         color = colors[i]
-        streamtube_actor = actor.streamtube(bundle, color, linewidth=0.3)
+        streamtube_actor = actor.streamtube(bundle, colors=color, linewidth=0.3)
         streamtube_actor.RotateX(-90)
         streamtube_actor.RotateZ(90)
         scene.add(streamtube_actor)
     if show:
         window.show(scene)
     if fname is not None:
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
+        window.record(scene=scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
 show_both_bundles(
@@ -84,7 +84,9 @@ clust_thr = [0]
 
 threshold = 5
 
-ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(
+    bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
+)
 print("Shape similarity score = ", ba_score)
 
 ###############################################################################
@@ -92,7 +94,9 @@ print("Shape similarity score = ", ba_score)
 
 threshold = 10
 
-ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(
+    bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
+)
 print("Shape similarity score = ", ba_score)
 
 ###############################################################################
@@ -104,8 +108,5 @@ print("Shape similarity score = ", ba_score)
 # References
 # ----------
 #
-# .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-#         Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
-#         Garyfallidis, E. Bundle analytics, a computational framework for
-#         investigating the shapes and profiles of brain pathways across
-#         populations. Sci Rep 10, 17149 (2020)
+# .. footbibliography::
+#

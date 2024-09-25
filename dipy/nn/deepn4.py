@@ -10,7 +10,7 @@ from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow")
@@ -135,10 +135,18 @@ def UNet3D(input_shape):
 class DeepN4:
     """
     This class is intended for the DeepN4 model.
+
+    The DeepN4 model :footcite:p:`Kanakaraj2024` predicts the bias field for
+    magnetic field inhomogeneity correction on T1-weighted images.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
+    @warning_for_keywords()
     @doctest_skip_parser
-    def __init__(self, verbose=False):
+    def __init__(self, *, verbose=False):
         r"""
 
         To obtain the pre-trained model, use fetch_default_weights() like:
@@ -150,15 +158,8 @@ class DeepN4:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
-
-        References
-        ----------
-        Kanakaraj, P., Yao, T., Cai, L. Y., Lee, H. H., Newlin, N. R.,
-        Kim, M. E., & Moyer, D. (2023). DeepN4: Learning N4ITK Bias Field
-        Correction for T1-weighted Images.
         """
 
         if not have_tf:
@@ -172,14 +173,14 @@ class DeepN4:
         self.model = UNet3D(input_shape=(128, 128, 128, 1))
 
     def fetch_default_weights(self):
-        r"""
+        """
         Load the model pre-training weights to use for the fitting.
         """
-        fetch_model_weights_path = get_fnames("deepn4_default_weights")
+        fetch_model_weights_path = get_fnames(name="deepn4_default_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        r"""
+        """
         Load the custom pre-training weights to use for the fitting.
         get_fnames('deepn4_default_weights').
 
@@ -197,7 +198,7 @@ class DeepN4:
             ) from e
 
     def __predict(self, x_test):
-        r"""
+        """
         Internal prediction function
         Predict bias field from input T1 signal
 
@@ -250,7 +251,7 @@ class DeepN4:
             subj, 128
         )
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
-        input_data = normalize(input_data, 0, in_max, 0, 1)
+        input_data = normalize(input_data, min_v=0, max_v=in_max, new_min=0, new_max=1)
         input_data = np.squeeze(input_data)
         input_vols = np.zeros((1, 128, 128, 128, 1))
         input_vols[0, :, :, :, 0] = input_data
@@ -272,7 +273,7 @@ class DeepN4:
             in_max,
         )
 
-    def predict(self, img, img_affine):
+    def predict(self, img, img_affine, *, voxsize=(1, 1, 1)):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -290,7 +291,9 @@ class DeepN4:
 
         """
         # Preprocess input data (resample, normalize, and pad)
-        resampled_T1, affine2, ori_shape = transform_img(img, img_affine)
+        resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
+            transform_img(img, img_affine, voxsize=voxsize)
+        )
         (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
             self.load_resample(resampled_T1)
         )
@@ -308,7 +311,15 @@ class DeepN4:
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
         upsample_final_field = recover_img(
-            final_fields, affine2, ori_shape, np.shape(final_fields)
+            final_fields,
+            inv_affine,
+            mid_shape,
+            img.shape,
+            offset_array,
+            voxsize,
+            scale,
+            crop_vs,
+            pad_vs,
         )
 
         # Correct the image

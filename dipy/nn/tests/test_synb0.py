@@ -13,7 +13,7 @@ if have_tf:
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights():
-    file_names = get_fnames("synb0_test_data")
+    file_names = get_fnames(name="synb0_test_data")
     input_arr1 = np.load(file_names[0])["b0"][0]
     input_arr2 = np.load(file_names[0])["T1"][0]
     target_arr = np.load(file_names[1])["arr_0"][0]
@@ -26,7 +26,7 @@ def test_default_weights():
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
 def test_default_weights_batch():
-    file_names = get_fnames("synb0_test_data")
+    file_names = get_fnames(name="synb0_test_data")
     input_arr1 = np.load(file_names[0])["b0"]
     input_arr2 = np.load(file_names[0])["T1"]
     target_arr = np.load(file_names[1])["arr_0"]

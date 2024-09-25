@@ -79,9 +79,9 @@ sdr = SymmetricDiffeomorphicRegistration(
 # Perform the registration with equal images.
 
 mapping = sdr.optimize(img_ref.astype(float), img_ref.astype(float))
-img_warp = mapping.transform(img_ref, "linear")
+img_warp = mapping.transform(img_ref, interpolation="linear")
 show_images(img_ref, img_warp, "output-0")
-regtools.plot_2d_diffeomorphic_map(mapping, 5, "map-0.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=5, fname="map-0.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -93,9 +93,9 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, "map-0.png")
 # Perform the registration with binary and fuzzy images.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
-img_warp = mapping.transform(img_in, "linear")
+img_warp = mapping.transform(img_in, interpolation="linear")
 show_images(img_ref, img_warp, "output-1")
-regtools.plot_2d_diffeomorphic_map(mapping, 5, "map-1.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=5, fname="map-1.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -114,9 +114,9 @@ sdr.step_length = 0.1
 # Perform the registration and examine the output.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
-img_warp = mapping.transform(img_in, "linear")
+img_warp = mapping.transform(img_in, interpolation="linear")
 show_images(img_ref, img_warp, "output-2")
-regtools.plot_2d_diffeomorphic_map(mapping, 5, "map-2.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=5, fname="map-2.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -142,9 +142,9 @@ sdr = SymmetricDiffeomorphicRegistration(
 # Perform the registration.
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
-img_warp = mapping.transform(img_in, "linear")
+img_warp = mapping.transform(img_in, interpolation="linear")
 show_images(img_ref, img_warp, "output-3")
-regtools.plot_2d_diffeomorphic_map(mapping, 5, "map-3.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=5, fname="map-3.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

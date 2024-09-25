@@ -7,7 +7,7 @@ from libc.stdlib cimport malloc, free
 cimport numpy as cnp
 
 from dipy.tracking import Streamlines
-
+from dipy.utils.arrfuncs import as_native_array
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
@@ -99,15 +99,15 @@ def length(streamlines):
 
         arclengths = np.zeros(len(streamlines), dtype=np.float64)
 
-        if streamlines._data.dtype == np.float32:
+        if as_native_array(streamlines._data).dtype == np.float32:
             c_arclengths_from_arraysequence[float2d](
-                                    streamlines._data,
+                                    as_native_array(streamlines._data),
                                     streamlines._offsets.astype(np.intp),
                                     streamlines._lengths.astype(np.intp),
                                     arclengths)
         else:
             c_arclengths_from_arraysequence[double2d](
-                                      streamlines._data,
+                                      as_native_array(streamlines._data),
                                       streamlines._offsets.astype(np.intp),
                                       streamlines._lengths.astype(np.intp),
                                       arclengths)
@@ -319,7 +319,7 @@ def set_number_of_points(streamlines, nb_points=3):
             return Streamlines()
 
         nb_streamlines = len(streamlines)
-        dtype = streamlines._data.dtype
+        dtype = as_native_array(streamlines._data).dtype
         new_streamlines = Streamlines()
         new_streamlines._data = np.zeros((nb_streamlines * nb_points, 3),
                                          dtype=dtype)
@@ -330,12 +330,12 @@ def set_number_of_points(streamlines, nb_points=3):
 
         if dtype == np.float32:
             c_set_number_of_points_from_arraysequence[float2d](
-                streamlines._data, streamlines._offsets.astype(np.intp),
+                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
                 streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
         else:
             c_set_number_of_points_from_arraysequence[double2d](
-                streamlines._data, streamlines._offsets.astype(np.intp),
+                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
                 streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
 
@@ -538,34 +538,36 @@ cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
 
 
 def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
-    """ Compress streamlines by linearization as in [Presseau15]_.
+    """ Compress streamlines by linearization.
 
-    The compression consists in merging consecutive segments that are
-    nearly collinear. The merging is achieved by removing the point the two
-    segments have in common.
+    The compression :footcite:p:`Presseau2015` consists in merging consecutive
+    segments that are nearly collinear. The merging is achieved by removing the
+    point the two segments have in common.
 
-    The linearization process [Presseau15]_ ensures that every point being
-    removed are within a certain margin (in mm) of the resulting streamline.
-    Recommendations for setting this margin can be found in [Presseau15]_
-    (in which they called it tolerance error).
+    The linearization process :footcite:p:`Presseau2015` ensures that every
+    point being removed are within a certain margin (in mm) of the resulting
+    streamline. Recommendations for setting this margin can be found in
+    :footcite:p:`Presseau2015` (in which they called it tolerance error).
 
     The compression also ensures that two consecutive points won't be too far
     from each other (precisely less or equal than `max_segment_length`mm).
-    This is a tradeoff to speed up the linearization process [Rheault15]_. A low
-    value will result in a faster linearization but low compression, whereas
-    a high value will result in a slower linearization but high compression.
+    This is a tradeoff to speed up the linearization process
+    :footcite:p:`Rheault2015`. A low value will result in a faster linearization
+    but low compression, whereas a high value will result in a slower
+    linearization but high compression.
 
     Parameters
     ----------
     streamlines : one or a list of array-like of shape (N,3)
         Array representing x,y,z of N points in a streamline.
-    tol_error : float (optional)
-        Tolerance error in mm (default: 0.01). A rule of thumb is to set it
+    tol_error : float, optional
+        Tolerance error in mm. A rule of thumb is to set it
         to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
         streamlines.
-    max_segment_length : float (optional)
+    max_segment_length : float, optional
         Maximum length in mm of any given segment produced by the compression.
-        The default is 10mm. (In [Presseau15]_, they used a value of `np.inf`).
+        The default is 10mm. (In :footcite:p:`Presseau2015` they used a value of
+        `np.inf`).
 
     Returns
     -------
@@ -597,16 +599,11 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     Notes
     -----
     Be aware that compressed streamlines have variable step sizes. One needs to
-    be careful when computing streamlines-based metrics [Houde15]_.
+    be careful when computing streamlines-based metrics :footcite:p:`Houde2015`.
 
     References
     ----------
-    .. [Presseau15] Presseau C. et al., A new compression format for fiber
-                    tracking datasets, NeuroImage, no 109, 73-83, 2015.
-    .. [Rheault15] Rheault F. et al., Real Time Interaction with Millions of
-                   Streamlines, ISMRM, 2015.
-    .. [Houde15] Houde J.-C. et al. How to Avoid Biased Streamlines-Based
-                 Metrics for Streamlines with Variable Step Sizes, ISMRM, 2015.
+    .. footbibliography::
     """
     only_one_streamlines = False
     if type(streamlines) is cnp.ndarray:

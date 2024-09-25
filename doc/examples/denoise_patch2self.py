@@ -3,18 +3,18 @@
 Patch2Self: Self-Supervised Denoising via Statistical Independence
 ==================================================================
 
-Patch2Self [Fadnavis20]_ is  a self-supervised learning method for denoising
-DWI data, which uses the entire volume to learn a full-rank locally linear
-denoiser for that volume. By taking advantage of the oversampled q-space of DWI
-data, Patch2Self can separate structure from noise without requiring an
+Patch2Self :footcite:p:`Fadnavis2020` is  a self-supervised learning method for
+denoising DWI data, which uses the entire volume to learn a full-rank locally
+linear denoiser for that volume. By taking advantage of the oversampled q-space
+of DWI data, Patch2Self can separate structure from noise without requiring an
 explicit model for either.
 
-Classical denoising algorithms such as Local PCA [Manjon2013]_, [Veraa2016a]_,
-Non-local Means [Coupe08]_, Total Variation Norm [Knoll11]_, etc. assume
-certain properties on the signal structure. Patch2Self *does not* make any such
-assumption on the signal, instead using the fact that the noise across
-different 3D volumes of the DWI signal originates from random fluctuations in
-the acquired signal.
+Classical denoising algorithms such as Local PCA :footcite:p:`Manjon2013`,
+:footcite:p:`Veraart2016b`, Non-local Means :footcite:p:`Coupe2008`, Total
+Variation Norm :footcite:p:`Knoll2011`, etc. assume certain properties on the
+signal structure. Patch2Self *does not* make any such assumption on the signal,
+instead using the fact that the noise across different 3D volumes of the DWI
+signal originates from random fluctuations in the acquired signal.
 
 Since Patch2Self only relies on the randomness of the noise, it can be applied
 at any step in the pre-processing pipeline. The design of Patch2Self is such
@@ -25,8 +25,8 @@ distribution).
 The Patch2Self Framework:
 
 .. _patch2self:
-.. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
-   :scale: 60 %
+.. image:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
+   :width: 70 %
    :align: center
 
 The above figure demonstrates the working of Patch2Self. The idea is to build
@@ -68,7 +68,7 @@ from dipy.io.image import load_nifti, save_nifti
 # does not require noise estimation and should work with any kind of diffusion
 # data.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
 denoised_arr = patch2self(
@@ -94,22 +94,24 @@ denoised_arr = patch2self(
 #
 # .. note::
 #
-# Depending on the acquisition, b0 may exhibit signal attenuation or
-# other artefacts that are not ideal for any denoising algorithm. We therefore
-# provide an option to skip denoising b0 volumes in the data. This can be done
-# by using the option `b0_denoising=False` within Patch2Self.
+#    Depending on the acquisition, b0 may exhibit signal attenuation or
+#    other artefacts that are not ideal for any denoising algorithm. We
+#    therefore provide an option to skip denoising b0 volumes in the data.
+#    This can be done by using the option `b0_denoising=False` within
+#    Patch2Self.
 #
-# Please set ``shift_intensity=True`` and ``clip_negative_vals=False`` by
-# default to avoid negative values in the denoised output.
+#    Please set ``shift_intensity=True`` and ``clip_negative_vals=False`` by
+#    default to avoid negative values in the denoised output.
 #
-# The ``b0_threshold`` is used to separate the b0 volumes from the DWI
-# volumes. Changing the value of the b0 threshold is needed if the b0 volumes
-# in the ``bval`` file have a value greater than the default ``b0_threshold``.
+#    The ``b0_threshold`` is used to separate the b0 volumes from the DWI
+#    volumes. Changing the value of the b0 threshold is needed if the b0 volumes
+#    in the ``bval`` file have a value greater than the default
+#    ``b0_threshold``.
 #
-# The default value of ``b0_threshold`` in DIPY is set to 50. If using data
-# such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
-# associated with them in the `bval` file. Please check the b-values for b0s
-# and adjust the ``b0_threshold``` accordingly.
+#    The default value of ``b0_threshold`` in DIPY is set to 50. If using data
+#    such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
+#    associated with them in the `bval` file. Please check the b-values for b0s
+#    and adjust the ``b0_threshold``` accordingly.
 #
 # Now let's visualize the output and the residuals obtained from the denoising.
 
@@ -170,23 +172,5 @@ save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 # References
 # ----------
 #
-# .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-#                 Denoising Diffusion MRI with Self-supervised Learning,
-#                 Advances in Neural Information Processing Systems 33 (2020)
+# .. footbibliography::
 #
-# .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-#                 Weighted Image Denoising Using Overcomplete Local PCA" (2013)
-#                 PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
-#
-# .. [Veraa2016a] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-#                 mapping using random matrix theory. Magnetic Resonance in
-#                 Medicine. doi: 10.1002/mrm.26059.
-#
-# .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
-#              Barillot, An Optimized Blockwise Non Local Means Denoising
-#              Filter for 3D Magnetic Resonance Images, IEEE Transactions on
-#              Medical Imaging, 27(4):425-441, 2008
-#
-# .. [Knoll11] F. Knoll, K. Bredies, T. Pock, R. Stollberger, Second order
-#              total generalized variation (TGV) for MRI. Magnetic resonance
-#              in medicine, 65(2), pp.480-491.

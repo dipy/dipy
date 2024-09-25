@@ -129,8 +129,8 @@ def test_em_demons_step_2d():
     metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
 
     # compute the step using the implementation under test
-    actual_forward = metric.compute_demons_step(True)
-    actual_backward = metric.compute_demons_step(False)
+    actual_forward = metric.compute_demons_step(forward_step=True)
+    actual_backward = metric.compute_demons_step(forward_step=False)
 
     # Now directly compute the demons steps according to eq 4 in
     # [Vercauteren09]
@@ -223,8 +223,8 @@ def test_em_demons_step_3d():
     metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
 
     # compute the step using the implementation under test
-    actual_forward = metric.compute_demons_step(True)
-    actual_backward = metric.compute_demons_step(False)
+    actual_forward = metric.compute_demons_step(forward_step=True)
+    actual_backward = metric.compute_demons_step(forward_step=False)
 
     # Now directly compute the demons steps according to eq 4 in
     # [Vercauteren09]

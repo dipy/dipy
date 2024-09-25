@@ -6,19 +6,21 @@ import warnings
 import numpy as np
 import scipy.optimize as opt
 from scipy.optimize import minimize
-import scipy.sparse as sps
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
+    @warning_for_keywords()
     def __init__(
         self,
         fun,
         x0,
         args=(),
+        *,
         method="L-BFGS-B",
         jac=None,
         hess=None,
@@ -90,6 +92,7 @@ class Optimizer:
         constraints : dict or sequence of dict, optional
             Constraints definition (only for COBYLA and SLSQP).
             Each constraint is defined in a dictionary with fields:
+
                 type : str
                     Constraint type: 'eq' for equality, 'ineq' for inequality.
                 fun : callable
@@ -98,6 +101,7 @@ class Optimizer:
                     The Jacobian of `fun` (only for SLSQP).
                 args : sequence, optional
                     Extra arguments to be passed to the function and Jacobian.
+
             Equality constraint means that the constraint function result is to
             be zero whereas inequality means that it is to be non-negative.
             Note that COBYLA only supports inequality constraints.
@@ -113,10 +117,12 @@ class Optimizer:
         options : dict, optional
             A dictionary of solver options. All methods accept the following
             generic options:
+
                 maxiter : int
                     Maximum number of iterations to perform.
                 disp : bool
                     Set to True to print convergence messages.
+
             For method-specific options, see
             `show_options('minimize', method)`.
 
@@ -219,19 +225,14 @@ def spdot(A, B):
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
 
     """
-    if sps.issparse(A) and sps.issparse(B):
-        return A * B
-    elif sps.issparse(A) and not sps.issparse(B):
-        return (A * B).view(type=B.__class__)
-    elif not sps.issparse(A) and sps.issparse(B):
-        return (B.T * A.T).T.view(type=A.__class__)
-    else:
-        return np.dot(A, B)
+    return A @ B
 
 
+@warning_for_keywords()
 def sparse_nnls(
     y,
     X,
+    *,
     momentum=1,
     step_size=0.01,
     non_neg=True,
@@ -250,24 +251,24 @@ def sparse_nnls(
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
 
-    momentum : float, optional (default: 1).
+    momentum : float, optional
         The persistence of the gradient.
 
-    step_size : float, optional (default: 0.01).
+    step_size : float, optional
         The increment of parameter update in each iteration
 
-    non_neg : Boolean, optional (default: True)
+    non_neg : Boolean, optional
         Whether to enforce non-negativity of the solution.
 
-    check_error_iter : int (default:10)
+    check_error_iter : int, optional
         How many rounds to run between error evaluation for
         convergence-checking.
 
-    max_error_checks : int (default: 10)
+    max_error_checks : int, optional
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_sse : float (default: 0.99)
+    converge_on_sse : float, optional
       a percentage improvement in SSE that is required each time to say
       that things are still going well.
 
@@ -383,8 +384,11 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 
 
 class PositiveDefiniteLeastSquares:
-    def __init__(self, m, A=None, L=None):
-        r"""Regularized least squares with linear matrix inequality constraints
+    @warning_for_keywords()
+    def __init__(self, m, *, A=None, L=None):
+        r"""Regularized least squares with linear matrix inequality constraints.
+
+        See :footcite:p:`DelaHaije2020` for further details about the method.
 
         Generate a CVXPY representation of a regularized least squares
         optimization problem subject to linear matrix inequality constraints.
@@ -393,9 +397,9 @@ class PositiveDefiniteLeastSquares:
         ----------
         m : int
             Positive int indicating the number of regressors.
-        A : array (t = m + k + 1, p, p) (optional)
+        A : array (t = m + k + 1, p, p), optional
             Constraint matrices $A$.
-        L : array (m, m) (optional)
+        L : array (m, m), optional
             Regularization matrix $L$.
             Default: None.
 
@@ -417,13 +421,12 @@ class PositiveDefiniteLeastSquares:
         this type.
 
         This formulation is used here mainly to enforce polynomial
-        sum-of-squares constraints on various models, as described in [1]_.
+        sum-of-squares constraints on various models, as described in
+        :footcite:p:`DelaHaije2020`.
 
         References
         ----------
-        .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
-               for common diffusion MRI models using sum of squares
-               programming". NeuroImage 209, 2020, 116405.
+        .. footbibliography::
         """
         # Input
         self.A = A
@@ -477,7 +480,8 @@ class PositiveDefiniteLeastSquares:
         self.unconstrained_problem = cvxpy.Problem(p_objective)
         self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
 
-    def solve(self, design_matrix, measurements, check=False, **kwargs):
+    @warning_for_keywords()
+    def solve(self, design_matrix, measurements, *, check=False, **kwargs):
         r"""Solve CVXPY problem
 
         Solve a CVXPY problem instance for a given design matrix and a given set
@@ -489,12 +493,11 @@ class PositiveDefiniteLeastSquares:
             Design matrix.
         measurements : array (n)
             Measurements.
-        check : boolean (optional)
+        check : boolean, optional
             If True check whether the unconstrained optimization solution
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary
             constrained optimization calls.
-            Default: False
         kwargs : keyword arguments
             Arguments passed to the CVXPY solve method.
 

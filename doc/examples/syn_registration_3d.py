@@ -3,8 +3,8 @@
 Symmetric Diffeomorphic Registration in 3D
 ==========================================
 This example explains how to register 3D volumes using the Symmetric
-Normalization (SyN) algorithm proposed by Avants et al. [Avants09]_
-(also implemented in the ANTs software [Avants11]_)
+Normalization (SyN) algorithm proposed by :footcite:t:`Avants2008` (also
+implemented in the ANTs software :footcite:p:`Avants2009`)
 
 We will register two 3D volumes from the same modality using SyN with the Cross
 -Correlation (CC) metric.
@@ -24,7 +24,7 @@ from dipy.viz import regtools
 # Let's fetch two b0 volumes, the first one will be the b0 from the Stanford
 # HARDI dataset
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 stanford_b0, stanford_b0_affine = load_nifti(hardi_fname)
 stanford_b0 = np.squeeze(stanford_b0)[..., 0]
@@ -32,7 +32,7 @@ stanford_b0 = np.squeeze(stanford_b0)[..., 0]
 ###############################################################################
 # The second one will be the same b0 we used for the 2D registration tutorial
 
-t1_fname, b0_fname = get_fnames("syn_data")
+t1_fname, b0_fname = get_fnames(name="syn_data")
 syn_b0, syn_b0_affine = load_nifti(b0_fname)
 
 ###############################################################################
@@ -69,7 +69,11 @@ pre_align = np.array(
 # moving image towards the static image
 
 affine_map = AffineMap(
-    pre_align, static.shape, static_affine, moving.shape, moving_affine
+    pre_align,
+    domain_grid_shape=static.shape,
+    domain_grid2world=static_affine,
+    codomain_grid_shape=moving.shape,
+    codomain_grid2world=moving_affine,
 )
 
 resampled = affine_map.transform(moving)
@@ -77,7 +81,15 @@ resampled = affine_map.transform(moving)
 ###############################################################################
 # plot the overlapped middle slices of the volumes
 
-regtools.overlay_slices(static, resampled, None, 1, "Static", "Moving", "input_3d.png")
+regtools.overlay_slices(
+    static,
+    resampled,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Moving",
+    fname="input_3d.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -99,7 +111,7 @@ metric = CCMetric(3)
 # resolution.
 
 level_iters = [10, 10, 5]
-sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters=level_iters)
 
 ###############################################################################
 # Execute the optimization, which returns a DiffeomorphicMap object,
@@ -107,7 +119,13 @@ sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 # moving domains. We provide the pre-aligning matrix that brings the moving
 # image closer to the static image
 
-mapping = sdr.optimize(static, moving, static_affine, moving_affine, pre_align)
+mapping = sdr.optimize(
+    static,
+    moving,
+    static_grid2world=static_affine,
+    moving_grid2world=moving_affine,
+    prealign=pre_align,
+)
 
 ###############################################################################
 # Now let's warp the moving image and see if it gets similar to the static
@@ -119,7 +137,13 @@ warped_moving = mapping.transform(moving)
 # We plot the overlapped middle slices
 
 regtools.overlay_slices(
-    static, warped_moving, None, 1, "Static", "Warped moving", "warped_moving.png"
+    static,
+    warped_moving,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Static",
+    rtitle="Warped moving",
+    fname="warped_moving.png",
 )
 
 ###############################################################################
@@ -135,7 +159,13 @@ regtools.overlay_slices(
 
 warped_static = mapping.transform_inverse(static)
 regtools.overlay_slices(
-    warped_static, moving, None, 1, "Warped static", "Moving", "warped_static.png"
+    warped_static,
+    moving,
+    slice_index=None,
+    slice_type=1,
+    ltitle="Warped static",
+    rtitle="Moving",
+    fname="warped_static.png",
 )
 
 ###############################################################################
@@ -149,10 +179,5 @@ regtools.overlay_slices(
 # References
 # ----------
 #
-# .. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-#    (2009). Symmetric Diffeomorphic Image Registration with Cross-Correlation:
-#    Evaluating Automated Labeling of Elderly and Neurodegenerative Brain,
-#    12(1), 26-41.
+# .. footbibliography::
 #
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#    Normalization Tools (ANTS), 1-35.

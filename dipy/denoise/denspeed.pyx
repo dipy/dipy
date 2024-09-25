@@ -13,6 +13,7 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
+
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
                block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images

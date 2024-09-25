@@ -10,13 +10,19 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_raises,
 )
+import pytest
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.dki import common_fit_methods
 import dipy.reconst.dki_micro as dki_micro
 from dipy.reconst.dti import eig_from_lo_tri
 from dipy.sims.voxel import _check_directions, multi_tensor, multi_tensor_dki
+from dipy.utils.optpkg import optional_package
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 gtab_2s, DWIsim, DWIsim_all_taylor = None, None, None
 FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
@@ -25,13 +31,13 @@ FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
 def setup_module():
     global gtab_2s, DWIsim, DWIsim_all_taylor, FIE, RDI, ADI, ADE, Tor, RDE
 
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
 
     # single fiber simulate (which is the assumption of our model)
     FIE = np.array([[[0.30, 0.32], [0.74, 0.51]], [[0.47, 0.21], [0.80, 0.63]]])
@@ -91,6 +97,18 @@ def teardown_module():
     FIE, RDI, ADI, ADE, Tor, RDE = None, None, None, None, None, None
 
 
+@needs_cvxpy
+def test_fit_selection():
+    for model in [
+        dki_micro.KurtosisMicrostructureModel,
+        dki_micro.DiffusionKurtosisModel,
+    ]:
+        for name, method in common_fit_methods.items():
+            model_instance = model(gtab_2s, fit_method=name)
+
+            assert model_instance.fit_method == method
+
+
 def test_single_fiber_model():
     # single fiber simulate (which is the assumption of our model)
     fie = 0.49
@@ -114,12 +132,12 @@ def test_single_fiber_model():
 
     # Axonal Water Fraction
     AWF = dki_micro.axonal_water_fraction(
-        dkiF.model_params, default_sphere, mask=None, gtol=1e-5
+        dkiF.model_params, sphere=default_sphere, mask=None, gtol=1e-5
     )
     assert_almost_equal(AWF, fie)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, default_sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=default_sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 
@@ -189,12 +207,12 @@ def test_wmti_model_multi_voxel():
     # Axonal Water Fraction
     sphere = get_sphere()
     AWF = dki_micro.axonal_water_fraction(
-        dkiF.model_params, sphere, mask=None, gtol=1e-5
+        dkiF.model_params, sphere=sphere, mask=None, gtol=1e-5
     )
     assert_almost_equal(AWF, FIE)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 
@@ -226,11 +244,11 @@ def test_wmti_model_multi_voxel():
     mask[0, 0, 0] = 0
 
     dkiF = dkiM.fit(DWIsimc)
-    awf = dki_micro.axonal_water_fraction(dkiF.model_params, sphere, gtol=1e-5)
+    awf = dki_micro.axonal_water_fraction(dkiF.model_params, sphere=sphere, gtol=1e-5)
     assert_almost_equal(awf, FIEc)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere, awf=awf)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere=sphere, awf=awf)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
     assert_array_almost_equal(EDT[..., 0], ADEc, decimal=3)
@@ -243,13 +261,13 @@ def test_wmti_model_multi_voxel():
     # Check when mask is given
     dkiF = dkiM.fit(DWIsim)
     awf = dki_micro.axonal_water_fraction(
-        dkiF.model_params, sphere, gtol=1e-5, mask=mask
+        dkiF.model_params, sphere=sphere, gtol=1e-5, mask=mask
     )
     assert_almost_equal(awf, FIEc, decimal=3)
 
     # Extra-cellular and intra-cellular components
     edt, idt = dki_micro.diffusion_components(
-        dkiF.model_params, sphere, awf=awf, mask=mask
+        dkiF.model_params, sphere=sphere, awf=awf, mask=mask
     )
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)

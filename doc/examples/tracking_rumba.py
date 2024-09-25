@@ -4,9 +4,9 @@ Tracking with Robust Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ============================================================================
 
 Here, we demonstrate fiber tracking using a probabilistic direction getter
-and RUMBA-SD, a model introduced in [CanalesRodriguez2015]_. This model adapts
-Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi noise
-instead of Gaussian, which more accurately reflects the noise from MRI
+and RUMBA-SD, a model introduced in :footcite:p:`CanalesRodriguez2015`. This
+model adapts Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi
+noise instead of Gaussian, which more accurately reflects the noise from MRI
 scanners (see also
 :ref:`sphx_glr_examples_built_reconstruction_reconst_rumba.py`). This tracking
 tutorial is an extension on
@@ -36,15 +36,15 @@ from dipy.viz import actor, colormap, window
 # Enables/disables interactive visualization
 interactive = False
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-t1_fname = get_fnames("stanford_t1")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+t1_fname = get_fnames(name="stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 t1_data, t1_aff = load_nifti(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
@@ -118,7 +118,7 @@ streamlines = Streamlines(streamline_generator)
 
 color = colormap.line_colors(streamlines)
 streamlines_actor = actor.streamtube(
-    list(transform_streamlines(streamlines, inv(t1_aff))), color, linewidth=0.1
+    list(transform_streamlines(streamlines, inv(t1_aff))), colors=color, linewidth=0.1
 )
 
 vol_actor = actor.slicer(t1_data)
@@ -133,7 +133,9 @@ scene.add(streamlines_actor)
 if interactive:
     window.show(scene)
 
-window.record(scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800))
+window.record(
+    scene=scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800)
+)
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_rumba.trk")
@@ -148,10 +150,5 @@ save_trk(sft, "tractogram_probabilistic_rumba.trk")
 # References
 # ----------
 #
-# .. [CanalesRodriguez2015] Canales-Rodríguez, E. J., Daducci, A.,
-#    Sotiropoulos, S. N., Caruyer, E., Aja-Fernández, S., Radua, J.,
-#    Mendizabal, J. M. Y., Iturria-Medina, Y., Melie-García, L., Alemán-Gómez,
-#    Y., Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015).
-#    Spherical Deconvolution of Multichannel Diffusion MRI Data with
-#    Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE, 10(10),
-#    e0138910. https://doi.org/10.1371/journal.pone.0138910
+# .. footbibliography::
+#

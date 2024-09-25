@@ -1,12 +1,31 @@
 """Tools to easily make multi voxel models"""
 
+from functools import partial
+import multiprocessing
+
 import numpy as np
-from numpy.lib.stride_tricks import as_strided
 from tqdm import tqdm
 
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.utils.parallel import paramap
+
+
+def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
+    """
+    Works on a chunk of voxel data to create a list of
+    single voxel fits.
+
+    Parameters
+    ----------
+    vox_data : ndarray, shape (n_voxels, ...)
+        The data to fit.
+
+    single_voxel_fit : callable
+        The fit function to use on each voxel.
+    """
+    return [single_voxel_fit(data, **kwargs) for data in vox_data]
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -14,29 +33,60 @@ def multi_voxel_fit(single_voxel_fit):
     definition into a multi voxel model fit definition
     """
 
-    def new_fit(self, data, mask=None):
+    def new_fit(self, data, *, mask=None, **kwargs):
         """Fit method for every voxel in data"""
-        # If only one voxel just return a normal fit
+        # If only one voxel just return a standard fit, passing through
+        # the functions key-word arguments (no mask needed).
         if data.ndim == 1:
-            return single_voxel_fit(self, data)
+            return single_voxel_fit(self, data, **kwargs)
 
         # Make a mask if mask is None
         if mask is None:
-            shape = data.shape[:-1]
-            strides = (0,) * len(shape)
-            mask = as_strided(np.array(True), shape=shape, strides=strides)
+            mask = np.ones(data.shape[:-1], bool)
         # Check the shape of the mask if mask is not None
         elif mask.shape != data.shape[:-1]:
             raise ValueError("mask and data shape do not match")
 
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
-        bar = tqdm(total=np.sum(mask), position=0)
-        for ijk in ndindex(data.shape[:-1]):
-            if mask[ijk]:
-                fit_array[ijk] = single_voxel_fit(self, data[ijk])
+        # Default to serial execution:
+        engine = kwargs.get("engine", "serial")
+        if engine == "serial":
+            bar = tqdm(
+                total=np.sum(mask), position=0, disable=kwargs.get("verbose", True)
+            )
+            bar.set_description("Fitting reconstruction model using serial execution")
+            for ijk in ndindex(data.shape[:-1]):
+                if mask[ijk]:
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk], **kwargs)
                 bar.update()
-        bar.close()
+            bar.close()
+        else:
+            data_to_fit = data[np.where(mask)]
+            single_voxel_with_self = partial(single_voxel_fit, self)
+            n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
+            vox_per_chunk = kwargs.get(
+                "vox_per_chunk", np.max([data_to_fit.shape[0] // n_jobs, 1])
+            )
+            chunks = [
+                data_to_fit[ii : ii + vox_per_chunk]
+                for ii in range(0, data_to_fit.shape[0], vox_per_chunk)
+            ]
+            parallel_kwargs = {}
+            for kk in ["n_jobs", "vox_per_chunk", "engine", "verbose"]:
+                if kk in kwargs:
+                    parallel_kwargs[kk] = kwargs[kk]
+            fit_array[np.where(mask)] = np.concatenate(
+                (
+                    paramap(
+                        _parallel_fit_worker,
+                        chunks,
+                        func_args=[single_voxel_with_self],
+                        func_kwargs=kwargs,
+                        **parallel_kwargs,
+                    )
+                )
+            )
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit

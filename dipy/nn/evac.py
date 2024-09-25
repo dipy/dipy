@@ -16,7 +16,7 @@ from dipy.nn.utils import (
     set_logger_level,
     transform_img,
 )
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -54,7 +54,7 @@ logger = logging.getLogger("EVAC+")
 
 
 def prepare_img(image):
-    r"""
+    """
     Function to prepare image for model input
     Specific to EVAC+
 
@@ -98,6 +98,7 @@ def prepare_img(image):
 
 
 class Block(Layer):
+    @warning_for_keywords()
     def __init__(
         self,
         out_channels,
@@ -106,6 +107,7 @@ class Block(Layer):
         padding,
         drop_r,
         n_layers,
+        *,
         layer_type="down",
     ):
         super(Block, self).__init__()
@@ -152,8 +154,9 @@ class ChannelSum(Layer):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
 
-def init_model(model_scale=16):
-    r"""
+@warning_for_keywords()
+def init_model(*, model_scale=16):
+    """
     Function to create model for EVAC+
 
     Parameters
@@ -289,11 +292,21 @@ def init_model(model_scale=16):
 class EVACPlus:
     """
     This class is intended for the EVAC+ model.
+
+    The EVAC+ model :footcite:p:`Park2024` is a deep learning neural network for
+    brain extraction. It uses a V-net architecture combined with
+    multi-resolution input data, an additional conditional random field (CRF)
+    recurrent layer and supplementary Dice loss term for this recurrent layer.
+
+    References
+    ----------
+    .. footbibliography::
     """
 
     @doctest_skip_parser
-    def __init__(self, verbose=False):
-        r"""
+    @warning_for_keywords()
+    def __init__(self, *, verbose=False):
+        """
         The model was pre-trained for usage on
         brain extraction of T1 images.
 
@@ -302,15 +315,8 @@ class EVACPlus:
 
         Parameters
         ----------
-        verbose : bool (optional)
+        verbose : bool, optional
             Whether to show information about the processing.
-            Default: False
-
-        References
-        ----------
-        ..  [1] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
-                EVAC+: Multi-scale V-net with Deep Feature
-                CRF Layers for Brain Extraction.
         """
 
         if not have_tf:
@@ -325,17 +331,17 @@ class EVACPlus:
         self.fetch_default_weights()
 
     def fetch_default_weights(self):
-        r"""
+        """
         Load the model pre-training weights to use for the fitting.
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
         """
-        fetch_model_weights_path = get_fnames("evac_default_weights")
+        fetch_model_weights_path = get_fnames(name="evac_default_weights")
         print(f"fetched {fetch_model_weights_path}")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        r"""
+        """
         Load the custom pre-training weights to use for the fitting.
 
         Parameters
@@ -352,7 +358,7 @@ class EVACPlus:
             ) from e
 
     def __predict(self, x_test):
-        r"""
+        """
         Internal prediction function
 
         Parameters
@@ -372,13 +378,14 @@ class EVACPlus:
         self,
         T1,
         affine,
+        *,
         voxsize=(1, 1, 1),
         batch_size=None,
         return_affine=False,
         return_prob=False,
         largest_area=True,
     ):
-        r"""
+        """
         Wrapper function to facilitate prediction of larger dataset.
 
         Parameters
@@ -446,7 +453,6 @@ class EVACPlus:
                     "due to the input not having \
                                 a batch dimension",
                 )
-            batch_size = 1
 
             T1 = np.expand_dims(T1, 0)
             affine = np.expand_dims(affine, 0)
@@ -455,19 +461,31 @@ class EVACPlus:
             raise ValueError(
                 "T1 data should be a np.ndarray of dimension 3 or a list/tuple of it"
             )
+        if batch_size is None:
+            batch_size = 1
 
         input_data = np.zeros((128, 128, 128, len(T1)))
-        rev_affine = np.zeros((len(T1), 4, 4))
-        ori_shapes = np.zeros((len(T1), 3)).astype(int)
+        affines = np.zeros((len(T1), 4, 4))
+        mid_shapes = np.zeros((len(T1), 3)).astype(int)
+        offset_arrays = np.zeros((len(T1), 4, 4)).astype(int)
+        scales = np.zeros(len(T1))
+        crop_vss = np.zeros((len(T1), 3, 2))
+        pad_vss = np.zeros((len(T1), 3, 2))
 
         # Normalize the data.
         n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
             n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine, ori_shape = transform_img(n_T1[i], affine[i], voxsize[i])
+            t_img, t_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
+                transform_img(n_T1[i], affine[i], voxsize=voxsize[i])
+            )
             input_data[..., i] = t_img
-            rev_affine[i] = t_affine
-            ori_shapes[i] = ori_shape
+            affines[i] = t_affine
+            mid_shapes[i] = mid_shape
+            offset_arrays[i] = offset_array
+            scales[i] = scale
+            crop_vss[i] = crop_vs
+            pad_vss[i] = pad_vs
 
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128), dtype=np.float32)
@@ -483,13 +501,17 @@ class EVACPlus:
             prediction[-remainder:] = temp_pred
 
         output_mask = []
-        for i, T1_img in enumerate(T1):
+        for i in range(len(T1)):
             output = recover_img(
                 prediction[i],
-                rev_affine[i],
+                affines[i],
+                mid_shapes[i],
+                n_T1[i].shape,
+                offset_arrays[i],
                 voxsize=voxsize[i],
-                ori_shape=ori_shapes[i],
-                image_shape=T1_img.shape,
+                scale=scales[i],
+                crop_vs=crop_vss[i],
+                pad_vs=pad_vss[i],
             )
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
