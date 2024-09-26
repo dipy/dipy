@@ -90,9 +90,9 @@ def add_noise(signal, snr, S0, *, noise_type="rician", rng=None):
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise, 'rician' for Rice-distributed noise (default) or
         'rayleigh' for a Rayleigh distribution.
-    rng : numpy.random.Generator class, optional
-        Numpy's random generator for setting seed values when needed.
-        Default is None.
+    rng : numpy.random.Generator, optional
+        Random number generator for the noise. If ``None``, uses NumPy's default
+        random generator.
 
     Returns
     -------
@@ -361,6 +361,9 @@ def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
         need to be column wise.
     snr : float, optional
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
+    rng : numpy.random.Generator, optional
+        Random number generator for the noise. If ``None``, uses NumPy's default
+        random generator.
 
     Returns
     -------
@@ -434,6 +437,9 @@ def multi_tensor(
     snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
+    rng : numpy.random.Generator, optional
+        Random number generator for the noise. If ``None``, uses NumPy's default
+        random generator.
 
     Returns
     -------
