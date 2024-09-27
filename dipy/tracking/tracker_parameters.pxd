@@ -29,6 +29,7 @@ cdef class TrackerParameters:
     cdef public double max_angle
     cdef public double max_curvature
     cdef public int max_len
+    cdef public int random_seed
     cdef public double step_size
     cdef public double average_voxel_size
     cdef public double[3] voxel_size

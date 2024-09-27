@@ -13,8 +13,7 @@ cimport numpy as cnp
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
-from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
-                                    where_to_insert, random)
+from dipy.utils cimport fast_numpy
 
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
@@ -23,11 +22,14 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
 from dipy.tracking.tracker_parameters cimport TrackerParameters, func_ptr
+
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 from libc.math cimport floor, ceil
+
+from posix.time cimport clock_gettime, timespec, CLOCK_REALTIME
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
@@ -51,8 +53,10 @@ def generate_tractogram(double[:,::1] seed_positions,
     if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
         raise MemoryError("Memory allocation failed")
 
-    # Todo: Check if probalistic parameters are set if using probabilistic
-    # tracking. Same for PTT
+    # srand/rand don't play well with multi-threading
+    if params.random_seed > 0 and not nbr_threads == 1:
+        raise ValueError("random_seed > 0 do not work with nbr_threads != 1.")
+
     seed_start = 0
     seed_end = seed_start + _plen
     while seed_start < _len:
@@ -127,15 +131,28 @@ cdef int generate_local_streamline(double* seed,
                                    PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j
+        cnp.npy_uint32 s_random_seed
         double[3] point
         double[3] voxdir
-        double* stream_data
+        double* stream_data        
         StreamlineStatus stream_status_forward, stream_status_backward
+        timespec ts
+
+    # set the random generator
+    if params.random_seed > 0:
+        s_random_seed = int(
+            (seed[0] * 2 + seed[1] * 3 + seed[2] * 5) * params.random_seed
+            )
+    else:
+        clock_gettime(CLOCK_REALTIME, &ts)
+        s_random_seed = int(ts.tv_sec + (ts.tv_nsec / 1000000000.))
+
+    fast_numpy.seed(s_random_seed)
 
     # set the initial position
-    copy_point(seed, point)
-    copy_point(direction, voxdir)
-    copy_point(seed, &stream[params.max_len * 3])
+    fast_numpy.copy_point(seed, point)
+    fast_numpy.copy_point(direction, voxdir)
+    fast_numpy.copy_point(seed, &stream[params.max_len * 3])
 
     # forward tracking
     stream_data = <double*> malloc(100 * sizeof(double))
@@ -147,7 +164,7 @@ cdef int generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        copy_point(point, &stream[(params.max_len + i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_len + i )* 3])
 
         stream_status_forward = sc.check_point_c(point)
         if (stream_status_forward == ENDPOINT or
@@ -160,8 +177,8 @@ cdef int generate_local_streamline(double* seed,
     # # backward tracking
     stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
-    copy_point(seed, point)
-    copy_point(direction, voxdir)
+    fast_numpy.copy_point(seed, point)
+    fast_numpy.copy_point(direction, voxdir)
     for j in range(3):
         voxdir[j] = voxdir[j] * -1
 
@@ -173,7 +190,7 @@ cdef int generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        copy_point(point, &stream[(params.max_len - i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_len - i )* 3])
 
         stream_status_backward = sc.check_point_c(point)
         if (stream_status_backward == ENDPOINT or
