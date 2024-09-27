@@ -71,6 +71,7 @@ def test_tracker_probabilistic():
                                       sf_pmf_gen)
         npt.assert_equal(state, 1)
 
+
 def test_probabilistic_performances():
     # Test probabilistic tracker on the DiSCo dataset
     params = generate_tracking_parameters("prob",
