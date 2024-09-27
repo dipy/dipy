@@ -16,7 +16,7 @@ def generate_tracking_parameters(algo_name, *,
     int max_len=500, double step_size=0.5, double[:] voxel_size,
     double max_angle=30, double pmf_threshold=0.1, double probe_length=0.5,
     double probe_radius=0, int probe_quality=3, int probe_count=1,
-    double data_support_exponent=1):
+    double data_support_exponent=1, int random_seed=0):
 
     cdef TrackerParameters params
 
@@ -24,28 +24,31 @@ def generate_tracking_parameters(algo_name, *,
 
     if algo_name in ['deterministic', 'det']:
         params = TrackerParameters(max_len=max_len, step_size=step_size,
-                                    voxel_size=voxel_size,
-                                    pmf_threshold=pmf_threshold,
-                                    max_angle=max_angle)
+                                   voxel_size=voxel_size,
+                                   pmf_threshold=pmf_threshold,
+                                   max_angle=max_angle,
+                                   random_seed=random_seed)
         params.set_tracker_c(deterministic_tracker)
         return params
     elif algo_name in ['probabilistic', 'prob']:
         params = TrackerParameters(max_len=max_len, step_size=step_size,
-                                    voxel_size=voxel_size,
-                                    pmf_threshold=pmf_threshold,
-                                    max_angle=max_angle)
+                                   voxel_size=voxel_size,
+                                   pmf_threshold=pmf_threshold,
+                                   max_angle=max_angle,
+                                   random_seed=random_seed)
         params.set_tracker_c(probabilistic_tracker)
         return params
     elif algo_name == 'ptt':
         params = TrackerParameters(max_len=max_len, step_size=step_size,
-                                    voxel_size=voxel_size,
-                                    pmf_threshold=pmf_threshold,
-                                    max_angle=max_angle,
-                                    probe_length=probe_length,
-                                    probe_radius=probe_radius,
-                                    probe_quality=probe_quality,
-                                    probe_count=probe_count,
-                                    data_support_exponent=data_support_exponent)
+                                   voxel_size=voxel_size,
+                                   pmf_threshold=pmf_threshold,
+                                   max_angle=max_angle,
+                                   probe_length=probe_length,
+                                   probe_radius=probe_radius,
+                                   probe_quality=probe_quality,
+                                   probe_count=probe_count,
+                                   data_support_exponent=data_support_exponent,
+                                   random_seed=random_seed)
         params.set_tracker_c(parallel_transport_tracker)
         return params
     #elif algo_name == 'eudx':
@@ -62,10 +65,11 @@ cdef class TrackerParameters:
     def __init__(self, max_len, step_size, voxel_size,
                  max_angle, pmf_threshold=None, probe_length=None,
                  probe_radius=None, probe_quality=None, probe_count=None,
-                 data_support_exponent=None):
+                 data_support_exponent=None, random_seed=None):
         cdef cnp.npy_intp i
 
         self.max_len = max_len
+        self.random_seed = random_seed
         self.step_size = step_size
         self.average_voxel_size = 0
         for i in range(3):
