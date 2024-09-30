@@ -3,7 +3,7 @@ import numpy as np
 from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
 from dipy.sims.voxel import add_noise
 from dipy.testing.decorators import warning_for_keywords
-
+from sklearn.linear_model import LinearRegression
 
 class TissueClassifierHMRF:
     """
@@ -125,3 +125,98 @@ class TissueClassifierHMRF:
         PVE = PVE[..., 1:]
 
         return initial_segmentation, final_segmentation, PVE
+
+
+def compute_directional_average(data, bvals, b0_thresh=10):
+    """
+    Compute the mean signal for each unique b-value shell and fit a linear model.
+
+    Parameters
+    ----------
+        data : ndarray
+            The diffusion MRI data.
+        bvals : ndarray
+            The b-values corresponding to the diffusion data.
+
+    Returns
+    -------
+        P : float
+            The slope of the linear model.
+        V : float
+            The intercept of the linear model.
+    """
+    unique_bvals = np.unique(bvals)
+    # Mean signal for b=0 (non-diffusion weighted)
+    s0 = data[bvals < b0_thresh].mean()
+
+    if len(unique_bvals) <= 2:
+        raise ValueError("Insufficient unique b-values for fitting.")
+
+    # If the mean signal for b=0 is too low, return 0, 0
+    if data[bvals < b0_thresh].mean() < 50:
+        return 0, 0
+
+    S_bvals = [data[bvals == bval].mean() / (s0 + 0.01)
+               for bval in unique_bvals[1:]]
+    S_bvals = np.array(S_bvals)
+
+    # Avoid log(0)
+    if 0 in S_bvals:
+        S_bvals = S_bvals + 0.001
+
+    S_log = np.log(S_bvals)
+
+    xb = -np.log(np.arange(1, len(unique_bvals)))
+
+    # Reshape xb for linear regression
+    X = xb[:len(S_log)].reshape(-1, 1)
+    y = S_log
+
+    # Fit linear model
+    model = LinearRegression()
+    model.fit(X, y)
+    P = model.coef_[0]
+    V = model.intercept_
+
+    return P, V
+
+
+def compute_P_map(data, bvals, wm_threshold=0.5, b0_thresh=10):
+    """
+    Compute the P (slope) map for the entire dataset.
+
+    Parameters
+    ----------
+        data : ndarray
+            The diffusion MRI data.
+        bvals : ndarray
+            The b-values corresponding to the diffusion data.
+        wm_threshold : float, optional
+            The threshold below which a voxel is considered white matter.
+            Default is 0.5.
+        b0_thresh : float, optional
+            The threshold below for a b=0 image.
+            Default is 10.
+
+    Returns
+    -------
+        wm_mask : ndarray
+            A binary mask for white matter.
+        gm_mask : ndarray
+            A binary mask for grey matter.
+    """
+    P_map = np.zeros(data.shape[:-1])
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            for k in range(data.shape[2]):
+                voxel_data = data[i, j, k, :]
+                if np.any(bvals != 0):
+                    P, _ = compute_directional_average(voxel_data, bvals, b0_thresh)
+                    P_map[i, j, k] = P
+
+    wm_mask = (P_map <= wm_threshold) & (P_map > 0.01)
+
+    # Grey matter has a higher P value than white matter
+    gm_mask = (P_map > wm_threshold)
+
+    return wm_mask, gm_mask
