@@ -28,10 +28,10 @@ def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     vox_weights = kwargs.pop("weights", None)
     if type(vox_weights) is np.ndarray:
         return [
-                 single_voxel_fit(
-                   data, **(dict({"weights": weights}, **kwargs))
-                 ) for data, weights in zip(vox_data, vox_weights)
-               ]
+            single_voxel_fit(
+                data, **(dict({"weights": weights}, **kwargs))
+            ) for data, weights in zip(vox_data, vox_weights)
+        ]
     else:
         return [single_voxel_fit(data, **kwargs) for data in vox_data]
 
@@ -127,12 +127,12 @@ def multi_voxel_fit(single_voxel_fit):
                     parallel_kwargs[kk] = kwargs[kk]
 
             mvf = paramap(
-                    _parallel_fit_worker,
-                    chunks,
-                    func_args=[single_voxel_with_self],
-                    func_kwargs=kwargs_chunks,
-                    **parallel_kwargs,
-                  )
+                _parallel_fit_worker,
+                chunks,
+                func_args=[single_voxel_with_self],
+                func_kwargs=kwargs_chunks,
+                **parallel_kwargs,
+            )
 
             if isinstance(mvf[0][0], tuple):
                 tmp_fit_array = np.concatenate(
