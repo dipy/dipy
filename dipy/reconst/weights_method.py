@@ -12,7 +12,7 @@ def simple_cutoff(residuals, log_residuals, pred_sig,
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
-    cond = (np.abs(residuals) > +cutoff*C*HAT_factor)
+    cond = (np.abs(residuals) > + cutoff * C * HAT_factor)
     return cond
 
 
@@ -30,8 +30,8 @@ def two_eyes_cutoff(residuals, log_residuals, pred_sig,
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
-    cond = (residuals > +cutoff*C*HAT_factor) |\
-           (log_residuals < -cutoff*C*HAT_factor/pred_sig)
+    cond = (residuals > + cutoff * C * HAT_factor) |\
+           (log_residuals < - cutoff * C * HAT_factor / pred_sig)
     return cond
 
 
@@ -103,17 +103,17 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
 
     # NOTE: if more M-estimators are added, please update the docs!
     if m_est == "gm":
-        w = (C/pred_sig)**2 / ((C/pred_sig)**2 + log_residuals**2)**2
+        w = (C / pred_sig)**2 / ((C / pred_sig)**2 + log_residuals**2)**2
     if m_est == "cauchy":
-        w = C**2 / ((C/pred_sig)**2 + log_residuals**2)
+        w = C**2 / ((C / pred_sig)**2 + log_residuals**2)
 
     robust = None
 
     if idx == total_idx - 1:  # OLS without outliers
         cond = outlier_condition_func(
-                 residuals, log_residuals, pred_sig,
-                 design_matrix, leverages, C, cutoff
-               )
+            residuals, log_residuals, pred_sig,
+            design_matrix, leverages, C, cutoff
+        )
         robust = np.logical_not(cond)
 
         w[robust == 0] = 0.0
@@ -203,9 +203,9 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
 
     if idx == total_idx:
         cond = outlier_condition_func(
-                 residuals, log_residuals, pred_sig,
-                 design_matrix, leverages, C, cutoff
-               )
+            residuals, log_residuals, pred_sig,
+            design_matrix, leverages, C, cutoff
+        )
         robust = np.logical_not(cond)
 
         w[robust == 0] = 0.0
