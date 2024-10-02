@@ -193,7 +193,7 @@ def compute_directional_average(data, bvals, *,
 
 
 def dam_classifier(data, bvals, wm_threshold, *,
-                    b0_thresh=50, low_signal_threshold=50):
+                   b0_thresh=50, low_signal_threshold=50):
     """
     Compute the P (slope) map for the entire dataset.
 
