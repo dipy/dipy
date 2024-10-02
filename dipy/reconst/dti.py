@@ -1482,15 +1482,15 @@ def wls_fit_tensor(design_matrix, data, *, weights=None, return_S0_hat=False,
 
     if return_S0_hat:
         return (
-                 eig_from_lo_tri(
-                   fit_result, min_diffusivity=tol / -design_matrix.min()
-                 ),
-                 np.exp(-fit_result[:, -1])
-               ), leverages
+            eig_from_lo_tri(
+            fit_result, min_diffusivity=tol / -design_matrix.min()),
+            np.exp(-fit_result[:, -1])
+            ),\
+            leverages
     else:
         return eig_from_lo_tri(
-                 fit_result, min_diffusivity=tol / -design_matrix.min()
-               ), leverages
+            fit_result, min_diffusivity=tol / -design_matrix.min()),\
+            leverages
 
 
 @iter_fit_tensor()
@@ -2009,8 +2009,9 @@ def restore_fit_tensor(
             if sigma is not None:
                 C = sigma
             else:
-                C = factor * np.median(np.abs(residuals -
-                                              np.median(residuals)))
+                C = factor * np.median(
+                    np.abs(residuals - np.median(residuals))
+                )
 
             # If any of the residuals are outliers (using 3 sigma as a
             # criterion following Chang et al., e.g page 1089):
@@ -2022,8 +2023,9 @@ def restore_fit_tensor(
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
                     # GM weights (original Restore paper used Cauchy weights)
-                    C = factor * np.median(np.abs(residuals -
-                                                  np.median(residuals)))
+                    C = factor * np.median(
+                        np.abs(residuals - np.median(residuals))
+                    )
                     denominator = (C**2 + residuals**2)**2
                     gmm = np.divide(C**2, denominator,
                                     out=np.zeros_like(denominator),
