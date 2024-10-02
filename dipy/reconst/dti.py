@@ -1483,10 +1483,9 @@ def wls_fit_tensor(design_matrix, data, *, weights=None, return_S0_hat=False,
     if return_S0_hat:
         return (
             eig_from_lo_tri(
-            fit_result, min_diffusivity=tol / -design_matrix.min()),
-            np.exp(-fit_result[:, -1])
-            ),\
-            leverages
+                fit_result, min_diffusivity=tol / -design_matrix.min()),
+                np.exp(-fit_result[:, -1])
+        ), leverages
     else:
         return eig_from_lo_tri(
             fit_result, min_diffusivity=tol / -design_matrix.min()),\
