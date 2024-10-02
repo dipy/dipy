@@ -438,7 +438,7 @@ def test_wls_and_ls_fit():
 
     # Test wls given S^2 weights argument, matches default wls
     design_matrix = dti.design_matrix(gtab)
-    YN = Y + 10*np.random.normal(size=Y.shape)  # error, or weights irrelevant
+    YN = Y + 10 * np.random.normal(size=Y.shape)  # error or weights irrelevant
     YN[YN < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     # wls calculation
     D_w, _ = wls_fit_tensor(design_matrix, YN, return_lower_triangular=True)
@@ -480,7 +480,7 @@ def test_rwls_rnlls_irls_fit():
     npt.assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    YN = Y + 1*np.random.normal(size=Y.shape)  # error, or weights irrelevant
+    YN = Y + 1 * np.random.normal(size=Y.shape)  # error, or weights irrelevant
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
@@ -497,13 +497,13 @@ def test_rwls_rnlls_irls_fit():
                               np.linalg.norm(tensor_est.evals[0] - evals))
 
         npt.assert_array_less(
-                               np.linalg.norm(
-                                 tensor_est_R.quadratic_form[0] - tensor
-                               ),
-                               np.linalg.norm(
-                                 tensor_est.quadratic_form[0] - tensor
-                               )
-                             )
+            np.linalg.norm(
+                tensor_est_R.quadratic_form[0] - tensor
+            ),
+            np.linalg.norm(
+                tensor_est.quadratic_form[0] - tensor
+            )
+        )
 
         npt.assert_array_less(np.linalg.norm(tensor_est_R.md[0] - md),
                               np.linalg.norm(tensor_est.md[0] - md))
