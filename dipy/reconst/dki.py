@@ -2007,17 +2007,17 @@ class DiffusionKurtosisModel(ReconstModel):
 
                 # define weights for next fit
                 if mask is not None:
-                    w[cond], robust_mask =\
-                      weights_method(data_thres[cond], pred_sig[cond],
-                                     self.design_matrix, leverages[cond],
-                                     rdx, TDX, robust[cond])
+                    w[cond], robust_mask = weights_method(
+                      data_thres[cond], pred_sig[cond], self.design_matrix,
+                      leverages[cond], rdx, TDX, robust[cond]
+                    )
                     if robust_mask is not None:
                         robust[cond] = robust_mask
                 else:
-                    w, robust =\
-                      weights_method(data_thres, pred_sig,
-                                     self.design_matrix, leverages,
-                                     rdx, TDX, robust)
+                    w, robust = weights_method(
+                      data_thres, pred_sig, self.design_matrix,
+                      leverages, rdx, TDX, robust
+                    )
 
             tmp, extra = self.multi_fit(data_thres, mask=mask,
                                         weights=w, return_leverages=True)
