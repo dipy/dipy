@@ -141,10 +141,8 @@ def compute_directional_average(data, bvals, *,
         The b-values corresponding to the diffusion data.
     b0_thresh : float, optional
         The threshold below for a b=0 image.
-        Default is 50.
     low_signal_threshold : float, optional
         The threshold below which a voxel is considered to have low signal.
-        Default is 50.
 
     Returns
     -------
@@ -206,11 +204,9 @@ def dam_classifier(data, bvals, wm_threshold, *,
     wm_threshold : float, optional
         The threshold below which a voxel is considered white matter.
     b0_thresh : float, optional
-        The threshold below for a b=0 image.
-        Default is 50.
+        The intensity threshold for a b=0 image.
     low_signal_threshold : float, optional
         The threshold below which a voxel is considered to have low signal.
-        Default is 50.
 
     Returns
     -------
