@@ -51,7 +51,7 @@ from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.viz import actor, window
 
-sphere = get_sphere("symmetric724")
+sphere = get_sphere(name="symmetric724")
 
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was
@@ -59,11 +59,11 @@ sphere = get_sphere("symmetric724")
 # provided in their paper :footcite:p:`Hansen2016a`). The total size of the
 # downloaded data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # For the sake of simplicity, we only select two non-zero b-values for this
@@ -79,7 +79,7 @@ data = data[..., sel_b]
 # The gradient table is also selected to have the selected b-values (0, 1000
 # and 2000)
 
-gtab = gradient_table(bvals[sel_b], bvecs[sel_b])
+gtab = gradient_table(bvals[sel_b], bvecs=bvecs[sel_b])
 
 ###############################################################################
 # We make use of the ``median_otsu`` method to generate the mask for the data

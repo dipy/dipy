@@ -574,7 +574,7 @@ class ReconstDtiFlow(Workflow):
         )
 
         tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
-        tenfit = tenmodel.fit(data, mask)
+        tenfit = tenmodel.fit(data, mask=mask)
 
         return tenfit, tenmodel, gtab
 
@@ -1421,7 +1421,7 @@ class ReconstDkiFlow(Workflow):
 
         gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method, **optional_args)
-        dkfit = dkmodel.fit(data, mask)
+        dkfit = dkmodel.fit(data, mask=mask)
 
         return dkfit, dkmodel, gtab
 
@@ -1558,7 +1558,7 @@ class ReconstIvimFlow(Workflow):
 
         gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
-        ivimfit = ivimmodel.fit(data, mask)
+        ivimfit = ivimmodel.fit(data, mask=mask)
 
         return ivimfit, gtab
 

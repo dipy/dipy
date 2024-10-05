@@ -31,7 +31,7 @@ from dipy.sims.voxel import multi_tensor_dki, single_tensor
 # b-vectors. Here we use the GradientTable of the sample DIPY_ dataset
 # ``small_64D``.
 
-fimg, fbvals, fbvecs = get_fnames("small_64D")
+fimg, fbvals, fbvecs = get_fnames(name="small_64D")
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
 ###############################################################################
@@ -46,7 +46,7 @@ bvecs = np.concatenate((bvecs, bvecs), axis=0)
 # The b-values and gradient directions are then converted to DIPY's
 # ``GradientTable`` format.
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # In ``mevals`` we save the eigenvalues of each tensor. To simulate crossing

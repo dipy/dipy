@@ -29,6 +29,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 descoteaux07_legacy_msg = (
@@ -142,7 +143,8 @@ def sh_to_rh(r_sh, m_values, l_values):
     since="1.9",
     until="2.0",
 )
-def gen_dirac(m_values, l_values, theta, phi, legacy=True):
+@warning_for_keywords()
+def gen_dirac(m_values, l_values, theta, phi, *, legacy=True):
     """Generate Dirac delta function orientated in (theta, phi) on the sphere
 
     The spherical harmonics (SH) representation of this Dirac is returned as
@@ -189,7 +191,8 @@ def gen_dirac(m_values, l_values, theta, phi, legacy=True):
     since="1.9",
     until="2.0",
 )
-def spherical_harmonics(m_values, l_values, theta, phi, use_scipy=True):
+@warning_for_keywords()
+def spherical_harmonics(m_values, l_values, theta, phi, *, use_scipy=True):
     """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcast
@@ -309,7 +312,8 @@ def real_sph_harm(m_values, l_values, theta, phi):
     since="1.9",
     until="2.0",
 )
-def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
+@warning_for_keywords()
+def real_sh_tournier_from_index(m_values, l_values, theta, phi, *, legacy=True):
     r"""Compute real spherical harmonics.
 
     The SH are computed as initially defined in :footcite:p:`Tournier2007` then
@@ -374,7 +378,8 @@ def real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=True):
     since="1.9",
     until="2.0",
 )
-def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
+@warning_for_keywords()
+def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, *, legacy=True):
     r"""Compute real spherical harmonics.
 
     The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
@@ -432,7 +437,8 @@ def real_sh_descoteaux_from_index(m_values, l_values, theta, phi, legacy=True):
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
+@warning_for_keywords()
+def real_sh_tournier(sh_order_max, theta, phi, *, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics.
 
     The SH are computed as initially defined in :footcite:p:`Tournier2007` then
@@ -480,18 +486,19 @@ def real_sh_tournier(sh_order_max, theta, phi, full_basis=False, legacy=True):
     ----------
     .. footbibliography::
     """
-    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy)
+    real_sh = real_sh_tournier_from_index(m_values, l_values, theta, phi, legacy=legacy)
 
     return real_sh, m_values, l_values
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
+@warning_for_keywords()
+def real_sh_descoteaux(sh_order_max, theta, phi, *, full_basis=False, legacy=True):
     r"""Compute real spherical harmonics.
 
     The definition adopted here follows :footcite:p:`Descoteaux2007`, where the
@@ -540,12 +547,12 @@ def real_sh_descoteaux(sh_order_max, theta, phi, full_basis=False, legacy=True):
     ----------
     .. footbibliography::
     """
-    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis)
+    m_value, l_value = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
 
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy)
+    real_sh = real_sh_descoteaux_from_index(m_value, l_value, theta, phi, legacy=legacy)
 
     return real_sh, m_value, l_value
 
@@ -669,7 +676,8 @@ sph_harm_lookup = {
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-def sph_harm_ind_list(sh_order_max, full_basis=False):
+@warning_for_keywords()
+def sph_harm_ind_list(sh_order_max, *, full_basis=False):
     """
     Returns the order (``l``) and phase_factor (``m``) of all the symmetric
     spherical harmonics of order less then or equal to ``sh_order_max``.
@@ -718,7 +726,8 @@ def sph_harm_ind_list(sh_order_max, full_basis=False):
     return m_list, l_list
 
 
-def order_from_ncoef(ncoef, full_basis=False):
+@warning_for_keywords()
+def order_from_ncoef(ncoef, *, full_basis=False):
     """
     Given a number ``n`` of coefficients, calculate back the ``sh_order_max``
 
@@ -792,7 +801,8 @@ def lazy_index(index):
         return slice(index[0], index[-1] + 1, step[0])
 
 
-def _gfa_sh(coef, sh0_index=0):
+@warning_for_keywords()
+def _gfa_sh(coef, *, sh0_index=0):
     """The gfa of the odf, computed from the spherical harmonic coefficients
 
     This is a private function because it only works for coefficients of
@@ -857,8 +867,9 @@ class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
 
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+    @warning_for_keywords()
     def __init__(
-        self, gtab, sh_order_max, smooth=0.006, min_signal=1e-5, assume_normed=False
+        self, gtab, sh_order_max, *, smooth=0.006, min_signal=1e-5, assume_normed=False
     ):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -908,11 +919,12 @@ class QballBaseModel(SphHarmModel):
         msg = "User must implement this method in a subclass"
         raise NotImplementedError(msg)
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fits the model to diffusion data and returns the model fit"""
         # Normalize the data and fit coefficients
         if not self.assume_normed:
-            data = normalize_data(data, self._where_b0s, self.min_signal)
+            data = normalize_data(data, self._where_b0s, min_signal=self.min_signal)
 
         # Compute coefficients using abstract method
         coef = self._get_shm_coef(data)
@@ -973,7 +985,7 @@ class SphHarmFit(OdfFit):
 
     @auto_attr
     def gfa(self):
-        return _gfa_sh(self.shm_coeff, 0)
+        return _gfa_sh(self.shm_coeff, sh0_index=0)
 
     @property
     def shm_coeff(self):
@@ -985,7 +997,8 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
-    def predict(self, gtab=None, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, *, gtab=None, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
 
@@ -1000,7 +1013,7 @@ class SphHarmFit(OdfFit):
         if not hasattr(self.model, "predict"):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
-        return self.model.predict(self._shm_coef, gtab, S0)
+        return self.model.predict(self._shm_coef, gtab=gtab, S0=S0)
 
 
 class CsaOdfModel(QballBaseModel):
@@ -1025,7 +1038,8 @@ class CsaOdfModel(QballBaseModel):
         F = F[:, None]
         self._fit_matrix = (F * L) / (8 * np.pi) * invB
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
@@ -1055,7 +1069,8 @@ class OpdtModel(QballBaseModel):
         delta_q = 4 * F * invB
         self._fit_matrix = delta_b, delta_q
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         delta_b, delta_q = self._fit_matrix
         return _slowadc_formula(data[..., self._where_dwi], delta_b, delta_q)
@@ -1082,12 +1097,14 @@ class QballModel(QballBaseModel):
         F = F[:, None]
         self._fit_matrix = F * invB
 
-    def _get_shm_coef(self, data, mask=None):
+    @warning_for_keywords()
+    def _get_shm_coef(self, data, *, mask=None):
         """Returns the coefficients of the model"""
         return np.dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
-def normalize_data(data, where_b0, min_signal=1e-5, out=None):
+@warning_for_keywords()
+def normalize_data(data, where_b0, *, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0"""
     if out is None:
         out = np.array(data, dtype="float32", copy=True)
@@ -1126,7 +1143,8 @@ def lcr_matrix(H):
     return R - R.mean(0)
 
 
-def bootstrap_data_array(data, H, R, permute=None):
+@warning_for_keywords()
+def bootstrap_data_array(data, H, R, *, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
 
     data must be normalized, ie 0 < data <= 1
@@ -1153,7 +1171,8 @@ def bootstrap_data_array(data, H, R, permute=None):
     return data
 
 
-def bootstrap_data_voxel(data, H, R, permute=None):
+@warning_for_keywords()
+def bootstrap_data_voxel(data, H, R, *, permute=None):
     """Like bootstrap_data_array but faster when for a single voxel
 
     data must be 1d and normalized
@@ -1175,7 +1194,8 @@ class ResidualBootstrapWrapper:
     returns that sample.
     """
 
-    def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):
+    @warning_for_keywords()
+    def __init__(self, signal_object, B, where_dwi, *, min_signal=1e-5):
         """Builds a ResidualBootstrapWapper
 
         Given some linear model described by B, the design matrix, and a
@@ -1216,9 +1236,11 @@ class ResidualBootstrapWrapper:
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sf_to_sh(
     sf,
     sphere,
+    *,
     sh_order_max=4,
     basis_type=None,
     full_basis=False,
@@ -1280,8 +1302,9 @@ def sf_to_sh(
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sh_to_sf(
-    sh, sphere, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
+    sh, sphere, *, sh_order_max=4, basis_type=None, full_basis=False, legacy=True
 ):
     """Spherical harmonics (SH) to spherical function (SF).
 
@@ -1334,8 +1357,10 @@ def sh_to_sf(
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def sh_to_sf_matrix(
     sphere,
+    *,
     sh_order_max=4,
     basis_type=None,
     full_basis=False,
@@ -1403,7 +1428,8 @@ def sh_to_sf_matrix(
     return B.T
 
 
-def calculate_max_order(n_coeffs, full_basis=False):
+@warning_for_keywords()
+def calculate_max_order(n_coeffs, *, full_basis=False):
     r"""Calculate the maximal harmonic order (l), given that you know the
     number of parameters that were estimated.
 
@@ -1463,7 +1489,8 @@ def calculate_max_order(n_coeffs, full_basis=False):
     )
 
 
-def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2, non_negative=True):
+@warning_for_keywords()
+def anisotropic_power(sh_coeffs, *, norm_factor=0.00001, power=2, non_negative=True):
     r"""Calculate anisotropic power map with a given SH coefficient matrix.
 
     See :footcite:p:`DellAcqua2014` for further details about the method.
@@ -1572,7 +1599,8 @@ def convert_sh_to_full_basis(sh_coeffs):
     return full_sh_coeffs
 
 
-def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
+@warning_for_keywords()
+def convert_sh_from_legacy(sh_coeffs, sh_basis, *, full_basis=False):
     """Convert SH coefficients in legacy SH basis to SH coefficients
     of the new SH basis for ``descoteaux07`` or ``tournier07`` bases.
 
@@ -1617,7 +1645,8 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, full_basis=False):
     return out_sh_coeffs
 
 
-def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
+@warning_for_keywords()
+def convert_sh_to_legacy(sh_coeffs, sh_basis, *, full_basis=False):
     """Convert SH coefficients in new SH basis to SH coefficients for
     the legacy SH basis for ``descoteaux07`` or ``tournier07`` bases.
 

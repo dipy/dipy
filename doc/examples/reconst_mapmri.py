@@ -40,7 +40,7 @@ from dipy.viz.plotting import compare_maps
 # basis. The total size of the downloaded data is 187.66 MBytes, however you
 # only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 ###############################################################################
 # ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
@@ -55,7 +55,7 @@ fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
@@ -354,7 +354,7 @@ mapfit_both_iso = map_model_both_iso.fit(data_small)
 ###############################################################################
 # Load an ODF reconstruction sphere.
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Compute the ODFs.

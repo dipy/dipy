@@ -22,9 +22,6 @@ from dipy.workflows.workflow import Workflow
 
 pd, have_pd, _ = optional_package("pandas")
 
-if have_pd:
-    import pandas as pd
-
 
 def check_dimensions(static, moving):
     """Check the dimensions of the input images.
@@ -970,13 +967,13 @@ class BundleWarpFlow(Workflow):
             deformations. It is represented with λ in BundleWarp paper. NOTE:
             setting alpha<=0.01 will result in highly deformable registration
             that could extremely modify the original anatomy of the moving
-            bundle. (default 0.3)
+            bundle.
         beta : int, optional
             Represents the strength of the interaction between points
-            Gaussian kernel size. (default 20)
+            Gaussian kernel size.
         max_iter : int, optional
             Maximum number of iterations for deformation process in ml-CPD
-            method. (default 15)
+            method.
         affine : boolean, optional
             If False, use rigid registration as starting point. (default True)
         out_dir : string, optional
@@ -1038,13 +1035,11 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        df = pd.DataFrame(warp, columns=["transforms", "gaussian_kernel"])
-
         logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(df["transforms"]))
+        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
         logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(df["gaussian_kernel"]))
+        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
         logging.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)

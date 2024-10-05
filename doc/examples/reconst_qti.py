@@ -95,12 +95,12 @@ import dipy.reconst.qti as qti
 # As QTI requires data with tensor-valued encoding, let's load an example
 # dataset acquired with q-space trajectory encoding (QTE):
 
-fdata, fbvals, fbvecs, fmask = get_fnames("qte_lte_pte")
+fdata, fbvals, fbvecs, fmask = get_fnames(name="qte_lte_pte")
 data, affine = load_nifti(fdata)
 mask, _ = load_nifti(fmask)
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 btens = np.array(["LTE" for i in range(61)] + ["PTE" for i in range(61)])
-gtab = gradient_table(bvals, bvecs, btens=btens)
+gtab = gradient_table(bvals, bvecs=bvecs, btens=btens)
 
 ###############################################################################
 # The dataset contains 122 volumes of which the first half were acquired with
@@ -118,7 +118,7 @@ for i, ell in enumerate(["b = 0", "LTE", "PTE"]):
 # data as follows:
 
 qtimodel = qti.QtiModel(gtab)
-qtifit = qtimodel.fit(data, mask)
+qtifit = qtimodel.fit(data, mask=mask)
 
 ###############################################################################
 # QTI parameter maps can accessed as the attributes of `qtifit`. For instance,

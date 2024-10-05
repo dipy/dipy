@@ -101,7 +101,7 @@ directions = hsph_updated.vertices
 bvals = np.hstack((np.zeros(2), 1000 * np.ones(n_pts), 2000 * np.ones(n_pts)))
 bvecs = np.vstack((np.zeros((2, 3)), directions, directions))
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Simulations are looped for different intra- and extra-cellular water
@@ -162,7 +162,7 @@ dki_model = dki.DiffusionKurtosisModel(gtab)
 dki_fit = dki_model.fit(dwi)
 
 MD = dki_fit.md
-MK = dki_fit.mk(0, 3)
+MK = dki_fit.mk(min_kurtosis=0, max_kurtosis=3)
 
 ###############################################################################
 # Now we plot the results as a function of the ground truth intersection
@@ -224,11 +224,11 @@ fig1.savefig("MSDKI_simulations.png")
 # :footcite:p:`Hansen2016a`). The total size of the downloaded data is 192
 # MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Before fitting the data, we perform some data pre-processing. For
@@ -270,7 +270,7 @@ dki_model = dki.DiffusionKurtosisModel(gtab)
 dki_fit = dki_model.fit(data, mask=mask)
 
 MD = dki_fit.md
-MK = dki_fit.mk(0, 3)
+MK = dki_fit.mk(min_kurtosis=0, max_kurtosis=3)
 
 ###############################################################################
 # Let's now visualize the data using matplotlib for a selected axial slice.

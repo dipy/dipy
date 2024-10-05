@@ -136,7 +136,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -155,7 +157,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -174,7 +178,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -196,7 +202,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 
@@ -217,7 +225,9 @@ def test_forecast_odf():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere)
-    directions, _, _ = peak_directions(fodf, sphere, 0.35, 25)
+    directions, _, _ = peak_directions(
+        fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
+    )
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
 

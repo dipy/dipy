@@ -63,15 +63,15 @@ interactive = False
 rng = np.random.default_rng(1)
 
 # Read data
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-t1_fname = get_fnames("stanford_t1")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+t1_fname = get_fnames(name="stanford_t1")
 
 data, affine = load_nifti(hardi_fname)
 labels = load_nifti_data(label_fname)
 t1_data = load_nifti_data(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 # Select a relevant part of the data (left hemisphere)
 # Coordinates given in x bounds, y bounds, z bounds

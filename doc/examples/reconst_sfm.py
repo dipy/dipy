@@ -29,11 +29,11 @@ from dipy.viz import actor, window
 # run this example. The data will be stored for subsequent runs, and for use
 # with other examples.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 # Enables/disables interactive visualization
 interactive = False

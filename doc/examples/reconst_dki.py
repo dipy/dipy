@@ -105,11 +105,11 @@ from dipy.viz.plotting import compare_maps
 # provided in their paper :footcite:p:`Hansen2016a`). The total size of the
 # downloaded data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Function ``get_fnames`` downloads and outputs the paths of the data,
@@ -131,7 +131,7 @@ bval_sel[bvals == 1000] = 1
 bval_sel[bvals == 2000] = 1
 
 data = data[..., bval_sel == 1]
-gtab = gradient_table(bvals[bval_sel == 1], bvecs[bval_sel == 1])
+gtab = gradient_table(bvals[bval_sel == 1], bvecs=bvecs[bval_sel == 1])
 
 ###############################################################################
 # Before fitting the data, we perform some data pre-processing. We first

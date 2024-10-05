@@ -12,6 +12,7 @@ import numpy as np
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import auto_attr
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -430,7 +431,8 @@ def dtd_covariance(DTD):
     return C
 
 
-def qti_signal(gtab, D, C, S0=1):
+@warning_for_keywords()
+def qti_signal(gtab, D, C, *, S0=1):
     """Generate signals using the covariance tensor signal representation.
 
     Parameters
@@ -539,7 +541,8 @@ def design_matrix(btens):
     return X
 
 
-def _ols_fit(data, mask, X, step=int(1e4)):
+@warning_for_keywords()
+def _ols_fit(data, mask, X, *, step=int(1e4)):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
@@ -580,7 +583,8 @@ def _ols_fit(data, mask, X, step=int(1e4)):
     return params
 
 
-def _wls_fit(data, mask, X, step=int(1e4)):
+@warning_for_keywords()
+def _wls_fit(data, mask, X, *, step=int(1e4)):
     """Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -714,7 +718,8 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
 
 
 class QtiModel(ReconstModel):
-    def __init__(self, gtab, fit_method="WLS", cvxpy_solver="SCS"):
+    @warning_for_keywords()
+    def __init__(self, gtab, *, fit_method="WLS", cvxpy_solver="SCS"):
         """Covariance tensor model of q-space trajectory imaging.
 
         See :footcite:t:`Westin2016` for further details about the model.
@@ -765,7 +770,8 @@ class QtiModel(ReconstModel):
         self.cvxpy_solver = cvxpy_solver
         self.fit_method_name = fit_method
 
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit QTI to data.
 
         Parameters
@@ -812,7 +818,7 @@ class QtiModel(ReconstModel):
         S0 = np.exp(params[..., 0])
         D = params[..., 1:7, np.newaxis]
         C = params[..., 7::, np.newaxis]
-        S = qti_signal(self.gtab, D, C, S0)
+        S = qti_signal(self.gtab, D, C, S0=S0)
         return S
 
 
@@ -851,7 +857,7 @@ class QtiFit:
         S0 = self.S0_hat
         D = self.params[..., 1:7, np.newaxis]
         C = self.params[..., 7::, np.newaxis]
-        S = qti_signal(gtab, D, C, S0)
+        S = qti_signal(gtab, D, C, S0=S0)
         return S
 
     @auto_attr

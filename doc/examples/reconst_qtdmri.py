@@ -101,7 +101,7 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
 
     # estimate fractional anisotropy (FA) for this slice
     tenmod = dti.TensorModel(gtab_)
-    tenfit = tenmod.fit(data_middle_slice, data_middle_slice[..., 0] > 0)
+    tenfit = tenmod.fit(data_middle_slice, mask=data_middle_slice[..., 0] > 0)
     fa = tenfit.fa
 
     # set mask color to green with 0.5 opacity as overlay

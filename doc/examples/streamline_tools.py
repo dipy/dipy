@@ -44,15 +44,15 @@ from dipy.viz import actor, colormap as cmap, window
 # same space as the T1. We'll use the ``get_fnames`` function to download the
 # files we need and set the file names to variables.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-t1_fname = get_fnames("stanford_t1")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+t1_fname = get_fnames(name="stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 t1_data = load_nifti_data(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # We've loaded an image called ``labels_img`` which is a map of tissue types

@@ -52,10 +52,10 @@ from dipy.segment.mask import median_otsu
 # provided in their paper :footcite:p:`Hansen2016a`). The total size of the
 # downloaded data is 192 MBytes, however you only need to fetch it once.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames("cfin_multib")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames(name="cfin_multib")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # For the sake of simplicity, we only select two non-zero b-values for this
@@ -69,7 +69,7 @@ sel_b = np.logical_or(np.logical_or(bvals == 0, bvals == 1000), bvals == 2000)
 
 data = data[..., sel_b]
 
-gtab = gradient_table(bvals[sel_b], bvecs[sel_b])
+gtab = gradient_table(bvals[sel_b], bvecs=bvecs[sel_b])
 
 print(data.shape)
 
@@ -154,8 +154,8 @@ FA_orig = dki_orig.fa
 FA_den = dki_den.fa
 MD_orig = dki_orig.md
 MD_den = dki_den.md
-MK_orig = dki_orig.mk(0, 3)
-MK_den = dki_den.mk(0, 3)
+MK_orig = dki_orig.mk(min_kurtosis=0, max_kurtosis=3)
+MK_den = dki_den.mk(min_kurtosis=0, max_kurtosis=3)
 
 
 fig2, ax = plt.subplots(2, 3, figsize=(10, 6), subplot_kw={"xticks": [], "yticks": []})

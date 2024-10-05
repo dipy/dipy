@@ -36,7 +36,7 @@ from dipy.segment.mask import median_otsu
 # We first apply this algorithm to a T1-weighted dataset which can be fetched
 # using the following code:
 
-t1_fname, t1_denoised_fname, ap_fname = get_fnames("tissue_data")
+t1_fname, t1_denoised_fname, ap_fname = get_fnames(name="tissue_data")
 t1 = load_nifti_data(t1_denoised_fname)
 
 ###############################################################################
@@ -167,7 +167,7 @@ fig1.savefig("Gibbs_suppression_structural.png")
 
 bvals = [200, 400, 1000, 2000]
 
-img, gtab = read_cenir_multib(bvals)
+img, gtab = read_cenir_multib(bvals=bvals)
 
 data = np.asarray(img.dataobj)
 

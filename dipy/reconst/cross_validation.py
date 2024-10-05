@@ -5,9 +5,11 @@ Cross-validation analysis of diffusion models.
 import numpy as np
 
 import dipy.core.gradients as gt
+from dipy.testing.decorators import warning_for_keywords
 
 
-def coeff_of_determination(data, model, axis=-1):
+@warning_for_keywords()
+def coeff_of_determination(data, model, *, axis=-1):
     r"""Calculate the coefficient of determination for a model prediction,
     relative to data.
 
@@ -145,7 +147,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
             err_str += "do not have an implementation of model prediction"
             err_str += " and do not support cross-validation"
             raise ValueError(err_str)
-        this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)
+        this_predict = S0[..., None] * this_fit.predict(gtab=left_out_gtab, S0=1)
 
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
         prediction[..., idx_to_assign] = this_predict[..., np.sum(gtab.b0s_mask) :]

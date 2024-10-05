@@ -46,7 +46,7 @@ gtab = gradient_table(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     ),
-    op.join(
+    bvecs=op.join(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),
@@ -83,7 +83,7 @@ fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 ###############################################################################
 # Fit the FORECAST to the data
 
-f_fit = fm.fit(data_small, mask_small)
+f_fit = fm.fit(data_small, mask=mask_small)
 
 ###############################################################################
 # Calculate the crossing invariant tensor indices :footcite:p:`Kaden2016a`: the
@@ -133,7 +133,7 @@ plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 #
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Compute the fODFs.

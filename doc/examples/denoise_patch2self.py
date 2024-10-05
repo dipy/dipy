@@ -68,7 +68,7 @@ from dipy.io.image import load_nifti, save_nifti
 # does not require noise estimation and should work with any kind of diffusion
 # data.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
 denoised_arr = patch2self(

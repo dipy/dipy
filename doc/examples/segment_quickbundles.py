@@ -21,7 +21,7 @@ from dipy.viz import actor, colormap, window
 # For educational purposes we will try to cluster a small streamline bundle
 # known from neuroanatomy as the fornix.
 
-fname = get_fnames("fornix")
+fname = get_fnames(name="fornix")
 
 ###############################################################################
 # Load fornix streamlines.

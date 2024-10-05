@@ -50,7 +50,7 @@ from dipy.reconst.ivim import IvimModel
 # of b-values. In order to use this model the data should contain signals
 # measured at 0 bvalue.
 
-fraw, fbval, fbvec = get_fnames("ivim")
+fraw, fbval, fbvec = get_fnames(name="ivim")
 
 ###############################################################################
 # The gtab contains a GradientTable object (information about the gradients
@@ -59,7 +59,7 @@ fraw, fbval, fbvec = get_fnames("ivim")
 
 data = load_nifti_data(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
 print(f"data.shape {data.shape}")
 
 ###############################################################################

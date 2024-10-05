@@ -101,8 +101,8 @@ cdef class BootDirectionGetter(DirectionGetter):
             Angular threshold for excluding ODF peaks.
 
         """
-        return cls(data, model, max_angle, sphere, max_attempts, sh_order,
-                   b_tol, **kwargs)
+        return cls(data, model, max_angle, sphere=sphere, max_attempts=max_attempts, sh_order=sh_order,
+                   b_tol=b_tol, **kwargs)
 
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,

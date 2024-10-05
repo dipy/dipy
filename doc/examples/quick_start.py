@@ -108,7 +108,7 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 # acquisition specific parameters, e.g. b-values, b-vectors, timings and
 # others. To create this object you can use the function ``gradient_table``.
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Finally, you can use ``gtab`` (the GradientTable object) to show some

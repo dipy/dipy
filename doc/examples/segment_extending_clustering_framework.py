@@ -107,7 +107,7 @@ class ArcLengthFeature(Feature):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames("fornix")
+fname = get_fnames(name="fornix")
 fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
 streamlines = Streamlines(fornix)
@@ -203,7 +203,7 @@ class CosineMetric(Metric):
 #
 # We start by loading the fornix streamlines.
 
-fname = get_fnames("fornix")
+fname = get_fnames(name="fornix")
 fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 streamlines = fornix.streamlines
 

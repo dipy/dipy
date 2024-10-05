@@ -18,12 +18,15 @@ from dipy.reconst.recspeed import (
     search_descending,
 )
 from dipy.reconst.shm import sh_to_sf_matrix
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 
 
+@warning_for_keywords()
 def peak_directions_nl(
     sphere_eval,
+    *,
     relative_peak_threshold=0.25,
     min_separation_angle=25,
     sphere=default_sphere,
@@ -95,8 +98,14 @@ def peak_directions_nl(
     return directions, values
 
 
+@warning_for_keywords()
 def peak_directions(
-    odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25, is_symmetric=True
+    odf,
+    sphere,
+    *,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    is_symmetric=True,
 ):
     """Get the directions of odf peaks.
 
@@ -420,29 +429,31 @@ def _peaks_from_model_parallel_sub(args):
         sphere,
         relative_peak_threshold,
         min_separation_angle,
-        mask,
-        return_odf,
-        return_sh,
-        gfa_thr,
-        normalize_peaks,
-        sh_order,
-        sh_basis_type,
-        legacy,
-        npeaks,
-        B,
-        invB,
+        mask=mask,
+        return_odf=return_odf,
+        return_sh=return_sh,
+        gfa_thr=gfa_thr,
+        normalize_peaks=normalize_peaks,
+        sh_order_max=sh_order,
+        sh_basis_type=sh_basis_type,
+        legacy=legacy,
+        npeaks=npeaks,
+        B=B,
+        invB=invB,
         parallel=False,
         num_processes=None,
     )
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def peaks_from_model(
     model,
     data,
     sphere,
     relative_peak_threshold,
     min_separation_angle,
+    *,
     mask=None,
     return_odf=False,
     return_sh=True,
@@ -529,7 +540,11 @@ def peaks_from_model(
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order_max, sh_basis_type, return_inv=True, legacy=legacy
+            sphere,
+            sh_order_max=sh_order_max,
+            basis_type=sh_basis_type,
+            return_inv=True,
+            legacy=legacy,
         )
 
     num_processes = determine_num_processes(num_processes)
@@ -586,7 +601,7 @@ def peaks_from_model(
         if not mask[idx]:
             continue
 
-        odf = model.fit(data[idx]).odf(sphere)
+        odf = model.fit(data[idx]).odf(sphere=sphere)
 
         if return_sh:
             shm_coeff[idx] = np.dot(odf, invB)
@@ -601,7 +616,10 @@ def peaks_from_model(
 
         # Get peaks of odf
         direction, pk, ind = peak_directions(
-            odf, sphere, relative_peak_threshold, min_separation_angle
+            odf,
+            sphere,
+            relative_peak_threshold=relative_peak_threshold,
+            min_separation_angle=min_separation_angle,
         )
 
         # Calculate peak metrics
@@ -713,7 +731,11 @@ def peaks_from_positions(
     for i, s in enumerate(vox_positions):
         odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(
-            odf, sphere, relative_peak_threshold, min_separation_angle, is_symmetric
+            odf,
+            sphere,
+            relative_peak_threshold=relative_peak_threshold,
+            min_separation_angle=min_separation_angle,
+            is_symmetric=is_symmetric,
         )
         nbr_peaks = min(npeaks, peaks.shape[0])
         peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]

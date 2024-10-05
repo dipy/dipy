@@ -26,7 +26,7 @@ from dipy.io.image import load_nifti, save_nifti
 # We choose one of the data from the datasets in dipy_. However, you can
 # replace the following line with the path of your image.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("sherbrooke_3shell")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames(name="sherbrooke_3shell")
 
 ###############################################################################
 # We load the image and the affine of the image. The affine is the
@@ -44,13 +44,13 @@ bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 data_small = data[..., :3]
 bvals_small = bvals[:3]
 bvecs_small = bvecs[:3]
-gtab = gradient_table(bvals_small, bvecs_small)
+gtab = gradient_table(bvals_small, bvecs=bvecs_small)
 
 ###############################################################################
 # Start motion correction of our reduced DWI dataset(between-volumes motion
 # correction).
 
-data_corrected, reg_affines = motion_correction(data_small, gtab, affine)
+data_corrected, reg_affines = motion_correction(data_small, gtab, affine=affine)
 
 ###############################################################################
 # Save our DWI dataset corrected to a new Nifti file.

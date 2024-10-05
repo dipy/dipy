@@ -869,7 +869,7 @@ def test_kurtosis_maximum():
 
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
-    assert_almost_equal(dkiF.kmax(sphere, gtol=1e-5), RK)
+    assert_almost_equal(dkiF.kmax(sphere=sphere, gtol=1e-5), RK)
 
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
@@ -939,7 +939,7 @@ def test_multi_voxel_kurtosis_maximum():
     assert_almost_equal(k_max, RK, decimal=4)
 
     # TEST - when sphere is given
-    k_max = dki.kurtosis_maximum(dkiF.model_params, default_sphere)
+    k_max = dki.kurtosis_maximum(dkiF.model_params, sphere=default_sphere)
     assert_almost_equal(k_max, RK, decimal=4)
 
     # TEST - when mask is given

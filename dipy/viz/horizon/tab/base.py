@@ -434,10 +434,15 @@ def build_slider(
         Size of label text to display with slider
     label_style_bold : bool, optional
         Is label should have bold style.
+    is_double_slider : bool, optional
+        True if the slider allows to adjust two values.
 
-    Return
-    ------
-    (label: HorizonUIElement, element(slider): HorizonUIElement)
+    Returns
+    -------
+    label : HorizonUIElement
+        Slider label.
+    HorizonUIElement
+        Slider.
     """
 
     if is_double_slider and "ratio" in text_template:
@@ -486,7 +491,7 @@ def build_slider(
         slider.handles[0].color = (1.0, 0.5, 0.0)
         slider.handles[1].color = (1.0, 0.5, 0.0)
 
-    return (slider_label, HorizonUIElement(True, initial_value, slider))
+    return slider_label, HorizonUIElement(True, initial_value, slider)
 
 
 @warning_for_keywords()

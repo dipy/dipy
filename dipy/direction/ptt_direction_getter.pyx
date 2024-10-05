@@ -126,7 +126,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.rejection_sampling_nbr_sample = 10 # Adaptively set in Trekker.
 
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
+                                       pmf_threshold=pmf_threshold, **kwargs)
 
 
     cdef void initialize_candidate(self, double[:] init_dir):

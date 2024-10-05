@@ -20,8 +20,8 @@ from dipy.io.image import load_nifti_data
 from dipy.segment.mask import median_otsu
 from dipy.viz import regtools
 
-fname_moving = get_fnames("reg_o")
-fname_static = get_fnames("reg_c")
+fname_moving = get_fnames(name="reg_o")
+fname_static = get_fnames(name="reg_c")
 
 moving = np.load(fname_moving)
 static = np.load(fname_static)
@@ -32,7 +32,12 @@ static = np.load(fname_static)
 # where the differences are located
 
 regtools.overlay_images(
-    static, moving, "Static", "Overlay", "Moving", "input_images.png"
+    static,
+    moving,
+    title0="Static",
+    title_mid="Overlay",
+    title1="Moving",
+    fname="input_images.png",
 )
 
 ###############################################################################
@@ -61,7 +66,7 @@ metric = SSDMetric(dim)
 
 level_iters = [200, 100, 50, 25]
 
-sdr = SymmetricDiffeomorphicRegistration(metric, level_iters, inv_iter=50)
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters=level_iters, inv_iter=50)
 
 ###############################################################################
 # Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -74,7 +79,7 @@ mapping = sdr.optimize(static, moving)
 # It is a good idea to visualize the resulting deformation map to make sure
 # the result is reasonable (at least, visually)
 
-regtools.plot_2d_diffeomorphic_map(mapping, 10, "diffeomorphic_map.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=10, fname="diffeomorphic_map.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -86,14 +91,14 @@ regtools.plot_2d_diffeomorphic_map(mapping, 10, "diffeomorphic_map.png")
 # Now let's warp the moving image and see if it gets similar to the static
 # image
 
-warped_moving = mapping.transform(moving, "linear")
+warped_moving = mapping.transform(moving, interpolation="linear")
 regtools.overlay_images(
     static,
     warped_moving,
-    "Static",
-    "Overlay",
-    "Warped moving",
-    "direct_warp_result.png",
+    title0="Static",
+    title_mid="Overlay",
+    title1="Warped moving",
+    fname="direct_warp_result.png",
 )
 
 ###############################################################################
@@ -107,14 +112,14 @@ regtools.overlay_images(
 # And we can also apply the inverse mapping to verify that the warped static
 # image is similar to the moving image
 
-warped_static = mapping.transform_inverse(static, "linear")
+warped_static = mapping.transform_inverse(static, interpolation="linear")
 regtools.overlay_images(
     warped_static,
     moving,
-    "Warped static",
-    "Overlay",
-    "Moving",
-    "inverse_warp_result.png",
+    title0="Warped static",
+    title_mid="Overlay",
+    title1="Moving",
+    fname="inverse_warp_result.png",
 )
 
 ###############################################################################
@@ -142,14 +147,18 @@ def callback_CC(sdr, status):
         wstatic = sdr.metric.static_image
         # draw the images on top of each other with different colors
         regtools.overlay_images(
-            wmoving, wstatic, "Warped moving", "Overlay", "Warped static"
+            wmoving,
+            wstatic,
+            title0="Warped moving",
+            title_mid="Overlay",
+            title1="Warped static",
         )
 
 
 ###############################################################################
 # Now we are ready to configure and run the registration. First load the data
 
-t1_name, b0_name = get_fnames("syn_data")
+t1_name, b0_name = get_fnames(name="syn_data")
 data = load_nifti_data(b0_name)
 
 ###############################################################################
@@ -172,13 +181,13 @@ moving = b0_mask[:, :, 38]
 
 sigma_diff = 3.0
 radius = 4
-metric = CCMetric(2, sigma_diff, radius)
+metric = CCMetric(2, sigma_diff=sigma_diff, radius=radius)
 
 ###############################################################################
 # Let's use a scale space of 3 levels
 
 level_iters = [100, 50, 25]
-sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters=level_iters)
 sdr.callback = callback_CC
 
 ###############################################################################
@@ -193,7 +202,12 @@ warped = mapping.transform(moving)
 # and after registration
 
 regtools.overlay_images(
-    static, moving, "Static", "Overlay", "Moving", "t1_slices_input.png"
+    static,
+    moving,
+    title0="Static",
+    title_mid="Overlay",
+    title1="Moving",
+    fname="t1_slices_input.png",
 )
 
 ###############################################################################
@@ -202,7 +216,12 @@ regtools.overlay_images(
 # Input images.
 
 regtools.overlay_images(
-    static, warped, "Static", "Overlay", "Warped moving", "t1_slices_res.png"
+    static,
+    warped,
+    title0="Static",
+    title_mid="Overlay",
+    title1="Warped moving",
+    fname="t1_slices_res.png",
 )
 
 ###############################################################################
@@ -217,7 +236,12 @@ regtools.overlay_images(
 
 inv_warped = mapping.transform_inverse(static)
 regtools.overlay_images(
-    inv_warped, moving, "Warped static", "Overlay", "moving", "t1_slices_res2.png"
+    inv_warped,
+    moving,
+    title0="Warped static",
+    title_mid="Overlay",
+    title1="moving",
+    fname="t1_slices_res2.png",
 )
 
 ###############################################################################
@@ -230,7 +254,7 @@ regtools.overlay_images(
 #
 # Finally, let's see the deformation
 
-regtools.plot_2d_diffeomorphic_map(mapping, 5, "diffeomorphic_map_b0s.png")
+regtools.plot_2d_diffeomorphic_map(mapping, delta=5, fname="diffeomorphic_map_b0s.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

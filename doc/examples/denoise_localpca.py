@@ -43,10 +43,10 @@ from dipy.io.image import load_nifti, save_nifti
 # Load one of the datasets. These data were acquired with 63 gradients and 1
 # non-diffusion (b=0) image.
 
-dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames("isbi2013_2shell")
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames(name="isbi2013_2shell")
 data, affine = load_nifti(dwi_fname)
 bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 print("Input Volume", data.shape)
 
@@ -84,7 +84,7 @@ print("Sigma estimation time", time() - t)
 
 t = time()
 
-denoised_arr = localpca(data, sigma, tau_factor=2.3, patch_radius=2)
+denoised_arr = localpca(data, sigma=sigma, tau_factor=2.3, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 

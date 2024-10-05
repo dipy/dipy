@@ -44,12 +44,12 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivit
 from dipy.sims.voxel import single_tensor_odf
 from dipy.viz import actor, window
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # You can verify the b-values of the dataset by looking at the attribute
@@ -120,7 +120,7 @@ evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
 
-response_odf = single_tensor_odf(default_sphere.vertices, evals, evecs)
+response_odf = single_tensor_odf(default_sphere.vertices, evals=evals, evecs=evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
 response_actor = actor.odf_slicer(

@@ -7,6 +7,7 @@ from scipy.optimize import differential_evolution, least_squares
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -129,7 +130,8 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method="trr", **kwargs):
+@warning_for_keywords()
+def ivim_model_selector(gtab, *, fit_method="trr", **kwargs):
     """
     Selector function to switch between the 2-stage Trust-Region Reflective
     based NLLS fitting method (also containing the linear fit): `trr` and the
@@ -171,9 +173,11 @@ IvimModel = ivim_model_selector
 class IvimModelTRR(ReconstModel):
     """Ivim model"""
 
+    @warning_for_keywords()
     def __init__(
         self,
         gtab,
+        *,
         split_b_D=400.0,
         split_b_S0=200.0,
         bounds=None,
@@ -344,7 +348,8 @@ class IvimModelTRR(ReconstModel):
         else:
             return IvimFit(self, params_linear)
 
-    def estimate_linear_fit(self, data, split_b, less_than=True):
+    @warning_for_keywords()
+    def estimate_linear_fit(self, data, split_b, *, less_than=True):
         """Estimate a linear fit by taking log of data.
 
         Parameters
@@ -432,7 +437,8 @@ class IvimModelTRR(ReconstModel):
             f, D_star = params_f_D_star
             return f, D_star
 
-    def predict(self, ivim_params, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, ivim_params, gtab, *, S0=1.0):
         """
         Predict a signal for this IvimModel class instance given parameters.
 
@@ -508,7 +514,8 @@ class IvimModelTRR(ReconstModel):
 
 
 class IvimModelVP(ReconstModel):
-    def __init__(self, gtab, bounds=None, maxiter=10, xtol=1e-8):
+    @warning_for_keywords()
+    def __init__(self, gtab, *, bounds=None, maxiter=10, xtol=1e-8):
         r"""Initialize an IvimModelVP class.
 
         See :footcite:p:`LeBihan1988`, :footcite:p:`Federau2012` and
@@ -878,7 +885,8 @@ class IvimFit:
     def shape(self):
         return self.model_params.shape[:-1]
 
-    def predict(self, gtab, S0=1.0):
+    @warning_for_keywords()
+    def predict(self, gtab, *, S0=1.0):
         """Given a model fit, predict the signal.
 
         Parameters

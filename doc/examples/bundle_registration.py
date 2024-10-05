@@ -31,8 +31,8 @@ cb_subj1, cb_subj2 = two_cingulum_bundles()
 # with a different number of points will break the theoretical advantages of
 # using the SLR as explained in :footcite:p:`Garyfallidis2015`.
 
-cb_subj1 = set_number_of_points(cb_subj1, 20)
-cb_subj2 = set_number_of_points(cb_subj2, 20)
+cb_subj1 = set_number_of_points(cb_subj1, nb_points=20)
+cb_subj2 = set_number_of_points(cb_subj2, nb_points=20)
 
 ###############################################################################
 # Let's say now that we want to move the ``cb_subj2`` (moving) so that it can

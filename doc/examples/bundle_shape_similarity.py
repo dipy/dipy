@@ -84,7 +84,9 @@ clust_thr = [0]
 
 threshold = 5
 
-ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(
+    bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
+)
 print("Shape similarity score = ", ba_score)
 
 ###############################################################################
@@ -92,7 +94,9 @@ print("Shape similarity score = ", ba_score)
 
 threshold = 10
 
-ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(
+    bundle1, bundle2, rng, clust_thr=clust_thr, threshold=threshold
+)
 print("Shape similarity score = ", ba_score)
 
 ###############################################################################
