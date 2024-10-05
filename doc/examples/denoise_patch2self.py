@@ -68,7 +68,7 @@ from dipy.io.image import load_nifti, save_nifti
 # does not require noise estimation and should work with any kind of diffusion
 # data.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
 denoised_arr = patch2self(
@@ -154,8 +154,10 @@ save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 ###############################################################################
 # You can also use Patch2Self version 1 to denoise the data by using version
 # argument. The default version is set to 3. To use version 1, you can call
-# Patch2Self as follows:
+# Patch2Self as follows::
+#
 #    patch2self(data, bvals, version=1)
+#
 # Lastly, one can also use Patch2Self in batches if the number of gradient
 # directions is very high (>=200 volumes). For instance, if the data has 300
 # volumes, one can split the data into 2 batches, (150 directions each) and
