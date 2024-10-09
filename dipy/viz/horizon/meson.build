@@ -1,6 +1,7 @@
 python_sources = [
   '__init__.py',
   'app.py',
+  'compute.py',
   'util.py',
   ]
 

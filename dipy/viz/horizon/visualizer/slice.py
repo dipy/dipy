@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 
 from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.compute import compute_volume
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
@@ -172,7 +173,7 @@ class SlicesVisualizer:
         self._picked_voxel_actor = actor.dot(pnt, colors=(0.9, 0.4, 0.0), dot_size=10)
         self._scene.add(self._picked_voxel_actor)
 
-    def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
+    def thread_vol_calculations(self, prev_idx, next_idx, intensities):
         vol_data = self._data[..., prev_idx]
         # NOTE: Supported only in latests versions of scipy
         # percs = stats.percentileofscore(np.ravel(vol_data), intensities)
@@ -180,6 +181,12 @@ class SlicesVisualizer:
         perc_1 = stats.percentileofscore(np.ravel(vol_data), intensities[1])
         vol_data = self._data[..., next_idx]
         value_range = np.percentile(vol_data, [perc_0, perc_1])
+        return vol_data, value_range
+
+    def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
+
+        vol_data, value_range = compute_volume(self.thread_vol_calculations, prev_idx, next_idx, intensities)
+
         if np.sum(np.diff(self._int_range)) == 0:
             return False
 
