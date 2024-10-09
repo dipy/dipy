@@ -256,7 +256,7 @@ cdef class MidpointFeature(CythonFeature):
     shape (nb_points, nb_dimensions).
 
     The feature being extracted consists of one N-dimensional point representing
-    the middle point of the sequence (i.e. `nb_points//2`th point).
+    the middle point of the sequence (i.e. `nb_points//2` th point).
 
     """
     def __init__(MidpointFeature self):

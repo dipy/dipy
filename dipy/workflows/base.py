@@ -125,7 +125,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             ref_text = [text or "\n" for text in npds["References"]]
             ref_idx = self.epilog.find("References: \n") + len("References: \n")
             self.epilog = (
-                f"{self.epilog[:ref_idx]}{''.join(ref_text)}\n{self.epilog[ref_idx:]}"
+                f"{self.epilog[:ref_idx]}{''.join(ref_text)}\n\n{self.epilog[ref_idx:]}"
             )
 
         self._output_params = [
