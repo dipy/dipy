@@ -51,7 +51,7 @@ extensions = [
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
 numpydoc_show_inherited_class_members = {
-    'dipy.viz.horizon.visualizer.peak.PeakActor': False
+    "dipy.viz.horizon.visualizer.peak.PeakActor": False
 }
 
 # Sphinx extension for BibTeX style citations.

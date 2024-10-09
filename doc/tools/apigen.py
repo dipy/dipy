@@ -274,8 +274,9 @@ class ApiDocWriter:
                                 constant_variables.append(n.targets[0].id)
                                 continue
                             functions.append(n.targets[0].id)
-                        elif hasattr(n.value, "attr") and n.value.attr.startswith("vtk"):
-                            classes.append(n.targets[0].id)
+                        elif hasattr(n.value, "attr"):
+                            if n.value.attr.startswith("vtk"):
+                                classes.append(n.targets[0].id)
                     except Exception as e:
                         print(mod.__file__)
                         print(n.lineno)
@@ -298,8 +299,8 @@ class ApiDocWriter:
                 if not self.other_defines and not getmodule(obj) == mod:
                     continue
                 # figure out if obj is a function or class
-                if (hasattr(obj, "func_name") or isinstance(obj, BuiltinFunctionType)
-                   or ismethod(obj) or isinstance(obj, FunctionType)):
+                if (hasattr(obj, "func_name") or isinstance(obj, BuiltinFunctionType) or
+                   ismethod(obj) or isinstance(obj, FunctionType)):
                     functions.append(obj_str)
                 else:
                     try:
@@ -386,11 +387,11 @@ class ApiDocWriter:
 
         for c in classes:
             body += (
-                "\n:class:`"
-                + c
-                + "`\n"
-                + self.rst_section_levels[3] * (len(c) + 9)
-                + "\n\n"
+                "\n:class:`" +
+                c +
+                "`\n" +
+                self.rst_section_levels[3] * (len(c) + 9) +
+                "\n\n"
             )
             body += "\n.. autoclass:: " + c + "\n"
             # must NOT exclude from index to keep cross-refs working
@@ -484,9 +485,8 @@ class ApiDocWriter:
             # dipy does not import a whole bunch of modules we'll
             # include those here as well (the *.py filenames).
             filenames = [os.path.splitext(f)[0] for f in filenames
-                         if (f.endswith(".py") and
-                             not f.startswith("__init__"))
-                         or f.endswith(".pyx")]
+                         if (f.endswith(".py") and not f.startswith("__init__")) or
+                         f.endswith(".pyx")]
 
             for subpkg_name in dirnames + filenames:
                 package_uri = ".".join((root_uri, subpkg_name))
