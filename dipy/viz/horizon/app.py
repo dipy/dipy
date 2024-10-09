@@ -545,8 +545,7 @@ class Horizon:
                         data,
                         affine=affine,
                         world_coords=self.world_coords,
-                        rgb=self.rgb,
-                        is_binary=binary_image,
+                        rgb=self.rgb
                     )
                     self.__tabs.append(
                         SlicesTab(
