@@ -282,6 +282,7 @@ endif
 
 _cython_tree = [
   fs.copyfile('__init__.py'),
+  fs.copyfile('__init__.pyi'),
   fs.copyfile('../src/conditional_omp.h'),
   fs.copyfile('../src/cythonutils.h'),
   fs.copyfile('../src/dpy_math.h'),
@@ -315,8 +316,10 @@ generate_version = custom_target(
 # ------------------------------------------------------------------------
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'conftest.py',
-  'pkg_info.py'
+  'pkg_info.py',
+  'py.typed'
 ]
 
 py3.install_sources(

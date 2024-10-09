@@ -1,0 +1,37 @@
+__all__ = [
+    "syn_registration",
+    "register_dwi_to_template",
+    "write_mapping",
+    "read_mapping",
+    "resample",
+    "center_of_mass",
+    "translation",
+    "rigid_isoscaling",
+    "rigid_scaling",
+    "rigid",
+    "affine",
+    "motion_correction",
+    "affine_registration",
+    "register_series",
+    "register_dwi_series",
+    "streamline_registration",
+]
+
+from ._public import (
+    affine,
+    affine_registration,
+    center_of_mass,
+    motion_correction,
+    read_mapping,
+    register_dwi_series,
+    register_dwi_to_template,  # noqa
+    register_series,
+    resample,
+    rigid,
+    rigid_isoscaling,
+    rigid_scaling,
+    streamline_registration,
+    syn_registration,
+    translation,
+    write_mapping,
+)
