@@ -11,9 +11,7 @@ from dipy.reconst.shm import (
     descoteaux07_legacy_msg,
 )
 from dipy.tracking.tracker_ptt cimport parallel_transport_tracker
-
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
-
 from dipy.tracking.tests.test_fast_tracking import get_fast_tracking_performances
 
 

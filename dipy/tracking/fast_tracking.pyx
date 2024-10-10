@@ -233,11 +233,3 @@ cdef int get_pmf(double* pmf,
             pmf[i] = 0.0
 
     return 0
-
-
-
-
-
-
-
-

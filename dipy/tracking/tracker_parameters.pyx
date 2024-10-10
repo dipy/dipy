@@ -59,7 +59,6 @@ def generate_tracking_parameters(algo_name, *,
         raise ValueError("Invalid algorithm name")
 
 
-
 cdef class TrackerParameters:
 
     def __init__(self, max_len, step_size, voxel_size,
