@@ -554,3 +554,12 @@ sphinx_gallery_conf = {
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
+
+
+def setup(app):
+    def skip_doc_element(app, what, name, obj, would_skip, options):
+        if name == "docstring_addendum":
+            return True
+        return would_skip
+
+    app.connect("autodoc-skip-member", skip_doc_element)
