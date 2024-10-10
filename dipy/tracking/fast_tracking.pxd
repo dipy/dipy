@@ -30,8 +30,3 @@ cdef int get_pmf(double* pmf,
                  PmfGen pmf_gen,
                  double pmf_threshold,
                  int pmf_len) noexcept nogil
-
-
-
-
-

@@ -384,4 +384,3 @@ cdef double calculate_data_support(TrackerParameters params,
         likelihood = pow(likelihood, params.ptt.data_support_exponent)
 
     return likelihood
-
