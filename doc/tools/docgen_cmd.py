@@ -13,7 +13,7 @@ import sys
 # from packaging.version import Version
 
 # List of workflows to ignore
-SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
+SKIP_WORKFLOWS_LIST = ("Workflow", "CombinedWorkflow")
 
 
 def sh3(cmd):
@@ -58,7 +58,7 @@ def sh3(cmd):
 
 
 def abort(error):
-    print(f'*WARNING* Command line API documentation not generated: {error}')
+    print(f"*WARNING* Command line API documentation not generated: {error}")
     exit()
 
 
@@ -76,43 +76,11 @@ def get_doc_parser(class_obj):
 
 def format_title(text):
     text = text.title()
-    line = '-' * len(text)
-    return f'{text}\n{line}\n\n'
+    line = "-" * len(text)
+    return f"{text}\n{line}\n\n"
 
 
-def generate_invisible_rst_table(parameters):
-    """
-    Generates an invisible reStructuredText (reST) table with two columns:
-    parameter names and their descriptions.
-
-    Parameters
-    ----------
-    parameters : list of tuples
-        A list of (parameter_name, description) tuples. The description can be a
-        multi-line string.
-
-    Returns
-    -------
-    str: A string representation of the invisible reST table.
-    """
-    max_param_width = max(len(param) for param, _ in parameters)
-
-    if max_param_width % 4 != 0:
-        max_param_width += 4 - (max_param_width % 4)
-
-    table_lines = []
-    for param, description in parameters:
-        description_lines = description.splitlines()
-        table_lines.append(f"{param.ljust(max_param_width)}   {description_lines[0]}")
-        for line in description_lines[1:]:
-            table_lines.append(" " * (max_param_width + 3) + line)
-
-    rst_table = "\n".join(table_lines)
-    rst_table += "\n\n"
-    return rst_table
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # package name: Eg: dipy
     package = sys.argv[1]
     # directory in which the generated rst files will be saved
@@ -157,7 +125,7 @@ if __name__ == '__main__':
 
     workflow_desc = {}
     # We get all workflows class obj in a dictionary
-    for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
+    for path_file in os.listdir(pjoin("..", "dipy", "workflows")):
         module_name = inspect.getmodulename(path_file)
         if module_name is None:
             continue
@@ -184,10 +152,10 @@ if __name__ == '__main__':
             fp.write(f".. {fname}:\n\n{dashes}\n{fname}\n{dashes}\n\n")
             parser = workflow_desc[flow_name]["parser"]
             if parser.description not in ["", "\n\n"]:
-                fp.write(format_title('Synopsis'))
+                fp.write(format_title("Synopsis"))
                 fp.write(f"{parser.description}\n\n")
-            fp.write(format_title('usage'))
-            str_p_args = ' '.join([p[0] for p in parser.positional_parameters]).lower()
+            fp.write(format_title("usage"))
+            str_p_args = " ".join([p[0] for p in parser.positional_parameters]).lower()
             fp.write(".. code-block:: bash\n\n")
             fp.write(f"    {fname} [OPTIONS] {str_p_args}\n\n")
             fp.write(format_title("Input Parameters"))

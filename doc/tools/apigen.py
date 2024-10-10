@@ -244,7 +244,7 @@ class ApiDocWriter:
 
             functions = []
             classes = []
-            constant_variables = []
+            constants = []
             for n in node.body:
                 if not hasattr(n, "name"):
                     if not isinstance(n, ast.Assign):
@@ -271,7 +271,7 @@ class ApiDocWriter:
                                isinstance(n.targets[0], ast.Tuple):
                                 continue
                             if isinstance(n.value, (ast.Constant, ast.Dict, ast.Tuple)):
-                                constant_variables.append(n.targets[0].id)
+                                constants.append(n.targets[0].id)
                                 continue
                             functions.append(n.targets[0].id)
                         elif hasattr(n.value, "attr"):
@@ -283,13 +283,13 @@ class ApiDocWriter:
                         print(n.targets[0])
                         print(str(e))
 
-            return functions, classes, constant_variables
+            return functions, classes, constants
         else:
             # find all public objects in the module.
             obj_strs = [obj for obj in dir(mod) if not obj.startswith("_")]
             functions = []
             classes = []
-            constant_variables = []
+            constants = []
             for obj_str in obj_strs:
                 # find the actual object from its string representation
                 if obj_str not in mod.__dict__:
@@ -309,7 +309,7 @@ class ApiDocWriter:
                     except TypeError:
                         # not a function or class
                         pass
-            return functions, classes, constant_variables
+            return functions, classes, constants
 
     def _parse_lines(self, linesource):
         """Parse lines of text for functions and classes."""
@@ -349,7 +349,7 @@ class ApiDocWriter:
 
         """
         # get the names of all classes and functions
-        functions, classes, constant_variables = self._parse_module_with_import(uri)
+        functions, classes, constants = self._parse_module_with_import(uri)
         if not len(functions) and not len(classes) and DEBUG:
             print("WARNING: Empty -", uri)  # dbg
 
@@ -375,7 +375,7 @@ class ApiDocWriter:
 
         body += "\n.. currentmodule:: " + uri + "\n\n"
 
-        for c in constant_variables:
+        for c in constants:
             # must NOT exclude from index to keep cross-refs working
             body += c + "\n"
             body += self.rst_section_levels[3] * len(c) + "\n"
@@ -386,18 +386,12 @@ class ApiDocWriter:
             body += "\n\n"
 
         for c in classes:
-            body += (
-                "\n:class:`" +
-                c +
-                "`\n" +
-                self.rst_section_levels[3] * (len(c) + 9) +
-                "\n\n"
-            )
+            body += f"\n:class:`{c}`\n{self.rst_section_levels[3] * (len(c) + 9)}\n\n"
             body += "\n.. autoclass:: " + c + "\n"
             # must NOT exclude from index to keep cross-refs working
             body += "  :members:\n" "  :undoc-members:\n" "  :show-inheritance:\n" "\n"
         head += ".. autosummary::\n\n"
-        for f in constant_variables + classes + functions:
+        for f in constants + classes + functions:
             head += "   " + f + "\n"
         head += "\n\n"
 
