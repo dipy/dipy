@@ -79,6 +79,6 @@ def test_deterministic_performances():
                                           step_size=0.2,
                                           voxel_size=np.ones(3),
                                           max_angle=20)
-    r = get_fast_tracking_performances(params)
+    r = get_fast_tracking_performances(params, nbr_seeds=5000)
     npt.assert_(r > 0.85, msg="Deterministic tracker has a low performance "
                               "score: " + str(r))

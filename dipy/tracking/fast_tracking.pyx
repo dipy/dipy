@@ -28,6 +28,7 @@ from nibabel.streamlines import ArraySequence as Streamlines
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 from libc.math cimport floor, ceil
+from libc.stdio cimport printf
 
 from posix.time cimport clock_gettime, timespec, CLOCK_REALTIME
 
@@ -174,17 +175,24 @@ cdef int generate_local_streamline(double* seed,
     stream_idx[1] = params.max_len + i -1
     free(stream_data)
 
-    # # backward tracking
+    # backward tracking
     stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
+
     fast_numpy.copy_point(seed, point)
     fast_numpy.copy_point(direction, voxdir)
+    if i > 1:
+        # Use the first selected orientation for the backward tracking segment
+        for j in range(3):
+            voxdir[j] = stream[(params.max_len + 1) * 3 + j] - stream[params.max_len * 3 + j]                     
+        fast_numpy.normalize(voxdir)
+    
+    # flip the initial direction for backward streamline segment
     for j in range(3):
         voxdir[j] = voxdir[j] * -1
 
     stream_status_backward = TRACKPOINT
     for i in range(1, params.max_len):
-        ##### VOXDIR should be the real first direction #####
         if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
             break
         # update position

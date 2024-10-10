@@ -83,6 +83,6 @@ def test_ptt_performances():
                                           max_angle=15,
                                           probe_quality=4)
 
-    r = get_fast_tracking_performances(params)
+    r = get_fast_tracking_performances(params, nbr_seeds=5000)
     npt.assert_(r > 0.85, msg="PTT tracker has a low performance "
                               "score: " + str(r))
