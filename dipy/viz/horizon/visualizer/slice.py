@@ -23,9 +23,8 @@ class SlicesVisualizer:
         *,
         affine=None,
         world_coords=False,
-        percentiles=(2, 98),
+        percentiles=(0, 100),
         rgb=False,
-        is_binary=False,
     ):
         self._interactor = interactor
         self._scene = scene
@@ -41,8 +40,6 @@ class SlicesVisualizer:
         self._data_shape = data.shape
         self._rgb = False
         self._percentiles = percentiles
-        if is_binary:
-            self._percentiles = [0, 100]
 
         vol_data = self._data
 
