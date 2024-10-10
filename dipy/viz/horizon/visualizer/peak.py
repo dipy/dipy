@@ -70,8 +70,8 @@ class PeakActor(Actor):
         If an array (K,) is given, where K is the number of lines then these
         are considered as the values to be used by the colormap.
     lookup_colormap : vtkLookupTable, optional
-        Add a default lookup table to the colormap. Default is None which calls
-        :func:`fury.actor.colormap_lookup_table`.
+        Add a default lookup table to the colormap. Look at
+        :func:`fury.actor.colormap_lookup_table` for more information.
     linewidth : float, optional
         Line thickness. Default is 1.
     symmetric: bool, optional
@@ -308,7 +308,7 @@ def peak(
     lookup_colormap=None,
     symmetric=True,
 ):
-    """Visualize peak directions as given from ``peaks_from_model``.
+    """Visualize peak directions as given from ``peaks_from_model`` function.
 
     Parameters
     ----------
@@ -324,8 +324,8 @@ def peak(
         Default None. If None then every peak gets an orientation color
         in similarity to a DEC map.
     lookup_colormap : vtkLookupTable, optional
-        Add a default lookup table to the colormap. Default is None which calls
-        :func:`fury.actor.colormap_lookup_table`.
+        Add a default lookup table to the colormap. Look at
+        :func:`fury.actor.colormap_lookup_table` for more information.
     linewidth : float, optional
         Line thickness. Default is 1.
     symmetric : bool, optional

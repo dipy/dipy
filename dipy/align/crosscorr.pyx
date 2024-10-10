@@ -131,7 +131,7 @@ cdef inline void _update_factors(double[:, :, :, :] factors,
 def precompute_cc_factors_3d(floating[:, :, :] static,
                              floating[:, :, :] moving,
                              cnp.npy_intp radius, num_threads=None):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     Pre-computes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to
@@ -151,13 +151,14 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
     Returns
     -------
     factors : array, shape (S, R, C, 5)
-        the precomputed cross correlation terms:
-        factors[:,:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,:,1] : moving minus its mean value along the neighborhood
-        factors[:,:,:,2] : sum of the pointwise products of static and moving
-                           along the neighborhood
-        factors[:,:,:,3] : sum of sq. values of static along the neighborhood
-        factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
+        the precomputed cross correlation terms::
+
+            - factors[:,:,:,0] : static minus its mean value along the neighborhood
+            - factors[:,:,:,1] : moving minus its mean value along the neighborhood
+            - factors[:,:,:,2] : sum of the pointwise products of static and moving
+              along the neighborhood
+            - factors[:,:,:,3] : sum of sq. values of static along the neighborhood
+            - factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
@@ -287,7 +288,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
 @cython.cdivision(True)
 def precompute_cc_factors_3d_test(floating[:, :, :] static,
                                   floating[:, :, :] moving, int radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     This version of precompute_cc_factors_3d is for testing purposes, it
     directly computes the local cross-correlation factors without any
@@ -347,7 +348,7 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] factors,
                                cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the forward transformation
+    """Gradient of the CC Metric w.r.t. the forward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
@@ -415,7 +416,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
                                 cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the backward transformation
+    """Gradient of the CC Metric w.r.t. the backward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) :footcite:p:`Avants2008`. w.r.t. the displacement
@@ -484,7 +485,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 @cython.cdivision(True)
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              cnp.npy_intp radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     Pre-computes the separate terms of the cross correlation metric
     :footcite:p:`Avants2008` and image norms at each voxel considering a
@@ -503,13 +504,14 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     Returns
     -------
     factors : array, shape (R, C, 5)
-        the precomputed cross correlation terms:
-        factors[:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,1] : moving minus its mean value along the neighborhood
-        factors[:,:,2] : sum of the pointwise products of static and moving
-                           along the neighborhood
-        factors[:,:,3] : sum of sq. values of static along the neighborhood
-        factors[:,:,4] : sum of sq. values of moving along the neighborhood
+        the precomputed cross correlation terms::
+
+            - factors[:,:,0] : static minus its mean value along the neighborhood
+            - factors[:,:,1] : moving minus its mean value along the neighborhood
+            - factors[:,:,2] : sum of the pointwise products of static and moving
+              along the neighborhood
+            - factors[:,:,3] : sum of sq. values of static along the neighborhood
+            - factors[:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
@@ -599,7 +601,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
 @cython.cdivision(True)
 def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                                   cnp.npy_intp radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     This version of precompute_cc_factors_2d is for testing purposes, it
     directly computes the local cross-correlation without any optimization.
@@ -653,7 +655,7 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] factors,
                                cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the forward transformation
+    """Gradient of the CC Metric w.r.t. the forward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
@@ -722,7 +724,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
                                 cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the backward transformation
+    """Gradient of the CC Metric w.r.t. the backward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement

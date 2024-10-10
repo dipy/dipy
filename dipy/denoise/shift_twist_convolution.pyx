@@ -14,10 +14,10 @@ from dipy.utils.deprecator import deprecated_params
 
 @deprecated_params('sh_order', new_name='sh_order_max', since='1.9', until='2.0')
 def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
-    """ Perform the shift-twist convolution with the ODF data and
+    """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
-    See :footcite:p:`Meesters2016`, :footcite:p:`Duits2011`,
+    See :footcite:p:`Meesters2016a`, :footcite:p:`Duits2011`,
     :footcite:p:`Portegies2015a` and :footcite:p:`Portegies2015b` for further
     details about the method.
 
@@ -71,7 +71,7 @@ def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, n
     return output_sh
 
 def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
-    """ Perform the shift-twist convolution with the ODF data and
+    """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
     Parameters
@@ -86,7 +86,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=Tr
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
     normalize : boolean
         Apply max-normalization to the output such that its value range matches

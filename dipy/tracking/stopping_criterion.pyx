@@ -55,13 +55,6 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
 
 
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
-    """
-    # Declarations from stopping_criterion.pxd below
-    cdef:
-        double threshold, interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
-        double[:, :, :] metric_map
-    """
 
     def __cinit__(self, metric_map, double threshold):
         self.interp_out_view = self.interp_out_double
@@ -114,8 +107,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
     @classmethod
     def from_pve(cls, wm_map, gm_map, csf_map, **kw):
-        """AnatomicalStoppingCriterion from partial volume fraction (PVE)
-        maps.
+        """AnatomicalStoppingCriterion from partial volume fraction (PVE) maps.
 
         Parameters
         ----------
@@ -165,8 +157,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
 
 cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
-    r"""
-    Anatomically-Constrained Tractography (ACT) stopping criterion.
+    """Anatomically-Constrained Tractography (ACT) stopping criterion.
 
     See :footcite:p:`Smith2012` for further details about the method.
 
@@ -175,10 +166,6 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     :footcite:p:`Smith2012` that cuts streamlines going through subcortical gray
     matter regions is not implemented here. The backtracking technique for
     streamlines reaching INVALIDPOINT is not implemented either.
-    cdef:
-        double interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
-        double[:, :, :] include_map, exclude_map
 
     References
     ----------
