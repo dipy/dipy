@@ -40,7 +40,6 @@ position = 1
 enable = true
 files = [
     "quick_start.py",
-    "tracking_introduction_eudx.py",
 ]
 
 
