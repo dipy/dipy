@@ -36,4 +36,4 @@ jobs:
     - name: Build documentation
       run: |
         cd doc
-        make -C . html-no-examples
+        make -C . html-no-examples SPHINXOPTS="-W --keep-going"
