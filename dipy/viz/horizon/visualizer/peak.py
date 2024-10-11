@@ -73,11 +73,10 @@ class PeakActor(Actor):
         Add a default lookup table to the colormap. Look at
         :func:`fury.actor.colormap_lookup_table` for more information.
     linewidth : float, optional
-        Line thickness. Default is 1.
+        Line thickness.
     symmetric: bool, optional
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
-        peaks are only drawn for directions given by peaks_dirs. Default is
-        True.
+        peaks are only drawn for directions given by peaks_dirs.
 
     """
 
