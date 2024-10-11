@@ -55,9 +55,7 @@ class PeakActor(Actor):
         Peak values. The shape of the array should be (X, Y, Z, D).
     affine : array, optional
         4x4 transformation array from native coordinates to world coordinates.
-    colors : None or string ('rgb_standard') or tuple (3D or 4D) or
-        array/ndarray (N, 3 or 4) or array/ndarray (K, 3 or 4) or
-        array/ndarray(N, ) or array/ndarray (K, )
+    colors : None or string ('rgb_standard') or tuple (3D or 4D) or array/ndarray (N, 3 or 4) or (K, 3 or 4) or (N, ) or (K, )
         If None a standard orientation colormap is used for every line.
         If one tuple of color is used. Then all streamlines will have the same
         color.
@@ -78,7 +76,7 @@ class PeakActor(Actor):
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
         peaks are only drawn for directions given by peaks_dirs.
 
-    """
+    """  # noqa: E501
 
     @warning_for_keywords()
     def __init__(
