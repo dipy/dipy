@@ -1,7 +1,4 @@
 """
-
-.. _simulate_dki:
-
 ==========================
 DKI MultiTensor Simulation
 ==========================

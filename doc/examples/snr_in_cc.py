@@ -25,8 +25,9 @@ This is the strategy adopted in several recent papers (see
 :footcite:p:`Descoteaux2011` and :footcite:p:`Jones2013`). It gives a good
 indication of the quality of the DWI data.
 
-First, we compute the tensor model in a brain mask (see the :ref:`reconst_dti`
-example for further explanations).
+First, we compute the tensor model in a brain mask (see the
+:ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py` example for further
+explanations).
 
 Let's load the necessary modules:
 """
