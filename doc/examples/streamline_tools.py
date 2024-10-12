@@ -75,10 +75,11 @@ csapeaks = peaks.peaks_from_model(
 )
 
 ###############################################################################
-# Now we can use EuDX to track all of the white matter. To keep things
-# reasonably fast we use ``density=1`` which will result in 1 seeds per voxel.
-# The stopping criterion, determining when the tracking stops, is set to stop
-# when the tracking exits the white matter.
+# Now we can use EuDX to track all of the white matter. We define an identity
+# matrix for the affine transformation [#]_ of the seeding locations. To keep
+# things reasonably fast we use ``density=1`` which will result in 1 seeds per
+# voxel. The stopping criterion, determining when the tracking stops, is set to
+# stop when the tracking exits the white matter.
 
 affine = np.eye(4)
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
