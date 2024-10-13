@@ -1,7 +1,4 @@
 """
-
-.. _reconst_dti:
-
 ============================================================
 Reconstruction of the diffusion signal with the Tensor model
 ============================================================

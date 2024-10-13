@@ -174,7 +174,9 @@ regtools.overlay_slices(
 #
 #
 # Let's now fetch a set of streamlines from the Stanford HARDI dataset.
-# Those streamlines were generated during the :ref:`streamline_tools` example.
+# Those streamlines were generated during the
+# :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py`
+# example.
 #
 # We read the streamlines from file in voxel space:
 

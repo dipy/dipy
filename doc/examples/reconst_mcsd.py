@@ -1,7 +1,4 @@
 """
-
-.. _reconst-mcsd:
-
 ================================================
 Reconstruction with Multi-Shell Multi-Tissue CSD
 ================================================

@@ -1,6 +1,4 @@
 """
-.. _reconst_sfm:
-
 ==============================================
 Reconstruction with the Sparse Fascicle Model
 ==============================================
@@ -163,7 +161,8 @@ if interactive:
 # SFM Peaks and ODFs.
 #
 #
-# To see how to use this information in tracking, proceed to :ref:`sfm-track`.
+# To see how to use this information in tracking, proceed to
+# :ref:`sphx_glr_examples_built_fiber_tracking_tracking_sfm.py`.
 #
 # References
 # ----------

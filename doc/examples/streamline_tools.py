@@ -1,6 +1,4 @@
 """
-.. _streamline_tools:
-
 =========================================================
 Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
