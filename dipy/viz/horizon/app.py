@@ -545,7 +545,7 @@ class Horizon:
                         data,
                         affine=affine,
                         world_coords=self.world_coords,
-                        rgb=self.rgb
+                        rgb=self.rgb,
                     )
                     self.__tabs.append(
                         SlicesTab(
