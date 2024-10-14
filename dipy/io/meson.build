@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'dpy.py',
   'gradients.py',
   'image.py',

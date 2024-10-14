@@ -5,6 +5,7 @@ import operator
 from os.path import abspath, dirname, join as pjoin
 import warnings
 
+import lazy_loader as lazy
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
@@ -115,3 +116,6 @@ def check_for_warnings(warn_printed, w_msg):
     assert len(selected_w) >= 1
     msg = [str(m.message) for m in selected_w]
     npt.assert_equal(w_msg in msg, True)
+
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)
