@@ -66,7 +66,7 @@ class Profiler:
             if ext in (".py", ".pyx"):  # python/cython file
                 print("profiling python/cython file ...")
                 subprocess.call(
-                    ["python", "-m", "cProfile", "-o", "profile.prof", call]
+                    ["python3", "-m", "cProfile", "-o", "profile.prof", call]
                 )
                 s = pstats.Stats("profile.prof")
                 stats = s.strip_dirs().sort_stats("time")
