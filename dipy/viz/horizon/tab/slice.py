@@ -335,7 +335,7 @@ class SlicesTab(HorizonTab):
                 # Updating visibilities
                 slices = [self._slice_x, self._slice_y, self._slice_z]
                 for i, s in enumerate(slices):
-                    self._update_slice_visibility(None, s, i, s.visibility)
+                    self._update_slice_visibility(None, s, i, visibility=s.visibility)
 
                 self._volume.selected_value = value
                 self._force_render(self)

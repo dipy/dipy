@@ -23,7 +23,6 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    is_binary_image,
     unpack_image,
     unpack_surface,
 )
@@ -529,8 +528,7 @@ class Horizon:
                 title = f"Image {img_count + 1}"
                 data, affine, fname = unpack_image(img)
                 self.vox2ras = affine
-                binary_image = is_binary_image(data)
-                if binary_image and self.__roi_images:
+                if self.__roi_images:
                     if "rois" in self.random_colors:
                         roi_color = next(self.color_gen)
                     roi_actor = actor.contour_from_roi(
@@ -546,7 +544,6 @@ class Horizon:
                         affine=affine,
                         world_coords=self.world_coords,
                         rgb=self.rgb,
-                        is_binary=binary_image,
                     )
                     self.__tabs.append(
                         SlicesTab(
