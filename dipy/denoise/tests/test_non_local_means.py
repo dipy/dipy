@@ -44,6 +44,9 @@ def test_scalar_sigma(rng):
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
     assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=False)
+    
+    noise = "a"
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=False)
 
 
 @set_random_number_generator()
@@ -87,3 +90,17 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
+
+
+def test_nlmeans_2D_sigma():
+    S0 = np.ones((20, 20, 20, 3))
+    noise = np.ones((3,2))
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)
+    
+    S0 = np.ones((20, 20, 20))
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)
+
+def test_nlmeans_sigma_arr():
+    S0 = np.ones((20, 20, 20, 3))
+    noise = np.ones(4)
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)
