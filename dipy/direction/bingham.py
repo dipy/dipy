@@ -616,7 +616,8 @@ class BinghamMetrics:
         Notes
         -----
         Fiber spread (fs) is defined as fs = fd/f0 and characterizes the
-        spread of the lobe, i.e. the higher the fs, the wider the lobe :footcite:p:`Riffert2014`.
+        spread of the lobe, i.e. the higher the fs, the wider the lobe
+        :footcite:p:`Riffert2014`.
 
         References
         ----------
