@@ -55,7 +55,7 @@ def non_local_means(
                 "sigma should have the same length as the last "
                 "dimension of arr for 4D data",
                 sigma
-                )
+            )
     else:
         if not isinstance(sigma, Number):
             raise ValueError("sigma should be a float", sigma)
