@@ -86,7 +86,7 @@ def generate_tractogram(double[:,::1] seed_positions,
             yield s
 
 
-cdef int generate_tractogram_c(double[:,::1] seed_positions,
+cdef void generate_tractogram_c(double[:,::1] seed_positions,
                                double[:,::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
@@ -119,8 +119,6 @@ cdef int generate_tractogram_c(double[:,::1] seed_positions,
             memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
         free(stream)
         free(stream_idx)
-
-    return 0
 
 
 cdef int generate_local_streamline(double* seed,

@@ -274,13 +274,11 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
-        # if rng.random() < p:
         if random() < p:
             return TRACKPOINT
 
         # test if the tracking stopped in the include tissue map
         p = (include_result / (include_result + exclude_result))
-        # if rng.random() < p:
         if random() < p:
             return ENDPOINT
 
