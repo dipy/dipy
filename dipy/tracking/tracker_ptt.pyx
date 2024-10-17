@@ -16,7 +16,6 @@ from dipy.tracking.fast_tracking cimport TrackerParameters
 from libc.stdlib cimport malloc, free
 
 
-
 cdef int parallel_transport_tracker(double* point,
                                     double* direction,
                                     TrackerParameters params,
@@ -47,7 +46,7 @@ cdef int parallel_transport_tracker(double* point,
     direction : double[3]
         Previous tracking direction.
     params : TrackerParameters
-        PTT tracking parameters.
+        Parallel Transport Tractography (PTT) parameters.
     stream_data : double*
         Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
@@ -175,11 +174,13 @@ cdef int initialize(TrackerParameters params,
                 return 0
         return 1
 
+
 cdef void initialize_candidate(TrackerParameters params,
                                double* stream_data,
                                PmfGen pmf_gen,
                                double* init_dir) noexcept nogil:
-    """"Initialize the parallel transport frame.
+    """
+    Initialize the parallel transport frame.
 
     After initial position is set, a parallel transport frame is set using
     the initial direction (a walking frame, i.e., 3 orthonormal vectors,
@@ -199,6 +200,9 @@ cdef void initialize_candidate(TrackerParameters params,
         Orientation data.
     init_dir : double[3]
         Initial tracking direction (tangent)
+
+    Returns
+    -------
 
     """
     cdef double[3] position
@@ -255,6 +259,9 @@ cdef void prepare_propagator(TrackerParameters params,
         Streamline data persitant across tracking steps.
     arclength : double
         Arclenth, which is equivalent to step size along the arc
+
+    Returns
+    -------
 
     """
     cdef double tmp_arclength
