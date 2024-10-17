@@ -1,5 +1,6 @@
-import numpy as np
 from numbers import Number
+
+import numpy as np
 
 from dipy.denoise.nlmeans_block import nlmeans_block
 from dipy.testing.decorators import warning_for_keywords
@@ -54,7 +55,7 @@ def non_local_means(
             raise ValueError(
                 "sigma should have the same length as the last "
                 "dimension of arr for 4D data",
-                sigma
+                sigma,
             )
     else:
         if not isinstance(sigma, Number):
