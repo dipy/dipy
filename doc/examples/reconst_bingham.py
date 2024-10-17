@@ -1,7 +1,7 @@
 """
-===========================================================================
+=============================================
 Reconstruction of Bingham Functions from ODFs
-===========================================================================
+=============================================
 
 This example shows how to reconstruct Bingham functions from orientation
 distribution functions (ODFs). Reconstructed Bingham functions can be
@@ -42,7 +42,7 @@ print('The number of directions on the sphere is {}'.format(nd))
 
 ###############################################################################
 # Step 1. ODF estimation
-# =============================================================================
+# ======================
 #
 # Before fitting Bingham functions, we must reconstruct ODFs. In this example,
 # fiber ODFs (fODFs) will be reconstructed using the Constrained Spherical
@@ -92,7 +92,7 @@ if interactive:
 #
 #
 # Step 2. Bingham fitting and Metrics
-# =============================================================================
+# ===================================
 # Now that we have some ODFs, let us fit the Bingham functions to them by using
 # the function `sf_to_bingham`:
 
@@ -171,7 +171,7 @@ BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8, max_search_angle)
 
 ###############################################################################
 # Step 3. Bingham Metrics
-# =============================================================================
+# =======================
 # As mentioned above, reconstructed Bingham functions can be useful to
 # quantify properties from ODFs :footcite:p:`Riffert2014`,
 # :footcite:p:`NetoHenriques2018`. Below we plot the Bingham metrics
