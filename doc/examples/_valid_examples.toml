@@ -111,6 +111,7 @@ files = [
     "reconst_qti.py",
     "reconst_qtiplus.py",
     "histology_resdnn.py",
+    "reconst_bingham.py"
 ]
 
 [contextual_enhancement]
