@@ -1,4 +1,5 @@
 import numpy as np
+from numbers import Number
 
 from dipy.denoise.nlmeans_block import nlmeans_block
 from dipy.testing.decorators import warning_for_keywords
@@ -40,22 +41,28 @@ def non_local_means(
     .. footbibliography::
 
     """
+    if isinstance(sigma, np.ndarray) and sigma.size == 1:
+        sigma = sigma.item()
     if isinstance(sigma, np.ndarray):
-        if arr.ndim == 3 and (sigma.ndim != 0 or sigma.shape != (1, )):
-            raise ValueError("sigma should be a scalar for 3D data", sigma)
-        if arr.ndim == 4 and sigma.ndim != 1:
-            raise ValueError("sigma should be an array for 4D data", sigma)
-        if arr.ndim == 4 and sigma.shape[0] != arr.shape[-1]:
-            raise ValueError("sigma should have the same length as the last "
-                             "dimension of arr for 4D data", sigma)
-    else:
-        if not np.isscalar(sigma):
-            raise ValueError("sigma should be a float or an array", sigma)
         if arr.ndim == 3:
-            sigma = np.array([sigma])
+            raise ValueError("sigma should be a scalar for 3D data", sigma)
+        if not np.issubdtype(sigma.dtype, np.number):
+            raise ValueError("sigma should be an array of floats", sigma)
+        if arr.ndim == 4 and sigma.ndim != 1:
+            raise ValueError("sigma should be a 1D array for 4D data", sigma)
+        if arr.ndim == 4 and sigma.shape[0] != arr.shape[-1]:
+            raise ValueError(
+                "sigma should have the same length as the last "
+                "dimension of arr for 4D data",
+                sigma
+                )
+    else:
+        if not isinstance(sigma, Number):
+            raise ValueError("sigma should be a float", sigma)
         # if sigma is a scalar and arr is 4D, we assume the same sigma for all
-        elif arr.ndim == 4:
+        if arr.ndim == 4:
             sigma = np.array([sigma] * arr.shape[-1])
+
     if mask is None and arr.ndim > 2:
         mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype="f8")
     else:

@@ -15,6 +15,16 @@ def test_nlmeans_static():
     S0nb = non_local_means(S0, sigma=1.0, rician=False)
     assert_array_almost_equal(S0, S0nb)
 
+    S0 = 100 * np.ones((20, 20, 20, 3), dtype="f8")
+    S0nb = non_local_means(S0, sigma=1.0, rician=False)
+    assert_array_almost_equal(S0, S0nb)
+
+    S0nb = non_local_means(S0, sigma=np.array(1.0), rician=False)
+    assert_array_almost_equal(S0, S0nb)
+
+    S0nb = non_local_means(S0, sigma=np.array([1.0]), rician=False)
+    assert_array_almost_equal(S0, S0nb)
+
 
 @set_random_number_generator()
 def test_nlmeans_random_noise(rng):
