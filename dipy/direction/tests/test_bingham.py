@@ -9,8 +9,16 @@ from dipy.direction.bingham import (_single_bingham_to_sf, sf_to_bingham,
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh
 
-sphere = get_sphere('repulsion724')
-sphere = sphere.subdivide(2)
+
+def setup_module():
+    global sphere
+    sphere = get_sphere(name='repulsion724')
+    sphere = sphere.subdivide(n=2)
+
+
+def teardown_module():
+    global sphere
+    sphere = None
 
 
 def test_bingham_fit():
@@ -202,7 +210,7 @@ def test_bingham_from_sh():
     odf = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
 
     bim_odf = sf_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
-    sh = sf_to_sh(odf, sphere, sh_order_max=16)
-    bim_sh = sh_to_bingham(sh, sphere, 16, npeaks=2, max_search_angle=45)
+    sh = sf_to_sh(odf, sphere, sh_order_max=16, legacy=False)
+    bim_sh = sh_to_bingham(sh, sphere, 16, legacy=False, npeaks=2, max_search_angle=45)
     assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params,
                               decimal=3)

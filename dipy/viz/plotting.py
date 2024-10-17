@@ -282,10 +282,10 @@ def image_mosaic(images, *, ax_labels=None, ax_kwargs=None,
         Images to render.
     ax_labels: list of str, optional
         Label for each image.
-    ax_kwargs: list of dictionaries
+    ax_kwargs: list of dictionaries, optional
         keyword arguments passed to imshow for each image. One dictionary per
         image.
-    figsize: tuple of ints
+    figsize: tuple of ints, optional
         Figure size.
     filename: str, optional
         When given, figure is saved to disk under this name.
@@ -300,10 +300,10 @@ def image_mosaic(images, *, ax_labels=None, ax_kwargs=None,
     fig, ax = plt.subplots(1, len(images), figsize=figsize)
 
     aximages = []
-    for it in range(len(images)):
-        aximages.append(ax[it].imshow(images[it], **(ax_kwargs[it])))
+    for it, (im, axe, kw) in enumerate(zip(images, ax, ax_kwargs)):
+        aximages.append(axe.imshow(im, **kw))
         if ax_labels is not None:
-            ax[it].set_title(ax_labels[it])
+            axe.set_title(ax_labels[it])
 
     for it, aximage in enumerate(aximages):
         fig.colorbar(aximage, ax=ax[it])

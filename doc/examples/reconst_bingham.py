@@ -4,11 +4,12 @@ Reconstruction of Bingham Functions from ODFs
 ===========================================================================
 
 This example shows how to reconstruct Bingham functions from orientation
-distribution functions (ODFs). Reconstructed Bingham functions can be useful to
-quantify properties from ODFs such as fiber dispersion [1]_,[2]_.
+distribution functions (ODFs). Reconstructed Bingham functions can be
+useful to quantify properties from ODFs such as fiber dispersion
+:footcite:p:`Riffert2014`,:footcite:p:`NetoHenriques2018`.
 
-To begin, let us import the relevant functions and load a data consisting of 10
-b0s and 150 non-b0s with a b-value of 2000s/mm2.
+To begin, let us import the relevant functions and load a data consisting
+of 10 b0s and 150 non-b0s with a b-value of 2000s/mm2.
 """
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -22,11 +23,11 @@ from dipy.viz.plotting import image_mosaic
 from dipy.core.sphere import unit_icosahedron
 
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name='stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # To properly fit Bingham functions, we recommend the use of a larger number of
@@ -34,19 +35,19 @@ gtab = gradient_table(bvals, bvecs)
 # vertices sampling a 3D sphere (the icosahedron). We further subdivide the
 # faces of this `sphere` representation into 5, to get 10242 directions.
 
-sphere = unit_icosahedron.subdivide(5)
+sphere = unit_icosahedron.subdivide(n=5)
 
 nd = sphere.vertices.shape[0]
 print('The number of directions on the sphere is {}'.format(nd))
 
 ###############################################################################
 # Step 1. ODF estimation
-# =================================================
+# =============================================================================
 #
 # Before fitting Bingham functions, we must reconstruct ODFs. In this example,
 # fiber ODFs (fODFs) will be reconstructed using the Constrained Spherical
-# Deconvolution (CSD) method [3]_. For simplicity, we will refer to fODFs
-# as ODFs.
+# Deconvolution (CSD) method :footcite:p:`Tournier2007`. For simplicity, we
+# will refer to fODFs as ODFs.
 # In the main tutorial of CSD (see
 # :ref:`sphx_glr_examples_built_reconstruction_reconst_csd.py`), several
 # strategies to define the fiber response function are discussed. Here, for
@@ -91,7 +92,7 @@ if interactive:
 #
 #
 # Step 2. Bingham fitting and Metrics
-# =================================================
+# =============================================================================
 # Now that we have some ODFs, let us fit the Bingham functions to them by using
 # the function `sf_to_bingham`:
 
@@ -107,16 +108,19 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 #
 # - amplitude_lobe (the maximum value for each lobe. Also known as Bingham's
 #       f_0 parameter.)
-# - fd_lobe (fiber densitiy: as defined in [1]_, one for each peak.)
-# - fs_lobe (fiber spread: as defined in [1]_, one for each peak.)
+# - fd_lobe (fiber densitiy: as defined in :footcite:p:`Riffert2014`,
+#       one for each peak.)
+# - fs_lobe (fiber spread: as defined in :footcite:p:`Riffert2014`,
+#       one for each peak.)
 # - fd_voxel (voxel fiber density: average of fd across all ODF lobes.)
 # - fs_voxel (voxel fiber spread: average of fs across all ODF lobes.)
 # - odi1_lobe (orientation dispersion index along Bingham's first dispersion
-#       axis, one for each lobe. Defined in [2]_ and [4]_.)
+#       axis, one for each lobe. Defined in :footcite:p:`NetoHenriques2018`
+#       and :footcite:p:`Zhang2012`.)
 # - odi2_lobe (orientation dispersion index along Bingham's second dispersion
 #       axis, one for each lobe.)
 # - odi_total_lobe (orientation dispersion index averaged across both Binghams'
-#       dispersion axes. Defined in [5]_.)
+#       dispersion axes. Defined in :footcite:p:`Tariq2016`.)
 # - odi1_voxel (orientation dispersion index along Bingham's first dispersion
 #       axis, averaged across all lobes)
 # - odi2_voxel (orientation dispersion index along Bingham's second dispersion
@@ -167,9 +171,10 @@ BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8, max_search_angle)
 
 ###############################################################################
 # Step 3. Bingham Metrics
-# =================================================
+# =============================================================================
 # As mentioned above, reconstructed Bingham functions can be useful to
-# quantify properties from ODFs [1]_, [2]_. Below we plot the Bingham metrics
+# quantify properties from ODFs :footcite:p:`Riffert2014`,
+# :footcite:p:`NetoHenriques2018`. Below we plot the Bingham metrics
 # expected to be proportional to the fiber density (FD) of specific fiber
 # populations.
 
@@ -200,13 +205,14 @@ image_mosaic(FD_images, ax_labels=FD_labels, ax_kwargs=kwargs,
 # each voxel).
 #
 # Bingham functions can also be used to quantify fiber dispersion from the
-# ODFs [2]_. In addition to quantifying a combined orientation dispersion
-# index (`ODI_total`) for each ODF lobe [5]_, Bingham functions allow  the
-# quantification of dispersion along two main axes (`ODI_1` and `ODI_2`),
-# offering unique information of fiber orientation variability within the brain
-# tissue. Below we show how to extract these indexes from the largest ODF peak.
-# Note, for better visualization of ODI estimates, voxels with total FD lower
-# than 0.5 are masked.
+# ODFs :footcite:p:`NetoHenriques2018`. In addition to quantifying a combined
+# orientation dispersion index (`ODI_total`) for each ODF lobe
+# :footcite:p:`Tariq2016`, Bingham functions allow  the quantification of
+# dispersion along two main axes (`ODI_1` and `ODI_2`), offering unique
+# information of fiber orientation variability within the brain tissue. Below
+# we show how to extract these indexes from the largest ODF peak. Note, for
+# better visualization of ODI estimates, voxels with total FD lower than 0.5
+# are masked.
 
 ODIt = BinghamMetrics.odi_total_lobe[:, :, 0, 0]
 ODI1 = BinghamMetrics.odi1_lobe[:, :, 0, 0]
@@ -305,21 +311,5 @@ image_mosaic(ODI_images, ax_labels=ODI_labels, ax_kwargs=kwargs,
 # References
 # ----------
 #
-# .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-#        anisotropy: Extraction of bundle-specific structural metrics from
-#        crossing fiber models. NeuroImage 2014;100:176-91.
-# .. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
-#        Distribution Functions. in: Advanced methods for diffusion MRI data
-#        analysis and their application to the healthy ageing brain. Apollo -
-#        University of Cambridge Repository. Doctoral Thesis 2018.
-#        doi: 10.17863/CAM.29356.
-# .. [3] Tournier J-D, Calamante F and Connelly A. Robust determination of
-#        the fibre orientation distribution in diffusion MRI: Non-negativity
-#        constrained super-resolved spherical deconvolution.
-#        NeuroImage 2007;35(4):1459-1472.
-# .. [4] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
-#        NODDI: practical in vivo neurite orientation dispersion and
-#        density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
-# .. [5] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-#        Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
-#        of neurites using diffusion MRI. NeuroImage 2016;133:207-223.
+# .. footbibliography::
+#

@@ -1,19 +1,12 @@
 """Tools for fitting Bingham distributions to orientation distribution
-functions (ODF), as described in Riffert et al [1]_. The resulting
+functions (ODF), as described in :footcite:p:`Riffert2014`. The resulting
 distributions can further be used to compute ODF-lobe-specific measures such as
-the fiber density (FD) and fiber spread (FS) [1]_ and the orientation
-dispersion index (ODI) [2]_.
+the fiber density (FD) and fiber spread (FS) :footcite:p:`Riffert2014` and the
+orientation dispersion index (ODI) :footcite:p:`NetoHenriques2018`.
 
 References
 ----------
-.. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-        anisotropy: Extraction of bundle-specific structural metrics from
-        crossing fiber models. NeuroImage 2014;100:176-91.
-.. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
-        Distribution Functions. in: Advanced methods for diffusion MRI data
-        analysis and their application to the healthy ageing brain. Apollo -
-        University of Cambridge Repository. Doctoral Thesis 2018.
-        doi: 10.17863/CAM.29356.
+.. footbibliography::
 """
 
 import numpy as np
@@ -134,7 +127,8 @@ def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
     max_search_angle: float.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution. Although they suggest 6 degrees
-        in [1]_, tests show that a value around 45 degrees is more stable.
+        in :footcite:p:`Riffert2014`, tests show that a value around 45 degrees
+        is more stable.
     npeak: int, optional
         Maximum number of peaks found (default 5 peaks).
     min_sep_angle: float, optional
@@ -153,13 +147,11 @@ def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
     -----
     Lobes are first found by performing a peak extraction on the input ODF and
     Bingham distributions are then fitted around each of the extracted peaks
-    using the method described by Riffert et al [1]_.
+    using the method described in :footcite:p:`Riffert2014`.
 
     References
     ----------
-    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-            anisotropy: Extraction of bundle-specific structural metrics from
-            crossing fiber models. NeuroImage 2014;100:176-91.
+    .. footbibliography::
     """
     # extract all maxima on the ODF
     dirs, vals, inds = peak_directions(odf, sphere,
@@ -303,15 +295,13 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     Notes
     -----
     Fiber density (fd) is given by the surface integral of the
-    Bingham function [1]_.
+    Bingham function :footcite:p:`Riffert2014`.
 
     References
     ----------
-    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-            anisotropy: Extraction of bundle-specific structural metrics from
-            crossing fiber models. NeuroImage 2014;100:176-91.
+    .. footbibliography::
     """
-    sphere = unit_icosahedron.subdivide(subdivide)
+    sphere = unit_icosahedron.subdivide(n=subdivide)
 
     # directions for evaluating the integral
     u = sphere.vertices
@@ -366,13 +356,11 @@ def bingham_fiber_spread(f0, fd):
     Notes
     -----
     Fiber spread (fs) is defined as fs = fd/f0 and characterizes the spread of
-    the lobe, i.e. the higher the fs, the wider the lobe [1]_.
+    the lobe, i.e. the higher the fs, the wider the lobe :footcite:p:`Riffert2014`.
 
     References
     ----------
-    .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-            anisotropy: Extraction of bundle-specific structural metrics from
-            crossing fiber models. NeuroImage 2014;100:176-91.
+    .. footbibliography::
     """
     fs = np.zeros(f0.shape)
     fs[f0 > 0] = fd[f0 > 0] / f0[f0 > 0]
@@ -381,7 +369,7 @@ def bingham_fiber_spread(f0, fd):
 
 
 def k2odi(k):
-    """
+    r"""
     Convert the Bingham/Watson concentration parameter k to the orientation
     dispersion index (ODI).
 
@@ -398,7 +386,7 @@ def k2odi(k):
     Notes
     -----
     Orientation Dispersion Index for Watson/Bingham functions are defined as
-    [1]_,[2]_:
+    :footcite:p:`NetoHenriques2018`, :footcite:p:`Zhang2012`:
 
     .. math::
 
@@ -406,14 +394,7 @@ def k2odi(k):
 
     References
     ----------
-    .. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
-            Distribution Functions. in: Advanced methods for diffusion MRI data
-            analysis and their application to the healthy ageing brain. Apollo -
-            University of Cambridge Repository. Doctoral Thesis 2018.
-            doi: 10.17863/CAM.29356.
-    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
-            NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
+    .. footbibliography::
     """
     odi = np.zeros(k.shape)
     odi[k > 0] = 2 / np.pi * np.arctan(1 / k[k > 0])
@@ -421,7 +402,7 @@ def k2odi(k):
 
 
 def odi2k(odi):
-    """
+    r"""
     Convert the orientation dispersion index (ODI) to the Bingham/Watson
     concentration parameter k.
 
@@ -438,7 +419,7 @@ def odi2k(odi):
     Notes
     -----
     Orientation Dispersion Index for Watson/Bingham functions are defined as
-    [1]_,[2]_:
+    :footcite:p:`NetoHenriques2018`, :footcite:p:`Zhang2012`:
 
     .. math::
 
@@ -446,14 +427,7 @@ def odi2k(odi):
 
     References
     ----------
-    .. [2] Neto Henriques R. Mapping Fibre Dispersion from Fibre Orientation
-            Distribution Functions. in: Advanced methods for diffusion MRI data
-            analysis and their application to the healthy ageing brain. Apollo -
-            University of Cambridge Repository. Doctoral Thesis 2018.
-            doi: 10.17863/CAM.29356.
-    .. [3] Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC.
-            NODDI: practical in vivo neurite orientation dispersion and
-            density imaging of the human brain. NeuroImage 2012;61(4):1000-1016
+    .. footbibliography::
     """
     k = np.zeros(odi.shape)
     k[odi > 0] = 1 / np.tan(np.pi / 2 * odi[odi > 0])
@@ -568,16 +542,14 @@ class BinghamMetrics:
         Note:
         ----
         Overall (combined) concentration parameters for each lobe as defined
-        by equation 19 in [4]_ as:
+        by equation 19 in :footcite:p:`Tariq2016` as:
 
         .. math::
             k_{total} = sqrt{(k_1 * k_2)}
 
         References
         ----------
-        .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-                Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
-                of neurites using diffusion MRI. NeuroImage 2016;133:207-223.
+        .. footbibliography::
         """
         return np.sqrt(self.kappa1_lobe * self.kappa2_lobe)
 
@@ -597,13 +569,11 @@ class BinghamMetrics:
     def odi_total_lobe(self):
         """ Overall Orientation Dispersion Index (ODI) computed for an
         ODF lobe from the overall concentration parameter (k_total).
-        Defined by equation 20 in [4]_.
+        Defined by equation 20 in :footcite:p:`Tariq2016`.
 
         References
         ----------
-        .. [4] Tariq M, Schneider T, Alexander DC, Wheeler-Kingshott CAG,
-                Zhang H. Bingham–NODDI: Mapping anisotropic orientation dispersion
-                of neurites using diffusion MRI. NeuroImage 2016;133:207-223.
+        .. footbibliography::
         """
         return k2odi(self.kappa_total_lobe)
 
@@ -646,13 +616,11 @@ class BinghamMetrics:
         Notes
         -----
         Fiber spread (fs) is defined as fs = fd/f0 and characterizes the
-        spread of the lobe, i.e. the higher the fs, the wider the lobe [1]_.
+        spread of the lobe, i.e. the higher the fs, the wider the lobe :footcite:p:`Riffert2014`.
 
         References
         ----------
-        .. [1] Riffert TW, Schreiber J, Anwander A, Knösche TR. Beyond fractional
-                anisotropy: Extraction of bundle-specific structural metrics from
-                crossing fiber models. NeuroImage 2014;100:176-91.
+        .. footbibliography::
         """
         return bingham_fiber_spread(self.amplitude_lobe, self.fd_lobe)
 
@@ -694,10 +662,10 @@ def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
     max_search_angle: float.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution.
-    mask: ndarray
+    mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed.
-    npeak: int
-        Maximum number of peaks found (default 5 peaks).
+    npeak: int, optional
+        Maximum number of peaks found.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
     rel_th: float, optional
@@ -731,7 +699,8 @@ def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
     return BinghamMetrics(bpars)
 
 
-def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *, mask=None,
+def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *,
+                  mask=None, sh_basis='descoteaux07', legacy=True,
                   npeaks=5, min_sep_angle=60, rel_th=0.1):
     """
     Fit the Bingham function from an image volume of spherical harmonics (SH)
@@ -748,10 +717,14 @@ def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *, mask=None,
     max_search_angle: float.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution.
-    mask: ndarray
+    mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed.
-    npeak: int
-        Maximum number of peaks found (default 5 peaks).
+    sh_basis: str, optional
+        SH basis. Either `descoteaux07` or `tournier07`.
+    legacy: bool, optional
+        Use legacy SH basis definitions.
+    npeak: int, optional
+        Maximum number of peaks found.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
     rel_th: float, optional
@@ -776,7 +749,8 @@ def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *, mask=None,
         if not mask[idx]:
             continue
 
-        odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max)
+        odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max,
+                       basis_type=sh_basis, legacy=legacy)
 
         [fits, npeaks_final] = _single_sf_to_bingham(
             odf, sphere, max_search_angle, npeaks=npeaks,
