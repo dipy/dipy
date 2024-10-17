@@ -320,13 +320,19 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        mp.set_start_method("spawn", force=True)
-        pool = mp.Pool(num_processes)
+        if num_processes == 1:
+            for i in range(shap[0]):
+                vol[i, :, :] = _gibbs_removal_2d(
+                    vol[i, :, :], n_points=n_points, G0=G0, G1=G1
+                )
+        else:
+            mp.set_start_method("spawn", force=True)
+            pool = mp.Pool(num_processes)
 
-        partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
-        vol[:, :, :] = pool.map(partial_func, vol)
-        pool.close()
-        pool.join()
+            partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
+            vol[:, :, :] = pool.map(partial_func, vol)
+            pool.close()
+            pool.join()
 
     # Reshape data to original format
     if nd == 3:

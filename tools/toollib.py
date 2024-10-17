@@ -37,7 +37,7 @@ def get_dipydir():
 # import compileall and then get dir os.path.split
 def compile_tree():
     """Compile all Python files below current directory."""
-    stat = os.system('python -m compileall .')
+    stat = os.system('python3 -m compileall .')
     if stat:
         msg = '*** ERROR: Some Python files in tree do NOT compile! ***\n'
         msg += 'See messages above for the actual file that produced it.\n'

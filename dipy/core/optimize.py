@@ -376,6 +376,10 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 
         Parameters
         ----------
+        X : array-like (n_samples, n_features)
+            Samples.
+        y : array-like (n_samples,)
+            Target values.
 
         """
         coef, rnorm = opt.nnls(X, y)

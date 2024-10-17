@@ -22,7 +22,7 @@ Release checklist
 * Generate, Review and update the release notes. Run the following command from
   the root directory of DIPY::
 
-    python tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
+    python3 tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
 
   where ``1.7.0`` was the last release tag name.
 
@@ -66,7 +66,7 @@ Release checklist
 
     make distclean
     git clean -fxd
-    python -m build  or  pip install --no-build-isolation  -e .
+    python3 -m build  or  pip install --no-build-isolation  -e .
 
 * Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
 

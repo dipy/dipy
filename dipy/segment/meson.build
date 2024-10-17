@@ -37,6 +37,7 @@ python_sources = ['__init__.py',
   'metric.py',
   'threshold.py',
   'tissue.py',
+  'utils.py'
   ]
 
 py3.install_sources(

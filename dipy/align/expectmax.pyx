@@ -16,17 +16,18 @@ cdef inline int ifloor(double x) nogil:
     return int(floor(x))
 
 def quantize_positive_2d(floating[:, :] v, int num_levels):
-    r"""Quantizes a 2D image to num_levels quantization levels
+    """Quantize a 2D image to num_levels quantization levels.
 
     Quantizes the input image at num_levels intensity levels considering <=0
     as a special value. Those input pixels <=0, and only those, will be
     assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quantization levels.
 
-    The following are undefined, and raise a ValueError:
-    * Quantizing at zero levels because at least one level must be assigned
-    * Quantizing at one level because positive values should be assigned a
-      level different from the special level 0 (at least 2 levels are needed)
+    The following are undefined, and raise a ValueError::
+
+        * Quantizing at zero levels because at least one level must be assigned
+        * Quantizing at one level because positive values should be assigned a
+          level different from the special level 0 (at least 2 levels are needed)
 
     Parameters
     ----------
@@ -39,13 +40,14 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     -------
     out : array, shape (R, C), same shape as v
         the quantized image
-    levels: array, shape (num_levels,)
+    levels : array, shape (num_levels,)
         the quantization values: levels[0]=0, and levels[i] is the mid-point
         of the interval of intensities that are assigned to quantization
         level i, i=1, ..., num_levels-1.
-    hist: array, shape (num_levels,)
+    hist : array, shape (num_levels,)
         histogram: the number of pixels that were assigned to each quantization
         level
+
     """
     ftype = np.asarray(v).dtype
     cdef:
@@ -115,17 +117,18 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
 
 
 def quantize_positive_3d(floating[:, :, :] v, int num_levels):
-    r"""Quantizes a 3D volume to num_levels quantization levels
+    """Quantize a 3D volume to num_levels quantization levels.
 
-    Quantizes the input volume at num_levels intensity levels considering <=0
+    Quantize the input volume at num_levels intensity levels considering <=0
     as a special value. Those input voxels <=0, and only those, will be
     assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quantization levels.
 
-    The following are undefined, and raise a ValueError:
-    * Quantizing at zero levels because at least one level must be assigned
-    * Quantizing at one level because positive values should be assigned a
-      level different from the special level 0 (at least 2 levels are needed)
+    The following are undefined, and raise a ValueError::
+
+        * Quantizing at zero levels because at least one level must be assigned
+        * Quantizing at one level because positive values should be assigned a
+          level different from the special level 0 (at least 2 levels are needed)
 
     Parameters
     ----------
@@ -138,13 +141,14 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     -------
     out : array, shape (S, R, C), same shape as v
         the quantized volume
-    levels: array, shape (num_levels,)
+    levels : array, shape (num_levels,)
         the quantization values: levels[0]=0, and levels[i] is the mid-point
         of the interval of intensities that are assigned to quantization
         level i, i=1, ..., num_levels-1.
-    hist: array, shape (num_levels,)
+    hist : array, shape (num_levels,)
         histogram: the number of voxels that were assigned to each quantization
         level
+
     """
     ftype = np.asarray(v).dtype
     cdef:
