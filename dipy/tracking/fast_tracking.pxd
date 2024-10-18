@@ -25,8 +25,8 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
                                    PmfGen pmf_gen) noexcept nogil
 
 
-cdef int get_pmf(double* pmf,
-                 double* point,
-                 PmfGen pmf_gen,
-                 double pmf_threshold,
-                 int pmf_len) noexcept nogil
+cdef void prepare_pmf(double* pmf,
+                      double* point,
+                      PmfGen pmf_gen,
+                      double pmf_threshold,
+                      int pmf_len) noexcept nogil

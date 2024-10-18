@@ -15,7 +15,7 @@ from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tests.test_fast_tracking import get_fast_tracking_performances
 
 
-def test_tracker_deterministic():
+def test_tracker_ptt():
     # Test the probabilistic tracker function
     cdef double[:] stream_data = np.zeros(100, dtype=float)
     cdef double[:] point
