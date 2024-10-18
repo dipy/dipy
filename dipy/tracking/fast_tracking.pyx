@@ -20,7 +20,9 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                TRACKPOINT,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
-                                               INVALIDPOINT)
+                                               INVALIDPOINT,
+                                               VALIDSTREAMLIME,
+                                               INVALIDSTREAMLIME)
 from dipy.tracking.tracker_parameters cimport TrackerParameters, func_ptr
 
 from nibabel.streamlines import ArraySequence as Streamlines
@@ -77,7 +79,7 @@ def generate_tractogram(double[:,::1] seed_positions,
         streamlines = []
         try:
             for i in range(_len):
-                if (length_arr[i] > 1 and status_arr[i] == ENDPOINT) or return_all:
+                if (length_arr[i] > 1 and status_arr[i] == VALIDSTREAMLIME) or return_all:
                     s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                     streamlines.append(s.copy().reshape((-1,3)))
                     if streamlines_arr[i] == NULL:
@@ -138,8 +140,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         cnp.npy_uint32 s_random_seed
         double[3] point
         double[3] voxdir
+        double voxdir_norm
         double* stream_data        
-        StreamlineStatus stream_status_forward, stream_status_backward
+        StreamlineStatus status_forward, status_backward
         timespec ts
 
     # set the random generator
@@ -159,13 +162,14 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     stream_idx[0] = stream_idx[1] = params.max_len
 
     # the input direction is invalid 
-    if fast_numpy.norm(voxdir) < 0.99 or fast_numpy.norm(voxdir) > 1.01:        
-        return INVALIDPOINT
+    voxdir_norm = fast_numpy.norm(voxdir)
+    if voxdir_norm < 0.99 or voxdir_norm > 1.01:        
+        return INVALIDSTREAMLIME
 
     # forward tracking
     stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
-    stream_status_forward = TRACKPOINT
+    status_forward = TRACKPOINT
     for i in range(1, params.max_len):
         if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
             break
@@ -174,12 +178,12 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
         fast_numpy.copy_point(point, &stream[(params.max_len + i )* 3])
 
-        stream_status_forward = sc.check_point_c(point)
-        if (stream_status_forward == ENDPOINT or
-            stream_status_forward == INVALIDPOINT or
-            stream_status_forward == OUTSIDEIMAGE):
+        status_forward = sc.check_point_c(point)
+        if (status_forward == ENDPOINT or
+            status_forward == INVALIDPOINT or
+            status_forward == OUTSIDEIMAGE):
             break
-    stream_idx[1] = params.max_len + i -1
+    stream_idx[1] = params.max_len + i - 1
     free(stream_data)
 
     # backward tracking
@@ -198,7 +202,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     for j in range(3):
         voxdir[j] = voxdir[j] * -1
 
-    stream_status_backward = TRACKPOINT
+    status_backward = TRACKPOINT
     for i in range(1, params.max_len):
         if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
             break
@@ -207,23 +211,26 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
         fast_numpy.copy_point(point, &stream[(params.max_len - i )* 3])
 
-        stream_status_backward = sc.check_point_c(point)
-        if (stream_status_backward == ENDPOINT or
-            stream_status_backward == INVALIDPOINT or
-            stream_status_backward == OUTSIDEIMAGE):
+        status_backward = sc.check_point_c(point)
+        if (status_backward == ENDPOINT or
+            status_backward == INVALIDPOINT or
+            status_backward == OUTSIDEIMAGE):
             break
     stream_idx[0] = params.max_len - i + 1
     free(stream_data)
 
-    # return the lower value between the forward and the backward segments status
-    return min(stream_status_backward, stream_status_forward)
+    # check for valid streamline ending status
+    if ((status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
+        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)):
+        return VALIDSTREAMLIME
+    return INVALIDSTREAMLIME
 
 
-cdef int get_pmf(double* pmf,
-                 double* point,
-                 PmfGen pmf_gen,
-                 double pmf_threshold,
-                 int pmf_len) noexcept nogil:
+cdef void prepare_pmf(double* pmf,
+                      double* point,
+                      PmfGen pmf_gen,
+                      double pmf_threshold,
+                      int pmf_len) noexcept nogil:
     cdef:
         cnp.npy_intp i
         double absolute_pmf_threshold
@@ -239,5 +246,3 @@ cdef int get_pmf(double* pmf,
     for i in range(pmf_len):
         if pmf[i] < absolute_pmf_threshold:
             pmf[i] = 0.0
-
-    return 0

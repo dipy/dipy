@@ -3,17 +3,14 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-cimport cython
-from cython.parallel import prange
+
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
 from dipy.direction.pmf cimport PmfGen
-from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cross, normalize, random,
                                     random_perpendicular_vector,
                                     random_point_within_circle)
 from dipy.tracking.fast_tracking cimport TrackerParameters
-from libc.stdlib cimport malloc, free
 
 
 cdef int parallel_transport_tracker(double* point,
