@@ -5,17 +5,13 @@
 
 from libc.stdio cimport printf
 
-cimport cython
-from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
-from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
-from dipy.tracking.fast_tracking cimport get_pmf, TrackerParameters
+from dipy.tracking.fast_tracking cimport prepare_pmf, TrackerParameters
 from libc.stdlib cimport malloc, free
 
 
@@ -36,9 +32,7 @@ cdef int probabilistic_tracker(double* point,
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    if get_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf):
-        free(pmf)
-        return 1
+    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
 
     for i in range(len_pmf):
         cos_sim = pmf_gen.vertices[i][0] * direction[0] \

@@ -7,7 +7,7 @@ from scipy.stats import pearsonr
 from dipy.core.sphere import HemiSphere
 from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SimplePmfGen
+from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import sh_to_sf
 from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
@@ -49,27 +49,20 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
     affine = nib.load(fnames[25]).affine
     seed_mask = nib.load(fnames[34]).get_fdata()
     seed_mask = binary_erosion(seed_mask * mask, iterations=1)
-    seeds_positions = seeds_from_mask(seed_mask, affine, density=1)[:nbr_seeds]
-
-    
-    peaks = peaks_from_positions(
-        seeds_positions, fODFs, sphere, npeaks=1, affine=affine
-        )
-    seeds, initial_directions = seeds_directions_pairs(
-        seeds_positions,
-        peaks,
-        max_cross=1
-    )
+    seed_positions = seeds_from_mask(seed_mask, affine, density=1)[:nbr_seeds]    
+    peaks = peaks_from_positions(seed_positions, fODFs, sphere, npeaks=1, affine=affine)
+    seeds, directions = seeds_directions_pairs(seed_positions, peaks, max_cross=1)
 
     # stopping criterion
     sc = BinaryStoppingCriterion(mask)
 
     streamlines = generate_tractogram(seeds,
-                                      initial_directions,
+                                      directions,
                                       sc,
                                       params,
                                       pmf_gen,
-                                      nbr_threads=nbr_threads)
+                                      nbr_threads=nbr_threads,
+                                      return_all=True)
     return streamlines
 
 
@@ -235,12 +228,12 @@ def test_return_all():
     seed_mask = np.ones(mask.shape)
     seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=100, 
                                    seed_count_per_voxel=False)
-    initial_directions = np.random.random(seeds.shape)
-    initial_directions = np.array([v/np.linalg.norm(v) for v in initial_directions])    
+    directions = np.random.random(seeds.shape)
+    directions = np.array([v/np.linalg.norm(v) for v in directions])    
 
     # test return_all=True
     stream_gen = generate_tractogram(seeds,
-                                     initial_directions,
+                                     directions,
                                      sc,
                                      params,
                                      pmf_gen, 
@@ -250,7 +243,7 @@ def test_return_all():
 
     # test return_all=False
     stream_gen = generate_tractogram(seeds,
-                                     initial_directions,
+                                     directions,
                                      sc,
                                      params,
                                      pmf_gen, 
