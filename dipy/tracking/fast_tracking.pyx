@@ -219,11 +219,11 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     return min(stream_status_backward, stream_status_forward)
 
 
-cdef int get_pmf(double* pmf,
-                 double* point,
-                 PmfGen pmf_gen,
-                 double pmf_threshold,
-                 int pmf_len) noexcept nogil:
+cdef void prepare_pmf(double* pmf,
+                      double* point,
+                      PmfGen pmf_gen,
+                      double pmf_threshold,
+                      int pmf_len) noexcept nogil:
     cdef:
         cnp.npy_intp i
         double absolute_pmf_threshold
@@ -239,5 +239,3 @@ cdef int get_pmf(double* pmf,
     for i in range(pmf_len):
         if pmf[i] < absolute_pmf_threshold:
             pmf[i] = 0.0
-
-    return 0
