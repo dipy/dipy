@@ -1,8 +1,3 @@
-# init for io routines
+import lazy_loader as lazy
 
-from . import utils
-from .dpy import Dpy
-from .gradients import read_bvals_bvecs
-from .pickles import load_pickle, save_pickle
-
-__all__ = ["read_bvals_bvecs", "Dpy", "save_pickle", "load_pickle", "utils"]
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

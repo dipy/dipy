@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  '__init__.pyi',
   'cnn_1d_denoising.py',
   'deepn4.py',
   'evac.py',
