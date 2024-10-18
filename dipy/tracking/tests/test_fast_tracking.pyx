@@ -11,9 +11,11 @@ from dipy.direction.pmf import SimplePmfGen
 from dipy.reconst.shm import sh_to_sf
 from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
+from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
-from dipy.tracking.utils import (connectivity_matrix, seeds_from_mask,
-                                 seeds_directions_pairs)
+from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask, 
+                                 seeds_from_mask, seeds_directions_pairs)
+
 
 
 def get_fast_tracking_performances(params, *, nbr_seeds=1000, nbr_threads=0):
@@ -35,11 +37,12 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
     # prepare ODFs
     if sphere is None:
         sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
-    GT_SH = nib.load(fnames[20]).get_fdata()
-    GT_ODF = sh_to_sf(
-        GT_SH, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+    sh = nib.load(fnames[20]).get_fdata()    
+    fODFs = sh_to_sf(
+        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
         )
-    GT_ODF[GT_ODF<0] = 0
+    fODFs[fODFs<0] = 0
+    pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
 
     # seeds position and initial directions
     mask = nib.load(fnames[25]).get_fdata()
@@ -48,9 +51,9 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
     seed_mask = binary_erosion(seed_mask * mask, iterations=1)
     seeds_positions = seeds_from_mask(seed_mask, affine, density=1)[:nbr_seeds]
 
-    pmf_gen = SimplePmfGen(np.asarray(GT_ODF, dtype=float), sphere)
+    
     peaks = peaks_from_positions(
-        seeds_positions, GT_ODF, sphere, npeaks=1, affine=affine
+        seeds_positions, fODFs, sphere, npeaks=1, affine=affine
         )
     seeds, initial_directions = seeds_directions_pairs(
         seeds_positions,
@@ -203,3 +206,54 @@ def test_tracking_step_size():
         dists = get_points_distance(streamlines)
         npt.assert_almost_equal(np.min(dists), step_size)
         npt.assert_almost_equal(np.max(dists), step_size)
+
+
+def test_return_all():
+    """This tests that the number of streamlines equals the number of seeds
+    when return_all=True.
+    """
+    params = generate_tracking_parameters("det",
+                                          max_len=500,
+                                          step_size=0.5,
+                                          voxel_size=np.ones(3),
+                                          max_angle=20,
+                                          random_seed=0)
+
+    fnames = get_fnames(name="disco1")
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+    sh = nib.load(fnames[20]).get_fdata()    
+    fODFs = sh_to_sf(
+        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        )
+    fODFs[fODFs<0] = 0
+    pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
+
+    # seeds position and initial directions
+    mask = nib.load(fnames[25]).get_fdata()
+    sc = BinaryStoppingCriterion(mask)
+    affine = nib.load(fnames[25]).affine
+    seed_mask = np.ones(mask.shape)
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=100, 
+                                   seed_count_per_voxel=False)
+    initial_directions = np.random.random(seeds.shape)
+    initial_directions = np.array([v/np.linalg.norm(v) for v in initial_directions])    
+
+    # test return_all=True
+    stream_gen = generate_tractogram(seeds,
+                                     initial_directions,
+                                     sc,
+                                     params,
+                                     pmf_gen, 
+                                     return_all=True)
+    streamlines = Streamlines(stream_gen)
+    npt.assert_equal(len(streamlines), len(seeds))
+
+    # test return_all=False
+    stream_gen = generate_tractogram(seeds,
+                                     initial_directions,
+                                     sc,
+                                     params,
+                                     pmf_gen, 
+                                     return_all=False)
+    streamlines = Streamlines(stream_gen)
+    npt.assert_array_less(len(streamlines), len(seeds))
