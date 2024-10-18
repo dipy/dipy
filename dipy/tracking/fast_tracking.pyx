@@ -41,7 +41,13 @@ def generate_tractogram(double[:,::1] seed_positions,
                         TrackerParameters params,
                         PmfGen pmf_gen,
                         int nbr_threads=0,
-                        float buffer_frac=1.0):
+                        float buffer_frac=1.0,
+                        return_all=True):
+    """
+    return_all : bool, optional
+        If true, return all generated streamlines, otherwise only
+        streamlines reaching end points or exiting the image.
+    """
 
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
@@ -49,7 +55,7 @@ def generate_tractogram(double[:,::1] seed_positions,
         cnp.npy_intp i
         double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
         int* length_arr = <int*> malloc(_len * sizeof(int))
-        int* status_arr = <int*> malloc(_len * sizeof(double))
+        StreamlineStatus* status_arr = <StreamlineStatus*> malloc(_len * sizeof(int))
 
     if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
         raise MemoryError("Memory allocation failed")
@@ -71,7 +77,7 @@ def generate_tractogram(double[:,::1] seed_positions,
         streamlines = []
         try:
             for i in range(_len):
-                if length_arr[i] > 1:
+                if (length_arr[i] > 1 and status_arr[i] == ENDPOINT) or return_all:
                     s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                     streamlines.append(s.copy().reshape((-1,3)))
                     if streamlines_arr[i] == NULL:
@@ -94,7 +100,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
                                PmfGen pmf_gen,
                                double** streamlines,
                                int* lengths,
-                               int* status):
+                               StreamlineStatus* status):
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i, j, k
@@ -113,15 +119,14 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
                                               pmf_gen)
 
         # copy the streamlines points from the buffer to a 1d vector of the streamline length
-        lengths[i] = stream_idx[1] - stream_idx[0]
-        if lengths[i] > 1:
-            streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
-            memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
+        lengths[i] = stream_idx[1] - stream_idx[0] + 1        
+        streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
+        memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
         free(stream)
         free(stream_idx)
 
 
-cdef int generate_local_streamline(double* seed,
+cdef StreamlineStatus generate_local_streamline(double* seed,
                                    double* direction,
                                    double* stream,
                                    int* stream_idx,
@@ -145,13 +150,17 @@ cdef int generate_local_streamline(double* seed,
     else:
         clock_gettime(CLOCK_REALTIME, &ts)
         s_random_seed = int(ts.tv_sec + (ts.tv_nsec / 1000000000.))
-
     fast_numpy.seed(s_random_seed)
 
     # set the initial position
     fast_numpy.copy_point(seed, point)
     fast_numpy.copy_point(direction, voxdir)
     fast_numpy.copy_point(seed, &stream[params.max_len * 3])
+    stream_idx[0] = stream_idx[1] = params.max_len
+
+    # the input direction is invalid 
+    if fast_numpy.norm(voxdir) < 0.99 or fast_numpy.norm(voxdir) > 1.01:        
+        return INVALIDPOINT
 
     # forward tracking
     stream_data = <double*> malloc(100 * sizeof(double))
@@ -205,8 +214,9 @@ cdef int generate_local_streamline(double* seed,
             break
     stream_idx[0] = params.max_len - i + 1
     free(stream_data)
-    # # need to handle stream status
-    return 0 #stream_status
+
+    # return the lower value between the forward and the backward segments status
+    return min(stream_status_backward, stream_status_forward)
 
 
 cdef int get_pmf(double* pmf,
