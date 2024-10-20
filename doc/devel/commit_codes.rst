@@ -21,7 +21,7 @@ categories:
 
 So your commit message might look something like this::
 
-    TEST: relax test threshold slightly
+    TEST: Relax test threshold slightly
 
     Attempted fix for failure on windows test run when arrays are in fact
     very close (within 6 dp).
