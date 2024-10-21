@@ -11,11 +11,11 @@ References
 
 import numpy as np
 
-from dipy.direction import peak_directions
-from dipy.reconst.shm import sh_to_sf
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import unit_icosahedron
+from dipy.direction import peak_directions
+from dipy.reconst.shm import sh_to_sf
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
@@ -69,9 +69,13 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
     x, y, z = (p[:, 0], p[:, 1], p[:, 2])
 
     # Create an orientation matrix (T) to approximate mu0, mu1 and mu2
-    T = np.array([[x**2 * v, x * y * v, x * z * v],
-                  [x * y * v, y**2 * v, y * z * v],
-                  [x * z * v, y * z * v, z**2 * v]])
+    T = np.array(
+        [
+            [x**2 * v, x * y * v, x * z * v],
+            [x * y * v, y**2 * v, y * z * v],
+            [x * z * v, y * z * v, z**2 * v],
+        ]
+    )
 
     T = np.sum(T, axis=-1) / np.sum(v)
 
@@ -90,8 +94,8 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
 
     # Calculating the A matrix
     A = np.zeros((len(v), 2), dtype=float)  # (N, 2)
-    A[:, 0] = p.dot(mu1)**2
-    A[:, 1] = p.dot(mu2)**2
+    A[:, 0] = p.dot(mu1) ** 2
+    A[:, 1] = p.dot(mu2) ** 2
 
     # Test that AT.A is invertible for pseudo-inverse
     ATA = A.T.dot(A)
@@ -113,8 +117,9 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
     return f0, k1, k2, mu0, mu1, mu2
 
 
-def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
-                          min_sep_angle=60, rel_th=0.1):
+def _single_sf_to_bingham(
+    odf, sphere, max_search_angle, *, npeaks=5, min_sep_angle=60, rel_th=0.1
+):
     """
     Fit a Bingham distribution onto each principal ODF lobe.
 
@@ -154,9 +159,9 @@ def _single_sf_to_bingham(odf, sphere, max_search_angle, *, npeaks=5,
     .. footbibliography::
     """
     # extract all maxima on the ODF
-    dirs, vals, inds = peak_directions(odf, sphere,
-                                       relative_peak_threshold=rel_th,
-                                       min_separation_angle=min_sep_angle)
+    dirs, vals, inds = peak_directions(
+        odf, sphere, relative_peak_threshold=rel_th, min_separation_angle=min_sep_angle
+    )
 
     # n becomes the new limit of peaks and sets a maximum of peaks in case
     # the ODF has more than npeaks.
@@ -204,7 +209,7 @@ def _single_bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     Refer to method `bingham_to_odf` for the definition of
     the Bingham distribution.
     """
-    x = -k1 * vertices.dot(major_axis)**2 - k2 * vertices.dot(minor_axis)**2
+    x = -k1 * vertices.dot(major_axis) ** 2 - k2 * vertices.dot(minor_axis) ** 2
     fn = f0 * np.exp(x)
 
     return fn.T
@@ -257,8 +262,7 @@ def bingham_to_sf(bingham_params, sphere, *, mask=None):
             mu1 = bpars[li, 6:9]
             mu2 = bpars[li, 9:12]
 
-            this_odf += _single_bingham_to_sf(f0, k1, k2, mu1, mu2,
-                                              sphere.vertices)
+            this_odf += _single_bingham_to_sf(f0, k1, k2, mu1, mu2, sphere.vertices)
         odf[idx] = this_odf
 
     return odf
@@ -502,7 +506,7 @@ class BinghamMetrics:
     """
 
     def __init__(self, model_params):
-        """ Initialization of the Bingham Metrics Class.
+        """Initialization of the Bingham Metrics Class.
 
         Parameters
         ----------
@@ -521,26 +525,26 @@ class BinghamMetrics:
 
     @auto_attr
     def amplitude_lobe(self):
-        """ Maximum Bingham Amplitude for each ODF lobe.
+        """Maximum Bingham Amplitude for each ODF lobe.
         Measured in the unit 1/mm^3*rad."""
         return self.model_params[..., 0]
 
     @auto_attr
     def kappa1_lobe(self):
-        """ Concentration parameter k1 for each ODF lobe."""
+        """Concentration parameter k1 for each ODF lobe."""
         return self.model_params[..., 1]
 
     @auto_attr
     def kappa2_lobe(self):
-        """ Concentration parameter k2 for each ODF lobe."""
+        """Concentration parameter k2 for each ODF lobe."""
         return self.model_params[..., 2]
 
     @auto_attr
     def kappa_total_lobe(self):
-        """ Overall concentration parameters for an ODF peak.
+        """Overall concentration parameters for an ODF peak.
 
         Note:
-        ----
+        -----
         Overall (combined) concentration parameters for each lobe as defined
         by equation 19 in :footcite:p:`Tariq2016` as:
 
@@ -555,19 +559,19 @@ class BinghamMetrics:
 
     @auto_attr
     def odi1_lobe(self):
-        """ Orientation Dispersion index 1 computed for each ODF lobe from
+        """Orientation Dispersion index 1 computed for each ODF lobe from
         concentration parameter kappa1."""
         return k2odi(self.kappa1_lobe)
 
     @auto_attr
     def odi2_lobe(self):
-        """ Orientation Dispersion index 2 computed for each ODF lobe from
+        """Orientation Dispersion index 2 computed for each ODF lobe from
         concentration parameter kappa2."""
         return k2odi(self.kappa2_lobe)
 
     @auto_attr
     def odi_total_lobe(self):
-        """ Overall Orientation Dispersion Index (ODI) computed for an
+        """Overall Orientation Dispersion Index (ODI) computed for an
         ODF lobe from the overall concentration parameter (k_total).
         Defined by equation 20 in :footcite:p:`Tariq2016`.
 
@@ -579,7 +583,7 @@ class BinghamMetrics:
 
     @auto_attr
     def fd_lobe(self):
-        """ Fiber Density computed as the integral of the Bingham functions
+        """Fiber Density computed as the integral of the Bingham functions
         fitted for each ODF lobe."""
         return bingham_fiber_density(self.model_params)
 
@@ -599,19 +603,19 @@ class BinghamMetrics:
 
     @auto_attr
     def odi_total_voxel(self):
-        """ Voxel total Orientation Dispersion Index (weighted average of
+        """Voxel total Orientation Dispersion Index (weighted average of
         odf_total across all lobes where the weights are each lobe's
         fd estimate)."""
         return weighted_voxel_metric(self.odi_total_lobe, self.fd_lobe)
 
     @auto_attr
     def fd_voxel(self):
-        """ Voxel fiber density (sum of fd estimates of all ODF lobes)."""
+        """Voxel fiber density (sum of fd estimates of all ODF lobes)."""
         return np.sum(self.fd_lobe, axis=-1)
 
     @auto_attr
     def fs_lobe(self):
-        """ Fiber spread computed for each ODF lobe.
+        """Fiber spread computed for each ODF lobe.
 
         Notes
         -----
@@ -627,12 +631,12 @@ class BinghamMetrics:
 
     @auto_attr
     def fs_voxel(self):
-        """ Voxel fiber spread (weighted average of fiber spread across all
+        """Voxel fiber spread (weighted average of fiber spread across all
         lobes where the weights are each lobe's fd estimate)."""
         return weighted_voxel_metric(self.fs_lobe, self.fd_lobe)
 
     def odf(self, sphere):
-        """ Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
+        """Reconstruct ODFs from fitted Bingham parameters on multiple voxels.
 
         Parameters
         ----------
@@ -649,8 +653,9 @@ class BinghamMetrics:
         return bingham_to_sf(self.model_params, sphere, mask=mask)
 
 
-def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
-                  npeaks=5, min_sep_angle=60, rel_th=0.1):
+def sf_to_bingham(
+    odf, sphere, max_search_angle, *, mask=None, npeaks=5, min_sep_angle=60, rel_th=0.1
+):
     """
     Fit the Bingham function from an image volume of ODFs.
 
@@ -672,8 +677,8 @@ def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
     rel_th: float, optional
         Relative threshold used for peak extraction.
 
-    Return
-    ------
+    Returns
+    -------
     BinghamMetrics: class instance
         Class instance containing metrics computed from Bingham functions
         fitted to ODF lobes.
@@ -692,17 +697,32 @@ def sf_to_bingham(odf, sphere, max_search_angle, *, mask=None,
             continue
 
         [fits, npeaks_final] = _single_sf_to_bingham(
-            odf[idx], sphere, max_search_angle, npeaks=npeaks,
-            min_sep_angle=min_sep_angle, rel_th=rel_th)
+            odf[idx],
+            sphere,
+            max_search_angle,
+            npeaks=npeaks,
+            min_sep_angle=min_sep_angle,
+            rel_th=rel_th,
+        )
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
 
     return BinghamMetrics(bpars)
 
 
-def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *,
-                  mask=None, sh_basis='descoteaux07', legacy=True,
-                  npeaks=5, min_sep_angle=60, rel_th=0.1):
+def sh_to_bingham(
+    sh,
+    sphere,
+    sh_order_max,
+    max_search_angle,
+    *,
+    mask=None,
+    sh_basis="descoteaux07",
+    legacy=True,
+    npeaks=5,
+    min_sep_angle=60,
+    rel_th=0.1,
+):
     """
     Fit the Bingham function from an image volume of spherical harmonics (SH)
     representing ODFs.
@@ -731,8 +751,8 @@ def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *,
     rel_th: float, optional
         Relative threshold used for peak extraction.
 
-    Return
-    ------
+    Returns
+    -------
     BinghamMetrics: class instance
         Class instance containing metrics computed from Bingham functions
         fitted to ODF lobes.
@@ -750,12 +770,22 @@ def sh_to_bingham(sh, sphere, sh_order_max, max_search_angle, *,
         if not mask[idx]:
             continue
 
-        odf = sh_to_sf(sh[idx], sphere, sh_order_max=sh_order_max,
-                       basis_type=sh_basis, legacy=legacy)
+        odf = sh_to_sf(
+            sh[idx],
+            sphere,
+            sh_order_max=sh_order_max,
+            basis_type=sh_basis,
+            legacy=legacy,
+        )
 
         [fits, npeaks_final] = _single_sf_to_bingham(
-            odf, sphere, max_search_angle, npeaks=npeaks,
-            min_sep_angle=min_sep_angle, rel_th=rel_th)
+            odf,
+            sphere,
+            max_search_angle,
+            npeaks=npeaks,
+            min_sep_angle=min_sep_angle,
+            rel_th=rel_th,
+        )
 
         bpars[idx] = _convert_bingham_pars(fits, npeaks)
 
