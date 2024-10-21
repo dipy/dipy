@@ -569,7 +569,9 @@ class BinghamMetrics:
 
     @auto_attr
     def odi_total_lobe(self):
-        """Overall Orientation Dispersion Index (ODI) computed for an
+        """Overall Orientation Dispersion Index (ODI) for an ODF lobe.
+
+        Overall Orientation Dispersion Index (ODI) computed for an
         ODF lobe from the overall concentration parameter (k_total).
         Defined by equation 20 in :footcite:p:`Tariq2016`.
 
