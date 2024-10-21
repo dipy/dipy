@@ -3,6 +3,7 @@ python_sources = [
   'analysis.py',
   'resampling.py',
   'qc.py',
+  'sketching.py'
   ]
 
 

@@ -3,6 +3,7 @@ python_sources = [
   'test_analysis.py',
   'test_resampling.py',
   'test_qc.py',
+  'test_sketching.py'
   ]
 
 
