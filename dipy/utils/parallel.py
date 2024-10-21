@@ -29,6 +29,9 @@ def paramap(
     func_kwargs=None,
     **kwargs,
 ):
+    # FIXME: but several fitting functions return "extra" as well
+    #        is this being handled properly, or not?
+    #        perhaps the 'func' docs below are misleading?
     """
     Maps a function to a list of inputs in parallel.
 
@@ -36,9 +39,9 @@ def paramap(
     ----------
     func : callable
         The function to apply to each item in the array. Must have the form:
-        ``func(arr, idx, *args, *kwargs)`` where arr is an ndarray and idx is an
-        index into that array (a tuple). The Return of `func` needs to be one
-        item (e.g. float, int) per input item.
+        ``func(arr, idx, *args, *kwargs)`` where arr is an ndarray and idx is
+        an index into that array (a tuple). The Return of `func` needs to be
+        one item (e.g. float, int) per input item.
     in_list : list
        A sequence of items each of which can be an input to ``func``.
     out_shape : tuple, optional
