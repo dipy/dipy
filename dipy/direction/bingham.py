@@ -224,11 +224,11 @@ def bingham_to_sf(bingham_params, sphere, *, mask=None):
     bingham_params : ndarray (...., nl, 12)
         ndarray containing the model parameters of Binghams fitted to ODFs in
         the following order:
-            Maximum value of the Bingham function (f0, index 0);
-            concentration parameters k1 and k2 (indexes 1 and 2);
-            elements of Bingham's main direction (indexes 3-5);
-            elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11).
+        - Maximum value of the Bingham function (f0, index 0);
+        - concentration parameters k1 and k2 (indexes 1 and 2);
+        - elements of Bingham's main direction (indexes 3-5);
+        - elements of Bingham's dispersion major axis (indexes 6-8);
+        - elements of Bingham's dispersion minor axis (indexes 9-11).
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
     mask: ndarray, optional
@@ -278,11 +278,11 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
     bingham_params : ndarray (...., nl, 12)
         ndarray containing the model parameters of Bingham's fitted to ODFs in
         the following order:
-            Maximum value of the Bingham function (f0, index 0);
-            concentration parameters k1 and k2 (indexes 1 and 2);
-            elements of Bingham's main direction (indexes 3-5);
-            elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11).
+        - Maximum value of the Bingham function (f0, index 0);
+        - Concentration parameters k1 and k2 (indexes 1 and 2);
+        - Elements of Bingham's main direction (indexes 3-5);
+        - Elements of Bingham's dispersion major axis (indexes 6-8);
+        - Elements of Bingham's dispersion minor axis (indexes 9-11).
     subdivide: int >= 0, optional
         Number of times the unit icosahedron used for integration
         should be subdivided. The higher this value the more precise the
@@ -543,10 +543,8 @@ class BinghamMetrics:
     def kappa_total_lobe(self):
         """Overall concentration parameters for an ODF peak.
 
-        Note:
-        -----
-        Overall (combined) concentration parameters for each lobe as defined
-        by equation 19 in :footcite:p:`Tariq2016` as:
+        The overall (combined) concentration parameters for each lobe is
+        defined by equation 19 in :footcite:p:`Tariq2016` as:
 
         .. math::
             k_{total} = sqrt{(k_1 * k_2)}
