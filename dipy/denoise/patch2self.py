@@ -81,7 +81,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches)
 
 
-def _fit_denoising_model(train, vol_idx, model, alpha, version):
+def _fit_denoising_model(train, vol_idx, model, alpha):
     """Fit a single 3D volume using a train and test phase.
 
     Parameters
@@ -145,16 +145,18 @@ def vol_denoise(
     ----------
     data_dict : dict
         Dictionary containing the following
-        data_name : str
+
+        - data_name : str
             The name of the memmap file containing the memmaped data.
-        data_dtype : dtype
+        - data_dtype : dtype
             The dtype of the data.
-        data_shape : tuple
+        - data_shape : tuple
             The shape of the data.
-        data_b0s : ndarray
+        - data_b0s : ndarray
             Array of all 3D patches flattened out to be 2D for b0 volumes.
-        data_dwi : ndarray
+        - data_dwi : ndarray
             Array of all 3D patches flattened out to be 2D for dwi volumes.
+
     b0_idx : ndarray
         The indices of the b0 volumes.
     dwi_idx : ndarray
