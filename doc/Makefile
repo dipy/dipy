@@ -47,7 +47,7 @@ examples-clean:
 	-cd examples_built && find . -not -name "README" -not -name ".gitignore" -exec rm -rfd {} \; || true
 
 gitwash-update:
-	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=dipy \
+	python3 ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=dipy \
             --project-url=https://dipy.org \
             --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 

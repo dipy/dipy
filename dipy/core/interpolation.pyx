@@ -57,7 +57,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     See Also
     --------
-    scipy.interpolate.Rbf
+    scipy.interpolate.RBFInterpolator
 
     """
     def angle(x1, x2):

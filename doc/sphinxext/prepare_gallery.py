@@ -162,6 +162,40 @@ def folder_explicit_order():
     return [f.folder_name for f in folder_list if f.enable]
 
 
+def preprocess_include_directive(input_rst, output_rst):
+    """
+    Process include directives from input RST, and write the output to a new RST.
+
+    Parameters
+    ----------
+    input_rst : str
+        Path to the input RST file containing the include directive.
+    output_rst : str
+        Path to the output RST file with the include content expanded.
+
+    """
+    with open(input_rst, "r") as infile, open(output_rst, "w") as outfile:
+        for line in infile:
+            if line.strip().startswith(".. include::"):
+                # Extract the included file's path
+                included_file_path = line.strip().split(" ")[-1]
+                included_file_path = os.path.normpath(
+                    os.path.join(os.path.dirname(input_rst), included_file_path)
+                )
+
+                # Check if the included file exists and read its content
+                if os.path.isfile(included_file_path):
+                    with open(included_file_path, "r") as included_file:
+                        included_content = included_file.read()
+                        # Write the included file's content to the output file
+                        outfile.write(included_content)
+                else:
+                    print(f"Warning: Included file '{included_file_path}' not found.")
+            else:
+                # Write the line as-is if it's not an include directive
+                outfile.write(line)
+
+
 def prepare_gallery(app=None):
     srcdir = app.srcdir if app else os.path.abspath(pjoin(
         os.path.dirname(__file__), '..'))
@@ -228,11 +262,14 @@ def prepare_gallery(app=None):
         # Create readme file
         if example.readme.startswith('file:'):
             filename = example.readme.split('file:')[1].strip()
-            shutil.copy(Path(examples_dir, filename), Path(folder,
-                                                           'README.rst'))
+            preprocess_include_directive(Path(examples_dir, filename),
+                                         Path(folder, "README.rst"))
         else:
-            with open(Path(folder, 'README.rst'), 'w', encoding="utf8") as fi:
+            with open(Path(folder, "tmp_readme.rst"), "w", encoding="utf8") as fi:
                 fi.write(example.readme)
+            preprocess_include_directive(Path(folder, "tmp_readme.rst"),
+                                         Path(folder, "README.rst"))
+            os.remove(Path(folder, "tmp_readme.rst"))
 
         # Copy files to folder
         if not example.files:

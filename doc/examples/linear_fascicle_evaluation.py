@@ -13,10 +13,11 @@ We will use streamlines generated using probabilistic tracking on CSA
 peaks. For brevity, we will include in this example only streamlines going
 through the corpus callosum connecting left to right superior frontal
 cortex. The process of tracking and finding these streamlines is fully
-demonstrated in the :ref:`streamline_tools` example. If this example has been
-run, we can read the streamlines from file. Otherwise, we'll run that example
-first, by importing it. This provides us with all of the variables that were
-created in that example:
+demonstrated in the
+:ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py` example.
+If this example has been run, we can read the streamlines from file. Otherwise,
+we'll run that example first, by importing it. This provides us with all of the
+variables that were created in that example:
 
 """
 
@@ -50,7 +51,8 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 cc_slice = labels == 2
 
 # Let's now fetch a set of streamlines from the Stanford HARDI dataset.
-# Those streamlines were generated during the :ref:`streamline_tools` example.
+# Those streamlines were generated during the
+# :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py` example.
 # Read the candidates from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()

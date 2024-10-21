@@ -1,7 +1,4 @@
 """
-
-.. _intro_basic_tracking:
-
 ==============================
 Introduction to Basic Tracking
 ==============================

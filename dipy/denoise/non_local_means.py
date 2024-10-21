@@ -1,3 +1,5 @@
+from numbers import Number
+
 import numpy as np
 
 from dipy.denoise.nlmeans_block import nlmeans_block
@@ -20,7 +22,7 @@ def non_local_means(
         The array to be denoised
     mask : 3D ndarray
         Mask on data where the non-local means will be applied.
-    sigma : float
+    sigma : float or ndarray
         standard deviation of the noise estimated from the data
     patch_radius : int
         patch size is ``2 x patch_radius + 1``. Default is 1.
@@ -40,8 +42,28 @@ def non_local_means(
     .. footbibliography::
 
     """
-    if not np.isscalar(sigma) and not sigma.shape == (1,):
-        raise ValueError("Sigma input needs to be of type float", sigma)
+    if isinstance(sigma, np.ndarray) and sigma.size == 1:
+        sigma = sigma.item()
+    if isinstance(sigma, np.ndarray):
+        if arr.ndim == 3:
+            raise ValueError("sigma should be a scalar for 3D data", sigma)
+        if not np.issubdtype(sigma.dtype, np.number):
+            raise ValueError("sigma should be an array of floats", sigma)
+        if arr.ndim == 4 and sigma.ndim != 1:
+            raise ValueError("sigma should be a 1D array for 4D data", sigma)
+        if arr.ndim == 4 and sigma.shape[0] != arr.shape[-1]:
+            raise ValueError(
+                "sigma should have the same length as the last "
+                "dimension of arr for 4D data",
+                sigma,
+            )
+    else:
+        if not isinstance(sigma, Number):
+            raise ValueError("sigma should be a float", sigma)
+        # if sigma is a scalar and arr is 4D, we assume the same sigma for all
+        if arr.ndim == 4:
+            sigma = np.array([sigma] * arr.shape[-1])
+
     if mask is None and arr.ndim > 2:
         mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype="f8")
     else:
@@ -65,7 +87,7 @@ def non_local_means(
                     mask,
                     patch_radius,
                     block_radius,
-                    sigma,
+                    sigma[i],
                     int(rician),
                 )
             ).astype(arr.dtype)

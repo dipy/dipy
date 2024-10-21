@@ -4,7 +4,7 @@ Stolen with thankfulness from the numpy distribution
 
 This is a simple script, most of the heavy lifting is done in bdist_mpkg.
 
-To run this script:  'python build.py'
+To run this script:  'python3 build.py'
 
 Installer is built using sudo so file permissions are correct when installed on
 user system.  Script will prompt for sudo pwd.

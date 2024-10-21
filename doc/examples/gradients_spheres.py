@@ -146,5 +146,3 @@ if interactive:
 # ----------
 #
 # .. footbibliography::
-#
-# .. include:: ../../links_names.inc

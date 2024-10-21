@@ -10,7 +10,6 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    is_binary_image,
     show_ellipsis,
     unpack_surface,
 )
@@ -125,16 +124,6 @@ def test_show_ellipsis():
 
     available_size = 12
     npt.assert_equal(show_ellipsis(text, text_size, available_size), text)
-
-
-@set_random_number_generator()
-def test_is_binary_image(rng):
-    data = 255 * rng.random((197, 233, 189))
-    npt.assert_equal(False, is_binary_image(data))
-
-    data = rng.integers(0, 1, size=(10, 20, 100, 200))
-
-    npt.assert_equal(True, is_binary_image(data))
 
 
 @set_random_number_generator()

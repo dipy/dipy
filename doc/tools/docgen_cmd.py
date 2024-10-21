@@ -13,7 +13,7 @@ import sys
 # from packaging.version import Version
 
 # List of workflows to ignore
-SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
+SKIP_WORKFLOWS_LIST = ("Workflow", "CombinedWorkflow")
 
 
 def sh3(cmd):
@@ -58,11 +58,11 @@ def sh3(cmd):
 
 
 def abort(error):
-    print(f'*WARNING* Command line API documentation not generated: {error}')
+    print(f"*WARNING* Command line API documentation not generated: {error}")
     exit()
 
 
-def get_help_string(class_obj):
+def get_doc_parser(class_obj):
     # return inspect.getdoc(class_obj.run)
     try:
         ia_module = importlib.import_module("dipy.workflows.base")
@@ -71,16 +71,16 @@ def get_help_string(class_obj):
     except Exception as e:
         abort(f"Error on {class_obj.__name__}: {e}")
 
-    return parser.format_help()
+    return parser
 
 
 def format_title(text):
     text = text.title()
-    line = '-' * len(text)
-    return f'{text}\n{line}\n\n'
+    line = "-" * len(text)
+    return f"{text}\n{line}\n\n"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # package name: Eg: dipy
     package = sys.argv[1]
     # directory in which the generated rst files will be saved
@@ -125,14 +125,14 @@ if __name__ == '__main__':
 
     workflow_desc = {}
     # We get all workflows class obj in a dictionary
-    for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
+    for path_file in os.listdir(pjoin("..", "dipy", "workflows")):
         module_name = inspect.getmodulename(path_file)
         if module_name is None:
             continue
 
         module = importlib.import_module(f"dipy.workflows.{module_name}")
         members = inspect.getmembers(module)
-        d_wkflw = {name: {"module": obj, "help": get_help_string(obj)}
+        d_wkflw = {name: {"module": obj, "parser": get_doc_parser(obj)}
                    for name, obj in members
                    if inspect.isclass(obj) and
                    issubclass(obj, workflow_module.Workflow) and
@@ -149,23 +149,40 @@ if __name__ == '__main__':
         out_fname = fname + ".rst"
         with open(pjoin(outdir, out_fname), "w", encoding="utf-8") as fp:
             dashes = "=" * len(fname)
-            fp.write("\n{dashes}\n{fname}\n{dashes}\n\n")
-            # Trick to avoid docgen_cmd.py as cmd line
-            help_txt = workflow_desc[flow_name]["help"]
-            help_txt = help_txt.replace("docgen_cmd.py", fname)
-            help_txt = help_txt.replace("usage: ", format_title('usage'))
-            help_txt = help_txt.replace("positional arguments:",
-                                        format_title("positional arguments"))
-            help_txt = help_txt.replace("optional arguments:",
-                                        format_title("optional arguments"))
-            help_txt = help_txt.replace(
-                "output arguments(optional):",
-                format_title("output arguments(optional)"))
-            help_txt = help_txt.replace("References:",
-                                        format_title("References"))
-            help_txt = help_txt.rstrip()
-            fp.write(help_txt)
+            fp.write(f".. {fname}:\n\n{dashes}\n{fname}\n{dashes}\n\n")
+            parser = workflow_desc[flow_name]["parser"]
+            if parser.description not in ["", "\n\n"]:
+                fp.write(format_title("Synopsis"))
+                fp.write(f"{parser.description}\n\n")
+            fp.write(format_title("usage"))
+            str_p_args = " ".join([p[0] for p in parser.positional_parameters]).lower()
+            fp.write(".. code-block:: bash\n\n")
+            fp.write(f"    {fname} [OPTIONS] {str_p_args}\n\n")
+            fp.write(format_title("Input Parameters"))
+            for p in parser.positional_parameters:
+                fp.write(f"* ``{p[0]}``\n\n")
+                comment = '\n  '.join([text.rstrip() for text in p[2]])
+                fp.write(f"  {comment}\n\n")
 
+            optional_params = [p for p in parser.optional_parameters
+                               if not p[0].startswith("out_")]
+            if optional_params:
+                fp.write(format_title("General Options"))
+                for p in optional_params:
+                    fp.write(f"* ``--{p[0]}``\n\n")
+                    comment = '\n  '.join([text.rstrip() for text in p[2]])
+                    fp.write(f"  {comment}\n\n")
+
+            if parser.output_parameters:
+                fp.write(format_title("Output Options"))
+                for p in parser.output_parameters:
+                    fp.write(f"* ``--{p[0]}``\n\n")
+                    comment = '\n  '.join([text.rstrip() for text in p[2]])
+                    fp.write(f"  {comment}\n\n")
+
+            if parser.epilog:
+                fp.write(format_title("References"))
+                fp.write(parser.epilog.replace("References: \n", ""))
         cmd_list.append(out_fname)
         print("Done")
 

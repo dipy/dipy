@@ -10,13 +10,14 @@ import numpy as np
 from dipy.align.reslice import reslice
 from dipy.data import get_fnames
 from dipy.nn.utils import (
-    correct_minor_errors,
     normalize,
     recover_img,
     set_logger_level,
     transform_img,
 )
+from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
@@ -374,6 +375,9 @@ class EVACPlus:
 
         return self.model.predict(x_test)
 
+    @deprecated_params(
+        "largest_area", new_name="finalize_mask", since="1.10", until="1.12"
+    )
     def predict(
         self,
         T1,
@@ -383,27 +387,23 @@ class EVACPlus:
         batch_size=None,
         return_affine=False,
         return_prob=False,
-        largest_area=True,
+        finalize_mask=True,
     ):
         """
         Wrapper function to facilitate prediction of larger dataset.
 
         Parameters
         ----------
-        T1 : np.ndarray or list of np.ndarrys
+        T1 : np.ndarray or list of np.ndarray
             For a single image, input should be a 3D array.
             If multiple images, it should be a a list or tuple.
-
         affine : np.ndarray (4, 4) or (batch, 4, 4)
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
-
         voxsize : np.ndarray or list or tuple, optional
             (3,) or (batch, 3)
             voxel size of the T1 image.
-            Default is (1, 1, 1)
-
         batch_size : int, optional
             Number of images per prediction pass. Only available if data
             is provided with a batch dimension.
@@ -411,22 +411,15 @@ class EVACPlus:
             Increase it if you want it to be faster and have a lot of data.
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
-            Default is None
-
         return_affine : bool, optional
             Whether to return the affine matrix. Useful if the input was a
             file path.
-            Default is False
-
         return_prob : bool, optional
             Whether to return the probability map instead of a
             binary mask. Useful for testing.
-            Default is False
-
-        largest_area : bool, optional
-            Whether to exclude only the largest background/foreground.
+        finalize_mask : bool, optional
+            Whether to remove potential holes or islands.
             Useful for solving minor errors.
-            Default is True
 
         Returns
         -------
@@ -515,8 +508,8 @@ class EVACPlus:
             )
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
-                if largest_area:
-                    output = correct_minor_errors(output)
+                if finalize_mask:
+                    output = remove_holes_and_islands(output, slice_wise=True)
             output_mask.append(output)
 
         if dim == 3:
