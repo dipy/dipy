@@ -1,18 +1,29 @@
 import numpy as np
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_array_less)
-from dipy.direction.bingham import (_single_bingham_to_sf, sf_to_bingham,
-                                    _single_sf_to_bingham, _bingham_fit_peak,
-                                    bingham_fiber_density, odi2k, k2odi,
-                                    bingham_fiber_spread, sh_to_bingham,
-                                    _convert_bingham_pars)
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_less,
+)
+
 from dipy.data import get_sphere
+from dipy.direction.bingham import (
+    _bingham_fit_peak,
+    _convert_bingham_pars,
+    _single_bingham_to_sf,
+    _single_sf_to_bingham,
+    bingham_fiber_density,
+    bingham_fiber_spread,
+    k2odi,
+    odi2k,
+    sf_to_bingham,
+    sh_to_bingham,
+)
 from dipy.reconst.shm import sf_to_sh
 
 
 def setup_module():
     global sphere
-    sphere = get_sphere(name='repulsion724')
+    sphere = get_sphere(name="repulsion724")
     sphere = sphere.subdivide(n=2)
 
 
@@ -22,7 +33,7 @@ def teardown_module():
 
 
 def test_bingham_fit():
-    """ Tests for bingham function and single Bingham fit"""
+    """Tests for bingham function and single Bingham fit"""
     peak_dir = np.array([1, 0, 0])
     ma_axis = np.array([0, 1, 0])
     mi_axis = np.array([0, 0, 1])
@@ -36,8 +47,7 @@ def test_bingham_fit():
     assert_almost_equal(odf_test, f0)
 
     # Test Bingham fit on full sampled GT Bingham function
-    odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis,
-                                   mi_axis, sphere.vertices)
+    odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
     a0, c1, c2, mu0, mu1, mu2 = _bingham_fit_peak(odf_gt, peak_dir, sphere, 45)
 
     # check scalar parameters
@@ -49,8 +59,9 @@ def test_bingham_fit():
     # respective GT
     Mus = np.array([mu0, mu1, mu2])
     Mus_ref = np.array([peak_dir, ma_axis, mi_axis])
-    assert_array_almost_equal(np.abs(np.diag(np.dot(Mus, Mus_ref))),
-                              np.ones(3), decimal=5)
+    assert_array_almost_equal(
+        np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), decimal=5
+    )
 
     # check the same for bingham_fit_odf
     fits, n = _single_sf_to_bingham(odf_gt, sphere, max_search_angle=45)
@@ -60,8 +71,9 @@ def test_bingham_fit():
     Mus = np.array([fits[0][3], fits[0][4], fits[0][5]])
     # I had to decrease the precision in the assert below because main peak
     # direction is now calculated (before the GT direction was given)
-    assert_array_almost_equal(np.abs(np.diag(np.dot(Mus, Mus_ref))),
-                              np.ones(3), decimal=5)
+    assert_array_almost_equal(
+        np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), decimal=5
+    )
 
 
 def test_bingham_metrics():
@@ -106,9 +118,11 @@ def test_bingham_metrics():
     assert_array_almost_equal(fd, fd_hires, decimal=4)
 
     # Rotating the Bingham distribution should not bias the FD estimate
-    xfits = [(f0_lobe1, k1, k2, axis0, axis1, axis2),
-             (f0_lobe1, k1, k2, axis1, axis2, axis0),
-             (f0_lobe1, k1, k2, axis2, axis0, axis1)]
+    xfits = [
+        (f0_lobe1, k1, k2, axis0, axis1, axis2),
+        (f0_lobe1, k1, k2, axis1, axis2, axis0),
+        (f0_lobe1, k1, k2, axis2, axis0, axis1),
+    ]
     xpars = _convert_bingham_pars(xfits, 3)
     xfd = bingham_fiber_density(xpars)
 
@@ -136,7 +150,6 @@ def test_bingham_metrics():
 
 
 def test_bingham_from_odf():
-
     # Reconstruct multi voxel ODFs to test bingham_from_odf
     ma_axis = np.array([0, 1, 0])
     mi_axis = np.array([0, 0, 1])
@@ -160,22 +173,17 @@ def test_bingham_from_odf():
 
     # check if we have estimates in the right lobe for all voxels
     peak_v = bim.model_params[0, 0, 0, 0, 0]
-    assert_array_almost_equal(bim.amplitude_lobe[..., 0],
-                              peak_v * np.ones((2, 2, 1)))
-    assert_array_almost_equal(bim.amplitude_lobe[..., 1],
-                              np.zeros((2, 2, 1)))
+    assert_array_almost_equal(bim.amplitude_lobe[..., 0], peak_v * np.ones((2, 2, 1)))
+    assert_array_almost_equal(bim.amplitude_lobe[..., 1], np.zeros((2, 2, 1)))
 
     # check kappas
     assert_almost_equal(bim.kappa1_lobe[0, 0, 0, 0], k1, decimal=3)
     assert_almost_equal(bim.kappa2_lobe[0, 0, 0, 0], k2, decimal=3)
-    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0],
-                        np.sqrt(k1 * k2), decimal=3)
+    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0], np.sqrt(k1 * k2), decimal=3)
 
     # check ODI
-    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0],
-                        k2odi(np.array(k1)), decimal=3)
-    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0],
-                        k2odi(np.array(k2)), decimal=3)
+    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
+    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
     # ODI2 < ODI total < ODI1
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi1_lobe[..., 0])
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi_total_lobe[..., 0])
@@ -212,5 +220,4 @@ def test_bingham_from_sh():
     bim_odf = sf_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16, legacy=False)
     bim_sh = sh_to_bingham(sh, sphere, 16, legacy=False, npeaks=2, max_search_angle=45)
-    assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params,
-                              decimal=3)
+    assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params, decimal=3)

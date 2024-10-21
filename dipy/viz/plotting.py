@@ -270,8 +270,9 @@ def bundle_shape_profile(x, shape_profile, std):
     plt.show()
 
 
-def image_mosaic(images, *, ax_labels=None, ax_kwargs=None,
-                 figsize=None, filename=None):
+def image_mosaic(
+    images, *, ax_labels=None, ax_kwargs=None, figsize=None, filename=None
+):
     """
     Draw a mosaic of 2D images using pyplot.imshow(). A colorbar is drawn
     beside each image.
