@@ -222,9 +222,7 @@ def vol_denoise(
     ):
         if vol_idx in b0_idx.flatten():
             if b0_denoising:
-                b_fit, _ = _fit_denoising_model(
-                    data_b0s, b0_counter, model, alpha, version=3
-                )
+                b_fit, _ = _fit_denoising_model(data_b0s, b0_counter, model, alpha)
                 b_matrix = np.zeros(data_tmp.shape[-1])
                 b_fit_coef = np.insert(b_fit.coef_, b0_counter, 0)
                 np.put(b_matrix, b0_idx, b_fit_coef)
@@ -246,9 +244,7 @@ def vol_denoise(
                 del b_matrix
                 del result
         else:
-            dwi_fit, _ = _fit_denoising_model(
-                data_dwi, dwi_counter, model, alpha, version=3
-            )
+            dwi_fit, _ = _fit_denoising_model(data_dwi, dwi_counter, model, alpha)
             b_matrix = np.zeros(data_tmp.shape[-1])
             dwi_fit_coef = np.insert(dwi_fit.coef_, dwi_counter, 0)
             np.put(b_matrix, dwi_idx, dwi_fit_coef)
@@ -563,7 +559,7 @@ def _patch2self_version1(
 
         for vol_idx in range(0, data_b0s.shape[3]):
             b0_model, cur_x = _fit_denoising_model(
-                train_b0, vol_idx, model, alpha=alpha, version=1
+                train_b0, vol_idx, model, alpha=alpha
             )
 
             denoised_b0s[..., vol_idx] = b0_model.predict(cur_x.T).reshape(
@@ -589,9 +585,7 @@ def _patch2self_version1(
 
     # Insert the separately denoised arrays into the respective empty arrays
     for vol_idx in range(0, data_dwi.shape[3]):
-        dwi_model, cur_x = _fit_denoising_model(
-            train_dwi, vol_idx, model, alpha=alpha, version=1
-        )
+        dwi_model, cur_x = _fit_denoising_model(train_dwi, vol_idx, model, alpha=alpha)
         denoised_dwi[..., vol_idx] = dwi_model.predict(cur_x.T).reshape(
             data_dwi.shape[0], data_dwi.shape[1], data_dwi.shape[2]
         )
