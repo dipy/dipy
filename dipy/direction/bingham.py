@@ -447,11 +447,11 @@ def _convert_bingham_pars(fits, npeaks):
     fits : tuple
         Tuple of nl elements containing the Bingham function parameters
         in the following order:
-            Maximum value of the Bingham function (f0);
-            concentration parameters (k1 and k2);
-            elements of Bingham's main direction (mu0);
-            elements of Bingham's dispersion major axis (mu1);
-            and elements of Bingham's dispersion minor axis (mu2).
+        - Maximum value of the Bingham function (f0);
+        - concentration parameters (k1 and k2);
+        - elements of Bingham's main direction (mu0);
+        - elements of Bingham's dispersion major axis (mu1);
+        - and elements of Bingham's dispersion minor axis (mu2).
     npeaks: int
         Maximum number of fitted Bingham functions, by number of peaks.
 
@@ -460,11 +460,11 @@ def _convert_bingham_pars(fits, npeaks):
     bingham_params : ndarray (nl, 12)
         ndarray containing the model parameters of Bingham fitted to ODFs in
         the following order:
-            Maximum value of the Bingham function (f0, index 0);
-            concentration parameters k1 and k2 (indexes 1 and 2);
-            elements of Bingham's main direction (indexes 3-5);
-            elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11).
+        - Maximum value of the Bingham function (f0, index 0);
+        - concentration parameters k1 and k2 (indexes 1 and 2);
+        - elements of Bingham's main direction (indexes 3-5);
+        - elements of Bingham's dispersion major axis (indexes 6-8);
+        - elements of Bingham's dispersion minor axis (indexes 9-11).
     """
     n = len(fits)
     bpars = np.zeros((npeaks, 12))
@@ -513,11 +513,11 @@ class BinghamMetrics:
         model_params : ndarray (..., nl, 12)
             ndarray containing Bingham's model parameters fitted to ODFs
             in the following order:
-            Maximum value of the Bingham function (f0, index 0);
-            concentration parameters k1 and k2 (indexes 1 and 2);
-            elements of Bingham's main direction (indexes 3-5);
-            elements of Bingham's dispersion major axis (indexes 6-8);
-            elements of Bingham's dispersion minor axis (indexes 9-11).
+            - Maximum value of the Bingham function (f0, index 0);
+            - concentration parameters k1 and k2 (indexes 1 and 2);
+            - elements of Bingham's main direction (indexes 3-5);
+            - elements of Bingham's dispersion major axis (indexes 6-8);
+            - elements of Bingham's dispersion minor axis (indexes 9-11).
         """
         self.model_params = model_params
 
@@ -544,7 +544,7 @@ class BinghamMetrics:
         """Overall concentration parameters for an ODF peak.
 
         The overall (combined) concentration parameters for each lobe is
-        defined by equation 19 in :footcite:p:`Tariq2016` as:
+        defined by equation 19 in :footcite:p:`Tariq2016` as
 
         .. math::
             k_{total} = sqrt{(k_1 * k_2)}
