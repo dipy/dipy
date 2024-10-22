@@ -32,10 +32,14 @@ class Patch2SelfFlow(Workflow):
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
+        ver=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
     ):
         """Workflow for Patch2Self denoising method.
+
+        See :footcite:p:`Fadnavis2020` for further details about the method.
+        See :footcite:p:`Fadnavis2024` for further details about the new method.
 
         It applies patch2self denoising :footcite:p:`Fadnavis2020` on each file
         found by 'globing' ``input_file`` and ``bval_file``. It saves the
@@ -74,6 +78,8 @@ class Patch2SelfFlow(Workflow):
         shift_intensity : bool, optional
             Shifts the distribution of intensities per volume to give
             non-negative values
+        ver : int, optional
+            Version of the Patch2Self algorithm to use between  1 or 3.
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -96,7 +102,7 @@ class Patch2SelfFlow(Workflow):
                 logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-
+                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
                 denoised_data = patch2self(
                     data,
                     bvals,
@@ -104,10 +110,11 @@ class Patch2SelfFlow(Workflow):
                     b0_threshold=b0_threshold,
                     alpha=alpha,
                     verbose=verbose,
-                    patch_radius=patch_radius,
                     b0_denoising=b0_denoising,
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
+                    version=ver,
+                    **extra_args,
                 )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
