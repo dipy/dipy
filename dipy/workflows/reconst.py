@@ -11,7 +11,7 @@ from dipy.data import default_sphere, get_sphere
 from dipy.direction.peaks import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import peaks_to_niftis, save_peaks
+from dipy.io.peaks import pam_to_niftis, save_pam
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst

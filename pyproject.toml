@@ -85,6 +85,9 @@ dipy_slr = "dipy.workflows.cli:run"
 dipy_concatenate_tractograms = "dipy.workflows.cli:run"
 dipy_convert_tractogram = "dipy.workflows.cli:run"
 dipy_convert_tensors = "dipy.workflows.cli:run"
+dipy_nifti2pam = "dipy.workflows.cli:run"
+dipy_pam2nifti = "dipy.workflows.cli:run"
+dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
