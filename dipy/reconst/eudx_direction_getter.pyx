@@ -31,6 +31,15 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         self.qa_thr = 0.0239
         self.ang_thr = 60
         self.total_weight = .5
+        self.sphere = None
+        self.peak_indices = None
+        self.peak_values = None
+        self.peak_dirs = None
+        self.gfa = None
+        self.qa = None
+        self.shm_coeff = None
+        self.B = None
+        self.odf = None
 
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,

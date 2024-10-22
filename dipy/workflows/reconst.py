@@ -11,7 +11,7 @@ from dipy.data import default_sphere, get_sphere
 from dipy.direction.peaks import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import peaks_to_niftis, save_peaks
+from dipy.io.peaks import pam_to_niftis, save_pam
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
@@ -923,12 +923,12 @@ class ReconstCSDFlow(Workflow):
             )
             peaks_csd.affine = affine
 
-            save_peaks(opam, peaks_csd)
+            save_pam(opam, peaks_csd)
 
             logging.info("CSD computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csd,
                     oshm,
                     opeaks_dir,
@@ -1084,12 +1084,12 @@ class ReconstCSAFlow(Workflow):
             )
             peaks_csa.affine = affine
 
-            save_peaks(opam, peaks_csa)
+            save_pam(opam, peaks_csa)
 
             logging.info(f"Finished CSA {dwi}")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csa,
                     oshm,
                     opeaks_dir,
@@ -1794,10 +1794,10 @@ class ReconstRUMBAFlow(Workflow):
 
             rumba_peaks.affine = affine
 
-            save_peaks(opam, rumba_peaks)
+            save_pam(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     rumba_peaks,
                     oshm,
                     opeaks_dir,
