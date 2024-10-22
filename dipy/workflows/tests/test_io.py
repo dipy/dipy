@@ -9,9 +9,11 @@ import numpy as np
 import numpy.testing as npt
 
 import dipy.core.gradients as grad
-from dipy.data import get_fnames
+from dipy.data import default_sphere, get_fnames
 from dipy.data.fetcher import dipy_home
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import load_pam, save_pam
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
@@ -24,7 +26,10 @@ from dipy.workflows.io import (
     ConvertTractogramFlow,
     FetchFlow,
     IoInfoFlow,
+    NiftisToPamFlow,
+    PamToNiftisFlow,
     SplitFlow,
+    TensorToPamFlow,
 )
 
 fname_log = mkstemp()[1]
@@ -245,6 +250,8 @@ def test_convert_tensors_flow():
 
         img_out, _ = load_nifti(filepath_out)
         npt.assert_array_almost_equal(img_out, expected_img_out)
+
+
 def generate_random_pam():
     pam = PeaksAndMetrics()
     pam.affine = np.eye(4)
@@ -265,21 +272,22 @@ def generate_random_pam():
 def test_niftis_to_pam_flow():
     pam = generate_random_pam()
     with TemporaryDirectory() as out_dir:
-        fname = 'test.pam5'
+        fname = "test.pam5"
         save_pam(fname, pam)
 
         args = [fname, out_dir]
         flow = PamToNiftisFlow()
         flow.run(*args)
 
-        args = [flow.last_generated_outputs['out_peaks_dir'],
-                flow.last_generated_outputs['out_peaks_values'],
-                flow.last_generated_outputs['out_peaks_indices'],
-                ]
+        args = [
+            flow.last_generated_outputs["out_peaks_dir"],
+            flow.last_generated_outputs["out_peaks_values"],
+            flow.last_generated_outputs["out_peaks_indices"],
+        ]
 
         flow2 = NiftisToPamFlow()
         flow2.run(*args, out_dir=out_dir)
-        pam_file = flow2.last_generated_outputs['out_pam']
+        pam_file = flow2.last_generated_outputs["out_pam"]
         assert_true(os.path.isfile(pam_file))
 
         res_pam = load_pam(pam_file)
@@ -290,22 +298,22 @@ def test_niftis_to_pam_flow():
 
 
 def test_tensor_to_pam_flow():
-    fdata, fbval, fbvec = get_fnames('small_25')
-    gtab = gradient_table(fbval, fbvec)
+    fdata, fbval, fbvec = get_fnames(name="small_25")
+    gtab = grad.gradient_table(fbval, bvecs=fbvec)
     data, affine = load_nifti(fdata)
-    dm = TensorModel(gtab)
+    dm = dti.TensorModel(gtab)
     df = dm.fit(data)
     df.evals[0, 0, 0] = np.array([0, 0, 0])
 
     with TemporaryDirectory() as out_dir:
-        f_mevals, f_mevecs = 'evals.nii.gz', 'evecs.nii.gz'
+        f_mevals, f_mevecs = "evals.nii.gz", "evecs.nii.gz"
         save_nifti(f_mevals, df.evals, affine)
         save_nifti(f_mevecs, df.evecs, affine)
 
         args = [f_mevals, f_mevecs]
         flow = TensorToPamFlow()
         flow.run(*args, out_dir=out_dir)
-        pam_file = flow.last_generated_outputs['out_pam']
+        pam_file = flow.last_generated_outputs["out_pam"]
         assert_true(os.path.isfile(pam_file))
 
         pam = load_pam(pam_file)
@@ -318,21 +326,17 @@ def test_pam_to_niftis_flow():
     pam = generate_random_pam()
 
     with TemporaryDirectory():
-        fname = 'test.pam5'
+        fname = "test.pam5"
         save_pam(fname, pam)
 
-        args = [fname, ]
+        args = [
+            fname,
+        ]
         flow = PamToNiftisFlow()
         flow.run(*args)
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_peaks_dir']))
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_peaks_values']))
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_peaks_indices']))
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_shm']))
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_gfa']))
-        assert_true(
-            os.path.isfile(flow.last_generated_outputs['out_sphere']))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_dir"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_values"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_indices"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_shm"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_gfa"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_sphere"]))

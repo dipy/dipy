@@ -28,9 +28,12 @@ def _safe_save(group, array, name):
         ds[:] = array
 
 
-@deprecate_with_version("dipy.io.peaks.load_peaks is deprecated, Please use"
-                        "dipy.io.peaks.load_pam instead",
-                        since='1.10', until='1.12')
+@deprecate_with_version(
+    "dipy.io.peaks.load_peaks is deprecated, Please use"
+    "dipy.io.peaks.load_pam instead",
+    since="1.10",
+    until="1.12",
+)
 @warning_for_keywords()
 def load_peaks(fname, *, verbose=False):
     """Load a PeaksAndMetrics HDF5 file (PAM5).
@@ -57,7 +60,7 @@ def load_pam(fname, *, verbose=False):
     ----------
     fname : string
         Filename of PAM5 file.
-    verbose : bool
+    verbose : bool, optional
         Print summary information about the loaded file.
 
     Returns
@@ -65,8 +68,8 @@ def load_pam(fname, *, verbose=False):
     pam : PeaksAndMetrics object
 
     """
-    if os.path.splitext(fname)[1].lower() != '.pam5':
-        raise IOError('This function supports only PAM5 (HDF5) files')
+    if os.path.splitext(fname)[1].lower() != ".pam5":
+        raise IOError("This function supports only PAM5 (HDF5) files")
 
     f = h5py.File(fname, "r")
 
@@ -79,25 +82,24 @@ def load_pam(fname, *, verbose=False):
     if version != "0.0.1":
         raise OSError(f"Incorrect PAM5 file version {version}")
 
-    peak_dirs = pamh['peak_dirs'][:]
-    peak_values = pamh['peak_values'][:]
-    peak_indices = pamh['peak_indices'][:]
+    peak_dirs = pamh["peak_dirs"][:]
+    peak_values = pamh["peak_values"][:]
+    peak_indices = pamh["peak_indices"][:]
 
-    sphere_vertices = pamh['sphere_vertices'][:]
+    sphere_vertices = pamh["sphere_vertices"][:]
 
-    pam.affine = pamh['affine'][:] if 'affine' in pamh else None
+    pam.affine = pamh["affine"][:] if "affine" in pamh else None
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
-    pam.shm_coeff = pamh['shm_coeff'][:] if 'shm_coeff' in pamh else None
+    pam.shm_coeff = pamh["shm_coeff"][:] if "shm_coeff" in pamh else None
     pam.sphere = Sphere(xyz=sphere_vertices)
-    pam.B = pamh['B'][:] if 'B' in pamh else None
-    pam.total_weight = pamh['total_weight'][:][0] if 'total_weight' in pamh \
-        else None
-    pam.ang_thr = pamh['ang_thr'][:][0] if 'ang_thr' in pamh else None
-    pam.gfa = pamh['gfa'][:] if 'gfa' in pamh else None
-    pam.qa = pamh['qa'][:] if 'qa' in pamh else None
-    pam.odf = pamh['odf'][:] if 'odf' in pamh else None
+    pam.B = pamh["B"][:] if "B" in pamh else None
+    pam.total_weight = pamh["total_weight"][:][0] if "total_weight" in pamh else None
+    pam.ang_thr = pamh["ang_thr"][:][0] if "ang_thr" in pamh else None
+    pam.gfa = pamh["gfa"][:] if "gfa" in pamh else None
+    pam.qa = pamh["qa"][:] if "qa" in pamh else None
+    pam.odf = pamh["odf"][:] if "odf" in pamh else None
 
     f.close()
 
@@ -128,9 +130,12 @@ def load_pam(fname, *, verbose=False):
     return pam
 
 
-@deprecate_with_version("dipy.io.peaks.save_peaks is deprecated, Please use"
-                        "dipy.io.peaks.save_pam instead",
-                        since='1.10.0', until='1.12.0')
+@deprecate_with_version(
+    "dipy.io.peaks.save_peaks is deprecated, Please use"
+    "dipy.io.peaks.save_pam instead",
+    since="1.10.0",
+    until="1.12.0",
+)
 @warning_for_keywords()
 def save_peaks(fname, pam, *, affine=None, verbose=False):
     """Save PeaksAndMetrics object attributes in a PAM5 file (HDF5).
@@ -158,15 +163,15 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
 
     Parameters
     ----------
-    fname : string
+    fname : str
         Filename of PAM5 file
     pam : PeaksAndMetrics
         Object holding peak_dirs, shm_coeffs and other attributes
-    affine : array
+    affine : ndarray, optional
         The 4x4 matrix transforming the date from native to world coordinates.
         PeaksAndMetrics should have that attribute but if not it can be
         provided here. Default None.
-    verbose : bool
+    verbose : bool, optional
         Print summary information about the saved file.
 
     """
@@ -182,40 +187,41 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
         msg += " and peak_indices"
         raise ValueError(msg)
 
-    if not (isinstance(pam.peak_dirs, np.ndarray) and
-            isinstance(pam.peak_values, np.ndarray) and
-            isinstance(pam.peak_indices, np.ndarray)):
-
-        msg = 'Cannot save object: peak_dirs, peak_values'
-        msg += ' and peak_indices should be a ndarray'
+    if not (
+        isinstance(pam.peak_dirs, np.ndarray)
+        and isinstance(pam.peak_values, np.ndarray)
+        and isinstance(pam.peak_indices, np.ndarray)
+    ):
+        msg = "Cannot save object: peak_dirs, peak_values"
+        msg += " and peak_indices should be a ndarray"
         raise ValueError(msg)
 
-    f = h5py.File(fname, 'w')
+    f = h5py.File(fname, "w")
 
     group = f.create_group("pam")
     f.attrs["version"] = "0.0.1"
 
     version_string = f.attrs["version"]
 
-    affine = pam.affine if hasattr(pam, 'affine') else affine
-    shm_coeff = pam.shm_coeff if hasattr(pam, 'shm_coeff') else None
-    odf = pam.odf if hasattr(pam, 'odf') else None
+    affine = pam.affine if hasattr(pam, "affine") else affine
+    shm_coeff = pam.shm_coeff if hasattr(pam, "shm_coeff") else None
+    odf = pam.odf if hasattr(pam, "odf") else None
     vertices = None
-    if hasattr(pam, 'sphere') and pam.sphere is not None:
+    if hasattr(pam, "sphere") and pam.sphere is not None:
         vertices = pam.sphere.vertices
 
-    _safe_save(group, affine, 'affine')
-    _safe_save(group, pam.peak_dirs, 'peak_dirs')
-    _safe_save(group, pam.peak_values, 'peak_values')
-    _safe_save(group, pam.peak_indices, 'peak_indices')
-    _safe_save(group, shm_coeff, 'shm_coeff')
-    _safe_save(group, vertices, 'sphere_vertices')
-    _safe_save(group, pam.B, 'B')
-    _safe_save(group, np.array([pam.total_weight]), 'total_weight')
-    _safe_save(group, np.array([pam.ang_thr]), 'ang_thr')
-    _safe_save(group, pam.gfa, 'gfa')
-    _safe_save(group, pam.qa, 'qa')
-    _safe_save(group, odf, 'odf')
+    _safe_save(group, affine, "affine")
+    _safe_save(group, pam.peak_dirs, "peak_dirs")
+    _safe_save(group, pam.peak_values, "peak_values")
+    _safe_save(group, pam.peak_indices, "peak_indices")
+    _safe_save(group, shm_coeff, "shm_coeff")
+    _safe_save(group, vertices, "sphere_vertices")
+    _safe_save(group, pam.B, "B")
+    _safe_save(group, np.array([pam.total_weight]), "total_weight")
+    _safe_save(group, np.array([pam.ang_thr]), "ang_thr")
+    _safe_save(group, pam.gfa, "gfa")
+    _safe_save(group, pam.qa, "qa")
+    _safe_save(group, odf, "odf")
 
     f.close()
 
@@ -246,11 +252,23 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
     return pam
 
 
-@deprecate_with_version("dipy.io.peaks.peaks_to_niftis is deprecated, Please"
-                        " use dipy.io.peaks.pam_to_niftis instead",
-                        since='1.7', until='1.9')
-def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
-                    fname_gfa, reshape_dirs=False):
+@deprecate_with_version(
+    "dipy.io.peaks.peaks_to_niftis is deprecated, Please"
+    " use dipy.io.peaks.pam_to_niftis instead",
+    since="1.10.0",
+    until="1.12.0",
+)
+@warning_for_keywords()
+def peaks_to_niftis(
+    pam,
+    fname_shm,
+    fname_dirs,
+    fname_values,
+    fname_indices,
+    *,
+    fname_gfa=None,
+    reshape_dirs=False,
+):
     """Save SH, directions, indices and values of peaks to Nifti.
 
     Parameters
@@ -272,19 +290,30 @@ def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
         (default False)
 
     """
-    return pam_to_niftis(pam=pam, fname_peaks_dir=fname_dirs,
-                         fname_peaks_values=fname_values,
-                         fname_peaks_indices=fname_indices,
-                         fname_gfa=fname_gfa, fname_shm=fname_shm,
-                         reshape_dirs=reshape_dirs)
+    return pam_to_niftis(
+        pam=pam,
+        fname_peaks_dir=fname_dirs,
+        fname_peaks_values=fname_values,
+        fname_peaks_indices=fname_indices,
+        fname_gfa=fname_gfa,
+        fname_shm=fname_shm,
+        reshape_dirs=reshape_dirs,
+    )
 
 
-def pam_to_niftis(pam, fname_peaks_dir='peaks_dirs.nii.gz',
-                  fname_peaks_values='peaks_values.nii.gz',
-                  fname_peaks_indices='peaks_indices.nii.gz',
-                  fname_shm='shm.nii.gz', fname_gfa='gfa.nii.gz',
-                  fname_sphere='sphere.txt', fname_b='B.nii.gz',
-                  fname_qa='qa.nii.gz', reshape_dirs=False):
+def pam_to_niftis(
+    pam,
+    *,
+    fname_peaks_dir="peaks_dirs.nii.gz",
+    fname_peaks_values="peaks_values.nii.gz",
+    fname_peaks_indices="peaks_indices.nii.gz",
+    fname_shm="shm.nii.gz",
+    fname_gfa="gfa.nii.gz",
+    fname_sphere="sphere.txt",
+    fname_b="B.nii.gz",
+    fname_qa="qa.nii.gz",
+    reshape_dirs=False,
+):
     """Save SH, directions, indices and values of peaks to Nifti.
 
     Parameters
@@ -322,26 +351,37 @@ def pam_to_niftis(pam, fname_peaks_dir='peaks_dirs.nii.gz',
         pam_dirs = pam.peak_dirs.astype(np.float32)
 
     save_nifti(fname_peaks_dir, pam_dirs, pam.affine)
-    save_nifti(fname_peaks_values, pam.peak_values.astype(np.float32),
-               pam.affine)
+    save_nifti(fname_peaks_values, pam.peak_values.astype(np.float32), pam.affine)
     save_nifti(fname_peaks_indices, pam.peak_indices, pam.affine)
 
-    if hasattr(pam, 'shm_coeff'):
+    for attr, fname in [("gfa", fname_gfa), ("B", fname_b), ("qa", fname_qa)]:
+        obj = getattr(pam, attr, None)
+        if obj is None:
+            continue
+        save_nifti(fname, obj, pam.affine)
+
+    if hasattr(pam, "shm_coeff") and pam.shm_coeff is not None:
         save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
-    if hasattr(pam, 'gfa'):
-        save_nifti(fname_gfa, pam.gfa, pam.affine)
-    if hasattr(pam, 'sphere'):
+    if hasattr(pam, "sphere") and pam.sphere is not None:
         np.savetxt(fname_sphere, pam.sphere.vertices)
-    if hasattr(pam, 'B'):
-        save_nifti(fname_b, pam.B, pam.affine)
-    if hasattr(pam, 'qa'):
-        save_nifti(fname_qa, pam.qa, pam.affine)
 
 
-def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
-                  shm_coeff=None, sphere=None, gfa=None, B=None,
-                  qa=None, odf=None, total_weight=None, ang_thr=None,
-                  pam_file=None):
+def niftis_to_pam(
+    affine,
+    peak_dirs,
+    peak_values,
+    peak_indices,
+    *,
+    shm_coeff=None,
+    sphere=None,
+    gfa=None,
+    B=None,
+    qa=None,
+    odf=None,
+    total_weight=None,
+    ang_thr=None,
+    pam_file=None,
+):
     """Return SH, directions, indices and values of peaks to pam5.
 
     Parameters
@@ -383,9 +423,16 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
 
-    for name, value in [('shm_coeff', shm_coeff), ('sphere', sphere), ('B', B),
-                        ('total_weight', total_weight), ('ang_thr', ang_thr),
-                        ('gfa', gfa), ('qa', qa), ('odf', odf)]:
+    for name, value in [
+        ("shm_coeff", shm_coeff),
+        ("sphere", sphere),
+        ("B", B),
+        ("total_weight", total_weight),
+        ("ang_thr", ang_thr),
+        ("gfa", gfa),
+        ("qa", qa),
+        ("odf", odf),
+    ]:
         if value is not None:
             setattr(pam, name, value)
 
@@ -394,9 +441,23 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
     return pam
 
 
-def tensor_to_pam(evals, evecs, affine, shm_coeff=None, sphere=None, gfa=None,
-                  B=None, qa=None, odf=None, total_weight=None, ang_thr=None,
-                  pam_file=None, npeaks=5, generate_peaks_indices=True):
+def tensor_to_pam(
+    evals,
+    evecs,
+    affine,
+    *,
+    shm_coeff=None,
+    sphere=None,
+    gfa=None,
+    B=None,
+    qa=None,
+    odf=None,
+    total_weight=None,
+    ang_thr=None,
+    pam_file=None,
+    npeaks=5,
+    generate_peaks_indices=True,
+):
     """Convert diffusion tensor to pam5.
 
     Parameters
@@ -421,7 +482,7 @@ def tensor_to_pam(evals, evecs, affine, shm_coeff=None, sphere=None, gfa=None,
         SH coefficients for the ODF spherical function
     pam_file : str, optional
         Filename of the desired pam file
-    npeaks : int
+    npeaks : int, optional
         Maximum number of peaks found (default 5 peaks).
     generate_peaks_indices : bool, optional
     total_weight : float, optional
@@ -433,21 +494,33 @@ def tensor_to_pam(evals, evecs, affine, shm_coeff=None, sphere=None, gfa=None,
         Object holding peak_dirs, shm_coeffs and other attributes
 
     """
+    npeaks = 1 if npeaks < 1 else npeaks
+    npeaks = min(npeaks, evals.shape[-1])
     shape = evals.shape[:3]
     peaks_dirs = np.zeros((shape + (npeaks, 3)))
-    peaks_dirs[..., :3, :] = evecs
+    peaks_dirs[..., :npeaks, :] = evecs[..., :npeaks, :]
     peaks_values = np.zeros((shape + (npeaks,)))
-    peaks_values[..., :3] = evals
+    peaks_values[..., :npeaks] = evals[..., :npeaks]
 
     if generate_peaks_indices:
         vertices = sphere.vertices if sphere else None
-        peaks_indices = quantize_evecs(evecs, vertices)
+        peaks_indices = quantize_evecs(evecs[..., :npeaks, :], odf_vertices=vertices)
     else:
-        peaks_indices = np.zeros((shape + (npeaks,)), dtype='int')
+        peaks_indices = np.zeros((shape + (npeaks,)), dtype="int")
         peaks_indices.fill(-1)
 
-    return niftis_to_pam(affine=affine, peak_dirs=peaks_dirs,
-                         peak_values=peaks_values, peak_indices=peaks_indices,
-                         shm_coeff=shm_coeff, sphere=sphere, gfa=gfa, B=B,
-                         qa=qa, odf=odf, total_weight=total_weight,
-                         ang_thr=ang_thr, pam_file=pam_file)
+    return niftis_to_pam(
+        affine=affine,
+        peak_dirs=peaks_dirs,
+        peak_values=peaks_values,
+        peak_indices=peaks_indices.astype(np.int32),
+        shm_coeff=shm_coeff,
+        sphere=sphere,
+        gfa=gfa,
+        B=B,
+        qa=qa,
+        odf=odf,
+        total_weight=total_weight,
+        ang_thr=ang_thr,
+        pam_file=pam_file,
+    )
