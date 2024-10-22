@@ -28,7 +28,7 @@ class Patch2SelfFlow(Workflow):
         b0_threshold=50,
         alpha=1.0,
         verbose=False,
-        patch_radius=(0, 0, 0),
+        patch_radius=0,
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
@@ -102,7 +102,7 @@ class Patch2SelfFlow(Workflow):
                 logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-                extra_args = {"patch_radius": (0, 0, 0)} if ver == 1 else {}
+                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
                 denoised_data = patch2self(
                     data,
                     bvals,

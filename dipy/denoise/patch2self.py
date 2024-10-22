@@ -144,19 +144,17 @@ def vol_denoise(
     Parameters
     ----------
     data_dict : dict
-        Dictionary containing the following
-
-        - data_name : str
-            The name of the memmap file containing the memmaped data.
-        - data_dtype : dtype
-            The dtype of the data.
-        - data_shape : tuple
-            The shape of the data.
-        - data_b0s : ndarray
-            Array of all 3D patches flattened out to be 2D for b0 volumes.
-        - data_dwi : ndarray
-            Array of all 3D patches flattened out to be 2D for dwi volumes.
-
+        Dictionary containing the following:
+            data_name : str
+                The name of the memmap file containing the memmaped data.
+            data_dtype : dtype
+                The dtype of the data.
+            data_shape : tuple
+                The shape of the data.
+            data_b0s : ndarray
+                Array of all 3D patches flattened out to be 2D for b0 volumes.
+            data_dwi : ndarray
+                Array of all 3D patches flattened out to be 2D for dwi volumes.
     b0_idx : ndarray
         The indices of the b0 volumes.
     dwi_idx : ndarray
