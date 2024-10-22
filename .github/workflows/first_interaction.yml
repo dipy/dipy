@@ -1,0 +1,47 @@
+name: First interaction
+
+on:
+  - pull_request_target
+  - issues
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    steps:
+    - uses: actions/first-interaction@v1
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        issue-message: |
+          Thank you for contributing an issue!
+
+          **We are glad that you are finding DIPY useful!**
+
+          This is an automatic message. Allow for time for DIPY maintainers to be able to read the issue and comment on
+          it.
+
+          If asking for help or advice, please move the issue to the [Discussions section](https://github.com/dipy/dipy/discussions):
+          issues are intended to request new features or to report bugs.
+
+          We would appreciate if you took the time to submit a pull request to fix this issue should it happen to be
+          one. Please read our [CODE OF CONDUCT](../CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](../CONTRIBUTING.md)
+          if you have not done that already :book:.
+
+        pr-message: |
+          Thank you for contributing a pull request!
+
+          **We are glad that you are finding DIPY useful!**
+
+          This is an automatic message. Allow for time for DIPY maintainers to be able to read this pull request and
+          comment on it.
+
+          Note that we require the **code formatting**, **testing** and **documentation builds** to **pass** in order to
+          merge your pull request. GitHub will report on their status as the builds become available. **Please, check
+          their status and make the appropriate changes as necessary**. It is **your responsibility** to do this in
+          order to have your pull request reviewed in a timely manner and merged :mag:.
+
+          Please read our [CODE OF CONDUCT](../CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](../CONTRIBUTING.md)
+          if you have not done that already :book:.
