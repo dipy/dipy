@@ -154,10 +154,10 @@ def compute_directional_average(
         Precomputed mean signal map for b=0 images.
     masks : ndarray, optional
         Precomputed masks for each unique b-value shell.
-    b0_threshold : float, optional
-        The intensity threshold for a b=0 image.
     b0_mask : ndarray, optional
         Precomputed mask for b=0 images.
+    b0_threshold : float, optional
+        The intensity threshold for a b=0 image.
     low_signal_threshold : float, optional
         The threshold below which a voxel is considered to have low signal.
 
@@ -206,7 +206,9 @@ def compute_directional_average(
 def dam_classifier(
     data, bvals, wm_threshold, *, b0_threshold=50, low_signal_threshold=50
 ):
-    """Compute the P (slope) map for the entire dataset.
+    """Computes the P-map (fitting slope) on data to extract white and grey matter.
+
+    See :footcite:p:`Cheng2020` for further details about the method.
 
     Parameters
     ----------
@@ -214,7 +216,7 @@ def dam_classifier(
         The diffusion MRI data.
     bvals : ndarray
         The b-values corresponding to the diffusion data.
-    wm_threshold : float, optional
+    wm_threshold : float
         The threshold below which a voxel is considered white matter.
     b0_threshold : float, optional
         The intensity threshold for a b=0 image.
@@ -227,6 +229,11 @@ def dam_classifier(
         A binary mask for white matter.
     gm_mask : ndarray
         A binary mask for grey matter.
+
+    References
+    ----------
+    .. footbibliography::
+
     """
     # Precompute unique b-values, masks, and b=0 mask
     unique_bvals = np.unique(bvals)
