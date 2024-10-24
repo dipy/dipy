@@ -2,9 +2,9 @@
 
 .. _reconst-csd:
 
-=======================================================
-Reconstruction with Constrained Spherical Deconvolution
-=======================================================
+===================================================================
+Reconstruction with Constrained Spherical Deconvolution model (CSD)
+===================================================================
 
 This example shows how to use Constrained Spherical Deconvolution (CSD)
 introduced by :footcite:p:`Tournier2007`.

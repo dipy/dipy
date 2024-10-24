@@ -1,7 +1,7 @@
 """
-========================================================================
-Reconstruction of the diffusion signal with the correlation tensor model
-========================================================================
+==============================================================================
+Reconstruction of the diffusion signal with the correlation tensor model (CTI)
+==============================================================================
 
 Correlation Tensor MRI (CTI) is a method that uses double diffusion
 encoding data to resolve sources of kurtosis. It is similar to the Q-space
