@@ -1,7 +1,7 @@
 """
-===========================================================================
-Reconstruction with Robust and Unbiased Model-BAsed Spherical Deconvolution
-===========================================================================
+===================================================================================
+Reconstruction with Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA)
+===================================================================================
 
 This example shows how to use RUMBA-SD to reconstruct fiber orientation
 density functions (fODFs). This model was introduced by

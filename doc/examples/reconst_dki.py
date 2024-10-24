@@ -1,7 +1,7 @@
 """
-=====================================================================
-Reconstruction of the diffusion signal with the kurtosis tensor model
-=====================================================================
+===========================================================================
+Reconstruction of the diffusion signal with the kurtosis tensor model (DKI)
+===========================================================================
 
 Diffusional Kurtosis Imaging (DKI) is an expansion of the Diffusion Tensor
 Imaging (DTI) model

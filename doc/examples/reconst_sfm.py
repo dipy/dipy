@@ -1,7 +1,7 @@
 """
-==============================================
-Reconstruction with the Sparse Fascicle Model
-==============================================
+===================================================
+Reconstruction with the Sparse Fascicle Model (SFM)
+===================================================
 
 In this example, we will use the Sparse Fascicle Model (SFM)
 :footcite:p:`Rokem2015`, to reconstruct the fiber Orientation Distribution

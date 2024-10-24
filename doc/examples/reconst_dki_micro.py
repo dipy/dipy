@@ -1,7 +1,7 @@
 """
-=====================================================================
-Reconstruction of the diffusion signal with the WMTI model
-=====================================================================
+======================================================================
+Reconstruction of the diffusion signal with the WMTI model (DKI-MICRO)
+======================================================================
 
 DKI can also be used to derive concrete biophysical parameters by applying
 microstructural models to DT and KT estimated from DKI. For instance,

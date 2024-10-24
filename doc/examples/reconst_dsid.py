@@ -1,7 +1,7 @@
 """
-========================
-DSI Deconvolution vs DSI
-========================
+===============================
+DSI Deconvolution (DSID) vs DSI
+===============================
 
 An alternative method to DSI is the method proposed by
 :footcite:p:`CanalesRodriguez2010` which is called DSI with Deconvolution. This

@@ -1,7 +1,7 @@
 """
-============================================================
-Reconstruction of the diffusion signal with the Tensor model
-============================================================
+=====================================================================
+Reconstruction of the diffusion signal with DTI (single tensor) model
+=====================================================================
 
 The diffusion tensor model is a model that describes the diffusion within a
 voxel. First proposed by Basser and colleagues :footcite:p:`Basser1994a`, it has

@@ -1,7 +1,7 @@
 """
-===========================================
-Reconstruct with Diffusion Spectrum Imaging
-===========================================
+=================================================
+Reconstruct with Diffusion Spectrum Imaging (DSI)
+=================================================
 
 We show how to apply Diffusion Spectrum Imaging :footcite:p:`Wedeen2005` to
 diffusion MRI datasets of Cartesian keyhole diffusion gradients.
