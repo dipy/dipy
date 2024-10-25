@@ -378,14 +378,24 @@ fetch_stanford_hardi = _make_fetcher(
     doc="Download a HARDI dataset with 160 gradient directions",
 )
 
-fetch_resdnn_weights = _make_fetcher(
-    "fetch_resdnn_weights",
+fetch_resdnn_tf_weights = _make_fetcher(
+    "fetch_resdnn_tf_weights",
     pjoin(dipy_home, "histo_resdnn_weights"),
     "https://ndownloader.figshare.com/files/",
     ["22736240"],
     ["resdnn_weights_mri_2018.h5"],
     md5_list=["f0e118d72ab804a464494bd9015227f4"],
-    doc="Download ResDNN model weights for Nath et. al 2018",
+    doc="Download ResDNN Tensorflow model weights for Nath et. al 2018",
+)
+
+fetch_resdnn_torch_weights = _make_fetcher(
+    "fetch_resdnn_torch_weights",
+    pjoin(dipy_home, "histo_resdnn_weights"),
+    "https://ndownloader.figshare.com/files/",
+    ["50019429"],
+    ["histo_weights.pth"],
+    md5_list=["ca13692bbbaea725ff8b5df2d3a2779a"],
+    doc="Download ResDNN Pytorch model weights for Nath et. al 2018",
 )
 
 fetch_synb0_weights = _make_fetcher(
@@ -440,13 +450,23 @@ fetch_deepn4_test = _make_fetcher(
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
-fetch_evac_weights = _make_fetcher(
-    "fetch_evac_weights",
+fetch_evac_tf_weights = _make_fetcher(
+    "fetch_evac_tf_weights",
     pjoin(dipy_home, "evac"),
     "https://ndownloader.figshare.com/files/",
     ["43037191"],
     ["evac_default_weights.h5"],
     md5_list=["491cfa4f9a2860fad6c19f2b71b918e1"],
+    doc="Download EVAC+ model weights for Park et. al 2022",
+)
+
+fetch_evac_torch_weights = _make_fetcher(
+    "fetch_evac_torch_weights",
+    pjoin(dipy_home, "evac"),
+    "https://ndownloader.figshare.com/files/",
+    ["50019432"],
+    ["evac_weights.pth"],
+    md5_list=["b2bab512a0f899f089d9dd9ffc44f65b"],
     doc="Download EVAC+ model weights for Park et. al 2022",
 )
 
@@ -1616,9 +1636,13 @@ def get_fnames(*, name="small_64D"):
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, "100307_white_lh.vtk")
         return surface_name
-    if name == "histo_resdnn_weights":
-        files, folder = fetch_resdnn_weights()
+    if name == "histo_resdnn_tf_weights":
+        files, folder = fetch_resdnn_tf_weights()
         wraw = pjoin(folder, "resdnn_weights_mri_2018.h5")
+        return wraw
+    if name == "histo_resdnn_torch_weights":
+        files, folder = fetch_resdnn_torch_weights()
+        wraw = pjoin(folder, "histo_weights.pth")
         return wraw
     if name == "synb0_default_weights":
         _, folder = fetch_synb0_weights()
@@ -1642,9 +1666,13 @@ def get_fnames(*, name="small_64D"):
         input_array = pjoin(folder, "test_input_deepn4.npz")
         target_array = pjoin(folder, "test_output_deepn4.npz")
         return input_array, target_array
-    if name == "evac_default_weights":
-        files, folder = fetch_evac_weights()
+    if name == "evac_default_tf_weights":
+        files, folder = fetch_evac_tf_weights()
         weight = pjoin(folder, "evac_default_weights.h5")
+        return weight
+    if name == "evac_default_torch_weights":
+        files, folder = fetch_evac_torch_weights()
+        weight = pjoin(folder, "evac_weights.pth")
         return weight
     if name == "evac_test_data":
         files, folder = fetch_evac_test()

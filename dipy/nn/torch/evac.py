@@ -16,38 +16,31 @@ from dipy.nn.utils import (
     transform_img,
 )
 from dipy.segment.utils import remove_holes_and_islands
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
-if have_tf:
-    from tensorflow.keras.layers import (
-        Add,
-        Concatenate,
-        Conv3D,
-        Conv3DTranspose,
-        Dropout,
-        Layer,
-        LayerNormalization,
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+if have_torch:
+    from torch.nn import (
+        Conv3d,
+        ConvTranspose3d,
+        Dropout3d,
+        LayerNorm,
+        Module,
+        ModuleList,
         ReLU,
         Softmax,
     )
-    from tensorflow.keras.models import Model
 else:
 
-    class Model:
-        pass
-
-    class Layer:
+    class Module:
         pass
 
     logging.warning(
-        "This model requires Tensorflow.\
+        "This model requires Pytorch.\
                     Please install these packages using \
-                    pip. If using mac, please refer to this \
-                    link for installation. \
-                    https://github.com/apple/tensorflow_macos"
+                    pip."
     )
 
 logging.basicConfig()
@@ -69,39 +62,65 @@ def prepare_img(image):
     input_data : dict
     """
     input1 = np.moveaxis(image, -1, 0)
-    input1 = np.expand_dims(input1, -1)
+    input1 = np.expand_dims(input1, 1)
 
     input2, _ = reslice(image, np.eye(4), (1, 1, 1), (2, 2, 2))
     input2 = np.moveaxis(input2, -1, 0)
-    input2 = np.expand_dims(input2, -1)
+    input2 = np.expand_dims(input2, 1)
 
     input3, _ = reslice(image, np.eye(4), (1, 1, 1), (4, 4, 4))
     input3 = np.moveaxis(input3, -1, 0)
-    input3 = np.expand_dims(input3, -1)
+    input3 = np.expand_dims(input3, 1)
 
     input4, _ = reslice(image, np.eye(4), (1, 1, 1), (8, 8, 8))
     input4 = np.moveaxis(input4, -1, 0)
-    input4 = np.expand_dims(input4, -1)
+    input4 = np.expand_dims(input4, 1)
 
     input5, _ = reslice(image, np.eye(4), (1, 1, 1), (16, 16, 16))
     input5 = np.moveaxis(input5, -1, 0)
-    input5 = np.expand_dims(input5, -1)
+    input5 = np.expand_dims(input5, 1)
 
-    input_data = {
-        "input_1": input1,
-        "input_2": input2,
-        "input_3": input3,
-        "input_4": input4,
-        "input_5": input5,
-    }
+    input_data = [
+        torch.from_numpy(input1).float(),
+        torch.from_numpy(input2).float(),
+        torch.from_numpy(input3).float(),
+        torch.from_numpy(input4).float(),
+        torch.from_numpy(input5).float(),
+    ]
 
     return input_data
 
 
-class Block(Layer):
-    @warning_for_keywords()
+class MoveDimLayer(Module):
+    def __init__(self, source_dim, dest_dim):
+        super(MoveDimLayer, self).__init__()
+        self.source_dim = source_dim
+        self.dest_dim = dest_dim
+
+    def forward(self, x):
+        return torch.movedim(x, self.source_dim, self.dest_dim)
+
+
+class ChannelSum(Module):
+    def __init__(self):
+        super(ChannelSum, self).__init__()
+
+    def forward(self, inputs):
+        return torch.sum(inputs, dim=1, keepdim=True)
+
+
+class Add(Module):
+    def __init__(self):
+        super(Add, self).__init__()
+
+    def forward(self, x, passed):
+        return x + passed
+
+
+class Block(Module):
     def __init__(
         self,
+        in_channels,
         out_channels,
         kernel_size,
         strides,
@@ -109,36 +128,51 @@ class Block(Layer):
         drop_r,
         n_layers,
         *,
+        passed_channel=1,
         layer_type="down",
     ):
         super(Block, self).__init__()
-        self.layer_list = []
-        self.layer_list2 = []
         self.n_layers = n_layers
+        self.layer_list = ModuleList()
+        self.layer_list2 = ModuleList()
+
+        cur_channel = in_channels
         for _ in range(n_layers):
             self.layer_list.append(
-                Conv3D(out_channels, kernel_size, strides=strides, padding=padding)
+                Conv3d(
+                    cur_channel,
+                    out_channels,
+                    kernel_size,
+                    stride=strides,
+                    padding=padding,
+                )
             )
-            self.layer_list.append(Dropout(drop_r))
-            self.layer_list.append(LayerNormalization())
+            cur_channel = out_channels
+            self.layer_list.append(Dropout3d(drop_r))
+            self.layer_list.append(MoveDimLayer(1, -1))
+            self.layer_list.append(LayerNorm(out_channels))
+            self.layer_list.append(MoveDimLayer(-1, 1))
             self.layer_list.append(ReLU())
+
         if layer_type == "down":
-            self.layer_list2.append(Conv3D(1, 2, strides=2, padding="same"))
+            self.layer_list2.append(Conv3d(in_channels, 1, 2, stride=2, padding=0))
             self.layer_list2.append(ReLU())
         elif layer_type == "up":
-            self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding="same"))
+            self.layer_list2.append(
+                ConvTranspose3d(passed_channel, 1, 2, stride=2, padding=0)
+            )
             self.layer_list2.append(ReLU())
 
         self.channel_sum = ChannelSum()
         self.add = Add()
 
-    def call(self, input, passed):
+    def forward(self, input, passed):
         x = input
         for layer in self.layer_list:
             x = layer(x)
 
         x = self.channel_sum(x)
-        fwd = self.add([x, passed])
+        fwd = self.add(x, passed)
         x = fwd
 
         for layer in self.layer_list2:
@@ -147,147 +181,134 @@ class Block(Layer):
         return fwd, x
 
 
-class ChannelSum(Layer):
-    def __init__(self):
-        super(ChannelSum, self).__init__()
+class Model(Module):
+    def __init__(self, model_scale=16):
+        super(Model, self).__init__()
 
-    def call(self, inputs):
-        return tf.reduce_sum(inputs, axis=-1, keepdims=True)
+        # Block structure
+        self.block1 = Block(
+            1, model_scale, kernel_size=5, strides=1, padding=2, drop_r=0.2, n_layers=1
+        )
+        self.block2 = Block(
+            2,
+            model_scale * 2,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=2,
+        )
+        self.block3 = Block(
+            2,
+            model_scale * 4,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=3,
+        )
+        self.block4 = Block(
+            2,
+            model_scale * 8,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=3,
+        )
+        self.block5 = Block(
+            2,
+            model_scale * 16,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=3,
+            passed_channel=2,
+            layer_type="up",
+        )
 
+        # Upsample/decoder blocks
+        self.up_block1 = Block(
+            3,
+            model_scale * 8,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=3,
+            passed_channel=1,
+            layer_type="up",
+        )
+        self.up_block2 = Block(
+            3,
+            model_scale * 4,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=3,
+            passed_channel=1,
+            layer_type="up",
+        )
+        self.up_block3 = Block(
+            3,
+            model_scale * 2,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=2,
+            passed_channel=1,
+            layer_type="up",
+        )
+        self.up_block4 = Block(
+            2,
+            model_scale,
+            kernel_size=5,
+            strides=1,
+            padding=2,
+            drop_r=0.5,
+            n_layers=1,
+            passed_channel=1,
+            layer_type="none",
+        )
 
-@warning_for_keywords()
-def init_model(*, model_scale=16):
-    """
-    Function to create model for EVAC+
+        self.conv_pred = Conv3d(1, 2, 1, padding=0)
+        self.softmax = Softmax(dim=1)
 
-    Parameters
-    ----------
-    model_scale : int, optional
-        The scale of the model
-        Should match the saved weights from fetcher
-        Default is 16
+    def forward(self, inputs, raw_input_2, raw_input_3, raw_input_4, raw_input_5):
+        fwd1, x = self.block1(inputs, inputs)
+        x = torch.cat([x, raw_input_2], dim=1)
 
-    Returns
-    -------
-    model : tf.keras.Model
-    """
-    inputs = tf.keras.Input(shape=(128, 128, 128, 1), name="input_1")
-    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1), name="input_2")
-    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1), name="input_3")
-    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1), name="input_4")
-    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1), name="input_5")
-    # Encode
-    fwd1, x = Block(
-        model_scale, kernel_size=5, strides=1, padding="same", drop_r=0.2, n_layers=1
-    )(inputs, inputs)
+        fwd2, x = self.block2(x, x)
+        x = torch.cat([x, raw_input_3], dim=1)
 
-    x = Concatenate()([x, raw_input_2])
+        fwd3, x = self.block3(x, x)
+        x = torch.cat([x, raw_input_4], dim=1)
 
-    fwd2, x = Block(
-        model_scale * 2,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=2,
-    )(x, x)
+        fwd4, x = self.block4(x, x)
+        x = torch.cat([x, raw_input_5], dim=1)
 
-    x = Concatenate()([x, raw_input_3])
+        # Decoding path
+        _, up = self.block5(x, x)
+        x = torch.cat([fwd4, up], dim=1)
 
-    fwd3, x = Block(
-        model_scale * 4,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=3,
-    )(x, x)
+        _, up = self.up_block1(x, up)
+        x = torch.cat([fwd3, up], dim=1)
 
-    x = Concatenate()([x, raw_input_4])
+        _, up = self.up_block2(x, up)
+        x = torch.cat([fwd2, up], dim=1)
 
-    fwd4, x = Block(
-        model_scale * 8,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=3,
-    )(x, x)
+        _, up = self.up_block3(x, up)
+        x = torch.cat([fwd1, up], dim=1)
 
-    x = Concatenate()([x, raw_input_5])
+        _, pred = self.up_block4(x, up)
 
-    _, up = Block(
-        model_scale * 16,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=3,
-        layer_type="up",
-    )(x, x)
+        pred = self.conv_pred(pred)
+        output = self.softmax(pred)
 
-    x = Concatenate()([fwd4, up])
-
-    _, up = Block(
-        model_scale * 8,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=3,
-        layer_type="up",
-    )(x, up)
-
-    x = Concatenate()([fwd3, up])
-
-    _, up = Block(
-        model_scale * 4,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=3,
-        layer_type="up",
-    )(x, up)
-
-    x = Concatenate()([fwd2, up])
-
-    _, up = Block(
-        model_scale * 2,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=2,
-        layer_type="up",
-    )(x, up)
-
-    x = Concatenate()([fwd1, up])
-
-    _, pred = Block(
-        model_scale,
-        kernel_size=5,
-        strides=1,
-        padding="same",
-        drop_r=0.5,
-        n_layers=1,
-        layer_type="none",
-    )(x, up)
-
-    pred = Conv3D(2, 1, padding="same")(pred)
-    output = Softmax(axis=-1)(pred)
-
-    model = Model(
-        {
-            "input_1": inputs,
-            "input_2": raw_input_2,
-            "input_3": raw_input_3,
-            "input_4": raw_input_4,
-            "input_5": raw_input_5,
-        },
-        output[..., 0],
-    )
-    return model
+        return output
 
 
 class EVACPlus:
@@ -305,7 +326,6 @@ class EVACPlus:
     """
 
     @doctest_skip_parser
-    @warning_for_keywords()
     def __init__(self, *, verbose=False):
         """
         The model was pre-trained for usage on
@@ -320,25 +340,28 @@ class EVACPlus:
             Whether to show information about the processing.
         """
 
-        if not have_tf:
-            raise tf()
+        if not have_torch:
+            raise torch()
 
         log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
         # EVAC+ network load
 
-        self.model = init_model()
+        self.model = self.init_model()
         self.fetch_default_weights()
+
+    def init_model(self, model_scale=16):
+        return Model(model_scale)
 
     def fetch_default_weights(self):
         """
         Load the model pre-training weights to use for the fitting.
+
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
         """
-        fetch_model_weights_path = get_fnames(name="evac_default_tf_weights")
-        print(f"fetched {fetch_model_weights_path}")
+        fetch_model_weights_path = get_fnames(name="evac_default_torch_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -348,10 +371,11 @@ class EVACPlus:
         Parameters
         ----------
         weights_path : str
-            Path to the file containing the weights (hdf5, saved by tensorflow)
+            Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_weights(weights_path)
+            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.eval()
         except ValueError as e:
             raise ValueError(
                 "Expected input for the provided model weights \
@@ -364,7 +388,7 @@ class EVACPlus:
 
         Parameters
         ----------
-        x_test : np.ndarray (batch, 128, 128, 128, 1)
+        x_test : list of np.ndarray
             Image should match the required shape of the model.
 
         Returns
@@ -373,7 +397,7 @@ class EVACPlus:
             Predicted brain mask
         """
 
-        return self.model.predict(x_test)
+        return self.model(*x_test)[:, 0].detach().numpy()
 
     @deprecated_params(
         "largest_area", new_name="finalize_mask", since="1.10", until="1.12"
