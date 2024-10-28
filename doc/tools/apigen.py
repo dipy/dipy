@@ -113,7 +113,8 @@ class ApiDocWriter:
         root_module = self._import(package_name)
         if root_module.__path__:
             self.root_path = root_module.__path__[-1]
-        else:
+
+        if not self.root_path or 'editable_loader' in self.root_path.lower():
             self.root_path = os.path.dirname(root_module.__file__)
         self.written_modules = None
 
