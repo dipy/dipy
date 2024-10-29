@@ -32,6 +32,7 @@ python_sources = [
   'test_shore_odf.py',
   'test_utils.py',
   'test_vec_val_vect.py',
+  'test_weights_method.py',
   ]
 
 
