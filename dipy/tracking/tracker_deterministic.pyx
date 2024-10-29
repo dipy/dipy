@@ -8,19 +8,42 @@ from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
-from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils.fast_numpy cimport copy_point, norm, normalize
-from dipy.tracking.fast_tracking cimport prepare_pmf, TrackerParameters
+from dipy.tracking.fast_tracking cimport prepare_pmf
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus, 
+                                               SUCCESS, FAIL)
 from libc.stdlib cimport malloc, free
 
 
-cdef int deterministic_tracker(double* point,
-                               double* direction,
-                               TrackerParameters params,
-                               double* stream_data,
-                               PmfGen pmf_gen) noexcept nogil:
+cdef TrackerStatus deterministic_tracker(double* point,
+                                         double* direction,
+                                         TrackerParameters params,
+                                         double* stream_data,
+                                         PmfGen pmf_gen) noexcept nogil:
+    """
+    Propagates the position by step_size amount. The propagation use the 
+    direction of a sphere with the highest probability mass function (pmf).
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position.
+    direction : double[3]
+        Previous tracking direction.
+    params : TrackerParameters
+        Parallel Transport Tractography (PTT) parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+
+    Returns
+    -------
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
+    """
     cdef:
         cnp.npy_intp i, max_idx
         double max_value=0
@@ -30,7 +53,7 @@ cdef int deterministic_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     if norm(direction) == 0:
-        return 1
+        return FAIL
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
@@ -48,7 +71,7 @@ cdef int deterministic_tracker(double* point,
 
     if max_value <= 0:
         free(pmf)
-        return 1
+        return FAIL
 
     newdir = &pmf_gen.vertices[max_idx][0]
     # Update direction
@@ -62,5 +85,5 @@ cdef int deterministic_tracker(double* point,
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
     free(pmf)
-    return 0
+    return SUCCESS
     

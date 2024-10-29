@@ -10,14 +10,15 @@ from dipy.direction.pmf cimport PmfGen
 from dipy.utils.fast_numpy cimport (copy_point, cross, normalize, random,
                                     random_perpendicular_vector,
                                     random_point_within_circle)
-from dipy.tracking.fast_tracking cimport TrackerParameters
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus, 
+                                               SUCCESS, FAIL)
 
 
-cdef int parallel_transport_tracker(double* point,
-                                    double* direction,
-                                    TrackerParameters params,
-                                    double* stream_data,
-                                    PmfGen pmf_gen) noexcept nogil:
+cdef TrackerStatus parallel_transport_tracker(double* point,
+                                              double* direction,
+                                              TrackerParameters params,
+                                              double* stream_data,
+                                              PmfGen pmf_gen) noexcept nogil:
     """
     Propagates the position by step_size amount. The propagation is using
     the parameters of the last candidate curve. Then, randomly generate
@@ -51,10 +52,11 @@ cdef int parallel_transport_tracker(double* point,
 
     Returns
     -------
-    status : int
-        Returns 0 if the propagation was successful, or
-        1 otherwise.
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
     """
+    
     cdef double max_posterior = 0
     cdef double data_support = 0
     cdef double[3] tangent
@@ -113,9 +115,9 @@ cdef int parallel_transport_tracker(double* point,
             # within the trial limit
             # update the point and return
             copy_point(&stream_data[19], point)
-            return 0
+            return SUCCESS
 
-    return 1
+    return FAIL
 
 
 cdef int initialize(TrackerParameters params,
