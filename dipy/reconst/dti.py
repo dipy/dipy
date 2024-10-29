@@ -17,8 +17,8 @@ from dipy.reconst.base import ReconstModel
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.testing.decorators import warning_for_keywords
 from dipy.reconst.weights_method import (
-    weights_method_nlls_gm,
-    weights_method_wls_gm,
+    weights_method_nlls_m_est,
+    weights_method_wls_m_est,
 )
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -1359,7 +1359,7 @@ def iter_fit_tensor(*, step=1e4):
                             extra[key] = np.empty(data.shape)
                         extra[key][i : i + step] = extra_i[key]
 
-            if extra:  # if extra is not just {}
+            if extra:
                 for key in extra:
                     extra[key] = extra[key].reshape(shape + (-1,))
 
@@ -1640,7 +1640,7 @@ class _NllsHelper:
                 return ans
 
     def jacobian_func(self, tensor, design_matrix, data, weights=None):
-        r"""The Jacobian is the first derivative of the error function [1]_.
+        r"""The Jacobian is the first derivative of the error function.
 
         Parameters
         ----------
@@ -1659,8 +1659,8 @@ class _NllsHelper:
 
         Notes
         -----
-        This is an implementation of equation 14 in [1]_, but also
-        accounts for weights on the squared residuals if provided.
+        This Jacobian correcly accounts for weights on the squared residuals
+        if provided.
 
         References
         ----------
@@ -1849,7 +1849,7 @@ def nlls_fit_tensor(
 
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
-        except (np.linalg.LinAlgError, TypeError) as e:
+        except (np.linalg.LinAlgError, TypeError) as err:
             resort_to_OLS = True
             this_param = start_params
 
@@ -1874,7 +1874,7 @@ def nlls_fit_tensor(
             params[vox, 12:] = this_param[6:-1] / md2
 
     if resort_to_OLS:
-        warnings.warn(ols_resort_msg, UserWarning)
+        warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
     if return_leverages:
         leverages = {"leverages": leverages}
@@ -1903,10 +1903,10 @@ def restore_fit_tensor(
     fail_is_nan=False
 ):
     """
-    Use the RESTORE algorithm [1]_ to calculate a robust tensor fit.
-    Note that [1]_ does not define Geman–McClure M-estimator weights as
+    Use the RESTORE algorithm :footcite:p:`Chang2005` to calculate a robust tensor fit.
+    Note that :footcite:p:`Chang2005` does not define Geman–McClure M-estimator weights as
     claimed (instead, Cauchy M-estimator weights are defined), but this
-    function does define these weights correctly.
+    function does define correct Geman–McClure M-estimator weights.
 
     Parameters
     ----------
@@ -1920,12 +1920,13 @@ def restore_fit_tensor(
         dimension should contain the data. It makes no copies of data.
 
     sigma : float, optional
-        An estimate of the variance. [1]_ recommend to use
+        An estimate of the variance. :footcite:p:`Chang2005` recommend to use
         1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
         If not provided, will be estimated per voxel as:
         sigma = 1.4826 * sqrt(N / (N - p)) * MAD(residuals)
-        as in [2]_ but with additional correction factor 1.4826 for MAD.
+        as in :footcite:p:`Chang2012` but with the additional correction factor
+        1.4826 required to link standard deviation to MAD.
 
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
@@ -2116,28 +2117,27 @@ def iterative_fit_tensor(design_matrix, data, *, jac=True,
                          fit_type=None,
                          num_iter=4,
                          weights_method=None):
-    """ Iteratively Reweighted fitting for the DTI/DKI model.
+    """Iteratively Reweighted fitting for the DTI/DKI model.
 
     Parameters
     ----------
 
-    design_matrix : array of shape (g, ...)
+    design_matrix : ndarray of shape (g, ...)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-
-    data : array of shape ([X, Y, Z, n_directions], g)
+    data : ndarray of shape ([X, Y, Z, n_directions], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-
-    return_S0_hat : bool
+    jac : bool, optional
+        Use the Jacobian for NLLS fitting (does nothing for WLS fitting).
+    return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
-
+    fit_type : str, optional
+        Whether to use NLLS or WLS fitting scheme.
     num_iter : int, optional
         Number of times to iterate.
-
-    weights_method : function, optional
+    weights_method : callable, optional
         A function with args and returns as follows:
-
         (weights, robust) =
           weights_method(data, pred_sig,
                          design_matrix, leverages,
@@ -2195,6 +2195,7 @@ def iterative_fit_tensor(design_matrix, data, *, jac=True,
             D, extra = nlls_fit_tensor(design_matrix, data, weights=w,
                                        return_lower_triangular=True,
                                        return_leverages=(rdx == 1),
+                                       jac=jac,
                                        init_params=D)
             if rdx == 1:
                 leverages = extra["leverages"]
@@ -2221,21 +2222,72 @@ def iterative_fit_tensor(design_matrix, data, *, jac=True,
         return params, extra
 
 
-# define robust WLS and NLLS functions using GM M-estimators
-def robust_fit_tensor_wls(*args, **kwargs):
-    """ return iterative_fit_tensor(*args, **kwargs, fit_type="WLS",
-                                     weights_method=weights_method_wls_gm)
+def robust_fit_tensor_wls(design_matrix, data, *,
+                          return_S0_hat=False,
+                          num_iter=4):
+    """Iteratively Reweighted fitting for WLS for the DTI/DKI model.
+  
+    Parameters
+    ----------
+
+    design_matrix : ndarray of shape (g, ...)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : ndarray of shape ([X, Y, Z, n_directions], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+    return_S0_hat : bool, optional
+        Boolean to return (True) or not (False) the S0 values for the fit.
+    num_iter : int, optional
+        Number of times to iterate.
+
+    Notes
+    -----
+    This is a convenience function that does does:
+      iterative_fit_tensor(*args, **kwargs, fit_type="WLS",
+                           weights_method=weights_method_wls)
     """
-    return iterative_fit_tensor(*args, **kwargs, fit_type="WLS",
-                                weights_method=weights_method_wls_gm)
+    return iterative_fit_tensor(design_matrix, data,
+                                return_S0_hat=return_S0_hat,
+                                fit_type="WLS",
+                                num_iter=num_iter,
+                                weights_method=weights_method_wls_m_est)
 
 
-def robust_fit_tensor_nlls(*args, **kwargs):
-    """ return iterative_fit_tensor(*args, **kwargs, fit_type="NLLS",
-                                     weights_method=weights_method_nlls_gm)
+def robust_fit_tensor_nlls(design_matrix, data, *,
+                           jac=True,
+                           return_S0_hat=False,
+                           num_iter=4):
+    """Iteratively Reweighted fitting for NLLS for the DTI/DKI model.
+  
+    Parameters
+    ----------
+
+    design_matrix : ndarray of shape (g, ...)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : ndarray of shape ([X, Y, Z, n_directions], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+    jac : bool, optional
+        Use the Jacobian?
+    return_S0_hat : bool, optional
+        Boolean to return (True) or not (False) the S0 values for the fit.
+    num_iter : int, optional
+        Number of times to iterate.
+
+    Notes
+    -----
+    This is a convenience function that does does:
+      iterative_fit_tensor(*args, **kwargs, fit_type="NLLS",
+                           weights_method=weights_method_nlls)
     """
-    return iterative_fit_tensor(*args, **kwargs, fit_type="NLLS",
-                                weights_method=weights_method_nlls_gm)
+    return iterative_fit_tensor(design_matrix, data,
+                                jac=jac,
+                                return_S0_hat=return_S0_hat,
+                                fit_type="NLLS",
+                                num_iter=num_iter,
+                                weights_method=weights_method_nlls_m_est)
 
 
 _lt_indices = np.array([[0, 1, 3], [1, 2, 4], [3, 4, 5]])

@@ -35,8 +35,8 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import decompose_tensor, from_lower_triangular
 from dipy.reconst.utils import dki_design_matrix
 from dipy.reconst.weights_method import (
-    weights_method_nlls_gm,
-    weights_method_wls_gm
+    weights_method_nlls_m_est,
+    weights_method_wls_m_est
 )
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.testing import check_for_warnings
@@ -343,7 +343,7 @@ def test_dki_fits():
         kwargs = {}
         if fit_method == "CWLS":
             kwargs = {"cvxpy_solver": cvxpy.CLARABEL}
-        wm = weights_method_wls_gm  # weights method
+        wm = weights_method_wls_m_est  # weights method
         dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method=fit_method,
                                            return_S0_hat=True,
                                            weights_method=wm,
@@ -379,7 +379,7 @@ def test_dki_fits():
     # use RWLS and RNLLS but via explicit call to IRLS
     tested_methods = ['WLS', 'NLLS']
     for fm in tested_methods:
-        wm = weights_method_wls_gm if fm == 'WLS' else weights_method_nlls_gm
+        wm = weights_method_wls_m_est if fm == 'WLS' else weights_method_nlls_m_est
         dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method='IRLS',
                                            return_S0_hat=True,
                                            weights_method=wm,
@@ -389,7 +389,7 @@ def test_dki_fits():
     # test the weights methods fail if num_iter is too low
     tested_methods = ['WLS', 'NLLS']
     for fm in tested_methods:
-        wm = weights_method_wls_gm if fm == 'WLS' else weights_method_nlls_gm
+        wm = weights_method_wls_m_est if fm == 'WLS' else weights_method_nlls_m_est
         dki_M = dki.DiffusionKurtosisModel(gtab_2s, fit_method='IRLS',
                                            return_S0_hat=True,
                                            weights_method=wm,

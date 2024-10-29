@@ -8,7 +8,29 @@ MIN_POSITIVE_SIGNAL = 0.0001
 
 def simple_cutoff(residuals, log_residuals, pred_sig,
                   design_matrix, leverages, C, cutoff):
-    """ Define outliers based on signal.
+    """Define outliers based on the signal (rather than the log-signal).
+
+    Parameters
+    ----------
+    residuals : ndarray
+        Residuals of the signal (observed signal - fitted signal).
+    log_residuals : ndarray
+        Residuals of the log signal (log observed signal - fitted log signal).
+    pred_sig : ndarray
+        The predicted signal, given a previous fit.
+    design_matrix : ndarray (g, ...)
+        Design matrix holding the covariants used to solve for the
+        regression coefficients.
+    leverages : ndarray
+        The leverages (diagonal of the 'hat matrix') of the fit.
+    C : float
+        Estimate of the standard deviation of the error.
+    cutoff : float, optional
+        Cut-off value for defining outliers based on fitting residuals.
+        Here the condition is:
+            |residuals| > cut_off x C x HAT_factor
+        where HAT_factor = sqrt(1 - leverages) adjusts for leverage effects.
+
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
@@ -18,15 +40,31 @@ def simple_cutoff(residuals, log_residuals, pred_sig,
 
 def two_eyes_cutoff(residuals, log_residuals, pred_sig,
                     design_matrix, leverages, C, cutoff):
-    """ Two-eyes approach to define outliers, see [1]_.
+    """Two-eyes approach to define outliers, see :footcite:p:`Collier2015`.
+    
+    Parameters
+    ----------
+    residuals : ndarray
+        Residuals of the signal (observed signal - fitted signal).
+    log_residuals : ndarray
+        Residuals of the log signal (log observed signal - fitted log signal).
+    pred_sig : ndarray
+        The predicted signal, given a previous fit.
+    design_matrix : ndarray (g, ...)
+        Design matrix holding the covariants used to solve for the
+        regression coefficients.
+    leverages : ndarray
+        The leverages (diagonal of the 'hat matrix') of the fit.
+    C : float
+        Estimate of the standard deviation of the error.
+    cutoff : float, optional
+        Cut-off value for defining outliers based on fitting residuals,
+        see :footcite:p:`Collier2015` for the two-eyes approached used here.
 
     References
     ----------
-    .. [1] Collier, Q., Veraart, J., Jeurissen, B., den Dekker, A., Sijbers,
-       J., 2015. Iterative reweighted linear least squares for accurate, fast,
-       and robust estimation of diffusion magnetic resonance parameters: IRLLS
-       for Estimation of Diffusion MR Parameters. Magnetic Resonance in
-       Medicine 73, 2174-2184.
+    .. footbibliography::
+
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
@@ -39,38 +77,51 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
                              idx, total_idx, last_robust,
                              m_est="gm", cutoff=3,
                              outlier_condition_func=simple_cutoff):
-    """ Calculate M-estimator weights for WLS model.
+    """Calculate M-estimator weights for WLS model.
 
     Parameters
     ----------
-    data : array
+    data : ndarray
         The measured signal.
-    pred_sig : array
+    pred_sig : ndarray
         The predicted signal, given a previous fit.
         Has the same shape as data.
-    design_matrix : array (g, ...)
+    design_matrix : ndarray (g, ...)
         Design matrix holding the covariants used to solve for the
         regression coefficients.
-    leverages : array
+    leverages : ndarray
         The leverages (diagonal of the 'hat matrix') of the fit.
     idx : int
         The current iteration number.
     total_idx : int
         The total number of iterations.
-    last_robust : array (int),
-        Array of 1s (inlier) and 0s (outlier).
-        Has the same shape as data.
-    m_est : which M-estimator weighting scheme to use. Currently,
-            'gm' (Geman-McClure) and 'cauchy' are provided.
-    cut_off : float
-        Outliers are defined by residuals > |cut_off * standard_deviation|
+    last_robust : ndarray
+        True for inlier indices and False for outlier indices. Must have the
+        same shape as data.
+    m_est : str, optional.
+        M-estimator weighting scheme to use. Currently,
+        'gm' (Geman-McClure) and 'cauchy' are provided.
+    cutoff : float, optional
+        Cut-off value for defining outliers based on fitting residuals.
+        Will be passed to the outlier_condition_func.
+        Typical example: |residuals| > cut_off x standard_deviation
+    outlier_condition_func : callable, optional
+        A function with args and returns as follows:
+        is_an_outlier =
+          outlier_condition_func(residuals, log_residuals, pred_sig,
+                                 design_matrix, leverages, C, cutoff)
 
     Notes
     -----
     Robust weights are calculated specifically for the WLS problem, i.e. the
     usual form of the WLS problem is accounted for when defining these new
-    weights. On the second-to-last iteration, OLS is performed without
-    outliers. On the last iteration, WLS is performed without outliers.
+    weights, see :footcite:p:`Collier2015`. On the second-to-last iteration,
+    OLS is performed without outliers. On the last iteration, WLS is performed
+    without outliers.
+
+    References
+    ----------
+    .. footbibliography::
 
     """
     # check if M-estimator is valid (defined in this function)
@@ -116,13 +167,13 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
         )
         robust = np.logical_not(cond)
 
-        w[robust == 0] = 0.0
-        w[robust == 1] = 1.0
+        w[~robust] = 0.0
+        w[robust] = 1.0
 
     if idx == total_idx:  # WLS without outliers
         robust = last_robust
-        w[robust == 0] = 0.0
-        w[robust == 1] = pred_sig[robust == 1]**2
+        w[~robust] = 0.0
+        w[robust] = pred_sig[robust == 1]**2
 
     w[np.isinf(w)] = 0
     w[np.isnan(w)] = 0
@@ -134,31 +185,39 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
                               idx, total_idx, last_robust,
                               m_est="gm", cutoff=3,
                               outlier_condition_func=simple_cutoff):
-    """ Calculate M-estimator weights for NLLS model.
+    """Calculate M-estimator weights for NLLS model.
 
     Parameters
     ----------
-    data : array
+    data : ndarray
         The measured signal.
-    pred_sig : array
+    pred_sig : ndarray
         The predicted signal, given a previous fit.
         Has the same shape as data.
-    design_matrix : array (g, ...)
+    design_matrix : ndarray (g, ...)
         Design matrix holding the covariants used to solve for the
         regression coefficients.
-    leverages : array
+    leverages : ndarray
         The leverages (diagonal of the 'hat matrix') of the fit.
     idx : int
         The current iteration number.
     total_idx : int
         The total number of iterations.
-    last_robust : array (int),
-        Array of 1s (inlier) and 0s (outlier).
-        Has the same shape as data.
-    m_est : which M-estimator weighting scheme to use. Currently,
-            'gm' (Geman-McClure) and 'cauchy' are provided.
-    cut_off : float
-        Outliers are defined by residuals > |cut_off * standard_deviation|
+    last_robust : ndarray
+        True for inlier indices and False for outlier indices. Must have the
+        same shape as data.
+    m_est : str, optional.
+        M-estimator weighting scheme to use. Currently,
+        'gm' (Geman-McClure) and 'cauchy' are provided.
+    cutoff : float, optional
+        Cut-off value for defining outliers based on fitting residuals.
+        Will be passed to the outlier_condition_func.
+        Typical example: |residuals| > cut_off x standard_deviation
+    outlier_condition_func : callable, optional
+        A function with args and returns as follows:
+        is_an_outlier =
+          outlier_condition_func(residuals, log_residuals, pred_sig,
+                                 design_matrix, leverages, C, cutoff)
 
     Notes
     -----
@@ -208,41 +267,10 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
         )
         robust = np.logical_not(cond)
 
-        w[robust == 0] = 0.0
-        w[robust == 1] = 1.0
+        w[~robust] = 0.0
+        w[robust] = 1.0
 
     w[np.isinf(w)] = 0
     w[np.isnan(w)] = 0
 
     return w, robust
-
-
-# define specific M-estimators
-def weights_method_wls_gm(*args):
-    """ return weights_method_wls_m_est(*args, m_est="gm", cutoff=3),
-        where "gm" stands for Geman-McClure
-    """
-    return weights_method_wls_m_est(*args, m_est="gm", cutoff=3,
-                                    outlier_condition_func=simple_cutoff)
-
-
-def weights_method_nlls_gm(*args):
-    """ return weights_method_nlls_m_est(*args, m_est="gm", cutoff=3),
-        where "gm" stands for Geman-McClure
-    """
-    return weights_method_nlls_m_est(*args, m_est="gm", cutoff=3,
-                                     outlier_condition_func=simple_cutoff)
-
-
-def weights_method_wls_cauchy(*args):
-    """ return weights_method_wls_m_est(*args, m_est="cauchy", cutoff=3)
-    """
-    return weights_method_wls_m_est(*args, m_est="cauchy", cutoff=3,
-                                    outlier_condition_func=simple_cutoff)
-
-
-def weights_method_nlls_cauchy(*args):
-    """ return weights_method_nlls_m_est(*args, m_est="cauchy", cutoff=3)
-    """
-    return weights_method_nlls_m_est(*args, m_est="cauchy", cutoff=3,
-                                     outlier_condition_func=simple_cutoff)
