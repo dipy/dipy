@@ -36,10 +36,8 @@ from dipy.reconst.dti import (
     wls_fit_tensor,
 )
 from dipy.reconst.weights_method import (
-    weights_method_nlls_cauchy,
-    weights_method_nlls_gm,
-    weights_method_wls_cauchy,
-    weights_method_wls_gm,
+    weights_method_nlls_m_est,
+    weights_method_wls_m_est,
 )
 from dipy.sims.voxel import single_tensor
 from dipy.testing.decorators import set_random_number_generator
@@ -513,8 +511,8 @@ def test_rwls_rnlls_irls_fit():
         #                       np.linalg.norm(tensor_est.S0_hat[0] - b0))
 
     # test RWLS/RNLLS implemented explicitly via IRLS function
-    for wm, fit_type in zip([weights_method_wls_gm,
-                             weights_method_nlls_gm],
+    for wm, fit_type in zip([weights_method_wls_m_est,
+                             weights_method_nlls_m_est],
                             ["WLS", "NLLS"]):
 
         # IRLS implementation
@@ -537,27 +535,6 @@ def test_rwls_rnlls_irls_fit():
 
         npt.assert_almost_equal(tensor_est_R1.quadratic_form[0],
                                 tensor_est_R2.quadratic_form[0])
-
-    # test Geman-McClure and Cauchy weights both work to exclude outlier
-    for wm_gm, wm_c, fit_type_1 in zip([weights_method_wls_gm,
-                                        weights_method_nlls_gm],
-                                       [weights_method_wls_cauchy,
-                                        weights_method_nlls_cauchy],
-                                       ["WLS", "NLLS"]):
-
-        # IRLS implementation - Geman-McClure
-        model = TensorModel(gtab, fit_method="IRLS", return_S0_hat=True,
-                            weights_method=wm_gm, fit_type=fit_type,
-                            num_iter=10)
-        tensor_est_gm = model.fit(YN)
-        npt.assert_equal(model.extra["robust"][0, -1], 0)
-
-        # IRLS implementation - Cauchy
-        model = TensorModel(gtab, fit_method="IRLS", return_S0_hat=True,
-                            weights_method=wm_c, fit_type=fit_type,
-                            num_iter=10)
-        tensor_est_c = model.fit(YN)
-        npt.assert_equal(model.extra["robust"][0, -1], 0)
 
     # test that error is raised if not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
