@@ -38,8 +38,8 @@ from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.testing.decorators import warning_for_keywords
 from dipy.reconst.weights_method import (
-    weights_method_nlls_gm,
-    weights_method_wls_gm,
+    weights_method_nlls_m_est,
+    weights_method_wls_m_est,
 )
 
 
@@ -1824,10 +1824,7 @@ class DiffusionKurtosisModel(ReconstModel):
                                               'LS', 'LLS', 'OLS', 'OLLS',
                                               'CLS', 'CWLS']
 
-        if "weights_method" in self.kwargs:
-            self.is_iter_method = True
-        else:
-            self.is_iter_method = False
+        self.is_iter_method = "weights_method" in self.kwargs
 
         if "num_iter" not in self.kwargs and self.is_iter_method:
             self.kwargs["num_iter"] = 4
@@ -1957,7 +1954,7 @@ class DiffusionKurtosisModel(ReconstModel):
         return DiffusionKurtosisFit(self, params, model_S0=S0_params), extra
 
     def iterative_fit(self, data_thres, *, mask=None, num_iter=4,
-                      weights_method=weights_method_wls_gm):
+                      weights_method=weights_method_wls_m_est):
         """ Iteratively Reweighted fitting for the DKI model.
 
         Parameters
@@ -1969,7 +1966,7 @@ class DiffusionKurtosisModel(ReconstModel):
             should be analyzed that has the shape data.shape[-1]
         num_iter : int, optional
             Number of times to iterate.
-        weights_method : function, optional
+        weights_method : callable, optional
             A function with args and returns as follows:
 
             (weights, robust) =
@@ -1989,17 +1986,18 @@ class DiffusionKurtosisModel(ReconstModel):
         if num_iter < 2:  # otherwise, weights_method will not be utilized
             raise ValueError("num_iter must be 2+")
 
+        w, robust = True, None  # w = True ensures WLS (not OLS)
+        tmp, extra, leverages = None, None, None  # initialize, for clarity
+
         TDX = num_iter
         for rdx in range(1, TDX + 1):
 
-            if rdx == 1:
-                w, robust = True, None  # w = True ensures WLS (not OLS)
-            else:
+            if rdx > 1:  #  after first iteration, update weights
                 # if using mask, define full-sized arrays for w and robust
                 if rdx == 2 and mask is not None:
                     cond = (mask == 1)
                     w = np.ones_like(data_thres, dtype=float)
-                    robust = np.zeros_like(data_thres)
+                    robust = np.zeros_like(data_thres, dtype=bool)
                     robust[cond] = 1
 
                 # make prediction of the signal
