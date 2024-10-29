@@ -11,15 +11,41 @@ cimport numpy as cnp
 from dipy.direction.pmf cimport PmfGen
 from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
                                     where_to_insert, random)
-from dipy.tracking.fast_tracking cimport prepare_pmf, TrackerParameters
+from dipy.tracking.fast_tracking cimport prepare_pmf
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus, 
+                                               SUCCESS, FAIL)
 from libc.stdlib cimport malloc, free
 
 
-cdef int probabilistic_tracker(double* point,
-                               double* direction,
-                               TrackerParameters params,
-                               double* stream_data,
-                               PmfGen pmf_gen) noexcept nogil:
+cdef TrackerStatus probabilistic_tracker(double* point,
+                                         double* direction,
+                                         TrackerParameters params,
+                                         double* stream_data,
+                                         PmfGen pmf_gen) noexcept nogil:
+    """
+    Propagates the position by step_size amount. The propagation use randomly samples 
+    direction of a sphere based on probability mass function (pmf).
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position.
+    direction : double[3]
+        Previous tracking direction.
+    params : TrackerParameters
+        Parallel Transport Tractography (PTT) parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+
+    Returns
+    -------
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
+    """
+
     cdef:
         cnp.npy_intp i, idx
         double* newdir
@@ -28,7 +54,7 @@ cdef int probabilistic_tracker(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     if norm(direction) == 0:
-        return 1
+        return FAIL
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
@@ -47,7 +73,7 @@ cdef int probabilistic_tracker(double* point,
     last_cdf = pmf[len_pmf - 1]
     if last_cdf == 0:
         free(pmf)
-        return 1
+        return FAIL
 
     idx = where_to_insert(pmf, random() * last_cdf, len_pmf)
     newdir = &pmf_gen.vertices[idx][0]
@@ -62,5 +88,5 @@ cdef int probabilistic_tracker(double* point,
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
     free(pmf)
-    return 0
+    return SUCCESS
     
