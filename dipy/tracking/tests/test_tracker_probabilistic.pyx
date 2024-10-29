@@ -11,7 +11,7 @@ from dipy.reconst.shm import (
     descoteaux07_legacy_msg,
 )
 from dipy.tracking.tracker_probabilistic cimport probabilistic_tracker
-from dipy.tracking.tracker_parameters import generate_tracking_parameters
+from dipy.tracking.tracker_parameters import generate_tracking_parameters, FAIL
 from dipy.tracking.tests.test_fast_tracking import get_fast_tracking_performances
 
 
@@ -54,20 +54,20 @@ def test_tracker_probabilistic():
         direction = unit_octahedron.vertices[0].copy()
 
         # Test using SH pmf
-        state = probabilistic_tracker(&point[0],
-                                      &direction[0],
-                                      params,
-                                      &stream_data[0],
-                                      sh_pmf_gen)
-        npt.assert_equal(state, 1)
+        status = probabilistic_tracker(&point[0],
+                                       &direction[0],
+                                       params,
+                                       &stream_data[0],
+                                       sh_pmf_gen)
+        npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
-        state = probabilistic_tracker(&point[0],
-                                      &direction[0],
-                                      params,
-                                      &stream_data[0],
-                                      sf_pmf_gen)
-        npt.assert_equal(state, 1)
+        status = probabilistic_tracker(&point[0],
+                                       &direction[0],
+                                       params,
+                                       &stream_data[0],
+                                       sf_pmf_gen)
+        npt.assert_equal(status, FAIL)
 
 
 def test_probabilistic_performances():

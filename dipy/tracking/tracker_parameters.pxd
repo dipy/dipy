@@ -1,10 +1,13 @@
 from dipy.direction.pmf cimport PmfGen
+cpdef enum TrackerStatus:
+    SUCCESS = 1
+    FAIL = -1
 
-ctypedef int (*func_ptr)(double* point,
-                         double* direction,
-                         TrackerParameters params,
-                         double* stream_data,
-                         PmfGen pmf_gen) noexcept nogil
+ctypedef TrackerStatus (*func_ptr)(double* point,
+                                   double* direction,
+                                   TrackerParameters params,
+                                   double* stream_data,
+                                   PmfGen pmf_gen) noexcept nogil
 
 cdef class ParallelTransportTrackerParameters:
     cdef public double angular_separation

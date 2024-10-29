@@ -23,7 +23,10 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                INVALIDPOINT,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
-from dipy.tracking.tracker_parameters cimport TrackerParameters, func_ptr
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, 
+                                               func_ptr, 
+                                               SUCCESS, 
+                                               FAIL)
 
 from nibabel.streamlines import ArraySequence as Streamlines
 
@@ -36,6 +39,7 @@ from posix.time cimport clock_gettime, timespec, CLOCK_REALTIME
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
+
 
 def generate_tractogram(double[:,::1] seed_positions,
                         double[:,::1] seed_directions,
@@ -129,12 +133,12 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
 
 
 cdef StreamlineStatus generate_local_streamline(double* seed,
-                                   double* direction,
-                                   double* stream,
-                                   int* stream_idx,
-                                   StoppingCriterion sc,
-                                   TrackerParameters params,
-                                   PmfGen pmf_gen) noexcept nogil:
+                                                double* direction,
+                                                double* stream,
+                                                int* stream_idx,
+                                                StoppingCriterion sc,
+                                                TrackerParameters params,
+                                                PmfGen pmf_gen) noexcept nogil:
     cdef:
         cnp.npy_intp i, j
         cnp.npy_uint32 s_random_seed
@@ -171,7 +175,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen) == FAIL:
             break
         # update position
         for j in range(3):
@@ -204,7 +208,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     status_backward = TRACKPOINT
     for i in range(1, params.max_len):
-        if <func_ptr>params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen):
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen) == FAIL:
             break
         # update position
         for j in range(3):

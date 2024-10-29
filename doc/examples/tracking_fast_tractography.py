@@ -32,9 +32,9 @@ from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.utils import (
-    connectivity_matrix, 
+    connectivity_matrix,
     random_seeds_from_mask,
-    seeds_directions_pairs
+    seeds_directions_pairs,
 )
 from dipy.viz import actor, colormap, has_fury, window
 
@@ -222,7 +222,7 @@ ptt_params = generate_tracking_parameters(
     step_size=0.2,
     voxel_size=voxel_size,
     max_angle=15,
-    probe_quality=4
+    probe_quality=4,
 )
 
 # Prepare the streamline generator
