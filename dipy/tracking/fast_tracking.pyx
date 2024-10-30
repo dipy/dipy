@@ -47,8 +47,7 @@ def generate_tractogram(double[:,::1] seed_positions,
                         TrackerParameters params,
                         PmfGen pmf_gen,
                         int nbr_threads=0,
-                        float buffer_frac=1.0,
-                        return_all=True):
+                        float buffer_frac=1.0):
     """
     return_all : bool, optional
         If true, return all generated streamlines, otherwise only
@@ -83,12 +82,12 @@ def generate_tractogram(double[:,::1] seed_positions,
         streamlines = []
         try:
             for i in range(_len):
-                if (length_arr[i] > 1 and status_arr[i] == VALIDSTREAMLIME) or return_all:
+                if status_arr[i] == VALIDSTREAMLIME or params.return_all:
                     s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                     streamlines.append(s.copy().reshape((-1,3)))
                     if streamlines_arr[i] == NULL:
                         continue
-                    free(streamlines_arr[i])
+                free(streamlines_arr[i])
         finally:
             free(streamlines_arr)
             free(length_arr)
@@ -225,7 +224,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     # check for valid streamline ending status
     if ((status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
-        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)):
+        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
+        and stream_idx[1] - stream_idx[0] + 1 >= params.min_len
+        and stream_idx[1] - stream_idx[0] + 1 <= params.max_len):
         return VALIDSTREAMLIME
     return INVALIDSTREAMLIME
 
