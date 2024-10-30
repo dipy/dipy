@@ -1955,7 +1955,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
     def iterative_fit(self, data_thres, *, mask=None, num_iter=4,
                       weights_method=weights_method_wls_m_est):
-        """ Iteratively Reweighted fitting for the DKI model.
+        """Iteratively Reweighted fitting for the DKI model.
 
         Parameters
         ----------
