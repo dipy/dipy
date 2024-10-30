@@ -197,3 +197,39 @@ def test_phantom(rng):
     dwi_den = p2s.patch2self(dwi, bvals=bvals, model="ols", version=1)
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
+
+def test_validate_patch_radius_and_version():
+    
+    data = np.random.rand(5, 5, 5, 10)
+    bvals = np.zeros(10) 
+
+    test_cases = [
+        {"patch_radius": 1, "version": 1, "tmp_dir": None, "expect_fail": False},
+        {"patch_radius": (1, 1, 1), "version": 1, "tmp_dir": None, "expect_fail": False},
+        {"patch_radius": (0, 0, 0), "version": 1, "tmp_dir": None, "expect_fail": False},
+        {"patch_radius": (0, 0, 0), "version": 3, "tmp_dir": None, "expect_fail": False},
+        {"patch_radius": 1, "version": 3, "tmp_dir": None, "expect_fail": True}, 
+        {"patch_radius": (1, 1, 1), "version": 3, "tmp_dir": None, "expect_fail": True},  
+        {"patch_radius": (0, 0, 0), "version": 3, "tmp_dir": "/nonexistent_dir", "expect_fail": True},  
+        {"patch_radius": 1, "version": 1, "tmp_dir": "/some_temp_dir", "expect_fail": True},  
+    ]
+
+    for case in test_cases:
+        patch_radius = case["patch_radius"]
+        version = case["version"]
+        tmp_dir = case["tmp_dir"]
+        expect_fail = case["expect_fail"]
+
+        if expect_fail:
+            # Expecting a ValueError for this case
+            with pytest.raises(ValueError):
+                p2s.patch2self(data, bvals, patch_radius=patch_radius, version=version, tmp_dir=tmp_dir)
+        else:
+            # Expecting success
+            try:
+                result = p2s.patch2self(data, bvals, patch_radius=patch_radius, version=version, tmp_dir=tmp_dir)
+                assert result.shape == data.shape, (
+                    f"Shape mismatch with patch_radius={patch_radius}, version={version}, tmp_dir={tmp_dir}"
+                )
+            except ValueError:
+                pytest.fail(f"Unexpected ValueError with patch_radius={patch_radius}, version={version}, tmp_dir={tmp_dir}")
