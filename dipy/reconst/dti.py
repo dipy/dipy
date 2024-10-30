@@ -1659,7 +1659,7 @@ class _NllsHelper:
 
         Notes
         -----
-        This Jacobian correcly accounts for weights on the squared residuals
+        This Jacobian correctly accounts for weights on the squared residuals
         if provided.
 
         References
@@ -1832,7 +1832,7 @@ def nlls_fit_tensor(
 
         try:
             # Do the optimization in this voxel:
-            this_param, status = opt.leastsq(nlls.err_func, start_params,
+            this_param, status = opt.leastsq(err_func, start_params,
                                              args=(design_matrix,
                                                    flat_data[vox],
                                                    weights_vox),
@@ -1903,10 +1903,11 @@ def restore_fit_tensor(
     fail_is_nan=False
 ):
     """
-    Use the RESTORE algorithm :footcite:p:`Chang2005` to calculate a robust tensor fit.
-    Note that :footcite:p:`Chang2005` does not define Geman–McClure M-estimator weights as
-    claimed (instead, Cauchy M-estimator weights are defined), but this
-    function does define correct Geman–McClure M-estimator weights.
+    Use the RESTORE algorithm :footcite:p:`Chang2005` to calculate a robust
+    tensor fit.  Note that :footcite:p:`Chang2005` does not define
+    Geman–McClure M-estimator weights as claimed (instead, Cauchy M-estimator
+    weights are defined), but this function does define correct Geman–McClure
+    M-estimator weights.
 
     Parameters
     ----------
@@ -1996,7 +1997,7 @@ def restore_fit_tensor(
         try:
 
             # Do unweighted nlls in this voxel:
-            this_param, status = opt.leastsq(nlls.err_func, start_params,
+            this_param, status = opt.leastsq(err_func, start_params,
                                              args=(design_matrix,
                                                    flat_data[vox]),
                                              Dfun=jac_func)
@@ -2033,7 +2034,7 @@ def restore_fit_tensor(
 
                     # Do nlls with GMM-weighting:
                     this_param, status = opt.leastsq(
-                        nlls.err_func, start_params,
+                        err_func, start_params,
                         args=(design_matrix, flat_data[vox], gmm),
                         Dfun=jac_func)
 
@@ -2063,7 +2064,7 @@ def restore_fit_tensor(
                         clean_design, clean_data, return_lower_triangular=True
                     )
 
-                    this_param, status = opt.leastsq(nlls.err_func,
+                    this_param, status = opt.leastsq(err_func,
                                                      new_start,
                                                      args=(clean_design,
                                                            clean_data),
@@ -2172,15 +2173,12 @@ def iterative_fit_tensor(design_matrix, data, *, jac=True,
     npa = p + 5
     dti = (npa == 12)
 
-    # loop over the methods
-    D = None  # for NLLS, initially set this to be None
+    w, robust = None, None  # w = None means wls_fit_tensor uses WLS weights
+    D, extra, leverages = None, None, None  # initialize, for clarity
     TDX = num_iter
     for rdx in range(1, TDX + 1):
 
-        if rdx == 1:
-            w, robust = None, None
-            # NOTE: OK that w = None here, wls_fit_tensor will use WLS weights
-        else:
+        if rdx > 1:
             log_pred_sig = np.dot(design_matrix, D.T).T
             pred_sig = np.exp(log_pred_sig)
             w, robust = weights_method(data, pred_sig, design_matrix,
@@ -2190,14 +2188,15 @@ def iterative_fit_tensor(design_matrix, data, *, jac=True,
             D, extra = wls_fit_tensor(design_matrix, data, weights=w,
                                       return_lower_triangular=True,
                                       return_leverages=True)
-            leverages = extra["leverages"]
+            leverages = extra["leverages"]  # for WLS, update leverages
+
         if fit_type == "NLLS":
             D, extra = nlls_fit_tensor(design_matrix, data, weights=w,
                                        return_lower_triangular=True,
                                        return_leverages=(rdx == 1),
                                        jac=jac,
                                        init_params=D)
-            if rdx == 1:
+            if rdx == 1:  # for NLLS, leverages from OLS, so they never change
                 leverages = extra["leverages"]
 
     # Convert diffusion tensor parameters to the evals and the evecs:
@@ -2226,7 +2225,7 @@ def robust_fit_tensor_wls(design_matrix, data, *,
                           return_S0_hat=False,
                           num_iter=4):
     """Iteratively Reweighted fitting for WLS for the DTI/DKI model.
-  
+
     Parameters
     ----------
 
@@ -2259,7 +2258,7 @@ def robust_fit_tensor_nlls(design_matrix, data, *,
                            return_S0_hat=False,
                            num_iter=4):
     """Iteratively Reweighted fitting for NLLS for the DTI/DKI model.
-  
+
     Parameters
     ----------
 

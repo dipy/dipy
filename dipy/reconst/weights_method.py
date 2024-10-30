@@ -41,7 +41,7 @@ def simple_cutoff(residuals, log_residuals, pred_sig,
 def two_eyes_cutoff(residuals, log_residuals, pred_sig,
                     design_matrix, leverages, C, cutoff):
     """Two-eyes approach to define outliers, see :footcite:p:`Collier2015`.
-    
+
     Parameters
     ----------
     residuals : ndarray
