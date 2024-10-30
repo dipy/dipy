@@ -61,8 +61,7 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
                                       sc,
                                       params,
                                       pmf_gen,
-                                      nbr_threads=nbr_threads,
-                                      return_all=True)
+                                      nbr_threads=nbr_threads)
     return streamlines
 
 
@@ -205,12 +204,7 @@ def test_return_all():
     """This tests that the number of streamlines equals the number of seeds
     when return_all=True.
     """
-    params = generate_tracking_parameters("det",
-                                          max_len=500,
-                                          step_size=0.5,
-                                          voxel_size=np.ones(3),
-                                          max_angle=20,
-                                          random_seed=0)
+
 
     fnames = get_fnames(name="disco1")
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
@@ -232,21 +226,80 @@ def test_return_all():
     directions = np.array([v/np.linalg.norm(v) for v in directions])    
 
     # test return_all=True
+    params = generate_tracking_parameters("det",
+                                          max_len=500,
+                                          min_len=10,
+                                          step_size=0.5,
+                                          voxel_size=np.ones(3),
+                                          max_angle=20,
+                                          random_seed=0,
+                                          return_all=True)
     stream_gen = generate_tractogram(seeds,
                                      directions,
                                      sc,
                                      params,
-                                     pmf_gen, 
-                                     return_all=True)
+                                     pmf_gen)
     streamlines = Streamlines(stream_gen)
     npt.assert_equal(len(streamlines), len(seeds))
 
     # test return_all=False
+    params = generate_tracking_parameters("det",
+                                          max_len=500,
+                                          min_len=10,
+                                          step_size=0.5,
+                                          voxel_size=np.ones(3),
+                                          max_angle=20,
+                                          random_seed=0,
+                                          return_all=False)
     stream_gen = generate_tractogram(seeds,
                                      directions,
                                      sc,
                                      params,
-                                     pmf_gen, 
-                                     return_all=False)
+                                     pmf_gen)
     streamlines = Streamlines(stream_gen)
     npt.assert_array_less(len(streamlines), len(seeds))
+
+
+def test_max_min_length():
+    """This tests that the returned streamlines respect the length criterion.
+    """
+    fnames = get_fnames(name="disco1")
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+    sh = nib.load(fnames[20]).get_fdata()    
+    fODFs = sh_to_sf(
+        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        )
+    fODFs[fODFs<0] = 0
+    pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
+
+    # seeds position and initial directions
+    mask = nib.load(fnames[25]).get_fdata()
+    sc = BinaryStoppingCriterion(mask)
+    affine = nib.load(fnames[25]).affine
+    seed_mask = np.ones(mask.shape)
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=1000, 
+                                   seed_count_per_voxel=False)
+    directions = np.random.random(seeds.shape)
+    directions = np.array([v/np.linalg.norm(v) for v in directions])    
+
+    min_len=10
+    max_len=100
+
+    params = generate_tracking_parameters("det",
+                                          max_len=max_len,
+                                          min_len=min_len,
+                                          step_size=0.5,
+                                          voxel_size=np.ones(3),
+                                          max_angle=20,
+                                          random_seed=0,
+                                          return_all=False)
+    stream_gen = generate_tractogram(seeds,
+                                     directions,
+                                     sc,
+                                     params,
+                                     pmf_gen)
+    streamlines = Streamlines(stream_gen)
+    errors = np.array([len(s) < min_len and len(s) > max_len for s in streamlines])
+
+    npt.assert_(np.sum(errors) == 0)
+

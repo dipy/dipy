@@ -1,4 +1,5 @@
 from dipy.direction.pmf cimport PmfGen
+
 cpdef enum TrackerStatus:
     SUCCESS = 1
     FAIL = -1
@@ -32,11 +33,13 @@ cdef class TrackerParameters:
     cdef public double max_angle
     cdef public double max_curvature
     cdef public int max_len
+    cdef public int min_len
     cdef public int random_seed
     cdef public double step_size
     cdef public double average_voxel_size
     cdef public double[3] voxel_size
     cdef public double[3] inv_voxel_size
+    cdef public bint return_all
 
     cdef public ShTrackerParameters sh
     cdef public ParallelTransportTrackerParameters ptt
