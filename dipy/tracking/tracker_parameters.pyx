@@ -13,33 +13,41 @@ cimport numpy as cnp
 
 
 def generate_tracking_parameters(algo_name, *,
-    int max_len=500, double step_size=0.5, double[:] voxel_size,
-    double max_angle=30, double pmf_threshold=0.1, double probe_length=0.5,
-    double probe_radius=0, int probe_quality=3, int probe_count=1,
-    double data_support_exponent=1, int random_seed=0):
+    int max_len=500, int min_len=1, double step_size=0.5, double[:] voxel_size,
+    double max_angle=30, return_all=True, double pmf_threshold=0.1, 
+    double probe_length=0.5, double probe_radius=0, int probe_quality=3, 
+    int probe_count=1, double data_support_exponent=1, int random_seed=0):
 
     cdef TrackerParameters params
 
     algo_name = algo_name.lower()
 
     if algo_name in ['deterministic', 'det']:
-        params = TrackerParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len, 
+                                   min_len=min_len, 
+                                   step_size=step_size,
                                    voxel_size=voxel_size,
                                    pmf_threshold=pmf_threshold,
                                    max_angle=max_angle,
-                                   random_seed=random_seed)
+                                   random_seed=random_seed,
+                                   return_all=return_all)
         params.set_tracker_c(deterministic_tracker)
         return params
     elif algo_name in ['probabilistic', 'prob']:
-        params = TrackerParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len,                                    
+                                   min_len=min_len,
+                                   step_size=step_size,
                                    voxel_size=voxel_size,
                                    pmf_threshold=pmf_threshold,
                                    max_angle=max_angle,
-                                   random_seed=random_seed)
+                                   random_seed=random_seed,
+                                   return_all=return_all)
         params.set_tracker_c(probabilistic_tracker)
         return params
     elif algo_name == 'ptt':
-        params = TrackerParameters(max_len=max_len, step_size=step_size,
+        params = TrackerParameters(max_len=max_len,
+                                   min_len=min_len,
+                                   step_size=step_size,
                                    voxel_size=voxel_size,
                                    pmf_threshold=pmf_threshold,
                                    max_angle=max_angle,
@@ -48,26 +56,25 @@ def generate_tracking_parameters(algo_name, *,
                                    probe_quality=probe_quality,
                                    probe_count=probe_count,
                                    data_support_exponent=data_support_exponent,
-                                   random_seed=random_seed)
+                                   random_seed=random_seed,
+                                   return_all=return_all)
         params.set_tracker_c(parallel_transport_tracker)
         return params
-    #elif algo_name == 'eudx':
-    #    return TrackerParameters(tracker=euDX_tracker,
-    #                              max_len=max_len, step_size=step_size,
-    #                              voxel_size=voxel_size)
     else:
         raise ValueError("Invalid algorithm name")
 
 
 cdef class TrackerParameters:
 
-    def __init__(self, max_len, step_size, voxel_size,
-                 max_angle, pmf_threshold=None, probe_length=None,
+    def __init__(self, max_len, min_len, step_size, voxel_size,
+                 max_angle, return_all, pmf_threshold=None, probe_length=None,
                  probe_radius=None, probe_quality=None, probe_count=None,
                  data_support_exponent=None, random_seed=None):
         cdef cnp.npy_intp i
 
         self.max_len = max_len
+        self.min_len = min_len
+        self.return_all = return_all
         self.random_seed = random_seed
         self.step_size = step_size
         self.average_voxel_size = 0
