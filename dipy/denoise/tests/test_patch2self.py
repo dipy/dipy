@@ -31,7 +31,12 @@ def test_patch2self_random_noise(rng):
     for version in [1, 3]:
         extra_args = {"patch_radius": (0, 0, 0)} if version == 1 else {}
         S0den_shift = p2s.patch2self(
-            S0, bvals, model="ols", shift_intensity=True, version=version, **extra_args
+            S0,
+            bvals,
+            model="ols",
+            shift_intensity=True,
+            version=version,
+            **extra_args,
         )
 
         assert_greater_equal(S0den_shift.min(), S0.min())
@@ -149,7 +154,11 @@ def rfiw_phantom(gtab, snr=None, rng=None):
     angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
     dwi = np.zeros(slice_ind.shape + (gtab.bvals.size,))
     for i in range(10):
-        fractions = [f1[i] * fia * 100, f1[i] * (1 - fia) * 100, (1 - f1[i]) * 100]
+        fractions = [
+            f1[i] * fia * 100,
+            f1[i] * (1 - fia) * 100,
+            (1 - f1[i]) * 100,
+        ]
         sig, direction = multi_tensor(
             gtab, mevals, S0=S0[i], angles=angles, fractions=fractions, snr=None
         )
@@ -198,21 +207,56 @@ def test_phantom(rng):
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
 
+
 @needs_sklearn
 def test_validate_patch_radius_and_version():
-    
     data = np.random.rand(5, 5, 5, 10)
-    bvals = np.zeros(10) 
+    bvals = np.zeros(10)
 
     test_cases = [
-        {"patch_radius": 1, "version": 1, "tmp_dir": None, "expect_fail": False},
-        {"patch_radius": (1, 1, 1), "version": 1, "tmp_dir": None, "expect_fail": False},
-        {"patch_radius": (0, 0, 0), "version": 1, "tmp_dir": None, "expect_fail": False},
-        {"patch_radius": (0, 0, 0), "version": 3, "tmp_dir": None, "expect_fail": False},
-        {"patch_radius": 1, "version": 3, "tmp_dir": None, "expect_fail": True}, 
-        {"patch_radius": (1, 1, 1), "version": 3, "tmp_dir": None, "expect_fail": True},  
-        {"patch_radius": (0, 0, 0), "version": 3, "tmp_dir": "/nonexistent_dir", "expect_fail": True},  
-        {"patch_radius": 1, "version": 1, "tmp_dir": "/some_temp_dir", "expect_fail": True},  
+        {
+            "patch_radius": 1,
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (1, 1, 1),
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 3,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {"patch_radius": 1, "version": 3, "tmp_dir": None, "expect_fail": True},
+        {
+            "patch_radius": (1, 1, 1),
+            "version": 3,
+            "tmp_dir": None,
+            "expect_fail": True,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 3,
+            "tmp_dir": "/nonexistent_dir",
+            "expect_fail": True,
+        },
+        {
+            "patch_radius": 1,
+            "version": 1,
+            "tmp_dir": "/some_temp_dir",
+            "expect_fail": True,
+        },
     ]
 
     for case in test_cases:
@@ -224,13 +268,29 @@ def test_validate_patch_radius_and_version():
         if expect_fail:
             # Expecting a ValueError for this case
             with pytest.raises(ValueError):
-                p2s.patch2self(data, bvals, patch_radius=patch_radius, version=version, tmp_dir=tmp_dir)
+                p2s.patch2self(
+                    data,
+                    bvals,
+                    patch_radius=patch_radius,
+                    version=version,
+                    tmp_dir=tmp_dir,
+                )
         else:
             # Expecting success
             try:
-                result = p2s.patch2self(data, bvals, patch_radius=patch_radius, version=version, tmp_dir=tmp_dir)
+                result = p2s.patch2self(
+                    data,
+                    bvals,
+                    patch_radius=patch_radius,
+                    version=version,
+                    tmp_dir=tmp_dir,
+                )
                 assert result.shape == data.shape, (
-                    f"Shape mismatch with patch_radius={patch_radius}, version={version}, tmp_dir={tmp_dir}"
+                    f"Shape mismatch with patch_radius={patch_radius}, "
+                    f"version={version}, tmp_dir={tmp_dir}"
                 )
             except ValueError:
-                pytest.fail(f"Unexpected ValueError with patch_radius={patch_radius}, version={version}, tmp_dir={tmp_dir}")
+                pytest.fail(
+                    f"Unexpected ValueError with patch_radius={patch_radius}, "
+                    f"version={version}, tmp_dir={tmp_dir}"
+                )
