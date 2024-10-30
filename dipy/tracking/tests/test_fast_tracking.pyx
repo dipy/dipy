@@ -188,11 +188,11 @@ def test_tracking_step_size():
 
     for step_size in [0.02, 0.5, 1]:
         params = generate_tracking_parameters("det",
-                                            max_len=500,
-                                            step_size=step_size,
-                                            voxel_size=np.ones(3),
-                                            max_angle=20,
-                                            random_seed=0)
+                                              max_len=500,
+                                              step_size=step_size,
+                                              voxel_size=np.ones(3),
+                                              max_angle=20,
+                                              random_seed=0)
 
         streamlines = generate_disco_streamlines(params, nbr_seeds=100)
         dists = get_points_distance(streamlines)
@@ -228,7 +228,7 @@ def test_return_all():
     # test return_all=True
     params = generate_tracking_parameters("det",
                                           max_len=500,
-                                          min_len=10,
+                                          min_len=0,
                                           step_size=0.5,
                                           voxel_size=np.ones(3),
                                           max_angle=20,
@@ -303,3 +303,51 @@ def test_max_min_length():
 
     npt.assert_(np.sum(errors) == 0)
 
+
+def test_buffer_frac():
+    """This tests that the buffer fraction for generate tractogram plays well.
+    """
+    fnames = get_fnames(name="disco1")
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+    sh = nib.load(fnames[20]).get_fdata()    
+    fODFs = sh_to_sf(
+        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        )
+    fODFs[fODFs<0] = 0
+    pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
+
+    # seeds position and initial directions
+    mask = nib.load(fnames[25]).get_fdata()
+    sc = BinaryStoppingCriterion(mask)
+    affine = nib.load(fnames[25]).affine
+    seed_mask = np.ones(mask.shape)
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=500, 
+                                   seed_count_per_voxel=False)
+    directions = np.random.random(seeds.shape)
+    directions = np.array([v/np.linalg.norm(v) for v in directions])    
+
+    params = generate_tracking_parameters("prob",
+                                          max_len=500,
+                                          min_len=0,
+                                          step_size=0.5,
+                                          voxel_size=np.ones(3),
+                                          max_angle=20,
+                                          random_seed=0,
+                                          return_all=True)
+        
+    streams = Streamlines(generate_tractogram(seeds,
+                                              directions,
+                                              sc,
+                                              params,
+                                              pmf_gen,
+                                              buffer_frac=1.0))
+
+    # test the results are identical with various buffer fractions
+    for frac in [0.01,0.1,0.5]:
+        frac_streams = Streamlines(generate_tractogram(seeds,
+                                                       directions,
+                                                       sc,
+                                                       params,
+                                                       pmf_gen,
+                                                       buffer_frac=frac))
+        npt.assert_equal(len(frac_streams), len(streams))
