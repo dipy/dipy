@@ -57,44 +57,50 @@ def generate_tractogram(double[:,::1] seed_positions,
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
         cnp.npy_intp _plen = int(ceil(_len * buffer_frac))
-        cnp.npy_intp i
-        double** streamlines_arr = <double**> malloc(_len * sizeof(double*))
-        int* length_arr = <int*> malloc(_len * sizeof(int))
-        StreamlineStatus* status_arr = <StreamlineStatus*> malloc(_len * sizeof(int))
-
-    if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
-        raise MemoryError("Memory allocation failed")
+        cnp.npy_intp i, seed_start, seed_end
+        double** streamlines_arr
+        int* length_arr
+        StreamlineStatus* status_arr
 
     # srand/rand don't play well with multi-threading
     if params.random_seed > 0 and not nbr_threads == 1:
         raise ValueError("random_seed > 0 do not work with nbr_threads != 1.")
 
+    if buffer_frac <=0 or buffer_frac > 1:
+        raise ValueError("buffer_frac must > 0 and <= 1.")
+
     seed_start = 0
-    seed_end = seed_start + _plen
+    seed_end = _plen
     while seed_start < _len:
+        streamlines_arr = <double**> malloc(_plen * sizeof(double*))
+        length_arr = <int*> malloc(_plen * sizeof(int))
+        status_arr = <StreamlineStatus*> malloc(_plen * sizeof(int))
+
+        if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
+            raise MemoryError("Memory allocation failed")
+
         generate_tractogram_c(seed_positions[seed_start:seed_end],
                               seed_directions[seed_start:seed_end],
-                              nbr_threads, sc, params,
-                              pmf_gen,
+                              nbr_threads, sc, params, pmf_gen,
                               streamlines_arr, length_arr, status_arr)
+        
+       
+        for i in range(seed_end - seed_start):
+            if ((status_arr[i] == VALIDSTREAMLIME or params.return_all)
+                and (length_arr[i] >= params.min_len 
+                     and length_arr[i] <= params.max_len)):
+                s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
+                yield s.copy().reshape((-1,3))
+            free(streamlines_arr[i])
+    
+        free(streamlines_arr)
+        free(length_arr)
+        free(status_arr)
+        
         seed_start += _plen
         seed_end += _plen
-        streamlines = []
-        try:
-            for i in range(_len):
-                if status_arr[i] == VALIDSTREAMLIME or params.return_all:
-                    s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                    streamlines.append(s.copy().reshape((-1,3)))
-                    if streamlines_arr[i] == NULL:
-                        continue
-                free(streamlines_arr[i])
-        finally:
-            free(streamlines_arr)
-            free(length_arr)
-            free(status_arr)
-
-        for s in streamlines:
-            yield s
+        if seed_end > _len:
+            seed_end = _len
 
 
 cdef void generate_tractogram_c(double[:,::1] seed_positions,
@@ -224,9 +230,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     # check for valid streamline ending status
     if ((status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
-        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
-        and stream_idx[1] - stream_idx[0] + 1 >= params.min_len
-        and stream_idx[1] - stream_idx[0] + 1 <= params.max_len):
+        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)):
         return VALIDSTREAMLIME
     return INVALIDSTREAMLIME
 
