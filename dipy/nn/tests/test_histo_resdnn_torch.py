@@ -8,14 +8,14 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.nn.histo_resdnn import HistoResDNN
+from dipy.nn.torch.histo_resdnn import HistoResDNN
 from dipy.reconst.shm import tournier07_legacy_msg
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
+@pytest.mark.skipif(not have_torch, reason="Requires Pytorch")
 def test_default_weights():
     input_arr = np.expand_dims(
         np.array(
@@ -129,7 +129,7 @@ def test_default_weights():
     assert_almost_equal(results_arr, target_arr)
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
+@pytest.mark.skipif(not have_torch, reason="Requires Pytorch")
 def test_predict_shape_and_masking():
     resdnn_model = HistoResDNN()
     resdnn_model.fetch_default_weights()
@@ -153,16 +153,18 @@ def test_predict_shape_and_masking():
     assert_equal(results_arr.shape[-1], 45)
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
+@pytest.mark.skipif(not have_torch, reason="Requires Pytorch")
 def test_wrong_sh_order_weights():
     resdnn_model = HistoResDNN(sh_order_max=6)
-    fetch_model_weights_path = get_fnames(name="histo_resdnn_tf_weights")
-    assert_raises(ValueError, resdnn_model.load_model_weights, fetch_model_weights_path)
+    fetch_model_weights_path = get_fnames(name="histo_resdnn_torch_weights")
+    assert_raises(
+        RuntimeError, resdnn_model.load_model_weights, fetch_model_weights_path
+    )
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
+@pytest.mark.skipif(not have_torch, reason="Requires Pytorch")
 def test_wrong_sh_order_input():
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames(name="histo_resdnn_tf_weights")
+    fetch_model_weights_path = get_fnames(name="histo_resdnn_torch_weights")
     resdnn_model.load_model_weights(fetch_model_weights_path)
     assert_raises(ValueError, resdnn_model._HistoResDNN__predict, np.zeros((1, 28)))

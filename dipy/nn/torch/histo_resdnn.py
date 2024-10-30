@@ -12,26 +12,50 @@ from dipy.core.sphere import HemiSphere
 from dipy.data import get_fnames, get_sphere
 from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
-if have_tf:
-    from tensorflow.keras.layers import Add, Dense, Input
-    from tensorflow.keras.models import Model
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+if have_torch:
+    from torch.nn import Linear, Module
 else:
-    logging.warning(
-        "This model requires Tensorflow.\
-                    Please install these packages using \
-                    pip. If using mac, please refer to this \
-                    link for installation. \
-                    https://github.com/apple/tensorflow_macos"
-    )
 
+    class Module:
+        pass
+
+    logging.warning(
+        "This model requires Pytorch.\
+                    Please install these packages using \
+                    pip."
+    )
 
 logging.basicConfig()
 logger = logging.getLogger("histo_resdnn")
+
+
+class DenseModel(Module):
+    def __init__(self, sh_size, num_hidden):
+        super(DenseModel, self).__init__()
+        self.fc1 = Linear(sh_size, 400)
+        self.fc2 = Linear(400, num_hidden)
+        self.fc3 = Linear(num_hidden, 200)
+        self.fc4 = Linear(200, num_hidden)
+        self.fc5 = Linear(num_hidden, 200)
+        self.fc6 = Linear(200, num_hidden)
+
+    def forward(self, x):
+        x1 = torch.relu(self.fc1(x))
+        x2 = torch.relu(self.fc2(x1))
+        x3 = torch.relu(self.fc3(x2))
+        x4 = self.fc4(x3)
+
+        # Adding x2 and x4
+        res_add = x2 + x4
+
+        x5 = torch.relu(self.fc5(res_add))
+        x6 = self.fc6(x5)
+
+        return x6
 
 
 class HistoResDNN:
@@ -50,8 +74,6 @@ class HistoResDNN:
     .. footbibliography::
     """
 
-    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-    @warning_for_keywords()
     @doctest_skip_parser
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
         r"""
@@ -59,9 +81,9 @@ class HistoResDNN:
         ('tournier07') like the proposed model in :footcite:p:`Nath2019`.
 
         To obtain the pre-trained model, use::
-        >>> resdnn_model = HistoResDNN() # skip if not have_tf
-        >>> fetch_model_weights_path = get_fnames(name='histo_resdnn_tf_weights') # skip if not have_tf
-        >>> resdnn_model.load_model_weights(fetch_model_weights_path) # skip if not have_tf
+        >>> resdnn_model = HistoResDNN() # skip if not have_torch
+        >>> fetch_model_weights_path = get_fnames(name='histo_resdnn_torch_weights') # skip if not have_torch
+        >>> resdnn_model.load_model_weights(fetch_model_weights_path) # skip if not have_torch
 
         This model is designed to take as input raw DWI signal on a sphere
         (ODF) represented as SH of order 8 in the tournier basis and predict
@@ -85,8 +107,8 @@ class HistoResDNN:
         .. footbibliography::
         """  # noqa: E501
 
-        if not have_tf:
-            raise tf()
+        if not have_torch:
+            raise torch()
 
         self.sh_order_max = sh_order_max
         self.sh_size = len(sph_harm_ind_list(sh_order_max)[0])
@@ -104,42 +126,34 @@ class HistoResDNN:
 
         # ResDNN Network Flow
         num_hidden = self.sh_size
-        inputs = Input(shape=(self.sh_size,))
-        x1 = Dense(400, activation="relu")(inputs)
-        x2 = Dense(num_hidden, activation="relu")(x1)
-        x3 = Dense(200, activation="relu")(x2)
-        x4 = Dense(num_hidden, activation="linear")(x3)
-        res_add = Add()([x2, x4])
-        x5 = Dense(200, activation="relu")(res_add)
-        x6 = Dense(num_hidden)(x5)
-
-        self.model = Model(inputs=inputs, outputs=x6)
+        self.model = DenseModel(self.sh_size, num_hidden).type(torch.float64)
 
     def fetch_default_weights(self):
-        r"""
+        """
         Load the model pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
-        fetch_model_weights_path = get_fnames(name="histo_resdnn_tf_weights")
+        fetch_model_weights_path = get_fnames(name="histo_resdnn_torch_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        r"""
+        """
         Load the custom pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
 
         The weights for a sh_order of 8 can be obtained via the function:
-            get_fnames(name='histo_resdnn_tf_weights').
+            get_fnames('histo_resdnn_torch_weights').
 
         Parameters
         ----------
         weights_path : str
-            Path to the file containing the weights (hdf5, saved by tensorflow)
+            Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_weights(weights_path)
+            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.eval()
         except ValueError as e:
             raise ValueError(
                 "Expected input for the provided model weights do not match the "
@@ -169,9 +183,8 @@ class HistoResDNN:
                 f"declared model ({self.sh_size})"
             )
 
-        return self.model.predict(x_test)
+        return self.model(torch.from_numpy(x_test)).detach().numpy()
 
-    @warning_for_keywords()
     def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
