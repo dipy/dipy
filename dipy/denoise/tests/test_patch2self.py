@@ -198,6 +198,7 @@ def test_phantom(rng):
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
 
+@needs_sklearn
 def test_validate_patch_radius_and_version():
     
     data = np.random.rand(5, 5, 5, 10)
