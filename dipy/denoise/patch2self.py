@@ -419,7 +419,6 @@ def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
         files are saved in the system's default temporary directory.
 
     """
-    print(version)
     if out_dtype is None:
         out_dtype = data.dtype
 
@@ -434,13 +433,16 @@ def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
             "Temporary directory is not supported for Patch2Self version 1. \
                 Please set tmp_dir to None."
         )
-    if (patch_radius != (0, 0, 0) or patch_radius != 0) and version == 3:
+    if patch_radius!=(0,0,0) and version == 3:
         raise ValueError(
             "Patch radius is not supported for Patch2Self version 3. \
-                Please set patch_radius to (0,0,0) or 0"
+                Please do not set patch_radius."
         )
     
-    if (isinstance(patch_radius, list) and len(patch_radius) == 1) or isinstance(patch_radius, int):
+    if (isinstance(patch_radius, list) and len(patch_radius) == 1):
+        patch_radius = (patch_radius[0], patch_radius[0], patch_radius[0])
+    
+    if isinstance(patch_radius, int):
         patch_radius = (patch_radius, patch_radius, patch_radius)
 
     if version == 3 and tmp_dir is not None and not os.path.exists(tmp_dir):
