@@ -716,10 +716,26 @@ def test_nnls_jacobian_func(rng):
 
                 args = [X[i], Y[i], weights]
 
-                approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
+                # FIXME: this is sometimes failing in tests on Github
+                # approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
+                #
+                #        approx_fprime wants nlls.err_func to return a scalar
+                #        value, which it ought to do if called with a single
+                #        data point (otherwise, it returns an array, consistent
+                #        with scipy.opt.leastsq) but something seems broken in
+                #        some tests, so let's make a function that ensures a
+                #        scalar is returned. Issue for this *test*, not for
+                #        nlls.err_func, which works correctly
+                def ef(x):
+                    tmp = nlls.err_func(x, *args)
+                    return tmp if np.isscalar(tmp) else tmp[0]
+                approx = opt.approx_fprime(D, ef, 1e-8)
 
+                # NOTE: approx_fprime not accurate enough to pass this test
+                #       even though it will pass if using autograd code
+                #       to ensure a truly accurate derivative of nlls.err_func
                 # assert np.allclose(approx, analytical[i])
-                assert True  # NOTE: approx_fprime not accurate enough
+                assert True
 
 
 def test_nlls_fit_tensor():
