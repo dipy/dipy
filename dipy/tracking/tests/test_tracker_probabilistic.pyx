@@ -77,6 +77,6 @@ def test_probabilistic_performances():
                                           step_size=0.2,
                                           voxel_size=np.ones(3),
                                           max_angle=20)
-    r = get_fast_tracking_performances(params, nbr_seeds=5000)
+    r = get_fast_tracking_performances(params, nbr_seeds=10000)
     npt.assert_(r > 0.85, msg="Probabilistic tracker has a low performance "
                               "score: " + str(r))
