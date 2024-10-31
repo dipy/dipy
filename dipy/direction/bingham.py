@@ -15,7 +15,7 @@ from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import unit_icosahedron
 from dipy.direction import peak_directions
-from dipy.reconst.shm import sh_to_sf
+from dipy.reconst.shm import calculate_max_order, sh_to_sf
 
 
 def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
@@ -180,8 +180,8 @@ def _single_sf_to_bingham(
 def _single_bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     """
     Sample a Bingham function on the directions described by `vertices`.
-    The function assumes that `vertices` are already normalized and no
-    checks are performed to validate that this is the case.
+    The function assumes that `vertices` are unit length and no checks
+    are performed to validate that this is the case.
 
     Parameters
     ----------
@@ -715,7 +715,6 @@ def sf_to_bingham(
 def sh_to_bingham(
     sh,
     sphere,
-    sh_order_max,
     max_search_angle,
     *,
     mask=None,
@@ -735,8 +734,6 @@ def sh_to_bingham(
         SH coefficients representing a spherical function.
     sphere : `Sphere` class instance
         The Sphere providing the odf's discrete directions.
-    sh_order_max: int
-        Maximum order used for the SH reconstruction.
     max_search_angle: float.
         Maximum angle between a peak and its neighbour directions
         for fitting the Bingham distribution.
@@ -760,6 +757,7 @@ def sh_to_bingham(
         fitted to ODF lobes.
     """
     shape = sh.shape[0:-1]
+    sh_order_max = calculate_max_order(sh.shape[-1])
 
     if mask is None:
         mask = np.ones(shape)

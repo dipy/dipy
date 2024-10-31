@@ -219,5 +219,5 @@ def test_bingham_from_sh():
 
     bim_odf = sf_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16, legacy=False)
-    bim_sh = sh_to_bingham(sh, sphere, 16, legacy=False, npeaks=2, max_search_angle=45)
+    bim_sh = sh_to_bingham(sh, sphere, legacy=False, npeaks=2, max_search_angle=45)
     assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params, decimal=3)

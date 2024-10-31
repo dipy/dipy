@@ -168,7 +168,7 @@ if interactive:
 # the function `csd_model`:
 
 sh_coeff = csd_fit.shm_coeff
-BinghamMetrics = sh_to_bingham(sh_coeff, sphere, 8, max_search_angle)
+BinghamMetrics = sh_to_bingham(sh_coeff, sphere, max_search_angle)
 
 ###############################################################################
 # Step 3. Bingham Metrics
