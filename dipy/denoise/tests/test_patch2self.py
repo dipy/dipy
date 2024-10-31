@@ -28,42 +28,65 @@ def test_patch2self_random_noise(rng):
     bvals = np.repeat(30, 50)
 
     # shift = True
-    S0den_shift = p2s.patch2self(S0, bvals, model="ols", shift_intensity=True)
+    for version in [1, 3]:
+        extra_args = {"patch_radius": (0, 0, 0)} if version == 1 else {}
+        S0den_shift = p2s.patch2self(
+            S0,
+            bvals,
+            model="ols",
+            shift_intensity=True,
+            version=version,
+            **extra_args,
+        )
 
-    assert_greater_equal(S0den_shift.min(), S0.min())
-    assert_less_equal(np.round(S0den_shift.mean()), 30)
+        assert_greater_equal(S0den_shift.min(), S0.min())
+        assert_less_equal(np.round(S0den_shift.mean()), 30)
 
-    # clip = True
-    msg = "Both `clip_negative_vals` and `shift_intensity` .*"
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-        S0den_clip = p2s.patch2self(S0, bvals, model="ols", clip_negative_vals=True)
+        # clip = True
+        msg = "Both `clip_negative_vals` and `shift_intensity` .*"
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            S0den_clip = p2s.patch2self(
+                S0,
+                bvals,
+                model="ols",
+                clip_negative_vals=True,
+                version=version,
+                **extra_args,
+            )
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+        assert_greater(S0den_clip.min(), S0.min())
+        assert_equal(np.round(S0den_clip.mean()), 30)
 
-    # both clip and shift = True, and int patch_radius
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        # both clip and shift = True, and int patch_radius
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            S0den_clip = p2s.patch2self(
+                S0,
+                bvals,
+                model="ols",
+                clip_negative_vals=True,
+                shift_intensity=True,
+                version=version,
+                **extra_args,
+            )
+
+        assert_greater(S0den_clip.min(), S0.min())
+        assert_equal(np.round(S0den_clip.mean()), 30)
+
+        # both clip and shift = False
         S0den_clip = p2s.patch2self(
             S0,
             bvals,
-            patch_radius=0,
             model="ols",
-            clip_negative_vals=True,
-            shift_intensity=True,
+            clip_negative_vals=False,
+            shift_intensity=False,
+            version=version,
+            **extra_args,
         )
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
-
-    # both clip and shift = False
-    S0den_clip = p2s.patch2self(
-        S0, bvals, model="ols", clip_negative_vals=False, shift_intensity=False
-    )
-
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+        assert_greater(S0den_clip.min(), S0.min())
+        assert_equal(np.round(S0den_clip.mean()), 30)
 
 
 @needs_sklearn
@@ -76,10 +99,11 @@ def test_patch2self_boundary(rng):
     S0[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
 
     bvals = np.repeat(100, 20)
-
-    p2s.patch2self(S0, bvals)
-    assert_greater(S0[9, 9, 9, 9], 290)
-    assert_less(S0[10, 10, 10, 10], 110)
+    for version in [1, 3]:
+        extra_args = {"patch_radius": (0, 0, 0)} if version == 1 else {}
+        p2s.patch2self(S0, bvals, **extra_args)
+        assert_greater(S0[9, 9, 9, 9], 290)
+        assert_less(S0[10, 10, 10, 10], 110)
 
 
 def rfiw_phantom(gtab, snr=None, rng=None):
@@ -130,7 +154,11 @@ def rfiw_phantom(gtab, snr=None, rng=None):
     angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
     dwi = np.zeros(slice_ind.shape + (gtab.bvals.size,))
     for i in range(10):
-        fractions = [f1[i] * fia * 100, f1[i] * (1 - fia) * 100, (1 - f1[i]) * 100]
+        fractions = [
+            f1[i] * fia * 100,
+            f1[i] * (1 - fia) * 100,
+            (1 - f1[i]) * 100,
+        ]
         sig, direction = multi_tensor(
             gtab, mevals, S0=S0[i], angles=angles, fractions=fractions, snr=None
         )
@@ -164,10 +192,10 @@ def test_phantom(rng):
     gtab = gradient_table(bvals, bvecs=bvecs)
 
     dwi, sigma = rfiw_phantom(gtab, snr=10, rng=rng)
-    dwi_den1 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=1.0)
+    dwi_den1 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=1.0, version=1)
 
     assert_less(np.max(dwi_den1) / sigma, np.max(dwi) / sigma)
-    dwi_den2 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=0.7)
+    dwi_den2 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=0.7, version=1)
 
     assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
     assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
@@ -175,6 +203,94 @@ def test_phantom(rng):
     assert_raises(ValueError, p2s.patch2self, dwi, model="empty", bvals=bvals)
 
     # Try this with a sigma volume, instead of a scalar
-    dwi_den = p2s.patch2self(dwi, bvals=bvals, model="ols")
+    dwi_den = p2s.patch2self(dwi, bvals=bvals, model="ols", version=1)
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
+
+
+@needs_sklearn
+def test_validate_patch_radius_and_version():
+    data = np.random.rand(5, 5, 5, 10)
+    bvals = np.zeros(10)
+
+    test_cases = [
+        {
+            "patch_radius": 1,
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (1, 1, 1),
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 1,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 3,
+            "tmp_dir": None,
+            "expect_fail": False,
+        },
+        {"patch_radius": 1, "version": 3, "tmp_dir": None, "expect_fail": True},
+        {
+            "patch_radius": (1, 1, 1),
+            "version": 3,
+            "tmp_dir": None,
+            "expect_fail": True,
+        },
+        {
+            "patch_radius": (0, 0, 0),
+            "version": 3,
+            "tmp_dir": "/nonexistent_dir",
+            "expect_fail": True,
+        },
+        {
+            "patch_radius": 1,
+            "version": 1,
+            "tmp_dir": "/some_temp_dir",
+            "expect_fail": True,
+        },
+    ]
+
+    for case in test_cases:
+        patch_radius = case["patch_radius"]
+        version = case["version"]
+        tmp_dir = case["tmp_dir"]
+        expect_fail = case["expect_fail"]
+
+        if expect_fail:
+            # Expecting a ValueError for this case
+            with pytest.raises(ValueError):
+                p2s.patch2self(
+                    data,
+                    bvals,
+                    patch_radius=patch_radius,
+                    version=version,
+                    tmp_dir=tmp_dir,
+                )
+        else:
+            # Expecting success
+            try:
+                result = p2s.patch2self(
+                    data,
+                    bvals,
+                    patch_radius=patch_radius,
+                    version=version,
+                    tmp_dir=tmp_dir,
+                )
+                assert result.shape == data.shape, (
+                    f"Shape mismatch with patch_radius={patch_radius}, "
+                    f"version={version}, tmp_dir={tmp_dir}"
+                )
+            except ValueError:
+                pytest.fail(
+                    f"Unexpected ValueError with patch_radius={patch_radius}, "
+                    f"version={version}, tmp_dir={tmp_dir}"
+                )

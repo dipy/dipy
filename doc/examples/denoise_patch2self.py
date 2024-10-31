@@ -3,7 +3,7 @@
 Patch2Self: Self-Supervised Denoising via Statistical Independence
 ==================================================================
 
-Patch2Self :footcite:p:`Fadnavis2020` is  a self-supervised learning method for
+Patch2Self :footcite:p:`Fadnavis2020` and :footcite:p:`Fadnavis2024` is  a self-supervised learning method for
 denoising DWI data, which uses the entire volume to learn a full-rank locally
 linear denoiser for that volume. By taking advantage of the oversampled q-space
 of DWI data, Patch2Self can separate structure from noise without requiring an
@@ -152,6 +152,12 @@ fig1.savefig("denoised_patch2self.png")
 save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 
 ###############################################################################
+# You can also use Patch2Self version 1 to denoise the data by using version
+# argument. The default version is set to 3. To use version 1, you can call
+# Patch2Self as follows::
+#
+#    patch2self(data, bvals, version=1)
+#
 # Lastly, one can also use Patch2Self in batches if the number of gradient
 # directions is very high (>=200 volumes). For instance, if the data has 300
 # volumes, one can split the data into 2 batches, (150 directions each) and
@@ -173,4 +179,3 @@ save_nifti("denoised_patch2self.nii.gz", denoised_arr, affine)
 # ----------
 #
 # .. footbibliography::
-#
