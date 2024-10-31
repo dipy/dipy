@@ -154,7 +154,7 @@ class HistoResDNN:
         try:
             self.model.load_state_dict(torch.load(weights_path, weights_only=True))
             self.model.eval()
-        except ValueError as e:
+        except RuntimeError as e:
             raise ValueError(
                 "Expected input for the provided model weights do not match the "
                 f"declared model ({self.sh_size})"
