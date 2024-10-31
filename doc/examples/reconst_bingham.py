@@ -15,9 +15,9 @@ of 10 b0s and 150 non-b0s with a b-value of 2000s/mm2.
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import unit_icosahedron
 from dipy.data import get_fnames
-from dipy.direction.bingham import sf_to_bingham, sh_to_bingham
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.reconst.bingham import sf_to_bingham, sh_to_bingham
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.viz import actor, window
 from dipy.viz.plotting import image_mosaic

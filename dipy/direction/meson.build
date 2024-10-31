@@ -29,7 +29,6 @@ endforeach
 
 python_sources = ['__init__.py',
   'peaks.py',
-  'bingham.py'
   ]
 
 

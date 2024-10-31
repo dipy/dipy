@@ -6,7 +6,7 @@ from numpy.testing import (
 )
 
 from dipy.data import get_sphere
-from dipy.direction.bingham import (
+from dipy.reconst.bingham import (
     _bingham_fit_peak,
     _convert_bingham_pars,
     _single_bingham_to_sf,
