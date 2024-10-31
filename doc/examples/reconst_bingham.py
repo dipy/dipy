@@ -8,7 +8,7 @@ distribution functions (ODFs). Reconstructed Bingham functions can be
 useful to quantify properties from ODFs such as fiber dispersion
 :footcite:p:`Riffert2014`, :footcite:p:`NetoHenriques2018`.
 
-To begin, let us import the relevant functions and load a data consisting
+To begin, let us import the relevant functions and load data consisting
 of 10 b0s and 150 non-b0s with a b-value of 2000s/mm2.
 """
 
@@ -32,7 +32,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 # To properly fit Bingham functions, we recommend the use of a larger number of
 # directions to sample the ODFs. For this, we load a `sphere` object with 12
 # vertices sampling a 3D sphere (the icosahedron). We further subdivide the
-# faces of this `sphere` representation into 5, to get 10242 directions.
+# faces of this `sphere` representation five times, to get 10242 directions.
 
 sphere = unit_icosahedron.subdivide(n=5)
 

@@ -232,7 +232,8 @@ def bingham_to_sf(bingham_params, sphere, *, mask=None):
     sphere: `Sphere` class instance
          The Sphere providing the odf's discrete directions
     mask: ndarray, optional
-        Map marking the coordinates in the data that should be analyzed
+        Map marking the coordinates in the data that should be analyzed.
+        Default (None) means all voxels in the volume will be analyzed.
 
     Returns
     -------
@@ -289,7 +290,8 @@ def bingham_fiber_density(bingham_params, *, subdivide=5, mask=None):
         approximation will be, at the cost of longer execution times. The
         default results in a sphere of 10242 points.
     mask: ndarray, optional
-        Map marking the coordinates in the data that should be analyzed
+        Map marking the coordinates in the data that should be analyzed.
+        Default (None) means all voxels in the volume will be analyzed.
 
     Returns
     -------
@@ -488,7 +490,7 @@ def weighted_voxel_metric(bmetric, bfd):
     Parameters
     ----------
     bmetric: ndarray(..., nl)
-        An arbitrary metric with values for nl ODF lobes.
+        Any metric with values for nl ODF lobes.
     bfd: ndarray(..., nl)
         Bingham's fiber density estimates for the nl ODF lobes
 
@@ -688,7 +690,7 @@ def sf_to_bingham(
     if mask is None:
         mask = np.ones(shape)
 
-    # Bingham parameters saved in an ndarray with shape:
+    # Bingham parameters stored in an ndarray with shape:
     # (Nx, Ny, Nz, n_max_peak, 12).
     bpars = np.zeros(shape + (npeaks,) + (12,))
 
