@@ -382,8 +382,7 @@ class ReconstDtiFlow(Workflow):
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
         nifti_tensor : bool, optional
             Whether the tensor is saved in the standard Nifti format or in an
-            alternate format
-            that is used by other software (e.g., FSL): a
+            alternate format that is used by other software (e.g., FSL): a
             4-dimensional volume (shape (i, j, k, 6)) with
             Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
         extract_pam_values : bool, optional

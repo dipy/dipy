@@ -8,6 +8,11 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.10.0 changes
 -------------------
 
+**IO**
+
+- The ``dipy.io.peaks.save_peaks`` and ``dipy.io.peaks.load_peaks`` functions have been deprecated.
+  Please Use the ``dipy.io.peaks.save_pam`` and ``dipy.io.peaks.load_pam`` functions instead.
+
 **Reconstruction**
 
 - Applied the change of the default `cvxpy` solver from `ECOS` to `CLARABEL`.

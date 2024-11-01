@@ -583,7 +583,7 @@ class NiftisToPamFlow(Workflow):
         out_dir="",
         out_pam="peaks.pam5",
     ):
-        """Convert pam5 files to multiple nifti files.
+        """Convert multiple nifti files to a single pam5 file.
 
         Parameters
         ----------
@@ -605,17 +605,16 @@ class NiftisToPamFlow(Workflow):
         sphere_files : string, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
-            default_sphere option will be used
+            default_sphere option will be used.
         default_sphere_name : string, optional
             Specify default sphere to use for spherical harmonics
             representation. This option can be superseded by
-            sphere_files option. default: repulsion724.
-            possible options: ['symmetric362', 'symmetric642', 'symmetric724',
-            'repulsion724', 'repulsion100', 'repulsion200']
+            sphere_files option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default input file directory).
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.pam5')
+            Name of the peaks volume to be saved.
 
         """
         io_it = self.get_io_iterator()
@@ -634,9 +633,6 @@ class NiftisToPamFlow(Workflow):
             else:
                 sphere = get_sphere(name=default_sphere_name)
 
-            # shm, _ = load_nifti(fshm)
-            # gfa, _ = load_nifti(fgfa)
-
             niftis_to_pam(
                 affine=affine,
                 peak_dirs=peak_dirs,
@@ -644,7 +640,7 @@ class NiftisToPamFlow(Workflow):
                 peak_values=peak_values,
                 peak_indices=peak_indices,
                 pam_file=opam,
-            )  # , gfa=gfa, shm_coeff=shm)
+            )
             logging.info(msg.replace("pam5", opam))
 
 
@@ -675,17 +671,16 @@ class TensorToPamFlow(Workflow):
         sphere_files : string, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
-            default_sphere option will be used
+            default_sphere option will be used.
         default_sphere_name : string, optional
             Specify default sphere to use for spherical harmonics
             representation. This option can be superseded by sphere_files
-            option. default: repulsion724.
-            possible options: ['symmetric362', 'symmetric642', 'symmetric724',
-            'repulsion724', 'repulsion100', 'repulsion200']
+            option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default input file directory).
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.pam5')
+            Name of the peaks volume to be saved.
 
         """
         io_it = self.get_io_iterator()
@@ -731,23 +726,19 @@ class PamToNiftisFlow(Workflow):
             Path to the input peaks volumes. This path may contain wildcards to
             process multiple inputs at once.
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default input file directory).
         out_peaks_dir : string, optional
-            Name of the peaks directions volume to be saved
-            (default 'peaks_dirs.nii.gz')
+            Name of the peaks directions volume to be saved.
         out_peaks_values : string, optional
-            Name of the peaks values volume to be saved
-            (default 'peaks_values.nii.gz')
+            Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
-            Name of the peaks indices volume to be saved
-            (default 'peaks_indices.nii.gz')
+            Name of the peaks indices volume to be saved.
         out_shm : string, optional
-            Name of the spherical harmonics volume to be saved
-            (default 'shm.nii.gz')
+            Name of the spherical harmonics volume to be saved.
         out_gfa : string, optional
-            Generalized FA volume name to be saved (default 'gfa.nii.gz')
+            Generalized FA volume name to be saved.
         out_sphere : string, optional
-            Sphere vertices name to be saved (default 'sphere.txt')
+            Sphere vertices name to be saved.
 
         """
         io_it = self.get_io_iterator()

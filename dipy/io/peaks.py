@@ -66,6 +66,7 @@ def load_pam(fname, *, verbose=False):
     Returns
     -------
     pam : PeaksAndMetrics object
+        Object holding peaks information and metrics.
 
     """
     if os.path.splitext(fname)[1].lower() != ".pam5":
@@ -143,9 +144,9 @@ def save_peaks(fname, pam, *, affine=None, verbose=False):
     Parameters
     ----------
     fname : string
-        Filename of PAM5 file
+        Filename of PAM5 file.
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
+        Object holding peak_dirs, shm_coeffs and other attributes.
     affine : array
         The 4x4 matrix transforming the date from native to world coordinates.
         PeaksAndMetrics should have that attribute but if not it can be
@@ -158,19 +159,18 @@ def save_peaks(fname, pam, *, affine=None, verbose=False):
 
 
 def save_pam(fname, pam, *, affine=None, verbose=False):
-    """Save all important attributes of object PeaksAndMetrics in a PAM5 file
-    (HDF5).
+    """Save all important attributes of object PeaksAndMetrics in a PAM5 file (HDF5).
 
     Parameters
     ----------
     fname : str
-        Filename of PAM5 file
+        Filename of PAM5 file.
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
+        Object holding peaks information and metrics.
     affine : ndarray, optional
         The 4x4 matrix transforming the date from native to world coordinates.
         PeaksAndMetrics should have that attribute but if not it can be
-        provided here. Default None.
+        provided here.
     verbose : bool, optional
         Print summary information about the saved file.
 
@@ -274,20 +274,19 @@ def peaks_to_niftis(
     Parameters
     ----------
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
+        Object holding peaks information and metrics.
     fname_shm : str
-        Spherical Harmonics coefficients filename
+        Spherical Harmonics coefficients filename.
     fname_dirs : str
-        peaks direction filename
+        Peaks direction filename.
     fname_values : str
-        peaks values filename
+        Peaks values filename.
     fname_indices : str
-        peaks indices filename
-    fname_gfa : str
-        Generalized FA filename
+        Peaks indices filename.
+    fname_gfa : str, optional
+        Generalized FA filename.
     reshape_dirs : bool, optional
-        If True, reshape peaks for visualization
-        (default False)
+        If True, reshape peaks for visualization.
 
     """
     return pam_to_niftis(
@@ -319,18 +318,17 @@ def pam_to_niftis(
     Parameters
     ----------
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
+        Object holding peaks information and metrics.
     fname_peaks_dir : str, optional
-        peaks direction filename.
+        Peaks direction filename.
     fname_peaks_values : str, optional
-        peaks values filename.
+        Peaks values filename.
     fname_peaks_indices : str, optional
-        peaks indices filename
+        Peaks indices filename.
     fname_shm : str, optional
-        Spherical Harmonics coefficients filename.
-        It will be saved if available.
+        Spherical Harmonics coefficients filename. It will be saved if available.
     fname_gfa : str, optional
-        Generalized FA filename.It will be saved if available.
+        Generalized FA filename. It will be saved if available.
     fname_sphere : str, optional
         Sphere vertices filename. It will be saved if available.
     fname_b : str, optional
@@ -338,11 +336,9 @@ def pam_to_niftis(
         spherical function. It will be saved if available.
     fname_qa : str, optional
         Quantitative Anisotropy filename. It will be saved if available.
-
     reshape_dirs : bool, optional
         If True, Reshape and convert to float32 a set of peaks for
         visualisation with mrtrix or the fibernavigator.
-        (default False)
 
     """
     if reshape_dirs:
@@ -387,7 +383,7 @@ def niftis_to_pam(
     Parameters
     ----------
     affine : array, (4, 4)
-        the matrix defining the affine transform
+        The matrix defining the affine transform.
     peak_dirs : ndarray
         The direction of each peak.
     peak_values : ndarray
@@ -395,26 +391,28 @@ def niftis_to_pam(
     peak_indices : ndarray
         Indices (in sphere vertices) of the peaks in each voxel.
     shm_coeff : array, optional
-        Spherical harmonics coefficients
+        Spherical harmonics coefficients.
     sphere : `Sphere` class instance, optional
-        The Sphere providing discrete directions for evaluation.
+        The sphere providing discrete directions for evaluation.
     gfa : ndarray, optional
-        generalized FA volume
+        Generalized FA volume.
     B : ndarray, optional
-        Matrix that transforms spherical harmonics to spherical function
+        Matrix that transforms spherical harmonics to spherical function.
     qa : array, optional
         Quantitative Anisotropy in each voxel.
     odf : ndarray, optional
-        SH coefficients for the ODF spherical function
+        SH coefficients for the ODF spherical function.
     total_weight : float, optional
+        Total weight of the peaks.
     ang_thr : float, optional
+        Angular threshold of the peaks.
     pam_file : str, optional
-        Filename of the desired pam file
+        Filename of the desired pam file.
 
     Returns
     -------
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
+        Object holding peak_dirs, shm_coeffs and other attributes.
 
     """
     pam = PeaksAndMetrics()
@@ -465,34 +463,35 @@ def tensor_to_pam(
     evals : ndarray
         Eigenvalues of a diffusion tensor. shape should be (...,3).
     evecs : ndarray
-        Eigen vectors from the tensor model
+        Eigen vectors from the tensor model.
     affine : array, (4, 4)
-        the matrix defining the affine transform
+        The matrix defining the affine transform.
     shm_coeff : array, optional
-        Spherical harmonics coefficients
+        Spherical harmonics coefficients.
     sphere : `Sphere` class instance, optional
-        The Sphere providing discrete directions for evaluation.
+        The sphere providing discrete directions for evaluation.
     gfa : ndarray, optional
-        generalized FA volume
+        Generalized FA volume.
     B : ndarray, optional
-        Matrix that transforms spherical harmonics to spherical function
+        Matrix that transforms spherical harmonics to spherical function.
     qa : array, optional
         Quantitative Anisotropy in each voxel.
     odf : ndarray, optional
-        SH coefficients for the ODF spherical function
+        SH coefficients for the ODF spherical function.
     pam_file : str, optional
-        Filename of the desired pam file
+        Filename of the desired pam file.
     npeaks : int, optional
-        Maximum number of peaks found (default 5 peaks).
+        Maximum number of peaks found.
     generate_peaks_indices : bool, optional
     total_weight : float, optional
+        Total weight of the peaks.
     ang_thr : float, optional
+        Angular threshold of the peaks.
 
     Returns
     -------
     pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes
-
+        Object holding peaks information and metrics.
     """
     npeaks = 1 if npeaks < 1 else npeaks
     npeaks = min(npeaks, evals.shape[-1])
