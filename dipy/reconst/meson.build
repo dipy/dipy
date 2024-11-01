@@ -19,6 +19,7 @@ endforeach
 
 python_sources = ['__init__.py',
   'base.py',
+  'bingham.py',
   'cache.py',
   'cross_validation.py',
   'csdeconv.py',
