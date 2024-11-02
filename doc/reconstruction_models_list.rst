@@ -146,7 +146,7 @@
      - :bdg-danger:`No`
      - 5 b=0, 50 directions at 3 non-zero b-shells: b=1000, 2000, 3000 s/mm^2
      - `Jeurissen 2014 <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`__
-   * - :ref:`ForeCast <sphx_glr_examples_built_reconstruction_reconst_forecast.py>`
+   * - :ref:`FORECAST <sphx_glr_examples_built_reconstruction_reconst_forecast.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
