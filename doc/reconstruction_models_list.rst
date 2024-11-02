@@ -12,19 +12,19 @@
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
-     - Typical b-value = 1000s/mm^2, maximum b-value 1200s/mm^2 (some success up to 1500s/mm^2)
+     - Typical b-value = 1000 s/mm^2, maximum b-value 1200 s/mm^2 (some success up to 1500 s/mm^2)
      - `Basser 1994 <https://www.ncbi.nlm.nih.gov/pubmed/8130344>`__
    * - :ref:`DTI (RESTORE) <sphx_glr_examples_built_reconstruction_restore_dti.py>`
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
-     - Typical b-value = 1000s/mm^2, maximum b-value 1200s/mm^2 (some success up to 1500s/mm^2)
+     - Typical b-value = 1000 s/mm^2, maximum b-value 1200 s/mm^2 (some success up to 1500 s/mm^2)
      - Yendiki2013, Chang2005, Chung2006
    * - :ref:`FwDTI <sphx_glr_examples_built_reconstruction_reconst_fwdti.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - DTI-style acquisition, multiple b=0, all shells should be within maximum b-value of 1000 (or 32 directions evenly distributed 500mm/s^2 and 1500mm/s^2 per Henriques 2017)
+     - DTI-style acquisition, multiple b=0, all shells should be within maximum b-value of 1000 s/mm^2 (or 32 directions evenly distributed 500 s/mm^2 and 1500 s/mm^2 per Henriques 2017)
      - `Pasternak 2009 <https://www.ncbi.nlm.nih.gov/pubmed/19623619>`__, `Henriques et al., 2017 <https://github.com/ReScience-Archives/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017/raw/master/article/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017.pdf>`__
    * - :ref:`DKI - Standard <sphx_glr_examples_built_reconstruction_reconst_dki.py>`
      - :bdg-danger:`No`
@@ -48,7 +48,7 @@
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - b-values in increments of 500 from 0 to 2000, 30 directions
+     - b-values in increments of 500 from 0 to 2000 s/mm^2, 30 directions
      - `Henriques, 2018 <https://www.repository.cam.ac.uk/handle/1810/281993>`__
    * - :ref:`CSA <sphx_glr_examples_built_reconstruction_reconst_csa.py>`
      - :bdg-success:`Yes`
@@ -78,19 +78,19 @@
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
-     - QBI-style acquisition (60-64 directions, b-value 1000mm/s^2)
+     - QBI-style acquisition (60-64 directions, b-value 1000 s/mm^2)
      - Descoteaux 2009
    * - :ref:`DSI <sphx_glr_examples_built_reconstruction_reconst_dsi.py>`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
-     - 515 diffusion encodings, b-values from 12,000 to 18,000 s/mm^2. Acceleration in subsequent studies with ~100 diffusion encoding directions in half sphere of the q-space with b-values = 1000, 2000, 3000s/mm2)
+     - 515 diffusion encodings, b-values from 12,000 to 18,000 s/mm^2. Acceleration in subsequent studies with ~100 diffusion encoding directions in half sphere of the q-space with b-values = 1000, 2000, 3000 s/mm^2)
      - `Wedeen 2008 <https://doi.org/10.1016/j.neuroimage.2008.03.036>`__, `Sotiropoulos 2013 <https://doi.org/10.1016/j.neuroimage.2013.05.057>`__
    * - :ref:`DSID <sphx_glr_examples_built_reconstruction_reconst_dsid.py>`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
-     - 203 diffusion encodings (isotropic 3D grid points in the q-space contained within a sphere with radius 3.6), maximum b-value=4000mm/s^2
+     - 203 diffusion encodings (isotropic 3D grid points in the q-space contained within a sphere with radius 3.6), maximum b-value = 4000 s/mm^2
      - `Canales-Rodriguez 2010 <https://doi.org/10.1016/j.neuroimage.2009.11.066>`__
    * - :ref:`GQI - GQI2 <sphx_glr_examples_built_reconstruction_reconst_gqi.py>`
      - :bdg-danger:`No`
@@ -102,13 +102,13 @@
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - At least 40 directions, b-value above 1000mm/s^2
+     - At least 40 directions, b-value above 1000 s/mm^2
      - `Rokem 2015 <https://doi.org/10.1371/journal.pone.0123272>`__
    * - :ref:`Q-Ball (OPDT) <sphx_glr_examples_built_reconstruction_reconst_csa.py>`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
-     - At least 64 directions, maximum b-values 3000-4000mm/s^2, multi-shell, isotropic voxel size
+     - At least 64 directions, maximum b-values 3000-4000 s/mm^2, multi-shell, isotropic voxel size
      - `Tuch 2004 <https://doi.org/10.1002/mrm.20279>`__, `Descoteaux 2007 <https://www.ncbi.nlm.nih.gov/pubmed/17763358>`__, `Tristan-Vega 2010 <https://doi.org/10.1007/978-3-642-04271-3_51>`__
    * - :ref:`SHORE <sphx_glr_examples_built_reconstruction_reconst_shore.py>`
      - :bdg-danger:`No`
@@ -132,37 +132,37 @@
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - Multi-shell similar to WU-Minn HCP, with minimum of 60 samples from 2 shells b-value 1000 and 3000s/mm^2
+     - Multi-shell similar to WU-Minn HCP, with minimum of 60 samples from 2 shells b-value 1000 and 3000 s/mm^2
      - `Fick 2016 <https://doi.org/10.1016/j.neuroimage.2016.03.046>`__
    * - :ref:`CSD <sphx_glr_examples_built_reconstruction_reconst_csd.py>`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
      - :bdg-danger:`No`
-     - Minimum: 20 gradient directions and a b-value of 1000 s/mm^2; benefits additionally from 60 direction HARDI data with b-value = 3000s/mm^2 or multi-shell
+     - Minimum: 20 gradient directions and a b-value of 1000 s/mm^2; benefits additionally from 60 direction HARDI data with b-value = 3000 s/mm^2 or multi-shell
      - Tournier 2017, Descoteaux 2008, Tournier 2007
    * - :ref:`SMS/MT CSD <sphx_glr_examples_built_reconstruction_reconst_mcsd.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - 5 b=0, 50 directions at 3 non-zero b-shells: b=1000, b=2000, b=3000
+     - 5 b=0, 50 directions at 3 non-zero b-shells: b=1000, 2000, 3000 s/mm^2
      - `Jeurissen 2014 <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`__
    * - :ref:`ForeCast <sphx_glr_examples_built_reconstruction_reconst_forecast.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - Multi-shell 64 direction b-values of 1000, 2000s/mm^2 as in `Alexander 2017 <https://doi.org/10.1038%2Fsdata.2017.181>`__. Original model used 1480 s/mm^2  with 92 directions and 36 b=0
+     - Multi-shell 64 direction b-values of 1000, 2000 s/mm^2 as in `Alexander 2017 <https://doi.org/10.1038%2Fsdata.2017.181>`__. Original model used 1480 s/mm^2 with 92 directions and 36 b=0
      - Anderson 2005, `Alexander 2017 <https://doi.org/10.1038%2Fsdata.2017.181>`__
    * - :ref:`RUMBA-SD <sphx_glr_examples_built_reconstruction_reconst_rumba.py>`
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
-     - HARDI data with 64 directions at b = 2500s/mm^2, 3 b=0 images (full original acquisition: 256 directions on a sphere at b = 2500s/mm^2, 36 b=0 volumes)
+     - HARDI data with 64 directions at b = 2500 s/mm^2, 3 b=0 images (full original acquisition: 256 directions on a sphere at b = 2500 s/mm^2, 36 b=0 volumes)
      - `Canales-Rodríguez 2015 <https://doi.org/10.1371/journal.pone.0138910>`__
    * - :ref:`QTI <sphx_glr_examples_built_reconstruction_reconst_qti.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - Evenly distributed geometric sampling scheme of 216 measurements, 5 b-values (50, 250, 50, 1000, 200mm/s^2), measurement tensors of four shapes: stick, prolate, sphere, and plane
+     - Evenly distributed geometric sampling scheme of 216 measurements, 5 b-values (50, 250, 50, 1000, 200 s/mm^2), measurement tensors of four shapes: stick, prolate, sphere, and plane
      - `Westin 2016 <https://doi.org/10.1016/j.neuroimage.2016.02.039>`__
    * - :ref:`QTI+ <sphx_glr_examples_built_reconstruction_reconst_qtiplus.py>`
      - :bdg-danger:`No`
@@ -174,7 +174,7 @@
      - :bdg-success:`Yes`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - Three b=0, 60 evenly distributed directions per `Jones 1999 <https://doi.org/10.1002/(SICI)1522-2594(199909)42:3%3C515::AID-MRM14%3E3.0.CO;2-Q>`__ at b-value 1000mm/s^2
+     - Three b=0, 60 evenly distributed directions per `Jones 1999 <https://doi.org/10.1002/(SICI)1522-2594(199909)42:3%3C515::AID-MRM14%3E3.0.CO;2-Q>`__ at b-value 1000 s/mm^2
      - `Behrens 2003 <https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.10609>`__
    * - :ref:`QTau-MRI <sphx_glr_examples_built_reconstruction_reconst_qtdmri.py>`
      - :bdg-danger:`No`
@@ -192,7 +192,7 @@
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`
-     - 72 directions at each of 5 evenly spaced b-values from 0.5 to 2.5 ms/μm2, 5 b-values from 3 to 5 ms/μm2, 5 b-values from 5.5 to 7.5 ms/μm2, and 3 b-values from 8 to 9 ms/μm2 /  b=0 ms/μm^-2, and along 33 directions at b-values from 0.2–3 ms/μm^-2 in steps of 0.2 ms/μm^−2 (24 point spherical design and 9 directions identified for rapid kurtosis estimation)
+     - 72 directions at each of 5 evenly spaced b-values from 0.5 to 2.5 ms/μm^2, 5 b-values from 3 to 5 ms/μm^2, 5 b-values from 5.5 to 7.5 ms/μm^2, and 3 b-values from 8 to 9 ms/μm^2 / b=0 ms/μm^2, and along 33 directions at b-values from 0.2–3 ms/μm^2 in steps of 0.2 ms/μm^2 (24 point spherical design and 9 directions identified for rapid kurtosis estimation)
      - `NetoHe2019 <https://doi.org/10.1002/mrm.27606>`__, `Kaden2016b <https://www.nature.com/articles/sdata201672>`__
    * - :ref:`CTI <sphx_glr_examples_built_reconstruction_reconst_cti.py>`
      - :bdg-danger:`No`
