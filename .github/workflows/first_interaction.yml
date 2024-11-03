@@ -26,7 +26,7 @@ jobs:
 
           We would appreciate if you took the time to submit a pull request to fix this issue should it happen to be one.
 
-          Please read our [CODE OF CONDUCT](../CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](../CONTRIBUTING.md) if you have not done that already :book:.
+          Please read our [CODE OF CONDUCT](https://github.com/dipy/dipy/blob/master/.github/CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md) if you have not done that already :book:.
 
         pr-message: |
           Thank you for contributing a pull request !
@@ -41,4 +41,4 @@ jobs:
 
           It is **your responsibility** to ensure that the above checks pass to have your pull request reviewed in a timely manner and merged :mag:.
 
-          Please read our [CODE OF CONDUCT](../CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](../CONTRIBUTING.md) if you have not done that already :book:.
+          Please read our [CODE OF CONDUCT](https://github.com/dipy/dipy/blob/master/.github/CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md) if you have not done that already :book:.
