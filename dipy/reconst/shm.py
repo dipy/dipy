@@ -1,7 +1,7 @@
 """Tools for using spherical harmonic models to fit diffusion data.
 
 See :footcite:p:`Aganj2009`, :footcite:p:`Descoteaux2007`,
-:footcite:p:`TristanVega2009`, and :footcite:p:`TristanVega2010`.
+:footcite:p:`TristanVega2009a`, and :footcite:p:`TristanVega2010`.
 
 References
 ----------
@@ -1053,7 +1053,7 @@ class OpdtModel(QballBaseModel):
     """Implementation of Orientation Probability Density Transform
     reconstruction method.
 
-    See :footcite:p:`TristanVega2009` and :footcite:p:`TristanVega2010` for
+    See :footcite:p:`TristanVega2009a` and :footcite:p:`TristanVega2010` for
     further details about the method.
 
     References
