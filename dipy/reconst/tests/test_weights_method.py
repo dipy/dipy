@@ -1,32 +1,26 @@
 """Testing weights methods"""
 
-import random
-import warnings
-
 import numpy as np
 from numpy.testing import (
-    assert_equal,
     assert_almost_equal,
-    assert_array_almost_equal,
-    assert_array_equal,
+    assert_equal,
     assert_raises,
 )
 
 import dipy.core.gradients as grad
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
 import dipy.reconst.dti as dti
-
 from dipy.reconst.weights_method import (
     simple_cutoff,
     two_eyes_cutoff,
-    weights_method_wls_m_est,
     weights_method_nlls_m_est,
+    weights_method_wls_m_est,
 )
-
 from dipy.testing.decorators import set_random_number_generator
 
 MIN_POSITIVE_SIGNAL = 0.0001
+
 
 @set_random_number_generator()
 def test_outlier_funcs(rng):
@@ -57,16 +51,17 @@ def test_outlier_funcs(rng):
     C = scale  # since we added noise, just set C to scale
 
     for outlier_func in [simple_cutoff, two_eyes_cutoff]:
-
         # use extremely generous cutoff of 6; find only the super outlier
-        outlier =  outlier_func(residuals, log_residuals, pred_sig,
-                                design_matrix, leverages, C, cutoff=6)
+        outlier = outlier_func(
+            residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff=6
+        )
         assert_equal(outlier[0], True)
         assert_equal(outlier[1:], np.zeros_like(outlier[1:], dtype=bool))
-        
+
         # make everything an outlier, by using a cut-off of zero
-        outlier =  outlier_func(residuals, log_residuals, pred_sig,
-                                design_matrix, leverages, C, cutoff=0.0)
+        outlier = outlier_func(
+            residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff=0.0
+        )
         assert_equal(outlier.sum(), Y.shape[0])
 
 
@@ -91,12 +86,8 @@ def test_weights_funcs(rng):
     Y[Y < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     Y[0] = Y[0] * 100  # make 1 signal into a super outlier
 
-    # other args
-    residuals = Y - pred_sig  # may differ from residuals due to signal clip
-    log_residuals = np.log(Y) - log_pred_sig
     # make some fake leverages (they should sum to npar=7)
     leverages = np.ones_like(Y) * D_orig.shape[0] / Y.shape[0]
-    C = scale  # since we added noise, just set C to scale
 
     # set last robust to None ?
     # it's only currently used on the last iteration of WLS, because we need to
@@ -106,29 +97,37 @@ def test_weights_funcs(rng):
     # from previous iterations, for the most generality
 
     # TODO: need to test about the number of iterations, to make sure errors are raised
-    # TODO: robust return should be None exepect on last for NLLS,
+    # TODO: robust return should be None expect on last for NLLS,
     #       and second to last and last on WLS
 
     NUM_ITER = 4
     for fit_type, weights_func in zip(
-        ["wls", "nlls"],
-        [weights_method_wls_m_est, weights_method_nlls_m_est]
+        ["wls", "nlls"], [weights_method_wls_m_est, weights_method_nlls_m_est]
     ):
-
         # invalid estimator choice
         assert_raises(
             ValueError,
             weights_func,
-            Y, pred_sig, design_matrix, leverages, 1, 10, None,
-            m_est="unknown_estimator"
+            Y,
+            pred_sig,
+            design_matrix,
+            leverages,
+            1,
+            10,
+            None,
+            m_est="unknown_estimator",
         )
 
         # test error if <4 iters for wls, or <3 iters for nlls
         assert_raises(
             ValueError,
             weights_func,
-            Y, pred_sig, design_matrix, leverages, 1,
-            3 if fit_type=="wls" else 2,
+            Y,
+            pred_sig,
+            design_matrix,
+            leverages,
+            1,
+            3 if fit_type == "wls" else 2,
             None,
         )
 
@@ -136,24 +135,31 @@ def test_weights_funcs(rng):
         assert_raises(
             ValueError,
             weights_func,
-            Y[0:6], pred_sig[0:6], design_matrix[0:6], leverages[0:6], 1,
+            Y[0:6],
+            pred_sig[0:6],
+            design_matrix[0:6],
+            leverages[0:6],
+            1,
             10,
             None,
         )
-            
+
         for mest in ["gm", "cauchy"]:
             for outlier_func in [simple_cutoff, two_eyes_cutoff]:
-    
                 last_robust = None
-                for idx in range(1, NUM_ITER+1):
+                for idx in range(1, NUM_ITER + 1):
                     # neither last, nor second-to-last, iteration
                     weights, robust = weights_func(
-                        Y, pred_sig, design_matrix, leverages,
-                        idx=idx, total_idx=NUM_ITER,
+                        Y,
+                        pred_sig,
+                        design_matrix,
+                        leverages,
+                        idx=idx,
+                        total_idx=NUM_ITER,
                         last_robust=last_robust,
                         m_est=mest,
                         cutoff=3,
-                        outlier_condition_func=outlier_func
+                        outlier_condition_func=outlier_func,
                     )
                     last_robust = robust
 
