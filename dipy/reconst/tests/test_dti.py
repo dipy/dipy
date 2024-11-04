@@ -1,10 +1,7 @@
 """Testing DTI."""
 
-import warnings
-
 import numpy as np
 import numpy.testing as npt
-import scipy.optimize as opt
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
@@ -28,7 +25,6 @@ from dipy.reconst.dti import (
     mean_diffusivity,
     mode,
     ols_fit_tensor,
-    ols_resort_msg,
     planarity,
     radial_diffusivity,
     sphericity,
@@ -417,16 +413,18 @@ def test_wls_and_ls_fit():
     npt.assert_array_almost_equal(tensor_est.sphericity, sphericity(evals))
 
     # testing that leverages are returned on request
-    for fit_method in ['LS', 'WLS']:
+    for fit_method in ["LS", "WLS"]:
         # Estimate tensor from test signals, not returning leverages
-        model = TensorModel(gtab, fit_method=fit_method, return_S0_hat=True,
-                            return_leverages=False)
+        model = TensorModel(
+            gtab, fit_method=fit_method, return_S0_hat=True, return_leverages=False
+        )
         tensor_est = model.fit(Y)
         npt.assert_equal(tensor_est.model.extra, {})
 
         # Estimate tensor from test signals, returning leverages
-        model = TensorModel(gtab, fit_method=fit_method, return_S0_hat=True,
-                            return_leverages=True)
+        model = TensorModel(
+            gtab, fit_method=fit_method, return_S0_hat=True, return_leverages=True
+        )
         tensor_est = model.fit(Y)
         npt.assert_equal(tensor_est.model.extra["leverages"].shape, Y.shape)
 
@@ -443,15 +441,17 @@ def test_wls_and_ls_fit():
     # wls calculation, by calculating S^2 from OLS fit, then passing weights
     D_o, _ = ols_fit_tensor(design_matrix, YN, return_lower_triangular=True)
     pred_s = np.exp(np.dot(design_matrix, D_o.T)).T
-    D_W, _ = wls_fit_tensor(design_matrix, YN, return_lower_triangular=True,
-                            weights=pred_s**2)  # weights match WLS default
+    D_W, _ = wls_fit_tensor(
+        design_matrix, YN, return_lower_triangular=True, weights=pred_s**2
+    )  # weights match WLS default
     npt.assert_almost_equal(D_w, D_W)
     # wls calculation, but passing incorrect weights
-    D_W, _ = wls_fit_tensor(design_matrix, YN, return_lower_triangular=True,
-                            weights=pred_s**1)
+    D_W, _ = wls_fit_tensor(
+        design_matrix, YN, return_lower_triangular=True, weights=pred_s**1
+    )
     npt.assert_raises(AssertionError, npt.assert_array_equal, D_w, D_W)
     # Test that wls implementation is correct, by comparison with result here
-    W = np.diag(pred_s.squeeze()**2)
+    W = np.diag(pred_s.squeeze() ** 2)
     AT_W = np.dot(design_matrix.T, W)
     inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, design_matrix))
     AT_W_LS = np.dot(AT_W, np.log(YN).squeeze())
@@ -460,14 +460,13 @@ def test_wls_and_ls_fit():
 
 
 def test_rwls_rnlls_irls_fit():
-
     # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
-    b0 = 1000.
-    bval, bvec = read_bvals_bvecs(*get_fnames(name='55dir_grad'))
+    b0 = 1000.0
+    bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     B = bval[1]
     # Scale the eigenvalues and tensor by the B value so the units match
-    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
-    evals = np.array([2., 1., 0.]) / B
+    D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
+    evals = np.array([2.0, 1.0, 0.0]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
     # Design Matrix
@@ -482,67 +481,72 @@ def test_rwls_rnlls_irls_fit():
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
-
         # Estimate tensor from test signals
         model = TensorModel(gtab, fit_method=a, return_S0_hat=True)
         tensor_est = model.fit(YN)
 
-        model = TensorModel(gtab, fit_method=ar, return_S0_hat=True,
-                            num_iter=10)
+        model = TensorModel(gtab, fit_method=ar, return_S0_hat=True, num_iter=10)
         tensor_est_R = model.fit(YN)
 
-        npt.assert_array_less(np.linalg.norm(tensor_est_R.evals[0] - evals),
-                              np.linalg.norm(tensor_est.evals[0] - evals))
-
         npt.assert_array_less(
-            np.linalg.norm(
-                tensor_est_R.quadratic_form[0] - tensor
-            ),
-            np.linalg.norm(
-                tensor_est.quadratic_form[0] - tensor
-            )
+            np.linalg.norm(tensor_est_R.evals[0] - evals),
+            np.linalg.norm(tensor_est.evals[0] - evals),
         )
 
-        npt.assert_array_less(np.linalg.norm(tensor_est_R.md[0] - md),
-                              np.linalg.norm(tensor_est.md[0] - md))
+        npt.assert_array_less(
+            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor),
+            np.linalg.norm(tensor_est.quadratic_form[0] - tensor),
+        )
+
+        npt.assert_array_less(
+            np.linalg.norm(tensor_est_R.md[0] - md),
+            np.linalg.norm(tensor_est.md[0] - md),
+        )
 
         # error is often almost exactly the same, so this test sometimes fails
         # npt.assert_array_less(np.linalg.norm(tensor_est_R.S0_hat[0] - b0),
         #                       np.linalg.norm(tensor_est.S0_hat[0] - b0))
 
     # test RWLS/RNLLS implemented explicitly via IRLS function
-    for wm, fit_type in zip([weights_method_wls_m_est,
-                             weights_method_nlls_m_est],
-                            ["WLS", "NLLS"]):
-
+    for wm, fit_type in zip(
+        [weights_method_wls_m_est, weights_method_nlls_m_est], ["WLS", "NLLS"]
+    ):
         # IRLS implementation
-        model = TensorModel(gtab, fit_method="IRLS", return_S0_hat=True,
-                            weights_method=wm, fit_type=fit_type, num_iter=10)
+        model = TensorModel(
+            gtab,
+            fit_method="IRLS",
+            return_S0_hat=True,
+            weights_method=wm,
+            fit_type=fit_type,
+            num_iter=10,
+        )
         tensor_est_R1 = model.fit(YN)
         npt.assert_equal(tensor_est_R1.model.extra["robust"].shape, YN.shape)
         npt.assert_equal(tensor_est_R1.model.extra["robust"][0, -1], 0)
 
         # 'shortcut' method RWLS/RNLLS
-        model = TensorModel(gtab, fit_method="R" + fit_type,
-                            return_S0_hat=False,  # NOTE increase coverage
-                            num_iter=10)
+        model = TensorModel(
+            gtab,
+            fit_method="R" + fit_type,
+            return_S0_hat=False,  # NOTE increase coverage
+            num_iter=10,
+        )
         tensor_est_R2 = model.fit(YN)
         npt.assert_equal(tensor_est_R2.model.extra["robust"].shape, YN.shape)
         npt.assert_equal(tensor_est_R2.model.extra["robust"][0, -1], 0)
 
-        npt.assert_almost_equal(tensor_est_R1.evals[0],
-                                tensor_est_R2.evals[0])
+        npt.assert_almost_equal(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
 
-        npt.assert_almost_equal(tensor_est_R1.quadratic_form[0],
-                                tensor_est_R2.quadratic_form[0])
+        npt.assert_almost_equal(
+            tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0]
+        )
 
     # test that error is raised if not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
     npt.assert_raises(ValueError, model.fit, YN[:, 0:3])
 
     # force use of iter_fit_tensor without making a large test
-    model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True,
-                        num_iter=10)
+    model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True, num_iter=10)
     tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
 
 
@@ -672,10 +676,10 @@ def test_mask():
             npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
             npt.assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
             # Except for the one voxel that was selected by the mask:
-            npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0],
-                                    dtifit.fa[0, 0, 0])
-            npt.assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0],
-                                    dtifit.S0_hat[0, 0, 0])
+            npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+            npt.assert_almost_equal(
+                dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0]
+            )
 
 
 @set_random_number_generator()
@@ -703,17 +707,15 @@ def test_nnls_jacobian_func(rng):
     for sigma in [sigma_scalar, sigma_array]:
         weights = 1 / sigma**2
         for D in [D_orig, np.zeros_like(D_orig)]:
-
             # Test Jacobian at D
             args = [D, X, Y, weights]
             # 1. call 'err_func', to set internal stuff in the class
             nlls.err_func(*args)
             # 2. call 'jabobian_func', corresponds to last err_func call
-            analytical = nlls.jacobian_func(*args)
+            # analytical = nlls.jacobian_func(*args)
 
             # test analytical gradient (needs to be performed per data-point)
             for i in range(len(X)):
-
                 args = [X[i], Y[i], weights]
 
                 # FIXME: this is sometimes failing in tests on Github
@@ -726,14 +728,14 @@ def test_nnls_jacobian_func(rng):
                 #        some tests, so let's make a function that ensures a
                 #        scalar is returned. Issue for this *test*, not for
                 #        nlls.err_func, which works correctly
-                def ef(x):
-                    tmp = nlls.err_func(x, *args)
-                    return tmp if np.isscalar(tmp) else tmp[0]
-                approx = opt.approx_fprime(D, ef, 1e-8)
+                # def ef(x):
+                #     tmp = nlls.err_func(x, *args)
+                #     return tmp if np.isscalar(tmp) else tmp[0]
 
                 # NOTE: approx_fprime not accurate enough to pass this test
                 #       even though it will pass if using autograd code
                 #       to ensure a truly accurate derivative of nlls.err_func
+                # approx = opt.approx_fprime(D, ef, 1e-8)
                 # assert np.allclose(approx, analytical[i])
                 assert True
 
@@ -780,7 +782,7 @@ def test_nlls_fit_tensor():
 
     # Using weights:
     weights = 2 * np.ones_like(Y, dtype=np.float32)
-    tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weights=weights)
+    tensor_model = dti.TensorModel(gtab, fit_method="NLLS", weights=weights)
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
     npt.assert_array_almost_equal(tensor_est.evals[0], evals)
@@ -804,13 +806,13 @@ def test_nlls_fit_tensor():
 
     # Test warning for failure of NLLS method, resort to OLS result
     # (reason for failure: too few data points for NLLS)
-    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS',
-                                   return_S0_hat=True)
+    tensor_model = dti.TensorModel(gtab_less, fit_method="NLLS", return_S0_hat=True)
     tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
 
     # Test fail_is_nan=True, failed NLLS method gives NaN
-    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS',
-                                   return_S0_hat=True, fail_is_nan=True)
+    tensor_model = dti.TensorModel(
+        gtab_less, fit_method="NLLS", return_S0_hat=True, fail_is_nan=True
+    )
     tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
@@ -857,15 +859,14 @@ def test_restore():
                 )
 
                 # test recording of robust signals
-                npt.assert_equal(tensor_est.model.extra["robust"].shape,
-                                 Y.shape)
+                npt.assert_equal(tensor_est.model.extra["robust"].shape, Y.shape)
 
     # If sigma is very small, it still needs to work:
     tensor_model = dti.TensorModel(gtab, fit_method="restore", sigma=0.0001)
     tensor_model.fit(Y.copy())
 
     # If sigma is very small, it still needs to work (it is estimated):
-    tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=None)
+    tensor_model = dti.TensorModel(gtab, fit_method="restore", sigma=None)
     tensor_model.fit(Y.copy() + np.random.normal(size=Y.shape))
 
     # Test return_S0_hat
@@ -1062,15 +1063,13 @@ def test_extra_return():
 
     """
 
-    b0 = 1000.
-    bval, bvecs = read_bvals_bvecs(*get_fnames(name='55dir_grad'))
+    b0 = 1000.0
+    bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table(bval, bvecs=bvecs)
     B = bval[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
-    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
-    evals = np.array([2., 1., 0.]) / B
-    tensor = from_lower_triangular(D)
+    D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
 
     # Design Matrix
     X = dti.design_matrix(gtab)
@@ -1087,8 +1086,7 @@ def test_extra_return():
             sigma = 0.0001
 
             if method == "restore":
-                tensor_model = dti.TensorModel(gtab, fit_method=method,
-                                               sigma=sigma)
+                tensor_model = dti.TensorModel(gtab, fit_method=method, sigma=sigma)
 
             tensor_est = tensor_model.fit(this_y)
             npt.assert_equal(tensor_est.model.extra["robust"].shape, Y.shape)

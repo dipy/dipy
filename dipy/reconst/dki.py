@@ -8,10 +8,7 @@ import warnings
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.core.geometry import (
-    cart2sphere,
-    perpendicular_directions,
-    sphere2cart)
+from dipy.core.geometry import cart2sphere, perpendicular_directions, sphere2cart
 from dipy.core.gradients import check_multi_b
 from dipy.core.ndindex import ndindex
 from dipy.core.optimize import PositiveDefiniteLeastSquares
@@ -36,11 +33,10 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.testing.decorators import warning_for_keywords
 from dipy.reconst.weights_method import (
-    weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
+from dipy.testing.decorators import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -1722,8 +1718,7 @@ class DiffusionKurtosisModel(ReconstModel):
     """Class for the Diffusion Kurtosis Model"""
 
     @warning_for_keywords()
-    def __init__(self, gtab, *args,
-                 fit_method="WLS", return_S0_hat=False, **kwargs):
+    def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """Diffusion Kurtosis Tensor Model.
 
         See :footcite:p:`Jensen2005` and :footcite:p:`NetoHenriques2021a` for
@@ -1818,11 +1813,18 @@ class DiffusionKurtosisModel(ReconstModel):
                 )
             self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
 
-        self.weights = fit_method in {'WLS', 'WLLS', 'CWLS'}
+        self.weights = fit_method in {"WLS", "WLLS", "CWLS"}
 
-        self.is_multi_method = fit_method in ['WLS', 'WLLS',
-                                              'LS', 'LLS', 'OLS', 'OLLS',
-                                              'CLS', 'CWLS']
+        self.is_multi_method = fit_method in [
+            "WLS",
+            "WLLS",
+            "LS",
+            "LLS",
+            "OLS",
+            "OLLS",
+            "CLS",
+            "CWLS",
+        ]
 
         self.is_iter_method = "weights_method" in self.kwargs
 
@@ -1847,18 +1849,19 @@ class DiffusionKurtosisModel(ReconstModel):
         data_thres = np.maximum(data, self.min_signal)
 
         if self.is_multi_method and not self.is_iter_method:
-            fit_result, extra = self.multi_fit(data_thres, mask=mask,
-                                               weights=self.weights,
-                                               **self.kwargs)
+            fit_result, extra = self.multi_fit(
+                data_thres, mask=mask, weights=self.weights, **self.kwargs
+            )
             if extra is not None:
                 self.extra = extra
             return fit_result
 
         if self.is_multi_method and self.is_iter_method:
             fit_result, extra = self.iterative_fit(
-                data_thres, mask=mask,
+                data_thres,
+                mask=mask,
                 num_iter=self.kwargs["num_iter"],
-                weights_method=self.kwargs["weights_method"]
+                weights_method=self.kwargs["weights_method"],
             )
             if extra is not None:
                 self.extra = extra
@@ -1926,8 +1929,7 @@ class DiffusionKurtosisModel(ReconstModel):
     @multi_voxel_fit
     @warning_for_keywords()
     def multi_fit(self, data, *, mask=None, **kwargs):
-        """ Convenience function for fitting multiple voxels.
-        """
+        """Convenience function for fitting multiple voxels."""
         extra_args = (
             {}
             if not self.convexity_constraint
@@ -1953,8 +1955,14 @@ class DiffusionKurtosisModel(ReconstModel):
 
         return DiffusionKurtosisFit(self, params, model_S0=S0_params), extra
 
-    def iterative_fit(self, data_thres, *, mask=None, num_iter=4,
-                      weights_method=weights_method_wls_m_est):
+    def iterative_fit(
+        self,
+        data_thres,
+        *,
+        mask=None,
+        num_iter=4,
+        weights_method=weights_method_wls_m_est,
+    ):
         """Iteratively Reweighted fitting for the DKI model.
 
         Parameters
@@ -1991,11 +1999,10 @@ class DiffusionKurtosisModel(ReconstModel):
 
         TDX = num_iter
         for rdx in range(1, TDX + 1):
-
             if rdx > 1:  #  after first iteration, update weights
                 # if using mask, define full-sized arrays for w and robust
                 if rdx == 2 and mask is not None:
-                    cond = (mask == 1)
+                    cond = mask == 1
                     w = np.ones_like(data_thres, dtype=float)
                     robust = np.zeros_like(data_thres, dtype=bool)
                     robust[cond] = 1
@@ -2006,19 +2013,30 @@ class DiffusionKurtosisModel(ReconstModel):
                 # define weights for next fit
                 if mask is not None:
                     w[cond], robust_mask = weights_method(
-                        data_thres[cond], pred_sig[cond], self.design_matrix,
-                        leverages[cond], rdx, TDX, robust[cond]
+                        data_thres[cond],
+                        pred_sig[cond],
+                        self.design_matrix,
+                        leverages[cond],
+                        rdx,
+                        TDX,
+                        robust[cond],
                     )
                     if robust_mask is not None:
                         robust[cond] = robust_mask
                 else:
                     w, robust = weights_method(
-                        data_thres, pred_sig, self.design_matrix,
-                        leverages, rdx, TDX, robust
+                        data_thres,
+                        pred_sig,
+                        self.design_matrix,
+                        leverages,
+                        rdx,
+                        TDX,
+                        robust,
                     )
 
-            tmp, extra = self.multi_fit(data_thres, mask=mask,
-                                        weights=w, return_leverages=True)
+            tmp, extra = self.multi_fit(
+                data_thres, mask=mask, weights=w, return_leverages=True
+            )
             leverages = extra["leverages"]
 
         extra = {"robust": robust}
@@ -2697,15 +2715,14 @@ def ls_fit_dki(
         result = np.dot(inv_W_A_W, y)
 
         if return_leverages:
-            leverages = np.einsum('ij,ji->i', design_matrix, inv_W_A_W)
+            leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
 
     else:
         # DKI ordinary linear least square solution
         result = np.dot(inverse_design_matrix, y)
 
         if return_leverages:
-            leverages = np.einsum('ij,ji->i', design_matrix,
-                                  inverse_design_matrix)
+            leverages = np.einsum("ij,ji->i", design_matrix, inverse_design_matrix)
 
     if return_leverages:
         leverages = {"leverages": leverages}
@@ -2736,7 +2753,7 @@ def cls_fit_dki(
     min_diffusivity=0,
     return_lower_triangular=False,
     return_leverages=False,
-    cvxpy_solver=None
+    cvxpy_solver=None,
 ):
     r"""Compute the diffusion and kurtosis tensors using a constrained
     ordinary or weighted linear least squares approach.
@@ -2814,7 +2831,7 @@ def cls_fit_dki(
 
         if return_leverages:
             inv_W_A_W = np.linalg.pinv(A).dot(W)
-            leverages = np.einsum('ij,ji->i', design_matrix, inv_W_A_W)
+            leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
 
     # Solve sdp
     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
@@ -3075,5 +3092,5 @@ common_fit_methods = {
     "RWLS": robust_fit_tensor_wls,
     "RNLLS": robust_fit_tensor_nlls,
     "CLS": cls_fit_dki,
-    "CWLS": cls_fit_dki
+    "CWLS": cls_fit_dki,
 }
