@@ -1,3 +1,5 @@
+import importlib
+import sys
 import warnings
 
 import numpy as np
@@ -8,15 +10,21 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.nn.histo_resdnn import HistoResDNN
 from dipy.reconst.shm import tournier07_legacy_msg
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+have_nn = have_tf or have_torch
+BACKENDS = [
+    backend
+    for backend, available in [("tf", have_tf), ("torch", have_torch)]
+    if available
+]
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
-def test_default_weights():
+@pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
+def test_default_weights(monkeypatch):
     input_arr = np.expand_dims(
         np.array(
             [
@@ -123,17 +131,22 @@ def test_default_weights():
         axis=0,
     )
 
-    resdnn_model = HistoResDNN()
-    resdnn_model.fetch_default_weights()
-    results_arr = resdnn_model._HistoResDNN__predict(input_arr)
-    assert_almost_equal(results_arr, target_arr)
+    for backend in BACKENDS:
+        monkeypatch.setenv("DIPY_NN_BACKEND", backend)
+        with warnings.catch_warnings():
+            msg = ".*uses TensorFlow.*install PyTorch.*"
+            warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
+            dipy_nn = importlib.reload(sys.modules["dipy.nn"])
+            resdnn = dipy_nn.histo_resdnn
+
+        resdnn_model = resdnn.HistoResDNN()
+        resdnn_model.fetch_default_weights()
+        results_arr = resdnn_model._HistoResDNN__predict(input_arr)
+        assert_almost_equal(results_arr, target_arr)
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
-def test_predict_shape_and_masking():
-    resdnn_model = HistoResDNN()
-    resdnn_model.fetch_default_weights()
-
+@pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
+def test_predict_shape_and_masking(monkeypatch):
     dwi_fname, bval_fname, bvec_fname = get_fnames(name="stanford_hardi")
     data, _ = load_nifti(dwi_fname)
     data = np.squeeze(data)
@@ -143,26 +156,56 @@ def test_predict_shape_and_masking():
     mask = np.zeros(data.shape[0:3], dtype=bool)
     mask[38:40, 45:50, 35:40] = 1
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", message=tournier07_legacy_msg, category=PendingDeprecationWarning
+    for backend in BACKENDS:
+        monkeypatch.setenv("DIPY_NN_BACKEND", backend)
+        with warnings.catch_warnings():
+            msg = ".*uses TensorFlow.*install PyTorch.*"
+            warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
+            dipy_nn = importlib.reload(sys.modules["dipy.nn"])
+            resdnn = dipy_nn.histo_resdnn
+
+        resdnn_model = resdnn.HistoResDNN()
+        resdnn_model.fetch_default_weights()
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=tournier07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            results_arr = resdnn_model.predict(data, gtab, mask=mask)
+        results_pos = np.sum(results_arr, axis=-1, dtype=bool)
+        assert_equal(mask, results_pos)
+        assert_equal(results_arr.shape[-1], 45)
+
+
+@pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
+def test_wrong_sh_order_weights(monkeypatch):
+    for backend in BACKENDS:
+        monkeypatch.setenv("DIPY_NN_BACKEND", backend)
+        with warnings.catch_warnings():
+            msg = ".*uses TensorFlow.*install PyTorch.*"
+            warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
+            dipy_nn = importlib.reload(sys.modules["dipy.nn"])
+            resdnn = dipy_nn.histo_resdnn
+
+        resdnn_model = resdnn.HistoResDNN(sh_order_max=6)
+        fetch_model_weights_path = get_fnames(name=f"histo_resdnn_{backend}_weights")
+        assert_raises(
+            ValueError, resdnn_model.load_model_weights, fetch_model_weights_path
         )
-        results_arr = resdnn_model.predict(data, gtab, mask=mask)
-    results_pos = np.sum(results_arr, axis=-1, dtype=bool)
-    assert_equal(mask, results_pos)
-    assert_equal(results_arr.shape[-1], 45)
 
 
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
-def test_wrong_sh_order_weights():
-    resdnn_model = HistoResDNN(sh_order_max=6)
-    fetch_model_weights_path = get_fnames(name="histo_resdnn_tf_weights")
-    assert_raises(ValueError, resdnn_model.load_model_weights, fetch_model_weights_path)
+@pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
+def test_wrong_sh_order_input(monkeypatch):
+    for backend in BACKENDS:
+        monkeypatch.setenv("DIPY_NN_BACKEND", backend)
+        with warnings.catch_warnings():
+            msg = ".*uses TensorFlow.*install PyTorch.*"
+            warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
+            dipy_nn = importlib.reload(sys.modules["dipy.nn"])
+            resdnn = dipy_nn.histo_resdnn
 
-
-@pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
-def test_wrong_sh_order_input():
-    resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames(name="histo_resdnn_tf_weights")
-    resdnn_model.load_model_weights(fetch_model_weights_path)
-    assert_raises(ValueError, resdnn_model._HistoResDNN__predict, np.zeros((1, 28)))
+        resdnn_model = resdnn.HistoResDNN()
+        fetch_model_weights_path = get_fnames(name=f"histo_resdnn_{backend}_weights")
+        resdnn_model.load_model_weights(fetch_model_weights_path)
+        assert_raises(ValueError, resdnn_model._HistoResDNN__predict, np.zeros((1, 28)))
