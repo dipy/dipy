@@ -34,7 +34,7 @@ on:
         description: ""
         type: string
         required: false
-        default: cython!=0.29.29 numpy matplotlib h5py nibabel cvxpy<=1.4.4 tqdm
+        default: cython!=0.29.29 numpy matplotlib h5py nibabel cvxpy tqdm
       extra-depends:
         description: ""
         type: string
@@ -105,7 +105,13 @@ jobs:
         export HDF5_DIR=/opt/homebrew/opt/hdf5
         export BLOSC_DIR=/opt/homebrew/opt/c-blosc
         pip install tables
-
+    - name: Install OpenBlas on Windows
+      if: ${{ (runner.os == 'Windows') &&  (env.INSTALL_TYPE == 'pip') && (env.PYTHON_VERSION == '3.13') }}
+      run: |
+        curl -L -o OpenBLAS.zip https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.28/OpenBLAS-0.3.28-x64.zip
+        unzip OpenBLAS.zip -d $HOME/OpenBLAS
+        echo "$HOME/OpenBLAS/bin" >> $GITHUB_PATH
+        ls $HOME/OpenBLAS/bin
     - name: Install Dependencies
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
