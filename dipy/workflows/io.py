@@ -8,7 +8,15 @@ import warnings
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.sphere import Sphere
+from dipy.data import get_sphere
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import (
+    load_pam,
+    niftis_to_pam,
+    pam_to_niftis,
+    tensor_to_pam,
+)
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
@@ -556,3 +564,204 @@ class ConvertTractogramFlow(Workflow):
                     )
                 tmm.save(trx, otracks)
                 trx.close()
+
+
+class NiftisToPamFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "niftis_to_pam"
+
+    def run(
+        self,
+        peaks_dir_files,
+        peaks_values_files,
+        peaks_indices_files,
+        shm_files=None,
+        gfa_files=None,
+        sphere_files=None,
+        default_sphere_name="repulsion724",
+        out_dir="",
+        out_pam="peaks.pam5",
+    ):
+        """Convert multiple nifti files to a single pam5 file.
+
+        Parameters
+        ----------
+        peaks_dir_files : string
+            Path to the input peaks directions volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_values_files : string
+            Path to the input peaks values volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_indices_files : string
+            Path to the input peaks indices volume. This path may contain
+            wildcards to process multiple inputs at once.
+        shm_files : string, optional
+            Path to the input spherical harmonics volume. This path may
+            contain wildcards to process multiple inputs at once.
+        gfa_files : string, optional
+            Path to the input generalized FA volume. This path may contain
+            wildcards to process multiple inputs at once.
+        sphere_files : string, optional
+            Path to the input sphere vertices. This path may contain
+            wildcards to process multiple inputs at once. If it is not define,
+            default_sphere option will be used.
+        default_sphere_name : string, optional
+            Specify default sphere to use for spherical harmonics
+            representation. This option can be superseded by
+            sphere_files option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"pam5 files saved in {out_dir or 'current directory'}"
+
+        for fpeak_dirs, fpeak_values, fpeak_indices, opam in io_it:
+            logging.info("Converting nifti files to pam5")
+            peak_dirs, affine = load_nifti(fpeak_dirs)
+            peak_values, _ = load_nifti(fpeak_values)
+            peak_indices, _ = load_nifti(fpeak_indices)
+
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            niftis_to_pam(
+                affine=affine,
+                peak_dirs=peak_dirs,
+                sphere=sphere,
+                peak_values=peak_values,
+                peak_indices=peak_indices,
+                pam_file=opam,
+            )
+            logging.info(msg.replace("pam5", opam))
+
+
+class TensorToPamFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "tensor_to_niftis"
+
+    def run(
+        self,
+        evals_files,
+        evecs_files,
+        sphere_files=None,
+        default_sphere_name="repulsion724",
+        out_dir="",
+        out_pam="peaks.pam5",
+    ):
+        """Convert multiple tensor files(evals, evecs) to pam5 files.
+
+        Parameters
+        ----------
+        evals_files : string
+            Path to the input eigen values volumes. This path may contain
+            wildcards to process multiple inputs at once.
+        evecs_files : string
+            Path to the input eigen vectors volumes. This path may contain
+            wildcards to process multiple inputs at once.
+        sphere_files : string, optional
+            Path to the input sphere vertices. This path may contain
+            wildcards to process multiple inputs at once. If it is not define,
+            default_sphere option will be used.
+        default_sphere_name : string, optional
+            Specify default sphere to use for spherical harmonics
+            representation. This option can be superseded by sphere_files
+            option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"pam5 files saved in {out_dir or 'current directory'}"
+
+        for fevals, fevecs, opam in io_it:
+            logging.info("Converting tensor files to pam5...")
+            evals, affine = load_nifti(fevals)
+            evecs, _ = load_nifti(fevecs)
+
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
+            logging.info(msg.replace("pam5", opam))
+
+
+class PamToNiftisFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "pam_to_niftis"
+
+    def run(
+        self,
+        pam_files,
+        out_dir="",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_shm="shm.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+    ):
+        """Convert pam5 files to multiple nifti files.
+
+        Parameters
+        ----------
+        pam_files : string
+            Path to the input peaks volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_gfa : string, optional
+            Generalized FA volume name to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"Nifti files saved in {out_dir or 'current directory'}"
+        for (
+            ipam,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            oshm,
+            ogfa,
+            osphere,
+        ) in io_it:
+            logging.info("Converting %s file to niftis...", ipam)
+            pam = load_pam(ipam)
+            pam_to_niftis(
+                pam,
+                fname_peaks_dir=opeaks_dir,
+                fname_shm=oshm,
+                fname_peaks_values=opeaks_values,
+                fname_peaks_indices=opeaks_indices,
+                fname_sphere=osphere,
+                fname_gfa=ogfa,
+            )
+            logging.info(msg)

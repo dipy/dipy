@@ -10,7 +10,7 @@ from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.workflows.reconst import ReconstCSAFlow, ReconstCSDFlow
 
@@ -47,28 +47,15 @@ def reconst_flow_core(flow):
 
         reconst_flow = flow()
         for sh_order in [4, 6, 8]:
-            if flow.get_short_name() == "csd":
-                reconst_flow.run(
-                    data_path,
-                    bval_path,
-                    bvec_path,
-                    mask_path,
-                    sh_order=sh_order,
-                    out_dir=out_dir,
-                    extract_pam_values=True,
-                )
-
-            elif flow.get_short_name() == "csa":
-                reconst_flow.run(
-                    data_path,
-                    bval_path,
-                    bvec_path,
-                    mask_path,
-                    sh_order=sh_order,
-                    odf_to_sh_order=sh_order,
-                    out_dir=out_dir,
-                    extract_pam_values=True,
-                )
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                sh_order_max=sh_order,
+                out_dir=out_dir,
+                extract_pam_values=True,
+            )
 
             gfa_path = reconst_flow.last_generated_outputs["out_gfa"]
             gfa_data = load_nifti_data(gfa_path)
@@ -98,7 +85,7 @@ def reconst_flow_core(flow):
             )
             npt.assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
-            pam = load_peaks(reconst_flow.last_generated_outputs["out_pam"])
+            pam = load_pam(reconst_flow.last_generated_outputs["out_pam"])
             npt.assert_allclose(
                 pam.peak_dirs.reshape(peaks_dir_data.shape), peaks_dir_data
             )
