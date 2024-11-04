@@ -1,13 +1,14 @@
 #!/usr/bin/python
-""" Functions for defining weights for iterative fitting methods."""
+"""Functions for defining weights for iterative fitting methods."""
 
 import numpy as np
 
 MIN_POSITIVE_SIGNAL = 0.0001
 
 
-def simple_cutoff(residuals, log_residuals, pred_sig,
-                  design_matrix, leverages, C, cutoff):
+def simple_cutoff(
+    residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
+):
     """Define outliers based on the signal (rather than the log-signal).
 
     Parameters
@@ -34,12 +35,13 @@ def simple_cutoff(residuals, log_residuals, pred_sig,
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
-    cond = (np.abs(residuals) > + cutoff * C * HAT_factor)
+    cond = np.abs(residuals) > +cutoff * C * HAT_factor
     return cond
 
 
-def two_eyes_cutoff(residuals, log_residuals, pred_sig,
-                    design_matrix, leverages, C, cutoff):
+def two_eyes_cutoff(
+    residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
+):
     """Two-eyes approach to define outliers, see :footcite:p:`Collier2015`.
 
     Parameters
@@ -68,15 +70,24 @@ def two_eyes_cutoff(residuals, log_residuals, pred_sig,
     """
     leverages[np.isclose(leverages, 1.0)] = 0.99  # avoids rare issues
     HAT_factor = np.sqrt(1 - leverages)
-    cond = (residuals > + cutoff * C * HAT_factor) |\
-           (log_residuals < - cutoff * C * HAT_factor / pred_sig)
+    cond = (residuals > +cutoff * C * HAT_factor) | (
+        log_residuals < -cutoff * C * HAT_factor / pred_sig
+    )
     return cond
 
 
-def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
-                             idx, total_idx, last_robust,
-                             m_est="gm", cutoff=3,
-                             outlier_condition_func=simple_cutoff):
+def weights_method_wls_m_est(
+    data,
+    pred_sig,
+    design_matrix,
+    leverages,
+    idx,
+    total_idx,
+    last_robust,
+    m_est="gm",
+    cutoff=3,
+    outlier_condition_func=simple_cutoff,
+):
     """Calculate M-estimator weights for WLS model.
 
     Parameters
@@ -148,22 +159,23 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
     z = pred_sig * log_residuals
 
     # IRLLS paper eq9 corrected (weights for log_residuals^2 are pred_sig^2)
-    C = factor * np.median(np.abs(z - np.median(z, axis=-1)[..., None]),
-                           axis=-1)[..., None]
+    C = (
+        factor
+        * np.median(np.abs(z - np.median(z, axis=-1)[..., None]), axis=-1)[..., None]
+    )
     C[C == 0] = np.nanmedian(C)  # C could be 0, if all signals = min_signal
 
     # NOTE: if more M-estimators are added, please update the docs!
     if m_est == "gm":
-        w = (C / pred_sig)**2 / ((C / pred_sig)**2 + log_residuals**2)**2
+        w = (C / pred_sig) ** 2 / ((C / pred_sig) ** 2 + log_residuals**2) ** 2
     if m_est == "cauchy":
-        w = C**2 / ((C / pred_sig)**2 + log_residuals**2)
+        w = C**2 / ((C / pred_sig) ** 2 + log_residuals**2)
 
     robust = None
 
     if idx == total_idx - 1:  # OLS without outliers
         cond = outlier_condition_func(
-            residuals, log_residuals, pred_sig,
-            design_matrix, leverages, C, cutoff
+            residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
         )
         robust = np.logical_not(cond)
 
@@ -173,7 +185,7 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
     if idx == total_idx:  # WLS without outliers
         robust = last_robust
         w[~robust] = 0.0
-        w[robust] = pred_sig[robust == 1]**2
+        w[robust] = pred_sig[robust == 1] ** 2
 
     w[np.isinf(w)] = 0
     w[np.isnan(w)] = 0
@@ -181,10 +193,18 @@ def weights_method_wls_m_est(data, pred_sig, design_matrix, leverages,
     return w, robust
 
 
-def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
-                              idx, total_idx, last_robust,
-                              m_est="gm", cutoff=3,
-                              outlier_condition_func=simple_cutoff):
+def weights_method_nlls_m_est(
+    data,
+    pred_sig,
+    design_matrix,
+    leverages,
+    idx,
+    total_idx,
+    last_robust,
+    m_est="gm",
+    cutoff=3,
+    outlier_condition_func=simple_cutoff,
+):
     """Calculate M-estimator weights for NLLS model.
 
     Parameters
@@ -246,15 +266,18 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
     residuals = data - pred_sig
     log_data = np.log(data)
     log_residuals = log_data - log_pred_sig
-    z = pred_sig * log_residuals
 
-    C = factor * np.median(np.abs(residuals - np.median(residuals)[..., None]),
-                           axis=-1)[..., None]
+    C = (
+        factor
+        * np.median(np.abs(residuals - np.median(residuals)[..., None]), axis=-1)[
+            ..., None
+        ]
+    )
     C[C == 0] = np.nanmedian(C)  # C could be 0, if all signals = min_signal
 
     # NOTE: if more M-estimators are added, please update the docs!
     if m_est == "gm":
-        w = C**2 / (C**2 + residuals**2)**2
+        w = C**2 / (C**2 + residuals**2) ** 2
     if m_est == "cauchy":
         w = C**2 / (C**2 + residuals**2)
 
@@ -262,8 +285,7 @@ def weights_method_nlls_m_est(data, pred_sig, design_matrix, leverages,
 
     if idx == total_idx:
         cond = outlier_condition_func(
-            residuals, log_residuals, pred_sig,
-            design_matrix, leverages, C, cutoff
+            residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
         )
         robust = np.logical_not(cond)
 

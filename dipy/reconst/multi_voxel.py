@@ -28,9 +28,8 @@ def _parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
     vox_weights = kwargs.pop("weights", None)
     if type(vox_weights) is np.ndarray:
         return [
-            single_voxel_fit(
-                data, **(dict({"weights": weights}, **kwargs))
-            ) for data, weights in zip(vox_data, vox_weights)
+            single_voxel_fit(data, **(dict({"weights": weights}, **kwargs)))
+            for data, weights in zip(vox_data, vox_weights)
         ]
     else:
         return [single_voxel_fit(data, **kwargs) for data in vox_data]
@@ -75,8 +74,7 @@ def multi_voxel_fit(single_voxel_fit):
         if engine == "serial":
             extra_list = []
             bar = tqdm(
-                total=np.sum(mask), position=0,
-                disable=kwargs.get("verbose", True)
+                total=np.sum(mask), position=0, disable=kwargs.get("verbose", True)
             )
             bar.set_description("Fitting reconstruction model using serial execution")
             for ijk in ndindex(data.shape[:-1]):
@@ -141,8 +139,7 @@ def multi_voxel_fit(single_voxel_fit):
                 tmp_extra = np.concatenate(
                     [[svf[1] for svf in mvf_ch] for mvf_ch in mvf]
                 ).tolist()
-                fit_array[np.where(mask)], extra_list =\
-                    tmp_fit_array, tmp_extra
+                fit_array[np.where(mask)], extra_list = tmp_fit_array, tmp_extra
                 return_extra = True
             else:
                 tmp_fit_array = np.concatenate(mvf)
@@ -151,8 +148,10 @@ def multi_voxel_fit(single_voxel_fit):
         # Redefine extra to be a single dictionary
         if return_extra:
             if extra_list[0] is not None:
-                extra_mask = {key: np.vstack([e[key] for e in extra_list])
-                              for key in extra_list[0]}
+                extra_mask = {
+                    key: np.vstack([e[key] for e in extra_list])
+                    for key in extra_list[0]
+                }
                 extra = {}
                 for key in extra_mask:
                     extra[key] = np.zeros(data.shape)
