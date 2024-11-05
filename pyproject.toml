@@ -35,7 +35,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
 ]
-dynamic = ['version']
+version = "1.10.0.dev0"
 dependencies = [
     "numpy>=1.22.4",
     "scipy>=1.8",
