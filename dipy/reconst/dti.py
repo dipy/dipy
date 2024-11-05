@@ -1404,7 +1404,7 @@ def wls_fit_tensor(
         Weights to apply for fitting. These weights must correspond to the
         squared residuals such that $S = \sum_i w_i r_i^2$.
         If not provided, weights are estimated as the squared predicted signal
-        from an initial OLS fit [1]_.
+        from an initial OLS fit :footcite:p:`Chung2006`.
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
     return_lower_triangular : bool, optional
@@ -1916,24 +1916,21 @@ def nlls_fit_tensor(
 def restore_fit_tensor(
     design_matrix, data, *, sigma=None, jac=True, return_S0_hat=False, fail_is_nan=False
 ):
-    """
-    Use the RESTORE algorithm :footcite:p:`Chang2005` to calculate a robust
-    tensor fit.  Note that :footcite:p:`Chang2005` does not define
+    """Compute a robust tensor fit using the RESTORE algorithm.
+
+    Note that the RESTORE algorithm defined in :footcite:p:`Chang2005` does not define
     Geman–McClure M-estimator weights as claimed (instead, Cauchy M-estimator
     weights are defined), but this function does define correct Geman–McClure
     M-estimator weights.
 
     Parameters
     ----------
-
     design_matrix : array of shape (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-
     data : array of shape ([X, Y, Z, n_directions], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-
     sigma : float, optional
         An estimate of the variance. :footcite:p:`Chang2005` recommend to use
         1.5267 * std(background_noise), where background_noise is estimated
@@ -1942,15 +1939,12 @@ def restore_fit_tensor(
         sigma = 1.4826 * sqrt(N / (N - p)) * MAD(residuals)
         as in :footcite:p:`Chang2012` but with the additional correction factor
         1.4826 required to link standard deviation to MAD.
-
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
         optimization procedure used to fit the tensor parameters (see also
         :func:`nlls_fit_tensor`).
-
     return_S0_hat : bool, optional
         Boolean to return (True) or not (False) the S0 values for the fit.
-
     fail_is_nan : bool, optional
         Boolean to set failed NL fitting to NaN (True) or LS (False).
 
@@ -2137,7 +2131,6 @@ def iterative_fit_tensor(
 
     Parameters
     ----------
-
     design_matrix : ndarray of shape (g, ...)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
@@ -2153,12 +2146,10 @@ def iterative_fit_tensor(
     num_iter : int, optional
         Number of times to iterate.
     weights_method : callable, optional
-        A function with args and returns as follows:
-        (weights, robust) =
-          weights_method(data, pred_sig,
-                         design_matrix, leverages,
-                         idx, num_iter,
-                         robust)
+        A function with args and returns as follows::
+
+            (weights, robust) = weights_method(data, pred_sig, design_matrix,
+                                               leverages, idx, num_iter, robust)
 
     Notes
     -----
@@ -2249,7 +2240,6 @@ def robust_fit_tensor_wls(design_matrix, data, *, return_S0_hat=False, num_iter=
 
     Parameters
     ----------
-
     design_matrix : ndarray of shape (g, ...)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
@@ -2263,9 +2253,11 @@ def robust_fit_tensor_wls(design_matrix, data, *, return_S0_hat=False, num_iter=
 
     Notes
     -----
-    This is a convenience function that does does:
-      iterative_fit_tensor(*args, **kwargs, fit_type="WLS",
-                           weights_method=weights_method_wls)
+    This is a convenience function that does::
+
+        iterative_fit_tensor(*args, **kwargs, fit_type="WLS",
+                             weights_method=weights_method_wls)
+
     """
     return iterative_fit_tensor(
         design_matrix,
@@ -2284,7 +2276,6 @@ def robust_fit_tensor_nlls(
 
     Parameters
     ----------
-
     design_matrix : ndarray of shape (g, ...)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
@@ -2300,9 +2291,11 @@ def robust_fit_tensor_nlls(
 
     Notes
     -----
-    This is a convenience function that does does:
-      iterative_fit_tensor(*args, **kwargs, fit_type="NLLS",
-                           weights_method=weights_method_nlls)
+    This is a convenience function that does::
+
+        iterative_fit_tensor(*args, **kwargs, fit_type="NLLS",
+        weights_method=weights_method_nlls)
+
     """
     return iterative_fit_tensor(
         design_matrix,
