@@ -28,8 +28,10 @@ def simple_cutoff(
         Estimate of the standard deviation of the error.
     cutoff : float, optional
         Cut-off value for defining outliers based on fitting residuals.
-        Here the condition is:
+        Here the condition is::
+
             |residuals| > cut_off x C x HAT_factor
+
         where HAT_factor = sqrt(1 - leverages) adjusts for leverage effects.
 
     """
@@ -42,7 +44,9 @@ def simple_cutoff(
 def two_eyes_cutoff(
     residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
 ):
-    """Two-eyes approach to define outliers, see :footcite:p:`Collier2015`.
+    """Define outliers with two-eyes approach.
+
+    see :footcite:p:`Collier2015` for more details.
 
     Parameters
     ----------
@@ -84,6 +88,7 @@ def weights_method_wls_m_est(
     idx,
     total_idx,
     last_robust,
+    *,
     m_est="gm",
     cutoff=3,
     outlier_condition_func=simple_cutoff,
@@ -115,12 +120,12 @@ def weights_method_wls_m_est(
     cutoff : float, optional
         Cut-off value for defining outliers based on fitting residuals.
         Will be passed to the outlier_condition_func.
-        Typical example: |residuals| > cut_off x standard_deviation
+        Typical example: ``|residuals| > cut_off x standard_deviation``
     outlier_condition_func : callable, optional
-        A function with args and returns as follows:
-        is_an_outlier =
-          outlier_condition_func(residuals, log_residuals, pred_sig,
-                                 design_matrix, leverages, C, cutoff)
+        A function with args and returns as follows::
+
+            is_an_outlier = outlier_condition_func(residuals, log_residuals,
+                pred_sig, design_matrix, leverages, C, cutoff)
 
     Notes
     -----
@@ -201,6 +206,7 @@ def weights_method_nlls_m_est(
     idx,
     total_idx,
     last_robust,
+    *,
     m_est="gm",
     cutoff=3,
     outlier_condition_func=simple_cutoff,
@@ -232,12 +238,12 @@ def weights_method_nlls_m_est(
     cutoff : float, optional
         Cut-off value for defining outliers based on fitting residuals.
         Will be passed to the outlier_condition_func.
-        Typical example: |residuals| > cut_off x standard_deviation
+        Typical example: ``|residuals| > cut_off x standard_deviation``
     outlier_condition_func : callable, optional
-        A function with args and returns as follows:
-        is_an_outlier =
-          outlier_condition_func(residuals, log_residuals, pred_sig,
-                                 design_matrix, leverages, C, cutoff)
+        A function with args and returns as follows::
+
+            is_an_outlier = outlier_condition_func(residuals, log_residuals,
+                pred_sig, design_matrix, leverages, C, cutoff)
 
     Notes
     -----
