@@ -19,14 +19,12 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import (
     ConstrainedSDTModel,
     ConstrainedSphericalDeconvModel,
-    auto_response,
     auto_response_ssst,
     forward_sdeconv_mat,
     mask_for_response_ssst,
     odf_deconv,
     odf_sh_to_sharp,
     recursive_response,
-    response_from_mask,
     response_from_mask_ssst,
 )
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
@@ -72,24 +70,6 @@ def get_test_data():
     response = (evals_list[0], s0[0])
     fa = fractional_anisotropy(evals)
     return gtab, data, mask, response, fa
-
-
-def test_auto_response_deprecated():
-    gtab, data, _, _, _ = get_test_data()
-    npt.assert_raises(
-        ExpiredDeprecationError,
-        auto_response,
-        gtab,
-        data,
-        roi_center=None,
-        roi_radius=1,
-        fa_thr=0.7,
-    )
-
-
-def test_response_from_mask_deprecated():
-    gtab, data, mask, _, _ = get_test_data()
-    npt.assert_raises(ExpiredDeprecationError, response_from_mask, gtab, data, mask)
 
 
 def test_recursive_response_calibration():
