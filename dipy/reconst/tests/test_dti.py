@@ -192,6 +192,10 @@ def test_tensor_model():
 
     # Test error-handling:
     npt.assert_raises(ValueError, dti.TensorModel, gtab, fit_method="crazy_method")
+    npt.assert_warns(UserWarning, dti.TensorModel, gtab, fit_method="NLLS", step=1e4)
+    with npt.assert_warns(UserWarning):
+        model = dti.TensorModel(gtab, fit_method="NLS", step=1e4)
+        npt.assert_equal(model.kwargs.get("step", None), None)
 
     # Test custom fit tensor method
     try:
