@@ -34,7 +34,7 @@ The following 25 authors contributed 848 commits.
 * Sam Coveney
 * Sandro
 * Serge Koudoro
-* kaibo
+* Kaibo Tang
 
 
 We closed a total of 430 issues, 181 pull requests and 249 regular issues;
@@ -49,7 +49,7 @@ Pull Requests (181):
 * :ghpull:`3403`: Robust split idea rebase tidy
 * :ghpull:`3404`: RF: Improve and Simplify version management
 * :ghpull:`3395`: RF: Refactor `nn` module and deprecate `tensorflow` module
-* :ghpull:`1957`: niftis2pam, pam2niftis Worflow
+* :ghpull:`1957`: niftis2pam, pam2niftis Workflow
 * :ghpull:`3396`: DOC: Adopt `sphinxcontrib-bibtex` for reconst model list refs
 * :ghpull:`3399`: STYLE: Remove empty quoted paragraph in developer guide index
 * :ghpull:`3398`: DOC: Improve first interaction GitHub Actions config file
@@ -119,13 +119,13 @@ Pull Requests (181):
 * :ghpull:`3312`: DOC: Use `misc` for other types of BibTeX entries
 * :ghpull:`3309`: DOC: Miscellaneous doc formatting fixes (part 4)
 * :ghpull:`3308`: DOC: Rework the BibTeX bibliography file
-* :ghpull:`3275`: FIX: remove sagital from codespellrc ignore list
+* :ghpull:`3275`: FIX: remove sagital from codespellrc ignore list |# codespell:ignore sagital|
 * :ghpull:`3304`: DOC: Miscellaneous doc formatting fixes (part 3)
 * :ghpull:`3295`: ENH: Add a GHA workflow file to build docs
 * :ghpull:`3302`: DOC: Miscellaneous doc formatting fixes (part 2)
 * :ghpull:`3301`: FIX: explicit keyword argument for Horizon
 * :ghpull:`3297`: DOC: Miscellaneous doc formatting fixes
-* :ghpull:`3291`: FIX: nighlty wheels for macOS arm64
+* :ghpull:`3291`: FIX: nightly wheels for macOS arm64
 * :ghpull:`3262`: NF: Applying Decorators in Module (Visualization)
 * :ghpull:`3263`: NF: Applying Decorators in Module (Workflow)
 * :ghpull:`3287`: NF: Add `__len__` to `GradientTable`
@@ -146,7 +146,7 @@ Pull Requests (181):
 * :ghpull:`3274`: RF: Update pyproject.toml for numpy 2.0
 * :ghpull:`3273`: STYLE: Make statement dwell on a single line
 * :ghpull:`3237`: Add support for tensor-valued spherical functions in `interp_rbf`
-* :ghpull:`3245`: RF: Switch from using sparse *_matrix to *_array.
+* :ghpull:`3245`: RF: Switch from using sparse `*_matrix` to `*_array`.
 * :ghpull:`3267`: STYLE: Avoid deprecated NumPy types and methods for NumPy 2.0 compat
 * :ghpull:`3264`: TEST: avoid direct comparison of floating point numbers
 * :ghpull:`3268`: STYLE: Prefer using `np.asarray` to avoid copy while creating an array
@@ -239,7 +239,7 @@ Issues (249):
 * :ghissue:`3404`: RF: Improve and Simplify version management
 * :ghissue:`3401`: Robust split idea rebase arokem
 * :ghissue:`3395`: RF: Refactor `nn` module and deprecate `tensorflow` module
-* :ghissue:`1957`: niftis2pam, pam2niftis Worflow
+* :ghissue:`1957`: niftis2pam, pam2niftis Workflow
 * :ghissue:`3396`: DOC: Adopt `sphinxcontrib-bibtex` for reconst model list refs
 * :ghissue:`3399`: STYLE: Remove empty quoted paragraph in developer guide index
 * :ghissue:`3398`: DOC: Improve first interaction GitHub Actions config file
@@ -328,8 +328,8 @@ Issues (249):
 * :ghissue:`3312`: DOC: Use `misc` for other types of BibTeX entries
 * :ghissue:`3309`: DOC: Miscellaneous doc formatting fixes (part 4)
 * :ghissue:`3308`: DOC: Rework the BibTeX bibliography file
-* :ghissue:`3223`: Remove`sagital`  from de codespell ignore list.
-* :ghissue:`3275`: FIX: remove sagital from codespellrc ignore list
+* :ghissue:`3223`: Remove`sagital`  from de codespell ignore list |# codespell:ignore sagital|
+* :ghissue:`3275`: FIX: remove sagital from codespellrc ignore list |# codespell:ignore sagital|
 * :ghissue:`3298`: Inaccurate docstring in `omp.pyx::determine_num_threads`
 * :ghissue:`3304`: DOC: Miscellaneous doc formatting fixes (part 3)
 * :ghissue:`3305`: How to apply NODDI sequence in dipy
@@ -341,7 +341,7 @@ Issues (249):
 * :ghissue:`3297`: DOC: Miscellaneous doc formatting fixes
 * :ghissue:`3300`: BF: Title Fix
 * :ghissue:`3299`: Numpy compatibility issue
-* :ghissue:`3291`: FIX: nighlty wheels for macOS arm64
+* :ghissue:`3291`: FIX: nightly wheels for macOS arm64
 * :ghissue:`3262`: NF: Applying Decorators in Module (Visualization)
 * :ghissue:`3263`: NF: Applying Decorators in Module (Workflow)
 * :ghissue:`3283`: BUG: Gradient table requires at least 2 orientations
@@ -371,7 +371,7 @@ Issues (249):
 * :ghissue:`3273`: STYLE: Make statement dwell on a single line
 * :ghissue:`3236`: Allow `interp_rbf` to accept tensor-valued spherical functions
 * :ghissue:`3237`: Add support for tensor-valued spherical functions in `interp_rbf`
-* :ghissue:`3245`: RF: Switch from using sparse *_matrix to *_array.
+* :ghissue:`3245`: RF: Switch from using sparse `*_matrix` to `*_array`.
 * :ghissue:`3267`: STYLE: Avoid deprecated NumPy types and methods for NumPy 2.0 compat
 * :ghissue:`3264`: TEST: avoid direct comparison of floating point numbers
 * :ghissue:`3268`: STYLE: Prefer using `np.asarray` to avoid copy while creating an array
@@ -476,3 +476,5 @@ Issues (249):
 * :ghissue:`2970`: spherical harmonic degree/order terminology swapped
 * :ghissue:`3086`: [RF] Fix spherical harmonic terminology swap
 * :ghissue:`3095`: [UPCOMING] Release preparation for 1.9.0
+
+.. |# codespell:ignore sagital| replace:: .
