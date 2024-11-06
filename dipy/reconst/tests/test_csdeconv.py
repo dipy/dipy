@@ -46,7 +46,6 @@ from dipy.sims.voxel import (
 )
 from dipy.testing import assert_greater, assert_greater_equal
 from dipy.testing.decorators import set_random_number_generator
-from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def get_test_data():
