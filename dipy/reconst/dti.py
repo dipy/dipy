@@ -756,6 +756,14 @@ class TensorModel(ReconstModel):
 
         if not callable(fit_method):
             try:
+                if fit_method.upper() in ["NLS", "NLLS"] and "step" in kwargs:
+                    _ = kwargs.pop("step")
+                    warnings.warn(
+                        "The 'step' parameter can not be used in the "
+                        f"{fit_method.upper()} method. It will be ignored.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
                 fit_method = common_fit_methods[fit_method.upper()]
             except KeyError as e:
                 e_s = '"' + str(fit_method) + '" is not a known fit '
