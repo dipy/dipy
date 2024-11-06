@@ -20,5 +20,5 @@ Jinja2
 sphinx-design>=0.5.0
 boto3
 tensorflow
-pytorch
+torch
 sphinxcontrib-bibtex>=2.5.0
