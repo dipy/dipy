@@ -54,5 +54,35 @@ answer it yourself and contribute to the documentation!
         save_nifti(otensor, data, affine, image.header)
 
 
+.. dropdown:: How do I save/read the output fields from the Symmetric Diffeomorphic Registration?
+   :animate: fade-in-slide-down
+
+   The mapping fields is saved in a Nifti file. The data in the file is organized with
+   shape (X, Y, Z, 3, 2), such that the forward mapping in each voxel is in
+   `data[i, j, k, :, 0]` and the backward mapping in each voxel is in
+   `data[i, j, k, :, 1]`.
+
+   The output fields from the Symmetric Diffeomorphic Registration can be saved and
+   read using the functions `write_mapping` and `read_mapping` respectively.
+
+   .. code-block:: Python
+
+        from dipy.align import read_mapping, write_mapping
+        from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
+
+        # Load your static and moving images and setup the registration parameters.
+        # Then apply the registration
+
+        sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+        mapping = sdr.optimize(static, moving)
+
+        # Save the mapping
+        write_mapping(mapping,'outputField.nii.gz')
+
+        # If you need to read the mapping back
+        mapping = read_mapping('outputField.nii.gz', static_filename, moving_filename)
+
+
+
 
 .. include:: links_names.inc

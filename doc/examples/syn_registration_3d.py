@@ -12,6 +12,7 @@ We will register two 3D volumes from the same modality using SyN with the Cross
 
 import numpy as np
 
+from dipy.align import read_mapping, write_mapping
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
@@ -176,6 +177,19 @@ regtools.overlay_slices(
 # resolution.
 #
 #
+# If you wish, you can also save the transformation to a file, so that it can
+# be applied to other images in the future. This can be done with the
+# `write_mapping` function. The data in the file will be organized with shape
+# (X, Y, Z, 3, 2), such that the forward mapping in each voxel is in
+# data[i, j, k, :, 0] and the backward mapping in each voxel is in
+# data[i, j, k, :, 1]
+
+write_mapping(mapping, "mapping.nii.gz")
+# To read the mapping back, use the `read_mapping` function
+saved_mapping = read_mapping("mapping.nii.gz", hardi_fname, b0_fname)
+
+
+###############################################################################
 # References
 # ----------
 #
