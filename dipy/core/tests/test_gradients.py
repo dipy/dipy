@@ -25,7 +25,6 @@ from dipy.core.gradients import (
     reorient_bvecs,
     reorient_vectors,
     round_bvals,
-    unique_bvals,
     unique_bvals_magnitude,
     unique_bvals_tolerance,
 )
@@ -33,13 +32,6 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.testing import clear_and_catch_warnings
 from dipy.testing.decorators import set_random_number_generator
-from dipy.utils.deprecator import ExpiredDeprecationError
-
-
-def test_unique_bvals_deprecated():
-    npt.assert_raises(
-        ExpiredDeprecationError, unique_bvals, np.array([0, 800, 1400, 1401, 1405])
-    )
 
 
 def test_mask_non_weighted_bvals():

@@ -4,8 +4,6 @@ import numpy as np
 from scipy.interpolate import splev, splprep
 
 from dipy.testing.decorators import warning_for_keywords
-from dipy.tracking.streamline import set_number_of_points
-from dipy.utils.deprecator import deprecate_with_version
 
 
 def winding(xyz):
@@ -160,37 +158,6 @@ def midpoint(xyz):
     Ds = midlen - len0
     Lambda = Ds / (len1 - len0)
     return Lambda * xyz[ind] + (1 - Lambda) * xyz[ind - 1]
-
-
-@deprecate_with_version(
-    "dipy.tracking.metrics.downsample is deprecated, "
-    "Please use "
-    "dipy.tracking.streamline.set_number_of_points instead",
-    since="1.2",
-    until="1.4",
-)
-@warning_for_keywords()
-def downsample(xyz, *, n_pols=3):
-    """downsample for a specific number of points along the streamline
-    Uses the length of the curve. It works in a similar fashion to
-    midpoint and arbitrarypoint but it also reduces the number of segments
-    of a streamline.
-
-    Parameters
-    ----------
-    xyz : array-like shape (N,3)
-       array representing x,y,z of N points in a streamlines
-    n_pol : int
-       integer representing number of points (poles) we need along the curve.
-
-    Returns
-    -------
-    xyz2 : array shape (M,3)
-       array representing x,y,z of M points that where extrapolated. M
-       should be equal to n_pols
-
-    """
-    return set_number_of_points(xyz, nb_points=n_pols)
 
 
 def center_of_mass(xyz):

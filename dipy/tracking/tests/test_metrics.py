@@ -1,17 +1,10 @@
 """Testing track_metrics module"""
 
 import numpy as np
-import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_equal
 
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import distances as pf, metrics as tm
-from dipy.utils.deprecator import ExpiredDeprecationError
-
-
-def test_downsample_deprecated():
-    streamline = [np.array([[0, 0, 0], [1, 1, 1]])]
-    npt.assert_raises(ExpiredDeprecationError, tm.downsample, streamline, 12)
 
 
 @set_random_number_generator()
