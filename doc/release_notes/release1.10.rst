@@ -18,7 +18,7 @@ The following 25 authors contributed 848 commits.
 * Charles Poirier
 * Eleftherios Garyfallidis
 * Eric Larson
-* FWijanto
+* Florent Wijanto
 * Gabriel Girard
 * Jon Haitz Legarreta Gorroño
 * Jong Sung Park
@@ -32,7 +32,7 @@ The following 25 authors contributed 848 commits.
 * Rafael Neto Henriques
 * Sai Prajwal Reddy
 * Sam Coveney
-* Sandro
+* Sandro Turriate
 * Serge Koudoro
 * Kaibo Tang
 
