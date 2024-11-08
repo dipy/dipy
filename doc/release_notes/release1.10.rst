@@ -37,12 +37,13 @@ The following 25 authors contributed 848 commits.
 * Kaibo Tang
 
 
-We closed a total of 430 issues, 181 pull requests and 249 regular issues;
+We closed a total of 430 issues, 183 pull requests and 250 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (181):
 
+* :ghpull:`3412`: BF: Fixing single-slice data error in Patch2Self
 * :ghpull:`3407`: CI: unpin cvxpy
 * :ghpull:`3408`: RF: fix step argument in DTI NLLS model
 * :ghpull:`3402`: DOC: Add Exporting and importing Mapping field information in recipes and registration tutorial
@@ -227,6 +228,8 @@ Pull Requests (181):
 
 Issues (249):
 
+* :ghissue:`3412`: BF: Fixing single-slice data error in Patch2Self
+* :ghissue:`2469`: Error in patch2self for single-slice data
 * :ghissue:`3407`: CI: unpin cvxpy
 * :ghissue:`3030`: I do not see a way to change step as used by reconst.dti.TensorModel.fit()
 * :ghissue:`3408`: RF: fix step argument in DTI NLLS model
