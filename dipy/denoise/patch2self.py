@@ -525,6 +525,10 @@ def _patch2self_version1(
     else:
         calc_dtype = np.float32
 
+    if 1 in data.shape and data.shape[-1] != 1:
+        position = data.shape.index(1)
+        data = np.concatenate((data, data, data), position)
+
     # Segregates volumes by b0 threshold
     b0_idx = np.argwhere(bvals <= b0_threshold)
     dwi_idx = np.argwhere(bvals > b0_threshold)
