@@ -105,7 +105,7 @@ Highlights
 - Multiple Workflows updated.
 - Multiple DIPY Horizon features updated.
 - Large documentation update.
-- Closed 249 issues and merged 181 pull requests.
+- Closed 250 issues and merged 183 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
