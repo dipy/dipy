@@ -294,3 +294,19 @@ def test_validate_patch_radius_and_version():
                     f"Unexpected ValueError with patch_radius={patch_radius}, "
                     f"version={version}, tmp_dir={tmp_dir}"
                 )
+
+
+@needs_sklearn
+def test_single_slice_data():
+    for version in [1, 3]:
+        # Create single-slice 4D data with shape (64, 64, 1, 10)
+        single_slice_data = np.random.rand(64, 64, 1, 10).astype(np.float32)
+        bvals = np.array([0] * 5 + [1000] * 5)  # Simulate bvals for testing
+
+        # Run the Patch2Self function
+        denoised_data = p2s.patch2self(single_slice_data, bvals, version=version)
+
+        assert denoised_data.shape == single_slice_data.shape, (
+            f"Expected shape {single_slice_data.shape} for version {version}, "
+            f"but got {denoised_data.shape}."
+        )

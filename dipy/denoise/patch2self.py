@@ -525,6 +525,7 @@ def _patch2self_version1(
     else:
         calc_dtype = np.float32
 
+    original_shape = data.shape
     if 1 in data.shape and data.shape[-1] != 1:
         position = data.shape.index(1)
         data = np.concatenate((data, data, data), position)
@@ -614,6 +615,9 @@ def _patch2self_version1(
 
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
+
+    if 1 in original_shape and original_shape[-1] != 1:
+        denoised_arr = np.take(denoised_arr, [0], axis=position)
 
     denoised_arr = _apply_post_processing(
         denoised_arr, shift_intensity, clip_negative_vals
