@@ -717,6 +717,8 @@ class PamToNiftisFlow(Workflow):
         out_shm="shm.nii.gz",
         out_gfa="gfa.nii.gz",
         out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Convert pam5 files to multiple nifti files.
 
@@ -739,6 +741,10 @@ class PamToNiftisFlow(Workflow):
             Generalized FA volume name to be saved.
         out_sphere : string, optional
             Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy file to be saved.
 
         """
         io_it = self.get_io_iterator()
@@ -752,6 +758,8 @@ class PamToNiftisFlow(Workflow):
             oshm,
             ogfa,
             osphere,
+            ob,
+            oqa,
         ) in io_it:
             logging.info("Converting %s file to niftis...", ipam)
             pam = load_pam(ipam)
@@ -763,5 +771,7 @@ class PamToNiftisFlow(Workflow):
                 fname_peaks_indices=opeaks_indices,
                 fname_sphere=osphere,
                 fname_gfa=ogfa,
+                fname_b=ob,
+                fname_qa=oqa,
             )
             logging.info(msg)
