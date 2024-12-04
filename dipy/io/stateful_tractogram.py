@@ -233,7 +233,7 @@ class StatefulTractogram:
             self._affine, formatter={"float_kind": lambda x: f"{x:.6f}"}
         )
         vox_sizes = np.array2string(
-            self._voxel_sizes, formatter={"float_kind": lambda x: "{x:.2f}"}
+            self._voxel_sizes, formatter={"float_kind": lambda x: f"{x:.2f}"}
         )
         text = f"Affine: \n{affine}"
         text += f"\ndimensions: {np.array2string(self._dimensions)}"
