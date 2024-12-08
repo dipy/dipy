@@ -106,7 +106,7 @@ def test_recobundles_flow():
         npt.assert_equal(len(rec_bundle) == len(f2), True)
 
         label_flow = LabelsBundlesFlow(force=True)
-        label_flow.run(f1_path, labels)
+        label_flow.run(f1_path, labels, out_dir=out_dir)
 
         recog_bundle = label_flow.last_generated_outputs["out_bundle"]
         rec_bundle_org = load_tractogram(

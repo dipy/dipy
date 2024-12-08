@@ -16,7 +16,6 @@ from dipy.io.peaks import (
     load_peaks,
     niftis_to_pam,
     pam_to_niftis,
-    peaks_to_niftis,
     save_pam,
     save_peaks,
     tensor_to_pam,
@@ -45,7 +44,7 @@ def generate_default_pam(rng):
 @set_random_number_generator()
 def test_io_peaks(rng):
     with TemporaryDirectory() as tmpdir:
-        fname = "test.pam5"
+        fname = pjoin(tmpdir, "test.pam5")
 
         pam = generate_default_pam(rng)
         save_pam(fname, pam)
@@ -54,12 +53,12 @@ def test_io_peaks(rng):
 
         pam2.affine = None
 
-        fname2 = "test2.pam5"
-        save_pam(pjoin(tmpdir, fname2), pam2, affine=np.eye(4))
-        pam2_res = load_pam(pjoin(tmpdir, fname2), verbose=True)
+        fname2 = pjoin(tmpdir, "test2.pam5")
+        save_pam(fname2, pam2, affine=np.eye(4))
+        pam2_res = load_pam(fname2, verbose=True)
         npt.assert_array_equal(pam.peak_dirs, pam2_res.peak_dirs)
 
-        pam3 = load_pam(pjoin(tmpdir, fname2), verbose=False)
+        pam3 = load_pam(fname2, verbose=False)
 
         for attr in [
             "peak_dirs",
@@ -77,43 +76,44 @@ def test_io_peaks(rng):
         npt.assert_equal(pam3.ang_thr, pam.ang_thr)
         npt.assert_array_almost_equal(pam3.sphere.vertices, pam.sphere.vertices)
 
-        fname3 = "test3.pam5"
+        fname3 = pjoin(tmpdir, "test3.pam5")
         pam4 = PeaksAndMetrics()
-        npt.assert_raises(
-            (ValueError, AttributeError), save_pam, pjoin(tmpdir, fname3), pam4
-        )
+        npt.assert_raises((ValueError, AttributeError), save_pam, fname3, pam4)
 
-        fname4 = "test4.pam5"
+        fname4 = pjoin(tmpdir, "test4.pam5")
         del pam.affine
-        save_pam(pjoin(tmpdir, fname4), pam, affine=None)
+        save_pam(fname4, pam, affine=None)
 
-        fname5 = "test5.pkm"
-        npt.assert_raises(IOError, save_pam, pjoin(tmpdir, fname5), pam)
+        fname5 = pjoin(tmpdir, "test5.pkm")
+        npt.assert_raises(IOError, save_pam, fname5, pam)
 
         pam.affine = np.eye(4)
-        fname6 = "test6.pam5"
-        save_pam(pjoin(tmpdir, fname6), pam, verbose=True)
+        fname6 = pjoin(tmpdir, "test6.pam5")
+        save_pam(fname6, pam, verbose=True)
 
         del pam.shm_coeff
         save_pam(pjoin(tmpdir, fname6), pam, verbose=False)
 
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
         del pam.odf
-        save_pam(pjoin(tmpdir, fname6), pam)
-        pam_tmp = load_pam(pjoin(tmpdir, fname6), verbose=True)
+        save_pam(fname6, pam)
+        pam_tmp = load_pam(fname6, verbose=True)
         npt.assert_equal(pam_tmp.odf, None)
 
-        fname7 = "test7.paw"
-        npt.assert_raises(OSError, load_pam, pjoin(tmpdir, fname7))
+        fname7 = pjoin(tmpdir, "test7.paw")
+        npt.assert_raises(OSError, load_pam, fname7)
 
         del pam.shm_coeff
-        save_pam(pjoin(tmpdir, fname6), pam, verbose=True)
+        save_pam(fname6, pam, verbose=True)
 
-        fname_shm = "shm.nii.gz"
-        fname_dirs = "dirs.nii.gz"
-        fname_values = "values.nii.gz"
-        fname_indices = "indices.nii.gz"
-        fname_gfa = "gfa.nii.gz"
+        fname_shm = pjoin(tmpdir, "shm.nii.gz")
+        fname_dirs = pjoin(tmpdir, "peaks_dirs.nii.gz")
+        fname_values = pjoin(tmpdir, "peaks_values.nii.gz")
+        fname_indices = pjoin(tmpdir, "peaks_indices.nii.gz")
+        fname_gfa = pjoin(tmpdir, "gfa.nii.gz")
+        fname_sphere = pjoin(tmpdir, "sphere.txt")
+        fname_b = pjoin(tmpdir, "B.nii.gz")
+        fname_qa = pjoin(tmpdir, "qa.nii.gz")
 
         pam.shm_coeff = np.ones((10, 10, 10, 45))
         pam_to_niftis(
@@ -123,23 +123,11 @@ def test_io_peaks(rng):
             fname_peaks_values=fname_values,
             fname_peaks_indices=fname_indices,
             fname_gfa=fname_gfa,
+            fname_sphere=fname_sphere,
+            fname_b=fname_b,
+            fname_qa=fname_qa,
             reshape_dirs=False,
         )
-
-        pam_to_niftis(pam, reshape_dirs=False)
-        # old version
-        with warnings.catch_warnings(record=True) as cw:
-            peaks_to_niftis(
-                pam,
-                fname_shm="ptn_shm.nii.gz",
-                fname_dirs="ptn_dirs.nii.gz",
-                fname_values="ptn_values.nii.gz",
-                fname_indices="ptn_indices.nii.gz",
-                fname_gfa="ptn_gfa.nii.gz",
-                reshape_dirs=False,
-            )
-            npt.assert_equal(len(cw), 1)
-            npt.assert_(issubclass(cw[-1].category, DeprecationWarning))
 
         for name in [
             "shm.nii.gz",
@@ -148,13 +136,11 @@ def test_io_peaks(rng):
             "gfa.nii.gz",
             "peaks_indices.nii.gz",
             "shm.nii.gz",
-            "ptn_dirs.nii.gz",
-            "ptn_values.nii.gz",
-            "ptn_indices.nii.gz",
-            "ptn_gfa.nii.gz",
-            "ptn_shm.nii.gz",
         ]:
-            npt.assert_(os.path.isfile(name), "{} file does not exist".format(name))
+            npt.assert_(
+                os.path.isfile(pjoin(tmpdir, name)),
+                "{} file does not exist".format(pjoin(tmpdir, name)),
+            )
 
 
 @set_random_number_generator()
@@ -184,24 +170,25 @@ def test_io_save_pam_error(rng):
 
 
 def test_io_niftis_to_pam():
-    pam = niftis_to_pam(
-        affine=np.eye(4),
-        peak_dirs=np.random.rand(10, 10, 10, 5, 3),
-        peak_values=np.zeros((10, 10, 10, 5)),
-        peak_indices=np.zeros((10, 10, 10, 5)),
-        shm_coeff=np.zeros((10, 10, 10, 45)),
-        sphere=default_sphere,
-        gfa=np.zeros((10, 10, 10)),
-        B=np.zeros((45, default_sphere.vertices.shape[0])),
-        qa=np.zeros((10, 10, 10, 5)),
-        odf=np.zeros((10, 10, 10, default_sphere.vertices.shape[0])),
-        total_weight=0.5,
-        ang_thr=60,
-        pam_file="test15.pam5",
-    )
+    with TemporaryDirectory() as tmpdir:
+        pam = niftis_to_pam(
+            affine=np.eye(4),
+            peak_dirs=np.random.rand(10, 10, 10, 5, 3),
+            peak_values=np.zeros((10, 10, 10, 5)),
+            peak_indices=np.zeros((10, 10, 10, 5)),
+            shm_coeff=np.zeros((10, 10, 10, 45)),
+            sphere=default_sphere,
+            gfa=np.zeros((10, 10, 10)),
+            B=np.zeros((45, default_sphere.vertices.shape[0])),
+            qa=np.zeros((10, 10, 10, 5)),
+            odf=np.zeros((10, 10, 10, default_sphere.vertices.shape[0])),
+            total_weight=0.5,
+            ang_thr=60,
+            pam_file=pjoin(tmpdir, "test15.pam5"),
+        )
 
-    npt.assert_equal(pam.peak_dirs.shape, (10, 10, 10, 5, 3))
-    npt.assert_(os.path.isfile("test15.pam5"))
+        npt.assert_equal(pam.peak_dirs.shape, (10, 10, 10, 5, 3))
+        npt.assert_(os.path.isfile(pjoin(tmpdir, "test15.pam5")))
 
 
 def test_tensor_to_pam():
@@ -236,13 +223,14 @@ def test_tensor_to_pam():
 
 @set_random_number_generator()
 def test_io_peaks_deprecated(rng):
-    with warnings.catch_warnings(record=True) as cw:
-        warnings.simplefilter("always", DeprecationWarning)
-        fname = "test_tt.pam5"
-        pam = generate_default_pam(rng)
-        save_peaks(fname, pam)
-        pam2 = load_peaks(fname, verbose=True)
-        npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-        npt.assert_equal(len(cw), 2)
-        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
-        npt.assert_(issubclass(cw[1].category, DeprecationWarning))
+    with TemporaryDirectory() as tmpdir:
+        with warnings.catch_warnings(record=True) as cw:
+            warnings.simplefilter("always", DeprecationWarning)
+            fname = pjoin(tmpdir, "test_tt.pam5")
+            pam = generate_default_pam(rng)
+            save_peaks(fname, pam)
+            pam2 = load_peaks(fname, verbose=True)
+            npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
+            npt.assert_equal(len(cw), 2)
+            npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+            npt.assert_(issubclass(cw[1].category, DeprecationWarning))

@@ -335,6 +335,8 @@ class ReconstDtiFlow(Workflow):
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
+        out_sphere="sphere.txt",
+        out_qa="qa.nii.gz",
     ):
         """Workflow for tensor reconstruction and for computing DTI metrics
         using Weighted  Least-Squares.
@@ -424,6 +426,10 @@ class ReconstDtiFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
+        out_sphere: string, optional
+            Sphere vertices name to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
@@ -453,6 +459,8 @@ class ReconstDtiFlow(Workflow):
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
+            osphere,
+            oqa,
         ) in io_it:
             logging.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -562,6 +570,8 @@ class ReconstDtiFlow(Workflow):
                     fname_peaks_dir=opeaks_dir,
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -619,6 +629,9 @@ class ReconstDsiFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Diffusion Spectrum Imaging (DSI) reconstruction workflow.
 
@@ -685,6 +698,12 @@ class ReconstDsiFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
         """
         io_it = self.get_io_iterator()
 
@@ -699,6 +718,9 @@ class ReconstDsiFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
@@ -748,6 +770,9 @@ class ReconstDsiFlow(Workflow):
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
                     fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -785,6 +810,9 @@ class ReconstCSDFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Constrained spherical deconvolution.
 
@@ -854,6 +882,12 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere: string, optional
+            Sphere vertices name to be saved.
+        out_b: string, optional
+            Name of the B Matrix to be saved.
+        out_qa: string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
 
         References
@@ -873,6 +907,9 @@ class ReconstCSDFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
@@ -969,6 +1006,9 @@ class ReconstCSDFlow(Workflow):
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
                     fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -1008,7 +1048,10 @@ class ReconstCSAFlow(Workflow):
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
+        out_sphere="sphere.txt",
         out_gfa="gfa.nii.gz",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Constant Solid Angle.
 
@@ -1064,8 +1107,14 @@ class ReconstCSAFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
@@ -1084,7 +1133,10 @@ class ReconstCSAFlow(Workflow):
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
+            osphere,
             ogfa,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
@@ -1139,7 +1191,10 @@ class ReconstCSAFlow(Workflow):
                     fname_peaks_dir=opeaks_dir,
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
                     fname_gfa=ogfa,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -1188,6 +1243,7 @@ class ReconstDkiFlow(Workflow):
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
+        out_sphere="sphere.txt",
     ):
         """Workflow for Diffusion Kurtosis reconstruction and for computing
         DKI metrics.
@@ -1266,6 +1322,8 @@ class ReconstDkiFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
 
         References
         ----------
@@ -1299,6 +1357,7 @@ class ReconstDkiFlow(Workflow):
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
+            osphere,
         ) in io_it:
             logging.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -1413,6 +1472,7 @@ class ReconstDkiFlow(Workflow):
                     fname_peaks_dir=opeaks_dir,
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
                     reshape_dirs=True,
                 )
 
@@ -1624,6 +1684,9 @@ class ReconstRUMBAFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Reconstruct the fiber local orientations using the Robust and
         Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) model.
@@ -1723,6 +1786,12 @@ class ReconstRUMBAFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
@@ -1742,6 +1811,9 @@ class ReconstRUMBAFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             # Read the data
             logging.info(f"Loading {dwi}")
@@ -1817,6 +1889,9 @@ class ReconstRUMBAFlow(Workflow):
                     fname_peaks_values=opeaks_values,
                     fname_peaks_indices=opeaks_indices,
                     fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
