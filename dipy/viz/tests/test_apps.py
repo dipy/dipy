@@ -1,4 +1,6 @@
 import os
+from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
@@ -67,23 +69,24 @@ def test_horizon_events(rng):
     # blocks recording
     fname = os.path.join(DATA_DIR, "record_horizon.log.gz")
 
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        pams=pams,
-        cluster=True,
-        cluster_thr=5.0,
-        roi_images=True,
-        random_colors=False,
-        length_gt=0,
-        length_lt=np.inf,
-        clusters_gt=0,
-        clusters_lt=np.inf,
-        world_coords=True,
-        interactive=True,
-        out_png="tmp.png",
-        recorded_events=fname,
-    )
+    with TemporaryDirectory() as out_dir:
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            pams=pams,
+            cluster=True,
+            cluster_thr=5.0,
+            roi_images=True,
+            random_colors=False,
+            length_gt=0,
+            length_lt=np.inf,
+            clusters_gt=0,
+            clusters_lt=np.inf,
+            world_coords=True,
+            interactive=True,
+            out_png=pjoin(out_dir, "horizon-event.png"),
+            recorded_events=fname,
+        )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
@@ -127,23 +130,7 @@ def test_horizon(rng):
     # only tractograms
     tractograms = [sft]
     images = None
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        cluster=True,
-        cluster_thr=5,
-        random_colors=False,
-        length_lt=np.inf,
-        length_gt=0,
-        clusters_lt=np.inf,
-        clusters_gt=0,
-        world_coords=True,
-        interactive=False,
-    )
-
-    images = [(data, affine, "/test/filename.nii.gz")]
-    # tractograms in native coords (not supported for now)
-    with npt.assert_raises(ValueError) as ve:
+    with TemporaryDirectory() as out_dir:
         horizon(
             tractograms=tractograms,
             images=images,
@@ -154,43 +141,64 @@ def test_horizon(rng):
             length_gt=0,
             clusters_lt=np.inf,
             clusters_gt=0,
-            world_coords=False,
+            world_coords=True,
             interactive=False,
+            out_png=pjoin(out_dir, "only-tractograms.png"),
         )
 
-    msg = "Currently native coordinates are not supported for streamlines."
-    npt.assert_(msg in str(ve.exception))
+        images = [(data, affine, "/test/filename.nii.gz")]
+        # tractograms in native coords (not supported for now)
+        with npt.assert_raises(ValueError) as ve:
+            horizon(
+                tractograms=tractograms,
+                images=images,
+                cluster=True,
+                cluster_thr=5,
+                random_colors=False,
+                length_lt=np.inf,
+                length_gt=0,
+                clusters_lt=np.inf,
+                clusters_gt=0,
+                world_coords=False,
+                interactive=False,
+                out_png=pjoin(out_dir, "native-tractograms.png"),
+            )
 
-    # only images
-    tractograms = None
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        cluster=True,
-        cluster_thr=5,
-        random_colors=False,
-        length_lt=np.inf,
-        length_gt=0,
-        clusters_lt=np.inf,
-        clusters_gt=0,
-        world_coords=True,
-        interactive=False,
-    )
+        msg = "Currently native coordinates are not supported for streamlines."
+        npt.assert_(msg in str(ve.exception))
 
-    # no clustering tractograms and images
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        cluster=False,
-        cluster_thr=5,
-        random_colors=False,
-        length_lt=np.inf,
-        length_gt=0,
-        clusters_lt=np.inf,
-        clusters_gt=0,
-        world_coords=True,
-        interactive=False,
-    )
+        # only images
+        tractograms = None
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            cluster=True,
+            cluster_thr=5,
+            random_colors=False,
+            length_lt=np.inf,
+            length_gt=0,
+            clusters_lt=np.inf,
+            clusters_gt=0,
+            world_coords=True,
+            interactive=False,
+            out_png=pjoin(out_dir, "only-images.png"),
+        )
+
+        # no clustering tractograms and images
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            cluster=False,
+            cluster_thr=5,
+            random_colors=False,
+            length_lt=np.inf,
+            length_gt=0,
+            clusters_lt=np.inf,
+            clusters_gt=0,
+            world_coords=True,
+            interactive=False,
+            out_png=pjoin(out_dir, "no-clusting-tractograms-and-images.png"),
+        )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
@@ -206,11 +214,16 @@ def test_horizon_wrong_dtype_images():
 
     data = np.random.rand(197, 233, 189).astype(np.bool_)
     images = [(data, affine)]
-    with warnings.catch_warnings(record=True) as l_warns:
-        horizon(images=images, interactive=False)
-        check_for_warnings(
-            l_warns, "skipping image 1, passed image is not in numerical format"
-        )
+    with TemporaryDirectory() as out_dir:
+        with warnings.catch_warnings(record=True) as l_warns:
+            horizon(
+                images=images,
+                interactive=False,
+                out_png=pjoin(out_dir, "wrong-dtype.png"),
+            )
+            check_for_warnings(
+                l_warns, "skipping image 1, passed image is not in numerical format"
+            )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

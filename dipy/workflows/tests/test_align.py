@@ -68,7 +68,7 @@ def test_slr_flow():
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
-        slr_flow.run(f1_path, f2_path)
+        slr_flow.run(f1_path, f2_path, out_dir=out_dir)
 
         out_path = slr_flow.last_generated_outputs["out_moved"]
 
