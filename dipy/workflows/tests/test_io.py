@@ -2,6 +2,7 @@ import importlib
 from inspect import getmembers, isfunction
 import logging
 import os
+from os.path import join as pjoin
 import sys
 from tempfile import TemporaryDirectory, mkstemp
 
@@ -272,7 +273,7 @@ def generate_random_pam():
 def test_niftis_to_pam_flow():
     pam = generate_random_pam()
     with TemporaryDirectory() as out_dir:
-        fname = "test.pam5"
+        fname = pjoin(out_dir, "test.pam5")
         save_pam(fname, pam)
 
         args = [fname, out_dir]
@@ -306,7 +307,10 @@ def test_tensor_to_pam_flow():
     df.evals[0, 0, 0] = np.array([0, 0, 0])
 
     with TemporaryDirectory() as out_dir:
-        f_mevals, f_mevecs = "evals.nii.gz", "evecs.nii.gz"
+        f_mevals, f_mevecs = (
+            pjoin(out_dir, "evals.nii.gz"),
+            pjoin(out_dir, "evecs.nii.gz"),
+        )
         save_nifti(f_mevals, df.evals, affine)
         save_nifti(f_mevecs, df.evecs, affine)
 
@@ -325,13 +329,11 @@ def test_tensor_to_pam_flow():
 def test_pam_to_niftis_flow():
     pam = generate_random_pam()
 
-    with TemporaryDirectory():
-        fname = "test.pam5"
+    with TemporaryDirectory() as out_dir:
+        fname = pjoin(out_dir, "test.pam5")
         save_pam(fname, pam)
 
-        args = [
-            fname,
-        ]
+        args = [fname, out_dir]
         flow = PamToNiftisFlow()
         flow.run(*args)
         assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_dir"]))

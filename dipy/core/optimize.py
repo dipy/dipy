@@ -440,10 +440,8 @@ class PositiveDefiniteLeastSquares:
         t = len(A) if A else 0
         k = t - m - 1
 
-        sparsity = [(i, j) for i in range(m) for j in range(i, m)]
-
         # Unknowns
-        self._X = cvxpy.Parameter((m, m), sparsity=sparsity)  # Design matrix
+        self._X = cvxpy.Parameter((m, m))  # Design matrix
         self._f = cvxpy.Parameter(m)  # Given solution for feasibility check
         self._h = cvxpy.Variable(m)  # Solution to constrained problem
         self._y = cvxpy.Parameter(m)  # Regressand

@@ -1,4 +1,5 @@
 import os
+from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -61,49 +62,52 @@ def test_horizon_flow(rng):
     tractograms = [sft]
     images = None
 
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        cluster=True,
-        cluster_thr=5,
-        random_colors=False,
-        length_lt=np.inf,
-        length_gt=0,
-        clusters_lt=np.inf,
-        clusters_gt=0,
-        world_coords=True,
-        interactive=False,
-    )
-
-    buan_colors = np.ones(streamlines.get_data().shape)
-
-    horizon(
-        tractograms=tractograms,
-        buan=True,
-        buan_colors=buan_colors,
-        world_coords=True,
-        interactive=False,
-    )
-
-    data = 255 * rng.random((197, 233, 189))
-
-    images = [(data, affine, "test/test.nii.gz")]
-
-    horizon(
-        tractograms=tractograms,
-        images=images,
-        cluster=True,
-        cluster_thr=5,
-        random_colors=False,
-        length_lt=np.inf,
-        length_gt=0,
-        clusters_lt=np.inf,
-        clusters_gt=0,
-        world_coords=True,
-        interactive=False,
-    )
-
     with TemporaryDirectory() as out_dir:
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            cluster=True,
+            cluster_thr=5,
+            random_colors=False,
+            length_lt=np.inf,
+            length_gt=0,
+            clusters_lt=np.inf,
+            clusters_gt=0,
+            world_coords=True,
+            interactive=False,
+            out_png=pjoin(out_dir, "horizon-flow.png"),
+        )
+
+        buan_colors = np.ones(streamlines.get_data().shape)
+
+        horizon(
+            tractograms=tractograms,
+            buan=True,
+            buan_colors=buan_colors,
+            world_coords=True,
+            interactive=False,
+            out_png=pjoin(out_dir, "buan.png"),
+        )
+
+        data = 255 * rng.random((197, 233, 189))
+
+        images = [(data, affine, "test/test.nii.gz")]
+
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            cluster=True,
+            cluster_thr=5,
+            random_colors=False,
+            length_lt=np.inf,
+            length_gt=0,
+            clusters_lt=np.inf,
+            clusters_gt=0,
+            world_coords=True,
+            interactive=False,
+            out_png=pjoin(out_dir, "horizon-flow-nii-images.png"),
+        )
+
         fimg = os.path.join(out_dir, "test.nii.gz")
         ftrk = os.path.join(out_dir, "test.trk")
         fnpy = os.path.join(out_dir, "test.npy")

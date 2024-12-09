@@ -349,7 +349,7 @@ def test_trk_iterative_saving_loading():
             assert_allclose(
                 tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
             )
-            save_tractogram(sft_iter, "gs_iter.trk")
+            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.trk"))
 
 
 def test_tck_iterative_saving_loading():

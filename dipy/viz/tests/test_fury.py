@@ -1,3 +1,5 @@
+from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
@@ -93,22 +95,27 @@ def test_contour_from_roi():
         seed_mask, affine=affine, color=[0, 1, 1], opacity=0.5
     )
 
-    # Create the 3d display.
-    sc = window.Scene()
-    sc2 = window.Scene()
-    sc.add(streamlines_actor)
-    arr3 = window.snapshot(sc, fname="test_surface3.png", offscreen=True)
-    report3 = window.analyze_snapshot(arr3, find_objects=True)
-    sc2.add(streamlines_actor)
-    sc2.add(seedroi_actor)
-    arr4 = window.snapshot(sc2, fname="test_surface4.png", offscreen=True)
-    report4 = window.analyze_snapshot(arr4, find_objects=True)
+    with TemporaryDirectory() as out_dir:
+        # Create the 3d display.
+        sc = window.Scene()
+        sc2 = window.Scene()
+        sc.add(streamlines_actor)
+        arr3 = window.snapshot(
+            sc, fname=pjoin(out_dir, "test_surface3.png"), offscreen=True
+        )
+        report3 = window.analyze_snapshot(arr3, find_objects=True)
+        sc2.add(streamlines_actor)
+        sc2.add(seedroi_actor)
+        arr4 = window.snapshot(
+            sc2, fname=pjoin(out_dir, "test_surface4.png"), offscreen=True
+        )
+        report4 = window.analyze_snapshot(arr4, find_objects=True)
 
-    # assert that the seed ROI rendering is not far
-    # away from the streamlines (affine error)
-    npt.assert_equal(report3.objects, report4.objects)
-    # window.show(sc)
-    # window.show(sc2)
+        # assert that the seed ROI rendering is not far
+        # away from the streamlines (affine error)
+        npt.assert_equal(report3.objects, report4.objects)
+        # window.show(sc)
+        # window.show(sc2)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
