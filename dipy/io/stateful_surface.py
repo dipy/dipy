@@ -37,23 +37,6 @@ def set_sfs_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
-class Space(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    VOX = "vox"
-    VOXMM = "voxmm"
-    RASMM = "rasmm"
-    LPSMM = "lpsmm"
-
-
-class Origin(enum.Enum):
-    """Enum to simplify future change to convention"""
-    # TODO: maybe gifti and vtk should be different origins?
-    # Required to do mapping using numpy
-    NIFTI = "center"
-    TRACKVIS = "corner"
-
-
 class StatefulSurface:
     """Class for stateful representation of meshes and lines
     Object designed to be identical no matter the file format
@@ -82,11 +65,11 @@ class StatefulSurface:
             Reference that provides the spatial attributes.
             Typically a nifti-related object from the native space used for
             surface generation
-        space : Enum (dipy.io.stateful_surface.Space)
+        space : Enum (dipy.io.utils.Space)
             Current space in which the surface are (vox, voxmm or rasmm)
             After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin : Enum (dipy.io.stateful_surface.Origin), optional
+        origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the surface are (center or corner)
             After loading with nibabel the origin is CENTER
         data_per_point : dict, optional
@@ -162,9 +145,8 @@ class StatefulSurface:
                     "TrkFile, Nifti1Header or trk.header (dict)."
                 )
 
-        (self._affine, self._dimensions, self._voxel_sizes, self._voxel_order) = (
+        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
             space_attributes
-        )
         self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
 
         if space not in Space:
@@ -299,7 +281,7 @@ class StatefulSurface:
 
         if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
             dtype_dict = {"vertices": np.float32,
-                "faces": np.uint32}
+                          "faces": np.uint32}
             return OrderedDict(dtype_dict)
 
         dtype_dict = {
@@ -663,7 +645,7 @@ class StatefulSurface:
                 flip_affine = np.diag([-1, -1, 1, 1])
                 self._vertices = apply_affine(
                     flip_affine, self._vertices, inplace=True)
-            self._space = Space.RASMM
+            self._space = Space.LPSMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
             logger.warning("Wrong initial space for this function.")
