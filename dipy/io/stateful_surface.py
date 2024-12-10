@@ -15,6 +15,8 @@ from dipy.io.utils import (
     get_reference_info,
     is_header_compatible,
     is_reference_info_valid,
+    Space,
+    Origin,
 )
 from dipy.testing.decorators import warning_for_keywords
 from dipy.io.vtk import get_polydata_triangles, get_polydata_vertices, convert_to_polydata
@@ -108,9 +110,7 @@ class StatefulSurface:
         if dtype_dict is None:
             dtype_dict = {"vertices": np.float32,
                           "faces": np.uint32}
-        print('-')
         self.dtype_dict = dtype_dict
-        print(self.dtype_dict)
 
         if isinstance(data, vtk.vtkPolyData):
             self._vertices = get_polydata_vertices(
@@ -297,9 +297,10 @@ class StatefulSurface:
     def dtype_dict(self):
         """Getter for dtype_dict"""
 
-        if getattr(self, "_vertices", None) is None or \
-                getattr(self, "_faces", None) is None:
-            return {}
+        if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
+            dtype_dict = {"vertices": np.float32,
+                "faces": np.uint32}
+            return OrderedDict(dtype_dict)
 
         dtype_dict = {
             "vertices": self._vertices.dtype,

@@ -770,7 +770,7 @@ class SynRegistrationFlow(Workflow):
             static_file,
             moving_file,
             owarped_file,
-            _,
+            oinv_static_file,
             omap_file,
         ) in io_it:
             logging.info(f"Loading static file {static_file}")
@@ -841,8 +841,8 @@ class SynRegistrationFlow(Workflow):
             # Saving
             logging.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info(f"Saving inverse transformes static {out_inv_static}")
-            save_nifti(out_inv_static, inv_static, static_grid2world)
+            logging.info(f"Saving inverse transformes static {oinv_static_file}")
+            save_nifti(oinv_static_file, inv_static, static_grid2world)
             logging.info(f"Saving Diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
