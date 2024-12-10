@@ -49,6 +49,7 @@ Python 2.7 support was dropped starting from DIPY 1.0.0
  2022              Py3.7+
  mid-2023          Py3.8+
  2024              Py3.9+
+ 2025              Py3.10+
 ================  =======================================================================
 
 NumPy
@@ -77,6 +78,7 @@ Python release.
  1.7.0              >=3.8, <=3.11               >=1.19.5, <1.24.0
  1.8.0              >=3.8, <=3.12               >=1.19.5, <1.26.0
  1.9.0              >=3.9, <3.12                >=1.21.6, <1.27.0
+ 1.10.0             >=3.9, <3.13                >=1.21.6, <2.2.0
 =================  ========================    =======================
 
 .. note::
@@ -146,9 +148,9 @@ Building the Documentation
  Tool                 Version
 ====================  =================================================
 Sphinx                Whatever recent versions work. >= 6.0.
-GRG Sphinx theme      Whatever recent versions work. >= 0.3.1.
+GRG Sphinx theme      Whatever recent versions work. >= 0.4.0.
 Sphinx-Design         Whatever recent versions work. >= 0.5.0.
-numpydoc              Whatever recent versions work. >= 1.6.0.
+numpydoc              Whatever recent versions work. >= 1.8.0.
 Sphinx-Gallery        Whatever recent versions work. >= 0.15.0.
 Sphinxcontrib-bibtex  Whatever recent versions work. >= 2.6.1
 ====================  =================================================
