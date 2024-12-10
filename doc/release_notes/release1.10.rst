@@ -4,11 +4,11 @@
  Release notes for DIPY version 1.10
 =====================================
 
-GitHub stats for 2024/03/08 - 2024/11/06 (tag: 1.9.0)
+GitHub stats for 2024/03/08 - 2024/12/09 (tag: 1.9.0)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 25 authors contributed 848 commits.
+The following 25 authors contributed 871 commits.
 
 * Alex Rockhill
 * Ariel Rokem
@@ -23,27 +23,32 @@ The following 25 authors contributed 848 commits.
 * Jon Haitz Legarreta Gorroño
 * Jong Sung Park
 * Julio Villalon
+* Kaibo Tang
 * Kaustav Deka
 * Maharshi Gor
-* MartinKjunior
+* Martin Kozár
 * Matt Cieslak
 * Matthew Feickert
 * Michael R. Crusoe
+* Prajwal Reddy
 * Rafael Neto Henriques
-* Sai Prajwal Reddy
 * Sam Coveney
 * Sandro Turriate
 * Serge Koudoro
-* Kaibo Tang
 
 
-We closed a total of 430 issues, 183 pull requests and 250 regular issues;
+We closed a total of 445 issues, 187 pull requests and 258 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (181):
+Pull Requests (187):
 
+* :ghpull:`3420`: CI: define output path for coverage
+* :ghpull:`3415`: tests: leave no trace behind
+* :ghpull:`3417`: MAINT: Address changes to API with new (1.6) version of cvxpy.
+* :ghpull:`3414`: Bump codecov/codecov-action from 4 to 5 in the actions group
 * :ghpull:`3412`: BF: Fixing single-slice data error in Patch2Self
+* :ghpull:`3409`: [RF] Cleanup deprecated functions and remove some old legacy scripts
 * :ghpull:`3407`: CI: unpin cvxpy
 * :ghpull:`3408`: RF: fix step argument in DTI NLLS model
 * :ghpull:`3402`: DOC: Add Exporting and importing Mapping field information in recipes and registration tutorial
@@ -226,10 +231,17 @@ Pull Requests (181):
 * :ghpull:`3086`: [RF] Fix spherical harmonic terminology swap
 * :ghpull:`3095`: [UPCOMING] Release preparation for 1.9.0
 
-Issues (249):
+Issues (258):
 
-* :ghissue:`3412`: BF: Fixing single-slice data error in Patch2Self
+* :ghissue:`3420`: CI: define output path for coverage
+* :ghissue:`3415`: tests: leave no trace behind
+* :ghissue:`3417`: MAINT: Address changes to API with new (1.6) version of cvxpy.
+* :ghissue:`3414`: Bump codecov/codecov-action from 4 to 5 in the actions group
 * :ghissue:`2469`: Error in patch2self for single-slice data
+* :ghissue:`3412`: BF: Fixing single-slice data error in Patch2Self
+* :ghissue:`1531`: Test suite fails with errors regarding the ConvexHull of scipy.spatial.qhull objects
+* :ghissue:`3409`: [RF] Cleanup deprecated functions and remove some old legacy scripts
+* :ghissue:`3410`: `radial_scale` parameter of `actor.odf_slicer` has some issues
 * :ghissue:`3407`: CI: unpin cvxpy
 * :ghissue:`3030`: I do not see a way to change step as used by reconst.dti.TensorModel.fit()
 * :ghissue:`3408`: RF: fix step argument in DTI NLLS model
