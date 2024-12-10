@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import os
 import time
@@ -17,7 +18,6 @@ from dipy.testing.decorators import warning_for_keywords
 def load_surface(
     fname,
     reference,
-    *,
     to_space=Space.RASMM,
     to_origin=Origin.NIFTI,
     bbox_valid_check=True,
@@ -55,14 +55,21 @@ def load_surface(
         Origin to which the surface was transformed before saving.
         Help for software compatibility. If None, assumes NIFTI.
 
+    Raises
+    ------
+    ValueError
+        If the bounding box is not valid in voxel space.
+
     Returns
     -------
     output : StatefulSurface
         The surface to load (must have been saved properly)
     """
+    vtk_ext = [".vtk", ".vtp", ".obj", ".stl", ".ply"]
+    freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig",
+                      ".smoothwm", ".T1"]
     _, extension = os.path.splitext(fname)
-    if extension not in [".vtk", ".vtp", ".obj", ".stl", ".ply", ".gii", ".gii.gz",
-                         ".pial"]:
+    if extension not in freesurfer_ext + vtk_ext:
         logging.error("Output filename is not one of the supported format.")
         return False
 
@@ -87,31 +94,34 @@ def load_surface(
     _, ext = os.path.splitext(fname)
 
     timer = time.time()
+    metadata = None
     if ext == ".gii" or ext == ".gii.gz":
         data = load_gifti(fname)
     elif ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
         data = load_polydata(fname)
     else:
-        try:
-            data = load_pial(fname)
-            reference = fname if reference == "same" else reference
-            affine, dimensions, _, _ = get_reference_info(reference)
-            center_volume = (np.array(dimensions) / 2)
-            xform_translation = np.dot(affine[0:3, 0:3], center_volume) + affine[0:3, 3]
-            data = data[0] + xform_translation, data[1]
+        data = load_pial(fname, return_meta=True)
+        data, metadata = data[0:2], data[2]
 
-            if from_space is not None or from_origin is not None:
-                warn("from_space and from_origin are ignored when loading pial files.")
-            from_space = Space.RASMM
-            from_origin = Origin.NIFTI
-        except ValueError:
-            warn(f"The file {fname} provided is not supported.")
+        reference = fname if reference == "same" else reference
+        affine, dimensions, _, _ = get_reference_info(reference)
+        center_volume = (np.array(dimensions) / 2)
+        xform_translation = np.dot(
+            affine[0:3, 0:3], center_volume) + affine[0:3, 3]
+        data = data[0] + xform_translation, data[1]
+
+        if from_space is not None or from_origin is not None:
+            warn("from_space and from_origin are ignored when loading pial files.")
+        from_space = Space.RASMM
+        from_origin = Origin.TRACKVIS
 
     from_space = Space.RASMM if from_space is None else from_space
     from_origin = Origin.NIFTI if from_origin is None else from_origin
 
     sfs = StatefulSurface(data, reference, space=from_space, origin=from_origin,
                           data_per_point=None)
+    sfs.metadata = metadata
+
     logging.debug(
         "Load %s with %s streamlines in %s seconds.",
         fname,
@@ -125,8 +135,7 @@ def load_surface(
             "load a valid file if some coordinates are invalid.\n"
             "Please set bbox_valid_check to False and then use "
             "the function remove_invalid_streamlines to discard "
-            "invalid streamlines."
-        )
+            "invalid streamlines.")
 
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
@@ -135,13 +144,100 @@ def load_surface(
 
 
 def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
-                 legacy_vtk_format=False):
+                 legacy_vtk_format=False, bbox_valid_check=True,
+                 ref_pial=None):
     """
+    Save the stateful surface to any format (vtk/vtp/obj/stl/ply/gii/pial)
+
+    Parameters
+    ----------
+    fname : str
+        Absolute path of the file.
+    sfs : StatefulSurface
+        The surface to save (must have been loaded properly)
+    to_space : Enum (dipy.io.stateful_surface.Space)
+        Space to which the surface will be transformed before saving
+    to_origin : Enum (dipy.io.stateful_surface.Origin)
+        Origin to which the surface will be transformed before saving
+            NIFTI standard, default (center of the voxel)
+            TRACKVIS standard (corner of the voxel)
+    legacy_vtk_format : bool
+        Whether to save the file in legacy VTK format or not.
+    check_bbox_valid : bool
+        Verification for negative voxel coordinates or values above the
+        volume dimensions. Default is True, to enforce valid file.
+    ref_pial : str
+        Reference pial file to save the surface in pial format.
+        If not provided, the metadata of the input surface is used.
+
+    Raises
+    ------
+    ValueError
+        If the bounding box is not valid in voxel space.
     """
+    old_space = deepcopy(sfs.space)
+    old_origin = deepcopy(sfs.origin)
+    if bbox_valid_check and not sfs.is_bbox_in_vox_valid():
+        raise ValueError(
+            "Bounding box is not valid in voxel space, cannot "
+            "save a valid file if some coordinates are invalid.\n"
+            "Please set bbox_valid_check to False and verify the "
+            "bounding box of the surface.")
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
-    save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format)
 
+    _, ext = os.path.splitext(fname)
+
+    if ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
+        if sfs.data_per_point is not None:
+            # Check if rgb, colors, colors, etc. are available
+            color_array_name = None
+            for key in ["rgb", "colors", "colors", "color"]:
+                if key in sfs.data_per_point:
+                    color_array_name = key
+                    break
+                if key.upper() in sfs.data_per_point:
+                    color_array_name = key.upper()
+                    break
+        save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format,
+                      color_array_name=color_array_name)
+    elif ext in [".gii", ".gii.gz"]:
+        vertices, faces = sfs.get_vertices_faces()
+        surf_img = nib.gifti.GiftiImage()
+        surf_img.add_gifti_data_array(ns.numpy_to_vtk(vertices, deep=True))
+        surf_img.add_gifti_data_array(ns.numpy_to_vtk(faces, deep=True))
+        nib.save(surf_img, fname)
+    elif ext == ".pial":
+        if not hasattr(sfs, "metadata") and ref_pial is None:
+            raise ValueError("Metadata is required to save a pial file.\n"
+                             "Please provide the reference pial file.")
+
+        if ref_pial is not None:
+            _, ext = os.path.splitext(ref_pial)
+            if ext != ".pial":
+                raise ValueError(
+                    "Reference pial file must have .pial extension.")
+            metadata = load_pial(ref_pial, return_meta=True)[-1]
+        else:
+            metadata = sfs.metadata
+
+            if to_space is not None or to_origin is not None:
+                warn("to_space and to_origin are ignored when loading pial files.")
+            to_space = Space.RASMM
+            to_origin = Origin.TRACKVIS
+
+        affine, dimensions = sfs.affine, sfs.dimensions
+        center_volume = np.array(dimensions) / 2
+        xform_translation = np.dot(
+            affine[0:3, 0:3], center_volume) + affine[0:3, 3]
+
+        vertices = deepcopy(sfs.vertices) - xform_translation
+        save_pial(fname, vertices, sfs.faces, metadata)
+    else:
+        logging.error("Output extension is not one of the supported format.")
+
+    sfs.to_space(old_space)
+    sfs.to_origin(old_origin)
 
 
 @warning_for_keywords()
@@ -161,11 +257,34 @@ def load_pial(fname, *, return_meta=False):
         (vertices, faces) if return_meta=False. Otherwise, (vertices, faces,
         metadata).
     """
+    not_valid_geometry = False
     try:
-        return nib.freesurfer.read_geometry(fname, read_metadata=return_meta)
+        data = nib.freesurfer.read_geometry(fname, read_metadata=return_meta)
     except ValueError:
-        warn(
-            f"The file {fname} provided does not have geometry data.", stacklevel=2)
+        try:
+            data = nib.freesurfer.read_geometry(fname, read_metadata=False)
+            warn("No metadata found, please use a pial file with metadata.")
+        except ValueError:
+            raise ValueError(f"{fname} provided does not have geometry data.")
+
+    return data
+
+
+def save_pial(fname, vertices, faces, metadata):
+    """Save pial file.
+
+    Parameters
+    ----------
+    fname : str
+        Absolute path of the file.
+    vertices : ndarray
+        Vertices.
+    faces : ndarray
+        Faces.
+    metadata : dict
+        Key-value pairs to encode at the end of the file.
+    """
+    nib.freesurfer.write_geometry(fname, vertices, faces, volume_info=metadata)
 
 
 def load_gifti(fname):

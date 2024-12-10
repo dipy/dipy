@@ -14,11 +14,12 @@ from nibabel.streamlines.tractogram import (
 import numpy as np
 
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import (
-    get_reference_info,
-    is_header_compatible,
-    is_reference_info_valid,
-)
+from dipy.io.utils import (get_reference_info,
+                           is_header_compatible,
+                           is_reference_info_valid,
+                           Space,
+                           Origin
+                           )
 from dipy.testing.decorators import warning_for_keywords
 
 logger = logging.getLogger("StatefulTractogram")
@@ -35,21 +36,6 @@ def set_sft_logger_level(log_level):
         Log level for the StatefulTractogram only
     """
     logger.setLevel(level=log_level)
-
-
-class Space(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    VOX = "vox"
-    VOXMM = "voxmm"
-    RASMM = "rasmm"
-
-
-class Origin(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    NIFTI = "center"
-    TRACKVIS = "corner"
 
 
 class StatefulTractogram:
@@ -163,7 +149,8 @@ class StatefulTractogram:
         self._space = space
 
         if origin not in Origin:
-            raise ValueError("Origin MUST be from Origin enum, e.g Origin.NIFTI.")
+            raise ValueError(
+                "Origin MUST be from Origin enum, e.g Origin.NIFTI.")
         self._origin = origin
 
         logger.debug(self)
@@ -189,7 +176,8 @@ class StatefulTractogram:
             logger.warning("Inconsistent data_per_point between both sft.")
             are_sft_compatible = False
         if sft_1.get_data_per_streamline_keys() != sft_2.get_data_per_streamline_keys():
-            logger.warning("Inconsistent data_per_streamline between both sft.")
+            logger.warning(
+                "Inconsistent data_per_streamline between both sft.")
             are_sft_compatible = False
 
         return are_sft_compatible
@@ -514,6 +502,9 @@ class StatefulTractogram:
         elif self._space == Space.VOXMM:
             self._voxmm_to_rasmm()
 
+    def to_lpsmm(self):
+        raise NotImplementedError("LPSMM is not supported yet.")
+
     def to_space(self, target_space):
         """Safe function to transform streamlines to a particular space using
         an enum and update state"""
@@ -523,6 +514,8 @@ class StatefulTractogram:
             self.to_voxmm()
         elif target_space == Space.RASMM:
             self.to_rasmm()
+        elif target_space == Space.LPSMM:
+            self.to_lpsmm()
         else:
             logger.error(
                 "Unsupported target space, please use Enum in "
@@ -637,11 +630,13 @@ class StatefulTractogram:
         self.to_vox()
         self.to_corner()
 
-        min_condition = np.min(self._tractogram.streamlines._data, axis=1) < epsilon
+        min_condition = np.min(
+            self._tractogram.streamlines._data, axis=1) < epsilon
         max_condition = np.any(
             self._tractogram.streamlines._data > self._dimensions - epsilon, axis=1
         )
-        ic_offsets_indices = np.where(np.logical_or(min_condition, max_condition))[0]
+        ic_offsets_indices = np.where(
+            np.logical_or(min_condition, max_condition))[0]
 
         indices_to_remove = []
         for i in ic_offsets_indices:
@@ -688,7 +683,8 @@ class StatefulTractogram:
         """Unsafe function to transform streamlines"""
         if self._space == Space.VOX:
             if self._tractogram.streamlines._data.size > 0:
-                self._tractogram.streamlines._data *= np.asarray(self._voxel_sizes)
+                self._tractogram.streamlines._data *= np.asarray(
+                    self._voxel_sizes)
             self._space = Space.VOXMM
             logger.debug("Moved streamlines from vox to voxmm.")
         else:
@@ -698,7 +694,8 @@ class StatefulTractogram:
         """Unsafe function to transform streamlines"""
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines._data.size > 0:
-                self._tractogram.streamlines._data /= np.asarray(self._voxel_sizes)
+                self._tractogram.streamlines._data /= np.asarray(
+                    self._voxel_sizes)
             self._space = Space.VOX
             logger.debug("Moved streamlines from voxmm to vox.")
         else:
@@ -728,7 +725,8 @@ class StatefulTractogram:
         """Unsafe function to transform streamlines"""
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines._data.size > 0:
-                self._tractogram.streamlines._data /= np.asarray(self._voxel_sizes)
+                self._tractogram.streamlines._data /= np.asarray(
+                    self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
             self._space = Space.RASMM
             logger.debug("Moved streamlines from voxmm to rasmm.")
@@ -740,7 +738,8 @@ class StatefulTractogram:
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
-                self._tractogram.streamlines._data *= np.asarray(self._voxel_sizes)
+                self._tractogram.streamlines._data *= np.asarray(
+                    self._voxel_sizes)
             self._space = Space.VOXMM
             logger.debug("Moved streamlines from rasmm to voxmm.")
         else:

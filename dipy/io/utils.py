@@ -1,5 +1,6 @@
 """Utility functions for file formats"""
 
+import enum
 import logging
 import numbers
 import os
@@ -18,6 +19,23 @@ pd, have_pd, _ = optional_package("pandas")
 
 if have_pd:
     import pandas as pd
+
+
+class Space(enum.Enum):
+    """Enum to simplify future change to convention"""
+
+    VOX = "vox"
+    VOXMM = "voxmm"
+    RASMM = "rasmm"
+    LPSMM = "lpsmm"
+
+
+class Origin(enum.Enum):
+    """Enum to simplify future change to convention"""
+    # TODO: maybe gifti and vtk should be different origins?
+    # Required to do mapping using numpy
+    NIFTI = "center"
+    TRACKVIS = "corner"
 
 
 def nifti1_symmat(image_data, *args, **kwargs):

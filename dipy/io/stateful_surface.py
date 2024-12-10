@@ -1,21 +1,18 @@
-from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
-import enum
 from itertools import product
 import logging
 
 from nibabel.affines import apply_affine
-from nibabel.streamlines.tractogram import PerArrayDict
 import numpy as np
 import vtk
 import vtk.util.numpy_support as ns
 
-from dipy.io.utils import (
-    get_reference_info,
-    is_header_compatible,
-    is_reference_info_valid,
-)
+from dipy.io.utils import (get_reference_info,
+                           is_header_compatible,
+                           is_reference_info_valid,
+                           Space,
+                           Origin)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.io.vtk import get_polydata_triangles, get_polydata_vertices, convert_to_polydata
 
@@ -33,23 +30,6 @@ def set_sfs_logger_level(log_level):
         Log level for the StatefulSurface only
     """
     logger.setLevel(level=log_level)
-
-
-class Space(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    VOX = "vox"
-    VOXMM = "voxmm"
-    RASMM = "rasmm"
-    LPSMM = "lpsmm"
-
-
-class Origin(enum.Enum):
-    """Enum to simplify future change to convention"""
-    # TODO: maybe gifti and vtk should be different origins?
-    # Required to do mapping using numpy
-    NIFTI = "center"
-    TRACKVIS = "corner"
 
 
 class StatefulSurface:
@@ -104,18 +84,23 @@ class StatefulSurface:
         """
 
         self.data_per_point = {} if data_per_point is None else data_per_point
-    
+        self._freesurfer_metadata = None
+
         if isinstance(data, vtk.vtkPolyData):
-            self._vertices = get_polydata_vertices(data, dtype=self.dtype_dict["vertices"])
-            self._faces = get_polydata_triangles(data, dtype=self.dtype_dict["faces"])
+            self._vertices = get_polydata_vertices(
+                data, dtype=self.dtype_dict["vertices"])
+            self._faces = get_polydata_triangles(
+                data, dtype=self.dtype_dict["faces"])
 
             point_data = data.GetPointData()
-            scalar_names = [point_data.GetArrayName(i) for i in range(point_data.GetNumberOfArrays())]
+            scalar_names = [point_data.GetArrayName(
+                i) for i in range(point_data.GetNumberOfArrays())]
             if scalar_names:
                 for name in scalar_names:
                     scalar = data.GetPointData().GetScalars(name)
                     if name in self.data_per_point:
-                        logger.warning(f"Scalar {name} already in data_per_point, overwriting")
+                        logger.warning(
+                            f"Scalar {name} already in data_per_point, overwriting")
                     self.data_per_point[name] = ns.vtk_to_numpy(scalar)
         else:
             self._vertices, self._faces = data
@@ -161,7 +146,8 @@ class StatefulSurface:
         self._space = space
 
         if origin not in Origin:
-            raise ValueError("Origin MUST be from Origin enum, e.g Origin.NIFTI.")
+            raise ValueError(
+                "Origin MUST be from Origin enum, e.g Origin.NIFTI.")
         self._origin = origin
 
         logger.debug(self)
@@ -285,6 +271,9 @@ class StatefulSurface:
     def dtype_dict(self):
         """Getter for dtype_dict"""
 
+        if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
+            return {"vertices": np.float32, "faces": np.uint32}
+
         dtype_dict = {
             "vertices": self._vertices.dtype,
             "faces": self._faces.dtype,
@@ -336,7 +325,7 @@ class StatefulSurface:
     def vertices(self):
         """Partially safe getter for vertices"""
         return self._vertices
-    
+
     @property
     def faces(self):
         """Partially safe getter for faces"""
@@ -370,12 +359,12 @@ class StatefulSurface:
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""
         return self._vertices.copy()
-    
+
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces)
+        return convert_to_polydata(self._vertices, self._faces, self.data_per_point)
 
     @vertices.setter
-    def streamlines(self, data):
+    def vertices(self, data):
         """Modify surface. Creating a new object would be less risky.
         TODO
         Parameters
@@ -390,6 +379,28 @@ class StatefulSurface:
     def data_per_point(self):
         """Getter for data_per_point"""
         return self._data_per_point
+
+    @property
+    def freesurfer_metadata(self, metadata):
+        """Modify freesurfer_metadata.
+
+        Parameters
+        ----------
+        metadata : dict
+            Dictionary containing the metadata of the freesurfer file.
+        """
+        return self._freesurfer_metadata
+
+    @freesurfer_metadata.setter
+    def freesurfer_metadata(self, metadata):
+        """Modify freesurfer_metadata.
+
+        Parameters
+        ----------
+        metadata : dict
+            Dictionary containing the metadata of the freesurfer file.
+        """
+        self._freesurfer_metadata = metadata
 
     @data_per_point.setter
     def data_per_point(self, data):
@@ -510,6 +521,7 @@ class StatefulSurface:
         output : bool
             Are the vertices within the volume of the associated reference
         """
+
         if not self._vertices.size:
             return True
 
@@ -519,6 +531,7 @@ class StatefulSurface:
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
         self.to_corner()
+
         bbox_corners = deepcopy(self.compute_bounding_box())
 
         is_valid = True
@@ -527,11 +540,9 @@ class StatefulSurface:
             logger.debug(bbox_corners)
             is_valid = False
 
-        if (
-            np.any(bbox_corners[:, 0] > self._dimensions[0])
+        if (np.any(bbox_corners[:, 0] > self._dimensions[0])
             or np.any(bbox_corners[:, 1] > self._dimensions[1])
-            or np.any(bbox_corners[:, 2] > self._dimensions[2])
-        ):
+                or np.any(bbox_corners[:, 2] > self._dimensions[2])):
             logger.error("Voxel space values higher than dimensions.")
             logger.debug(bbox_corners)
             is_valid = False
@@ -578,7 +589,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.VOX:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from vox to rasmm.")
         else:
@@ -588,7 +600,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._inv_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._inv_affine, self._vertices, inplace=True)
             self._space = Space.VOX
             logger.debug("Moved vertices from rasmm to vox.")
         else:
@@ -599,7 +612,8 @@ class StatefulSurface:
         if self._space == Space.VOXMM:
             if self._vertices.size > 0:
                 self._vertices /= np.asarray(self._voxel_sizes)
-                self._vertices = apply_affine(self._affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from voxmm to rasmm.")
         else:
@@ -609,19 +623,21 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._inv_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._inv_affine, self._vertices, inplace=True)
                 self._vertices *= np.asarray(self._voxel_sizes)
             self._space = Space.VOXMM
             logger.debug("Moved vertices from rasmm to voxmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _lpsmm_to_rasmm(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.LPSMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    flip_affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
@@ -632,8 +648,9 @@ class StatefulSurface:
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
-            self._space = Space.RASMM
+                self._vertices = apply_affine(
+                    flip_affine, self._vertices, inplace=True)
+            self._space = Space.LPSMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
             logger.warning("Wrong initial space for this function.")
@@ -646,7 +663,7 @@ class StatefulSurface:
             logger.debug("Moved vertices from lpsmm to voxmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _voxmm_to_lpsmm(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.VOXMM:
@@ -655,7 +672,7 @@ class StatefulSurface:
             logger.debug("Moved vertices from voxmm to lpsmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _lpsmm_to_vox(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.LPSMM:
@@ -697,6 +714,7 @@ class StatefulSurface:
             logger.debug("Origin moved to the center of voxel.")
             self._origin = Origin.NIFTI
 
+
 """
 def _is_data_per_point_valid(streamlines, data):
     pass
@@ -733,4 +751,3 @@ def _is_data_per_point_valid(streamlines, data):
 
     return True
 """
-
