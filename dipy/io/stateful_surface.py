@@ -1,18 +1,23 @@
+from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
+import enum
 from itertools import product
 import logging
 
 from nibabel.affines import apply_affine
+from nibabel.streamlines.tractogram import PerArrayDict
 import numpy as np
 import vtk
 import vtk.util.numpy_support as ns
 
-from dipy.io.utils import (get_reference_info,
-                           is_header_compatible,
-                           is_reference_info_valid,
-                           Space,
-                           Origin)
+from dipy.io.utils import (
+    get_reference_info,
+    is_header_compatible,
+    is_reference_info_valid,
+    Space,
+    Origin,
+)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.io.vtk import get_polydata_triangles, get_polydata_vertices, convert_to_polydata
 
@@ -47,6 +52,7 @@ class StatefulSurface:
         space,
         origin=Origin.NIFTI,
         data_per_point=None,
+        dtype_dict=None,
     ):
         """Create a strict, state-aware, robust surface
 
@@ -59,11 +65,11 @@ class StatefulSurface:
             Reference that provides the spatial attributes.
             Typically a nifti-related object from the native space used for
             surface generation
-        space : Enum (dipy.io.stateful_surface.Space)
+        space : Enum (dipy.io.utils.Space)
             Current space in which the surface are (vox, voxmm or rasmm)
             After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin : Enum (dipy.io.stateful_surface.Origin), optional
+        origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the surface are (center or corner)
             After loading with nibabel the origin is CENTER
         data_per_point : dict, optional
@@ -84,7 +90,10 @@ class StatefulSurface:
         """
 
         self.data_per_point = {} if data_per_point is None else data_per_point
-        self._freesurfer_metadata = None
+        if dtype_dict is None:
+            dtype_dict = {"vertices": np.float32,
+                          "faces": np.uint32}
+        self.dtype_dict = dtype_dict
 
         if isinstance(data, vtk.vtkPolyData):
             self._vertices = get_polydata_vertices(
@@ -136,9 +145,8 @@ class StatefulSurface:
                     "TrkFile, Nifti1Header or trk.header (dict)."
                 )
 
-        (self._affine, self._dimensions, self._voxel_sizes, self._voxel_order) = (
+        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
             space_attributes
-        )
         self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
 
         if space not in Space:
@@ -272,7 +280,9 @@ class StatefulSurface:
         """Getter for dtype_dict"""
 
         if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
-            return {"vertices": np.float32, "faces": np.uint32}
+            dtype_dict = {"vertices": np.float32,
+                          "faces": np.uint32}
+            return OrderedDict(dtype_dict)
 
         dtype_dict = {
             "vertices": self._vertices.dtype,
@@ -341,6 +351,12 @@ class StatefulSurface:
             Dictionary containing the desired datatype for positions, offsets
             and all dpp and dps keys. (To use with TRX file format):
         """
+        if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
+            self.dtype_dict[0] = 0
+            self.dtype_dict["vertices"] = dtype_dict["vertices"]
+            self.dtype_dict["faces"] = dtype_dict["faces"]
+            return
+
         if "faces" in dtype_dict:
             self._faces = self._faces.astype(dtype_dict["faces"])
         if "vertices" in dtype_dict:
@@ -361,10 +377,11 @@ class StatefulSurface:
         return self._vertices.copy()
 
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces, self.data_per_point)
+        return convert_to_polydata(self._vertices, self._faces,
+                                   self._data_per_point)
 
     @vertices.setter
-    def vertices(self, data):
+    def streamlines(self, data):
         """Modify surface. Creating a new object would be less risky.
         TODO
         Parameters
@@ -379,28 +396,6 @@ class StatefulSurface:
     def data_per_point(self):
         """Getter for data_per_point"""
         return self._data_per_point
-
-    @property
-    def freesurfer_metadata(self, metadata):
-        """Modify freesurfer_metadata.
-
-        Parameters
-        ----------
-        metadata : dict
-            Dictionary containing the metadata of the freesurfer file.
-        """
-        return self._freesurfer_metadata
-
-    @freesurfer_metadata.setter
-    def freesurfer_metadata(self, metadata):
-        """Modify freesurfer_metadata.
-
-        Parameters
-        ----------
-        metadata : dict
-            Dictionary containing the metadata of the freesurfer file.
-        """
-        self._freesurfer_metadata = metadata
 
     @data_per_point.setter
     def data_per_point(self, data):
@@ -521,7 +516,6 @@ class StatefulSurface:
         output : bool
             Are the vertices within the volume of the associated reference
         """
-
         if not self._vertices.size:
             return True
 
@@ -531,7 +525,6 @@ class StatefulSurface:
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
         self.to_corner()
-
         bbox_corners = deepcopy(self.compute_bounding_box())
 
         is_valid = True
@@ -540,9 +533,11 @@ class StatefulSurface:
             logger.debug(bbox_corners)
             is_valid = False
 
-        if (np.any(bbox_corners[:, 0] > self._dimensions[0])
+        if (
+            np.any(bbox_corners[:, 0] > self._dimensions[0])
             or np.any(bbox_corners[:, 1] > self._dimensions[1])
-                or np.any(bbox_corners[:, 2] > self._dimensions[2])):
+            or np.any(bbox_corners[:, 2] > self._dimensions[2])
+        ):
             logger.error("Voxel space values higher than dimensions.")
             logger.debug(bbox_corners)
             is_valid = False
@@ -713,41 +708,3 @@ class StatefulSurface:
         else:
             logger.debug("Origin moved to the center of voxel.")
             self._origin = Origin.NIFTI
-
-
-"""
-def _is_data_per_point_valid(streamlines, data):
-    pass
-    if not isinstance(data, (dict, PerArrayDict)):
-        logger.error("data_per_point MUST be a dictionary.")
-        return False
-    elif data == {}:
-        return True
-
-    total_point = 0
-    total_streamline = 0
-    for i in streamlines:
-        total_streamline += 1
-        total_point += len(i)
-
-    for key in data.keys():
-        total_point_entries = 0
-        if not len(data[key]) == total_streamline:
-            logger.error(
-                "Missing entry for streamlines points data, "
-                "inconsistent number of streamlines."
-            )
-            return False
-
-        for values in data[key]:
-            total_point_entries += len(values)
-
-        if total_point_entries != total_point:
-            logger.error(
-                "Missing entry for streamlines points data, "
-                "inconsistent number of points per streamlines."
-            )
-            return False
-
-    return True
-"""

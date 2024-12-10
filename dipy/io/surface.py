@@ -10,9 +10,10 @@ import vtk
 import vtk.util.numpy_support as ns
 
 from dipy.io.vtk import load_polydata, save_polydata
-from dipy.io.stateful_surface import StatefulSurface, Origin, Space
+from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.utils import is_header_compatible, get_reference_info
 from dipy.testing.decorators import warning_for_keywords
+from dipy.io.utils import Origin, Space
 
 
 def load_surface(
@@ -102,24 +103,27 @@ def load_surface(
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
+        print('==++==', data[0][0])
 
         reference = fname if reference == "same" else reference
         affine, dimensions, _, _ = get_reference_info(reference)
         center_volume = (np.array(dimensions) / 2)
         xform_translation = np.dot(
-            affine[0:3, 0:3], center_volume) + affine[0:3, 3]
+            affine[0:3, 0:3], center_volume - 0.5) + affine[0:3, 3]
+
         data = data[0] + xform_translation, data[1]
 
         if from_space is not None or from_origin is not None:
-            warn("from_space and from_origin are ignored when loading pial files.")
+            logging.warning(
+                "from_space and from_origin are ignored when loading pial files.")
         from_space = Space.RASMM
-        from_origin = Origin.TRACKVIS
+        from_origin = Origin.NIFTI
 
     from_space = Space.RASMM if from_space is None else from_space
     from_origin = Origin.NIFTI if from_origin is None else from_origin
-
     sfs = StatefulSurface(data, reference, space=from_space, origin=from_origin,
                           data_per_point=None)
+    print('====', sfs.vertices[0])
     sfs.metadata = metadata
 
     logging.debug(
@@ -139,6 +143,7 @@ def load_surface(
 
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
+    print('==++==', sfs.vertices[0])
 
     return sfs
 
@@ -183,12 +188,12 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
             "save a valid file if some coordinates are invalid.\n"
             "Please set bbox_valid_check to False and verify the "
             "bounding box of the surface.")
-    sfs.to_space(to_space)
-    sfs.to_origin(to_origin)
 
     _, ext = os.path.splitext(fname)
 
     if ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
+        sfs.to_space(to_space)
+        sfs.to_origin(to_origin)
         if sfs.data_per_point is not None:
             # Check if rgb, colors, colors, etc. are available
             color_array_name = None
@@ -202,6 +207,9 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
         save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format,
                       color_array_name=color_array_name)
     elif ext in [".gii", ".gii.gz"]:
+        # TODO: check if this is correct
+        sfs.to_space(to_space)
+        sfs.to_origin(to_origin)
         vertices, faces = sfs.get_vertices_faces()
         surf_img = nib.gifti.GiftiImage()
         surf_img.add_gifti_data_array(ns.numpy_to_vtk(vertices, deep=True))
@@ -221,17 +229,19 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
         else:
             metadata = sfs.metadata
 
-            if to_space is not None or to_origin is not None:
-                warn("to_space and to_origin are ignored when loading pial files.")
-            to_space = Space.RASMM
-            to_origin = Origin.TRACKVIS
+        if to_space is not None or to_origin is not None:
+            logging.warning(
+                "to_space and to_origin are ignored when loading pial files.")
+        sfs.to_space(Space.RASMM)
+        sfs.to_origin(Origin.NIFTI)
 
         affine, dimensions = sfs.affine, sfs.dimensions
         center_volume = np.array(dimensions) / 2
         xform_translation = np.dot(
-            affine[0:3, 0:3], center_volume) + affine[0:3, 3]
+            affine[0:3, 0:3], center_volume) + affine[0:3, 3] + [0.5, 0.5, -0.5]
 
         vertices = deepcopy(sfs.vertices) - xform_translation
+        print('final', vertices[0])
         save_pial(fname, vertices, sfs.faces, metadata)
     else:
         logging.error("Output extension is not one of the supported format.")
@@ -263,7 +273,8 @@ def load_pial(fname, *, return_meta=False):
     except ValueError:
         try:
             data = nib.freesurfer.read_geometry(fname, read_metadata=False)
-            warn("No metadata found, please use a pial file with metadata.")
+            logging.warning(
+                "No metadata found, please use a pial file with metadata.")
         except ValueError:
             raise ValueError(f"{fname} provided does not have geometry data.")
 

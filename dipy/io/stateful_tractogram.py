@@ -1,7 +1,6 @@
 from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
-import enum
 from itertools import product
 import logging
 
@@ -18,8 +17,7 @@ from dipy.io.utils import (get_reference_info,
                            is_header_compatible,
                            is_reference_info_valid,
                            Space,
-                           Origin
-                           )
+                           Origin)
 from dipy.testing.decorators import warning_for_keywords
 
 logger = logging.getLogger("StatefulTractogram")
@@ -67,11 +65,11 @@ class StatefulTractogram:
             Reference that provides the spatial attributes.
             Typically a nifti-related object from the native diffusion used for
             streamlines generation
-        space : Enum (dipy.io.stateful_tractogram.Space)
+        space : Enum (dipy.io.utils.Space)
             Current space in which the streamlines are (vox, voxmm or rasmm)
             After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin : Enum (dipy.io.stateful_tractogram.Origin), optional
+        origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the streamlines are (center or corner)
             After loading with nibabel the origin is CENTER
         data_per_point : dict, optional
@@ -139,9 +137,8 @@ class StatefulTractogram:
                     "TrkFile, Nifti1Header or trk.header (dict)."
                 )
 
-        (self._affine, self._dimensions, self._voxel_sizes, self._voxel_order) = (
+        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
             space_attributes
-        )
         self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
 
         if space not in Space:

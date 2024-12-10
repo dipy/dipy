@@ -177,10 +177,10 @@ def convert_to_polydata(vertices, triangles, data_per_point=None):
                     "Array length does not match number of points.")
             vtk_array = _numpy_to_vtk_array(np.array(array), name=name)
 
-        if 'normal' in name.lower():
-            polydata.GetPointData().SetNormals(vtk_array)
-        else:
-            polydata.GetPointData().AddArray(vtk_array)
+            if 'normal' in name.lower():
+                polydata.GetPointData().SetNormals(vtk_array)
+            else:
+                polydata.GetPointData().AddArray(vtk_array)
 
     return polydata
 
