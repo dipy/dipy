@@ -426,7 +426,7 @@ class ReconstDtiFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
-        out_sphere: string, optional
+        out_sphere : string, optional
             Sphere vertices name to be saved.
         out_qa : string, optional
             Name of the Quantitative Anisotropy to be saved.
@@ -882,11 +882,11 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
-        out_sphere: string, optional
+        out_sphere : string, optional
             Sphere vertices name to be saved.
-        out_b: string, optional
+        out_b : string, optional
             Name of the B Matrix to be saved.
-        out_qa: string, optional
+        out_qa : string, optional
             Name of the Quantitative Anisotropy to be saved.
 
 
@@ -1716,7 +1716,7 @@ class ReconstRUMBAFlow(Workflow):
         roi_center : variable int, optional
             Center of ROI in data. If center is None, it is assumed that it is
             the center of the volume with shape `data.shape[:3]`.
-        roi_radii : int or array-like, optional
+        roi_radii : variable int, optional
             radii of cuboid ROI in voxels.
         fa_thr : float, optional
             FA threshold to compute the WM response function.
