@@ -134,13 +134,15 @@ def load_surface(
     return sfs
 
 
-def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
-                 legacy_vtk_format=False):
+def save_surface(fname, sfs, to_space=Space.LPSMM, to_origin=Origin.NIFTI,
+                 legacy_vtk_format=False, vtk_color_array_name=None):
     """
     """
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
-    save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format)
+    save_polydata(sfs.get_polydata(), fname,
+                  color_array_name=vtk_color_array_name,
+                  legacy_vtk_format=legacy_vtk_format)
 
 
 

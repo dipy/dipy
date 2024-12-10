@@ -67,6 +67,7 @@ class StatefulSurface:
         space,
         origin=Origin.NIFTI,
         data_per_point=None,
+        dtype_dict=None,
     ):
         """Create a strict, state-aware, robust surface
 
@@ -104,18 +105,28 @@ class StatefulSurface:
         """
 
         self.data_per_point = {} if data_per_point is None else data_per_point
-    
+        if dtype_dict is None:
+            dtype_dict = {"vertices": np.float32,
+                          "faces": np.uint32}
+        print('-')
+        self.dtype_dict = dtype_dict
+        print(self.dtype_dict)
+
         if isinstance(data, vtk.vtkPolyData):
-            self._vertices = get_polydata_vertices(data, dtype=self.dtype_dict["vertices"])
-            self._faces = get_polydata_triangles(data, dtype=self.dtype_dict["faces"])
+            self._vertices = get_polydata_vertices(
+                data, dtype=self.dtype_dict["vertices"])
+            self._faces = get_polydata_triangles(
+                data, dtype=self.dtype_dict["faces"])
 
             point_data = data.GetPointData()
-            scalar_names = [point_data.GetArrayName(i) for i in range(point_data.GetNumberOfArrays())]
+            scalar_names = [point_data.GetArrayName(
+                i) for i in range(point_data.GetNumberOfArrays())]
             if scalar_names:
                 for name in scalar_names:
                     scalar = data.GetPointData().GetScalars(name)
                     if name in self.data_per_point:
-                        logger.warning(f"Scalar {name} already in data_per_point, overwriting")
+                        logger.warning(
+                            f"Scalar {name} already in data_per_point, overwriting")
                     self.data_per_point[name] = ns.vtk_to_numpy(scalar)
         else:
             self._vertices, self._faces = data
@@ -161,7 +172,8 @@ class StatefulSurface:
         self._space = space
 
         if origin not in Origin:
-            raise ValueError("Origin MUST be from Origin enum, e.g Origin.NIFTI.")
+            raise ValueError(
+                "Origin MUST be from Origin enum, e.g Origin.NIFTI.")
         self._origin = origin
 
         logger.debug(self)
@@ -285,6 +297,10 @@ class StatefulSurface:
     def dtype_dict(self):
         """Getter for dtype_dict"""
 
+        if getattr(self, "_vertices", None) is None or \
+                getattr(self, "_faces", None) is None:
+            return {}
+
         dtype_dict = {
             "vertices": self._vertices.dtype,
             "faces": self._faces.dtype,
@@ -336,7 +352,7 @@ class StatefulSurface:
     def vertices(self):
         """Partially safe getter for vertices"""
         return self._vertices
-    
+
     @property
     def faces(self):
         """Partially safe getter for faces"""
@@ -352,6 +368,12 @@ class StatefulSurface:
             Dictionary containing the desired datatype for positions, offsets
             and all dpp and dps keys. (To use with TRX file format):
         """
+        if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
+            self.dtype_dict[0] = 0
+            self.dtype_dict["vertices"] = dtype_dict["vertices"]
+            self.dtype_dict["faces"] = dtype_dict["faces"]
+            return
+
         if "faces" in dtype_dict:
             self._faces = self._faces.astype(dtype_dict["faces"])
         if "vertices" in dtype_dict:
@@ -370,9 +392,10 @@ class StatefulSurface:
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""
         return self._vertices.copy()
-    
+
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces)
+        return convert_to_polydata(self._vertices, self._faces,
+                                   self._data_per_point)
 
     @vertices.setter
     def streamlines(self, data):
@@ -578,7 +601,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.VOX:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from vox to rasmm.")
         else:
@@ -588,7 +612,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._inv_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._inv_affine, self._vertices, inplace=True)
             self._space = Space.VOX
             logger.debug("Moved vertices from rasmm to vox.")
         else:
@@ -599,7 +624,8 @@ class StatefulSurface:
         if self._space == Space.VOXMM:
             if self._vertices.size > 0:
                 self._vertices /= np.asarray(self._voxel_sizes)
-                self._vertices = apply_affine(self._affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from voxmm to rasmm.")
         else:
@@ -609,19 +635,21 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
-                self._vertices = apply_affine(self._inv_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    self._inv_affine, self._vertices, inplace=True)
                 self._vertices *= np.asarray(self._voxel_sizes)
             self._space = Space.VOXMM
             logger.debug("Moved vertices from rasmm to voxmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _lpsmm_to_rasmm(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.LPSMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    flip_affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
@@ -632,7 +660,8 @@ class StatefulSurface:
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(
+                    flip_affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
@@ -646,7 +675,7 @@ class StatefulSurface:
             logger.debug("Moved vertices from lpsmm to voxmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _voxmm_to_lpsmm(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.VOXMM:
@@ -655,7 +684,7 @@ class StatefulSurface:
             logger.debug("Moved vertices from voxmm to lpsmm.")
         else:
             logger.warning("Wrong initial space for this function.")
-    
+
     def _lpsmm_to_vox(self):
         """Unsafe function to transform vertices"""
         if self._space == Space.LPSMM:
@@ -696,41 +725,3 @@ class StatefulSurface:
         else:
             logger.debug("Origin moved to the center of voxel.")
             self._origin = Origin.NIFTI
-
-"""
-def _is_data_per_point_valid(streamlines, data):
-    pass
-    if not isinstance(data, (dict, PerArrayDict)):
-        logger.error("data_per_point MUST be a dictionary.")
-        return False
-    elif data == {}:
-        return True
-
-    total_point = 0
-    total_streamline = 0
-    for i in streamlines:
-        total_streamline += 1
-        total_point += len(i)
-
-    for key in data.keys():
-        total_point_entries = 0
-        if not len(data[key]) == total_streamline:
-            logger.error(
-                "Missing entry for streamlines points data, "
-                "inconsistent number of streamlines."
-            )
-            return False
-
-        for values in data[key]:
-            total_point_entries += len(values)
-
-        if total_point_entries != total_point:
-            logger.error(
-                "Missing entry for streamlines points data, "
-                "inconsistent number of points per streamlines."
-            )
-            return False
-
-    return True
-"""
-
