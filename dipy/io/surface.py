@@ -103,7 +103,6 @@ def load_surface(
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
-        print('==++==', data[0][0])
 
         reference = fname if reference == "same" else reference
         affine, dimensions, _, _ = get_reference_info(reference)
@@ -123,7 +122,7 @@ def load_surface(
     from_origin = Origin.NIFTI if from_origin is None else from_origin
     sfs = StatefulSurface(data, reference, space=from_space, origin=from_origin,
                           data_per_point=None)
-    print('====', sfs.vertices[0])
+    print(sfs.vertices[0], sfs.space, sfs.origin, '0')
     sfs.metadata = metadata
 
     logging.debug(
@@ -143,7 +142,6 @@ def load_surface(
 
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
-    print('==++==', sfs.vertices[0])
 
     return sfs
 
@@ -204,6 +202,7 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
                 if key.upper() in sfs.data_per_point:
                     color_array_name = key.upper()
                     break
+        print(sfs.vertices[0], sfs.space, sfs.origin, 'save')
         save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format,
                       color_array_name=color_array_name)
     elif ext in [".gii", ".gii.gz"]:
@@ -238,10 +237,9 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
         affine, dimensions = sfs.affine, sfs.dimensions
         center_volume = np.array(dimensions) / 2
         xform_translation = np.dot(
-            affine[0:3, 0:3], center_volume) + affine[0:3, 3] + [0.5, 0.5, -0.5]
+            affine[0:3, 0:3], center_volume) + affine[0:3, 3] - 0.5
 
         vertices = deepcopy(sfs.vertices) - xform_translation
-        print('final', vertices[0])
         save_pial(fname, vertices, sfs.faces, metadata)
     else:
         logging.error("Output extension is not one of the supported format.")

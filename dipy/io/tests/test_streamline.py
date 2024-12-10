@@ -14,7 +14,7 @@ from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
 
@@ -179,7 +179,8 @@ def io_tractogram(extension):
         in_dimensions = np.array([50, 50, 50])
         in_voxel_sizes = np.array([2, 1.5, 1.5])
         in_affine = np.dot(in_affine, np.diag(np.r_[in_voxel_sizes, 1]))
-        nii_header = create_nifti_header(in_affine, in_dimensions, in_voxel_sizes)
+        nii_header = create_nifti_header(
+            in_affine, in_dimensions, in_voxel_sizes)
 
         sft = StatefulTractogram(STREAMLINES, nii_header, space=Space.RASMM)
         save_tractogram(sft, fpath, bbox_valid_check=False)
@@ -196,7 +197,8 @@ def io_tractogram(extension):
         npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
         npt.assert_array_equal(in_dimensions, dimensions)
         npt.assert_equal(len(sft), len(STREAMLINES))
-        npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
+        npt.assert_array_almost_equal(
+            sft.streamlines[1], STREAMLINE, decimal=4)
 
 
 def test_io_trk():

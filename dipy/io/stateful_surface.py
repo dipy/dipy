@@ -693,10 +693,11 @@ class StatefulSurface:
             shift = np.asarray([0.5, 0.5, 0.5])
             if self._space == Space.VOXMM:
                 shift = shift * self._voxel_sizes
-            elif self._space == Space.RASMM:
+            elif self._space == Space.RASMM or self._space == Space.LPSMM:
                 tmp_affine = np.eye(4)
                 tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
-                shift = apply_affine(tmp_affine, shift)
+                flip = [1, 1, 1] if self._space == Space.RASMM else [-1, -1, 1]
+                shift = apply_affine(tmp_affine, shift * flip)
             if self._origin == Origin.TRACKVIS:
                 shift *= -1
 
