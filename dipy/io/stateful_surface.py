@@ -112,7 +112,7 @@ class StatefulSurface:
                             f"Scalar {name} already in data_per_point, overwriting")
                     self.data_per_point[name] = ns.vtk_to_numpy(scalar)
         else:
-            self._vertices, self._faces = data
+            self._vertices, self._faces = np.array(data[0]), np.array(data[1])
 
         if isinstance(reference, type(self)):
             logger.warning(
@@ -272,8 +272,8 @@ class StatefulSurface:
         pass
 
     def __iadd__(self, other):
-        self.value = self + other
-        return self.value
+        # TODO
+        pass
 
     @property
     def dtype_dict(self):
@@ -381,7 +381,7 @@ class StatefulSurface:
                                    self._data_per_point)
 
     @vertices.setter
-    def streamlines(self, data):
+    def vertices(self, data):
         """Modify surface. Creating a new object would be less risky.
         TODO
         Parameters

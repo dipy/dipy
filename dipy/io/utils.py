@@ -335,6 +335,8 @@ def get_reference_info(reference):
         is_trx = True
     elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
         is_sft = True
+    elif isinstance(reference, dipy.io.stateful_surface.StatefulSurface):
+        is_sft = True
 
     if is_nifti:
         affine = header.get_best_affine()

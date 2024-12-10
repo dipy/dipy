@@ -122,7 +122,7 @@ def load_surface(
     from_origin = Origin.NIFTI if from_origin is None else from_origin
     sfs = StatefulSurface(data, reference, space=from_space, origin=from_origin,
                           data_per_point=None)
-    print(sfs.vertices[0], sfs.space, sfs.origin, '0')
+
     sfs.metadata = metadata
 
     logging.debug(
@@ -202,7 +202,7 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
                 if key.upper() in sfs.data_per_point:
                     color_array_name = key.upper()
                     break
-        print(sfs.vertices[0], sfs.space, sfs.origin, 'save')
+
         save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format,
                       color_array_name=color_array_name)
     elif ext in [".gii", ".gii.gz"]:
