@@ -89,9 +89,12 @@ class StatefulSurface:
         directly and be careful.
         """
 
+        self.fs_metadata = None
+        self.gii_header = None
+
         self.data_per_point = {} if data_per_point is None else data_per_point
         if dtype_dict is None:
-            dtype_dict = {"vertices": np.float32,
+            dtype_dict = {"vertices": np.float64,
                           "faces": np.uint32}
         self.dtype_dict = dtype_dict
 
@@ -147,7 +150,7 @@ class StatefulSurface:
 
         self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
             space_attributes
-        self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
+        self._inv_affine = np.linalg.inv(self._affine).astype(np.float64)
 
         if space not in Space:
             raise ValueError("Space MUST be from Space enum, e.g Space.VOX.")
@@ -280,7 +283,7 @@ class StatefulSurface:
         """Getter for dtype_dict"""
 
         if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
-            dtype_dict = {"vertices": np.float32,
+            dtype_dict = {"vertices": np.float64,
                           "faces": np.uint32}
             return OrderedDict(dtype_dict)
 
@@ -383,7 +386,6 @@ class StatefulSurface:
     @vertices.setter
     def vertices(self, data):
         """Modify surface. Creating a new object would be less risky.
-        TODO
         Parameters
         ----------
         data
@@ -528,7 +530,7 @@ class StatefulSurface:
         bbox_corners = deepcopy(self.compute_bounding_box())
 
         is_valid = True
-        if np.any(bbox_corners < 0):
+        if np.any(bbox_corners < -1e-3):
             logger.error("Voxel space values lower than 0.0.")
             logger.debug(bbox_corners)
             is_valid = False
@@ -697,7 +699,7 @@ class StatefulSurface:
                 tmp_affine = np.eye(4)
                 tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
                 flip = [1, 1, 1] if self._space == Space.RASMM else [-1, -1, 1]
-                shift = apply_affine(tmp_affine, shift * flip)
+                shift = apply_affine(tmp_affine, shift) * flip
             if self._origin == Origin.TRACKVIS:
                 shift *= -1
 

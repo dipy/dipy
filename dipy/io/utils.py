@@ -298,7 +298,6 @@ def get_reference_info(reference):
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
     """
-
     is_nifti = False
     is_trk = False
     is_sft = False
@@ -505,3 +504,20 @@ def read_img_arr_or_path(data, *, affine=None):
             affine = data.affine
         data = data.get_fdata()
     return data, affine
+
+
+def split_name_with_gz(filename):
+    """
+    Returns the clean basename and extension of a file.
+    Means that this correctly manages the ".nii.gz" extensions.
+
+    Parameters
+    ----------
+    filename: str
+        The filename to clean
+    """
+    base, ext = os.path.splitext(filename)
+    if ext == ".gz":
+        base, add_ext = os.path.splitext(base)
+        ext = add_ext + ext
+    return base, ext
