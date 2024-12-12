@@ -114,7 +114,7 @@ stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit = csd_model.fit(data_small)
-csd_fit_shm = np.lib.pad(
+csd_fit_shm = np.pad(
     csd_fit.shm_coeff,
     ((xa, dshape[0] - xb), (ya, dshape[1] - yb), (za, dshape[2] - zb), (0, 0)),
     "constant",

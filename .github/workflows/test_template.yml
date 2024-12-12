@@ -141,7 +141,7 @@ jobs:
       if: ${{ fromJSON(env.COVERAGE) }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        directory: for_testing
+        directory: for_testing_results
         files: coverage.xml
         fail_ci_if_error: true
         flags: unittests
