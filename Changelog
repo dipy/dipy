@@ -24,7 +24,7 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.10.0 (Friday, December 10, 2024)
+* 1.10.0 (Friday, December 12, 2024)
 
 - NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
 - NF: Fiber density and spread from ODF using Bingham distributions method added.

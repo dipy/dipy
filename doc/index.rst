@@ -115,7 +115,7 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
-- :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 10, 2024.
+- :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
 - :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 - :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
 
