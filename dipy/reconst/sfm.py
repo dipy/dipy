@@ -556,7 +556,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             ) as parallel:
                 out = parallel(
                     joblib.delayed(self._fit_solver2voxels)(
-                        isopredict, vox_data, vox, True
+                        isopredict, vox_data, vox, parallel=True
                     )
                     for vox, vox_data in enumerate(flat_S)
                 )
