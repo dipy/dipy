@@ -9,10 +9,11 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from datetime import datetime
+import datetime
 import os
 import re
 import sys
+import time
 
 # Doc generation depends on being able to import dipy
 try:
@@ -78,10 +79,15 @@ source_suffix = ".rst"
 # The master toctree document.
 master_doc = "index"
 
+build_date = datetime.datetime.fromtimestamp(
+    int(os.environ.get("SOURCE_DATE_EPOCH", time.time())),
+    tz=datetime.timezone.utc,
+)
+
 # General information about the project.
 project = "dipy"
 copyright = (
-    f"Copyright 2008-{datetime.now().year},DIPY developers."
+    f"Copyright 2008-{build_date.year},DIPY developers."
     f" Created using Grg Sphinx Theme and PyData Sphinx Theme."
 )
 
