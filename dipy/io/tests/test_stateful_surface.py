@@ -245,3 +245,32 @@ def test_save_load_many_times(extension):
 
         # Final vertices should match original
         npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
+
+
+def test_create_from_sfs():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+
+    sfs_1 = load_surface(f'gs_rasmm_center.ply', 'gs.nii')
+    sfs_2 = StatefulSurface.from_sfs(
+        sfs_1.vertices,
+        sfs_1,
+        data_per_point=sfs_1.data_per_point
+    )
+
+    if not (sfs_1 == sfs_2):
+        npt.assert_(
+            True,
+            msg="vertices, faces, space attributes, space, origin, "
+            "data_per_point and data_per_streamline should "
+            "be identical",
+        )
+
+    nb_pts = sfs_1.vertices.shape[0]
+    sfs_1.vertices = np.arange(nb_pts * 3).reshape((nb_pts, 3))
+    if np.array_equal(sfs_1.vertices, sfs_2.vertices):
+        npt.assert_(
+            True,
+            msg="Side effect, modifying the original "
+            "StatefulTractogram after creating a new one "
+            "should not modify the new one",
+        )

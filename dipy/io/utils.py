@@ -293,7 +293,7 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
+        - affine ndarray (4,4), np.float64, transformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
@@ -302,7 +302,7 @@ def get_reference_info(reference):
     is_trk = False
     is_sft = False
     is_trx = False
-    print(dir(dipy.io))
+
     if isinstance(reference, str):
         _, ext = split_name_with_gz(reference)
         ext = ext.lower()
@@ -369,7 +369,7 @@ def get_reference_info(reference):
 
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
-    return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
+    return affine.astype(np.float64), dimensions, voxel_sizes, voxel_order
 
 
 def is_header_compatible(reference_1, reference_2):

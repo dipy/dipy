@@ -866,14 +866,7 @@ def test_create_from_sft():
         data_per_streamline=sft_1.data_per_streamline,
     )
 
-    if not (
-        np.array_equal(sft_1.streamlines, sft_2.streamlines)
-        and sft_1.space_attributes == sft_2.space_attributes
-        and sft_1.space == sft_2.space
-        and sft_1.origin == sft_2.origin
-        and sft_1.data_per_point == sft_2.data_per_point
-        and sft_1.data_per_streamline == sft_2.data_per_streamline
-    ):
+    if not (sft_1 == sft_2):
         npt.assert_(
             True,
             msg="Streamlines, space attributes, space, origin, "
@@ -895,7 +888,7 @@ def test_create_from_sft():
 def test_init_dtype_dict_attributes():
     sft = load_tractogram(FILEPATH_DIX["gs.trk"], FILEPATH_DIX["gs.nii"])
     dtype_dict = {
-        "positions": np.float32,
+        "positions": np.float64,
         "offsets": np.int_,
         "dpp": {"color_x": np.float32, "color_y": np.float32, "color_z": np.float32},
         "dps": {"random_coord": np.float32},
