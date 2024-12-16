@@ -522,3 +522,32 @@ def split_name_with_gz(filename):
         base, add_ext = os.path.splitext(base)
         ext = add_ext + ext
     return base, ext
+
+
+def recursive_compare(d1, d2, level="root"):
+    if isinstance(d1, dict) and isinstance(d2, dict):
+        if d1.keys() != d2.keys():
+            s1 = set(d1.keys())
+            s2 = set(d2.keys())
+            common_keys = s1 & s2
+            if s1 - s2:
+                raise ValueError(f"Keys {s1 - s2} in d1 but not in d2")
+        else:
+            common_keys = set(d1.keys())
+
+        for k in common_keys:
+            recursive_compare(d1[k], d2[k], level=f"{level}.{k}")
+
+    elif isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            raise ValueError(
+                f"Lists do not have the same length at level {level}")
+        common_len = min(len(d1), len(d2))
+
+        for i in range(common_len):
+            recursive_compare(d1[i], d2[i], level=f"{level}[{i}]")
+
+    else:
+        if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
+            raise ValueError(
+                f"Values {d1}, {d2} do not match at level {level}")

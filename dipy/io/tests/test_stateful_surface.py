@@ -9,13 +9,15 @@ import numpy.testing as npt
 from dipy.io.stateful_tractogram import StatefulTractogram as _  # fake import
 from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.surface import load_surface, save_surface
-from dipy.io.utils import Space, Origin
+from dipy.io.utils import Space, Origin, recursive_compare
 from dipy.utils.optpkg import optional_package
 
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 CWD = "/home/rhef1902/Datasets/stateful_surface/"
+SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
+ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
@@ -184,14 +186,10 @@ def test_random_space_transformations():
     sfs.to_center()
     initial_vertices = sfs.vertices.copy()
 
-    # List of possible spaces
-    spaces = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
-    origins = [Origin.NIFTI, Origin.TRACKVIS]
-
     # Apply 100 random transformations
     for _ in range(100):
-        space = np.random.choice(spaces, 1, replace=False)
-        origin = np.random.choice(origins, 1, replace=False)
+        space = np.random.choice(SPACES, 1, replace=False)
+        origin = np.random.choice(ORIGINS, 1, replace=False)
         sfs.to_space(space)
         sfs.to_origin(origin)
 
@@ -201,12 +199,8 @@ def test_random_space_transformations():
     npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
 
 
-spaces = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
-origins = [Origin.NIFTI, Origin.TRACKVIS]
-
-
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("space, origin", list(itertools.product(spaces, origins)))
+@pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
 def test_space_origin_gold_standard(space, origin):
     os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
     sfs = load_surface(f'gs_{space.value.lower()}_{origin.value.lower()}.ply',
@@ -225,26 +219,6 @@ def test_space_origin_gold_standard(space, origin):
     sfs.to_center()
     vertices = np.loadtxt(f'gs_rasmm_center.txt')
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
-
-
-@pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
-def test_save_load_many_times(extension):
-    os.chdir(os.path.join(os.path.expanduser(CWD), 'mni_freesurfer'))
-
-    # Load initial surface
-    sfs = load_surface(os.path.join("surf", 'lh.pial'), 'mni_masked.nii.gz')
-    ref_vertices = sfs.vertices.copy()
-
-    with TemporaryDirectory() as tmpdir:
-        # Save and load 10 times
-        for i in range(10):
-            save_surface(os.path.join(tmpdir, f'test_{i}.{extension}'), sfs)
-            sfs = load_surface(os.path.join(
-                tmpdir, f'test_{i}.{extension}'), 'mni_masked.nii.gz')
-
-        # Final vertices should match original
-        npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
 
 
 def test_create_from_sfs():
@@ -274,3 +248,130 @@ def test_create_from_sfs():
             "StatefulTractogram after creating a new one "
             "should not modify the new one",
         )
+
+
+def test_init_dtype_dict_attributes():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+    sfs = load_surface('gs_rasmm_center.ply', 'gs.nii')
+    dtype_dict = {
+        "vertices": np.float64,
+        "faces": np.uint32,
+    }
+
+    try:
+        recursive_compare(dtype_dict, sfs.dtype_dict)
+    except ValueError as e:
+        print(e)
+        npt.assert_(False, msg=e)
+
+
+def test_set_dtype_dict_attributes():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+    sfs = load_surface('gs_rasmm_center.ply', 'gs.nii')
+    sfs.data_per_point = {
+        "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
+    }
+    dtype_dict = {
+        "vertices": np.float16,
+        "faces": np.int32,
+        "dpp": {"normal": np.float16},
+    }
+
+    sfs.dtype_dict = dtype_dict
+    try:
+        recursive_compare(dtype_dict, sfs.dtype_dict)
+    except ValueError:
+        npt.assert_(False, msg="dtype_dict should be identical after set.")
+
+
+def test_set_partial_dtype_dict_attributes():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+    sfs = load_surface('gs_rasmm_center.ply', 'gs.nii')
+    sfs.data_per_point = {
+        "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
+    }
+    dtype_dict = {"vertices": np.float16, "faces": np.int32}
+    dpp_dtype_dict = {
+        "normal": np.float16,
+    }
+
+    # Set only vertices and faces
+    sfs.dtype_dict = dtype_dict
+
+    try:
+        recursive_compare(dtype_dict["vertices"], sfs.dtype_dict["vertices"])
+        recursive_compare(dtype_dict["faces"], sfs.dtype_dict["faces"])
+        recursive_compare(dpp_dtype_dict, sfs.dtype_dict["dpp"])
+    except ValueError:
+        npt.assert_(
+            False,
+            msg="Partial use of dtype_dict should apply only to the "
+            "relevant portions.",
+        )
+
+
+def test_non_existing_dtype_dict_attributes():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+    sfs = load_surface('gs_rasmm_center.ply', 'gs.nii')
+    dtype_dict = {
+        "dpp": {
+            "color_x": np.uint8,  # Fake
+            "color_y": np.uint8,  # Fake
+            "color_z": np.uint8,
+        },  # Fake
+        "fake_attr": {"random_value": np.float64},  # Fake
+    }
+
+    sfs.dtype_dict = dtype_dict
+    try:
+        recursive_compare(sfs.dtype_dict, dtype_dict)
+        npt.assert_(False, msg="Fake entries in dtype_dict should not work.")
+    except ValueError:
+        npt.assert_(True)
+
+
+def test_from_sfs_dtype_dict_attributes():
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'toy_data'))
+    sfs = load_surface('gs_rasmm_center.ply', 'gs.nii')
+    sfs.data_per_point = {
+        "color_r": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
+        "color_g": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
+        "color_b": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
+    }
+    dtype_dict = {
+        "vertices": np.float16,
+        "faces": np.int32,
+        "dpp": {"color_r": np.uint8, "color_g": np.uint8, "color_b": np.uint8},
+    }
+
+    sfs.dtype_dict = dtype_dict
+    new_sfs = StatefulSurface.from_sfs(
+        sfs.vertices,
+        sfs,
+        data_per_point=sfs.data_per_point
+    )
+    try:
+        recursive_compare(new_sfs.dtype_dict, dtype_dict)
+        recursive_compare(sfs.dtype_dict, dtype_dict)
+    except ValueError:
+        npt.assert_(False, msg="from_sfs() should not modify the dtype_dict.")
+
+
+@pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_save_load_many_times(extension):
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'mni_freesurfer'))
+
+    # Load initial surface
+    sfs = load_surface(os.path.join("surf", 'lh.pial'), 'mni_masked.nii.gz')
+    ref_vertices = sfs.vertices.copy()
+
+    with TemporaryDirectory() as tmpdir:
+        # Save and load 10 times
+        for i in range(10):
+            save_surface(os.path.join(tmpdir, f'test_{i}.{extension}'), sfs)
+            sfs = load_surface(os.path.join(
+                tmpdir, f'test_{i}.{extension}'), 'mni_masked.nii.gz')
+
+        # Final vertices should match original
+        npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)

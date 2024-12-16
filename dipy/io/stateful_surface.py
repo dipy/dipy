@@ -295,7 +295,7 @@ class StatefulSurface:
             dtype_dict["dpp"] = {}
             for key in self.data_per_point.keys():
                 if key in self.data_per_point:
-                    dtype_dict["dpp"][key] = self.data_per_point[key]._data.dtype
+                    dtype_dict["dpp"][key] = self.data_per_point[key].dtype
 
         return OrderedDict(dtype_dict)
 
@@ -371,7 +371,7 @@ class StatefulSurface:
         for key in self.data_per_point:
             if key in dtype_dict["dpp"]:
                 dtype_to_use = dtype_dict["dpp"][key]
-                self.data_per_point[key]._data = self.data_per_point[key]._data.astype(
+                self.data_per_point[key] = self.data_per_point[key].astype(
                     dtype_to_use
                 )
 

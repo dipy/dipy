@@ -15,7 +15,7 @@ from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.stateful_surface import StatefulSurface as _  # fake import
-from dipy.io.utils import is_header_compatible
+from dipy.io.utils import is_header_compatible, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
@@ -23,6 +23,8 @@ fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
 is_big_endian = "big" in sys.byteorder.lower()
 
 
+EXTENSIONS = ["trk", "tck", "trx", "fib", "dpy"]
+SPACES = [Space.RASMM, Space.VOXMM, Space.VOX]
 FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 
 
@@ -64,12 +66,8 @@ def test_direct_trx_loading():
                         rtol=1e-04, atol=1e-06)
 
 
-extensions = ["trk", "tck", "trx", "fib", "dpy"]
-spaces = [Space.RASMM, Space.VOXMM, Space.VOX]
-
-
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("ext, space", list(itertools.product(extensions, spaces)))
+@pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
 def test_space_gold_standard(ext, space):
     sft = load_tractogram(FILEPATH_DIX[f"gs.{ext}"], FILEPATH_DIX["gs.nii"],
                           to_space=space)
@@ -1001,32 +999,3 @@ def test_slicing_dtype_dict_attributes():
         recursive_compare(sft.dtype_dict, dtype_dict)
     except ValueError:
         npt.assert_(False, msg="Slicing should not modify the dtype_dict.")
-
-
-def recursive_compare(d1, d2, level="root"):
-    if isinstance(d1, dict) and isinstance(d2, dict):
-        if d1.keys() != d2.keys():
-            s1 = set(d1.keys())
-            s2 = set(d2.keys())
-            common_keys = s1 & s2
-            if s1 - s2:
-                raise ValueError(f"Keys {s1 - s2} in d1 but not in d2")
-        else:
-            common_keys = set(d1.keys())
-
-        for k in common_keys:
-            recursive_compare(d1[k], d2[k], level=f"{level}.{k}")
-
-    elif isinstance(d1, list) and isinstance(d2, list):
-        if len(d1) != len(d2):
-            raise ValueError(
-                f"Lists do not have the same length at level {level}")
-        common_len = min(len(d1), len(d2))
-
-        for i in range(common_len):
-            recursive_compare(d1[i], d2[i], level=f"{level}[{i}]")
-
-    else:
-        if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
-            raise ValueError(
-                f"Values {d1}, {d2} do not match at level {level}")
