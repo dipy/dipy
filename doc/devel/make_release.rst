@@ -110,10 +110,8 @@ version number, so you might want to make the release commit on your local
 machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
 then do you push to upstream on github.
 
-* Make the release commit.  Edit :file:`dipy/meson.build` and
-  :file:`dipy/tools/version_utils.py`` to get the correct version number
-  (set version: in the former, and ISRELEASED = True in the latter) and commit
-  it with a message like REL: set version to <version-number>.
+* Make the release commit.  Edit :file:`pyproject.toml` and to get the correct version
+  number and commit it with a message like REL: set version to <version-number>.
   Don’t push this commit to the DIPY_ repo yet.;
 
 * Finally tag the release locally with git tag <v1.x.y>. Continue with building
