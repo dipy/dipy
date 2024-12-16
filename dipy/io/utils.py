@@ -302,6 +302,7 @@ def get_reference_info(reference):
     is_trk = False
     is_sft = False
     is_trx = False
+    print(dir(dipy.io))
     if isinstance(reference, str):
         _, ext = split_name_with_gz(reference)
         ext = ext.lower()
