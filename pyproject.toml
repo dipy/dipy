@@ -104,39 +104,46 @@ dipy_pam2nifti = "dipy.workflows.cli:run"
 dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
-all = ["dipy[dev,doc,style,test, viz, ml, extra, benchmark]"]
+build = [
+    "meson-python>=0.13",
+    "wheel",
+    "setuptools~=69.5",
+    "packaging>=21",
+    "ninja",
+    "Cython>=0.29.35",
+    "numpy>=1.22.4",
+    "spin>=0.5",
+    "build"
+]
+all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
-viz = ["fury>=0.10.0", "matplotlib"]
-test = ["pytest", "coverage", "coveralls", "codecov"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
+viz = ["fury>=0.12.0", "matplotlib"]
+test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
 dev = [
-    # Also update [build-system] -> requires
-    'meson-python>=0.13',
-    'wheel',
-    'setuptools~=69.5',
-    'packaging>=21',
-    'ninja',
-    'Cython>=0.29.35',
-    'numpy>=1.22.4',
-    # Developer UI
-    'spin>=0.5',
-    'build',
+    "dipy[build, style]",
+    "pytest",
+    "coverage",
+    "coveralls",
+    "codecov",
+    "asv"
 ]
 
-extra = ["dipy[viz, ml]",
-         "cvxpy",
-         "scikit-image",
-         "boto3",
-         "numexpr"
-        ]
+optional = [
+    "dipy[viz, ml]",
+    "cvxpy",
+    "scikit-image",
+    "boto3",
+    "numexpr"
+]
 
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
     "texext",
     "tomli; python_version < \"3.11\"",
-    "sphinxcontrib-bibtex",
-    "sphinx_design",
+    "sphinxcontrib-bibtex>=2.5.0",
+    "sphinx_design>=0.5.0",
     "sphinx-gallery>=0.10.0",
     "tomli>=2.0.1",
     "grg-sphinx-theme>=0.4.0",

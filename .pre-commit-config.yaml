@@ -16,3 +16,10 @@ repos:
       - id: codespell
         additional_dependencies:
           - tomli
+  - repo: local
+    hooks:
+      - id: generate_requirements.py
+        name: generate_requirements.py
+        language: system
+        entry: python tools/generate_requirements.py
+        files: "pyproject.toml|requirements/.*\\.txt|tools/generate_requirements.py"
