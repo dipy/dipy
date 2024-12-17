@@ -68,6 +68,7 @@ dipy_fit_dti = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
@@ -112,7 +113,8 @@ dev = [
 extra = ["dipy[viz, ml]",
          "cvxpy",
          "scikit-image",
-         "boto3"
+         "boto3",
+         "numexpr"
         ]
 
 doc = [
