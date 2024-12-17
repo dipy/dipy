@@ -34,6 +34,7 @@ cli_flows = {
     "dipy_horizon": ("dipy.workflows.viz", "HorizonFlow"),
     "dipy_info": ("dipy.workflows.io", "IoInfoFlow"),
     "dipy_labelsbundles": ("dipy.workflows.segment", "LabelsBundlesFlow"),
+    "dipy_math": ("dipy.workflows.io", "MathFlow"),
     "dipy_mask": ("dipy.workflows.mask", "MaskFlow"),
     "dipy_median_otsu": ("dipy.workflows.segment", "MedianOtsuFlow"),
     "dipy_nifti2pam": ("dipy.workflows.io", "NiftisToPamFlow"),
