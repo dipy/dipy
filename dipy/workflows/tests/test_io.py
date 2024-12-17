@@ -3,11 +3,13 @@ from inspect import getmembers, isfunction
 import logging
 import os
 from os.path import join as pjoin
+import shutil
 import sys
 from tempfile import TemporaryDirectory, mkstemp
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.core.gradients as grad
 from dipy.data import default_sphere, get_fnames
@@ -20,6 +22,8 @@ from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true
+from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWireError
 from dipy.workflows.io import (
     ConcatenateTractogramFlow,
     ConvertSHFlow,
@@ -27,11 +31,14 @@ from dipy.workflows.io import (
     ConvertTractogramFlow,
     FetchFlow,
     IoInfoFlow,
+    MathFlow,
     NiftisToPamFlow,
     PamToNiftisFlow,
     SplitFlow,
     TensorToPamFlow,
 )
+
+ne, have_ne, _ = optional_package("numexpr")
 
 fname_log = mkstemp()[1]
 
@@ -342,3 +349,73 @@ def test_pam_to_niftis_flow():
         assert_true(os.path.isfile(flow.last_generated_outputs["out_shm"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_gfa"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_sphere"]))
+
+
+def test_math():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_101D")
+        data_path_a = pjoin(out_dir, "data_a.nii.gz")
+        data_path_b = pjoin(out_dir, "data_b.nii.gz")
+        shutil.copy(data_path, data_path_a)
+        shutil.copy(data_path, data_path_b)
+
+        data, _ = load_nifti(data_path)
+        operations = ["vol1*3", "vol1+vol2+vol3", "5*vol1-vol2-vol3", "vol3*2 + vol2"]
+        kwargs = [{"dtype": "i"}, {"dtype": "float32"}, {}, {}]
+
+        if have_ne:
+            for op, kwarg in zip(operations, kwargs):
+                math_flow = MathFlow()
+                math_flow.run(
+                    op, [data_path_a, data_path_b, data_path], out_dir=out_dir, **kwarg
+                )
+                out_path = pjoin(out_dir, "math_out.nii.gz")
+                out_data, _ = load_nifti(out_path)
+                npt.assert_array_equal(out_data, data * 3)
+                if kwarg:
+                    npt.assert_equal(out_data.dtype, np.dtype(kwarg["dtype"]))
+
+        else:
+            math_flow = MathFlow()
+            npt.assert_raises(TripWireError, math_flow.run, "vol1*3", [data_path_a])
+
+
+@pytest.mark.skipif(not have_ne, reason="numexpr not installed")
+def test_math_error():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_101D")
+        data_path_2, _, _ = get_fnames(name="small_64D")
+        data_path_a = pjoin(out_dir, "data_a.nii.gz")
+        data_path_b = pjoin(out_dir, "data_b.gz")
+        data_path_c = pjoin(out_dir, "data_c.nii")
+        shutil.copy(data_path, data_path_a)
+        shutil.copy(data_path, data_path_b)
+
+        math_flow = MathFlow()
+        npt.assert_raises(
+            SyntaxError, math_flow.run, "vol1*", [data_path_a], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit,
+            math_flow.run,
+            "vol1*2",
+            [data_path_a],
+            dtype="k",
+            out_dir=out_dir,
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*2", [data_path_b], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*2", [data_path_c], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*vol3", [data_path_a], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit,
+            math_flow.run,
+            "vol1*vol2",
+            [data_path, data_path_2],
+            out_dir=out_dir,
+        )
