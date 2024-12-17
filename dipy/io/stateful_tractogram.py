@@ -5,11 +5,9 @@ from itertools import product
 import logging
 
 from nibabel.affines import apply_affine
-from nibabel.streamlines.tractogram import (
-    PerArrayDict,
-    PerArraySequenceDict,
-    Tractogram,
-)
+from nibabel.streamlines.tractogram import (PerArrayDict,
+                                            PerArraySequenceDict,
+                                            Tractogram)
 import numpy as np
 
 from dipy.io.dpy import Streamlines

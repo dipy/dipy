@@ -1,25 +1,19 @@
-from dipy.io.stateful_surface import StatefulSurface
-from dipy.io.stateful_tractogram import StatefulTractogram
-from dipy.io.utils import Space, Origin
-from dipy.io.streamline import load_tractogram, save_tractogram
-from matplotlib.pyplot import get_cmap
-import sys
-from dipy.io.surface import save_surface, load_surface, load_pial
-from scipy.spatial import KDTree
-import os
 import itertools
+import os
+from tempfile import TemporaryDirectory
 
 import nibabel as nib
 import numpy as np
-import logging
-from dipy.utils.optpkg import optional_package
 import numpy.testing as npt
 import pytest
-from tempfile import TemporaryDirectory
+
+from dipy.io.utils import Space, Origin
+from dipy.io.surface import save_surface, load_surface
+from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
-CWD = "/home/rhef1902/Datasets/stateful_surface/"
+CWD = "/home/local/USHERBROOKE/rhef1902/Datasets/stateful_surface/"
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")

@@ -1,12 +1,10 @@
 from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
-import enum
 from itertools import product
 import logging
 
 from nibabel.affines import apply_affine
-from nibabel.streamlines.tractogram import PerArrayDict
 import numpy as np
 import vtk
 import vtk.util.numpy_support as ns
@@ -40,8 +38,8 @@ def set_sfs_logger_level(log_level):
 class StatefulSurface:
     """Class for stateful representation of meshes and lines
     Object designed to be identical no matter the file format
-    (gii, vtk, ply, stl, obj, pial). Facilitate transformation between space and
-    data manipulation for each streamline / point.
+    (gii, vtk, ply, stl, obj, pial). Facilitate transformation between space
+    and data manipulation for each streamline / point.
     """
 
     @warning_for_keywords()

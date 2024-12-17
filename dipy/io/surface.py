@@ -2,19 +2,16 @@ from copy import deepcopy
 import logging
 import os
 import time
-from warnings import warn
 import gzip
 
 import nibabel as nib
 import numpy as np
-import vtk
-import vtk.util.numpy_support as ns
 
 from dipy.io.vtk import load_polydata, save_polydata
 from dipy.io.stateful_surface import StatefulSurface
-from dipy.io.utils import is_header_compatible, get_reference_info
+from dipy.io.utils import get_reference_info
 from dipy.testing.decorators import warning_for_keywords
-from dipy.io.utils import Origin, Space, create_nifti_header, split_name_with_gz
+from dipy.io.utils import Origin, Space, split_name_with_gz
 
 
 def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
@@ -80,12 +77,6 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
                 'Reference must be provided, "same" is only ' "available for GII file."
             )
             return False
-
-    # if gii_header_check and extension in [".gii", ".gii.gz"]:
-    #     if not is_header_compatible(fname, reference):
-    #         logging.error(
-    #             "Trk file header does not match the provided reference.")
-    #         return False
 
     timer = time.time()
     metadata = None

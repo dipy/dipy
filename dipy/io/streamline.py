@@ -10,8 +10,9 @@ import numpy as np
 import trx.trx_file_memmap as tmm
 
 from dipy.io.dpy import Dpy
-from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
-from dipy.io.utils import create_tractogram_header, is_header_compatible
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.utils import (create_tractogram_header, is_header_compatible,
+                           Origin, Space)
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
 
@@ -58,7 +59,8 @@ def save_tractogram(sft, filename, *, bbox_valid_check=True):
     timer = time.time()
     if extension in [".trk", ".tck"]:
         tractogram_type = detect_format(filename)
-        header = create_tractogram_header(tractogram_type, *sft.space_attributes)
+        header = create_tractogram_header(
+            tractogram_type, *sft.space_attributes)
         new_tractogram = Tractogram(sft.streamlines, affine_to_rasmm=np.eye(4))
 
         if extension == ".trk":
@@ -152,7 +154,8 @@ def load_tractogram(
 
     if trk_header_check and extension == ".trk":
         if not is_header_compatible(filename, reference):
-            logging.error("Trk file header does not match the provided reference.")
+            logging.error(
+                "Trk file header does not match the provided reference.")
             return False
 
     timer = time.time()

@@ -15,7 +15,7 @@ from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
-CWD = "/home/rhef1902/Datasets/stateful_surface/"
+CWD = "/home/local/USHERBROOKE/rhef1902/Datasets/stateful_surface/"
 SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
 ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
