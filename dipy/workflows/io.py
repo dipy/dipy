@@ -21,8 +21,11 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
+from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
+
+ne, have_ne, _ = optional_package("numexpr")
 
 
 class IoInfoFlow(Workflow):
@@ -775,3 +778,75 @@ class PamToNiftisFlow(Workflow):
                 fname_qa=oqa,
             )
             logging.info(msg)
+
+
+class MathFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "math_flow"
+
+    def run(
+        self, operation, input_files, dtype=None, out_dir="", out_file="math_out.nii.gz"
+    ):
+        """Perform mathematical operations on volume input files.
+
+        This workflow allows the user to perform mathematical operations on
+        multiple input files. e.g. to add two volumes together, subtract one:
+        ``dipy_math "vol1 + vol2 - vol3" t1.nii.gz t1_a.nii.gz t1_b.nii.gz``
+        The input files must be in Nifti format and have the same shape.
+
+        Parameters
+        ----------
+        operation : string
+            Mathematical operation to perform. supported operators are:
+                - Bitwise operators (and, or, not, xor): ``&, |, ~, ^``
+                - Comparison operators: ``<, <=, ==, !=, >=, >``
+                - Unary arithmetic operators: ``-``
+                - Binary arithmetic operators: ``+, -, *, /, **, %, <<, >>``
+            Supported functions are:
+                - ``where(bool, number1, number2) -> number``: number1 if the bool
+                  condition is true, number2 otherwise.
+                - ``{sin,cos,tan}(float|complex) -> float|complex``: trigonometric sine,
+                  cosine or tangent.
+                - ``{arcsin,arccos,arctan}(float|complex) -> float|complex``:
+                  trigonometric inverse sine, cosine or tangent.
+                - ``arctan2(float1, float2) -> float``: trigonometric inverse tangent of
+                  float1/float2.
+                - ``{sinh,cosh,tanh}(float|complex) -> float|complex``: hyperbolic
+                  sine, cosine or tangent.
+                - ``{arcsinh,arccosh,arctanh}(float|complex) -> float|complex``:
+                  hyperbolic inverse sine, cosine or tangent.
+                - ``{log,log10,log1p}(float|complex) -> float|complex``: natural,
+                  base-10 and log(1+x) logarithms.
+                - ``{exp,expm1}(float|complex) -> float|complex``: exponential and
+                  exponential minus one.
+                - ``sqrt(float|complex) -> float|complex``: square root.
+                - ``abs(float|complex) -> float|complex``: absolute value.
+                - ``conj(complex) -> complex``: conjugate value.
+                - ``{real,imag}(complex) -> float``: real or imaginary part of complex.
+                - ``complex(float, float) -> complex``: complex from real and imaginary
+                  parts.
+                - ``contains(np.str, np.str) -> bool``: returns True for every string
+                  in op1 that contains op2.
+        input_files : variable string
+            Any number of Nifti1 files
+        dtype : string, optional
+            Data type of the resulting file.
+        out_dir : string, optional
+            Output directory
+        out_file : string, optional
+            Name of the resulting file to be saved.
+        """
+        vol_dict = {}
+        for i, fname in enumerate(input_files, start=1):
+            if not os.path.isfile(fname) or not fname.endswith(".nii.gz"):
+                raise warnings.warn(
+                    f"Input file {fname} does not exist. Skipping...", stacklevel=2
+                )
+            data, affine = load_nifti(fname)
+            vol_dict[f"vol{i}"] = data
+
+        res = ne.evaluate(operation, local_dict=vol_dict)
+        if dtype:
+            res = res.astype(dtype)
+        save_nifti(os.path.join(out_dir, out_file), res, affine)
