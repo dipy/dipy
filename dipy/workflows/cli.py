@@ -23,13 +23,20 @@ cli_flows = {
     "dipy_denoise_patch2self": ("dipy.workflows.denoise", "Patch2SelfFlow"),
     "dipy_evac_plus": ("dipy.workflows.nn", "EVACPlusFlow"),
     "dipy_fetch": ("dipy.workflows.io", "FetchFlow"),
-    "dipy_fit_csa": ("dipy.workflows.reconst", "ReconstCSAFlow"),
+    "dipy_fit_csa": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_csd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
     "dipy_fit_dki": ("dipy.workflows.reconst", "ReconstDkiFlow"),
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_dsid": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_forecast": ("dipy.workflows.reconst", "ReconstForecastFlow"),
+    "dipy_fit_gqi": ("dipy.workflows.reconst", "ReconstGQIFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
+    "dipy_fit_opdt": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
+    "dipy_fit_qball": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
+    "dipy_fit_sdt": ("dipy.workflows.reconst", "ReconstSDTFlow"),
+    "dipy_fit_sfm": ("dipy.workflows.reconst", "ReconstSFMFlow"),
     "dipy_gibbs_ringing": ("dipy.workflows.denoise", "GibbsRingingFlow"),
     "dipy_horizon": ("dipy.workflows.viz", "HorizonFlow"),
     "dipy_info": ("dipy.workflows.io", "IoInfoFlow"),
@@ -59,4 +66,41 @@ def run():
         print(f"Available flows: {', '.join(cli_flows.keys())}")
         sys.exit(1)
     mod, _, _ = optional_package(mod_name)
-    run_flow(getattr(mod, flow_name)())
+
+    extra_args = {}
+    if script_name == "dipy_fit_dsid":
+        extra_args = {
+            "remove_convolution": {
+                "dest": "remove_convolution",
+                "action": "store_true",
+                "default": True,
+            }
+        }
+    elif script_name == "dipy_fit_csa":
+        extra_args = {
+            "method": {
+                "action": "store",
+                "dest": "method",
+                "metavar": "string",
+                "default": "csa",
+            }
+        }
+    elif script_name == "dipy_fit_opdt":
+        extra_args = {
+            "method": {
+                "action": "store",
+                "dest": "method",
+                "metavar": "string",
+                "default": "opdt",
+            }
+        }
+    elif script_name == "dipy_fit_qball":
+        extra_args = {
+            "method": {
+                "action": "store",
+                "dest": "method",
+                "metavar": "string",
+                "default": "qball",
+            }
+        }
+    run_flow(getattr(mod, flow_name)(), extra_args=extra_args)

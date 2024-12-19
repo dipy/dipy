@@ -12,6 +12,26 @@ from dipy.workflows.reconst import ReconstDsiFlow
 
 
 def test_reconst_dsi():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        reconst_flow_core(ReconstDsiFlow)
+
+
+def test_reconst_dsid():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        reconst_flow_core(ReconstDsiFlow, remove_convolution=True)
+
+
+def reconst_flow_core(flow, **kwargs):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
@@ -33,6 +53,7 @@ def test_reconst_dsi():
                 mask_path,
                 out_dir=out_dir,
                 extract_pam_values=True,
+                **kwargs,
             )
 
         peaks_dir_path = dsi_flow.last_generated_outputs["out_peaks_dir"]
