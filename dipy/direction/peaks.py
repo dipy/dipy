@@ -556,7 +556,7 @@ def peaks_from_model(
             peak_values[idx][:n] = pk[:n]
 
             if normalize_peaks:
-                peak_values[idx][:n] /= pk[0]
+                peak_values[idx][:n] = peak_values[idx][:n] / pk[0] if pk[0] != 0 else 0
                 peak_dirs[idx] *= peak_values[idx][:, None]
 
     qa_array /= global_max

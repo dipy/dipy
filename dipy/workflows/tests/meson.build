@@ -13,7 +13,7 @@ python_sources = [
   'test_reconst_dsi.py',
   'test_reconst_ivim.py',
   'test_reconst_mapmri.py',
-  'test_reconst_rumba.py',
+  'test_reconst.py',
   'test_segment.py',
   'test_stats.py',
   'test_tracking.py',

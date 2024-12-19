@@ -15,9 +15,13 @@ from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import niftis_to_pam, pam_to_niftis, save_pam, tensor_to_pam
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
+from dipy.reconst.csdeconv import (
+    ConstrainedSDTModel,
+    ConstrainedSphericalDeconvModel,
+    auto_response_ssst,
+)
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
-from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.dsi import DiffusionSpectrumDeconvModel, DiffusionSpectrumModel
 from dipy.reconst.dti import (
     TensorModel,
     axial_diffusivity,
@@ -29,9 +33,12 @@ from dipy.reconst.dti import (
     mode as get_mode,
     radial_diffusivity,
 )
+from dipy.reconst.forecast import ForecastModel
+from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.sfm import SparseFascicleModel
+from dipy.reconst.shm import CsaOdfModel, OpdtModel, QballModel
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.workflows.workflow import Workflow
@@ -614,6 +621,7 @@ class ReconstDsiFlow(Workflow):
         r_end=6.0,
         r_step=0.2,
         filter_width=32,
+        remove_convolution=False,
         normalize_peaks=False,
         sphere_name=None,
         relative_peak_threshold=0.5,
@@ -634,6 +642,10 @@ class ReconstDsiFlow(Workflow):
         out_qa="qa.nii.gz",
     ):
         """Diffusion Spectrum Imaging (DSI) reconstruction workflow.
+
+        In DSI, the diffusion signal is sampled on a Cartesian grid in q-space.
+        When using remove_convolution=True, the convolution on the DSI propagator that
+        is caused by the truncation of the q-space in the DSI sampling is removed.
 
         Parameters
         ----------
@@ -662,6 +674,9 @@ class ReconstDsiFlow(Workflow):
             Step size of the ODf sampling from r_start to r_end
         filter_width : float, optional
             Strength of the hanning filter
+        remove_convolution : bool, optional
+            Whether to remove the convolution on the DSI propagator that is
+            caused by the truncation of the q-space in the DSI sampling.
         normalize_peaks : bool, optional
             Whether to normalize the peaks
         sphere_name : string, optional
@@ -707,6 +722,9 @@ class ReconstDsiFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
+        if remove_convolution:
+            filter_width = np.inf
+
         for (
             dwi,
             bval,
@@ -729,7 +747,12 @@ class ReconstDsiFlow(Workflow):
             gtab = gradient_table(bvals, bvecs=bvecs)
             mask = load_nifti_data(mask).astype(bool)
 
-            dsi_model = DiffusionSpectrumModel(
+            DSIModel = (
+                DiffusionSpectrumDeconvModel
+                if remove_convolution
+                else DiffusionSpectrumModel
+            )
+            dsi_model = DSIModel(
                 gtab,
                 qgrid_size=qgrid_size,
                 r_start=r_start,
@@ -1021,10 +1044,10 @@ class ReconstCSDFlow(Workflow):
             return io_it
 
 
-class ReconstCSAFlow(Workflow):
+class ReconstQBallBaseFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return "csa"
+        return "qballbase"
 
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def run(
@@ -1033,6 +1056,11 @@ class ReconstCSAFlow(Workflow):
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
+        method="csa",
+        smooth=0.006,
+        min_signal=1e-5,
+        assume_normed=False,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         sphere_name=None,
@@ -1071,6 +1099,21 @@ class ReconstCSAFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
+        method : string, optional
+            Method to use for the reconstruction. Can be one of the following:
+            'csa' for Constant Solid Angle reconstruction
+            'qball' for Q-Ball reconstruction
+            'opdt' for Orientation Probability Density Transform reconstruction
+        smooth : float, optional
+            The regularization parameter of the model.
+        min_signal : float, optional
+            During fitting, all signal values less than `min_signal` are
+            clipped to `min_signal`. This is done primarily to avoid values
+            less than or equal to zero when taking logs.
+        assume_normed : bool, optional
+            If True, clipping and normalization of the data with respect to the
+            mean B0 signal are skipped during mode fitting. This is an advanced
+            feature and should be used with care.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -1123,6 +1166,18 @@ class ReconstCSAFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
+        if method.lower() not in ["csa", "qball", "opdt"]:
+            raise ValueError(
+                f"Method {method} not recognized. "
+                "Please choose between 'csa', 'qball', 'opdt'."
+            )
+
+        model_list = {
+            "csa": CsaOdfModel,
+            "qball": QballModel,
+            "opdt": OpdtModel,
+        }
+
         for (
             dwi,
             bval,
@@ -1161,12 +1216,18 @@ class ReconstCSAFlow(Workflow):
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info(f"Starting CSA computations {dwi}")
+            logging.info(f"Starting {method.upper()} computations {dwi}")
 
-            csa_model = CsaOdfModel(gtab, sh_order_max)
+            qball_base_model = model_list[method.lower()](
+                gtab,
+                sh_order_max,
+                smooth=smooth,
+                min_signal=min_signal,
+                assume_normed=assume_normed,
+            )
 
-            peaks_csa = peaks_from_model(
-                model=csa_model,
+            peaks_qballbase = peaks_from_model(
+                model=qball_base_model,
                 data=data,
                 sphere=peaks_sphere,
                 relative_peak_threshold=relative_peak_threshold,
@@ -1178,15 +1239,15 @@ class ReconstCSAFlow(Workflow):
                 parallel=parallel,
                 num_processes=num_processes,
             )
-            peaks_csa.affine = affine
+            peaks_qballbase.affine = affine
 
-            save_pam(opam, peaks_csa)
+            save_pam(opam, peaks_qballbase)
 
-            logging.info(f"Finished CSA {dwi}")
+            logging.info(f"Finished {method.upper()} {dwi}")
 
             if extract_pam_values:
                 pam_to_niftis(
-                    peaks_csa,
+                    peaks_qballbase,
                     fname_shm=oshm,
                     fname_peaks_dir=opeaks_dir,
                     fname_peaks_values=opeaks_values,
@@ -1900,5 +1961,864 @@ class ReconstRUMBAFlow(Workflow):
                 logging.info("Pam5 file saved in current directory")
             else:
                 logging.info(f"Pam5 file saved in {dname_}")
+
+            return io_it
+
+
+class ReconstSDTFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "sdt"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        ratio=None,
+        roi_center=None,
+        roi_radii=10,
+        fa_thr=0.7,
+        sphere_name=None,
+        sh_order_max=8,
+        lambda_=1.0,
+        tau=0.1,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        parallel=False,
+        extract_pam_values=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Workflow for Spherical Deconvolution Transform (SDT)
+
+        See :footcite:p:`Descoteaux2009` for further details about the method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        ratio : float, optional
+            Ratio of the smallest to largest eigenvalue used in the response
+            function estimation. If None, the response function will be
+            estimated automatically.
+        roi_center : variable int, optional
+            Center of ROI in data. If center is None, it is assumed that it is
+            the center of the volume with shape `data.shape[:3]`.
+        roi_radii : variable int, optional
+            radii of cuboid ROI in voxels.
+        fa_thr : float, optional
+            FA threshold to compute the WM response function.
+        sphere_name : str, optional
+            Sphere name on which to reconstruct the fODFs.
+        sh_order_max : int, optional
+            Maximum spherical harmonics order (l) used in the SDT fit.
+        lambda_ : float, optional
+            Regularization parameter.
+        tau : float, optional
+            Diffusion time.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The angle tolerance between directions.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+        out_dir : string, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
+            if data.shape[-1] < n_params:
+                raise ValueError(
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
+                )
+
+            if ratio is None:
+                logging.info("Computing response function")
+                _, ratio = auto_response_ssst(
+                    gtab,
+                    data,
+                    roi_center=roi_center,
+                    roi_radii=roi_radii,
+                    fa_thr=fa_thr,
+                )
+
+            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
+
+            peaks_sphere = default_sphere
+            if sphere_name is not None:
+                peaks_sphere = get_sphere(name=sphere_name)
+
+            logging.info("SDT computation started.")
+            sdt_model = ConstrainedSDTModel(
+                gtab,
+                ratio,
+                sh_order_max=sh_order_max,
+                reg_sphere=peaks_sphere,
+                lambda_=lambda_,
+                tau=tau,
+            )
+
+            peaks_sdt = peaks_from_model(
+                model=sdt_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order_max,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
+            peaks_sdt.affine = affine
+
+            save_pam(opam, peaks_sdt)
+
+            logging.info("SDT computation completed.")
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    peaks_sdt,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
+
+            dname_ = os.path.dirname(opam)
+            if dname_ == "":
+                logging.info("Pam5 file saved in current directory")
+            else:
+                logging.info(f"Pam5 file saved in {dname_}")
+
+            return io_it
+
+
+class ReconstSFMFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "sfm"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        sphere_name=None,
+        response=None,
+        solver="ElasticNet",
+        l1_ratio=0.5,
+        alpha=0.001,
+        seed=42,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        sh_order_max=8,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        parallel=False,
+        extract_pam_values=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Workflow for Sparse Fascicle Model (SFM)
+
+        See :footcite:p:`Rokem2015` for further details about the method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        response : variable int, optional
+            Response function to use. If None, the response function will be
+            defined automatically.
+        solver : str, optional
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. It needs to be one of the following:
+            {'ElasticNet', 'NNLS'}
+        l1_ratio : float, optional
+            The ElasticNet mixing parameter, with 0 <= l1_ratio <= 1. For l1_ratio = 0
+            the penalty is an L2 penalty. For l1_ratio = 1 it is an L1 penalty. For
+            0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
+        alpha : float, optional
+            Sets the balance between least-squares error and L1/L2
+            regularization in ElasticNet :footcite:p`Zou2005`.
+        seed : int, optional
+            Seed for the random number generator.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        sh_order_max : int, optional
+            Maximum spherical harmonics order (l) used in the SFM fit.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The angle tolerance between directions.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+        out_dir : string, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+        response = response or (0.0015, 0.0005, 0.0005)
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
+            if data.shape[-1] < n_params:
+                raise ValueError(
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
+                )
+
+            peaks_sphere = (
+                default_sphere if sphere_name is None else get_sphere(name=sphere_name)
+            )
+
+            logging.info("SFM computation started.")
+            sfm_model = SparseFascicleModel(
+                gtab,
+                sphere=peaks_sphere,
+                response=response,
+                solver=solver,
+                l1_ratio=l1_ratio,
+                alpha=alpha,
+                seed=seed,
+            )
+
+            peaks_sfm = peaks_from_model(
+                model=sfm_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order_max,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
+            peaks_sfm.affine = affine
+
+            save_pam(opam, peaks_sfm)
+
+            logging.info("SFM computation completed.")
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    peaks_sfm,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
+
+            dname_ = os.path.dirname(opam)
+            msg = (
+                "Pam5 file saved in current directory"
+                if dname_ == ""
+                else f"Pam5 file saved in {dname_}"
+            )
+            logging.info(msg)
+
+            return io_it
+
+
+class ReconstGQIFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "gqi"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        method="gqi2",
+        sampling_length=1.2,
+        normalize_peaks=False,
+        sphere_name=None,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        sh_order_max=8,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        parallel=False,
+        extract_pam_values=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Workflow for Generalized Q-Sampling Imaging (GQI)
+
+        See :footcite:p:`Yeh2010` for further details about the method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        method : str, optional
+            Method used to compute the ODFs. It can be 'standard' or 'gqi2'.
+        sampling_length : float, optional
+            The maximum length of the sampling fibers.
+        normalize_peaks : bool, optional
+            If True, the peaks are normalized to 1.
+        sphere_name : str, optional
+            Sphere name on which to reconstruct the fODFs.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        sh_order_max : int, optional
+            Maximum spherical harmonics order (l) used in the SFM fit.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The angle tolerance between directions.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+        out_dir : string, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
+            if data.shape[-1] < n_params:
+                raise ValueError(
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
+                )
+
+            peaks_sphere = (
+                default_sphere if sphere_name is None else get_sphere(name=sphere_name)
+            )
+
+            logging.info("GQI computation started.")
+            gqi_model = GeneralizedQSamplingModel(
+                gtab,
+                method=method,
+                sampling_length=sampling_length,
+                normalize_peaks=normalize_peaks,
+            )
+
+            peaks_gqi = peaks_from_model(
+                model=gqi_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order_max,
+                normalize_peaks=normalize_peaks,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
+            peaks_gqi.affine = affine
+
+            save_pam(opam, peaks_gqi)
+
+            logging.info("GQI computation completed.")
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    peaks_gqi,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
+
+            dname_ = os.path.dirname(opam)
+            msg = (
+                "Pam5 file saved in current directory"
+                if dname_ == ""
+                else f"Pam5 file saved in {dname_}"
+            )
+            logging.info(msg)
+
+            return io_it
+
+
+class ReconstForecastFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "forecast"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        lambda_lb=1e-3,
+        dec_alg="CSD",
+        lambda_csd=1.0,
+        sphere_name=None,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        sh_order_max=8,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        parallel=False,
+        extract_pam_values=False,
+        num_processes=None,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Workflow for Fiber ORientation Estimated using Continuous Axially Symmetric
+        Tensors (FORECAST).
+
+        FORECAST :footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a`,
+        :footcite:p:`Zucchelli2017` is a Spherical Deconvolution reconstruction
+        model for multi-shell diffusion data which enables the calculation of a
+        voxel adaptive response function using the Spherical Mean Technique (SMT)
+        :footcite:p:`Kaden2016a`, :footcite:p:`Zucchelli2017`.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        lambda_lb : float, optional
+            Regularization parameter for the Laplacian-Beltrami operator.
+        dec_alg : str, optional
+            Spherical deconvolution algorithm. The possible values are Weighted Least
+            Squares ('WLS'),
+            Positivity Constraints using CVXPY ('POS') and the Constraint
+            Spherical Deconvolution algorithm ('CSD').
+        lambda_csd : float, optional
+            Regularization parameter for the CSD algorithm.
+        sphere_name : str, optional
+            Sphere name on which to reconstruct the fODFs.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        sh_order_max : int, optional
+            Maximum spherical harmonics order (l) used in the SFM fit.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The angle tolerance between directions.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+        out_dir : string, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logging.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
+            if data.shape[-1] < n_params:
+                raise ValueError(
+                    f"You need at least {n_params} unique DWI volumes to "
+                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
+                    " DWI volumes."
+                )
+
+            peaks_sphere = (
+                default_sphere if sphere_name is None else get_sphere(name=sphere_name)
+            )
+
+            logging.info("FORECAST computation started.")
+            forecast_model = ForecastModel(
+                gtab,
+                sh_order_max=sh_order_max,
+                lambda_lb=lambda_lb,
+                dec_alg=dec_alg,
+                sphere=peaks_sphere.vertices,
+                lambda_csd=lambda_csd,
+            )
+
+            peaks_forecast = peaks_from_model(
+                model=forecast_model,
+                data=data,
+                sphere=peaks_sphere,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
+                mask=mask_vol,
+                return_sh=True,
+                sh_order_max=sh_order_max,
+                normalize_peaks=True,
+                parallel=parallel,
+                num_processes=num_processes,
+            )
+            peaks_forecast.affine = affine
+
+            save_pam(opam, peaks_forecast)
+
+            logging.info("FORECAST computation completed.")
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    peaks_forecast,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
+
+            dname_ = os.path.dirname(opam)
+            msg = (
+                "Pam5 file saved in current directory"
+                if dname_ == ""
+                else f"Pam5 file saved in {dname_}"
+            )
+            logging.info(msg)
 
             return io_it
