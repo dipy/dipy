@@ -17,6 +17,7 @@
 *.trx
 *.pam5
 *.pial
+*.prof
 build
 *~
 doc/_build
