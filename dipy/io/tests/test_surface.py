@@ -15,13 +15,23 @@ fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 CWD = "/home/local/USHERBROOKE/rhef1902/Datasets/stateful_surface/"
 
+FOLDERS_GII = ["ascii", "base64", "gzip_base64"]
+FILENAMES_GII = ["pial.L.surf.gii", "smoothwm.L.surf.gii"]
+
+FOLDERS = ["big_affine_freesurfer", "small_affine_freesurfer"]
+HEMISPHERES = ["lh", "rh"]
+TYPES = ["pial", "smoothwm", "orig"]
+
+SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
+ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
+
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_pial_load_save():
-    os.chdir(os.path.join(os.path.expanduser(CWD), 'mni_freesurfer'))
-    data_raw = nib.freesurfer.read_geometry(os.path.join("surf", 'lh.pial'))
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'no_affine_freesurfer'))
+    data_raw = nib.freesurfer.read_geometry('naf_lh.pial')
 
-    sfs = load_surface(os.path.join("surf", 'lh.pial'), 'mni_masked.nii.gz')
+    sfs = load_surface('naf_lh.pial', 'naf_mni_masked.nii.gz')
 
     # Change the space/origin, should not affect the saved pial
     sfs.to_vox()
@@ -29,22 +39,19 @@ def test_pial_load_save():
 
     with TemporaryDirectory() as tmpdir:
         save_surface(os.path.join(tmpdir, 'lh.pial'), sfs,
-                     ref_pial=os.path.join("surf", 'lh.pial'))
+                     ref_pial='naf_lh.pial')
         data_save = nib.freesurfer.read_geometry(
             os.path.join(tmpdir, 'lh.pial'))
     npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
 
 
-spaces = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
-origins = [Origin.NIFTI, Origin.TRACKVIS]
-
-
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("space,origin", list(itertools.product(spaces, origins)))
+@pytest.mark.parametrize("space,origin",
+                         list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(space, origin):
-    os.chdir(os.path.join(os.path.expanduser(CWD), 'mni_freesurfer'))
+    os.chdir(os.path.join(os.path.expanduser(CWD), 'no_affine_freesurfer'))
 
-    sfs = load_surface(os.path.join("surf", 'lh.pial'), 'mni_masked.nii.gz')
+    sfs = load_surface('naf_lh.pial', 'naf_mni_masked.nii.gz')
     sfs.to_rasmm()
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
@@ -52,7 +59,8 @@ def test_vtk_matching_space(space, origin):
     with TemporaryDirectory() as tmpdir:
         save_surface(os.path.join(tmpdir, 'tmp.vtk'), sfs,
                      to_space=space, to_origin=origin)
-        sfs = load_surface(os.path.join(tmpdir, 'tmp.vtk'), 'mni_masked.nii.gz',
+        sfs = load_surface(os.path.join(tmpdir, 'tmp.vtk'),
+                           'naf_mni_masked.nii.gz',
                            from_space=space, from_origin=origin)
 
         sfs.to_rasmm()
@@ -61,11 +69,9 @@ def test_vtk_matching_space(space, origin):
         npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
-folders = ["ascii", "base64", "gzip_base64"]
-filenames = ["gifti.case1.pial.L.surf.gii", "gifti.case1.smoothwm.L.surf.gii"]
-
-
-@pytest.mark.parametrize("type,fname,space,origin", list(itertools.product(folders, filenames, spaces, origins)))
+@pytest.mark.parametrize("type,fname,space,origin",
+                         list(itertools.product(FOLDERS_GII, FILENAMES_GII,
+                                                SPACES, ORIGINS)))
 def test_gifti_matching_space(type, fname, space, origin):
     os.chdir(os.path.join(os.path.expanduser(CWD), 'gifti'))
     if type == "gzip_base64":
@@ -87,17 +93,14 @@ def test_gifti_matching_space(type, fname, space, origin):
         npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
-folders = ["big_affine_freesurfer", "small_affine_freesurfer"]
-hemispheres = ["lh", "rh"]
-types = ["pial", "smoothwm", "orig"]
-
-
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("dataset,hemisphere,type", list(itertools.product(folders, hemispheres, types)))
+@pytest.mark.parametrize("dataset,hemisphere,type",
+                         list(itertools.product(FOLDERS, HEMISPHERES, TYPES)))
 def test_freesurfer_density_operation(dataset, hemisphere, type):
     os.chdir(os.path.join(os.path.expanduser(CWD), dataset))
-    fname = os.path.join("surf", f"{hemisphere}.{type}")
-    sfs = load_surface(fname, 't1.nii.gz')
+    prefix = "baf" if dataset == "big_affine_freesurfer" else "saf"
+    fname = f"{prefix}_{hemisphere}.{type}"
+    sfs = load_surface(fname, f'{prefix}_t1.nii.gz')
 
     assert sfs.is_bbox_in_vox_valid()
 

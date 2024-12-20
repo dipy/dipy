@@ -12,7 +12,7 @@ is_big_endian = "big" in sys.byteorder.lower()
 
 @pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_concatenate():
-    filepath_dix, _, _ = get_fnames(name="gold_standard_tracks")
+    filepath_dix, _, _ = get_fnames(name="gold_standard_io")
     sft = load_tractogram(filepath_dix["gs.trk"], filepath_dix["gs.nii"])
     trx = tmm.load(filepath_dix["gs.trx"])
     concat = concatenate_tractogram([sft, trx])

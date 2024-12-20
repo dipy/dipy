@@ -25,7 +25,7 @@ FILEPATH_DIX = None
 def setup_module():
     global FILEPATH_DIX
     try:
-        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_tracks")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_io")
     except (HTTPError, URLError) as e:
         FILEPATH_DIX = None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
@@ -140,8 +140,8 @@ def reference_info_zero_affine():
 
 
 def test_reference_trk_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trk"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trk"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -152,8 +152,8 @@ def test_reference_trk_file_info_identical():
 
 
 def test_reference_trx_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trx"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trx"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -164,9 +164,9 @@ def test_reference_trx_file_info_identical():
 
 
 def test_reference_obj_info_identical():
-    sft = load_tractogram(FILEPATH_DIX["gs.trk"], "same")
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    sft = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"], "same")
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(sft)
     tuple_2 = get_reference_info(trx)
@@ -187,9 +187,9 @@ def test_reference_obj_info_identical():
 
 
 def test_reference_header_info_identical():
-    trk = nib.streamlines.load(FILEPATH_DIX["gs.trk"])
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    trk = nib.streamlines.load(FILEPATH_DIX["gs_streamlines.trk"])
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(trk.header)
     tuple_2 = get_reference_info(trx.header)

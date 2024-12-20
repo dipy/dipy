@@ -294,7 +294,8 @@ def _make_fetcher(
             i,
             (f, n),
         ) in enumerate(zip(remote_fnames, local_fnames)):
-            files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
+            files[n] = (baseurl + f, md5_list[i]
+                        if md5_list is not None else None)
         fetch_data(files, folder, data_size=data_size, use_headers=use_headers)
 
         if msg is not None:
@@ -345,7 +346,8 @@ fetch_stanford_labels = _make_fetcher(
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["aparc-reduced.nii.gz", "label_info.txt"],
     ["aparc-reduced.nii.gz", "label_info.txt"],
-    md5_list=["742de90090d06e687ce486f680f6d71a", "39db9f0f5e173d7a2c2e51b07d5d711b"],
+    md5_list=["742de90090d06e687ce486f680f6d71a",
+              "39db9f0f5e173d7a2c2e51b07d5d711b"],
     doc="Download reduced freesurfer aparc image from stanford web site",
 )
 
@@ -426,7 +428,8 @@ fetch_synb0_test = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["36379911", "36671850"],
     ["test_input_synb0.npz", "test_output_synb0.npz"],
-    md5_list=["987203aa73de2dac8770f39ed506dc0c", "515544fbcafd9769785502821b47b661"],
+    md5_list=["987203aa73de2dac8770f39ed506dc0c",
+              "515544fbcafd9769785502821b47b661"],
     doc="Download Synb0 test data for Schilling et. al 2019",
 )
 
@@ -446,7 +449,8 @@ fetch_deepn4_test = _make_fetcher(
     "https://ndownloader.figshare.com/files/",
     ["48842938", "48842941"],
     ["test_input_deepn4.npz", "test_output_deepn4.npz"],
-    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "8f52bdfceef93a5acae7c32a2c63a7c6"],
+    md5_list=["07aa7cc7c7f839683a0aad5bb853605b",
+              "8f52bdfceef93a5acae7c32a2c63a7c6"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -543,7 +547,8 @@ fetch_syn_data = _make_fetcher(
     UW_RW_URL + "1773/38476/",
     ["t1.nii.gz", "b0.nii.gz"],
     ["t1.nii.gz", "b0.nii.gz"],
-    md5_list=["701bda02bb769655c7d4a9b1df2b73a6", "e4b741f0c77b6039e67abb2885c97a78"],
+    md5_list=["701bda02bb769655c7d4a9b1df2b73a6",
+              "e4b741f0c77b6039e67abb2885c97a78"],
     data_size="12MB",
     doc="Download t1 and b0 volumes from the same session",
 )
@@ -778,32 +783,66 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
 fetch_gold_standard_io = _make_fetcher(
     "fetch_gold_standard_io",
     pjoin(dipy_home, "gold_standard_io"),
-    "https://zenodo.org/record/7767654/files/",
+    "https://zenodo.org/record/14537666/files/",
     [
-        "gs.trk",
-        "gs.tck",
-        "gs.trx",
-        "gs.fib",
-        "gs.dpy",
-        "gs.nii",
-        "gs_3mm.nii",
-        "gs_rasmm_space.txt",
-        "gs_voxmm_space.txt",
-        "gs_vox_space.txt",
-        "points_data.txt",
-        "streamlines_data.txt",
+        "gs_streamlines.trk",
+        "gs_streamlines.tck",
+        "gs_streamlines.trx",
+        "gs_streamlines.fib",
+        "gs_streamlines.dpy",
+        "gs_mesh_faces.txt",
+        "gs_mesh_lpsmm_corner.ply",
+        "gs_mesh_mesh_lpsmm_center.ply",
+        "gs_mesh_rasmm_center.ply",
+        "gs_mesh_rasmm_corner.ply",
+        "gs_mesh_vox_center.ply",
+        "gs_mesh_vox_corner.ply",
+        "gs_mesh_voxmm_center.ply",
+        "gs_mesh_voxmm_corner.ply",
+        "gs_volume.nii",
+        "gs_volume_3mm.nii",
+        "gs_streamlines_rasmm_space.txt",
+        "gs_streamlines_voxmm_space.txt",
+        "gs_streamlines_vox_space.txt",
+        "gs_mesh_rasmm_corner.txt",
+        "gs_mesh_rasmm_center.txt",
+        "gs_mesh_lpsmm_corner.txt",
+        "gs_mesh_lpsmm_center.txt",
+        "gs_mesh_voxmm_corner.txt",
+        "gs_mesh_voxmm_center.txt",
+        "gs_mesh_vox_corner.txt",
+        "gs_mesh_vox_center.txt",
+        "points_data.json",
+        "streamlines_data.json",
     ],
     [
-        "gs.trk",
-        "gs.tck",
-        "gs.trx",
-        "gs.fib",
-        "gs.dpy",
-        "gs.nii",
-        "gs_3mm.nii",
-        "gs_rasmm_space.txt",
-        "gs_voxmm_space.txt",
-        "gs_vox_space.txt",
+        "gs_streamlines.trk",
+        "gs_streamlines.tck",
+        "gs_streamlines.trx",
+        "gs_streamlines.fib",
+        "gs_streamlines.dpy",
+        "gs_mesh_faces.txt",
+        "gs_mesh_lpsmm_corner.ply",
+        "gs_mesh_lpsmm_center.ply",
+        "gs_mesh_rasmm_center.ply",
+        "gs_mesh_rasmm_corner.ply",
+        "gs_mesh_vox_center.ply",
+        "gs_mesh_vox_corner.ply",
+        "gs_mesh_voxmm_center.ply",
+        "gs_mesh_voxmm_corner.ply",
+        "gs_volume.nii",
+        "gs_volume_3mm.nii",
+        "gs_streamlines_rasmm_space.txt",
+        "gs_streamlines_voxmm_space.txt",
+        "gs_streamlines_vox_space.txt",
+        "gs_mesh_rasmm_corner.txt",
+        "gs_mesh_rasmm_center.txt",
+        "gs_mesh_lpsmm_corner.txt",
+        "gs_mesh_lpsmm_center.txt",
+        "gs_mesh_voxmm_corner.txt",
+        "gs_mesh_voxmm_center.txt",
+        "gs_mesh_vox_corner.txt",
+        "gs_mesh_vox_center.txt",
         "points_data.json",
         "streamlines_data.json",
     ],
@@ -813,16 +852,33 @@ fetch_gold_standard_io = _make_fetcher(
         "a6587f1a3adc4df076910c4d72eb4161",
         "e9818e07bef5bd605dea0877df14a2b0",
         "248606297e400d1a9b1786845aad8de3",
+        "775852c88be8f8c2c69f0b7fdcb8d310",
+        "cc05be6621e7986061844e2956339af3",
+        "d2fc1c7f64c472b95a769b620a33e51f",
+        "18a37f374fb13021d115bb2db6b2ab19",
+        "f2c95797b5e12a3117619e196138e19d",
+        "d2d36eef82aef9897de95d9d38e95eaf",
+        "0ed5b7aa807f4c20ba681db76150e3cd",
+        "6a1d90454284b31c4e0ec3ce5c3d4ce7",
+        "79fcf19eb9c8b9a94f0a47ed833ae901",
         "a2d4d8f62d1de0ab9927782c7d51cb27",
         "217b3ae0712a02b2463b8eedfe9a0a68",
         "ca193a5508d3313d542231aaf262960f",
         "3284de59dfd9ca3130e6e01258ed9022",
         "a2a89c387f45adab733652a92f6602d5",
+        "30e36aa7103b7900fc4bb92807975b6b",
+        "0a33b20061af68bb22bc4c755702fd4a",
+        "617dab59e802f5e30eae6f327df025de",
+        "b299f01365b81e588375fc824beb8441",
+        "3310302ec55808d52b22544d0b83aabb",
+        "c653b6927356c489b81b7124fa9fb375",
+        "7bd00557ebddbf261684cefee1e53685",
+        "c4969777454d557850fd2cf5d1229acc",
         "4bcca0c6195871fc05e93cdfabec22b4",
-        "578f29052ac03a6d8a98580eb7c70d97",
+        "578f29052ac03a6d8a98580eb7c70d97"
     ],
-    doc="Downloads the gold standard for streamlines io testing.",
-    data_size="47.KB",
+    doc="Downloads the gold standard for streamlines and meshes io testing.",
+    data_size="51.KB",
 )
 
 
@@ -987,7 +1043,8 @@ fetch_bundle_warp_dataset = _make_fetcher(
         "m_UF_L.trk",
         "s_UF_L.trk",
     ],
-    md5_list=["4db38ca1e80c16d6e3a97f88f0611187", "c1499005baccfab865ce38368d7a4c7f"],
+    md5_list=["4db38ca1e80c16d6e3a97f88f0611187",
+              "c1499005baccfab865ce38368d7a4c7f"],
     doc="Download Bundle Warp dataset",
 )
 
@@ -1602,8 +1659,10 @@ def get_fnames(*, name="small_64D"):
         files, folder = fetch_cfin_multib()
         t1_name = pjoin(folder, "T1.nii")
         fraw = pjoin(folder, "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii")
-        fbval = pjoin(folder, "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval")
-        fbvec = pjoin(folder, "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec")
+        fbval = pjoin(
+            folder, "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval")
+        fbvec = pjoin(
+            folder, "__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec")
         return fraw, fbval, fbvec, t1_name
     if name == "target_tractrogram_hcp":
         files, folder = fetch_target_tractogram_hcp()
@@ -1699,7 +1758,7 @@ def get_fnames(*, name="small_64D"):
         seed_coords_name = pjoin(folder, "ptt_seed_coords.txt")
         seed_image_name = pjoin(folder, "ptt_seed_image.nii")
         return fod_name, seed_coords_name, seed_image_name
-    if name == "gold_standard_tracks":
+    if name == "gold_standard_io":
         filepath_dix = {}
         files, folder = fetch_gold_standard_io()
         for filename in files:
@@ -1782,7 +1841,8 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_scheme_retest.txt",
     ]
     for gtab_txt_name in gtab_txt_names:
-        txt_loc = pjoin(dipy_home, "qtdMRI_test_retest_2subjects", gtab_txt_name)
+        txt_loc = pjoin(
+            dipy_home, "qtdMRI_test_retest_2subjects", gtab_txt_name)
         qtdmri_scheme = np.loadtxt(txt_loc, skiprows=1)
         bvecs = qtdmri_scheme[:, 1:4]
         G = qtdmri_scheme[:, 4] / 1e3  # because dipy takes T/mm not T/m
@@ -1913,7 +1973,8 @@ def read_taiwan_ntu_dsi():
     """
     fraw, fbval, fbvec = get_fnames(name="taiwan_ntu_dsi")
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
+    bvecs[1:] = bvecs[1:] / \
+        np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
     gtab = gradient_table(bvals, bvecs=bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -1952,7 +2013,8 @@ def fetch_tissue_data():
     ]  # ap
 
     url_list = [t1, t1d, ap]
-    fname_list = ["t1_brain.nii.gz", "t1_brain_denoised.nii.gz", "power_map.nii.gz"]
+    fname_list = ["t1_brain.nii.gz",
+                  "t1_brain_denoised.nii.gz", "power_map.nii.gz"]
 
     if not op.exists(folder):
         _log(f"Creating new directory {folder}")
@@ -2388,7 +2450,8 @@ def get_file_formats():
     bundles_list : all bundles (list)
     ref_anat : reference
     """
-    ref_anat = pjoin(dipy_home, "bundle_file_formats_example", "template0.nii.gz")
+    ref_anat = pjoin(dipy_home, "bundle_file_formats_example",
+                     "template0.nii.gz")
     bundles_list = []
     for filename in [
         "cc_m_sub.trk",
@@ -2397,7 +2460,8 @@ def get_file_formats():
         "raf_m_sub.vtk",
         "rpt_m_sub.dpy",
     ]:
-        bundles_list.append(pjoin(dipy_home, "bundle_file_formats_example", filename))
+        bundles_list.append(
+            pjoin(dipy_home, "bundle_file_formats_example", filename))
 
     return bundles_list, ref_anat
 
@@ -2529,7 +2593,8 @@ def read_DiB_217_lte_pte_ste():
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     """
-    fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames(name="DiB_217_lte_pte_ste")
+    fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames(
+        name="DiB_217_lte_pte_ste")
     _, folder = fetch_DiB_217_lte_pte_ste()
     if op.isfile(pjoin(folder, "DiB_217_lte_pte_ste.nii.gz")):
         data_img = nib.load(pjoin(folder, "DiB_217_lte_pte_ste.nii.gz"))
@@ -2799,7 +2864,8 @@ def _hbn_downloader(my_path, derivative, subjects, client):
         )  # noqa
         query_content = query.get("Contents", None)
         if query_content is None:
-            raise ValueError(f"Could not find derivatives data for subject {subject}")
+            raise ValueError(
+                f"Could not find derivatives data for subject {subject}")
         file_list = [kk["Key"] for kk in query["Contents"]]
         sub_dir = op.join(base_dir, f"sub-{subject}")
         ses_dir = op.join(sub_dir, ses)
@@ -2812,13 +2878,17 @@ def _hbn_downloader(my_path, derivative, subjects, client):
         if derivative == "afq":
             if not os.path.exists(sub_dir):
                 os.makedirs(os.path.join(ses_dir, "bundles"), exist_ok=True)
-                os.makedirs(os.path.join(ses_dir, "clean_bundles"), exist_ok=True)
+                os.makedirs(os.path.join(
+                    ses_dir, "clean_bundles"), exist_ok=True)
                 os.makedirs(os.path.join(ses_dir, "ROIs"), exist_ok=True)
-                os.makedirs(os.path.join(ses_dir, "tract_profile_plots"), exist_ok=True)
-                os.makedirs(os.path.join(ses_dir, "viz_bundles"), exist_ok=True)
+                os.makedirs(os.path.join(
+                    ses_dir, "tract_profile_plots"), exist_ok=True)
+                os.makedirs(os.path.join(
+                    ses_dir, "viz_bundles"), exist_ok=True)
 
         for remote in file_list:
-            full = remote.split("Projects")[-1][1:].replace("/BIDS_curated", "")
+            full = remote.split(
+                "Projects")[-1][1:].replace("/BIDS_curated", "")
             local = op.join(my_path, full)
             data_files[local] = remote
 
