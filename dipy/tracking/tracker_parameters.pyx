@@ -13,7 +13,7 @@ cimport numpy as cnp
 
 
 def generate_tracking_parameters(algo_name, *,
-    int max_len=500, int min_len=1, double step_size=0.5, double[:] voxel_size,
+    int max_len=500, int min_len=2, double step_size=0.5, double[:] voxel_size,
     double max_angle=30, return_all=True, double pmf_threshold=0.1, 
     double probe_length=0.5, double probe_radius=0, int probe_quality=3, 
     int probe_count=1, double data_support_exponent=1, int random_seed=0):

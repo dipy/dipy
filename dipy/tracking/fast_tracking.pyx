@@ -82,8 +82,7 @@ def generate_tractogram(double[:,::1] seed_positions,
         generate_tractogram_c(seed_positions[seed_start:seed_end],
                               seed_directions[seed_start:seed_end],
                               nbr_threads, sc, params, pmf_gen,
-                              streamlines_arr, length_arr, status_arr)
-        
+                              streamlines_arr, length_arr, status_arr)        
        
         for i in range(seed_end - seed_start):
             if ((status_arr[i] == VALIDSTREAMLIME or params.return_all)
