@@ -132,6 +132,8 @@ readme = """
 Fiber Tracking
 --------------
 
+.. include:: ../../tractography_methods_list.rst
+
 """
 position = 13
 enable = true
