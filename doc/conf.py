@@ -124,6 +124,7 @@ exclude_patterns = [
     "examples",
     "examples_revamped",
     "reconstruction_models_list.rst",
+    "tractography_methods_list.rst",
 ]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
