@@ -433,12 +433,12 @@ class PositiveDefiniteLeastSquares:
         .. footbibliography::
         """
         # Input
-        self.A = A
-        self.L = L
+        self.A = A  # list: [zeros, H(omega), L(alpha)] --- see eq 22
+        self.L = L  # this is a regularizer matrix, NOT L(alpha) eq 22
 
         # Problem size
         t = len(A) if A else 0
-        k = t - m - 1
+        k = t - m - 1  # length of alpha in L(alpha) eq 22
 
         sparsity = [(i, j) for i in range(m) for j in range(i, m)]
 
@@ -461,13 +461,14 @@ class PositiveDefiniteLeastSquares:
 
         # Constraints
         if t:
-            M = F = A[0]
+            M = F = A[0]  # first matrix all zeros (use to initialize)
             if k > 0:
-                for i in range(m):
+                for i in range(m):  # loop over H(omega) from eq 22
                     F += self._f[i] * A[i + 1]
                     M += self._h[i] * A[i + 1]
+                    # A-matrix for 'intercept' (22nd, i=21) should be zeros
                 self._s = cvxpy.Variable(k)
-                for j in range(k):
+                for j in range(k):  # loop over L(alpha) from eq 22
                     F += self._s[j] * A[m + j + 1]
                     M += self._s[j] * A[m + j + 1]
             else:
