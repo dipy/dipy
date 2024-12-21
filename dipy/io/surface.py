@@ -62,7 +62,7 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
     _, ext = split_name_with_gz(fname)
 
     if ext not in (freesurfer_ext + vtk_ext):
-        logging.error("Output filename is not one of the supported format.")
+        logging.error("Input extension is not one of the supported format.")
         return False
 
     if to_space not in Space:

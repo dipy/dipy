@@ -783,7 +783,7 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
 fetch_gold_standard_io = _make_fetcher(
     "fetch_gold_standard_io",
     pjoin(dipy_home, "gold_standard_io"),
-    "https://zenodo.org/record/14537666/files/",
+    "https://zenodo.org/record/14538513/files/",
     [
         "gs_streamlines.trk",
         "gs_streamlines.tck",
@@ -791,8 +791,9 @@ fetch_gold_standard_io = _make_fetcher(
         "gs_streamlines.fib",
         "gs_streamlines.dpy",
         "gs_mesh_faces.txt",
+        "gs_mesh.gii",
         "gs_mesh_lpsmm_corner.ply",
-        "gs_mesh_mesh_lpsmm_center.ply",
+        "gs_mesh_lpsmm_center.ply",
         "gs_mesh_rasmm_center.ply",
         "gs_mesh_rasmm_corner.ply",
         "gs_mesh_vox_center.ply",
@@ -822,6 +823,7 @@ fetch_gold_standard_io = _make_fetcher(
         "gs_streamlines.fib",
         "gs_streamlines.dpy",
         "gs_mesh_faces.txt",
+        "gs_mesh.gii",
         "gs_mesh_lpsmm_corner.ply",
         "gs_mesh_lpsmm_center.ply",
         "gs_mesh_rasmm_center.ply",
@@ -853,6 +855,7 @@ fetch_gold_standard_io = _make_fetcher(
         "e9818e07bef5bd605dea0877df14a2b0",
         "248606297e400d1a9b1786845aad8de3",
         "775852c88be8f8c2c69f0b7fdcb8d310",
+        "04889f220a57c43dd955987e516b51b2",
         "cc05be6621e7986061844e2956339af3",
         "d2fc1c7f64c472b95a769b620a33e51f",
         "18a37f374fb13021d115bb2db6b2ab19",
@@ -876,6 +879,84 @@ fetch_gold_standard_io = _make_fetcher(
         "c4969777454d557850fd2cf5d1229acc",
         "4bcca0c6195871fc05e93cdfabec22b4",
         "578f29052ac03a6d8a98580eb7c70d97"
+    ],
+    doc="Downloads the gold standard for streamlines and meshes io testing.",
+    data_size="51.KB",
+)
+
+
+fetch_real_data_io = _make_fetcher(
+    "fetch_real_data_io",
+    pjoin(dipy_home, "real_data_io"),
+    "https://zenodo.org/record/14537772/files/",
+    [
+        "anat.nii.gz",
+        "baf_lh.orig",
+        "baf_lh.pial",
+        "baf_lh.smoothwm",
+        "baf_rh.orig",
+        "baf_rh.pial",
+        "baf_rh.smoothwm",
+        "baf_t1.nii.gz",
+        "naf_lh.pial",
+        "naf_mni_masked.nii.gz",
+        "pial.L.surf.gii",
+        "pial.L.surf.gii.gz",
+        "saf_lh.orig",
+        "saf_lh.pial",
+        "saf_lh.smoothwm",
+        "saf_rh.orig",
+        "saf_rh.pial",
+        "saf_rh.smoothwm",
+        "saf_t1.nii.gz",
+        "smoothwm.L.surf.gii",
+        "smoothwm.L.surf.gii.gz",
+    ],
+    [
+        "anat.nii.gz",
+        "baf_lh.orig",
+        "baf_lh.pial",
+        "baf_lh.smoothwm",
+        "baf_rh.orig",
+        "baf_rh.pial",
+        "baf_rh.smoothwm",
+        "baf_t1.nii.gz",
+        "naf_lh.pial",
+        "naf_mni_masked.nii.gz",
+        "pial.L.surf.gii",
+        "pial.L.surf.gii.gz",
+        "saf_lh.orig",
+        "saf_lh.pial",
+        "saf_lh.smoothwm",
+        "saf_rh.orig",
+        "saf_rh.pial",
+        "saf_rh.smoothwm",
+        "saf_t1.nii.gz",
+        "smoothwm.L.surf.gii",
+        "smoothwm.L.surf.gii.gz",
+    ],
+    md5_list=[
+        "deb754c933076edf360be8a1842d651b",
+        "162506eaf2ab8f6c8bb7498b6d3dbe75",
+        "7ae3f808e5d497759e16e9c992a99912",
+        "211a7c015c1050b338006d2a1b79a1c9",
+        "6c2c1e34aecc977e4a02eca42a3da6e2",
+        "243f193388473858dbd80acd4f5c1be4",
+        "96f58e8fc72f51bc0ea360aefeaa9914",
+        "30a270c56730cc60ec7539d493a76e98",
+        "8e6087f510a0dfb513ad46c14d82a4bf",
+        "ea6c119442d23a25033de19b55c607d3",
+        "252928164e241871003190ac6d013cd3",
+        "f1b7b0785036903c5ebf8d4ed61e431c",
+        "486de9dbbb8250903ad930372f9fb0be",
+        "f853d34e01abb68bf1ca2cd3ec18d3c2",
+        "a5b25fbe6aad62d36fba77c0a2fb21b0",
+        "187ee9b18312d3e4b5c8f13e4acf3d9e",
+        "15387c2de6ef710d94374d734593a5bb",
+        "f63648f5b8fe2a1517d6f9c034f284bb",
+        "3734ce8cbd95e6f1587603dd79b631ef",
+        "54aa36961ca4a19f7843d7a5a1e721d0",
+        "0b6dbdda2416cf2db2bf56603a154845",
     ],
     doc="Downloads the gold standard for streamlines and meshes io testing.",
     data_size="51.KB",
@@ -1771,6 +1852,13 @@ def get_fnames(*, name="small_64D"):
             streamlines_data = dict(json.load(json_file))
 
         return filepath_dix, points_data, streamlines_data
+    if name == "real_data_io":
+        filepath_dix = {}
+        files, folder = fetch_real_data_io()
+        for filename in files:
+            filepath_dix[filename] = os.path.join(folder, filename)
+
+        return filepath_dix
     if name in ["disco", "disco1", "disco2", "disco3"]:
         local_fetcher = globals().get(f"fetch_{name}_dataset")
         files, folder = local_fetcher()
