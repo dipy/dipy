@@ -103,7 +103,7 @@ class StatefulSurface:
             dtype_dict = {"vertices": np.float64, "faces": np.uint32}
         self.dtype_dict = dtype_dict
 
-        if isinstance(data, vtk.vtkPolyData):
+        if have_fury and isinstance(data, vtk.vtkPolyData):
             self._vertices = get_polydata_vertices(
                 data, dtype=self.dtype_dict["vertices"]
             )

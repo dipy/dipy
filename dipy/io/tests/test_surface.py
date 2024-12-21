@@ -84,6 +84,7 @@ def test_vtk_matching_space(space, origin):
         npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize(
     "type,fname,space,origin",
     list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),

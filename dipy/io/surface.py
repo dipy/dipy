@@ -257,7 +257,7 @@ def save_surface(
 
         vertices = apply_freesurfer_transform(sfs.vertices, sfs, inv=False)
 
-        save_pial(fname, vertices, sfs.faces, metadata)
+        save_pial(fname, vertices, sfs.faces, metadata=metadata)
     else:
         logging.error("Output extension is not one of the supported format.")
 

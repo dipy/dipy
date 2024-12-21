@@ -287,6 +287,7 @@ def test_equivalent_gii():
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_create_from_sfs():
     sfs_1 = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -314,6 +315,7 @@ def test_create_from_sfs():
         )
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_init_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -330,6 +332,7 @@ def test_init_dtype_dict_attributes():
         npt.assert_(False, msg=e)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_set_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -350,6 +353,7 @@ def test_set_dtype_dict_attributes():
         npt.assert_(False, msg="dtype_dict should be identical after set.")
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_set_partial_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -377,6 +381,7 @@ def test_set_partial_dtype_dict_attributes():
         )
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_non_existing_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -398,6 +403,7 @@ def test_non_existing_dtype_dict_attributes():
         npt.assert_(True)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_from_sfs_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -424,8 +430,8 @@ def test_from_sfs_dtype_dict_attributes():
         npt.assert_(False, msg="from_sfs() should not modify the dtype_dict.")
 
 
-@pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
 def test_save_load_many_times(extension):
     # Load initial surface
     sfs = load_surface(
