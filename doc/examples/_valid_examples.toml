@@ -72,7 +72,7 @@ readme = """
 Reconstruction
 --------------
 
-Below, an overview of all reconstruction models available on DIPY.
+Below, an overview of all reconstruction models available in DIPY.
 
 .. note::
     Some reconstruction models do not have a tutorial yet
@@ -131,6 +131,8 @@ files = [
 readme = """
 Fiber Tracking
 --------------
+
+.. include:: ../../tractography_methods_list.rst
 
 """
 position = 13
