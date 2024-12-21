@@ -181,6 +181,9 @@ Metrics = [
 ]
 # TODO: Add custom commands
 
+[tool.setuptools.package-data]
+"dipy" = ["py.typed"]
+
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
 filterwarnings = [
