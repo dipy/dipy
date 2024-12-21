@@ -9,8 +9,8 @@ import numpy.testing as npt
 import pytest
 
 from dipy.data import get_fnames
-from dipy.io.utils import Space, Origin
-from dipy.io.surface import save_surface, load_surface
+from dipy.io.surface import load_surface, save_surface
+from dipy.io.utils import Origin, Space
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
@@ -39,39 +39,44 @@ def setup_module():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_pial_load_save():
-    data_raw = nib.freesurfer.read_geometry(FILEPATH_DIX['naf_lh.pial'])
+    data_raw = nib.freesurfer.read_geometry(FILEPATH_DIX["naf_lh.pial"])
 
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
 
     # Change the space/origin, should not affect the saved pial
     sfs.to_vox()
     sfs.to_corner()
 
     with TemporaryDirectory() as tmpdir:
-        save_surface(os.path.join(tmpdir, 'lh.pial'), sfs,
-                     ref_pial=FILEPATH_DIX['naf_lh.pial'])
-        data_save = nib.freesurfer.read_geometry(
-            os.path.join(tmpdir, 'lh.pial'))
+        save_surface(
+            os.path.join(tmpdir, "lh.pial"), sfs, ref_pial=FILEPATH_DIX["naf_lh.pial"]
+        )
+        data_save = nib.freesurfer.read_geometry(os.path.join(tmpdir, "lh.pial"))
     npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("space,origin",
-                         list(itertools.product(SPACES, ORIGINS)))
+@pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(space, origin):
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_rasmm()
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
 
     with TemporaryDirectory() as tmpdir:
-        save_surface(os.path.join(tmpdir, 'tmp.vtk'), sfs,
-                     to_space=space, to_origin=origin)
-        sfs = load_surface(os.path.join(tmpdir, 'tmp.vtk'),
-                           FILEPATH_DIX['naf_mni_masked.nii.gz'],
-                           from_space=space, from_origin=origin)
+        save_surface(
+            os.path.join(tmpdir, "tmp.vtk"), sfs, to_space=space, to_origin=origin
+        )
+        sfs = load_surface(
+            os.path.join(tmpdir, "tmp.vtk"),
+            FILEPATH_DIX["naf_mni_masked.nii.gz"],
+            from_space=space,
+            from_origin=origin,
+        )
 
         sfs.to_rasmm()
         sfs.to_center()
@@ -79,24 +84,28 @@ def test_vtk_matching_space(space, origin):
         npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
-@pytest.mark.parametrize("type,fname,space,origin",
-                         list(itertools.product(FOLDERS_GII, FILENAMES_GII,
-                                                SPACES, ORIGINS)))
+@pytest.mark.parametrize(
+    "type,fname,space,origin",
+    list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),
+)
 def test_gifti_matching_space(type, fname, space, origin):
     if type == "gzip_base64":
         fname += ".gz"
-    sfs = load_surface(FILEPATH_DIX[fname],
-                       FILEPATH_DIX['anat.nii.gz'])
+    sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX["anat.nii.gz"])
     sfs.to_rasmm()
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
 
     with TemporaryDirectory() as tmpdir:
-        save_surface(os.path.join(tmpdir, 'tmp.gii'), sfs,
-                     to_space=space, to_origin=origin)
-        sfs = load_surface(os.path.join(tmpdir, 'tmp.gii'),
-                           FILEPATH_DIX['anat.nii.gz'],
-                           from_space=space, from_origin=origin)
+        save_surface(
+            os.path.join(tmpdir, "tmp.gii"), sfs, to_space=space, to_origin=origin
+        )
+        sfs = load_surface(
+            os.path.join(tmpdir, "tmp.gii"),
+            FILEPATH_DIX["anat.nii.gz"],
+            from_space=space,
+            from_origin=origin,
+        )
 
         sfs.to_rasmm()
         sfs.to_center()
@@ -105,13 +114,13 @@ def test_gifti_matching_space(type, fname, space, origin):
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("dataset,hemisphere,type",
-                         list(itertools.product(FOLDERS, HEMISPHERES, TYPES)))
+@pytest.mark.parametrize(
+    "dataset,hemisphere,type", list(itertools.product(FOLDERS, HEMISPHERES, TYPES))
+)
 def test_freesurfer_density_operation(dataset, hemisphere, type):
     prefix = "baf" if dataset == "big_affine_freesurfer" else "saf"
     fname = f"{prefix}_{hemisphere}.{type}"
-    sfs = load_surface(FILEPATH_DIX[fname],
-                       FILEPATH_DIX[f'{prefix}_t1.nii.gz'])
+    sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX[f"{prefix}_t1.nii.gz"])
 
     assert sfs.is_bbox_in_vox_valid()
 
@@ -126,16 +135,17 @@ def test_freesurfer_density_operation(dataset, hemisphere, type):
         data[coord] += 1
 
     with TemporaryDirectory() as tmpdir:
-        nib.save(nib.Nifti1Image(data, sfs.affine),
-                 os.path.join(tmpdir, f"{hemisphere}_{type}.nii.gz"))
+        nib.save(
+            nib.Nifti1Image(data, sfs.affine),
+            os.path.join(tmpdir, f"{hemisphere}_{type}.nii.gz"),
+        )
 
-    # Compute the barycenter of the density map and compare it to the approximate barycenter
+    # Compute the barycenter of the density map and compare it to the
+    # approximate barycenter
     barycenter = np.mean(np.argwhere(data), axis=0)
     if dataset == "small_affine_freesurfer":
-        approx_barycenter = [
-            141, 100, 82] if hemisphere == "lh" else [80, 101, 83]
+        approx_barycenter = [141, 100, 82] if hemisphere == "lh" else [80, 101, 83]
     elif dataset == "big_affine_freesurfer":
-        approx_barycenter = [
-            139, 96, 80] if hemisphere == "lh" else [79, 97, 78]
+        approx_barycenter = [139, 96, 80] if hemisphere == "lh" else [79, 97, 78]
 
     npt.assert_(np.linalg.norm(barycenter - approx_barycenter) < 2.0)

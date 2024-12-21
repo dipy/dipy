@@ -32,6 +32,7 @@ class Space(enum.Enum):
 
 class Origin(enum.Enum):
     """Enum to simplify future change to convention"""
+
     # TODO: maybe gifti and vtk should be different origins?
     # Required to do mapping using numpy
     NIFTI = "center"
@@ -540,8 +541,7 @@ def recursive_compare(d1, d2, level="root"):
 
     elif isinstance(d1, list) and isinstance(d2, list):
         if len(d1) != len(d2):
-            raise ValueError(
-                f"Lists do not have the same length at level {level}")
+            raise ValueError(f"Lists do not have the same length at level {level}")
         common_len = min(len(d1), len(d2))
 
         for i in range(common_len):
@@ -549,5 +549,4 @@ def recursive_compare(d1, d2, level="root"):
 
     else:
         if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
-            raise ValueError(
-                f"Values {d1}, {d2} do not match at level {level}")
+            raise ValueError(f"Values {d1}, {d2} do not match at level {level}")

@@ -1,10 +1,10 @@
 from copy import deepcopy
+import itertools
 import os
 from os.path import join as pjoin
 import sys
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
-import itertools
 
 import numpy as np
 import numpy.testing as npt
@@ -14,7 +14,6 @@ import trx.trx_file_memmap as tmm
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.stateful_surface import StatefulSurface as _  # fake import
 from dipy.io.utils import is_header_compatible, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
@@ -31,8 +30,9 @@ FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 def setup_module():
     global FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA
     try:
-        FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = \
-            get_fnames(name="gold_standard_io")
+        FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = get_fnames(
+            name="gold_standard_io"
+        )
     except (HTTPError, URLError) as e:
         FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
@@ -53,43 +53,39 @@ def test_direct_trx_loading():
     sft = trx.to_sft()
 
     tmp_points_vox = np.loadtxt(FILEPATH_DIX["gs_streamlines_vox_space.txt"])
-    tmp_points_rasmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
     trx.close()
     assert not os.path.isdir(tmp_dir)
 
-    npt.assert_allclose(sft.streamlines._data, tmp_points_rasmm,
-                        rtol=1e-04, atol=1e-06)
+    npt.assert_allclose(sft.streamlines._data, tmp_points_rasmm, rtol=1e-04, atol=1e-06)
     sft.to_vox()
-    npt.assert_allclose(sft.streamlines._data, tmp_points_vox,
-                        rtol=1e-04, atol=1e-06)
+    npt.assert_allclose(sft.streamlines._data, tmp_points_vox, rtol=1e-04, atol=1e-06)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
 def test_space_gold_standard(ext, space):
-    sft = load_tractogram(FILEPATH_DIX[f"gs.{ext}"],
-                          FILEPATH_DIX["gs_volume.nii"],
-                          to_space=space)
-    tmp_points_vox = np.loadtxt(
-        FILEPATH_DIX[f"gs_{space.value.lower()}_space.txt"])
-    npt.assert_allclose(tmp_points_vox, sft.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    sft = load_tractogram(
+        FILEPATH_DIX[f"gs.{ext}"], FILEPATH_DIX["gs_volume.nii"], to_space=space
+    )
+    tmp_points_vox = np.loadtxt(FILEPATH_DIX[f"gs_{space.value.lower()}_space.txt"])
+    npt.assert_allclose(
+        tmp_points_vox, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_switch_voxel_sizes_from_rasmm():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     sft_switch = StatefulTractogram(
         sft.streamlines, FILEPATH_DIX["gs_volume_3mm.nii"], Space.RASMM
     )
-    tmp_points_rasmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-    tmp_points_voxmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_voxmm_space.txt"])
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    tmp_points_voxmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_voxmm_space.txt"])
 
     sft_switch.to_rasmm()
     npt.assert_allclose(
@@ -97,110 +93,127 @@ def test_switch_voxel_sizes_from_rasmm():
     )
 
     sft_switch.to_voxmm()
-    npt.assert_allclose(tmp_points_voxmm, sft_switch.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        tmp_points_voxmm, sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_switch_voxel_sizes_from_voxmm():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOXMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOXMM,
     )
     sft_switch = StatefulTractogram(
         sft.streamlines, FILEPATH_DIX["gs_volume_3mm.nii"], Space.VOXMM
     )
-    tmp_points_rasmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-    tmp_points_voxmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_voxmm_space.txt"])
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    tmp_points_voxmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_voxmm_space.txt"])
 
     sft_switch.to_rasmm()
-    npt.assert_allclose(tmp_points_rasmm, sft_switch.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        tmp_points_rasmm, sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
     sft_switch.to_voxmm()
-    npt.assert_allclose(tmp_points_voxmm, sft_switch.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        tmp_points_voxmm, sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_to_rasmm_equivalence():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
 
     sft_1.to_rasmm()
     sft_2.to_space(Space.RASMM)
-    npt.assert_allclose(sft_1.streamlines.get_data(), sft_2.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft_1.streamlines.get_data(), sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_to_voxmm_equivalence():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
 
     sft_1.to_voxmm()
     sft_2.to_space(Space.VOXMM)
-    npt.assert_allclose(sft_1.streamlines.get_data(), sft_2.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft_1.streamlines.get_data(), sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_to_vox_equivalence():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
 
     sft_1.to_vox()
     sft_2.to_space(Space.VOX)
-    npt.assert_allclose(sft_1.streamlines.get_data(), sft_2.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft_1.streamlines.get_data(), sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_to_corner_equivalence():
-    sft_1 = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"],
-                            FILEPATH_DIX["gs_volume.nii"],
-                            to_space=Space.VOX)
-    sft_2 = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"],
-                            FILEPATH_DIX["gs_volume.nii"],
-                            to_space=Space.VOX)
+    sft_1 = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
+    )
+    sft_2 = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
+    )
 
     sft_1.to_corner()
     sft_2.to_origin(Origin.TRACKVIS)
-    npt.assert_allclose(sft_1.streamlines.get_data(),
-                        sft_2.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft_1.streamlines.get_data(), sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_to_center_equivalence():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
 
     sft_1.to_center()
     sft_2.to_origin(Origin.NIFTI)
-    npt.assert_allclose(sft_1.streamlines.get_data(),
-                        sft_2.streamlines.get_data(),
-                        atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft_1.streamlines.get_data(), sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6
+    )
 
 
 def test_empty_sft_case():
@@ -227,32 +240,35 @@ def test_empty_sft_case():
 
 def test_trk_iterative_saving_loading():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     with TemporaryDirectory() as tmp_dir:
         save_tractogram(sft, pjoin(tmp_dir, "gs_iter.trk"))
-        tmp_points_rasmm = np.loadtxt(
-            FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
-            sft_iter = load_tractogram(pjoin(tmp_dir, "gs_iter.trk"),
-                                       FILEPATH_DIX["gs_volume.nii"],
-                                       to_space=Space.RASMM)
-            npt.assert_allclose(tmp_points_rasmm, sft_iter.streamlines.get_data(),
-                                atol=1e-3, rtol=1e-6)
+            sft_iter = load_tractogram(
+                pjoin(tmp_dir, "gs_iter.trk"),
+                FILEPATH_DIX["gs_volume.nii"],
+                to_space=Space.RASMM,
+            )
+            npt.assert_allclose(
+                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+            )
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.trk"))
 
 
 def test_tck_iterative_saving_loading():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.tck"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     with TemporaryDirectory() as tmp_dir:
         save_tractogram(sft, pjoin(tmp_dir, "gs_iter.tck"))
-        tmp_points_rasmm = np.loadtxt(
-            FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
@@ -260,21 +276,22 @@ def test_tck_iterative_saving_loading():
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
-            npt.assert_allclose(tmp_points_rasmm, sft_iter.streamlines.get_data(),
-                                atol=1e-3, rtol=1e-6)
+            npt.assert_allclose(
+                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+            )
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.tck"))
 
 
 @pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
 def test_trx_iterative_saving_loading():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trx"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trx"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     with TemporaryDirectory() as tmp_dir:
         save_tractogram(sft, pjoin(tmp_dir, "gs_iter.trx"))
-        tmp_points_rasmm = np.loadtxt(
-            FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
@@ -282,8 +299,9 @@ def test_trx_iterative_saving_loading():
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
-            npt.assert_allclose(tmp_points_rasmm, sft_iter.streamlines.get_data(),
-                                atol=1e-3, rtol=1e-6)
+            npt.assert_allclose(
+                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+            )
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.trx"))
 
 
@@ -292,13 +310,13 @@ def test_fib_iterative_saving_loading():
     if not have_fury:
         return
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.fib"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.fib"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     with TemporaryDirectory() as tmp_dir:
         save_tractogram(sft, pjoin(tmp_dir, "gs_iter.fib"))
-        tmp_points_rasmm = np.loadtxt(
-            FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
@@ -306,20 +324,21 @@ def test_fib_iterative_saving_loading():
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
-            npt.assert_allclose(tmp_points_rasmm, sft_iter.streamlines.get_data(),
-                                atol=1e-3, rtol=1e-6)
+            npt.assert_allclose(
+                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+            )
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.fib"))
 
 
 def test_dpy_iterative_saving_loading():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.dpy"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.dpy"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     with TemporaryDirectory() as tmp_dir:
         save_tractogram(sft, pjoin(tmp_dir, "gs_iter.dpy"))
-        tmp_points_rasmm = np.loadtxt(
-            FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
@@ -327,37 +346,40 @@ def test_dpy_iterative_saving_loading():
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
-            npt.assert_allclose(tmp_points_rasmm, sft_iter.streamlines.get_data(),
-                                atol=1e-3, rtol=1e-6)
+            npt.assert_allclose(
+                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+            )
             save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.dpy"))
 
 
 def test_iterative_to_vox_transformation():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
-    tmp_points_rasmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
     for _ in range(1000):
         sft.to_vox()
         sft.to_rasmm()
-        npt.assert_allclose(tmp_points_rasmm, sft.streamlines.get_data(),
-                            atol=1e-3, rtol=1e-6)
+        npt.assert_allclose(
+            tmp_points_rasmm, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6
+        )
 
 
 def test_iterative_to_voxmm_transformation():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
-    tmp_points_rasmm = np.loadtxt(
-        FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
     for _ in range(1000):
         sft.to_voxmm()
         sft.to_rasmm()
-        npt.assert_allclose(tmp_points_rasmm, sft.streamlines.get_data(),
-                            atol=1e-3, rtol=1e-6)
+        npt.assert_allclose(
+            tmp_points_rasmm, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6
+        )
 
 
 def test_empty_space_change():
@@ -383,15 +405,17 @@ def test_empty_remove_invalid():
 
 def test_shift_corner_from_rasmm():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
     sft_1.to_corner()
     bbox_1 = sft_1.compute_bounding_box()
 
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     sft_2.to_corner()
     sft_2.to_vox()
@@ -402,15 +426,17 @@ def test_shift_corner_from_rasmm():
 
 def test_shift_corner_from_voxmm():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOX
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOX,
     )
     sft_1.to_corner()
     bbox_1 = sft_1.compute_bounding_box()
 
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.VOXMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.VOXMM,
     )
     sft_2.to_corner()
     sft_2.to_vox()
@@ -421,22 +447,25 @@ def test_shift_corner_from_voxmm():
 
 def test_iterative_shift_corner():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     tmp_streamlines = sft.get_streamlines_copy()
 
     for _ in range(1000):
         sft._shift_voxel_origin()
 
-    npt.assert_allclose(sft.get_streamlines_copy(),
-                        tmp_streamlines, atol=1e-3, rtol=1e-6)
+    npt.assert_allclose(
+        sft.get_streamlines_copy(), tmp_streamlines, atol=1e-3, rtol=1e-6
+    )
 
 
 def test_replace_streamlines():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     tmp_streamlines = sft.get_streamlines_copy()[::-1]
 
@@ -449,8 +478,9 @@ def test_replace_streamlines():
 
 def test_subsample_streamlines():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
     tmp_streamlines = sft.get_streamlines_copy()[0:8]
 
@@ -463,8 +493,9 @@ def test_subsample_streamlines():
 
 def test_reassign_both_data_sep_to_empty():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
 
     try:
@@ -478,8 +509,9 @@ def test_reassign_both_data_sep_to_empty():
 
 def test_reassign_both_data_sep():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM
+        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=Space.RASMM,
     )
 
     try:
@@ -505,7 +537,8 @@ def test_bounding_bbox_valid(standard):
 @set_random_number_generator(0)
 def test_random_point_color(rng):
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     random_colors = rng.integers(0, 255, (13, 8, 3))
     coloring_dict = {"colors": random_colors}
@@ -522,7 +555,8 @@ def test_random_point_color(rng):
 @set_random_number_generator(0)
 def test_random_point_gray(rng):
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     random_colors = rng.integers(0, 255, (13, 8, 1))
     coloring_dict = {
@@ -543,17 +577,15 @@ def test_random_point_gray(rng):
 @set_random_number_generator(0)
 def test_random_streamline_color(rng):
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     uniform_colors_x = rng.integers(0, 255, (13, 1))
     uniform_colors_y = rng.integers(0, 255, (13, 1))
     uniform_colors_z = rng.integers(0, 255, (13, 1))
-    uniform_colors_x = np.expand_dims(
-        np.repeat(uniform_colors_x, 8, axis=1), axis=-1)
-    uniform_colors_y = np.expand_dims(
-        np.repeat(uniform_colors_y, 8, axis=1), axis=-1)
-    uniform_colors_z = np.expand_dims(
-        np.repeat(uniform_colors_z, 8, axis=1), axis=-1)
+    uniform_colors_x = np.expand_dims(np.repeat(uniform_colors_x, 8, axis=1), axis=-1)
+    uniform_colors_y = np.expand_dims(np.repeat(uniform_colors_y, 8, axis=1), axis=-1)
+    uniform_colors_z = np.expand_dims(np.repeat(uniform_colors_z, 8, axis=1), axis=-1)
 
     coloring_dict = {
         "color_x": uniform_colors_x,
@@ -564,8 +596,7 @@ def test_random_streamline_color(rng):
     try:
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, pjoin(
-                tmp_dir, "random_streamlines_color.trk"))
+            save_tractogram(sft, pjoin(tmp_dir, "random_streamlines_color.trk"))
         npt.assert_(True)
     except (TypeError, ValueError):
         npt.assert_(False)
@@ -576,7 +607,8 @@ def test_random_streamline_color(rng):
 )
 def test_out_of_grid(value, is_out_of_grid):
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft.to_vox()
     tmp_streamlines = list(sft.get_streamlines_copy())
     tmp_streamlines[0] += value
@@ -590,7 +622,8 @@ def test_out_of_grid(value, is_out_of_grid):
 
 def test_data_per_point_consistency_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -604,7 +637,8 @@ def test_data_per_point_consistency_addition():
 
 def test_data_per_streamline_consistency_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -618,7 +652,8 @@ def test_data_per_streamline_consistency_addition():
 
 def test_space_consistency_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -632,7 +667,8 @@ def test_space_consistency_addition():
 
 def test_origin_consistency_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -646,7 +682,8 @@ def test_origin_consistency_addition():
 
 def test_space_attributes_consistency_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_switch = StatefulTractogram(
         sft.streamlines, FILEPATH_DIX["gs_volume_3mm.nii"], Space.RASMM
     )
@@ -660,16 +697,19 @@ def test_space_attributes_consistency_addition():
 
 def test_equality():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_2 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     npt.assert_(sft_1 == sft_2, msg="Identical sft should be equal (==)")
 
 
 def test_basic_slicing():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     first_streamline_sft = sft[0]
 
     npt.assert_allclose(
@@ -701,7 +741,8 @@ def test_basic_slicing():
 
 def test_space_side_effect_slicing():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     first_streamline = deepcopy(sft.streamlines[0])
 
     first_streamline_sft = sft[0]
@@ -727,7 +768,8 @@ def test_space_side_effect_slicing():
 
 def test_origin_side_effect_slicing():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     first_streamline = deepcopy(sft.streamlines[0])
 
     first_streamline_sft = sft[0]
@@ -753,7 +795,8 @@ def test_origin_side_effect_slicing():
 
 def test_advanced_slicing():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     last_streamline_sft = sft[::-1][0]
 
     npt.assert_allclose(
@@ -784,7 +827,8 @@ def test_advanced_slicing():
 
 def test_basic_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -794,7 +838,8 @@ def test_basic_addition():
 
 def test_space_side_effect_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -818,7 +863,8 @@ def test_space_side_effect_addition():
 
 def test_origin_side_effect_addition():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_first_half = sft[0:7]
     sft_last_half = sft[7:13]
 
@@ -842,7 +888,8 @@ def test_origin_side_effect_addition():
 
 def test_invalid_streamlines():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     src_strml_count = len(sft)
 
     obtained_idx_to_remove, obtained_idx_to_keep = sft.remove_invalid_streamlines()
@@ -877,7 +924,8 @@ def test_invalid_streamlines():
 
 def test_invalid_streamlines_epsilon():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     src_strml_count = len(sft)
 
     epsilon = 1e-6
@@ -917,7 +965,8 @@ def test_invalid_streamlines_epsilon():
 
 def test_create_from_sft():
     sft_1 = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sft_2 = StatefulTractogram.from_sft(
         sft_1.streamlines,
         sft_1,
@@ -946,7 +995,8 @@ def test_create_from_sft():
 
 def test_init_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "positions": np.float64,
         "offsets": np.int_,
@@ -963,7 +1013,8 @@ def test_init_dtype_dict_attributes():
 
 def test_set_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "positions": np.float16,
         "offsets": np.int32,
@@ -980,7 +1031,8 @@ def test_set_dtype_dict_attributes():
 
 def test_set_partial_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {"positions": np.float16, "offsets": np.int32}
     dpp_dtype_dict = {
         "dpp": {"color_x": np.float32, "color_y": np.float32, "color_z": np.float32}
@@ -1005,7 +1057,8 @@ def test_set_partial_dtype_dict_attributes():
 
 def test_non_existing_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "dpp": {
             "color_a": np.uint8,  # Fake
@@ -1026,7 +1079,8 @@ def test_non_existing_dtype_dict_attributes():
 
 def test_from_sft_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "positions": np.float16,
         "offsets": np.int32,
@@ -1050,7 +1104,8 @@ def test_from_sft_dtype_dict_attributes():
 
 def test_slicing_dtype_dict_attributes():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"])
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "positions": np.float16,
         "offsets": np.int32,

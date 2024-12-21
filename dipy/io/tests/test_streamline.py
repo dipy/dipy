@@ -179,8 +179,7 @@ def io_tractogram(extension):
         in_dimensions = np.array([50, 50, 50])
         in_voxel_sizes = np.array([2, 1.5, 1.5])
         in_affine = np.dot(in_affine, np.diag(np.r_[in_voxel_sizes, 1]))
-        nii_header = create_nifti_header(
-            in_affine, in_dimensions, in_voxel_sizes)
+        nii_header = create_nifti_header(in_affine, in_dimensions, in_voxel_sizes)
 
         sft = StatefulTractogram(STREAMLINES, nii_header, space=Space.RASMM)
         save_tractogram(sft, fpath, bbox_valid_check=False)
@@ -197,8 +196,7 @@ def io_tractogram(extension):
         npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
         npt.assert_array_equal(in_dimensions, dimensions)
         npt.assert_equal(len(sft), len(STREAMLINES))
-        npt.assert_array_almost_equal(
-            sft.streamlines[1], STREAMLINE, decimal=4)
+        npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
 
 
 @pytest.mark.parametrize("ext", ["trk", "tck", "trx", "dpy"])
@@ -227,16 +225,16 @@ def test_low_io_vtk():
 def trk_loader(filename):
     try:
         with TemporaryDirectory() as tmp_dir:
-            load_trk(os.path.join(tmp_dir, filename),
-                     FILEPATH_DIX["gs_volume.nii"])
+            load_trk(os.path.join(tmp_dir, filename), FILEPATH_DIX["gs_volume.nii"])
         return True
     except ValueError:
         return False
 
 
 def trk_saver(filename):
-    sft = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"],
-                          FILEPATH_DIX["gs_volume.nii"])
+    sft = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     try:
         with TemporaryDirectory() as tmp_dir:
@@ -272,11 +270,10 @@ def test_io_trk_load():
 def test_io_trk_save():
     npt.assert_(
         trk_saver(FILEPATH_DIX["gs_streamlines.trk"]),
-        msg="trk_saver should be able to save a trk"
+        msg="trk_saver should be able to save a trk",
     )
     npt.assert_(
-        not trk_saver("fake_file.TRK"),
-        msg="trk_saver should not be able to save a TRK"
+        not trk_saver("fake_file.TRK"), msg="trk_saver should not be able to save a TRK"
     )
     npt.assert_(
         not trk_saver(FILEPATH_DIX["gs_streamlines.tck"]),

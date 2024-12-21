@@ -1,4 +1,3 @@
-from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
 from itertools import product
@@ -6,18 +5,26 @@ import logging
 
 from nibabel.affines import apply_affine
 import numpy as np
-import vtk
-import vtk.util.numpy_support as ns
 
 from dipy.io.utils import (
+    Origin,
+    Space,
     get_reference_info,
     is_header_compatible,
     is_reference_info_valid,
-    Space,
-    Origin,
 )
-from dipy.testing.decorators import warning_for_keywords
-from dipy.io.vtk import get_polydata_triangles, get_polydata_vertices, convert_to_polydata
+from dipy.io.vtk import (
+    convert_to_polydata,
+    get_polydata_triangles,
+    get_polydata_vertices,
+)
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+
+if have_fury:
+    import vtk
+    import vtk.util.numpy_support as ns
 
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
@@ -42,12 +49,12 @@ class StatefulSurface:
     and data manipulation for each streamline / point.
     """
 
-    @warning_for_keywords()
     def __init__(
         self,
         data,
         reference,
         space,
+        *,
         origin=Origin.NIFTI,
         data_per_point=None,
         dtype_dict=None,
@@ -73,15 +80,16 @@ class StatefulSurface:
         data_per_point : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
+        dtype_dict : dict, optional
+            Dictionary containing the desired datatype for vertices, faces
+            and all data_per_point keys.
 
         Notes
-        -----
-        # TODO: add notes about data format
         Very important to respect the convention, verify that surface
         match the reference and are effectively in the right space.
 
-        Any change to the number of surface's points, data_per_point or
-        data_per_streamline requires particular verification.
+        Any change to the number of surface's points, data_per_point
+        requires verification.
 
         In a case of manipulation not allowed by this object, use Nibabel
         directly and be careful.
@@ -92,25 +100,27 @@ class StatefulSurface:
 
         self.data_per_point = {} if data_per_point is None else data_per_point
         if dtype_dict is None:
-            dtype_dict = {"vertices": np.float64,
-                          "faces": np.uint32}
+            dtype_dict = {"vertices": np.float64, "faces": np.uint32}
         self.dtype_dict = dtype_dict
 
         if isinstance(data, vtk.vtkPolyData):
             self._vertices = get_polydata_vertices(
-                data, dtype=self.dtype_dict["vertices"])
-            self._faces = get_polydata_triangles(
-                data, dtype=self.dtype_dict["faces"])
+                data, dtype=self.dtype_dict["vertices"]
+            )
+            self._faces = get_polydata_triangles(data, dtype=self.dtype_dict["faces"])
 
             point_data = data.GetPointData()
-            scalar_names = [point_data.GetArrayName(
-                i) for i in range(point_data.GetNumberOfArrays())]
+            scalar_names = [
+                point_data.GetArrayName(i)
+                for i in range(point_data.GetNumberOfArrays())
+            ]
             if scalar_names:
                 for name in scalar_names:
                     scalar = data.GetPointData().GetScalars(name)
                     if name in self.data_per_point:
                         logger.warning(
-                            f"Scalar {name} already in data_per_point, overwriting")
+                            f"Scalar {name} already in data_per_point, overwriting"
+                        )
                     self.data_per_point[name] = ns.vtk_to_numpy(scalar)
         else:
             self._vertices, self._faces = np.array(data[0]), np.array(data[1])
@@ -146,8 +156,9 @@ class StatefulSurface:
                     "TrkFile, Nifti1Header or trk.header (dict)."
                 )
 
-        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
+        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = (
             space_attributes
+        )
         self._inv_affine = np.linalg.inv(self._affine).astype(np.float64)
 
         if space not in Space:
@@ -155,8 +166,7 @@ class StatefulSurface:
         self._space = space
 
         if origin not in Origin:
-            raise ValueError(
-                "Origin MUST be from Origin enum, e.g Origin.NIFTI.")
+            raise ValueError("Origin MUST be from Origin enum, e.g Origin.NIFTI.")
         self._origin = origin
 
         logger.debug(self)
@@ -185,7 +195,6 @@ class StatefulSurface:
         return are_sfs_compatible
 
     @staticmethod
-    @warning_for_keywords()
     def from_sfs(data, sfs, *, data_per_point=None):
         """Create an instance of `StatefulSurface` from another instance
         of `StatefulSurface`.
@@ -281,8 +290,7 @@ class StatefulSurface:
         """Getter for dtype_dict"""
 
         if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
-            dtype_dict = {"vertices": np.float64,
-                          "faces": np.uint32}
+            dtype_dict = {"vertices": np.float64, "faces": np.uint32}
             return OrderedDict(dtype_dict)
 
         dtype_dict = {
@@ -369,17 +377,14 @@ class StatefulSurface:
         for key in self.data_per_point:
             if key in dtype_dict["dpp"]:
                 dtype_to_use = dtype_dict["dpp"][key]
-                self.data_per_point[key] = self.data_per_point[key].astype(
-                    dtype_to_use
-                )
+                self.data_per_point[key] = self.data_per_point[key].astype(dtype_to_use)
 
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""
         return self._vertices.copy()
 
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces,
-                                   self._data_per_point)
+        return convert_to_polydata(self._vertices, self._faces, self._data_per_point)
 
     @vertices.setter
     def vertices(self, data):
@@ -547,7 +552,6 @@ class StatefulSurface:
 
         return is_valid
 
-    @warning_for_keywords()
     def remove_invalid_vertices(self, *, epsilon=1e-3):
         # TODO: implement if make sense
         pass
@@ -585,7 +589,8 @@ class StatefulSurface:
         if self._space == Space.VOX:
             if self._vertices.size > 0:
                 self._vertices = apply_affine(
-                    self._affine, self._vertices, inplace=True)
+                    self._affine, self._vertices, inplace=True
+                )
             self._space = Space.RASMM
             logger.debug("Moved vertices from vox to rasmm.")
         else:
@@ -596,7 +601,8 @@ class StatefulSurface:
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
                 self._vertices = apply_affine(
-                    self._inv_affine, self._vertices, inplace=True)
+                    self._inv_affine, self._vertices, inplace=True
+                )
             self._space = Space.VOX
             logger.debug("Moved vertices from rasmm to vox.")
         else:
@@ -608,7 +614,8 @@ class StatefulSurface:
             if self._vertices.size > 0:
                 self._vertices /= np.asarray(self._voxel_sizes)
                 self._vertices = apply_affine(
-                    self._affine, self._vertices, inplace=True)
+                    self._affine, self._vertices, inplace=True
+                )
             self._space = Space.RASMM
             logger.debug("Moved vertices from voxmm to rasmm.")
         else:
@@ -619,7 +626,8 @@ class StatefulSurface:
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
                 self._vertices = apply_affine(
-                    self._inv_affine, self._vertices, inplace=True)
+                    self._inv_affine, self._vertices, inplace=True
+                )
                 self._vertices *= np.asarray(self._voxel_sizes)
             self._space = Space.VOXMM
             logger.debug("Moved vertices from rasmm to voxmm.")
@@ -631,8 +639,7 @@ class StatefulSurface:
         if self._space == Space.LPSMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(
-                    flip_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
             self._space = Space.RASMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
@@ -643,8 +650,7 @@ class StatefulSurface:
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(
-                    flip_affine, self._vertices, inplace=True)
+                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
             self._space = Space.LPSMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:

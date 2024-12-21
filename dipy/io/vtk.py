@@ -1,6 +1,5 @@
 import numpy as np
 
-
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
@@ -14,16 +13,16 @@ if have_fury:
     import vtk.util.numpy_support as ns
 
 datatype_map = {
-    np.dtype('int8'): vtk.VTK_CHAR,
-    np.dtype('uint8'): vtk.VTK_UNSIGNED_CHAR,
-    np.dtype('int16'): vtk.VTK_SHORT,
-    np.dtype('uint16'): vtk.VTK_UNSIGNED_SHORT,
-    np.dtype('int32'): vtk.VTK_INT,
-    np.dtype('uint32'): vtk.VTK_UNSIGNED_INT,
-    np.dtype('int64'): vtk.VTK_LONG_LONG,
-    np.dtype('uint64'): vtk.VTK_UNSIGNED_LONG_LONG,
-    np.dtype('float32'): vtk.VTK_FLOAT,
-    np.dtype('float64'): vtk.VTK_DOUBLE,
+    np.dtype("int8"): vtk.VTK_CHAR,
+    np.dtype("uint8"): vtk.VTK_UNSIGNED_CHAR,
+    np.dtype("int16"): vtk.VTK_SHORT,
+    np.dtype("uint16"): vtk.VTK_UNSIGNED_SHORT,
+    np.dtype("int32"): vtk.VTK_INT,
+    np.dtype("uint32"): vtk.VTK_UNSIGNED_INT,
+    np.dtype("int64"): vtk.VTK_LONG_LONG,
+    np.dtype("uint64"): vtk.VTK_UNSIGNED_LONG_LONG,
+    np.dtype("float32"): vtk.VTK_FLOAT,
+    np.dtype("float64"): vtk.VTK_DOUBLE,
 }
 
 
@@ -45,8 +44,9 @@ def load_polydata(file_name):
 
 
 @warning_for_keywords()
-def save_polydata(polydata, file_name, *, binary=False, color_array_name=None,
-                  legacy_vtk_format=False):
+def save_polydata(
+    polydata, file_name, *, binary=False, color_array_name=None, legacy_vtk_format=False
+):
     """Save a vtk polydata to a supported format file.
 
     Save formats can be VTK, VTP, FIB, PLY, STL and XML.
@@ -62,7 +62,7 @@ def save_polydata(polydata, file_name, *, binary=False, color_array_name=None,
         file_name=file_name,
         binary=binary,
         color_array_name=color_array_name,
-        legacy_vtk_format=legacy_vtk_format
+        legacy_vtk_format=legacy_vtk_format,
     )
 
 
@@ -134,16 +134,13 @@ def get_polydata_triangles(polydata, dtype=None):
         triangles = []
         for i in range(nbr_cells):
             ids = polydata.GetCell(i).GetPointIds()
-            for j in range(ids.GetNumberOfIds()-2):
-                triangles.append([ids.GetId(j),
-                                  ids.GetId(j+1),
-                                  ids.GetId(j+2)])
+            for j in range(ids.GetNumberOfIds() - 2):
+                triangles.append([ids.GetId(j), ids.GetId(j + 1), ids.GetId(j + 2)])
         triangles = np.array(triangles)
     else:
         if not (vtk_polys[::4] == 3).all():
             raise ValueError("Not all polygons are triangles")
-        triangles = np.vstack(
-            [vtk_polys[1::4], vtk_polys[2::4], vtk_polys[3::4]]).T
+        triangles = np.vstack([vtk_polys[1::4], vtk_polys[2::4], vtk_polys[3::4]]).T
     if dtype is not None:
         return triangles.astype(dtype)
     return triangles
@@ -160,8 +157,7 @@ def convert_to_polydata(vertices, triangles, data_per_point=None):
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(ns.numpy_to_vtk(vertices, deep=True))
 
-    vtk_triangles = np.hstack(
-        np.c_[np.ones(len(triangles)).astype(int) * 3, triangles])
+    vtk_triangles = np.hstack(np.c_[np.ones(len(triangles)).astype(int) * 3, triangles])
     vtk_triangles = ns.numpy_to_vtkIdTypeArray(vtk_triangles, deep=True)
     vtk_cells = vtk.vtkCellArray()
     vtk_cells.SetCells(len(triangles), vtk_triangles)
@@ -173,11 +169,10 @@ def convert_to_polydata(vertices, triangles, data_per_point=None):
     if data_per_point is not None:
         for name, array in data_per_point.items():
             if len(array) != polydata.GetNumberOfPoints():
-                raise ValueError(
-                    "Array length does not match number of points.")
+                raise ValueError("Array length does not match number of points.")
             vtk_array = _numpy_to_vtk_array(np.array(array), name=name)
 
-            if 'normal' in name.lower():
+            if "normal" in name.lower():
                 polydata.GetPointData().SetNormals(vtk_array)
             else:
                 polydata.GetPointData().AddArray(vtk_array)
@@ -190,8 +185,7 @@ def _numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
         vtk_dtype = datatype_map[np.dtype(dtype)]
     else:
         vtk_dtype = datatype_map[np.dtype(array.dtype)]
-    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True,
-                                array_type=vtk_dtype)
+    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True, array_type=vtk_dtype)
     if name is not None:
         vtk_array.SetName(name)
     return vtk_array

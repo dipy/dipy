@@ -1,19 +1,17 @@
 import itertools
 import os
-import pytest
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
-from dipy.io.stateful_tractogram import StatefulTractogram as _  # fake import
 from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.surface import load_surface, save_surface
-from dipy.io.utils import Space, Origin, recursive_compare
+from dipy.io.utils import Origin, Space, recursive_compare
 from dipy.utils.optpkg import optional_package
-
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
@@ -25,8 +23,7 @@ FILEPATH_DIX = None
 def setup_module():
     global FILEPATH_DIX
     try:
-        FILEPATH_DIX, _, _ = \
-            get_fnames(name="gold_standard_io")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_io")
         FILEPATH_DIX.update(get_fnames(name="real_data_io"))
     except (HTTPError, URLError) as e:
         FILEPATH_DIX = None
@@ -37,9 +34,12 @@ def setup_module():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_space():
-    sfs = StatefulSurface(([], []),
-                          FILEPATH_DIX['naf_mni_masked.nii.gz'],
-                          space=Space.RASMM, origin=Origin.NIFTI)
+    sfs = StatefulSurface(
+        ([], []),
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        space=Space.RASMM,
+        origin=Origin.NIFTI,
+    )
 
     # Test all space combinations
     sfs.to_vox()
@@ -52,9 +52,12 @@ def test_empty_change_space():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_origin():
-    sfs = StatefulSurface(([], []),
-                          FILEPATH_DIX['naf_mni_masked.nii.gz'],
-                          space=Space.RASMM, origin=Origin.NIFTI)
+    sfs = StatefulSurface(
+        ([], []),
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        space=Space.RASMM,
+        origin=Origin.NIFTI,
+    )
 
     # Test all origin combinations
     sfs.to_center()
@@ -66,10 +69,11 @@ def test_empty_change_origin():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_to_space_equivalent_to_rasmm(space):
-
     # Load initial surface and convert to rasmm directly
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'],)
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"],
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+    )
     if space == Space.RASMM:
         sfs.to_rasmm()
     elif space == Space.LPSMM:
@@ -81,8 +85,9 @@ def test_to_space_equivalent_to_rasmm(space):
     ref_vertices = sfs.vertices.copy()
 
     # Load surface again and use to_space
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_space(space)
 
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
@@ -91,10 +96,10 @@ def test_to_space_equivalent_to_rasmm(space):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("origin", [Origin.NIFTI, Origin.TRACKVIS])
 def test_to_origin_equivalent_to_center(origin):
-
     # Load initial surface and convert to center directly
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
 
     if origin == Origin.NIFTI:
         sfs.to_center()
@@ -103,8 +108,9 @@ def test_to_origin_equivalent_to_center(origin):
     ref_vertices = sfs.vertices.copy()
 
     # Load surface again and use to_origin
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_origin(origin)
 
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
@@ -113,8 +119,9 @@ def test_to_origin_equivalent_to_center(origin):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_change_origin_from_space(space):
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_space(space)
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
@@ -128,8 +135,9 @@ def test_change_origin_from_space(space):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_change_space_many_times(space):
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_space(space)
     ref_vertices = sfs.vertices.copy()
 
@@ -143,8 +151,9 @@ def test_change_space_many_times(space):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("origin", [Origin.NIFTI, Origin.TRACKVIS])
 def test_change_space_many_times_with_origin(origin):
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_origin(origin)
     ref_vertices = sfs.vertices.copy()
 
@@ -158,10 +167,12 @@ def test_change_space_many_times_with_origin(origin):
 # Test out of grid
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize(
-    "value, is_out_of_grid", [(1000, True), (-1000, True), (0, False)])
+    "value, is_out_of_grid", [(1000, True), (-1000, True), (0, False)]
+)
 def test_out_of_grid(value, is_out_of_grid):
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     sfs.to_vox()
     sfs.to_corner()
 
@@ -177,8 +188,12 @@ def test_out_of_grid(value, is_out_of_grid):
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_invalid_empty():
-    sfs = StatefulSurface(([], []), FILEPATH_DIX['naf_mni_masked.nii.gz'],
-                          space=Space.RASMM, origin=Origin.NIFTI)
+    sfs = StatefulSurface(
+        ([], []),
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        space=Space.RASMM,
+        origin=Origin.NIFTI,
+    )
     sfs.to_vox()
     sfs.to_corner()
 
@@ -190,11 +205,15 @@ def test_invalid_empty():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_equality():
-    sfs_1 = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                         FILEPATH_DIX['naf_mni_masked.nii.gz'])
-    sfs_2 = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                         FILEPATH_DIX['naf_mni_masked.nii.gz'],
-                         from_space=Space.LPSMM, from_origin=Origin.NIFTI)
+    sfs_1 = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
+    sfs_2 = load_surface(
+        FILEPATH_DIX["naf_lh.pial"],
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        from_space=Space.LPSMM,
+        from_origin=Origin.NIFTI,
+    )
     sfs_1.to_rasmm()
     sfs_1.to_center()
     sfs_2.to_rasmm()
@@ -205,8 +224,9 @@ def test_equality():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_random_space_transformations():
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
 
     # Store initial state
     sfs.to_rasmm()
@@ -229,47 +249,50 @@ def test_random_space_transformations():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
 def test_space_origin_gold_standard(space, origin):
-    fname = FILEPATH_DIX[f'gs_mesh_{space.value.lower()}_{origin.value.lower()}.ply']
-    sfs = load_surface(fname, FILEPATH_DIX['gs_volume.nii'],
-                       from_space=space, from_origin=origin,
-                       to_space=space, to_origin=origin)
+    fname = FILEPATH_DIX[f"gs_mesh_{space.value.lower()}_{origin.value.lower()}.ply"]
+    sfs = load_surface(
+        fname,
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=space,
+        from_origin=origin,
+        to_space=space,
+        to_origin=origin,
+    )
 
     # Test in the space it was loaded from
-    vertices = np.loadtxt(fname.replace('.ply', '.txt'))
-    faces = np.loadtxt(FILEPATH_DIX['gs_mesh_faces.txt'])
+    vertices = np.loadtxt(fname.replace(".ply", ".txt"))
+    faces = np.loadtxt(FILEPATH_DIX["gs_mesh_faces.txt"])
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
     npt.assert_allclose(faces, sfs.faces, atol=1e-3, rtol=1e-6)
 
     # Test in a standard space
     sfs.to_rasmm()
     sfs.to_center()
-    vertices = np.loadtxt(FILEPATH_DIX['gs_mesh_rasmm_center.txt'])
+    vertices = np.loadtxt(FILEPATH_DIX["gs_mesh_rasmm_center.txt"])
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
 def test_equivalent_gii():
-    fname = FILEPATH_DIX['gs_mesh.gii']
-    sfs = load_surface(fname, FILEPATH_DIX['gs_volume.nii'])
+    fname = FILEPATH_DIX["gs_mesh.gii"]
+    sfs = load_surface(fname, FILEPATH_DIX["gs_volume.nii"])
 
     # Test in the space it was loaded from
-    faces = np.loadtxt(FILEPATH_DIX['gs_mesh_faces.txt'])
+    faces = np.loadtxt(FILEPATH_DIX["gs_mesh_faces.txt"])
     npt.assert_allclose(faces, sfs.faces, atol=1e-3, rtol=1e-6)
 
     # Test in a standard space
     sfs.to_rasmm()
     sfs.to_center()
-    vertices = np.loadtxt(FILEPATH_DIX['gs_mesh_rasmm_center.txt'])
+    vertices = np.loadtxt(FILEPATH_DIX["gs_mesh_rasmm_center.txt"])
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
 def test_create_from_sfs():
-
-    sfs_1 = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                         FILEPATH_DIX['gs_volume.nii'])
+    sfs_1 = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sfs_2 = StatefulSurface.from_sfs(
-        sfs_1.vertices,
-        sfs_1,
-        data_per_point=sfs_1.data_per_point
+        sfs_1.vertices, sfs_1, data_per_point=sfs_1.data_per_point
     )
 
     if not (sfs_1 == sfs_2):
@@ -292,8 +315,9 @@ def test_create_from_sfs():
 
 
 def test_init_dtype_dict_attributes():
-    sfs = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                       FILEPATH_DIX['gs_volume.nii'])
+    sfs = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "vertices": np.float64,
         "faces": np.uint32,
@@ -307,8 +331,9 @@ def test_init_dtype_dict_attributes():
 
 
 def test_set_dtype_dict_attributes():
-    sfs = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                       FILEPATH_DIX['gs_volume.nii'])
+    sfs = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sfs.data_per_point = {
         "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
     }
@@ -326,8 +351,9 @@ def test_set_dtype_dict_attributes():
 
 
 def test_set_partial_dtype_dict_attributes():
-    sfs = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                       FILEPATH_DIX['gs_volume.nii'])
+    sfs = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sfs.data_per_point = {
         "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
     }
@@ -352,8 +378,9 @@ def test_set_partial_dtype_dict_attributes():
 
 
 def test_non_existing_dtype_dict_attributes():
-    sfs = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                       FILEPATH_DIX['gs_volume.nii'])
+    sfs = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     dtype_dict = {
         "dpp": {
             "color_x": np.uint8,  # Fake
@@ -372,8 +399,9 @@ def test_non_existing_dtype_dict_attributes():
 
 
 def test_from_sfs_dtype_dict_attributes():
-    sfs = load_surface(FILEPATH_DIX['gs_mesh_rasmm_center.ply'],
-                       FILEPATH_DIX['gs_volume.nii'])
+    sfs = load_surface(
+        FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
+    )
     sfs.data_per_point = {
         "color_r": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
         "color_g": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
@@ -387,9 +415,7 @@ def test_from_sfs_dtype_dict_attributes():
 
     sfs.dtype_dict = dtype_dict
     new_sfs = StatefulSurface.from_sfs(
-        sfs.vertices,
-        sfs,
-        data_per_point=sfs.data_per_point
+        sfs.vertices, sfs, data_per_point=sfs.data_per_point
     )
     try:
         recursive_compare(new_sfs.dtype_dict, dtype_dict)
@@ -401,19 +427,20 @@ def test_from_sfs_dtype_dict_attributes():
 @pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_save_load_many_times(extension):
-
     # Load initial surface
-    sfs = load_surface(FILEPATH_DIX['naf_lh.pial'],
-                       FILEPATH_DIX['naf_mni_masked.nii.gz'])
+    sfs = load_surface(
+        FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
+    )
     ref_vertices = sfs.vertices.copy()
 
     with TemporaryDirectory() as tmpdir:
         # Save and load 10 times
         for i in range(10):
-            save_surface(os.path.join(tmpdir, f'test_{i}.{extension}'), sfs)
-            sfs = load_surface(os.path.join(
-                tmpdir, f'test_{i}.{extension}'),
-                FILEPATH_DIX['naf_mni_masked.nii.gz'])
+            save_surface(os.path.join(tmpdir, f"test_{i}.{extension}"), sfs)
+            sfs = load_surface(
+                os.path.join(tmpdir, f"test_{i}.{extension}"),
+                FILEPATH_DIX["naf_mni_masked.nii.gz"],
+            )
 
         # Final vertices should match original
         npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)

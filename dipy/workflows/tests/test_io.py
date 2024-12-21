@@ -74,8 +74,7 @@ def test_io_info():
     with open(fname_log, "r") as file:
         lines = file.readlines()
         try:
-            npt.assert_equal(
-                lines[-3], "INFO Total number of unit bvectors 25\n")
+            npt.assert_equal(lines[-3], "INFO Total number of unit bvectors 25\n")
         except IndexError:  # logging maybe disabled in IDE setting
             pass
 
@@ -84,12 +83,10 @@ def test_io_fetch():
     fetch_flow = FetchFlow()
     with TemporaryDirectory() as out_dir:
         fetch_flow.run(["bundle_fa_hcp"])
-        npt.assert_equal(os.path.isdir(
-            os.path.join(dipy_home, "bundle_fa_hcp")), True)
+        npt.assert_equal(os.path.isdir(os.path.join(dipy_home, "bundle_fa_hcp")), True)
 
         fetch_flow.run(["bundle_fa_hcp"], out_dir=out_dir)
-        npt.assert_equal(os.path.isdir(
-            os.path.join(out_dir, "bundle_fa_hcp")), True)
+        npt.assert_equal(os.path.isdir(os.path.join(out_dir, "bundle_fa_hcp")), True)
 
 
 def test_io_fetch_fetcher_datanames():
@@ -111,8 +108,7 @@ def test_io_fetch_fetcher_datanames():
     num_expected_fetch_methods = len(fetcher_list)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)
     npt.assert_equal(
-        all(dataset_name in available_data.keys()
-            for dataset_name in fetcher_list),
+        all(dataset_name in available_data.keys() for dataset_name in fetcher_list),
         True,
     )
 
@@ -123,8 +119,7 @@ def test_split_flow():
         data_path, _, _ = get_fnames()
         volume, affine = load_nifti(data_path)
         split_flow.run(data_path, out_dir=out_dir)
-        assert_true(os.path.isfile(
-            split_flow.last_generated_outputs["out_split"]))
+        assert_true(os.path.isfile(split_flow.last_generated_outputs["out_split"]))
         split_flow._force_overwrite = True
         split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
         split_path = split_flow.last_generated_outputs["out_split"]
@@ -145,8 +140,7 @@ def test_concatenate_flow():
         ]
         concatenate_flow.run(*input_files, out_dir=out_dir)
         assert_true(
-            concatenate_flow.last_generated_outputs["out_extension"].endswith(
-                "trx")
+            concatenate_flow.last_generated_outputs["out_extension"].endswith("trx")
         )
         assert_true(
             os.path.isfile(
@@ -155,8 +149,7 @@ def test_concatenate_flow():
         )
 
         trk = load_tractogram(
-            concatenate_flow.last_generated_outputs["out_tractogram"] +
-            ".trx", "same"
+            concatenate_flow.last_generated_outputs["out_tractogram"] + ".trx", "same"
         )
         npt.assert_equal(len(trk), 13)
 
@@ -343,12 +336,9 @@ def test_pam_to_niftis_flow():
         args = [fname, out_dir]
         flow = PamToNiftisFlow()
         flow.run(*args)
-        assert_true(os.path.isfile(
-            flow.last_generated_outputs["out_peaks_dir"]))
-        assert_true(os.path.isfile(
-            flow.last_generated_outputs["out_peaks_values"]))
-        assert_true(os.path.isfile(
-            flow.last_generated_outputs["out_peaks_indices"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_dir"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_values"]))
+        assert_true(os.path.isfile(flow.last_generated_outputs["out_peaks_indices"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_shm"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_gfa"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_sphere"]))

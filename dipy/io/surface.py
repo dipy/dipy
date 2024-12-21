@@ -1,22 +1,29 @@
 from copy import deepcopy
+import gzip
 import logging
 import os
 import time
-import gzip
 
 import nibabel as nib
 import numpy as np
 
-from dipy.io.vtk import load_polydata, save_polydata
 from dipy.io.stateful_surface import StatefulSurface
-from dipy.io.utils import get_reference_info
+from dipy.io.utils import Origin, Space, get_reference_info, split_name_with_gz
+from dipy.io.vtk import load_polydata, save_polydata
 from dipy.testing.decorators import warning_for_keywords
-from dipy.io.utils import Origin, Space, split_name_with_gz
 
 
-def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
-                 bbox_valid_check=True, from_space=None, from_origin=None,
-                 gifti_in_freesurfer=False):
+def load_surface(
+    fname,
+    reference,
+    *,
+    to_space=Space.RASMM,
+    to_origin=Origin.NIFTI,
+    bbox_valid_check=True,
+    from_space=None,
+    from_origin=None,
+    gifti_in_freesurfer=False,
+):
     """Load the stateful surface from any format (vtk/vtp/obj/stl/ply/gii/pial)
 
     Parameters
@@ -57,8 +64,7 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
         The surface to load (must have been saved properly)
     """
     vtk_ext = [".vtk", ".vtp", ".obj", ".stl", ".ply"]
-    freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig",
-                      ".smoothwm", ".T1"]
+    freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig", ".smoothwm", ".T1"]
     _, ext = split_name_with_gz(fname)
 
     if ext not in (freesurfer_ext + vtk_ext):
@@ -84,23 +90,22 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
     if ext == ".gii" or ext == ".gii.gz":
         data = load_gifti(fname)
         if gifti_in_freesurfer:
-            data = (apply_freesurfer_transform(
-                data[0], reference, inv=True), data[1])
+            data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
     elif ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
         data = load_polydata(fname)
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
 
-        data = (apply_freesurfer_transform(
-            data[0], reference, inv=True), data[1])
+        data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
         from_space = Space.RASMM
         from_origin = Origin.NIFTI
 
     from_space = Space.RASMM if from_space is None else from_space
     from_origin = Origin.NIFTI if from_origin is None else from_origin
-    sfs = StatefulSurface(data, reference, space=from_space, origin=from_origin,
-                          data_per_point=None)
+    sfs = StatefulSurface(
+        data, reference, space=from_space, origin=from_origin, data_per_point=None
+    )
     if isinstance(metadata, dict):
         sfs.fs_metadata = metadata
     elif isinstance(metadata, nib.filebasedimages.FileBasedHeader):
@@ -119,7 +124,8 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
             "load a valid file if some coordinates are invalid.\n"
             "Please set bbox_valid_check to False and then use "
             "the function remove_invalid_streamlines to discard "
-            "invalid streamlines.")
+            "invalid streamlines."
+        )
 
     sfs.to_space(to_space)
     sfs.to_origin(to_origin)
@@ -127,9 +133,18 @@ def load_surface(fname, reference, to_space=Space.RASMM, to_origin=Origin.NIFTI,
     return sfs
 
 
-def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
-                 legacy_vtk_format=False, bbox_valid_check=True,
-                 ref_pial=None, ref_gii=None, gifti_in_freesurfer=False):
+def save_surface(
+    fname,
+    sfs,
+    *,
+    to_space=Space.RASMM,
+    to_origin=Origin.NIFTI,
+    legacy_vtk_format=False,
+    bbox_valid_check=True,
+    ref_pial=None,
+    ref_gii=None,
+    gifti_in_freesurfer=False,
+):
     """
     Save the stateful surface to any format (vtk/vtp/obj/stl/ply/gii/pial)
 
@@ -172,7 +187,8 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
             "Bounding box is not valid in voxel space, cannot "
             "save a valid file if some coordinates are invalid.\n"
             "Please set bbox_valid_check to False and verify the "
-            "bounding box of the surface.")
+            "bounding box of the surface."
+        )
 
     _, ext = split_name_with_gz(fname)
 
@@ -190,18 +206,23 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
                 if key.upper() in sfs.data_per_point:
                     color_array_name = key.upper()
                     break
-        save_polydata(sfs.get_polydata(), fname, legacy_vtk_format=legacy_vtk_format,
-                      color_array_name=color_array_name)
+        save_polydata(
+            sfs.get_polydata(),
+            fname,
+            legacy_vtk_format=legacy_vtk_format,
+            color_array_name=color_array_name,
+        )
     elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:
-            raise ValueError("Metadata is required to save a gii file.\n"
-                             "Please provide the reference gii file.")
+            raise ValueError(
+                "Metadata is required to save a gii file.\n"
+                "Please provide the reference gii file."
+            )
 
         if ref_gii is not None:
             _, ext = split_name_with_gz(ref_gii)
             if ext != ".gii" or ext != ".gii.gz":
-                raise ValueError(
-                    "Reference gii file must have .gii extension.")
+                raise ValueError("Reference gii file must have .gii extension.")
             _, metadata = load_gifti(ref_gii, return_header=True)[-1]
         else:
             metadata = sfs.gii_header
@@ -209,27 +230,28 @@ def save_surface(fname, sfs, to_space=Space.RASMM, to_origin=Origin.NIFTI,
         sfs.to_space(to_space)
         sfs.to_origin(to_origin)
         if gifti_in_freesurfer:
-            sfs.vertices = apply_freesurfer_transform(
-                sfs.vertices, sfs, inv=False)
+            sfs.vertices = apply_freesurfer_transform(sfs.vertices, sfs, inv=False)
         save_gifti(fname, sfs.vertices, sfs.faces, header=metadata)
 
     elif ext == ".pial":
         if not hasattr(sfs, "fs_metadata") and ref_pial is None:
-            raise ValueError("Metadata is required to save a pial file.\n"
-                             "Please provide the reference pial file.")
+            raise ValueError(
+                "Metadata is required to save a pial file.\n"
+                "Please provide the reference pial file."
+            )
 
         if ref_pial is not None:
             _, ext = os.path.splitext(ref_pial)
             if ext != ".pial":
-                raise ValueError(
-                    "Reference pial file must have .pial extension.")
+                raise ValueError("Reference pial file must have .pial extension.")
             metadata = load_pial(ref_pial, return_meta=True)[-1]
         else:
             metadata = sfs.fs_metadata
 
         if to_space is not None or to_origin is not None:
             logging.warning(
-                "to_space and to_origin are ignored when loading pial files.")
+                "to_space and to_origin are ignored when loading pial files."
+            )
         sfs.to_space(Space.RASMM)
         sfs.to_origin(Origin.NIFTI)
 
@@ -260,21 +282,19 @@ def load_pial(fname, *, return_meta=False):
         (vertices, faces) if return_meta=False. Otherwise, (vertices, faces,
         metadata).
     """
-    not_valid_geometry = False
     try:
         data = nib.freesurfer.read_geometry(fname, read_metadata=return_meta)
     except ValueError:
         try:
             data = nib.freesurfer.read_geometry(fname, read_metadata=False)
-            logging.warning(
-                "No metadata found, please use a pial file with metadata.")
+            logging.warning("No metadata found, please use a pial file with metadata.")
         except ValueError:
-            raise ValueError(f"{fname} provided does not have geometry data.")
+            raise ValueError(f"{fname} provided does not have geometry data.") from None
 
     return data
 
 
-def save_pial(fname, vertices, faces, metadata):
+def save_pial(fname, vertices, faces, *, metadata=None):
     """Save pial file.
 
     Parameters
@@ -291,7 +311,7 @@ def save_pial(fname, vertices, faces, metadata):
     nib.freesurfer.write_geometry(fname, vertices, faces, volume_info=metadata)
 
 
-def load_gifti(fname, return_header=False):
+def load_gifti(fname, *, return_header=False):
     """Load gifti file.
 
     Parameters
@@ -304,8 +324,9 @@ def load_gifti(fname, return_header=False):
     tuple
         (vertices, faces)
     """
+
     def reader(fname):
-        if str(fname).endswith('.gii.gz'):
+        if str(fname).endswith(".gii.gz"):
             with gzip.GzipFile(fname) as gz:
                 img = nib.GiftiImage.from_bytes(gz.read())
         else:
@@ -319,7 +340,7 @@ def load_gifti(fname, return_header=False):
         return reader(fname).agg_data(("pointset", "triangle"))
 
 
-def save_gifti(fname, vertices, faces, header=None):
+def save_gifti(fname, vertices, faces, *, header=None):
     """Save gifti file.
     https://netneurolab.github.io/neuromaps/_modules/neuromaps/images.html
 
@@ -332,19 +353,20 @@ def save_gifti(fname, vertices, faces, header=None):
     faces : ndarray
         Faces.
     header : nib.filebasedimages.FileBasedHeader
-        Valid header for the gifti file (typically loaded from a reference gii file)
+        Valid header for the gifti file, typically loaded from a reference GII
     """
-    gifti = nib.gifti.GiftiImage(header=header)
-    vert = nib.gifti.GiftiDataArray(vertices, 'NIFTI_INTENT_POINTSET',
-                                    'NIFTI_TYPE_FLOAT32',
-                                    coordsys=nib.gifti.GiftiCoordSystem(3, 3))
-    tri = nib.gifti.GiftiDataArray(faces, 'NIFTI_INTENT_TRIANGLE',
-                                   'NIFTI_TYPE_INT32')
+    vert = nib.gifti.GiftiDataArray(
+        vertices,
+        "NIFTI_INTENT_POINTSET",
+        "NIFTI_TYPE_FLOAT32",
+        coordsys=nib.gifti.GiftiCoordSystem(3, 3),
+    )
+    tri = nib.gifti.GiftiDataArray(faces, "NIFTI_INTENT_TRIANGLE", "NIFTI_TYPE_INT32")
     img = nib.GiftiImage(darrays=[vert, tri])
     nib.save(img, fname)
 
 
-def apply_freesurfer_transform(vertices, reference, inv=False):
+def apply_freesurfer_transform(vertices, reference, *, inv=False):
     """
     Apply the freesurfer transform to the vertices to bring them to RASMM space
     or to bring them back to the original space.
@@ -360,13 +382,11 @@ def apply_freesurfer_transform(vertices, reference, inv=False):
     """
 
     affine, dimensions, _, _ = get_reference_info(reference)
-    center_volume = (np.array(dimensions) / 2)
+    center_volume = np.array(dimensions) / 2
     vertices_copy = vertices.copy()
     if inv:
-        xform_translation = np.dot(
-            affine[0:3, 0:3], center_volume) + affine[0:3, 3]
+        xform_translation = np.dot(affine[0:3, 0:3], center_volume) + affine[0:3, 3]
     else:
-        xform_translation = -(np.dot(
-            affine[0:3, 0:3], center_volume) + affine[0:3, 3])
+        xform_translation = -(np.dot(affine[0:3, 0:3], center_volume) + affine[0:3, 3])
 
     return vertices_copy + xform_translation
