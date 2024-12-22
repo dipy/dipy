@@ -60,16 +60,18 @@ def test_io_info():
     filepath_dix, _, _ = get_fnames(name="gold_standard_io")
     if not is_big_endian:
         io_info_flow = IoInfoFlow()
-        io_info_flow.run(filepath_dix["gs.trx"])
+        io_info_flow.run(filepath_dix["gs_streamlines.trx"])
 
     io_info_flow = IoInfoFlow()
-    io_info_flow.run(filepath_dix["gs.trk"])
+    io_info_flow.run(filepath_dix["gs_streamlines.trk"])
 
     io_info_flow = IoInfoFlow()
-    npt.assert_raises(TypeError, io_info_flow.run, filepath_dix["gs.tck"])
+    npt.assert_raises(TypeError, io_info_flow.run, filepath_dix["gs_streamlines.tck"])
 
     io_info_flow = IoInfoFlow()
-    io_info_flow.run(filepath_dix["gs.tck"], reference=filepath_dix["gs.nii"])
+    io_info_flow.run(
+        filepath_dix["gs_streamlines.tck"], reference=filepath_dix["gs_volume.nii"]
+    )
 
     with open(fname_log, "r") as file:
         lines = file.readlines()
@@ -136,7 +138,13 @@ def test_concatenate_flow():
         input_files = [
             v
             for k, v in data_path.items()
-            if k in ["gs.trk", "gs.tck", "gs.trx", "gs.fib"]
+            if k
+            in [
+                "gs_streamlines.trk",
+                "gs_streamlines.tck",
+                "gs_streamlines.trx",
+                "gs_streamlines.fib",
+            ]
         ]
         concatenate_flow.run(*input_files, out_dir=out_dir)
         assert_true(
@@ -187,18 +195,11 @@ def test_convert_sh_flow():
 def test_convert_tractogram_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames(name="gold_standard_io")
-        input_files = [
-            v
-            for k, v in data_path.items()
-            if k
-            in [
-                "gs.tck",
-            ]
-        ]
+        input_files = [v for k, v in data_path.items() if k in ["gs_streamlines.tck"]]
 
         convert_tractogram_flow = ConvertTractogramFlow(mix_names=True)
         convert_tractogram_flow.run(
-            input_files, reference=data_path["gs.nii"], out_dir=out_dir
+            input_files, reference=data_path["gs_volume.nii"], out_dir=out_dir
         )
 
         convert_tractogram_flow._force_overwrite = True
@@ -210,7 +211,7 @@ def test_convert_tractogram_flow():
             npt.assert_warns(
                 UserWarning,
                 convert_tractogram_flow.run,
-                data_path["gs.trx"],
+                data_path["gs_streamlines.trx"],
                 out_dir=out_dir,
                 out_tractogram="gs_converted.trx",
             )
