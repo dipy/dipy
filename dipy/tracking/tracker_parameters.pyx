@@ -14,8 +14,8 @@ cimport numpy as cnp
 
 def generate_tracking_parameters(algo_name, *,
     int max_len=500, int min_len=2, double step_size=0.5, double[:] voxel_size,
-    double max_angle=30, return_all=True, double pmf_threshold=0.1, 
-    double probe_length=0.5, double probe_radius=0, int probe_quality=3, 
+    double max_angle=30, return_all=True, double pmf_threshold=0.1,
+    double probe_length=0.5, double probe_radius=0, int probe_quality=3,
     int probe_count=1, double data_support_exponent=1, int random_seed=0):
 
     cdef TrackerParameters params
@@ -23,8 +23,8 @@ def generate_tracking_parameters(algo_name, *,
     algo_name = algo_name.lower()
 
     if algo_name in ['deterministic', 'det']:
-        params = TrackerParameters(max_len=max_len, 
-                                   min_len=min_len, 
+        params = TrackerParameters(max_len=max_len,
+                                   min_len=min_len,
                                    step_size=step_size,
                                    voxel_size=voxel_size,
                                    pmf_threshold=pmf_threshold,
@@ -34,7 +34,7 @@ def generate_tracking_parameters(algo_name, *,
         params.set_tracker_c(deterministic_tracker)
         return params
     elif algo_name in ['probabilistic', 'prob']:
-        params = TrackerParameters(max_len=max_len,                                    
+        params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
                                    voxel_size=voxel_size,
