@@ -11,7 +11,7 @@ cimport numpy as cnp
 from dipy.direction.pmf cimport PmfGen
 from dipy.utils.fast_numpy cimport copy_point, norm, normalize
 from dipy.tracking.fast_tracking cimport prepare_pmf
-from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus, 
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus,
                                                SUCCESS, FAIL)
 from libc.stdlib cimport malloc, free
 
@@ -22,8 +22,10 @@ cdef TrackerStatus deterministic_tracker(double* point,
                                          double* stream_data,
                                          PmfGen pmf_gen) noexcept nogil:
     """
-    Propagates the position by step_size amount. The propagation use the 
-    direction of a sphere with the highest probability mass function (pmf).
+    Propagate the position by step_size amount.
+
+    The propagation use the direction of a sphere with the highest probability
+    mass function (pmf).
 
     Parameters
     ----------
@@ -32,7 +34,7 @@ cdef TrackerStatus deterministic_tracker(double* point,
     direction : double[3]
         Previous tracking direction.
     params : TrackerParameters
-        Parallel Transport Tractography (PTT) parameters.
+        Deterministic Tractography parameters.
     stream_data : double*
         Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
@@ -57,7 +59,7 @@ cdef TrackerStatus deterministic_tracker(double* point,
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
-    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)    
+    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
 
     for i in range(len_pmf):
         cos_sim = pmf_gen.vertices[i][0] * direction[0] \
@@ -86,4 +88,3 @@ cdef TrackerStatus deterministic_tracker(double* point,
         direction[2] = direction[2] * -1
     free(pmf)
     return SUCCESS
-    

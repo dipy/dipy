@@ -1,9 +1,8 @@
+from itertools import repeat
 import multiprocessing as mp
+from os import path
 import tempfile
 import warnings
-
-from itertools import repeat
-from os import path
 
 import numpy as np
 import scipy.optimize as opt

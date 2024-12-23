@@ -23,9 +23,9 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                INVALIDPOINT,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
-from dipy.tracking.tracker_parameters cimport (TrackerParameters, 
-                                               func_ptr, 
-                                               SUCCESS, 
+from dipy.tracking.tracker_parameters cimport (TrackerParameters,
+                                               func_ptr,
+                                               SUCCESS,
                                                FAIL)
 
 from nibabel.streamlines import ArraySequence as Streamlines
@@ -48,12 +48,31 @@ def generate_tractogram(double[:,::1] seed_positions,
                         PmfGen pmf_gen,
                         int nbr_threads=0,
                         float buffer_frac=1.0):
-    """
-    return_all : bool, optional
-        If true, return all generated streamlines, otherwise only
-        streamlines reaching end points or exiting the image.
-    """
+    """Generate a tractogram from a set of seed points and directions.
 
+    Parameters
+    ----------
+    seed_positions : ndarray
+        Seed positions for the streamlines.
+    seed_directions : ndarray
+        Seed directions for the streamlines.
+    sc : StoppingCriterion
+        Stopping criterion for the streamlines.
+    params : TrackerParameters
+        Parameters for the streamline generation.
+    pmf_gen : PmfGen
+        Probability mass function generator.
+    nbr_threads : int, optional
+        Number of threads to use for streamline generation.
+    buffer_frac : float, optional
+        Fraction of the seed points to process in each iteration.
+
+    Yields
+    ------
+    streamlines : Streamlines
+        Streamlines generated from the seed points.
+
+    """
     cdef:
         cnp.npy_intp _len = seed_positions.shape[0]
         cnp.npy_intp _plen = int(ceil(_len * buffer_frac))
@@ -82,20 +101,20 @@ def generate_tractogram(double[:,::1] seed_positions,
         generate_tractogram_c(seed_positions[seed_start:seed_end],
                               seed_directions[seed_start:seed_end],
                               nbr_threads, sc, params, pmf_gen,
-                              streamlines_arr, length_arr, status_arr)        
-       
+                              streamlines_arr, length_arr, status_arr)
+
         for i in range(seed_end - seed_start):
             if ((status_arr[i] == VALIDSTREAMLIME or params.return_all)
-                and (length_arr[i] >= params.min_len 
+                and (length_arr[i] >= params.min_len
                      and length_arr[i] <= params.max_len)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                 yield s.copy().reshape((-1,3))
             free(streamlines_arr[i])
-    
+
         free(streamlines_arr)
         free(length_arr)
         free(status_arr)
-        
+
         seed_start += _plen
         seed_end += _plen
         if seed_end > _len:
@@ -103,14 +122,40 @@ def generate_tractogram(double[:,::1] seed_positions,
 
 
 cdef void generate_tractogram_c(double[:,::1] seed_positions,
-                               double[:,::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
                                TrackerParameters params,
                                PmfGen pmf_gen,
                                double** streamlines,
                                int* lengths,
-                               StreamlineStatus* status):
+                               StreamlineStatus* status,
+                               double* seed_directions):
+    """Generate a tractogram from a set of seed points and directions.
+
+    This is the C implementation of the generate_tractogram function.
+
+    Parameters
+    ----------
+    seed_positions : ndarray
+        Seed positions for the streamlines.
+    seed_directions : ndarray
+        Seed directions for the streamlines.
+    nbr_threads : int
+        Number of threads to use for streamline generation.
+    sc : StoppingCriterion
+        Stopping criterion for the streamlines.
+    params : TrackerParameters
+        Parameters for the streamline generation.
+    pmf_gen : PmfGen
+        Probability mass function generator.
+    streamlines : list
+        List to store the generated streamlines.
+    lengths : list
+        List to store the lengths of the generated streamlines.
+    status : list
+        List to store the status of the generated streamlines.
+
+    """
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i, j, k
@@ -129,7 +174,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
                                               pmf_gen)
 
         # copy the streamlines points from the buffer to a 1d vector of the streamline length
-        lengths[i] = stream_idx[1] - stream_idx[0] + 1        
+        lengths[i] = stream_idx[1] - stream_idx[0] + 1
         streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
         memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
         free(stream)
@@ -143,15 +188,38 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
                                                 StoppingCriterion sc,
                                                 TrackerParameters params,
                                                 PmfGen pmf_gen) noexcept nogil:
+    """Generate a unique streamline from a seed point and direction.
+
+    This is the C implementation.
+
+    Parameters
+    ----------
+    seed : ndarray
+        Seed point for the streamline.
+    direction : ndarray
+        Seed direction for the streamline.
+    stream : ndarray
+        Buffer to store the generated streamline.
+    stream_idx : ndarray
+        Buffer to store the indices of the generated streamline.
+    sc : StoppingCriterion
+        Stopping criterion for the streamline.
+    params : TrackerParameters
+        Parameters for the streamline generation.
+    pmf_gen : PmfGen
+        Probability mass function generator.
+
+    """
     cdef:
         cnp.npy_intp i, j
         cnp.npy_uint32 s_random_seed
         double[3] point
         double[3] voxdir
         double voxdir_norm
-        double* stream_data        
+        double* stream_data
         StreamlineStatus status_forward, status_backward
         timespec ts
+
 
     # set the random generator
     if params.random_seed > 0:
@@ -169,9 +237,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     fast_numpy.copy_point(seed, &stream[params.max_len * 3])
     stream_idx[0] = stream_idx[1] = params.max_len
 
-    # the input direction is invalid 
+    # the input direction is invalid
     voxdir_norm = fast_numpy.norm(voxdir)
-    if voxdir_norm < 0.99 or voxdir_norm > 1.01:        
+    if voxdir_norm < 0.99 or voxdir_norm > 1.01:
         return INVALIDSTREAMLIME
 
     # forward tracking
@@ -203,9 +271,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     if i > 1:
         # Use the first selected orientation for the backward tracking segment
         for j in range(3):
-            voxdir[j] = stream[(params.max_len + 1) * 3 + j] - stream[params.max_len * 3 + j]                     
+            voxdir[j] = stream[(params.max_len + 1) * 3 + j] - stream[params.max_len * 3 + j]
         fast_numpy.normalize(voxdir)
-    
+
     # flip the initial direction for backward streamline segment
     for j in range(3):
         voxdir[j] = voxdir[j] * -1
@@ -239,6 +307,22 @@ cdef void prepare_pmf(double* pmf,
                       PmfGen pmf_gen,
                       double pmf_threshold,
                       int pmf_len) noexcept nogil:
+    """Prepare the probability mass function for streamline generation.
+
+    Parameters
+    ----------
+    pmf : ndarray
+        Probability mass function.
+    point : ndarray
+        Current tracking position.
+    pmf_gen : PmfGen
+        Probability mass function generator.
+    pmf_threshold : float
+        Threshold for the probability mass function.
+    pmf_len : int
+        Length of the probability mass function.
+
+    """
     cdef:
         cnp.npy_intp i
         double absolute_pmf_threshold
