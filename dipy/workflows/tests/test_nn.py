@@ -11,7 +11,7 @@ from dipy.nn.evac import EVACPlus
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.nn import EVACPlusFlow
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")

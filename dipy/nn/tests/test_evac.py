@@ -9,7 +9,7 @@ import pytest
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 have_nn = have_tf or have_torch
 BACKENDS = [

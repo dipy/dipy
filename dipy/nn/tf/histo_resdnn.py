@@ -16,7 +16,7 @@ from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.layers import Add, Dense, Input
     from tensorflow.keras.models import Model

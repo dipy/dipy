@@ -13,7 +13,7 @@ from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_im
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.layers import (
         Concatenate,
