@@ -48,7 +48,9 @@ def teardown_module():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_equivalence_lpsmm_sft_sfs():
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.vtk"], FILEPATH_DIX["gs_volume.nii"]
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
     )
     sfs = load_surface(
         FILEPATH_DIX["gs_streamlines.vtk"],

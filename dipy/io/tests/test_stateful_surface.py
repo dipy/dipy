@@ -1,5 +1,5 @@
 import itertools
-import os
+from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
@@ -442,9 +442,9 @@ def test_save_load_many_times(extension):
     with TemporaryDirectory() as tmpdir:
         # Save and load 10 times
         for i in range(10):
-            save_surface(sfs, os.path.join(tmpdir, f"test_{i}.{extension}"))
+            save_surface(sfs, pjoin(tmpdir, f"test_{i}.{extension}"))
             sfs = load_surface(
-                os.path.join(tmpdir, f"test_{i}.{extension}"),
+                pjoin(tmpdir, f"test_{i}.{extension}"),
                 FILEPATH_DIX["naf_mni_masked.nii.gz"],
             )
 

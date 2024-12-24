@@ -22,7 +22,7 @@ fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 is_big_endian = "big" in sys.byteorder.lower()
 
 
-EXTENSIONS = ["trk", "tck", "trx", "fib", "dpy"]
+EXTENSIONS = ["trk", "tck", "trx", "fib", "vtk", "dpy"]
 SPACES = [Space.RASMM, Space.VOXMM, Space.VOX]
 FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 
@@ -66,11 +66,16 @@ def test_direct_trx_loading():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
 def test_space_gold_standard(ext, space):
+    # VTK/FIB in the gold standard dataset are in LPSMM space.
+    from_space = Space.LPSMM if ext in ["vtk", "fib"] else Space.RASMM
     sft = load_tractogram(
         FILEPATH_DIX[f"gs_streamlines.{ext}"],
         FILEPATH_DIX["gs_volume.nii"],
         to_space=space,
+        from_space=from_space,
+        bbox_valid_check=False,
     )
+
     fname = FILEPATH_DIX[f"gs_streamlines_{space.value.lower()}_space.txt"]
     tmp_points_vox = np.loadtxt(fname)
     npt.assert_allclose(
@@ -241,118 +246,30 @@ def test_empty_sft_case():
     assert is_header_compatible(sft_1, sft_2)
 
 
-def test_trk_iterative_saving_loading():
+@pytest.mark.parametrize("ext", EXTENSIONS)
+def test_iterative_saving_loading(ext):
+    # VTK/FIB in the gold standard dataset are in LPSMM space.
+    from_space = Space.LPSMM if ext in ["vtk", "fib"] else Space.RASMM
     sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trk"],
+        FILEPATH_DIX[f"gs_streamlines.{ext}"],
         FILEPATH_DIX["gs_volume.nii"],
         to_space=Space.RASMM,
+        from_space=from_space,
     )
     with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, "gs_iter.trk"))
+        save_tractogram(sft, pjoin(tmp_dir, f"gs_iter.{ext}"))
         tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
-                pjoin(tmp_dir, "gs_iter.trk"),
+                pjoin(tmp_dir, f"gs_iter.{ext}"),
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
             npt.assert_allclose(
                 tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
             )
-            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.trk"))
-
-
-def test_tck_iterative_saving_loading():
-    sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.tck"],
-        FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM,
-    )
-    with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, "gs_iter.tck"))
-        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-
-        for _ in range(100):
-            sft_iter = load_tractogram(
-                pjoin(tmp_dir, "gs_iter.tck"),
-                FILEPATH_DIX["gs_volume.nii"],
-                to_space=Space.RASMM,
-            )
-            npt.assert_allclose(
-                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
-            )
-            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.tck"))
-
-
-@pytest.mark.skipif(is_big_endian, reason="Little Endian architecture required")
-def test_trx_iterative_saving_loading():
-    sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.trx"],
-        FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM,
-    )
-    with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, "gs_iter.trx"))
-        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-
-        for _ in range(100):
-            sft_iter = load_tractogram(
-                pjoin(tmp_dir, "gs_iter.trx"),
-                FILEPATH_DIX["gs_volume.nii"],
-                to_space=Space.RASMM,
-            )
-            npt.assert_allclose(
-                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
-            )
-            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.trx"))
-
-
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
-def test_fib_iterative_saving_loading():
-    if not have_fury:
-        return
-    sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.fib"],
-        FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM,
-    )
-    with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, "gs_iter.fib"))
-        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-
-        for _ in range(100):
-            sft_iter = load_tractogram(
-                pjoin(tmp_dir, "gs_iter.fib"),
-                FILEPATH_DIX["gs_volume.nii"],
-                to_space=Space.RASMM,
-            )
-            npt.assert_allclose(
-                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
-            )
-            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.fib"))
-
-
-def test_dpy_iterative_saving_loading():
-    sft = load_tractogram(
-        FILEPATH_DIX["gs_streamlines.dpy"],
-        FILEPATH_DIX["gs_volume.nii"],
-        to_space=Space.RASMM,
-    )
-    with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, "gs_iter.dpy"))
-        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
-
-        for _ in range(100):
-            sft_iter = load_tractogram(
-                pjoin(tmp_dir, "gs_iter.dpy"),
-                FILEPATH_DIX["gs_volume.nii"],
-                to_space=Space.RASMM,
-            )
-            npt.assert_allclose(
-                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
-            )
-            save_tractogram(sft_iter, pjoin(tmp_dir, "gs_iter.dpy"))
+            save_tractogram(sft_iter, pjoin(tmp_dir, f"gs_iter.{ext}"))
 
 
 def test_iterative_to_vox_transformation():

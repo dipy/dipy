@@ -89,7 +89,11 @@ def save_tractogram(
 
     elif extension in [".vtk", ".vtp", ".fib"]:
         binary = extension in [".vtk", ".fib"]
-        save_vtk_streamlines(sft.streamlines, filename, binary=binary)
+        save_vtk_streamlines(sft.streamlines, filename, binary=binary, to_lps=False)
+        logging.warning(
+            "StatefulTractogram was previously saving  in LPSMM space.\n"
+            "Now use to_space=Space.LPSMM to match the previous behavior."
+        )
     elif extension in [".dpy"]:
         dpy_obj = Dpy(filename, mode="w")
         dpy_obj.write_tracks(sft.streamlines)
@@ -204,7 +208,11 @@ def load_tractogram(
             data_per_streamline = tractogram_obj.data_per_streamline
 
     elif extension in [".vtk", ".vtp", ".fib"]:
-        streamlines = load_vtk_streamlines(filename)
+        streamlines = load_vtk_streamlines(filename, to_lps=False)
+        logging.warning(
+            "StatefulTractogram was previously saving in LPSMM space.\n"
+            "Use from_space=Space.LPSMM to load older files."
+        )
     elif extension in [".dpy"]:
         dpy_obj = Dpy(filename, mode="r")
         streamlines = list(dpy_obj.read_tracks())
@@ -273,6 +281,8 @@ def load_generator(ttype):
         to_origin=Origin.NIFTI,
         bbox_valid_check=True,
         trk_header_check=True,
+        from_space=None,
+        from_origin=None,
     ):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
@@ -283,10 +293,12 @@ def load_generator(ttype):
         sft = load_tractogram(
             filename,
             reference,
-            to_space=Space.RASMM,
+            to_space=to_space,
             to_origin=to_origin,
             bbox_valid_check=bbox_valid_check,
             trk_header_check=trk_header_check,
+            from_space=from_space,
+            from_origin=from_origin,
         )
         return sft
 
