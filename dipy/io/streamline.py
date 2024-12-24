@@ -101,6 +101,8 @@ def load_tractogram(
     to_space=Space.RASMM,
     to_origin=Origin.NIFTI,
     bbox_valid_check=True,
+    from_space=None,
+    from_origin=None,
     trk_header_check=True,
 ):
     """Load the stateful tractogram from any format (trk/tck/vtk/vtp/fib/dpy)
@@ -114,15 +116,22 @@ def load_tractogram(
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
         streamlines generation
-    to_space : Enum (dipy.io.stateful_tractogram.Space)
+    to_space : Enum (dipy.io.utils.Space)
         Space to which the streamlines will be transformed after loading
-    to_origin : Enum (dipy.io.stateful_tractogram.Origin)
+    to_origin : Enum (dipy.io.utils.Origin)
         Origin to which the streamlines will be transformed after loading
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
+    from_space : Enum (dipy.io.utils.Space)
+        Space to which the surface was transformed before saving.
+        Help for software compatibility. If None, assumes RASMM.
+    from_origin : Enum (dipy.io.utils.Origin)
+        Origin to which the surface was transformed before saving.
+        Help for software compatibility. If None, assumes NIFTI.
+    gifti_in_freesurfer : bool
     trk_header_check : bool
         Verification that the reference has the same header as the spatial
         attributes as the input tractogram when a Trk is loaded
@@ -158,6 +167,18 @@ def load_tractogram(
     timer = time.time()
     data_per_point = None
     data_per_streamline = None
+    if (
+        extension in [".trk", ".tck", ".trx"]
+        and from_space is not None
+        or from_origin is not None
+    ):
+        from_space = None
+        from_origin = None
+        logging.warning(
+            "from_space and from_origin are ignored when loading "
+            ".trk or .tck or .trx files."
+        )
+
     if extension in [".trk", ".tck"]:
         tractogram_obj = nib.streamlines.load(filename).tractogram
         streamlines = tractogram_obj.streamlines
@@ -172,6 +193,9 @@ def load_tractogram(
         streamlines = list(dpy_obj.read_tracks())
         dpy_obj.close()
 
+    from_space = Space.RASMM if from_space is None else from_space
+    from_origin = Origin.NIFTI if from_origin is None else from_origin
+
     if extension in [".trx"]:
         trx_obj = tmm.load(filename)
         sft = trx_obj.to_sft()
@@ -180,8 +204,8 @@ def load_tractogram(
         sft = StatefulTractogram(
             streamlines,
             reference,
-            Space.RASMM,
-            origin=Origin.NIFTI,
+            from_space,
+            origin=from_origin,
             data_per_point=data_per_point,
             data_per_streamline=data_per_streamline,
         )

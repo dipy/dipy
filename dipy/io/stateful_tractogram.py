@@ -485,6 +485,8 @@ class StatefulTractogram:
             self._voxmm_to_vox()
         elif self._space == Space.RASMM:
             self._rasmm_to_vox()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_vox()
 
     def to_voxmm(self):
         """Safe function to transform streamlines and update state"""
@@ -492,6 +494,8 @@ class StatefulTractogram:
             self._vox_to_voxmm()
         elif self._space == Space.RASMM:
             self._rasmm_to_voxmm()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_voxmm()
 
     def to_rasmm(self):
         """Safe function to transform streamlines and update state"""
@@ -499,9 +503,16 @@ class StatefulTractogram:
             self._vox_to_rasmm()
         elif self._space == Space.VOXMM:
             self._voxmm_to_rasmm()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
 
     def to_lpsmm(self):
-        raise NotImplementedError("LPSMM is not supported yet.")
+        if self._space == Space.VOX:
+            self._vox_to_lpsmm()
+        elif self._space == Space.VOXMM:
+            self._voxmm_to_lpsmm()
+        elif self._space == Space.RASMM:
+            self._rasmm_to_lpsmm()
 
     def to_space(self, target_space):
         """Safe function to transform streamlines to a particular space using
@@ -737,6 +748,65 @@ class StatefulTractogram:
         else:
             logger.warning("Wrong initial space for this function.")
 
+    def _lpsmm_to_rasmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            if self._tractogram.streamlines._data.size > 0:
+                flip_affine = np.diag([-1, -1, 1, 1])
+                self._tractogram.apply_affine(flip_affine)
+            self._space = Space.RASMM
+            logger.debug("Moved vertices from lpsmm to rasmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _rasmm_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.RASMM:
+            if self._tractogram.streamlines._data.size > 0:
+                flip_affine = np.diag([-1, -1, 1, 1])
+                print(self._tractogram.streamlines._data[0], "a")
+                self._tractogram.apply_affine(flip_affine)
+            self._space = Space.LPSMM
+            logger.debug("Moved vertices from lpsmm to rasmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _lpsmm_to_voxmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
+            self._rasmm_to_voxmm()
+            logger.debug("Moved vertices from lpsmm to voxmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _voxmm_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.VOXMM:
+            self._voxmm_to_rasmm()
+            self._rasmm_to_lpsmm()
+            logger.debug("Moved vertices from voxmm to lpsmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _lpsmm_to_vox(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
+            self._rasmm_to_vox()
+            logger.debug("Moved vertices from lpsmm to vox.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _vox_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.VOX:
+            self._vox_to_rasmm()
+            self._rasmm_to_lpsmm()
+            logger.debug("Moved vertices from vox to lpsmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
     def _shift_voxel_origin(self):
         """Unsafe function to switch the origin from center to corner
         and vice versa"""
@@ -744,10 +814,11 @@ class StatefulTractogram:
             shift = np.asarray([0.5, 0.5, 0.5])
             if self._space == Space.VOXMM:
                 shift = shift * self._voxel_sizes
-            elif self._space == Space.RASMM:
+            elif self._space == Space.RASMM or self._space == Space.LPSMM:
                 tmp_affine = np.eye(4)
                 tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
-                shift = apply_affine(tmp_affine, shift)
+                flip = [1, 1, 1] if self._space == Space.RASMM else [-1, -1, 1]
+                shift = apply_affine(tmp_affine, shift) * flip
             if self._origin == Origin.TRACKVIS:
                 shift *= -1
 

@@ -35,19 +35,19 @@ def load_surface(
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
         streamlines generation
-    to_space : Enum (dipy.io.stateful_surface.Space)
+    to_space : Enum (dipy.io.utils.Space)
         Space to which the surface will be transformed after loading
-    to_origin : Enum (dipy.io.stateful_surface.Origin)
+    to_origin : Enum (dipy.io.utils.Origin)
         Origin to which the surface will be transformed after loading
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
-    from_space : Enum (dipy.io.stateful_surface.Space)
+    from_space : Enum (dipy.io.utils.Space)
         Space to which the surface was transformed before saving.
         Help for software compatibility. If None, assumes RASMM.
-    from_origin : Enum (dipy.io.stateful_surface.Origin)
+    from_origin : Enum (dipy.io.utils.Origin)
         Origin to which the surface was transformed before saving.
         Help for software compatibility. If None, assumes NIFTI.
     gifti_in_freesurfer : bool
@@ -98,6 +98,10 @@ def load_surface(
         data, metadata = data[0:2], data[2]
 
         data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
+        if from_space is not None or from_origin is not None:
+            logging.warning(
+                "from_space and from_origin are ignored when loading pial files."
+            )
         from_space = Space.RASMM
         from_origin = Origin.NIFTI
 

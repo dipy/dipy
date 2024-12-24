@@ -108,7 +108,7 @@ def load_vtk_streamlines(filename, *, to_lps=True):
         input filename (.vtk or .fib)
     to_lps : bool
         Default to True, will follow the vtk file convention for streamlines
-        Will be supported by MITKDiffusion and MI-Brain
+        Will be supported by MITK-Diffusion and MI-Brain
 
     Returns
     -------

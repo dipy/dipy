@@ -18,7 +18,7 @@ from dipy.io.utils import is_header_compatible, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 is_big_endian = "big" in sys.byteorder.lower()
 
 
@@ -67,9 +67,12 @@ def test_direct_trx_loading():
 @pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
 def test_space_gold_standard(ext, space):
     sft = load_tractogram(
-        FILEPATH_DIX[f"gs.{ext}"], FILEPATH_DIX["gs_volume.nii"], to_space=space
+        FILEPATH_DIX[f"gs_streamlines.{ext}"],
+        FILEPATH_DIX["gs_volume.nii"],
+        to_space=space,
     )
-    tmp_points_vox = np.loadtxt(FILEPATH_DIX[f"gs_{space.value.lower()}_space.txt"])
+    fname = FILEPATH_DIX[f"gs_streamlines_{space.value.lower()}_space.txt"]
+    tmp_points_vox = np.loadtxt(fname)
     npt.assert_allclose(
         tmp_points_vox, sft.streamlines.get_data(), atol=1e-3, rtol=1e-6
     )

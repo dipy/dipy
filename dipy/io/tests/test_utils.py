@@ -9,15 +9,22 @@ import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
+from dipy.io.surface import load_surface
 from dipy.io.utils import (
+    Space,
     create_nifti_header,
     decfa,
     decfa_to_float,
     get_reference_info,
+    is_header_compatible,
     is_reference_info_valid,
     read_img_arr_or_path,
 )
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+
 
 FILEPATH_DIX = None
 
@@ -36,6 +43,29 @@ def setup_module():
 def teardown_module():
     global FILEPATH_DIX
     FILEPATH_DIX = (None,)
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_equivalence_lpsmm_sft_sfs():
+    sft = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.vtk"], FILEPATH_DIX["gs_volume.nii"]
+    )
+    sfs = load_surface(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+        to_space=Space.RASMM,
+    )
+
+    assert is_header_compatible(sft, sfs)
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
+
+    sfs.to_lpsmm()
+    sfs.to_corner()
+    sft.to_lpsmm()
+    sft.to_corner()
+
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
 def test_decfa():
