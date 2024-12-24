@@ -138,8 +138,8 @@ def load_surface(
 
 
 def save_surface(
-    fname,
     sfs,
+    fname,
     *,
     to_space=Space.RASMM,
     to_origin=Origin.NIFTI,
@@ -154,10 +154,10 @@ def save_surface(
 
     Parameters
     ----------
-    fname : str
-        Absolute path of the file.
     sfs : StatefulSurface
         The surface to save (must have been loaded properly)
+    fname : str
+        Absolute path of the file.
     to_space : Enum (dipy.io.stateful_surface.Space)
         Space to which the surface will be transformed before saving
     to_origin : Enum (dipy.io.stateful_surface.Origin)

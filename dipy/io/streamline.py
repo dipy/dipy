@@ -17,7 +17,14 @@ from dipy.testing.decorators import warning_for_keywords
 
 
 @warning_for_keywords()
-def save_tractogram(sft, filename, *, bbox_valid_check=True):
+def save_tractogram(
+    sft,
+    filename,
+    *,
+    bbox_valid_check=True,
+    to_space=Space.RASMM,
+    to_origin=Origin.NIFTI,
+):
     """Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
@@ -29,6 +36,12 @@ def save_tractogram(sft, filename, *, bbox_valid_check=True):
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
+    to_space : Enum (dipy.io.utils.Space)
+        Space to which the streamlines will be transformed before saving
+    to_origin : Enum (dipy.io.utils.Origin)
+        Origin to which the streamlines will be transformed before saving
+            NIFTI standard, default (center of the voxel)
+            TRACKVIS standard (corner of the voxel)
 
     Returns
     -------
@@ -52,10 +65,16 @@ def save_tractogram(sft, filename, *, bbox_valid_check=True):
     old_space = deepcopy(sft.space)
     old_origin = deepcopy(sft.origin)
 
-    sft.to_rasmm()
-    sft.to_center()
-
     timer = time.time()
+    if extension in [".trk", ".tck", ".trx"]:
+        to_origin = Origin.NIFTI
+        to_space = Space.RASMM
+        logging.warning(
+            "to_space and to_origin are ignored when saving "
+            ".trk or .tck or .trx files."
+        )
+    sft.to_space(to_space)
+    sft.to_origin(to_origin)
     if extension in [".trk", ".tck"]:
         tractogram_type = detect_format(filename)
         header = create_tractogram_header(tractogram_type, *sft.space_attributes)
@@ -167,10 +186,8 @@ def load_tractogram(
     timer = time.time()
     data_per_point = None
     data_per_streamline = None
-    if (
-        extension in [".trk", ".tck", ".trx"]
-        and from_space is not None
-        or from_origin is not None
+    if extension in [".trk", ".tck", ".trx"] and (
+        from_space is not None or from_origin is not None
     ):
         from_space = None
         from_origin = None

@@ -1,3 +1,4 @@
+import itertools
 import os
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
@@ -9,7 +10,7 @@ import pytest
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, load_trk, save_tractogram, save_trk
-from dipy.io.utils import create_nifti_header
+from dipy.io.utils import Origin, Space, create_nifti_header
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
@@ -17,6 +18,8 @@ from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 FILEPATH_DIX = None
+SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
+ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
 
 def setup_module():
@@ -197,6 +200,33 @@ def io_tractogram(extension):
         npt.assert_array_equal(in_dimensions, dimensions)
         npt.assert_equal(len(sft), len(STREAMLINES))
         npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
+def test_vtk_matching_space(space, origin):
+    sfs = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.vtk"], FILEPATH_DIX["gs_volume.nii"]
+    )
+    sfs.to_rasmm()
+    sfs.to_center()
+    ref_coords = sfs.streamlines._data.copy()
+
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(
+            sfs, os.path.join(tmpdir, "tmp.vtk"), to_space=space, to_origin=origin
+        )
+        sfs = load_tractogram(
+            os.path.join(tmpdir, "tmp.vtk"),
+            FILEPATH_DIX["gs_volume.nii"],
+            from_space=space,
+            from_origin=origin,
+        )
+
+        sfs.to_rasmm()
+        sfs.to_center()
+        save_coords = sfs.streamlines._data.copy()
+        npt.assert_almost_equal(ref_coords, save_coords, decimal=5)
 
 
 @pytest.mark.parametrize("ext", ["trk", "tck", "trx", "dpy"])

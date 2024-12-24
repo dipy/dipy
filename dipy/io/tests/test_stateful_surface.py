@@ -442,7 +442,7 @@ def test_save_load_many_times(extension):
     with TemporaryDirectory() as tmpdir:
         # Save and load 10 times
         for i in range(10):
-            save_surface(os.path.join(tmpdir, f"test_{i}.{extension}"), sfs)
+            save_surface(sfs, os.path.join(tmpdir, f"test_{i}.{extension}"))
             sfs = load_surface(
                 os.path.join(tmpdir, f"test_{i}.{extension}"),
                 FILEPATH_DIX["naf_mni_masked.nii.gz"],
