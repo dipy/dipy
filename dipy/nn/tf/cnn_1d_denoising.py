@@ -187,7 +187,7 @@ class Cnn1DDenoiser:
             If int, represents the absolute number of train samples.
             If None, the value is automatically set to the complement of the
             test size.
-        random_state: int, RandomState instance or None, optional
+        random_state: int, np.random.Generator instance or None, optional
             Controls the shuffling applied to the data before applying
             the split. Pass an int for reproducible output across multiple
             function calls. See Glossary.

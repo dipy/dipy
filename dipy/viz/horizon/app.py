@@ -179,7 +179,7 @@ class Horizon:
         self.clusters_gt = clusters_gt
         self.world_coords = world_coords
         self.interactive = interactive
-        self.prng = np.random.RandomState(27)
+        self.prng = np.random.default_rng(27)
         self.tractograms = tractograms or []
         self.out_png = out_png
         self.images = images or []
