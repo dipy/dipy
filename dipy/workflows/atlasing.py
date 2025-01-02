@@ -1,18 +1,32 @@
 import logging
-from dipy.workflows.workflow import Workflow
+
 from dipy.atlasing.bundles import compute_atlas_bundle
+from dipy.workflows.workflow import Workflow
 
 
 class DiscreteBundleAtlasFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'bdaf'
+        return "bdaf"
 
-    def run(self, in_dir, subjects=None, group=None, mid_path='',
-            bundle_names=None, model_bundle_dir=None, out_dir=None,
-            merge_out=False, save_temp=False, n_stream_min=10,
-            n_stream_max=5000, n_point=20, distance='mdf',
-            comb_method='rlap', skip_pairs=False):
+    def run(
+        self,
+        in_dir,
+        subjects=None,
+        group=None,
+        mid_path="",
+        bundle_names=None,
+        model_bundle_dir=None,
+        out_dir=None,
+        merge_out=False,
+        save_temp=False,
+        n_stream_min=10,
+        n_stream_max=5000,
+        n_point=20,
+        distance="mdf",
+        comb_method="rlap",
+        skip_pairs=False,
+    ):
         """Workflow of discrete bundle atlas generation.
 
         Given several segmented bundles as input, compute the atlas by
@@ -68,34 +82,38 @@ class DiscreteBundleAtlasFlow(Workflow):
         logging.info("workflow running")
 
         if merge_out:
-            _, _ = compute_atlas_bundle(in_dir=in_dir,
-                                        subjects=subjects,
-                                        group=group,
-                                        mid_path=mid_path,
-                                        bundle_names=bundle_names,
-                                        model_bundle_dir=model_bundle_dir,
-                                        out_dir=out_dir,
-                                        merge_out=merge_out,
-                                        save_temp=save_temp,
-                                        n_stream_min=n_stream_min,
-                                        n_stream_max=n_stream_max,
-                                        n_point=n_point,
-                                        distance=distance,
-                                        comb_method=comb_method,
-                                        skip_pairs=skip_pairs)
+            _, _ = compute_atlas_bundle(
+                in_dir=in_dir,
+                subjects=subjects,
+                group=group,
+                mid_path=mid_path,
+                bundle_names=bundle_names,
+                model_bundle_dir=model_bundle_dir,
+                out_dir=out_dir,
+                merge_out=merge_out,
+                save_temp=save_temp,
+                n_stream_min=n_stream_min,
+                n_stream_max=n_stream_max,
+                n_point=n_point,
+                distance=distance,
+                comb_method=comb_method,
+                skip_pairs=skip_pairs,
+            )
         else:
-            _ = compute_atlas_bundle(in_dir=in_dir,
-                                     subjects=subjects,
-                                     group=group,
-                                     mid_path=mid_path,
-                                     bundle_names=bundle_names,
-                                     model_bundle_dir=model_bundle_dir,
-                                     out_dir=out_dir,
-                                     merge_out=merge_out,
-                                     save_temp=save_temp,
-                                     n_stream_min=n_stream_min,
-                                     n_stream_max=n_stream_max,
-                                     n_point=n_point,
-                                     distance=distance,
-                                     comb_method=comb_method,
-                                     skip_pairs=skip_pairs)
+            _ = compute_atlas_bundle(
+                in_dir=in_dir,
+                subjects=subjects,
+                group=group,
+                mid_path=mid_path,
+                bundle_names=bundle_names,
+                model_bundle_dir=model_bundle_dir,
+                out_dir=out_dir,
+                merge_out=merge_out,
+                save_temp=save_temp,
+                n_stream_min=n_stream_min,
+                n_stream_max=n_stream_max,
+                n_point=n_point,
+                distance=distance,
+                comb_method=comb_method,
+                skip_pairs=skip_pairs,
+            )

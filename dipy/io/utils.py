@@ -22,7 +22,6 @@ if have_pd:
 _, have_fury, _ = optional_package("fury")
 if have_fury:
     from dipy.viz import actor, window
-    from time import sleep
 
 
 def nifti1_symmat(image_data, *args, **kwargs):
@@ -538,15 +537,15 @@ def show_bundles(bundles, fname, colors=None, opacity=None, linewidth=None):
     scene.SetBackground(1, 1, 1)
     scene.set_camera((0, 0, 300), (12, 18, 40), (0, 1, 0))
     for i, bundle in enumerate(bundles):
-
-        lines_actor = actor.streamtube(bundle, colors[i], opacity=opacity[i],
-                                       linewidth=linewidth[i])
+        lines_actor = actor.streamtube(
+            bundle, colors[i], opacity=opacity[i], linewidth=linewidth[i]
+        )
 
         # Guess the optimal visualization angle based on coordinates
         coords, _ = dipy.tracking.streamline.unlist_streamlines(bundle)
-        in_left = len(np.where(coords[:, 0] < 0)[0])/coords.shape[0]
-        in_right = len(np.where(coords[:, 0] > 0)[0])/coords.shape[0]
-        if abs(in_left-in_right) < 0.2:
+        in_left = len(np.where(coords[:, 0] < 0)[0]) / coords.shape[0]
+        in_right = len(np.where(coords[:, 0] > 0)[0]) / coords.shape[0]
+        if abs(in_left - in_right) < 0.2:
             rY, rZ = 0, 0
         elif in_left > in_right:
             rY, rZ = 90, 90
