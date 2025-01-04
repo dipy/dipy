@@ -246,6 +246,7 @@ def test_empty_sft_case():
     assert is_header_compatible(sft_1, sft_2)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("ext", EXTENSIONS)
 def test_iterative_saving_loading(ext):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
