@@ -62,7 +62,7 @@ def save_polydata(
         file_name=file_name,
         binary=binary,
         color_array_name=color_array_name,
-        legacy_vtk_format=legacy_vtk_format,
+        # legacy_vtk_format=legacy_vtk_format, # TODO: Not supported in fury 0.8.0
     )
 
 

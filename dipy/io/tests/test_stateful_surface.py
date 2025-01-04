@@ -431,7 +431,7 @@ def test_from_sfs_dtype_dict_attributes():
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("extension", [".vtk", ".gii", ".pial"])
+@pytest.mark.parametrize("extension", ["vtk", "gii", "pial"])
 def test_save_load_many_times(extension):
     # Load initial surface
     sfs = load_surface(
