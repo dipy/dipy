@@ -11,7 +11,7 @@ from dipy.tracking.streamlinespeed import compress_streamlines
 
 class BenchStreamlines:
     def setup(self):
-        rng = np.random.RandomState(42)
+        rng = np.random.default_rng(42)
         nb_streamlines = 20000
         min_nb_points = 2
         max_nb_points = 100
