@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 from scipy import optimize
+from scipy.spatial import Delaunay
 
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
@@ -40,8 +41,6 @@ def faces_from_sphere_vertices(vertices):
         Indices into vertices; forms triangular faces.
 
     """
-    from scipy.spatial import Delaunay
-
     faces = Delaunay(vertices).convex_hull
     if len(vertices) < 2**16:
         return np.asarray(faces, np.uint16)
