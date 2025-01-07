@@ -36,7 +36,7 @@ This command will delete all files not present in your github repository.
 Then, complete your installation by using this command::
 
     pip install -r requirements/build.txt
-    pip install --no-build-isolation --user -e .
+    pip install --no-build-isolation -e .
 
 This command will do the following :
     - install the requirements for building dipy
@@ -61,7 +61,7 @@ Then, to install for the system::
 
 Or, to build DIPY in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
 
-    pip install --no-build-isolation --user -e .
+    pip install --no-build-isolation -e .
 
 add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
@@ -154,7 +154,7 @@ Then to install into your system::
 
 To install inplace - so that DIPY is running out of the source code directory::
 
-    pip install --no-build-isolation --user -e .
+    pip install --no-build-isolation -e .
 
 (this is the mode we recommend for following the latest source code).
 
@@ -235,6 +235,11 @@ Documentation
 To build the documentation in HTML in your computer you will need to do::
 
     sudo pip install sphinx
+
+You will also need to install the requirements for the documentation::
+
+    pip install -r requirements/doc.txt
+    pip install -r requirements/optional.txt
 
 Then change directory to ``<dipy root>`` and::
 
