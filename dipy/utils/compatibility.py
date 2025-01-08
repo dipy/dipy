@@ -1,4 +1,5 @@
 """Utility functions for checking different stuffs."""
+
 import operator
 
 from packaging import version
