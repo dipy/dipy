@@ -10,7 +10,6 @@ from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
@@ -32,10 +31,9 @@ from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
-from libc.math cimport floor, ceil
+from libc.math cimport ceil
 from libc.stdio cimport printf
 
-from posix.time cimport clock_gettime, timespec, CLOCK_REALTIME
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
@@ -218,7 +216,6 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         double voxdir_norm
         double* stream_data
         StreamlineStatus status_forward, status_backward
-        timespec ts
 
 
     # set the random generator
@@ -226,10 +223,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         s_random_seed = int(
             (seed[0] * 2 + seed[1] * 3 + seed[2] * 5) * params.random_seed
             )
-    else:
-        clock_gettime(CLOCK_REALTIME, &ts)
-        s_random_seed = int(ts.tv_sec + (ts.tv_nsec / 1000000000.))
-    fast_numpy.seed(s_random_seed)
+        fast_numpy.seed(s_random_seed)
 
     # set the initial position
     fast_numpy.copy_point(seed, point)

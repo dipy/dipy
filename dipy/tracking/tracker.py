@@ -31,6 +31,7 @@ def generic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    nbr_threads=0,
 ):
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
@@ -86,7 +87,9 @@ def generic_tracking(
         # affine=affine)
         seeds_directions = seeds_directions_pairs(seeds_positions, peaks, max_cross=1)
 
-    return generate_tractogram(seeds_positions, seeds_directions, sc, params, pmf_gen)
+    return generate_tractogram(
+        seeds_positions, seeds_directions, sc, params, pmf_gen, nbr_threads
+    )
 
 
 def probabilistic_tracking(
@@ -107,6 +110,8 @@ def probabilistic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    nbr_threads=0,
+    random_seed=0,
 ):
     """Probabilistic tracking algorithm.
 
@@ -146,6 +151,14 @@ def probabilistic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    nbr_threads: int, optional
+        Number of threads to use for the processing. By default, all available threads
+        will be used.
+    random_seed: int, optional
+        Seed for the random number generator, must be >= 0. A value of greater than 0
+        will all produce the same streamline trajectory for a given seed coordinate
+        (will forces nbr_threads=1). A value of 0 may produces various streamline
+        tracjectories for a given seed coordinate.
 
     Returns
     -------
@@ -153,6 +166,10 @@ def probabilistic_tracking(
 
     """
     voxel_size = voxel_size or np.ones(3)
+
+    if random_seed > 0:
+        nbr_threads = 1
+
     params = generate_tracking_parameters(
         "prob",
         max_len=max_len,
@@ -160,6 +177,7 @@ def probabilistic_tracking(
         voxel_size=voxel_size,
         max_angle=max_angle,
         pmf_threshold=pmf_threshold,
+        random_seed=random_seed,
     )
 
     return generic_tracking(
@@ -173,6 +191,7 @@ def probabilistic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        nbr_threads=nbr_threads,
     )
 
 
@@ -194,6 +213,8 @@ def deterministic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    nbr_threads=0,
+    random_seed=0,
 ):
     """Deterministic tracking algorithm.
 
@@ -233,6 +254,14 @@ def deterministic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    nbr_threads: int, optional
+        Number of threads to use for the processing. By default, all available threads
+        will be used.
+    random_seed: int, optional
+        Seed for the random number generator, must be >= 0. A value of greater than 0
+        will all produce the same streamline trajectory for a given seed coordinate
+        (will forces nbr_threads=1). A value of 0 may produces various streamline
+        tracjectories for a given seed coordinate.
 
     Returns
     -------
@@ -240,13 +269,18 @@ def deterministic_tracking(
 
     """
     voxel_size = voxel_size or np.ones(3)
+
+    if random_seed > 0:
+        nbr_threads = 1
+
     params = generate_tracking_parameters(
-        "prob",
+        "det",
         max_len=max_len,
         step_size=step_size,
         voxel_size=voxel_size,
         max_angle=max_angle,
         pmf_threshold=pmf_threshold,
+        random_seed=random_seed,
     )
     return generic_tracking(
         seeds_positions,
@@ -259,6 +293,7 @@ def deterministic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        nbr_threads=nbr_threads,
     )
 
 
@@ -275,7 +310,7 @@ def ptt_tracking(
     max_len=500,
     step_size=0.2,
     voxel_size=None,
-    max_angle=20,
+    max_angle=15,
     pmf_threshold=0.1,
     probe_length=0.5,
     probe_radius=0,
@@ -285,6 +320,8 @@ def ptt_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    nbr_threads=0,
+    random_seed=0,
 ):
     """Probabilistic Particle Tracing (PPT) tracking algorithm.
 
@@ -330,6 +367,14 @@ def ptt_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    nbr_threads: int, optional
+        Number of threads to use for the processing. By default, all available threads
+        will be used.
+    random_seed: int, optional
+        Seed for the random number generator, must be >= 0. A value of greater than 0
+        will all produce the same streamline trajectory for a given seed coordinate
+        (will forces nbr_threads=1). A value of 0 may produces various streamline
+        tracjectories for a given seed coordinate.
 
     Returns
     -------
@@ -337,6 +382,10 @@ def ptt_tracking(
 
     """
     voxel_size = voxel_size or np.ones(3)
+
+    if random_seed > 0:
+        nbr_threads = 1
+
     params = generate_tracking_parameters(
         "ptt",
         max_len=max_len,
@@ -344,6 +393,7 @@ def ptt_tracking(
         voxel_size=voxel_size,
         max_angle=max_angle,
         pmf_threshold=pmf_threshold,
+        random_seed=random_seed,
         probe_length=probe_length,
         probe_radius=probe_radius,
         probe_quality=probe_quality,
@@ -361,4 +411,5 @@ def ptt_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        nbr_threads=nbr_threads,
     )
