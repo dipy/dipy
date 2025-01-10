@@ -94,7 +94,7 @@ all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.10.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',

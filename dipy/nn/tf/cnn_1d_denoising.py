@@ -30,7 +30,7 @@ import numpy as np
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.initializers import Orthogonal
     from tensorflow.keras.layers import Activation, Conv1D, Input
