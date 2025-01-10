@@ -29,6 +29,9 @@ from dipy.workflows.io import (
     ConvertSHFlow,
     ConvertTensorsFlow,
     ConvertTractogramFlow,
+    ExtractB0Flow,
+    ExtractShellFlow,
+    ExtractVolumeFlow,
     FetchFlow,
     IoInfoFlow,
     MathFlow,
@@ -419,3 +422,67 @@ def test_math_error():
             [data_path, data_path_2],
             out_dir=out_dir,
         )
+
+
+def test_extract_b0_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+        b0_data = data[..., 0]
+        b0_path = pjoin(out_dir, "b0.nii.gz")
+        save_nifti(b0_path, b0_data, affine)
+
+        extract_b0_flow = ExtractB0Flow()
+        extract_b0_flow.run(fdata, fbval, out_dir=out_dir)
+        npt.assert_equal(extract_b0_flow.last_generated_outputs["out_b0"], b0_path)
+        res, _ = load_nifti(extract_b0_flow.last_generated_outputs["out_b0"])
+        npt.assert_array_equal(res, b0_data)
+
+
+def test_extract_shell_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+
+        extract_shell_flow = ExtractShellFlow()
+        extract_shell_flow.run(
+            fdata, fbval, fbvec, bvals_to_extract="2000", out_dir=out_dir
+        )
+        res, _ = load_nifti(pjoin(out_dir, "shell_2000.nii.gz"))
+        npt.assert_array_equal(res, data[..., 1:])
+
+        extract_shell_flow._force_overwrite = True
+        extract_shell_flow.run(
+            fdata,
+            fbval,
+            fbvec,
+            bvals_to_extract="0, 2000",
+            group_shells=False,
+            out_dir=out_dir,
+        )
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "shell_0.nii.gz")), True)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "shell_2000.nii.gz")), True)
+        res0, _ = load_nifti(pjoin(out_dir, "shell_0.nii.gz"))
+        res2000, _ = load_nifti(pjoin(out_dir, "shell_2000.nii.gz"))
+        npt.assert_array_equal(np.squeeze(res0), data[..., 0])
+        npt.assert_array_equal(res2000[..., 9], data[..., 10])
+
+
+def test_extract_volume_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, _, _ = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+
+        extract_volume_flow = ExtractVolumeFlow()
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", out_dir=out_dir)
+        res, _ = load_nifti(extract_volume_flow.last_generated_outputs["out_vol"])
+        npt.assert_equal(res.shape[-1], 5)
+
+        extract_volume_flow._force_overwrite = True
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", grouped=False, out_dir=out_dir)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "volume_2.nii.gz")), True)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "volume_5.nii.gz")), True)
+        res2, _ = load_nifti(pjoin(out_dir, "volume_2.nii.gz"))
+        res5, _ = load_nifti(pjoin(out_dir, "volume_5.nii.gz"))
+        npt.assert_array_equal(res2, data[..., 2])
+        npt.assert_array_equal(res5, data[..., 5])

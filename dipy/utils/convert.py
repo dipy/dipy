@@ -14,7 +14,7 @@ def expand_range(range_str):
     list(int)
 
     """
-    range_str = range_str.strip()
+    range_str = range_str.replace(" ", "").strip()
     range_str = range_str[:-1] if range_str.endswith(",") else range_str
     result = []
     for part in range_str.split(","):
