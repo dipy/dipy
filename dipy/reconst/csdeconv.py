@@ -5,7 +5,7 @@ import numpy as np
 from scipy.integrate import quad
 import scipy.linalg as la
 import scipy.linalg.lapack as ll
-from scipy.special import gamma, lpn
+import scipy.special as sps
 
 from dipy.core.geometry import cart2sphere, vec2vec_rotmat
 from dipy.core.ndindex import ndindex
@@ -27,6 +27,7 @@ from dipy.reconst.shm import (
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.compatibility import check_max_version
 from dipy.utils.deprecator import deprecated_params
 
 
@@ -413,11 +414,17 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
     sdt = np.zeros(n_orders)  # SDT matrix
     frt = np.zeros(n_orders)  # FRT (Funk-Radon transform) q-ball matrix
 
+    lpn = (
+        sps.lpn
+        if check_max_version("scipy", "1.15.0", strict=True)
+        else sps.legendre_p_all
+    )
+
     for j in np.arange(0, n_orders * 2, 2):
         if r2_term:
             sharp = quad(
                 lambda z, j=j: lpn(j, z)[0][-1]
-                * gamma(1.5)
+                * sps.gamma(1.5)
                 * np.sqrt(ratio / (4 * np.pi**3))
                 / np.power((1 - (1 - ratio) * z**2), 1.5),
                 -1.0,

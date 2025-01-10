@@ -11,7 +11,6 @@ from numpy.testing import (
     assert_equal,
     assert_raises,
 )
-from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
@@ -171,7 +170,6 @@ def test_real_sh_descoteaux_from_index():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-
         assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
 
@@ -1060,8 +1058,12 @@ def test_faster_sph_harm():
         ]
     )
 
-    sh = spherical_harmonics(m_values, l_values, theta[:, None], phi[:, None])
-    sh2 = sph_harm_sp(m_values, l_values, theta[:, None], phi[:, None])
+    sh = spherical_harmonics(
+        m_values, l_values, theta[:, None], phi[:, None], use_scipy=False
+    )
+    sh2 = spherical_harmonics(
+        m_values, l_values, theta[:, None], phi[:, None], use_scipy=True
+    )
 
     assert_array_almost_equal(sh, sh2, 8)
     sh = spherical_harmonics(
