@@ -13,7 +13,7 @@ from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
-from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask, 
+from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_from_mask, seeds_directions_pairs)
 
 
@@ -28,16 +28,16 @@ def get_fast_tracking_performances(params, *, nbr_seeds=1000, nbr_threads=0):
 
 def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=None):
     """
-    Return streamlines generated on the DiSCo dataset 
-    using the fast tracking module with the input tracking params 
+    Return streamlines generated on the DiSCo dataset
+    using the fast tracking module with the input tracking params
     """
     # fetch the disco data
     fnames = get_fnames(name="disco1")
-    
+
     # prepare ODFs
     if sphere is None:
         sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
-    sh = nib.load(fnames[20]).get_fdata()    
+    sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
         sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
         )
@@ -49,7 +49,7 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
     affine = nib.load(fnames[25]).affine
     seed_mask = nib.load(fnames[34]).get_fdata()
     seed_mask = binary_erosion(seed_mask * mask, iterations=1)
-    seed_positions = seeds_from_mask(seed_mask, affine, density=1)[:nbr_seeds]    
+    seed_positions = seeds_from_mask(seed_mask, affine, density=1)[:nbr_seeds]
     peaks = peaks_from_positions(seed_positions, fODFs, sphere, npeaks=1, affine=affine)
     seeds, directions = seeds_directions_pairs(seed_positions, peaks, max_cross=1)
 
@@ -61,6 +61,7 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
                                       sc,
                                       params,
                                       pmf_gen,
+                                      affine=affine,
                                       nbr_threads=nbr_threads)
     return streamlines
 
@@ -70,7 +71,7 @@ def get_disco_performances(streamlines):
     Return the streamlines connectivity performance compared to the GT DiSCo connectom.
     """
     # fetch the disco data
-    fnames = get_fnames(name="disco1")    
+    fnames = get_fnames(name="disco1")
 
     # prepare the GT connectome data
     GT_connectome = np.loadtxt(fnames[35])
@@ -92,7 +93,7 @@ def test_tractogram_reproducibility():
                                            step_size=0.2,
                                            voxel_size=np.ones(3),
                                            max_angle=20,
-                                           random_seed=0)  
+                                           random_seed=0)
 
     params1 = generate_tracking_parameters("prob",
                                            max_len=500,
@@ -107,10 +108,10 @@ def test_tractogram_reproducibility():
                                            voxel_size=np.ones(3),
                                            max_angle=20,
                                            random_seed=2)
-    
+
     # Same random generator seed
     r1 = get_fast_tracking_performances(params1, nbr_seeds=100, nbr_threads=1)
-    r2 = get_fast_tracking_performances(params1, nbr_seeds=100, nbr_threads=1)                                
+    r2 = get_fast_tracking_performances(params1, nbr_seeds=100, nbr_threads=1)
     npt.assert_equal(r1, r2)
 
     # Random random generator seed
@@ -155,7 +156,7 @@ def test_tracking_max_angle():
                     if cos_sim < min_cos_sim:
                         min_cos_sim = cos_sim
         return min_cos_sim
-    
+
     for sph in [
         get_sphere(name="repulsion100"),
         HemiSphere.from_sphere(get_sphere(name="repulsion100")),
@@ -178,11 +179,11 @@ def test_tracking_step_size():
     """This tests that the distance between streamline
     points is equal to the input `step_size` parameter.
     """
-    
+
     def get_points_distance(streamlines):
         dists = []
         for sl in streamlines:
-            dists.extend(np.linalg.norm(sl[0:-1] - sl[1:], axis=1))            
+            dists.extend(np.linalg.norm(sl[0:-1] - sl[1:], axis=1))
         return dists
 
 
@@ -208,7 +209,7 @@ def test_return_all():
 
     fnames = get_fnames(name="disco1")
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
-    sh = nib.load(fnames[20]).get_fdata()    
+    sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
         sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
         )
@@ -220,10 +221,10 @@ def test_return_all():
     sc = BinaryStoppingCriterion(mask)
     affine = nib.load(fnames[25]).affine
     seed_mask = np.ones(mask.shape)
-    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=100, 
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=100,
                                    seed_count_per_voxel=False)
     directions = np.random.random(seeds.shape)
-    directions = np.array([v/np.linalg.norm(v) for v in directions])    
+    directions = np.array([v/np.linalg.norm(v) for v in directions])
 
     # test return_all=True
     params = generate_tracking_parameters("det",
@@ -238,7 +239,8 @@ def test_return_all():
                                      directions,
                                      sc,
                                      params,
-                                     pmf_gen)
+                                     pmf_gen,
+                                     affine=affine)
     streamlines = Streamlines(stream_gen)
     npt.assert_equal(len(streamlines), len(seeds))
 
@@ -255,7 +257,8 @@ def test_return_all():
                                      directions,
                                      sc,
                                      params,
-                                     pmf_gen)
+                                     pmf_gen,
+                                     affine=affine)
     streamlines = Streamlines(stream_gen)
     npt.assert_array_less(len(streamlines), len(seeds))
 
@@ -265,7 +268,7 @@ def test_max_min_length():
     """
     fnames = get_fnames(name="disco1")
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
-    sh = nib.load(fnames[20]).get_fdata()    
+    sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
         sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
         )
@@ -277,10 +280,10 @@ def test_max_min_length():
     sc = BinaryStoppingCriterion(mask)
     affine = nib.load(fnames[25]).affine
     seed_mask = np.ones(mask.shape)
-    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=1000, 
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=1000,
                                    seed_count_per_voxel=False)
     directions = np.random.random(seeds.shape)
-    directions = np.array([v/np.linalg.norm(v) for v in directions])    
+    directions = np.array([v/np.linalg.norm(v) for v in directions])
 
     min_len=10
     max_len=100
@@ -297,7 +300,8 @@ def test_max_min_length():
                                      directions,
                                      sc,
                                      params,
-                                     pmf_gen)
+                                     pmf_gen,
+                                     affine=affine)
     streamlines = Streamlines(stream_gen)
     errors = np.array([len(s) < min_len and len(s) > max_len for s in streamlines])
 
@@ -309,7 +313,7 @@ def test_buffer_frac():
     """
     fnames = get_fnames(name="disco1")
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
-    sh = nib.load(fnames[20]).get_fdata()    
+    sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
         sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
         )
@@ -321,10 +325,10 @@ def test_buffer_frac():
     sc = BinaryStoppingCriterion(mask)
     affine = nib.load(fnames[25]).affine
     seed_mask = np.ones(mask.shape)
-    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=500, 
+    seeds = random_seeds_from_mask(seed_mask, affine, seeds_count=500,
                                    seed_count_per_voxel=False)
     directions = np.random.random(seeds.shape)
-    directions = np.array([v/np.linalg.norm(v) for v in directions])    
+    directions = np.array([v/np.linalg.norm(v) for v in directions])
 
     params = generate_tracking_parameters("prob",
                                           max_len=500,
@@ -334,12 +338,13 @@ def test_buffer_frac():
                                           max_angle=20,
                                           random_seed=0,
                                           return_all=True)
-        
+
     streams = Streamlines(generate_tractogram(seeds,
                                               directions,
                                               sc,
                                               params,
                                               pmf_gen,
+                                              affine=affine,
                                               buffer_frac=1.0))
 
     # test the results are identical with various buffer fractions
@@ -349,5 +354,6 @@ def test_buffer_frac():
                                                        sc,
                                                        params,
                                                        pmf_gen,
+                                                       affine=affine,
                                                        buffer_frac=frac))
         npt.assert_equal(len(frac_streams), len(streams))

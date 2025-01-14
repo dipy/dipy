@@ -142,7 +142,7 @@ det_params = generate_tracking_parameters(
 )
 
 streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, det_params, pmf_gen, nbr_threads=1
+    seeds, initial_directions, sc, det_params, pmf_gen, nbr_threads=1, affine=affine
 )
 det_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(det_streams, labels_img, Space.RASMM)
@@ -182,7 +182,7 @@ prob_params = generate_tracking_parameters(
 
 # Prepare the streamline generator
 streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, prob_params, pmf_gen, nbr_threads=4
+    seeds, initial_directions, sc, prob_params, pmf_gen, nbr_threads=4, affine=affine
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
@@ -227,7 +227,7 @@ ptt_params = generate_tracking_parameters(
 
 # Prepare the streamline generator
 streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, ptt_params, pmf_gen, nbr_threads=0
+    seeds, initial_directions, sc, ptt_params, pmf_gen, nbr_threads=0, affine=affine
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)

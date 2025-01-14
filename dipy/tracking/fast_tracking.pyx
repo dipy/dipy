@@ -44,6 +44,7 @@ def generate_tractogram(double[:,::1] seed_positions,
                         StoppingCriterion sc,
                         TrackerParameters params,
                         PmfGen pmf_gen,
+                        affine,
                         int nbr_threads=0,
                         float buffer_frac=1.0):
     """Generate a tractogram from a set of seed points and directions.
@@ -86,6 +87,9 @@ def generate_tractogram(double[:,::1] seed_positions,
     if buffer_frac <=0 or buffer_frac > 1:
         raise ValueError("buffer_frac must > 0 and <= 1.")
 
+    lin_T = affine[:3, :3].T.copy()
+    offset = affine[:3, 3].copy()
+
     seed_start = 0
     seed_end = _plen
     while seed_start < _len:
@@ -106,7 +110,8 @@ def generate_tractogram(double[:,::1] seed_positions,
                 and (length_arr[i] >= params.min_len
                      and length_arr[i] <= params.max_len)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                yield s.copy().reshape((-1,3))
+                track = s.copy().reshape((-1,3))
+                yield np.dot(track, lin_T) + offset
             free(streamlines_arr[i])
 
         free(streamlines_arr)

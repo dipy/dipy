@@ -25,6 +25,7 @@ def generic_tracking(
     sc,
     params,
     *,
+    affine=None,
     sh=None,
     peaks=None,
     sf=None,
@@ -32,7 +33,11 @@ def generic_tracking(
     basis_type=None,
     legacy=True,
     nbr_threads=0,
+    seed_buffer_fraction=1.0,
 ):
+    if affine is None:
+        affine = np.eye(4)
+
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
         {"name": "peaks", "value": peaks, "cls": SimplePmfGen},
@@ -61,6 +66,9 @@ def generic_tracking(
         if sphere is None:
             raise ValueError("A sphere should be defined when using SF.")
 
+    if selected_pmf["name"] == "peaks":
+        raise NotImplementedError("Peaks are not yet implemented.")
+
     sphere = sphere or default_sphere
 
     kwargs = {}
@@ -88,7 +96,14 @@ def generic_tracking(
         seeds_directions = seeds_directions_pairs(seeds_positions, peaks, max_cross=1)
 
     return generate_tractogram(
-        seeds_positions, seeds_directions, sc, params, pmf_gen, nbr_threads
+        seeds_positions,
+        seeds_directions,
+        sc,
+        params,
+        pmf_gen,
+        affine=affine,
+        nbr_threads=nbr_threads,
+        buffer_frac=seed_buffer_fraction,
     )
 
 
@@ -112,6 +127,7 @@ def probabilistic_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
+    seed_buffer_fraction=1.0,
 ):
     """Probabilistic tracking algorithm.
 
@@ -159,6 +175,10 @@ def probabilistic_tracking(
         will all produce the same streamline trajectory for a given seed coordinate
         (will forces nbr_threads=1). A value of 0 may produces various streamline
         tracjectories for a given seed coordinate.
+    seed_buffer_fraction: float, optional
+        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
+        buffer. A value of 0.5 will use half of the seed buffer then the other half.
+        a way to reduce memory usage.
 
     Returns
     -------
@@ -185,6 +205,7 @@ def probabilistic_tracking(
         seeds_directions,
         sc,
         params,
+        affine=affine,
         sh=sh,
         peaks=peaks,
         sf=sf,
@@ -192,6 +213,7 @@ def probabilistic_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
+        seed_buffer_fraction=seed_buffer_fraction,
     )
 
 
@@ -215,6 +237,7 @@ def deterministic_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
+    seed_buffer_fraction=1.0,
 ):
     """Deterministic tracking algorithm.
 
@@ -262,6 +285,10 @@ def deterministic_tracking(
         will all produce the same streamline trajectory for a given seed coordinate
         (will forces nbr_threads=1). A value of 0 may produces various streamline
         tracjectories for a given seed coordinate.
+    seed_buffer_fraction: float, optional
+        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
+        buffer. A value of 0.5 will use half of the seed buffer then the other half.
+        a way to reduce memory usage.
 
     Returns
     -------
@@ -287,6 +314,7 @@ def deterministic_tracking(
         seeds_directions,
         sc,
         params,
+        affine=affine,
         sh=sh,
         peaks=peaks,
         sf=sf,
@@ -294,6 +322,7 @@ def deterministic_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
+        seed_buffer_fraction=seed_buffer_fraction,
     )
 
 
@@ -322,6 +351,7 @@ def ptt_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
+    seed_buffer_fraction=1.0,
 ):
     """Probabilistic Particle Tracing (PPT) tracking algorithm.
 
@@ -330,15 +360,19 @@ def ptt_tracking(
     seeds_positions : ndarray
         Seeds positions.
     sc : StoppingCriterion
-
+        Stopping criterion.
+    affine : ndarray
+        Affine matrix.
     seeds_directions : ndarray, optional
         Seeds directions.
-    pmf : ndarray, optional
-        Probability Mass Function (PMF).
+    sh : ndarray, optional
+        Spherical Harmonics (SH) data.
     peaks : ndarray, optional
         Peaks array
     sf : ndarray, optional
         Spherical Function (SF).
+    min_len : int, optional
+        Minimum length of the streamlines.
     max_len : int, optional
         Maximum length of the streamlines.
     step_size : float, optional
@@ -375,6 +409,10 @@ def ptt_tracking(
         will all produce the same streamline trajectory for a given seed coordinate
         (will forces nbr_threads=1). A value of 0 may produces various streamline
         tracjectories for a given seed coordinate.
+    seed_buffer_fraction: float, optional
+        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
+        buffer. A value of 0.5 will use half of the seed buffer then the other half.
+        a way to reduce memory usage.
 
     Returns
     -------
@@ -405,6 +443,7 @@ def ptt_tracking(
         seeds_directions,
         sc,
         params,
+        affine=affine,
         sh=sh,
         peaks=peaks,
         sf=sf,
@@ -412,4 +451,5 @@ def ptt_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
+        seed_buffer_fraction=seed_buffer_fraction,
     )
