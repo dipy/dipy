@@ -54,5 +54,5 @@ cpdef (double, double) random_point_within_circle(
 
 cpdef double random() noexcept nogil
 
-cpdef void seed(cnp.npy_uint32 s) nogil
+cpdef void seed(cnp.npy_uint32 s) noexcept nogil
 

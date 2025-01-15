@@ -161,7 +161,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     """
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
-        cnp.npy_intp i, j, k
+        cnp.npy_intp i
 
     if nbr_threads<= 0:
         nbr_threads = 0
