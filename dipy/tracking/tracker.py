@@ -19,6 +19,39 @@ from dipy.tracking.utils import seeds_directions_pairs
 #     return generate_tractogram_py(seed_positons, seed_directions, tracker_parameters)
 
 
+def voxel_size_from_affine(affine):
+    """Compute the voxel sizes of an image from the affine.
+
+    Checks that the affine does not have any shear because local_tracker
+    assumes that the data is sampled on a regular grid.
+
+    Parameters
+    ----------
+    affine : ndarray
+        Affine matrix.
+
+    Returns
+    -------
+    ndarray
+        Voxel sizes.
+
+    Notes
+    -----
+    We might want to move this function to another module in the future.
+    """
+    lin = affine[:3, :3]
+    dotlin = np.dot(lin.T, lin)
+    # Check that the affine is well behaved
+    if not np.allclose(np.triu(dotlin, 1), 0.0, atol=1e-5):
+        msg = (
+            "The affine provided seems to contain shearing, data must "
+            "be acquired or interpolated on a regular grid to be used "
+            "with `LocalTracking`."
+        )
+        raise ValueError(msg)
+    return np.sqrt(dotlin.diagonal())
+
+
 def generic_tracking(
     seeds_positions,
     seeds_directions,
@@ -185,7 +218,7 @@ def probabilistic_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or np.ones(3)
+    voxel_size = voxel_size or voxel_size_from_affine(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -295,7 +328,7 @@ def deterministic_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or np.ones(3)
+    voxel_size = voxel_size or voxel_size_from_affine(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -419,7 +452,7 @@ def ptt_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or np.ones(3)
+    voxel_size = voxel_size or voxel_size_from_affine(affine)
 
     if random_seed > 0:
         nbr_threads = 1
