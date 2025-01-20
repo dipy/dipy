@@ -3,9 +3,11 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-from dipy.tracking.tracker_deterministic cimport deterministic_tracker
-from dipy.tracking.tracker_probabilistic cimport probabilistic_tracker
-from dipy.tracking.tracker_ptt cimport parallel_transport_tracker
+from dipy.tracking.propagator cimport (
+    deterministic_tracker,
+    probabilistic_tracker,
+    parallel_transport_tracker,
+)
 from dipy.tracking.utils import min_radius_curvature_from_angle
 
 import numpy as np
