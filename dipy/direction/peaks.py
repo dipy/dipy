@@ -2,6 +2,7 @@ from itertools import repeat
 import multiprocessing as mp
 from os import path
 import tempfile
+import warnings
 
 import numpy as np
 import scipy.optimize as opt
@@ -680,6 +681,7 @@ def peaks_from_positions(
     sphere,
     affine,
     *,
+    pmf_gen=None,
     relative_peak_threshold=0.5,
     min_separation_angle=25,
     is_symmetric=True,
@@ -700,6 +702,9 @@ def peaks_from_positions(
         of the odfs.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for positions.
+    pmf_gen : PmfGen
+        Probability mass function generator from voxel orientation information. Replaces
+        ``odfs`` and ``sphere`` when used.
     relative_peak_threshold : float, optional
         Only peaks greater than ``min + relative_peak_threshold * scale`` are
         kept, where ``min = max(0, odf.min())`` and
@@ -719,6 +724,16 @@ def peaks_from_positions(
     peaks_arr : array (N, npeaks, 3)
     """
 
+    if pmf_gen is not None and (odfs is not None or sphere is not None):
+        msg = (
+            "``odfs`` and ``sphere`` arguments will be ignored in favor of ``pmf_gen``."
+        )
+        warnings.warn(msg, stacklevel=2)
+
+    if pmf_gen is not None:
+        # use the sphere data from the pmf_gen
+        sphere = pmf_gen.get_sphere()
+
     inv_affine = np.linalg.inv(affine)
     vox_positions = np.dot(positions, inv_affine[:3, :3].T.copy())
     vox_positions += inv_affine[:3, 3]
@@ -729,7 +744,10 @@ def peaks_from_positions(
         vox_positions = vox_positions.astype(float)
 
     for i, s in enumerate(vox_positions):
-        odf = trilinear_interpolate4d(odfs, s)
+        if pmf_gen:
+            odf = pmf_gen.get_pmf(s)
+        else:
+            odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(
             odf,
             sphere,
