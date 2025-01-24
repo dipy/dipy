@@ -68,6 +68,7 @@ dipy_fit_dti = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
@@ -90,11 +91,11 @@ dipy_pam2nifti = "dipy.workflows.cli:run"
 dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
-all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
+all = ["dipy[dev,doc,style,test, viz, ml, extra, benchmark]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.10.0", "matplotlib"]
-test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
+test = ["pytest", "coverage", "coveralls", "codecov"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
@@ -112,7 +113,8 @@ dev = [
 extra = ["dipy[viz, ml]",
          "cvxpy",
          "scikit-image",
-         "boto3"
+         "boto3",
+         "numexpr"
         ]
 
 doc = [
@@ -126,6 +128,11 @@ doc = [
     "tomli>=2.0.1",
     "grg-sphinx-theme>=0.4.0",
     "Jinja2"
+]
+benchmark = [
+    "asv",
+    "pyperf",
+    "virtualenv",
 ]
 
 

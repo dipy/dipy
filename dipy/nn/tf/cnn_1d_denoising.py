@@ -30,7 +30,7 @@ import numpy as np
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.initializers import Orthogonal
     from tensorflow.keras.layers import Activation, Conv1D, Input
@@ -187,7 +187,7 @@ class Cnn1DDenoiser:
             If int, represents the absolute number of train samples.
             If None, the value is automatically set to the complement of the
             test size.
-        random_state: int, RandomState instance or None, optional
+        random_state: int, np.random.Generator instance or None, optional
             Controls the shuffling applied to the data before applying
             the split. Pass an int for reproducible output across multiple
             function calls. See Glossary.

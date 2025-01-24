@@ -9,7 +9,7 @@ from dipy.utils.optpkg import optional_package
 def _load_backend():
     """Dynamically load the preferred backend based on the environment variable."""
     preferred_backend = os.getenv("DIPY_NN_BACKEND", "torch").lower()
-    tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+    tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
     torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
     __all__ = []
