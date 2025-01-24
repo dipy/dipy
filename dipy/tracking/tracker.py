@@ -1,9 +1,10 @@
 import numpy as np
 
 from dipy.data import default_sphere
+from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
 from dipy.tracking.fast_tracking import generate_tractogram
-from dipy.tracking.tracking_parameters import generate_tracking_parameters
+from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.utils import seeds_directions_pairs
 
 # def custom_tracking(seed_positons, seed_directions, *,
@@ -123,10 +124,12 @@ def generic_tracking(
                 "seeds_directions and seeds_positions should have the same shape."
             )
     else:
-        # TODO: Get peaks
-        # peaks = peaks_from_positions(seeds_positions, GT_ODF, sphere, npeaks=1,
-        # affine=affine)
-        seeds_directions = seeds_directions_pairs(seeds_positions, peaks, max_cross=1)
+        peaks = peaks_from_positions(
+            seeds_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
+        )
+        seeds_positions, seeds_directions = seeds_directions_pairs(
+            seeds_positions, peaks, max_cross=1
+        )
 
     return generate_tractogram(
         seeds_positions,
@@ -225,6 +228,7 @@ def probabilistic_tracking(
 
     params = generate_tracking_parameters(
         "prob",
+        min_len=min_len,
         max_len=max_len,
         step_size=step_size,
         voxel_size=voxel_size,
@@ -335,6 +339,7 @@ def deterministic_tracking(
 
     params = generate_tracking_parameters(
         "det",
+        min_len=min_len,
         max_len=max_len,
         step_size=step_size,
         voxel_size=voxel_size,
@@ -459,6 +464,7 @@ def ptt_tracking(
 
     params = generate_tracking_parameters(
         "ptt",
+        min_len=min_len,
         max_len=max_len,
         step_size=step_size,
         voxel_size=voxel_size,
