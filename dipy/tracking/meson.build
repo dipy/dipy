@@ -49,6 +49,7 @@ python_sources = ['__init__.py',
   'mesh.py',
   'metrics.py',
   'streamline.py',
+  'tracker.py',
   'utils.py',
   ]
 
