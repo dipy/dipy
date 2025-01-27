@@ -28,6 +28,7 @@ python_sources = [
   'test_propagation.py',
   'test_stopping_criterion.py',
   'test_streamline.py',
+  'test_tracker.py',
   'test_track_volumes.py',
   'test_tracking.py',
   'test_utils.py',

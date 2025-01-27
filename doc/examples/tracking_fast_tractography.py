@@ -223,7 +223,12 @@ plt.close()
 # Perform fast parallel transport tractography tractography using all threads (cpus)
 print("Running fast Parallel Transport Tractography...")
 streamline_generator = ptt_tracking(
-    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=0,
+    seeds,
+    sc,
+    affine,
+    sf=GT_ODF,
+    seeds_directions=initial_directions,
+    nbr_threads=0,
     probe_quality=4,
 )
 ptt_streams = Streamlines(streamline_generator)
