@@ -100,12 +100,6 @@ cdef class TrackerParameters:
         if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
             self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
 
-    # def set_tracker(self, tracker):
-    #     if callable(tracker):
-    #         self.py_tracker = tracker
-    #     else:
-    #         raise TypeError("Object is not callable")
-
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil:
         self.tracker = tracker
 
