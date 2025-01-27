@@ -127,6 +127,7 @@ def probabilistic_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
+    return_all=False,
 ):
     """Probabilistic tracking algorithm.
 
@@ -178,13 +179,16 @@ def probabilistic_tracking(
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
         a way to reduce memory usage.
+    return_all: bool, optional
+        True to return all the streamlines, False to return only the streamlines that
+        reached the stopping criterion.
 
     Returns
     -------
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_sizes(affine)
+    voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -198,6 +202,7 @@ def probabilistic_tracking(
         max_angle=max_angle,
         pmf_threshold=pmf_threshold,
         random_seed=random_seed,
+        return_all=return_all,
     )
 
     return generic_tracking(
@@ -238,6 +243,7 @@ def deterministic_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
+    return_all=False,
 ):
     """Deterministic tracking algorithm.
 
@@ -289,13 +295,16 @@ def deterministic_tracking(
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
         a way to reduce memory usage.
+    return_all: bool, optional
+        True to return all the streamlines, False to return only the streamlines that
+        reached the stopping criterion.
 
     Returns
     -------
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_sizes(affine)
+    voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -309,6 +318,7 @@ def deterministic_tracking(
         max_angle=max_angle,
         pmf_threshold=pmf_threshold,
         random_seed=random_seed,
+        return_all=return_all,
     )
     return generic_tracking(
         seeds_positions,
@@ -353,6 +363,7 @@ def ptt_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
+    return_all=False,
 ):
     """Probabilistic Particle Tracing (PPT) tracking algorithm.
 
@@ -414,13 +425,16 @@ def ptt_tracking(
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
         a way to reduce memory usage.
+    return_all: bool, optional
+        True to return all the streamlines, False to return only the streamlines that
+        reached the stopping criterion.
 
     Returns
     -------
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_sizes(affine)
+    voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -439,6 +453,7 @@ def ptt_tracking(
         probe_quality=probe_quality,
         probe_count=probe_count,
         data_support_exponent=data_support_exponent,
+        return_all=return_all,
     )
     return generic_tracking(
         seeds_positions,
