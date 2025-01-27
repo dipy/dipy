@@ -27,10 +27,13 @@ from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_trk
 from dipy.reconst.shm import sh_to_sf
-from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
-from dipy.tracking.tracker_parameters import generate_tracking_parameters
+from dipy.tracking.tracker import (
+    deterministic_tracking,
+    probabilistic_tracking,
+    ptt_tracking,
+)
 from dipy.tracking.utils import (
     connectivity_matrix,
     random_seeds_from_mask,
@@ -41,6 +44,7 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
+print("Downloading and preparing data...")
 ###############################################################################
 # Prepare the synthetic DiSCo data for fast tracking. The ground-truth
 # connectome will be use to evaluate tractography performances.
@@ -72,6 +76,7 @@ plt.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest
 plt.axis("off")
 plt.savefig("connectome_ground_truth.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -96,6 +101,7 @@ if has_fury:
     window.record(scene=scene, out_path="GT_odfs.png", size=(600, 600))
     if interactive:
         window.show(scene)
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -137,13 +143,12 @@ plt.close()
 
 ###############################################################################
 # Perform fast deterministic tractography using 1 thread (cpu)
-det_params = generate_tracking_parameters(
-    "det", max_len=500, step_size=0.2, voxel_size=voxel_size, max_angle=20
+
+print("Running fast Deterministic Tractography...")
+streamline_generator = deterministic_tracking(
+    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=1
 )
 
-streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, det_params, pmf_gen, nbr_threads=1, affine=affine
-)
 det_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(det_streams, labels_img, Space.RASMM)
 save_trk(sft, "tractogram_fast_deterministic.trk")
@@ -168,6 +173,7 @@ plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
 plt.savefig("connectome_deterministic.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -176,13 +182,10 @@ plt.close()
 
 ###############################################################################
 # Perform fast probabilistic tractography using 4 threads (cpus)
-prob_params = generate_tracking_parameters(
-    "prob", max_len=500, step_size=0.2, voxel_size=voxel_size, max_angle=20
-)
 
-# Prepare the streamline generator
-streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, prob_params, pmf_gen, nbr_threads=4, affine=affine
+print("Running fast Probabilistic Tractography...")
+streamline_generator = probabilistic_tracking(
+    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=4
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
@@ -208,6 +211,7 @@ plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
 plt.savefig("connectome_probabilistic.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -215,19 +219,12 @@ plt.close()
 # DiSCo Probabilistic tractogram and corresponding connectome.
 
 ###############################################################################
-# Perform fast parallel transport tractography tractography using all threads (cpus)
-ptt_params = generate_tracking_parameters(
-    "ptt",
-    max_len=500,
-    step_size=0.2,
-    voxel_size=voxel_size,
-    max_angle=15,
-    probe_quality=4,
-)
 
-# Prepare the streamline generator
-streamline_generator = generate_tractogram(
-    seeds, initial_directions, sc, ptt_params, pmf_gen, nbr_threads=0, affine=affine
+# Perform fast parallel transport tractography tractography using all threads (cpus)
+print("Running fast Parallel Transport Tractography...")
+streamline_generator = ptt_tracking(
+    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=0,
+    probe_quality=4,
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
@@ -250,6 +247,7 @@ plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
 plt.savefig("connectome_ptt.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold

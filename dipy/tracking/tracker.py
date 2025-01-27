@@ -1,56 +1,12 @@
+from nibabel.affines import voxel_sizes
 import numpy as np
 
-from dipy.data import default_sphere
+from dipy.data import SPHERE_FILES, default_sphere, get_sphere
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
 from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.utils import seeds_directions_pairs
-
-# def custom_tracking(seed_positons, seed_directions, *,
-#                    tracker_parameters=None, tractogram_func=None,
-#                    postprocess_streamline=None, buffer_perc=1.0):
-#     tractogram_func = tractogram_func or generate_tractogram
-#     if tractogram_func and 'cython' in type(tractogram_func):
-#         for streamlines in tractogram_func(seed_positons, seed_directions,
-#                                            tracker_parameters,
-#                                            buffer_prec=buffer_perc):
-#             yield streamlines
-
-#     return generate_tractogram_py(seed_positons, seed_directions, tracker_parameters)
-
-
-def voxel_size_from_affine(affine):
-    """Compute the voxel sizes of an image from the affine.
-
-    Checks that the affine does not have any shear because local_tracker
-    assumes that the data is sampled on a regular grid.
-
-    Parameters
-    ----------
-    affine : ndarray
-        Affine matrix.
-
-    Returns
-    -------
-    ndarray
-        Voxel sizes.
-
-    Notes
-    -----
-    We might want to move this function to another module in the future.
-    """
-    lin = affine[:3, :3]
-    dotlin = np.dot(lin.T, lin)
-    # Check that the affine is well behaved
-    if not np.allclose(np.triu(dotlin, 1), 0.0, atol=1e-5):
-        msg = (
-            "The affine provided seems to contain shearing, data must "
-            "be acquired or interpolated on a regular grid to be used "
-            "with `LocalTracking`."
-        )
-        raise ValueError(msg)
-    return np.sqrt(dotlin.diagonal())
 
 
 def generic_tracking(
@@ -98,7 +54,14 @@ def generic_tracking(
 
     if selected_pmf["name"] == "sf":
         if sphere is None:
-            raise ValueError("A sphere should be defined when using SF.")
+            nb_vertices = sf.shape[-1]
+            all_spheres = list(SPHERE_FILES.keys())
+            all_spheres.remove("symmetric724")
+            found = [sph for sph in all_spheres if str(nb_vertices) in sph]
+            if len(found) == 1:
+                sphere = get_sphere(name=found[0])
+            else:
+                raise ValueError("A sphere should be defined when using SF.")
 
     if selected_pmf["name"] == "peaks":
         raise NotImplementedError("Peaks are not yet implemented.")
@@ -221,7 +184,7 @@ def probabilistic_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_size_from_affine(affine)
+    voxel_size = voxel_size or voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -332,7 +295,7 @@ def deterministic_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_size_from_affine(affine)
+    voxel_size = voxel_size or voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1
@@ -457,7 +420,7 @@ def ptt_tracking(
     Tractogram
 
     """
-    voxel_size = voxel_size or voxel_size_from_affine(affine)
+    voxel_size = voxel_size or voxel_sizes(affine)
 
     if random_seed > 0:
         nbr_threads = 1

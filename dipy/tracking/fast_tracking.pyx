@@ -61,6 +61,8 @@ def generate_tractogram(double[:,::1] seed_positions,
         Parameters for the streamline generation.
     pmf_gen : PmfGen
         Probability mass function generator.
+    affine : ndarray
+        Affine transformation for the streamlines.
     nbr_threads : int, optional
         Number of threads to use for streamline generation.
     buffer_frac : float, optional
