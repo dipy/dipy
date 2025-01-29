@@ -50,16 +50,27 @@ cdef void cross(
         double * v2) noexcept nogil
 
 cdef void random_vector(
-        double * out) noexcept nogil
+        double * out,
+        RNGState* rng=*) noexcept nogil
 
 cdef void random_perpendicular_vector(
         double * out,
-        double * v) noexcept nogil
+        double * v,
+        RNGState* rng=*) noexcept nogil
 
-cpdef (double, double) random_point_within_circle(
-        double r) noexcept nogil
+cdef (double, double) random_point_within_circle(
+        double r, RNGState* rng=*) noexcept nogil
 
 cpdef double random() noexcept nogil
 
 cpdef void seed(cnp.npy_uint32 s) noexcept nogil
 
+cdef struct RNGState:
+    cnp.npy_uint64 state
+    cnp.npy_uint64 inc
+
+cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil
+
+cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil
+
+cdef double random_float(RNGState* rng_state) noexcept nogil

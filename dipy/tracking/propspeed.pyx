@@ -15,9 +15,10 @@ from dipy.utils.fast_numpy cimport (
     copy_point,
     cross,
     normalize,
-    random,
+    random_float,
     random_perpendicular_vector,
     random_point_within_circle,
+    RNGState,
 )
 
 from libc.math cimport pow
@@ -405,7 +406,8 @@ cdef int initialize_ptt(TrackerParameters params,
                         double* stream_data,
                         PmfGen pmf_gen,
                         double* seed_point,
-                        double* seed_direction) noexcept nogil:
+                        double* seed_direction,
+                        RNGState* rng) noexcept nogil:
         """Sample an initial curve by rejection sampling.
 
         Parameters
@@ -420,6 +422,8 @@ cdef int initialize_ptt(TrackerParameters params,
             Initial point
         seed_direction : double[3]
             Initial direction
+        rng : RNGState*
+            Random number generator state. (Threadsafe)
 
         Returns
         -------
@@ -437,7 +441,7 @@ cdef int initialize_ptt(TrackerParameters params,
         stream_data[21] = seed_point[2]
 
         for tries in range(params.ptt.rejection_sampling_nbr_sample):
-            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction)
+            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
             data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
             if data_support > max_posterior:
                 max_posterior = data_support
@@ -448,8 +452,8 @@ cdef int initialize_ptt(TrackerParameters params,
         # Initialization is successful if a suitable candidate can be sampled
         # within the trial limit
         for tries in range(params.ptt.rejection_sampling_max_try):
-            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction)
-            if (random() * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
+            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
+            if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
                 stream_data[22] = stream_data[23] # last_val = last_val_cand
                 return 0
         return 1
@@ -458,7 +462,8 @@ cdef int initialize_ptt(TrackerParameters params,
 cdef void initialize_ptt_candidate(TrackerParameters params,
                                    double* stream_data,
                                    PmfGen pmf_gen,
-                                   double* init_dir) noexcept nogil:
+                                   double* init_dir,
+                                   RNGState* rng) noexcept nogil:
     """
     Initialize the parallel transport frame.
 
@@ -480,6 +485,8 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
         Orientation data.
     init_dir : double[3]
         Initial tracking direction (tangent)
+    rng : RNGState*
+        Random number generator state. (Threadsafe)
 
     Returns
     -------
@@ -495,12 +502,13 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
     stream_data[2] = init_dir[1]
     stream_data[3] = init_dir[2]
     random_perpendicular_vector(&stream_data[7],
-                                &stream_data[1])  # frame2, frame0
+                                &stream_data[1],
+                                rng)  # frame2, frame0
     cross(&stream_data[4],
           &stream_data[7],
           &stream_data[1])  # frame1, frame2, frame0
     stream_data[24], stream_data[25] = \
-        random_point_within_circle(params.max_curvature)
+        random_point_within_circle(params.max_curvature, rng)
 
     stream_data[22] = 0  # last_val
 

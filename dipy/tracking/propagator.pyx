@@ -10,9 +10,9 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.pmf cimport PmfGen
-from dipy.utils.fast_numpy cimport (copy_point, cross, cumsum, norm, normalize, random,
-                                    random_perpendicular_vector,
-                                    random_point_within_circle, where_to_insert)
+from dipy.utils.fast_numpy cimport (copy_point, cross, cumsum, norm, normalize,
+                                    random_point_within_circle, where_to_insert,
+                                    RNGState, random_float)
 from dipy.tracking.propspeed cimport (
     calculate_ptt_data_support,
     initialize_ptt,
@@ -30,7 +30,8 @@ cdef TrackerStatus deterministic_tracker(double* point,
                                          double* direction,
                                          TrackerParameters params,
                                          double* stream_data,
-                                         PmfGen pmf_gen) noexcept nogil:
+                                         PmfGen pmf_gen,
+                                         RNGState* rng) noexcept nogil:
     """
     Propagate the position by step_size amount.
 
@@ -49,6 +50,8 @@ cdef TrackerStatus deterministic_tracker(double* point,
         Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
 
     Returns
     -------
@@ -104,7 +107,8 @@ cdef TrackerStatus probabilistic_tracker(double* point,
                                          double* direction,
                                          TrackerParameters params,
                                          double* stream_data,
-                                         PmfGen pmf_gen) noexcept nogil:
+                                         PmfGen pmf_gen,
+                                         RNGState* rng) noexcept nogil:
     """
     Propagates the position by step_size amount. The propagation use randomly samples
     direction of a sphere based on probability mass function (pmf).
@@ -121,6 +125,8 @@ cdef TrackerStatus probabilistic_tracker(double* point,
         Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
 
     Returns
     -------
@@ -135,6 +141,7 @@ cdef TrackerStatus probabilistic_tracker(double* point,
         double* pmf
         double last_cdf, cos_sim
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+
 
     if norm(direction) == 0:
         return FAIL
@@ -158,7 +165,7 @@ cdef TrackerStatus probabilistic_tracker(double* point,
         free(pmf)
         return FAIL
 
-    idx = where_to_insert(pmf, random() * last_cdf, len_pmf)
+    idx = where_to_insert(pmf, random_float(rng) * last_cdf, len_pmf)
     newdir = &pmf_gen.vertices[idx][0]
     # Update direction
     if (direction[0] * newdir[0]
@@ -178,7 +185,8 @@ cdef TrackerStatus parallel_transport_tracker(double* point,
                                               double* direction,
                                               TrackerParameters params,
                                               double* stream_data,
-                                              PmfGen pmf_gen) noexcept nogil:
+                                              PmfGen pmf_gen,
+                                              RNGState* rng) noexcept nogil:
     """
     Propagates the position by step_size amount. The propagation is using
     the parameters of the last candidate curve. Then, randomly generate
@@ -209,6 +217,8 @@ cdef TrackerStatus parallel_transport_tracker(double* point,
         Streamline data persitant across tracking steps.
     pmf_gen : PmfGen
         Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
 
     Returns
     -------
@@ -224,7 +234,7 @@ cdef TrackerStatus parallel_transport_tracker(double* point,
     cdef int i
 
     if stream_data[0] == 0:
-        initialize_ptt(params, stream_data, pmf_gen, point, direction)
+        initialize_ptt(params, stream_data, pmf_gen, point, direction, rng)
         stream_data[0] = 1  # initialized
 
     prepare_ptt_propagator(params, stream_data, params.step_size)
@@ -269,7 +279,7 @@ cdef TrackerStatus parallel_transport_tracker(double* point,
         # k1, k2
         stream_data[24], stream_data[25] = \
             random_point_within_circle(params.max_curvature)
-        if random() * max_posterior < calculate_ptt_data_support(params, stream_data, pmf_gen):
+        if random_float(rng) * max_posterior < calculate_ptt_data_support(params, stream_data, pmf_gen):
             stream_data[22] = stream_data[23] # last_val = last_val_cand
             # Propagation is successful if a suitable candidate can be sampled
             # within the trial limit

@@ -135,7 +135,7 @@ cdef void cross(double * out, double * v1, double * v2) noexcept nogil:
     out[2] = v1[0] * v2[1] - v1[1] * v2[0]
 
 
-cdef void random_vector(double * out) noexcept nogil:
+cdef void random_vector(double * out, RNGState* rng=NULL) noexcept nogil:
     """Generate a unit random vector
 
     Parameters
@@ -147,13 +147,18 @@ cdef void random_vector(double * out) noexcept nogil:
     -----
     Overwrites the input
     """
-    out[0] = 2.0 * random() - 1.0
-    out[1] = 2.0 * random() - 1.0
-    out[2] = 2.0 * random() - 1.0
+    if rng == NULL:
+        out[0] = 2.0 * random() - 1.0
+        out[1] = 2.0 * random() - 1.0
+        out[2] = 2.0 * random() - 1.0
+    else:
+        out[0] = 2.0 * random_float(rng) - 1.0
+        out[1] = 2.0 * random_float(rng) - 1.0
+        out[2] = 2.0 * random_float(rng) - 1.0
     normalize(out)
 
 
-cdef void random_perpendicular_vector(double * out, double * v) noexcept nogil:
+cdef void random_perpendicular_vector(double * out, double * v, RNGState* rng=NULL) noexcept nogil:
     """Generate a random perpendicular vector
 
     Parameters
@@ -170,12 +175,12 @@ cdef void random_perpendicular_vector(double * out, double * v) noexcept nogil:
     """
     cdef double[3] tmp
 
-    random_vector(tmp)
+    random_vector(tmp, rng)
     cross(out, v, tmp)
     normalize(out)
 
 
-cpdef (double, double) random_point_within_circle(double r) noexcept nogil:
+cdef (double, double) random_point_within_circle(double r, RNGState* rng=NULL) noexcept nogil:
     """Generate a random point within a circle
 
     Parameters
@@ -195,9 +200,14 @@ cpdef (double, double) random_point_within_circle(double r) noexcept nogil:
     cdef double x = 1.0
     cdef double y = 1.0
 
-    while (x * x + y * y) > 1:
-        x = 2.0 * random() - 1.0
-        y = 2.0 * random() - 1.0
+    if rng == NULL:
+        while (x * x + y * y) > 1:
+            x = 2.0 * random() - 1.0
+            y = 2.0 * random() - 1.0
+    else:
+        while (x * x + y * y) > 1:
+            x = 2.0 * random_float(rng) - 1.0
+            y = 2.0 * random_float(rng) - 1.0
     return (r * x, r * y)
 
 
@@ -228,3 +238,60 @@ cdef void print_c_array_pointer(double* arr, int size) noexcept nogil:
     for i in range(size):
         printf("%f, ", arr[i])
     printf("\n\n\n")
+
+
+cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil:
+    """
+    Seed the RNG state (thread-safe).
+
+    Parameters
+    ----------
+    rng_state : RNGState*
+        The RNG state.
+    seed : int
+        The seed value.
+
+    """
+    rng_state.state = 0
+    rng_state.inc = (seed << 1) | 1
+    next_rng(rng_state)  # Advance the state
+    rng_state.state += seed
+    next_rng(rng_state)
+
+
+cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil:
+    """
+    Generate the next random number (thread-safe, PCG algorithm).
+
+    Parameters
+    ----------
+    rng_state : RNGState*
+        The RNG state.
+
+    Returns
+    -------
+    _ : int
+        The next random number.
+    """
+    cdef cnp.npy_uint64 oldstate = rng_state.state
+    rng_state.state = oldstate * 6364136223846793005ULL + rng_state.inc
+    cdef cnp.npy_uint32 xorshifted = ((oldstate >> 18) ^ oldstate) >> 27
+    cdef cnp.npy_uint32 rot = oldstate >> 59
+    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
+
+
+cdef double random_float(RNGState* rng_state) noexcept nogil:
+    """
+    Generate a random float in [0, 1) (thread-safe).
+
+    Parameters
+    ----------
+    rng_state : RNGState*
+        The RNG state.
+
+    Returns
+    -------
+    _ : float
+        The random float.
+    """
+    return next_rng(rng_state) / <double>0xffffffff

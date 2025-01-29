@@ -2,6 +2,7 @@ cimport numpy as cnp
 
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.tracker_parameters cimport TrackerParameters
+from dipy.utils.fast_numpy cimport RNGState
 
 cdef cnp.npy_intp _propagation_direction(double *point, double* prev, double* qa,
                                 double *ind, double *odf_vertices,
@@ -14,7 +15,8 @@ cdef int initialize_ptt(TrackerParameters params,
                         double* stream_data,
                         PmfGen pmf_gen,
                         double* seed_point,
-                        double* seed_direction) noexcept nogil
+                        double* seed_direction,
+                        RNGState* rng) noexcept nogil
 
 
 cdef void prepare_ptt_propagator(TrackerParameters params,

@@ -5,6 +5,7 @@
 
 from libc.stdio cimport printf
 
+cimport ctime
 cimport cython
 from cython.parallel import prange
 import numpy as np
@@ -30,13 +31,9 @@ from dipy.tracking.tracker_parameters cimport (TrackerParameters,
 from nibabel.streamlines import ArraySequence as Streamlines
 
 from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
+from libc.string cimport memcpy, memset
 from libc.math cimport ceil
 from libc.stdio cimport printf
-
-
-cdef extern from "stdlib.h" nogil:
-    void *memset(void *ptr, int value, size_t num)
 
 
 def generate_tractogram(double[:,::1] seed_positions,
@@ -81,10 +78,6 @@ def generate_tractogram(double[:,::1] seed_positions,
         double** streamlines_arr
         int* length_arr
         StreamlineStatus* status_arr
-
-    # srand/rand don't play well with multi-threading
-    if params.random_seed > 0 and not nbr_threads == 1:
-        raise ValueError("random_seed > 0 do not work with nbr_threads != 1.")
 
     if buffer_frac <=0 or buffer_frac > 1:
         raise ValueError("buffer_frac must > 0 and <= 1.")
@@ -223,14 +216,17 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         double voxdir_norm
         double* stream_data
         StreamlineStatus status_forward, status_backward
-
+        fast_numpy.RNGState rng
 
     # set the random generator
     if params.random_seed > 0:
         s_random_seed = int(
             (seed[0] * 2 + seed[1] * 3 + seed[2] * 5) * params.random_seed
             )
-        fast_numpy.seed(s_random_seed)
+    else:
+        s_random_seed = <cnp.npy_uint32>ctime.time_ns()
+
+    fast_numpy.seed_rng(&rng, s_random_seed)
 
     # set the initial position
     fast_numpy.copy_point(seed, point)
@@ -248,14 +244,14 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
     for i in range(1, params.max_len):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen) == FAIL:
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
         fast_numpy.copy_point(point, &stream[(params.max_len + i )* 3])
 
-        status_forward = sc.check_point_c(point)
+        status_forward = sc.check_point_c(point, &rng)
         if (status_forward == ENDPOINT or
             status_forward == INVALIDPOINT or
             status_forward == OUTSIDEIMAGE):
@@ -281,14 +277,14 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     status_backward = TRACKPOINT
     for i in range(1, params.max_len):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen) == FAIL:
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
         fast_numpy.copy_point(point, &stream[(params.max_len - i )* 3])
 
-        status_backward = sc.check_point_c(point)
+        status_backward = sc.check_point_c(point, &rng)
         if (status_backward == ENDPOINT or
             status_backward == INVALIDPOINT or
             status_backward == OUTSIDEIMAGE):

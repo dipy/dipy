@@ -4,9 +4,17 @@ cimport numpy as cnp
 import numpy as np
 from numpy.testing import (assert_, assert_almost_equal, assert_raises,
                             assert_array_equal)
-from dipy.utils.fast_numpy import random, seed, random_point_within_circle
-from dipy.utils.fast_numpy cimport (norm, normalize, dot, cross, random_vector,
-                                    random_perpendicular_vector, take)
+from dipy.utils.fast_numpy import random, seed
+from dipy.utils.fast_numpy cimport (
+    cross,
+    dot,
+    norm,
+    normalize,
+    random_vector,
+    random_perpendicular_vector, take,
+    random_point_within_circle,
+    take,
+)
 
 
 def test_norm():
@@ -100,7 +108,6 @@ def test_random_perpendicular_vector():
         assert_(np.all(test >= np.double(-1)))
         assert_(np.all(test <= np.double(1)))
         assert_almost_equal(np.dot(vec, test), 0)
-
 
 
 def test_random():

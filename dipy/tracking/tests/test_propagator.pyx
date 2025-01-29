@@ -13,6 +13,7 @@ from dipy.reconst.shm import (
 from dipy.tracking.propagator cimport deterministic_tracker, probabilistic_tracker, parallel_transport_tracker
 from dipy.tracking.tracker_parameters import generate_tracking_parameters, FAIL
 from dipy.tracking.tests.test_fast_tracking import get_fast_tracking_performances
+from dipy.utils.fast_numpy cimport RNGState, seed_rng
 
 
 def test_tracker_deterministic():
@@ -20,7 +21,9 @@ def test_tracker_deterministic():
     cdef double[:] stream_data = np.zeros(3, dtype=float)
     cdef double[:] point
     cdef double[:] direction
+    cdef RNGState rng
 
+    seed_rng(&rng, 12345)
     class SillyModel(SphHarmModel):
         sh_order_max = 4
 
@@ -58,7 +61,8 @@ def test_tracker_deterministic():
                                        &direction[0],
                                        params,
                                        &stream_data[0],
-                                       sh_pmf_gen)
+                                       sh_pmf_gen,
+                                       &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
@@ -66,7 +70,8 @@ def test_tracker_deterministic():
                                        &direction[0],
                                        params,
                                        &stream_data[0],
-                                       sf_pmf_gen)
+                                       sf_pmf_gen,
+                                       &rng)
         npt.assert_equal(status, FAIL)
 
 
@@ -87,6 +92,9 @@ def test_tracker_probabilistic():
     cdef double[:] stream_data = np.zeros(3, dtype=float)
     cdef double[:] point
     cdef double[:] direction
+    cdef RNGState rng
+
+    seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
         sh_order_max = 4
@@ -125,7 +133,8 @@ def test_tracker_probabilistic():
                                        &direction[0],
                                        params,
                                        &stream_data[0],
-                                       sh_pmf_gen)
+                                       sh_pmf_gen,
+                                       &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
@@ -133,7 +142,8 @@ def test_tracker_probabilistic():
                                        &direction[0],
                                        params,
                                        &stream_data[0],
-                                       sf_pmf_gen)
+                                       sf_pmf_gen,
+                                       &rng)
         npt.assert_equal(status, FAIL)
 
 
@@ -154,6 +164,9 @@ def test_tracker_ptt():
     cdef double[:] stream_data = np.zeros(100, dtype=float)
     cdef double[:] point
     cdef double[:] direction
+    cdef RNGState rng
+
+    seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
         sh_order_max = 4
@@ -193,7 +206,8 @@ def test_tracker_ptt():
                                             &direction[0],
                                             params,
                                             &stream_data[0],
-                                            sh_pmf_gen)
+                                            sh_pmf_gen,
+                                            &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
@@ -201,7 +215,8 @@ def test_tracker_ptt():
                                             &direction[0],
                                             params,
                                             &stream_data[0],
-                                            sf_pmf_gen)
+                                            sf_pmf_gen,
+                                            &rng)
         npt.assert_equal(status, FAIL)
 
 
