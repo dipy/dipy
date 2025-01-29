@@ -1,20 +1,29 @@
 cython_sources = [
   'direction_getter',
   'distances',
+  'fast_tracking',
   'fbcmeasures',
   'localtrack',
+  'propagator',
   'propspeed',
   'stopping_criterion',
   'streamlinespeed',
+  'tracker_parameters',
   'vox2track',
   ]
 
 cython_headers = [
   'direction_getter.pxd',
+  'fast_tracking.pxd',
   'fbcmeasures.pxd',
+  'propagator.pxd',
   'propspeed.pxd',
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
+  'tracker_deterministic.pxd',
+  'tracker_probabilistic.pxd',
+  'tracker_ptt.pxd',
+  'tracker_parameters.pxd'
 ]
 
 foreach ext: cython_sources
@@ -40,6 +49,7 @@ python_sources = ['__init__.py',
   'mesh.py',
   'metrics.py',
   'streamline.py',
+  'tracker.py',
   'utils.py',
   ]
 
