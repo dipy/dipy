@@ -35,6 +35,7 @@ def track(method, **kwargs):
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
     use_sf = kwargs.get("use_sf", False)
+    use_directions = kwargs.get("use_dirs", False)
 
     # test return_all=True
     params = {
@@ -47,11 +48,15 @@ def track(method, **kwargs):
         "return_all": True,
         "sf": fODFs if use_sf else None,
         "sh": sh if not use_sf else None,
+        "seeds_directions": directions if use_directions else None,
     }
-    stream_gen = method(seeds, sc, affine, seeds_directions=directions, **params)
+    stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
-    npt.assert_equal(len(streamlines), len(seeds))
+    if use_directions:
+        npt.assert_equal(len(streamlines), len(seeds))
+    else:
+        npt.assert_array_less(len(streamlines), len(seeds))
 
     # test return_all=False
     params = {
@@ -64,9 +69,10 @@ def track(method, **kwargs):
         "return_all": False,
         "sf": fODFs if use_sf else None,
         "sh": sh if not use_sf else None,
+        "seeds_directions": directions if use_directions else None,
     }
 
-    stream_gen = method(seeds, sc, affine, seeds_directions=directions, **params)
+    stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
     npt.assert_array_less(len(streamlines), len(seeds))
@@ -79,8 +85,8 @@ def test_deterministic_tracking():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.deterministic_tracking)
-        track(tracker.deterministic_tracking, use_sf=True)
+        track(tracker.deterministic_tracking, use_dirs=True)
+        track(tracker.deterministic_tracking, use_sf=True, use_dirs=True)
 
 
 def test_probabilistic_tracking():
@@ -90,8 +96,8 @@ def test_probabilistic_tracking():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.probabilistic_tracking)
-        track(tracker.probabilistic_tracking, use_sf=True)
+        track(tracker.probabilistic_tracking, use_dirs=True)
+        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True)
 
 
 def test_ptt_tracking():
@@ -102,4 +108,45 @@ def test_ptt_tracking():
             category=PendingDeprecationWarning,
         )
         track(tracker.ptt_tracking)
-        track(tracker.ptt_tracking, use_sf=True)
+        track(tracker.ptt_tracking, use_sf=True, use_dirs=True)
+
+
+def test_tracking_error():
+    sh = np.array([(64, 61, 57)])
+    seeds = [np.array([0.0, 0.0, 0.0], "float"), np.array([1.0, 2.0, 3.0], "float")]
+    mask = np.ones((10, 10, 10))
+    sc = BinaryStoppingCriterion(mask)
+
+    npt.assert_raises(
+        ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4), sf=sh, sh=sh
+    )
+    npt.assert_raises(ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4))
+    npt.assert_raises(
+        NotImplementedError,
+        tracker.deterministic_tracking,
+        seeds,
+        sc,
+        np.eye(4),
+        peaks=sh,
+    )
+    npt.assert_raises(
+        ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4), sf=sh
+    )
+    npt.assert_raises(
+        ValueError,
+        tracker.deterministic_tracking,
+        seeds,
+        sc,
+        np.eye(4),
+        sh=sh,
+        seeds_directions=1,
+    )
+    npt.assert_raises(
+        ValueError,
+        tracker.deterministic_tracking,
+        seeds,
+        sc,
+        np.eye(4),
+        sh=sh,
+        seeds_directions=[1],
+    )

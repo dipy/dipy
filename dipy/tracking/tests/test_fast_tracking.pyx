@@ -124,22 +124,6 @@ def test_tractogram_reproducibility():
     r2 = get_fast_tracking_performances(params2, nbr_seeds=100, nbr_threads=1)
     npt.assert_(not r1 == r2, msg="Tractograms are identical (different seeds).")
 
-    # ValeError raise when using more then 1 thread
-    npt.assert_raises(
-        ValueError,
-        get_fast_tracking_performances,
-        params1,
-        nbr_seeds=100,
-        nbr_threads=2,
-        )
-    npt.assert_raises(
-        ValueError,
-        get_fast_tracking_performances,
-        params1,
-        nbr_seeds=100,
-        nbr_threads=0,
-        )
-
 
 def test_tracking_max_angle():
     """This tests that the angle between streamline points is always smaller
@@ -210,9 +194,7 @@ def test_return_all():
     fnames = get_fnames(name="disco1")
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
-    fODFs = sh_to_sf(
-        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
-        )
+    fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False)
     fODFs[fODFs<0] = 0
     pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
 

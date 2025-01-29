@@ -25,8 +25,7 @@ def generic_tracking(
     nbr_threads=0,
     seed_buffer_fraction=1.0,
 ):
-    if affine is None:
-        affine = np.eye(4)
+    affine = affine if affine is not None else np.eye(4)
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
@@ -41,7 +40,7 @@ def generic_tracking(
         selected_pmf = ", ".join([p["name"] for p in initialized_pmf])
         raise ValueError(
             "Only one pmf type should be initialized. "
-            f"Variables initialized: {', '.join(initialized_pmf)}"
+            f"Variables initialized: {', '.join(selected_pmf)}"
         )
     if len(initialized_pmf) == 0:
         available_pmf = ", ".join([d["name"] for d in pmf_type])
@@ -172,9 +171,9 @@ def probabilistic_tracking(
         will be used.
     random_seed: int, optional
         Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate
-        (will forces nbr_threads=1). A value of 0 may produces various streamline
-        tracjectories for a given seed coordinate.
+        will all produce the same streamline trajectory for a given seed coordinate.
+        A value of 0 may produces various streamline tracjectories for a given seed
+        coordinate.
     seed_buffer_fraction: float, optional
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
@@ -189,9 +188,6 @@ def probabilistic_tracking(
 
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
-
-    if random_seed > 0:
-        nbr_threads = 1
 
     params = generate_tracking_parameters(
         "prob",
@@ -288,9 +284,9 @@ def deterministic_tracking(
         will be used.
     random_seed: int, optional
         Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate
-        (will forces nbr_threads=1). A value of 0 may produces various streamline
-        tracjectories for a given seed coordinate.
+        will all produce the same streamline trajectory for a given seed coordinate.
+        A value of 0 may produces various streamline tracjectories for a given seed
+        coordinate.
     seed_buffer_fraction: float, optional
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
@@ -305,9 +301,6 @@ def deterministic_tracking(
 
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
-
-    if random_seed > 0:
-        nbr_threads = 1
 
     params = generate_tracking_parameters(
         "det",
@@ -418,9 +411,9 @@ def ptt_tracking(
         will be used.
     random_seed: int, optional
         Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate
-        (will forces nbr_threads=1). A value of 0 may produces various streamline
-        tracjectories for a given seed coordinate.
+        will all produce the same streamline trajectory for a given seed coordinate.
+        A value of 0 may produces various streamline tracjectories for a given seed
+        coordinate.
     seed_buffer_fraction: float, optional
         Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
         buffer. A value of 0.5 will use half of the seed buffer then the other half.
@@ -435,9 +428,6 @@ def ptt_tracking(
 
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
-
-    if random_seed > 0:
-        nbr_threads = 1
 
     params = generate_tracking_parameters(
         "ptt",

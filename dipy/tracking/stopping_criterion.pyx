@@ -6,7 +6,7 @@
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
-from dipy.utils.fast_numpy cimport random
+from dipy.utils.fast_numpy cimport random, RNGState, random_float
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
@@ -18,7 +18,7 @@ cdef class StoppingCriterion:
 
         return self.check_point_c(&point[0])
 
-    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
          pass
 
 
@@ -32,7 +32,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
         self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
-    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             unsigned char result
             int err
@@ -62,7 +62,7 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
-    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double result
             int err
@@ -178,7 +178,7 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
-    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -237,7 +237,7 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         self.average_voxel_size = average_voxel_size
         self.correction_factor = step_size / average_voxel_size
 
-    cdef StreamlineStatus check_point_c(self, double* point) noexcept nogil:
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -274,13 +274,22 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
-        if random() < p:
-            return TRACKPOINT
+        if rng != NULL:
+            if random_float(rng) < p:
+                return TRACKPOINT
 
-        # test if the tracking stopped in the include tissue map
-        p = (include_result / (include_result + exclude_result))
-        if random() < p:
-            return ENDPOINT
+            # test if the tracking stopped in the include tissue map
+            p = (include_result / (include_result + exclude_result))
+            if random_float(rng) < p:
+                return ENDPOINT
+        else:
+            if random() < p:
+                return TRACKPOINT
+
+            # test if the tracking stopped in the include tissue map
+            p = (include_result / (include_result + exclude_result))
+            if random() < p:
+                return ENDPOINT
 
         # the tracking stopped in the exclude tissue map
         return INVALIDPOINT

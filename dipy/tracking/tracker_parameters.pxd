@@ -1,4 +1,6 @@
 from dipy.direction.pmf cimport PmfGen
+from dipy.utils.fast_numpy cimport RNGState
+
 
 cpdef enum TrackerStatus:
     SUCCESS = 1
@@ -8,7 +10,8 @@ ctypedef TrackerStatus (*func_ptr)(double* point,
                                    double* direction,
                                    TrackerParameters params,
                                    double* stream_data,
-                                   PmfGen pmf_gen) noexcept nogil
+                                   PmfGen pmf_gen,
+                                   RNGState* rng) noexcept nogil
 
 cdef class ParallelTransportTrackerParameters:
     cdef public double angular_separation
@@ -45,4 +48,3 @@ cdef class TrackerParameters:
     cdef public ParallelTransportTrackerParameters ptt
 
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil
-    
