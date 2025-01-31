@@ -8,6 +8,13 @@ from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.math cimport sqrt
 
 
+cdef void take(
+        double* odf,
+        cnp.npy_intp* indices,
+        cnp.npy_intp n_indices,
+        double* values_out) noexcept nogil
+
+
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(
         cnp.float_t* arr,

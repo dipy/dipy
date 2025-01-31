@@ -1,6 +1,12 @@
-cython_sources = ['interpolation',]
+cython_sources = [
+  'interpolation',
+  'math',
+]
 
-cython_headers = ['interpolation.pxd',]
+cython_headers = [
+  'interpolation.pxd',
+  'math.pxd',
+]
 
 foreach ext: cython_sources
   if fs.exists(ext + '.pxd')
