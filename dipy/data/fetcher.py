@@ -1,4 +1,3 @@
-import contextlib
 from hashlib import md5
 import json
 import logging
@@ -6,15 +5,16 @@ import os
 import os.path as op
 from os.path import join as pjoin
 import random
-from shutil import copyfileobj
 import tarfile
 import tempfile
-from urllib.request import Request, urlopen
 import zipfile
 
 import nibabel as nib
 import numpy as np
+import requests
+from requests.adapters import HTTPAdapter
 from tqdm.auto import tqdm
+from urllib3.util.retry import Retry
 
 from dipy.core.gradients import (
     gradient_table,
@@ -154,7 +154,7 @@ def check_md5(filename, *, stored_md5=None):
             raise FetcherError(msg)
 
 
-def _get_file_data(fname, url, *, use_headers=False):
+def _get_file_data(fname, url, *, headers=None, max_retries=3, expected_md5=None):
     """Get data from url and write it to file.
 
     Parameters
@@ -163,25 +163,62 @@ def _get_file_data(fname, url, *, use_headers=False):
         The filename to write the data to.
     url : str
         The URL to get the data from.
-    use_headers : bool, optional
-        Whether to use headers when downloading files.
+    headers : dict, optional
+        The headers to use when making the request.
+    max_retries : int, optional
+        The maximum number of retries to make when fetching the data.
+    expected_md5 : str, optional
+        The md5 checksum of the file. If provided, the downloaded file will be
+        checked against this checksum.
 
     """
-    req = url
-    if use_headers:
-        hdr = random.choice(HEADER_LIST)
-        req = Request(url, headers=hdr)
-    with contextlib.closing(urlopen(req)) as opener:
-        try:
-            response_size = opener.headers["content-length"]
-        except KeyError:
-            response_size = None
+    # Setup retry strategy
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=max_retries, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+    )
+    session.mount("http://", HTTPAdapter(max_retries=retry_strategy))
+    session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+    with session.get(url, headers=headers, stream=True) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        tqdm_options = {"unit": "iB", "unit_scale": True}
+        tqdm_options["desc"] = f"{fname} (size unknown)" if total == 0 else fname
+        if total:
+            tqdm_options["total"] = total
 
-        with open(fname, "wb") as data:
-            if response_size is None:
-                copyfileobj(opener, data)
-            else:
-                copyfileobj_withprogress(opener, data, response_size)
+        with open(fname, "wb") as f:
+            with tqdm(**tqdm_options) as pbar:
+                for chunk in r.iter_content(chunk_size=8192):
+                    size = f.write(chunk)
+                    pbar.update(size)
+
+    if md5 is not None and _get_file_md5(fname) != expected_md5:
+        file_size = os.path.getsize(fname)
+        headers_resume = headers.copy() if headers else {}
+        for attempt in range(max_retries):
+            headers_resume["Range"] = f"bytes={file_size}-"
+            tqdm_options = {"unit": "iB", "unit_scale": True}
+            tqdm_options["desc"] = f"Recovering chunks (attempt {attempt + 1})"
+            try:
+                with session.get(url, headers=headers_resume, stream=True) as r:
+                    if r.status_code == 206:  # Partial content
+                        with open(fname, "ab") as f:
+                            with tqdm(**tqdm_options) as pbar:
+                                for chunk in r.iter_content(chunk_size=8192):
+                                    size = f.write(chunk)
+                                    pbar.update(size)
+
+                        # Verify MD5 again
+                        current_md5 = _get_file_md5(fname)
+                        if current_md5 == expected_md5:
+                            _log("File recovered successfully!")
+                            break
+                    else:
+                        raise FetcherError("Server doesn't support partial content")
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise FetcherError(f"Failed to recover file: {str(e)}") from e
 
 
 @warning_for_keywords()
@@ -226,7 +263,8 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         all_skip = False
         _log(f'Downloading "{f}" to {folder}')
         _log(f"From: {url}")
-        _get_file_data(fullpath, url, use_headers=use_headers)
+        hdr = random.choice(HEADER_LIST) if use_headers else None
+        _get_file_data(fullpath, url, headers=hdr, expected_md5=md5)
         check_md5(fullpath, stored_md5=md5)
     if all_skip:
         _already_there_msg(folder)

@@ -30,7 +30,7 @@ def test_make_fetcher():
 
         # create local HTTP Server
         testfile_folder = op.split(symmetric362)[0] + os.sep
-        testfile_url = f"file:{pathname2url(testfile_folder)}"
+        testfile_url = "http://localhost:8000"
         print(testfile_url)
         print(symmetric362)
         current_dir = os.getcwd()
