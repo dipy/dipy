@@ -11,6 +11,13 @@ from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.utils import Origin, Space, get_reference_info, split_name_with_gz
 from dipy.io.vtk import load_polydata, save_polydata
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package("fury", min_version="0.12.0")
+
+if have_fury:
+    import vtk
+    import vtk.util.numpy_support as ns
 
 
 def load_surface(
@@ -73,6 +80,10 @@ def load_surface(
 
     if to_space not in Space:
         logging.error("Space MUST be one of the 3 choices (Enum).")
+        return False
+
+    if to_origin not in Origin:
+        logging.error("Origin MUST be one of the 2 choices (Enum).")
         return False
 
     if reference == "same":
@@ -203,18 +214,34 @@ def save_surface(
         if sfs.data_per_point is not None:
             # Check if rgb, colors, colors, etc. are available
             color_array_name = None
-            for key in ["rgb", "colors", "colors", "color"]:
+            for key in ["rgb", "colors", "color"]:
                 if key in sfs.data_per_point:
                     color_array_name = key
                     break
                 if key.upper() in sfs.data_per_point:
                     color_array_name = key.upper()
                     break
+
+        if color_array_name is not None:
+            polydata = sfs.get_polydata()
+            color_array = sfs.data_per_point[color_array_name]
+            if len(color_array) != polydata.GetNumberOfPoints():
+                raise ValueError("Array length does not match number of points.")
+            vtk_array = ns.numpy_to_vtk(
+                np.array(color_array), deep=True, array_type=vtk.VTK_UNSIGNED_CHAR
+            )
+            vtk_array.SetName("RGB")
+
+            if "normal" in color_array_name.lower():
+                polydata.GetPointData().SetNormals(vtk_array)
+            else:
+                try:
+                    polydata.GetPointData().SetScalars(vtk_array)
+                except ValueError:
+                    polydata.GetPointData().AddArray(vtk_array)
+
         save_polydata(
-            sfs.get_polydata(),
-            fname,
-            legacy_vtk_format=legacy_vtk_format,
-            color_array_name=color_array_name,
+            polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
         )
     elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:

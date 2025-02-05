@@ -4,7 +4,7 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+fury, have_fury, setup_module = optional_package("fury", min_version="0.12.0")
 
 if have_fury:
     import fury.io
@@ -50,19 +50,21 @@ def save_polydata(
     """Save a vtk polydata to a supported format file.
 
     Save formats can be VTK, VTP, FIB, PLY, STL and XML.
+    Color array can be saved as well either by being already in the polydata
+    or by passing it as an argument (color_array).
 
     Parameters
     ----------
     polydata : vtkPolyData
     file_name : string
-
     """
+
     fury.io.save_polydata(
         polydata=polydata,
         file_name=file_name,
         binary=binary,
         color_array_name=color_array_name,
-        # legacy_vtk_format=legacy_vtk_format, # TODO: Not supported in fury 0.8.0
+        legacy_vtk_format=legacy_vtk_format,
     )
 
 

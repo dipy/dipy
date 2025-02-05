@@ -53,6 +53,14 @@ def save_tractogram(
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
         raise TypeError("Output filename is not one of the supported format.")
 
+    if to_space not in Space:
+        raise ValueError("Space MUST be one of the 3 choices (Enum).")
+        return False
+
+    if to_origin not in Origin:
+        raise ValueError("Origin MUST be one of the 2 choices (Enum).")
+        return False
+
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError(
             "Bounding box is not valid in voxel space, cannot "
