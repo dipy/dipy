@@ -222,8 +222,8 @@ def save_surface(
                     color_array_name = key.upper()
                     break
 
+        polydata = sfs.get_polydata()
         if color_array_name is not None:
-            polydata = sfs.get_polydata()
             color_array = sfs.data_per_point[color_array_name]
             if len(color_array) != polydata.GetNumberOfPoints():
                 raise ValueError("Array length does not match number of points.")
