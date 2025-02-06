@@ -21,8 +21,6 @@ from scipy.ndimage import binary_erosion
 from scipy.stats import pearsonr
 
 from dipy.data import get_fnames, get_sphere
-from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SimplePmfGen
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_trk
@@ -34,11 +32,7 @@ from dipy.tracking.tracker import (
     probabilistic_tracking,
     ptt_tracking,
 )
-from dipy.tracking.utils import (
-    connectivity_matrix,
-    random_seeds_from_mask,
-    seeds_directions_pairs,
-)
+from dipy.tracking.utils import connectivity_matrix, seeds_from_mask
 from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
@@ -86,11 +80,11 @@ plt.close()
 ###############################################################################
 # Prepare ODFs
 sphere = get_sphere(name="repulsion724")
+
 GT_SH_fname = fnames[disco1_fnames.index("highRes_DiSCo1_Strand_ODFs.nii.gz")]
 GT_SH = load_nifti_data(GT_SH_fname)
 GT_ODF = sh_to_sf(GT_SH, sphere, sh_order_max=12, basis_type="tournier07", legacy=False)
 GT_ODF[GT_ODF < 0] = 0
-pmf_gen = SimplePmfGen(np.asarray(GT_ODF, dtype=float), sphere)
 
 if has_fury:
     scene = window.Scene()
@@ -118,12 +112,7 @@ voxel_size = np.ones(3)
 seed_fname = fnames[disco1_fnames.index("highRes_DiSCo1_ROIs-mask.nii.gz")]
 seed_mask = load_nifti_data(seed_fname)
 seed_mask = binary_erosion(seed_mask * mask, iterations=1)
-seeds_positions = random_seeds_from_mask(
-    seed_mask, affine, seeds_count=10000, seed_count_per_voxel=False
-)
-
-peaks = peaks_from_positions(seeds_positions, GT_ODF, sphere, npeaks=1, affine=affine)
-seeds, initial_directions = seeds_directions_pairs(seeds_positions, peaks, max_cross=1)
+seeds = seeds_from_mask(seed_mask, affine, density=2)
 
 plt.imshow(seed_mask[:, :, 17], origin="lower", cmap="gray", interpolation="nearest")
 plt.axis("off")
@@ -146,7 +135,7 @@ plt.close()
 
 print("Running fast Deterministic Tractography...")
 streamline_generator = deterministic_tracking(
-    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=1
+    seeds, sc, affine, sf=GT_ODF, nbr_threads=1, random_seed=1
 )
 
 det_streams = Streamlines(streamline_generator)
@@ -185,7 +174,7 @@ plt.close()
 
 print("Running fast Probabilistic Tractography...")
 streamline_generator = probabilistic_tracking(
-    seeds, sc, affine, sf=GT_ODF, seeds_directions=initial_directions, nbr_threads=4
+    seeds, sc, affine, sf=GT_ODF, nbr_threads=4, random_seed=1
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
@@ -227,9 +216,8 @@ streamline_generator = ptt_tracking(
     sc,
     affine,
     sf=GT_ODF,
-    seeds_directions=initial_directions,
     nbr_threads=0,
-    probe_quality=4,
+    random_seed=1,
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
