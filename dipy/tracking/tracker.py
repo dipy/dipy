@@ -126,7 +126,7 @@ def probabilistic_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
-    return_all=False,
+    return_all=True,
 ):
     """Probabilistic tracking algorithm.
 
@@ -239,7 +239,7 @@ def deterministic_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
-    return_all=False,
+    return_all=True,
 ):
     """Deterministic tracking algorithm.
 
@@ -356,7 +356,7 @@ def ptt_tracking(
     nbr_threads=0,
     random_seed=0,
     seed_buffer_fraction=1.0,
-    return_all=False,
+    return_all=True,
 ):
     """Probabilistic Particle Tracing (PPT) tracking algorithm.
 
