@@ -3,10 +3,10 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-from dipy.tracking.propagator cimport (
-    deterministic_tracker,
-    probabilistic_tracker,
-    parallel_transport_tracker,
+from dipy.tracking.propspeed cimport (
+    deterministic_propagator,
+    probabilistic_propagator,
+    parallel_transport_propagator,
 )
 from dipy.tracking.utils import min_radius_curvature_from_angle
 
@@ -33,7 +33,7 @@ def generate_tracking_parameters(algo_name, *,
                                    max_angle=max_angle,
                                    random_seed=random_seed,
                                    return_all=return_all)
-        params.set_tracker_c(deterministic_tracker)
+        params.set_tracker_c(deterministic_propagator)
         return params
     elif algo_name in ['probabilistic', 'prob']:
         params = TrackerParameters(max_len=max_len,
@@ -44,7 +44,7 @@ def generate_tracking_parameters(algo_name, *,
                                    max_angle=max_angle,
                                    random_seed=random_seed,
                                    return_all=return_all)
-        params.set_tracker_c(probabilistic_tracker)
+        params.set_tracker_c(probabilistic_propagator)
         return params
     elif algo_name == 'ptt':
         params = TrackerParameters(max_len=max_len,
@@ -60,7 +60,7 @@ def generate_tracking_parameters(algo_name, *,
                                    data_support_exponent=data_support_exponent,
                                    random_seed=random_seed,
                                    return_all=return_all)
-        params.set_tracker_c(parallel_transport_tracker)
+        params.set_tracker_c(parallel_transport_propagator)
         return params
     else:
         raise ValueError("Invalid algorithm name")

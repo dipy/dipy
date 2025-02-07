@@ -9,7 +9,7 @@ from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import sh_to_sf
-from dipy.tracking.fast_tracking import generate_tractogram
+from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters

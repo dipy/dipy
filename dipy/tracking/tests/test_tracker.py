@@ -49,6 +49,7 @@ def track(method, **kwargs):
         "sf": fODFs if use_sf else None,
         "sh": sh if not use_sf else None,
         "seeds_directions": directions if use_directions else None,
+        "sphere": sphere,
     }
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -70,6 +71,7 @@ def track(method, **kwargs):
         "sf": fODFs if use_sf else None,
         "sh": sh if not use_sf else None,
         "seeds_directions": directions if use_directions else None,
+        "sphere": sphere,
     }
 
     stream_gen = method(seeds, sc, affine, **params)
@@ -148,5 +150,14 @@ def test_tracking_error():
         sc,
         np.eye(4),
         sh=sh,
+        seeds_directions=[1],
+    )
+    npt.assert_raises(
+        ValueError,
+        tracker.deterministic_tracking,
+        seeds,
+        sc,
+        np.eye(4),
+        sf=sh,
         seeds_directions=[1],
     )

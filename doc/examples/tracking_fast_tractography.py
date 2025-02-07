@@ -15,6 +15,8 @@ See
 for detailed examples of those algorithms.
 """
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_erosion
@@ -38,12 +40,12 @@ from dipy.viz import actor, colormap, has_fury, window
 # Enables/disables interactive visualization
 interactive = False
 
-print("Downloading and preparing data...")
+print("Downloading data...")
 ###############################################################################
 # Prepare the synthetic DiSCo data for fast tracking. The ground-truth
 # connectome will be use to evaluate tractography performances.
 fnames = get_fnames(name="disco1")
-disco1_fnames = [f.split("/")[-1] for f in fnames]
+disco1_fnames = [os.path.basename(f) for f in fnames]
 
 GT_connectome_fname = fnames[
     disco1_fnames.index("DiSCo1_Connectivity_Matrix_Cross-Sectional_Area.txt")
@@ -57,6 +59,8 @@ connectome_mask = np.tril(np.ones(GT_connectome.shape), -1) > 0
 labels_fname = fnames[disco1_fnames.index("highRes_DiSCo1_ROIs.nii.gz")]
 labels, affine, labels_img = load_nifti(labels_fname, return_img=True)
 labels = labels.astype(int)
+
+print("Loading data...")
 
 GT_streams = load_tractogram(fnames[39], reference=labels_img).streamlines
 if has_fury:
@@ -135,7 +139,13 @@ plt.close()
 
 print("Running fast Deterministic Tractography...")
 streamline_generator = deterministic_tracking(
-    seeds, sc, affine, sf=GT_ODF, nbr_threads=1, random_seed=1
+    seeds,
+    sc,
+    affine,
+    sf=GT_ODF,
+    nbr_threads=1,
+    random_seed=1,
+    sphere=sphere,
 )
 
 det_streams = Streamlines(streamline_generator)
@@ -174,7 +184,13 @@ plt.close()
 
 print("Running fast Probabilistic Tractography...")
 streamline_generator = probabilistic_tracking(
-    seeds, sc, affine, sf=GT_ODF, nbr_threads=4, random_seed=1
+    seeds,
+    sc,
+    affine,
+    sf=GT_ODF,
+    nbr_threads=4,
+    random_seed=1,
+    sphere=sphere,
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
@@ -218,6 +234,7 @@ streamline_generator = ptt_tracking(
     sf=GT_ODF,
     nbr_threads=0,
     random_seed=1,
+    sphere=sphere,
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)

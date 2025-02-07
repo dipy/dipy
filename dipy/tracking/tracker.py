@@ -1,11 +1,11 @@
 from nibabel.affines import voxel_sizes
 import numpy as np
 
-from dipy.data import SPHERE_FILES, default_sphere, get_sphere
+from dipy.data import default_sphere
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
-from dipy.tracking.fast_tracking import generate_tractogram
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
+from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
 
 
@@ -51,16 +51,8 @@ def generic_tracking(
 
     selected_pmf = initialized_pmf[0]
 
-    if selected_pmf["name"] == "sf":
-        if sphere is None:
-            nb_vertices = sf.shape[-1]
-            all_spheres = list(SPHERE_FILES.keys())
-            all_spheres.remove("symmetric724")
-            found = [sph for sph in all_spheres if str(nb_vertices) in sph]
-            if len(found) == 1:
-                sphere = get_sphere(name=found[0])
-            else:
-                raise ValueError("A sphere should be defined when using SF.")
+    if selected_pmf["name"] == "sf" and sphere is None:
+        raise ValueError("A sphere should be defined when using SF (an ODF).")
 
     if selected_pmf["name"] == "peaks":
         raise NotImplementedError("Peaks are not yet implemented.")

@@ -1,10 +1,9 @@
 cython_sources = [
   'direction_getter',
   'distances',
-  'fast_tracking',
+  'tractogen',
   'fbcmeasures',
   'localtrack',
-  'propagator',
   'propspeed',
   'stopping_criterion',
   'streamlinespeed',
@@ -14,15 +13,11 @@ cython_sources = [
 
 cython_headers = [
   'direction_getter.pxd',
-  'fast_tracking.pxd',
+  'tractogen.pxd',
   'fbcmeasures.pxd',
-  'propagator.pxd',
   'propspeed.pxd',
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
-  'tracker_deterministic.pxd',
-  'tracker_probabilistic.pxd',
-  'tracker_ptt.pxd',
   'tracker_parameters.pxd'
 ]
 

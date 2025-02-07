@@ -1,6 +1,6 @@
 cython_sources = [
-  'test_fast_tracking',
-  'test_propagator',
+  'test_tractogen',
+  'test_propspeed',
   ]
 
 foreach ext: cython_sources
@@ -25,7 +25,6 @@ python_sources = [
   'test_life.py',
   'test_mesh.py',
   'test_metrics.py',
-  'test_propagation.py',
   'test_stopping_criterion.py',
   'test_streamline.py',
   'test_tracker.py',

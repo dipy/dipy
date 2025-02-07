@@ -4,15 +4,22 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
+from dipy.data import default_sphere
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
 from dipy.reconst.shm import (
     SphHarmFit,
     SphHarmModel,
     descoteaux07_legacy_msg,
 )
-from dipy.tracking.propagator cimport deterministic_tracker, probabilistic_tracker, parallel_transport_tracker
+from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
+from dipy.tracking.propspeed cimport (
+    deterministic_propagator,
+    probabilistic_propagator,
+    parallel_transport_propagator,
+)
+
 from dipy.tracking.tracker_parameters import generate_tracking_parameters, FAIL
-from dipy.tracking.tests.test_fast_tracking import get_fast_tracking_performances
+from dipy.tracking.tests.test_tractogen import get_fast_tracking_performances
 from dipy.utils.fast_numpy cimport RNGState, seed_rng
 
 
@@ -57,21 +64,21 @@ def test_tracker_deterministic():
         direction = unit_octahedron.vertices[0].copy()
 
         # Test using SH pmf
-        status = deterministic_tracker(&point[0],
-                                       &direction[0],
-                                       params,
-                                       &stream_data[0],
-                                       sh_pmf_gen,
-                                       &rng)
+        status = deterministic_propagator(&point[0],
+                                          &direction[0],
+                                          params,
+                                          &stream_data[0],
+                                          sh_pmf_gen,
+                                          &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
-        status = deterministic_tracker(&point[0],
-                                       &direction[0],
-                                       params,
-                                       &stream_data[0],
-                                       sf_pmf_gen,
-                                       &rng)
+        status = deterministic_propagator(&point[0],
+                                          &direction[0],
+                                          params,
+                                          &stream_data[0],
+                                          sf_pmf_gen,
+                                          &rng)
         npt.assert_equal(status, FAIL)
 
 
@@ -129,21 +136,21 @@ def test_tracker_probabilistic():
         direction = unit_octahedron.vertices[0].copy()
 
         # Test using SH pmf
-        status = probabilistic_tracker(&point[0],
-                                       &direction[0],
-                                       params,
-                                       &stream_data[0],
-                                       sh_pmf_gen,
-                                       &rng)
+        status = probabilistic_propagator(&point[0],
+                                          &direction[0],
+                                          params,
+                                          &stream_data[0],
+                                          sh_pmf_gen,
+                                          &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
-        status = probabilistic_tracker(&point[0],
-                                       &direction[0],
-                                       params,
-                                       &stream_data[0],
-                                       sf_pmf_gen,
-                                       &rng)
+        status = probabilistic_propagator(&point[0],
+                                          &direction[0],
+                                          params,
+                                          &stream_data[0],
+                                          sf_pmf_gen,
+                                          &rng)
         npt.assert_equal(status, FAIL)
 
 
@@ -202,21 +209,21 @@ def test_tracker_ptt():
         direction = unit_octahedron.vertices[0].copy()
 
         # Test using SH pmf
-        status = parallel_transport_tracker(&point[0],
-                                            &direction[0],
-                                            params,
-                                            &stream_data[0],
-                                            sh_pmf_gen,
-                                            &rng)
+        status = parallel_transport_propagator(&point[0],
+                                               &direction[0],
+                                               params,
+                                               &stream_data[0],
+                                               sh_pmf_gen,
+                                               &rng)
         npt.assert_equal(status, FAIL)
 
         # Test using SF pmf
-        status = parallel_transport_tracker(&point[0],
-                                            &direction[0],
-                                            params,
-                                            &stream_data[0],
-                                            sf_pmf_gen,
-                                            &rng)
+        status = parallel_transport_propagator(&point[0],
+                                               &direction[0],
+                                               params,
+                                               &stream_data[0],
+                                               sf_pmf_gen,
+                                               &rng)
         npt.assert_equal(status, FAIL)
 
 
@@ -233,3 +240,89 @@ def test_ptt_performances():
     r = get_fast_tracking_performances(params, nbr_seeds=5000)
     npt.assert_(r > 0.85, msg="PTT tracker has a low performance "
                               "score: " + str(r))
+
+
+def stepped_1d(arr_1d):
+    # Make a version of `arr_1d` which is not contiguous
+    return np.vstack((arr_1d, arr_1d)).ravel(order="F")[::2]
+
+
+def test_offset():
+    # Test ndarray_offset function
+    for dt in (np.int32, np.float64):
+        index = np.array([1, 1], dtype=np.intp)
+        A = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]], dtype=dt)
+        strides = np.array(A.strides, np.intp)
+        i_size = A.dtype.itemsize
+        npt.assert_equal(ndarray_offset(index, strides, 2, i_size), 4)
+        npt.assert_equal(A.ravel()[4], A[1, 1])
+        # Index and strides arrays must be C-continuous. Test this is enforced
+        # by using non-contiguous versions of the input arrays.
+        npt.assert_raises(ValueError, ndarray_offset, stepped_1d(index), strides, 2, i_size)
+        npt.assert_raises(ValueError, ndarray_offset, index, stepped_1d(strides), 2, i_size)
+
+
+def test_eudx_both_directions_errors():
+    # Test error conditions for both directions function
+    sphere = default_sphere
+    seed = np.zeros(3, np.float64)
+    qa = np.zeros((4, 5, 6, 7), np.float64)
+    ind = qa.copy()
+    # All of seed, qa, ind, odf_vertices must be C-contiguous.  Check by
+    # passing in versions that aren't C contiguous
+    npt.assert_raises(
+        ValueError,
+        eudx_both_directions,
+        stepped_1d(seed),
+        0,
+        qa,
+        ind,
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    npt.assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa[..., ::2],
+        ind,
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    npt.assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa,
+        ind[..., ::2],
+        sphere.vertices,
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
+    npt.assert_raises(
+        ValueError,
+        eudx_both_directions,
+        seed,
+        0,
+        qa,
+        ind,
+        sphere.vertices[::2],
+        0.5,
+        0.1,
+        1.0,
+        1.0,
+        2,
+    )
