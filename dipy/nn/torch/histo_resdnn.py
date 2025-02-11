@@ -127,6 +127,8 @@ class HistoResDNN:
         # ResDNN Network Flow
         num_hidden = self.sh_size
         self.model = DenseModel(self.sh_size, num_hidden).type(torch.float64)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
 
     def fetch_default_weights(self):
         """
@@ -152,7 +154,13 @@ class HistoResDNN:
             Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.load_state_dict(
+                torch.load(
+                    weights_path,
+                    weights_only=True,
+                    map_location=self.device,
+                )
+            )
             self.model.eval()
         except RuntimeError as e:
             raise ValueError(

@@ -397,8 +397,8 @@ class EVACPlus:
         T1 : np.ndarray or list of np.ndarray
             For a single image, input should be a 3D array.
             If multiple images, it should be a a list or tuple.
+            or list of np.ndarrays with len of batch_size
         affine : np.ndarray (4, 4) or (batch, 4, 4)
-            or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
         voxsize : np.ndarray or list or tuple, optional
