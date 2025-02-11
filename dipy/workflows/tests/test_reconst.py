@@ -1,5 +1,6 @@
 import logging
 import os
+from os.path import join
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
@@ -9,14 +10,17 @@ import numpy.testing as npt
 import pytest
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
+from dipy.data import default_sphere, get_fnames
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import load_pam
+from dipy.io.peaks import load_pam, save_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.sims.voxel import multi_tensor
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.reconst import (
+    CorrectBvecsFlow,
     ReconstForecastFlow,
     ReconstGQIFlow,
     ReconstPowermapFlow,
@@ -392,3 +396,77 @@ def test_reconst_powermap_edge_cases():
             assert not np.allclose(
                 powermaps[0], powermaps[1], rtol=0.1
             ), "Different norm factors should produce different results"
+
+
+@set_random_number_generator()
+def test_correct_bvecs_flow(rng):
+    with TemporaryDirectory() as out_dir:
+        _, bval_path, bvec_path = get_fnames(name="small_25")
+        bvec = np.loadtxt(bvec_path)
+
+        # Build a 5×5×5 volume with an X-axis fiber tract at [:, 2, 2].
+        # The center slice [1:-1, 1:-1, 1:-1] is 3×3×3, containing 3 tract voxels.
+        # With X-aligned peaks, only X-direction neighbor pairs are coherent.
+        # This breaks the orientation symmetry: the identity transform (peaks
+        # stay in X, aligned with the X-displacement between tract voxels) wins
+        # over any permutation that maps peaks to Y or Z, whose neighbors have
+        # no high-FA voxels.
+        shape = (5, 5, 5)
+        affine = np.eye(4)
+
+        mask = np.ones(shape, dtype=np.uint8)
+        mask_path = join(out_dir, "tmp_mask.nii.gz")
+        save_nifti(mask_path, mask, affine)
+
+        # FA is non-zero only along the X-axis tract so that only tract-to-tract
+        # neighbor pairs can satisfy the valid_mask check.
+        fa = np.zeros(shape, dtype=float)
+        fa[:, 2, 2] = 0.8
+        fa_path = join(out_dir, "fa.nii.gz")
+        save_nifti(fa_path, fa, affine)
+
+        # Test 1 (NIfTI format): X-aligned peaks → identity transform wins
+        # → bvecs should be left unchanged.
+        peaks = np.zeros(shape + (3,), dtype=float)
+        peaks[:, 2, 2] = [1, 0, 0]
+        peaks_path = join(out_dir, "peaks.nii.gz")
+        save_nifti(peaks_path, peaks, affine)
+
+        correct_flow = CorrectBvecsFlow()
+        correct_flow.run(bvec_path, fa_path, peaks_path, mask_path, out_dir=out_dir)
+
+        assert os.path.exists(join(out_dir, "corrected_bvecs.txt"))
+        bvec_corrected = np.loadtxt(join(out_dir, "corrected_bvecs.txt"))
+        npt.assert_array_equal(bvec_corrected, bvec)
+
+        correct_flow._force_overwrite = True
+
+        # Test 2 (PAM format): Z-aligned peaks on an X-axis tract represent a
+        # wrong orientation (the algorithm will prefer the transform that maps
+        # Z→X because it yields coherent X-tract neighbor pairs).
+        # bvecs should be changed to correct the detected error.
+        peaks_wrong = np.zeros(shape + (3,), dtype=float)
+        peaks_wrong[:, 2, 2] = [0, 0, 1]
+        pam_path = join(out_dir, "peaks.pam5")
+        pam = PeaksAndMetrics()
+        pam.affine = affine
+        pam.peak_dirs = peaks_wrong
+        pam.peak_values = np.zeros(peaks_wrong.shape[:-1])
+        pam.peak_indices = np.zeros(peaks_wrong.shape[:-1])
+        pam.sphere = default_sphere
+        save_pam(pam_path, pam, affine=affine)
+
+        correct_flow.run(
+            bvec_path,
+            fa_path,
+            pam_path,
+            mask_path,
+            out_dir=out_dir,
+            out_bvecs="corrected_bvecs_2.txt",
+        )
+
+        assert os.path.exists(join(out_dir, "corrected_bvecs_2.txt"))
+        bvec_corrected_2 = np.loadtxt(join(out_dir, "corrected_bvecs_2.txt"))
+        assert not np.allclose(
+            bvec_corrected_2, bvec
+        ), "Z-aligned peaks on X-axis tract should trigger bvec correction"
