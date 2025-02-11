@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-Class and helper functions for fitting the Histological ResDNN model.
-"""
+"""Class and helper functions for fitting the Histological ResDNN model."""
 
 import logging
 
@@ -59,8 +57,7 @@ class DenseModel(Module):
 
 
 class HistoResDNN:
-    """
-    This class is intended for the ResDNN Histology Network model.
+    """This class is intended for the ResDNN Histology Network model.
 
     ResDNN :footcite:p:`Nath2019` is a deep neural network that employs residual
     blocks deep neural network to predict ground truth SH coefficients from SH
@@ -76,7 +73,8 @@ class HistoResDNN:
 
     @doctest_skip_parser
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
-        r"""
+        """Model initialization
+
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in :footcite:p:`Nath2019`.
 
@@ -106,7 +104,6 @@ class HistoResDNN:
         ----------
         .. footbibliography::
         """  # noqa: E501
-
         if not have_torch:
             raise torch()
 
@@ -127,10 +124,11 @@ class HistoResDNN:
         # ResDNN Network Flow
         num_hidden = self.sh_size
         self.model = DenseModel(self.sh_size, num_hidden).type(torch.float64)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
 
     def fetch_default_weights(self):
-        """
-        Load the model pre-training weights to use for the fitting.
+        """Load the model pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
@@ -138,8 +136,7 @@ class HistoResDNN:
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        """
-        Load the custom pre-training weights to use for the fitting.
+        """Load the custom pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
 
@@ -152,17 +149,22 @@ class HistoResDNN:
             Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.load_state_dict(
+                torch.load(
+                    weights_path,
+                    weights_only=True,
+                    map_location=self.device,
+                )
+            )
             self.model.eval()
         except RuntimeError as e:
-            raise ValueError(
+            raise RuntimeError(
                 "Expected input for the provided model weights do not match the "
                 f"declared model ({self.sh_size})"
             ) from e
 
     def __predict(self, x_test):
-        r"""
-        Predict fODF (as SH) from input raw DWI signal (as SH)
+        """Predict fODF (as SH) from input raw DWI signal (as SH)
 
         Parameters
         ----------
@@ -176,7 +178,6 @@ class HistoResDNN:
         np.ndarray (N, M)
             Predicted fODF (as SH)
         """
-
         if x_test.shape[-1] != self.sh_size:
             raise ValueError(
                 "Expected input for the provided model weights do not match the "
@@ -202,6 +203,8 @@ class HistoResDNN:
             unreliable prediction outside the brain.
             Default: Compute prediction only for nonzero voxels (with at least
             one nonzero DWI value).
+        chunk_size : int, optional
+            Batch size when running model prediction.
 
         Returns
         -------
@@ -210,7 +213,6 @@ class HistoResDNN:
             data, but with
             ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` as a last
             dimension.
-
         """
         if mask is None:
             logger.warning(

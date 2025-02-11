@@ -8,126 +8,156 @@ from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
-if have_tf:
-    from tensorflow.keras.layers import (
-        Concatenate,
-        Conv3D,
-        Conv3DTranspose,
-        GroupNormalization,
-        Layer,
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+if have_torch:
+    from torch.nn import (
+        Conv3d,
+        ConvTranspose3d,
+        InstanceNorm3d,
         LeakyReLU,
-        MaxPool3D,
+        MaxPool3d,
+        Module,
+        Sequential,
     )
-    from tensorflow.keras.models import Model
 else:
 
-    class Model:
-        pass
-
-    class Layer:
+    class Module:
         pass
 
     logging.warning(
-        "This model requires Tensorflow.\
+        "This model requires Pytorch.\
                     Please install these packages using \
-                    pip. If using mac, please refer to this \
-                    link for installation. \
-                    https://github.com/apple/tensorflow_macos"
+                    pip."
     )
-
 
 logging.basicConfig()
 logger = logging.getLogger("deepn4")
 
 
-class EncoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
-        super(EncoderBlock, self).__init__()
-        self.conv3d = Conv3D(
-            out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
+class UNet3D(Module):
+    def __init__(self, n_in, n_out):
+        super(UNet3D, self).__init__()
+        # Encoder
+        c = 32
+        self.ec0 = self.encoder_block(n_in, c, kernel_size=3, stride=1, padding=1)
+        self.ec1 = self.encoder_block(c, c * 2, kernel_size=3, stride=1, padding=1)
+        self.pool0 = MaxPool3d(2)
+        self.ec2 = self.encoder_block(c * 2, c * 2, kernel_size=3, stride=1, padding=1)
+        self.ec3 = self.encoder_block(c * 2, c * 4, kernel_size=3, stride=1, padding=1)
+        self.pool1 = MaxPool3d(2)
+        self.ec4 = self.encoder_block(c * 4, c * 4, kernel_size=3, stride=1, padding=1)
+        self.ec5 = self.encoder_block(c * 4, c * 8, kernel_size=3, stride=1, padding=1)
+        self.pool2 = MaxPool3d(2)
+        self.ec6 = self.encoder_block(c * 8, c * 8, kernel_size=3, stride=1, padding=1)
+        self.ec7 = self.encoder_block(c * 8, c * 16, kernel_size=3, stride=1, padding=1)
+        self.el = Conv3d(c * 16, c * 16, kernel_size=1, stride=1, padding=0)
+
+        # Decoder
+        self.dc9 = self.decoder_block(
+            c * 16, c * 16, kernel_size=2, stride=2, padding=0
         )
-        self.instnorm = GroupNormalization(
-            groups=-1, axis=-1, epsilon=1e-05, center=False, scale=False
+        self.dc8 = self.decoder_block(
+            c * 16 + c * 8, c * 8, kernel_size=3, stride=1, padding=1
         )
-        self.activation = LeakyReLU(0.01)
-
-    def call(self, input):
-        x = self.conv3d(input)
-        x = self.instnorm(x)
-        x = self.activation(x)
-
-        return x
-
-
-class DecoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
-        super(DecoderBlock, self).__init__()
-        self.conv3d = Conv3DTranspose(
-            out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
+        self.dc7 = self.decoder_block(c * 8, c * 8, kernel_size=3, stride=1, padding=1)
+        self.dc6 = self.decoder_block(c * 8, c * 8, kernel_size=2, stride=2, padding=0)
+        self.dc5 = self.decoder_block(
+            c * 8 + c * 4, c * 4, kernel_size=3, stride=1, padding=1
         )
-        self.instnorm = GroupNormalization(
-            groups=-1, axis=-1, epsilon=1e-05, center=False, scale=False
+        self.dc4 = self.decoder_block(c * 4, c * 4, kernel_size=3, stride=1, padding=1)
+        self.dc3 = self.decoder_block(c * 4, c * 4, kernel_size=2, stride=2, padding=0)
+        self.dc2 = self.decoder_block(
+            c * 4 + c * 2, c * 2, kernel_size=3, stride=1, padding=1
         )
-        self.activation = LeakyReLU(0.01)
+        self.dc1 = self.decoder_block(c * 2, c * 2, kernel_size=3, stride=1, padding=1)
+        self.dc0 = self.decoder_block(c * 2, n_out, kernel_size=1, stride=1, padding=0)
+        self.dl = ConvTranspose3d(n_out, n_out, kernel_size=1, stride=1, padding=0)
 
-    def call(self, input):
-        x = self.conv3d(input)
-        x = self.instnorm(x)
-        x = self.activation(x)
+    def encoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        layer = Sequential(
+            Conv3d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
+            InstanceNorm3d(out_channels),
+            LeakyReLU(),
+        )
+        return layer
 
-        return x
+    def decoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        layer = Sequential(
+            ConvTranspose3d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
+            InstanceNorm3d(out_channels),
+            LeakyReLU(),
+        )
+        return layer
 
+    def forward(self, x):
+        # Encodes
+        e0 = self.ec0(x)
+        syn0 = self.ec1(e0)
+        del e0
 
-def UNet3D(input_shape):
-    inputs = tf.keras.Input(input_shape)
-    # Encode
-    x = EncoderBlock(32, kernel_size=3, strides=1, padding="same")(inputs)
-    syn0 = EncoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
+        e1 = self.pool0(syn0)
+        e2 = self.ec2(e1)
+        syn1 = self.ec3(e2)
+        del e1, e2
 
-    x = MaxPool3D()(syn0)
-    x = EncoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
-    syn1 = EncoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
+        e3 = self.pool1(syn1)
+        e4 = self.ec4(e3)
+        syn2 = self.ec5(e4)
+        del e3, e4
 
-    x = MaxPool3D()(syn1)
-    x = EncoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
-    syn2 = EncoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
+        e5 = self.pool2(syn2)
+        e6 = self.ec6(e5)
+        e7 = self.ec7(e6)
 
-    x = MaxPool3D()(syn2)
-    x = EncoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
-    x = EncoderBlock(512, kernel_size=3, strides=1, padding="same")(x)
+        # Last layer without relu
+        el = self.el(e7)
+        del e5, e6, e7
 
-    # Last layer without relu
-    x = Conv3D(512, kernel_size=1, strides=1, padding="same")(x)
+        # Decode
+        d9 = torch.cat((self.dc9(el), syn2), 1)
+        del el, syn2
 
-    x = DecoderBlock(512, kernel_size=2, strides=2, padding="valid")(x)
+        d8 = self.dc8(d9)
+        d7 = self.dc7(d8)
+        del d9, d8
 
-    x = Concatenate()([x, syn2])
+        d6 = torch.cat((self.dc6(d7), syn1), 1)
+        del d7, syn1
 
-    x = DecoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
-    x = DecoderBlock(256, kernel_size=3, strides=1, padding="same")(x)
-    x = DecoderBlock(256, kernel_size=2, strides=2, padding="valid")(x)
+        d5 = self.dc5(d6)
+        d4 = self.dc4(d5)
+        del d6, d5
 
-    x = Concatenate()([x, syn1])
+        d3 = torch.cat((self.dc3(d4), syn0), 1)
+        del d4, syn0
 
-    x = DecoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
-    x = DecoderBlock(128, kernel_size=3, strides=1, padding="same")(x)
-    x = DecoderBlock(128, kernel_size=2, strides=2, padding="valid")(x)
+        d2 = self.dc2(d3)
+        d1 = self.dc1(d2)
+        del d3, d2
 
-    x = Concatenate()([x, syn0])
+        d0 = self.dc0(d1)
+        del d1
 
-    x = DecoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
-    x = DecoderBlock(64, kernel_size=3, strides=1, padding="same")(x)
-
-    x = DecoderBlock(1, kernel_size=1, strides=1, padding="valid")(x)
-
-    # Last layer without relu
-    out = Conv3DTranspose(1, kernel_size=1, strides=1, padding="valid")(x)
-
-    return Model(inputs, out)
+        # Last layer without relu
+        out = self.dl(d0)
+        return out
 
 
 class DeepN4:
@@ -141,14 +171,13 @@ class DeepN4:
     .. footbibliography::
     """
 
-    @warning_for_keywords()
     @doctest_skip_parser
     def __init__(self, *, verbose=False):
         """Model initialization
 
         To obtain the pre-trained model, use fetch_default_weights() like:
-        >>> deepn4_model = DeepN4() # skip if not have_tf
-        >>> deepn4_model.fetch_default_weights() # skip if not have_tf
+        >>> deepn4_model = DeepN4() # skip if not have_torch
+        >>> deepn4_model.fetch_default_weights() # skip if not have_torch
 
         This model is designed to take as input file T1 signal and predict
         bias field. Effectively, this model is mimicking bias correction.
@@ -158,19 +187,21 @@ class DeepN4:
         verbose : bool, optional
             Whether to show information about the processing.
         """
-        if not have_tf:
-            raise tf()
+        if not have_torch:
+            raise torch()
 
         log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
-        # Synb0 network load
+        # DeepN4 network load
 
-        self.model = UNet3D(input_shape=(128, 128, 128, 1))
+        self.model = UNet3D(1, 1)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting."""
-        fetch_model_weights_path = get_fnames(name="deepn4_default_tf_weights")
+        fetch_model_weights_path = get_fnames(name="deepn4_default_torch_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
@@ -179,10 +210,17 @@ class DeepN4:
         Parameters
         ----------
         weights_path : str
-            Path to the file containing the weights (hdf5, saved by tensorflow)
+            Path to the file containing the weights
         """
         try:
-            self.model.load_weights(weights_path)
+            self.model.load_state_dict(
+                torch.load(
+                    weights_path,
+                    weights_only=True,
+                    map_location=self.device,
+                )["model_state_dict"]
+            )
+            self.model.eval()
         except ValueError as e:
             raise ValueError(
                 "Expected input for the provided model weights \
@@ -195,15 +233,15 @@ class DeepN4:
 
         Parameters
         ----------
-        x_test : np.ndarray (128, 128, 128, 1)
+        x_test : np.ndarray
             Image should match the required shape of the model.
 
         Returns
         -------
-        np.ndarray (128, 128, 128)
+        np.ndarray (batch, ...)
             Predicted bias field
         """
-        return self.model.predict(x_test)[..., 0]
+        return self.model(x_test)[:, 0].detach().numpy()
 
     def pad(self, img, sz):
         tmp = np.zeros((sz, sz, sz))
@@ -243,11 +281,11 @@ class DeepN4:
         in_max = np.percentile(input_data[np.nonzero(input_data)], 99.99)
         input_data = normalize(input_data, min_v=0, max_v=in_max, new_min=0, new_max=1)
         input_data = np.squeeze(input_data)
-        input_vols = np.zeros((1, 128, 128, 128, 1))
-        input_vols[0, :, :, :, 0] = input_data
+        input_vols = np.zeros((1, 1, 128, 128, 128))
+        input_vols[0, 0, :, :, :] = input_data
 
         return (
-            tf.convert_to_tensor(input_vols, dtype=tf.float32),
+            torch.from_numpy(input_vols).float(),
             lx,
             lX,
             ly,
@@ -294,7 +332,7 @@ class DeepN4:
         )
 
         # Run the model to get the bias field
-        logfield = self.__predict(in_features)
+        logfield = self.__predict(in_features.to(self.device))
         field = np.exp(logfield)
         field = field.squeeze()
 

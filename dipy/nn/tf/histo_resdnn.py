@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-Class and helper functions for fitting the Histological ResDNN model.
-"""
+"""Class and helper functions for fitting the Histological ResDNN model."""
 
 import logging
 
@@ -35,8 +33,7 @@ logger = logging.getLogger("histo_resdnn")
 
 
 class HistoResDNN:
-    """
-    This class is intended for the ResDNN Histology Network model.
+    """This class is intended for the ResDNN Histology Network model.
 
     ResDNN :footcite:p:`Nath2019` is a deep neural network that employs residual
     blocks deep neural network to predict ground truth SH coefficients from SH
@@ -54,7 +51,8 @@ class HistoResDNN:
     @warning_for_keywords()
     @doctest_skip_parser
     def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
-        r"""
+        """Model initialization
+
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in :footcite:p:`Nath2019`.
 
@@ -84,7 +82,6 @@ class HistoResDNN:
         ----------
         .. footbibliography::
         """  # noqa: E501
-
         if not have_tf:
             raise tf()
 
@@ -116,8 +113,7 @@ class HistoResDNN:
         self.model = Model(inputs=inputs, outputs=x6)
 
     def fetch_default_weights(self):
-        r"""
-        Load the model pre-training weights to use for the fitting.
+        """Load the model pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
         """
@@ -125,8 +121,7 @@ class HistoResDNN:
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        r"""
-        Load the custom pre-training weights to use for the fitting.
+        """Load the custom pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
 
@@ -147,8 +142,7 @@ class HistoResDNN:
             ) from e
 
     def __predict(self, x_test):
-        r"""
-        Predict fODF (as SH) from input raw DWI signal (as SH)
+        """Predict fODF (as SH) from input raw DWI signal (as SH)
 
         Parameters
         ----------
@@ -162,7 +156,6 @@ class HistoResDNN:
         np.ndarray (N, M)
             Predicted fODF (as SH)
         """
-
         if x_test.shape[-1] != self.sh_size:
             raise ValueError(
                 "Expected input for the provided model weights do not match the "
@@ -189,6 +182,8 @@ class HistoResDNN:
             unreliable prediction outside the brain.
             Default: Compute prediction only for nonzero voxels (with at least
             one nonzero DWI value).
+        chunk_size : int, optional
+            Batch size when running model prediction.
 
         Returns
         -------
@@ -197,7 +192,6 @@ class HistoResDNN:
             data, but with
             ``(sh_order_max + 1) * (sh_order_max + 2) / 2`` as a last
             dimension.
-
         """
         if mask is None:
             logger.warning(
