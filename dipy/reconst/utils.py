@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 
 
@@ -317,3 +319,160 @@ def convert_tensors(tensor, from_format, to_format):
 
     tensor_reordered = tensor_dipy[..., tensor_order[to_format.lower()][1]]
     return tensor_reordered
+
+
+def compute_coherence_table_for_gradient_transforms(
+    fiber_orientations,
+    anisotropy_values,
+    *,
+    nb_flips=4,
+    angle_threshold=None,
+):
+    """Compute fiber coherence indexes for gradient table orientation variations.
+
+    This function explores potential gradient table orientation errors by
+    computing coherence across 24 possible permutations and flips of the
+    original gradient directions. See :footcite:p:`schilling2019b`.
+
+    Parameters
+    ----------
+    fiber_orientations : np.ndarray
+        Principal fiber orientations (e.g peaks) for each voxel, shape (..., 3)
+    anisotropy_values : np.ndarray
+        Anisotropy measure for each voxel (e.g. FA map), shape should match
+        fiber_orientations.shape[:-1]
+    nb_flips : int, optional
+        Number of flips to consider for each permutation.
+    angle_threshold : float, optional
+        Maximum angle for considering directions coherent.
+
+    Returns
+    -------
+    Tuple containing:
+    - List of coherence values for each transform
+    - List of transformation matrices
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    # Precompute all possible permutations and flips
+    permutations = list(itertools.permutations([0, 1, 2]))
+    nb_transforms = len(permutations) * nb_flips
+    transforms = np.zeros((nb_transforms, 3, 3), dtype=np.float32)
+
+    for i, perm in enumerate(permutations):
+        # Base permutation transform
+        transforms[i * nb_flips][np.arange(3), perm] = 1.0
+
+        # Flip transforms for each axis
+        for axis in range(3):
+            flip_transform = transforms[i * nb_flips].copy()
+            flip_transform[axis, axis] *= -1
+            transforms[i * nb_flips + axis + 1] = flip_transform
+
+    ndims = len(fiber_orientations.shape) - 1
+    neighbor_offsets = np.array(
+        [
+            offset
+            for offset in itertools.product([-1, 0, 1], repeat=ndims)
+            if any(offset)  # Exclude (0,0,0)
+        ]
+    )
+    # Compute coherence for each transform
+    coherence_values = [
+        compute_fiber_coherence(
+            np.einsum("...ij,...j->...i", transform, fiber_orientations),
+            anisotropy_values,
+            angle_threshold=angle_threshold,
+            neighbor_offsets=neighbor_offsets,
+        )
+        for transform in transforms
+    ]
+
+    return coherence_values, list(transforms)
+
+
+def compute_fiber_coherence(
+    peaks,
+    anisotropy_values,
+    *,
+    angle_threshold=None,
+    neighbor_offsets=None,
+):
+    """Compute fiber coherence by analyzing directional consistency.
+
+    See :footcite:p:`schilling2019b` for more details.
+
+    Parameters
+    ----------
+    peaks : np.ndarray
+        Principal fiber orientations for each voxel, shape (..., 3)
+    anisotropy_values : np.ndarray
+        Anisotropy measure for each voxel (e.g. FA map).
+        Shape should match peaks.shape[:-1]
+    angle_threshold : float, optional
+        Maximum angle for considering directions coherent in radians.
+    neighbor_offsets : np.ndarray, optional
+        Precomputed neighbor offsets for efficient computation
+
+    Returns
+    -------
+    float
+        Computed fiber coherence value
+        Higher values indicate more coherent fiber orientations
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    if peaks.shape[:-1] != anisotropy_values.shape:
+        raise ValueError(
+            f"Shape mismatch: peaks {peaks.shape}, values {anisotropy_values.shape}"
+        )
+
+    angle_threshold = angle_threshold or np.pi / 6.0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        norms = np.linalg.norm(peaks, axis=-1, keepdims=True)
+        norm_peaks = np.divide(peaks, norms, out=np.zeros_like(peaks), where=norms > 0)
+
+    ndims = len(peaks.shape) - 1
+    if neighbor_offsets is None:
+        # Compute neighbor offsets and exclude zero offset
+        neighbor_offsets = np.array(
+            [
+                offset
+                for offset in itertools.product([-1, 0, 1], repeat=ndims)
+                if any(offset)  # Exclude (0,0,0)
+            ]
+        )
+
+    coherence = 0.0
+    cos_threshold = np.cos(angle_threshold)
+    for offset in neighbor_offsets:
+        # Create shifted slices to align neighborhoods
+        slice_center = tuple(slice(1, -1) for _ in range(ndims))
+        slice_neighbor = tuple(
+            slice(1 + off, -1 + off if off <= 0 else None) for off in offset
+        )
+
+        peaks_center = norm_peaks[slice_center]
+        peaks_neighbor = norm_peaks[slice_neighbor]
+        # Compute absolute dot product (cos of angle)
+        # Using einsum for efficient dot product calculation
+        cos_angles = np.abs(np.einsum("...i,...i->...", peaks_center, peaks_neighbor))
+
+        # Find voxels with angle less than threshold
+        coherent_mask = cos_angles > cos_threshold
+
+        values_center = anisotropy_values[slice_center]
+        values_neighbor = anisotropy_values[slice_neighbor]
+
+        # Add to coherence score
+        # Only count voxels where both center and neighbor have significant values
+        valid_mask = (values_center > 0) & (values_neighbor > 0) & coherent_mask
+        coherence += np.sum(values_center[valid_mask] + values_neighbor[valid_mask])
+
+    return coherence
