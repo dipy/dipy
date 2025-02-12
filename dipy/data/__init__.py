@@ -436,16 +436,12 @@ def load_sdp_constraints(model_name, *, order=None):
 
     """
 
-    if False:  # original
-        print("loading original constraints")
-        file = model_name + "_constraint"
-        if order is not None:
-           file += f"_{str(order)}"
-        file += ".npz"
-        print("loading this file:", file)
-    else:  # new constraints
-        print("loading new constraints from convexity matrix dir...")
-        file = "/home/sam/Documents/work/convexity_matrix/dki_constraint_SC.npz"
+    file = model_name + "_constraint"
+    if order is not None:
+        file += f"_{str(order)}"
+    if order is None:
+        file += "_SC"
+    file += ".npz"
 
     path = pjoin(DATA_DIR, file)
 
@@ -453,11 +449,9 @@ def load_sdp_constraints(model_name, *, order=None):
         raise ValueError(f"Constraints file '{file}' not found.")
 
     try:
-    #if True:
         array = load_npz(path)
         n, x = array.shape
         sdp_constraints = [array[i * x : (i + 1) * x] for i in range(n // x)]
         return sdp_constraints
     except Exception as e:
-    #else:
         raise ValueError(f"Failed to read constraints file '{file}'.") from e
