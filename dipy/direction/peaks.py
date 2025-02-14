@@ -11,6 +11,7 @@ from dipy.core.interpolation import trilinear_interpolate4d
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
+from dipy.reconst.dirspeed import peak_directions
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 from dipy.reconst.odf import gfa
 from dipy.reconst.recspeed import (
@@ -97,86 +98,6 @@ def peak_directions_nl(
     )
     values = values[idx]
     return directions, values
-
-
-@warning_for_keywords()
-def peak_directions(
-    odf,
-    sphere,
-    *,
-    relative_peak_threshold=0.5,
-    min_separation_angle=25,
-    is_symmetric=True,
-):
-    """Get the directions of odf peaks.
-
-    Peaks are defined as points on the odf that are greater than at least one
-    neighbor and greater than or equal to all neighbors. Peaks are sorted in
-    descending order by their values then filtered based on their relative size
-    and spacing on the sphere. An odf may have 0 peaks, for example if the odf
-    is perfectly isotropic.
-
-    Parameters
-    ----------
-    odf : 1d ndarray
-        The odf function evaluated on the vertices of `sphere`
-    sphere : Sphere
-        The Sphere providing discrete directions for evaluation.
-    relative_peak_threshold : float in [0., 1.]
-        Only peaks greater than ``min + relative_peak_threshold * scale`` are
-        kept, where ``min = max(0, odf.min())`` and
-        ``scale = odf.max() - min``.
-    min_separation_angle : float in [0, 90]
-        The minimum distance between directions. If two peaks are too close
-        only the larger of the two is returned.
-    is_symmetric : bool, optional
-        If True, v is considered equal to -v.
-
-    Returns
-    -------
-    directions : (N, 3) ndarray
-        N vertices for sphere, one for each peak
-    values : (N,) ndarray
-        peak values
-    indices : (N,) ndarray
-        peak indices of the directions on the sphere
-
-    Notes
-    -----
-    If the odf has any negative values, they will be clipped to zeros.
-
-    """
-    values, indices = local_maxima(odf, sphere.edges)
-
-    # If there is only one peak return
-    n = len(values)
-    if n == 0 or (values[0] < 0.0):
-        return np.zeros((0, 3)), np.zeros(0), np.zeros(0, dtype=int)
-    elif n == 1:
-        return sphere.vertices[indices], values, indices
-
-    odf_min = np.min(odf)
-    odf_min = max(odf_min, 0.0)
-    # because of the relative threshold this algorithm will give the same peaks
-    # as if we divide (values - odf_min) with (odf_max - odf_min) or not so
-    # here we skip the division to increase speed
-    values_norm = values - odf_min
-
-    # Remove small peaks
-    n = search_descending(values_norm, relative_peak_threshold)
-    indices = indices[:n]
-    directions = sphere.vertices[indices]
-
-    # Remove peaks too close together
-    directions, uniq = remove_similar_vertices(
-        directions,
-        min_separation_angle,
-        return_index=True,
-        remove_antipodal=is_symmetric,
-    )
-    values = values[uniq]
-    indices = indices[uniq]
-    return directions, values, indices
 
 
 def _pam_from_attrs(

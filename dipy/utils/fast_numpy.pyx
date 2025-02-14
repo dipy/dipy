@@ -2,6 +2,31 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 from libc.stdio cimport printf
+cimport numpy as cnp
+
+
+cdef void take(
+    double* odf,
+    cnp.npy_intp* indices,
+    cnp.npy_intp n_indices,
+    double* values_out) noexcept nogil:
+    """
+    Mimic np.take(odf, indices) in Cython using pointers.
+
+    Parameters
+    ----------
+    odf : double*
+        Pointer to the input array from which values are taken.
+    indices : npy_intp*
+        Pointer to the array of indices specifying which elements to take.
+    n_indices : npy_intp
+        Number of indices to process.
+    values_out : double*
+        Pointer to the output array where the selected values will be stored.
+    """
+    cdef int i
+    for i in range(n_indices):
+        values_out[i] = odf[indices[i]]
 
 
 cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) noexcept nogil:
