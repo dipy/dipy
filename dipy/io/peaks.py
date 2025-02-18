@@ -132,7 +132,7 @@ def load_pam(fname, *, verbose=False):
 
 
 @deprecate_with_version(
-    "dipy.io.peaks.save_peaks is deprecated, Please use"
+    "dipy.io.peaks.save_peaks is deprecated, Please use "
     "dipy.io.peaks.save_pam instead",
     since="1.10.0",
     until="1.12.0",
