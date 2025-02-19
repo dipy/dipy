@@ -50,6 +50,7 @@ dependencies = [
 dipy_align_syn = "dipy.workflows.cli:run"
 dipy_align_affine = "dipy.workflows.cli:run"
 dipy_apply_transform = "dipy.workflows.cli:run"
+dipy_auto = "dipy.workflows.cli:run"
 dipy_brain_mask = "dipy.workflows.cli:run"
 dipy_buan_shapes = "dipy.workflows.cli:run"
 dipy_buan_profiles = "dipy.workflows.cli:run"
