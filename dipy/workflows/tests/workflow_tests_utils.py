@@ -1,5 +1,4 @@
-from dipy.workflows.combined_workflow import CombinedWorkflow
-from dipy.workflows.workflow import Workflow
+from dipy.workflows.workflow import CombinedWorkflow, Workflow
 
 
 class DummyWorkflow1(Workflow):
