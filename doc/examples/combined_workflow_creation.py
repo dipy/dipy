@@ -12,15 +12,14 @@ file is usually located in the ``dipy/workflows`` directory.
 
 import os
 
-from dipy.workflows.combined_workflow import CombinedWorkflow
+from dipy.workflows.denoise import NLMeansFlow
+from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.workflow import CombinedWorkflow
 
 ###############################################################################
 # ``CombinedWorkflow`` is the base class that will be extended to create our
 # combined workflow.
-from dipy.workflows.denoise import NLMeansFlow
-from dipy.workflows.segment import MedianOtsuFlow
-
-###############################################################################
+#
 # ``MedianOtsuFlow`` and ``NLMeansFlow`` will be combined to create our
 # processing section.
 
