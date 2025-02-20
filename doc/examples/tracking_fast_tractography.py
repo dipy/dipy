@@ -22,11 +22,12 @@ import numpy as np
 from scipy.ndimage import binary_erosion
 from scipy.stats import pearsonr
 
-from dipy.data import get_fnames, get_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import default_sphere, get_fnames
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_trk
-from dipy.reconst.shm import sh_to_sf
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import (
@@ -74,7 +75,6 @@ plt.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest
 plt.axis("off")
 plt.savefig("connectome_ground_truth.png")
 plt.close()
-
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -82,31 +82,7 @@ plt.close()
 # DiSCo ground-truth trajectories (left) and connectivity matrix (right).
 
 ###############################################################################
-# Prepare ODFs
-sphere = get_sphere(name="repulsion724")
 
-GT_SH_fname = fnames[disco1_fnames.index("highRes_DiSCo1_Strand_ODFs.nii.gz")]
-GT_SH = load_nifti_data(GT_SH_fname)
-GT_ODF = sh_to_sf(GT_SH, sphere, sh_order_max=12, basis_type="tournier07", legacy=False)
-GT_ODF[GT_ODF < 0] = 0
-
-if has_fury:
-    scene = window.Scene()
-    ODF_spheres = actor.odf_slicer(
-        GT_ODF[:, :, 17:18, :], sphere=sphere, scale=2, norm=False, colormap="plasma"
-    )
-    scene.add(ODF_spheres)
-    window.record(scene=scene, out_path="GT_odfs.png", size=(600, 600))
-    if interactive:
-        window.show(scene)
-
-###############################################################################
-#
-# .. rst-class:: centered small fst-italic fw-semibold
-#
-# DiSCo ground-truth ODFs.
-
-###############################################################################
 # Tracking mask, seed positions and initial directions
 mask_fname = fnames[disco1_fnames.index("highRes_DiSCo1_mask.nii.gz")]
 mask = load_nifti_data(mask_fname)
@@ -135,17 +111,44 @@ plt.close()
 # DiSCo seeding (left) and tracking (right) masks.
 
 ###############################################################################
-# Perform fast deterministic tractography using 1 thread (cpu)
 
+# Compute ODFs
+data_fname = fnames[disco1_fnames.index("highRes_DiSCo1_DWI_RicianNoise-snr10.nii.gz")]
+data = load_nifti_data(data_fname)
+
+bvecs = fnames[disco1_fnames.index("DiSCo_gradients_dipy.bvecs")]
+bvals = fnames[disco1_fnames.index("DiSCo_gradients.bvals")]
+gtab = gradient_table(bvals=bvals, bvecs=bvecs)
+
+response, _ = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=8)
+csd_fit = csd_model.fit(data, mask=mask)
+ODFs = csd_fit.odf(default_sphere)
+
+if has_fury:
+    scene = window.Scene()
+    ODF_spheres = actor.odf_slicer(
+        ODFs[:, :, 17:18, :],
+        sphere=default_sphere,
+        scale=2,
+        norm=False,
+        colormap="plasma",
+    )
+    scene.add(ODF_spheres)
+    window.record(scene=scene, out_path="GT_odfs.png", size=(600, 600))
+    if interactive:
+        window.show(scene)
+###############################################################################
+#
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# DiSCo ground-truth ODFs.
+###############################################################################
+
+# Perform fast deterministic tractography using 1 thread (cpu)
 print("Running fast Deterministic Tractography...")
 streamline_generator = deterministic_tracking(
-    seeds,
-    sc,
-    affine,
-    sf=GT_ODF,
-    nbr_threads=1,
-    random_seed=1,
-    sphere=sphere,
+    seeds, sc, affine, sf=ODFs, nbr_threads=1, random_seed=42, sphere=default_sphere
 )
 
 det_streams = Streamlines(streamline_generator)
@@ -178,19 +181,13 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo Deterministic tractogram and corresponding connectome.
-
 ###############################################################################
+
 # Perform fast probabilistic tractography using 4 threads (cpus)
 
 print("Running fast Probabilistic Tractography...")
 streamline_generator = probabilistic_tracking(
-    seeds,
-    sc,
-    affine,
-    sf=GT_ODF,
-    nbr_threads=4,
-    random_seed=1,
-    sphere=sphere,
+    seeds, sc, affine, sf=ODFs, nbr_threads=4, random_seed=42, sphere=default_sphere
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
@@ -222,19 +219,12 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo Probabilistic tractogram and corresponding connectome.
-
 ###############################################################################
 
 # Perform fast parallel transport tractography tractography using all threads (cpus)
 print("Running fast Parallel Transport Tractography...")
 streamline_generator = ptt_tracking(
-    seeds,
-    sc,
-    affine,
-    sf=GT_ODF,
-    nbr_threads=0,
-    random_seed=1,
-    sphere=sphere,
+    seeds, sc, affine, sf=ODFs, nbr_threads=0, random_seed=42, sphere=default_sphere
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
@@ -263,5 +253,4 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo PTT tractogram and corresponding connectome.
-
 ###############################################################################
