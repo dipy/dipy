@@ -432,6 +432,8 @@ class PositiveDefiniteLeastSquares:
         ----------
         .. footbibliography::
         """
+        # Note: several comments refer to DelaHaije2020 eq 22
+
         # Input
         self.A = A  # list: [zeros, H(omega), L(alpha)] --- see eq 22
         self.L = L  # this is a regularizer matrix, NOT L(alpha) eq 22

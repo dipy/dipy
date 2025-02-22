@@ -1799,7 +1799,6 @@ class DiffusionKurtosisModel(ReconstModel):
             if isinstance(self.convexity_level, str):
                 if self.convexity_level == "full":
                     self.sdp_constraints = load_sdp_constraints("dki")
-                    # NOTE: load my constraint matrices instead, see if they work!
                 else:
                     raise ValueError(msg)
             elif self.convexity_level < 0 or self.convexity_level % 2:
