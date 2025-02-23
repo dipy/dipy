@@ -14,6 +14,7 @@ data_files = [
     'dki_constraint_2.npz',
     'dki_constraint_4.npz',
     'dki_constraint.npz',
+    'dki_constraint_SC.npz',
     'dsi515_b_table.txt',
     'dsi4169_b_table.txt',
     'eg_3voxels.pkl',
