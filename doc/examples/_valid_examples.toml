@@ -234,6 +234,7 @@ enable = true
 files = [
     "reconst_csa_parallel.py",
     "reconst_csd_parallel.py",
+    "tracking_fast_tractography.py",
 ]
 
 [file_formats]
