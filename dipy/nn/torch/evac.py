@@ -349,6 +349,8 @@ class EVACPlus:
         # EVAC+ network load
 
         self.model = self.init_model()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
         self.fetch_default_weights()
 
     def init_model(self, model_scale=16):
@@ -374,7 +376,13 @@ class EVACPlus:
             Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.load_state_dict(
+                torch.load(
+                    weights_path,
+                    weights_only=True,
+                    map_location=self.device,
+                )
+            )
             self.model.eval()
         except ValueError as e:
             raise ValueError(

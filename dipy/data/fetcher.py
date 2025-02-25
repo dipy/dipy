@@ -430,8 +430,8 @@ fetch_synb0_test = _make_fetcher(
     doc="Download Synb0 test data for Schilling et. al 2019",
 )
 
-fetch_deepn4_weights = _make_fetcher(
-    "fetch_deepn4_weights",
+fetch_deepn4_tf_weights = _make_fetcher(
+    "fetch_deepn4_tf_weights",
     pjoin(dipy_home, "deepn4"),
     "https://ndownloader.figshare.com/files/",
     ["44673313"],
@@ -440,13 +440,23 @@ fetch_deepn4_weights = _make_fetcher(
     doc="Download DeepN4 model weights for Kanakaraj et. al 2024",
 )
 
+fetch_deepn4_torch_weights = _make_fetcher(
+    "fetch_deepn4_torch_weights",
+    pjoin(dipy_home, "deepn4"),
+    "https://ndownloader.figshare.com/files/",
+    ["52285805"],
+    ["deepn4_torch_weights"],
+    md5_list=["97c5a5f8356a3d0eeca1c6bb7949c8b8"],
+    doc="Download DeepN4 model weights for Kanakaraj et. al 2024",
+)
+
 fetch_deepn4_test = _make_fetcher(
     "fetch_deepn4_test",
     pjoin(dipy_home, "deepn4"),
     "https://ndownloader.figshare.com/files/",
-    ["48842938", "48842941"],
-    ["test_input_deepn4.npz", "test_output_deepn4.npz"],
-    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "8f52bdfceef93a5acae7c32a2c63a7c6"],
+    ["48842938", "52454531"],
+    ["test_input_deepn4.npz", "new_test_output_deepn4.npz"],
+    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "6da15c4358fd13c99773eedeb93953c7"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -1657,14 +1667,18 @@ def get_fnames(*, name="small_64D"):
         input_array = pjoin(folder, "test_input_synb0.npz")
         target_array = pjoin(folder, "test_output_synb0.npz")
         return input_array, target_array
-    if name == "deepn4_default_weights":
-        _, folder = fetch_deepn4_weights()
+    if name == "deepn4_default_tf_weights":
+        _, folder = fetch_deepn4_tf_weights()
         w1 = pjoin(folder, "model_weights.h5")
+        return w1
+    if name == "deepn4_default_torch_weights":
+        _, folder = fetch_deepn4_torch_weights()
+        w1 = pjoin(folder, "deepn4_torch_weights")
         return w1
     if name == "deepn4_test_data":
         files, folder = fetch_deepn4_test()
         input_array = pjoin(folder, "test_input_deepn4.npz")
-        target_array = pjoin(folder, "test_output_deepn4.npz")
+        target_array = pjoin(folder, "new_test_output_deepn4.npz")
         return input_array, target_array
     if name == "evac_default_tf_weights":
         files, folder = fetch_evac_tf_weights()
