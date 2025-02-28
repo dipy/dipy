@@ -20,7 +20,7 @@ from dipy.io.vtk import (
 )
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.12.0")
+fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 if have_fury:
     import vtk
