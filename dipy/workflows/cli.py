@@ -28,6 +28,7 @@ cli_flows = {
     "dipy_fit_dki": ("dipy.workflows.reconst", "ReconstDkiFlow"),
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_fwdti": ("dipy.workflows.reconst", "ReconstFwdtiFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
     "dipy_gibbs_ringing": ("dipy.workflows.denoise", "GibbsRingingFlow"),
